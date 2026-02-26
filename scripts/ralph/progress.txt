@@ -44,6 +44,8 @@
 - **PPTX scheme color resolution**: In slide XML, `<a:schemeClr val="accent1"/>` resolves to RGB via `theme.colors.get(&scheme_name)`. Handled in both Start and Empty events (schemeClr can have children like `<a:tint/>`). When no theme is loaded, scheme colors resolve to `None`.
 - **PPTX theme font resolution**: `<a:latin typeface="+mj-lt"/>` → major font, `<a:latin typeface="+mn-lt"/>` → minor font. `resolve_theme_font()` substitutes these references. Explicit font names pass through unchanged.
 - **Test PPTX with theme**: Use `build_test_pptx_with_theme(cx, cy, slides, theme_xml)`. Includes `ppt/theme/theme1.xml` in ZIP and theme relationship in presentation.xml.rels. `make_theme_xml(colors, major_font, minor_font)` creates theme XML. `standard_theme_colors()` returns Office-like defaults.
+- **PPTX slide backgrounds**: `FixedPage.background_color: Option<Color>`. Parsed from `<p:bg><p:bgPr><a:solidFill>` in slide XML via `parse_background_color(xml, theme)`. Supports `<a:srgbClr>` and `<a:schemeClr>`. Inheritance chain: slide → layout → master via `resolve_inherited_background()`. Layout path from slide .rels (relationship target containing "slideLayout"), master path from layout .rels (target containing "slideMaster"). Typst codegen: `#set page(..., fill: rgb(r, g, b))` when background_color is Some.
+- **Test PPTX with layout/master**: Use `build_test_pptx_with_layout_master(cx, cy, slide_xml, layout_xml, master_xml)`. Creates full inheritance chain: slide1 → slideLayout1 → slideMaster1 with .rels files at each level. `make_slide_xml_with_bg(bg_xml, shapes)` creates slide XML with `<p:bg>` inside `<p:cSld>`.
 ---
 
 # Ralph Progress Log - Phase 2: P1 Features - Formatting, Styles, Font Fallback
@@ -213,4 +215,25 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - Color transforms (tint, shade, lumMod, etc.) are not applied — we use the base theme color as-is. Future improvement.
   - Font typeface `+mj-lt` and `+mn-lt` are OOXML conventions for referencing theme major/minor latin fonts
   - When no theme is present, `ThemeData::default()` is used — scheme colors resolve to None and font references stay as-is
+---
+
+## 2026-02-27 - US-024: PPTX parser - slide backgrounds
+- What was implemented:
+  - Added `background_color: Option<Color>` field to `FixedPage` IR struct
+  - Implemented `parse_background_color(xml, theme)` to extract solid fill colors from `<p:bg><p:bgPr><a:solidFill>` in slide/layout/master XML
+  - Supports both `<a:srgbClr>` (direct hex) and `<a:schemeClr>` (theme color reference, including Start elements with children)
+  - Implemented `resolve_inherited_background()` for layout → master fallback chain: reads slide .rels → finds layout → reads layout .rels → finds master
+  - Typst codegen: `generate_fixed_page()` emits `fill: rgb(r, g, b)` in `#set page(...)` when `background_color` is Some
+  - 10 new tests: 2 IR tests (background_color Some/None), 6 parser tests (solid color, no background, scheme color, with text content, inherit master, layout overrides master), 2 codegen tests (with/without background)
+- Files changed:
+  - `crates/office2pdf/src/ir/document.rs` — background_color field + 2 tests
+  - `crates/office2pdf/src/parser/pptx.rs` — parse_background_color(), resolve_inherited_background(), build_test_pptx_with_layout_master() helper + 6 tests
+  - `crates/office2pdf/src/render/typst_gen.rs` — fill: in generate_fixed_page() + 2 tests
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - PPTX background is in `<p:bg>` inside `<p:cSld>`, which appears before `<p:spTree>` — parse_background_color is a separate pass over the XML
+  - The inheritance chain (slide → layout → master) uses .rels files at each level to find the next parent
+  - Layout path from slide .rels: target containing "slideLayout". Master path from layout .rels: target containing "slideMaster"
+  - `resolve_relative_path()` (existing helper) correctly handles "../" in .rels targets (e.g., "../slideLayouts/slideLayout1.xml")
+  - The `build_test_pptx_with_layout_master()` test helper creates a full PPTX with .rels at slide, layout, and master levels
 ---
