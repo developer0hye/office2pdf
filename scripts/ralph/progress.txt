@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- **DOCX document styles**: `docx.styles.styles` is `Vec<Style>` with `style_id`, `name`, `style_type`, `run_property`, `paragraph_property`. Access via `docx.styles`. `ParagraphProperty.style: Option<ParagraphStyle>` stores the pStyle reference; `ParagraphStyle.val` is the style ID string. `Style.paragraph_property.outline_lvl: Option<OutlineLvl>` with `OutlineLvl.v: usize` (public) for heading level detection (0=H1..5=H6). `Name.name` is private — use `serde_json::to_value(&name)` → string. Create test styles: `Style::new("Heading1", StyleType::Paragraph).name("Heading 1").outline_lvl(0).bold().size(48)`. Apply to paragraph: `Paragraph::new().style("Heading1")`. The `build_style_map()` function builds `StyleMap` (HashMap<String, ResolvedStyle>) from docx styles. `merge_text_style()` and `merge_paragraph_style()` merge style defaults with explicit formatting (explicit wins). Heading defaults (when style doesn't specify): H1=24pt, H2=20pt, H3=16pt, H4=14pt, H5=12pt, H6=11pt, all bold.
 - **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. `FontSearcher::new().include_system_fonts(true).search()` discovers system fonts with embedded fallbacks (Libertinus Serif, New Computer Modern, DejaVu Sans Mono via `embed-fonts` feature). Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`.
 - **DOCX list detection**: Check `para.has_numbering` and `para.property.numbering_property` for `NumberingProperty { id: Option<NumberingId>, level: Option<IndentLevel> }`. `NumberingId.id` is the numId, `IndentLevel.val` is the ilvl (0-based). numId=0 means "no numbering". Resolve numId → abstractNumId via `docx.numberings.numberings`, then check `abstract_num.levels[0].format` (use serde) for `"bullet"` (Unordered) vs `"decimal"`/etc. (Ordered). Group consecutive list paragraphs with same numId into `Block::List`.
 - **Typst list codegen**: Use `#list(list.item[content], ...)` for unordered, `#enum(enum.item[content], ...)` for ordered. Nested items: emit a sub-list `[#list(...)]` after the parent item. The `generate_list_items()` function recursively handles nesting based on item levels.
@@ -162,4 +163,27 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - In practice, Microsoft Word DOCX files have swapped w/h for landscape, so orient is mainly a safety net for malformed documents.
   - `PageOrientationType` is publicly exported from `docx_rs` (via `pub use types::*`). Use `docx_rs::PageOrientationType::Landscape`.
   - The orient field serializes as `"landscape"` or `"portrait"` (camelCase due to `#[serde(rename_all = "camelCase")]`).
+---
+
+## 2026-02-27 - US-022: DOCX parser - document styles (Heading 1-6)
+- What was implemented:
+  - Added `ResolvedStyle` struct and `StyleMap` type for mapping style_id → resolved formatting
+  - `build_style_map()` extracts paragraph styles from `docx.styles.styles`, reading `run_property`, `paragraph_property`, and `outline_lvl` for heading detection
+  - `merge_text_style()` merges style text formatting with explicit run formatting (explicit wins), applying heading defaults (size + bold) when the style's outline_lvl indicates a heading
+  - `merge_paragraph_style()` merges style paragraph formatting with explicit paragraph formatting (explicit wins)
+  - `get_paragraph_style_id()` reads the pStyle reference from `ParagraphProperty.style`
+  - Heading default sizes: H1=24pt, H2=20pt, H3=16pt, H4=14pt, H5=12pt, H6=11pt — all bold
+  - Threaded style_map through `convert_paragraph_element()`, `convert_paragraph_blocks()`, `convert_table()`, `extract_raw_rows()`, `extract_cell_content()` so table cell paragraphs also get style resolution
+  - 9 new tests: heading1/2 defaults, heading3-6 defaults (loop), custom style formatting, explicit run override, style alignment, normal style no defaults, mixed heading document, color+font style
+- Files changed:
+  - `crates/office2pdf/src/parser/docx.rs` — style resolution infrastructure + 9 tests
+  - `scripts/ralph/prd.json` — US-022 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - `docx_rs::Style` has public `style_id`, `style_type`, `run_property`, `paragraph_property` fields — can be accessed directly
+  - `Name.name` is private; use `serde_json::to_value()` to extract the string
+  - `OutlineLvl.v` is public (no serde needed); 0=Heading 1, 5=Heading 6
+  - `ParagraphStyle.val` (pStyle reference) is public — direct access
+  - Style resolution uses the same `extract_run_style()` and `extract_paragraph_style()` for both styles and direct formatting — clean reuse
+  - Threading the StyleMap through the full call chain (including table cells) ensures consistent style application throughout the document
 ---
