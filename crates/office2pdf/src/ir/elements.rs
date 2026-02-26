@@ -1,5 +1,27 @@
 use super::style::{Color, ParagraphStyle, TextStyle};
 
+/// Header or footer content for flow pages.
+#[derive(Debug, Clone)]
+pub struct HeaderFooter {
+    pub paragraphs: Vec<HeaderFooterParagraph>,
+}
+
+/// A paragraph within a header or footer.
+#[derive(Debug, Clone)]
+pub struct HeaderFooterParagraph {
+    pub style: ParagraphStyle,
+    pub elements: Vec<HFInline>,
+}
+
+/// An inline element within a header or footer paragraph.
+#[derive(Debug, Clone)]
+pub enum HFInline {
+    /// A text run with styling.
+    Run(Run),
+    /// Current page number field.
+    PageNumber,
+}
+
 /// Block-level content elements.
 #[derive(Debug, Clone)]
 pub enum Block {
@@ -277,5 +299,42 @@ mod tests {
         assert_eq!(para.runs.len(), 2);
         assert_eq!(para.runs[0].text, "Hello ");
         assert_eq!(para.runs[1].style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_header_footer_with_text() {
+        let hf = HeaderFooter {
+            paragraphs: vec![HeaderFooterParagraph {
+                style: ParagraphStyle::default(),
+                elements: vec![HFInline::Run(Run {
+                    text: "My Header".to_string(),
+                    style: TextStyle::default(),
+                })],
+            }],
+        };
+        assert_eq!(hf.paragraphs.len(), 1);
+        assert_eq!(hf.paragraphs[0].elements.len(), 1);
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "My Header"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_header_footer_with_page_number() {
+        let hf = HeaderFooter {
+            paragraphs: vec![HeaderFooterParagraph {
+                style: ParagraphStyle::default(),
+                elements: vec![
+                    HFInline::Run(Run {
+                        text: "Page ".to_string(),
+                        style: TextStyle::default(),
+                    }),
+                    HFInline::PageNumber,
+                ],
+            }],
+        };
+        assert_eq!(hf.paragraphs[0].elements.len(), 2);
+        assert!(matches!(hf.paragraphs[0].elements[1], HFInline::PageNumber));
     }
 }

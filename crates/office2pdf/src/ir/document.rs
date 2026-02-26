@@ -73,6 +73,8 @@ pub struct FlowPage {
     pub size: PageSize,
     pub margins: Margins,
     pub content: Vec<Block>,
+    pub header: Option<super::elements::HeaderFooter>,
+    pub footer: Option<super::elements::HeaderFooter>,
 }
 
 /// A fixed-layout page (PPTX slides).

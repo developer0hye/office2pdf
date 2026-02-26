@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, ImageData, ImageFormat,
-    LineSpacing, List, ListItem, ListKind, Margins, Metadata, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, StyleSheet, Table, TableCell, TableRow, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, HFInline, HeaderFooter,
+    HeaderFooterParagraph, ImageData, ImageFormat, LineSpacing, List, ListItem, ListKind, Margins,
+    Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell,
+    TableRow, TextStyle,
 };
 use crate::parser::Parser;
 
@@ -189,6 +190,9 @@ impl Parser for DocxParser {
 
         let content = group_into_lists(elements, &num_kinds);
 
+        let header = extract_docx_header(&docx.document.section_property);
+        let footer = extract_docx_footer(&docx.document.section_property);
+
         Ok((
             Document {
                 metadata: Metadata::default(),
@@ -196,11 +200,132 @@ impl Parser for DocxParser {
                     size,
                     margins,
                     content,
+                    header,
+                    footer,
                 })],
                 styles: StyleSheet::default(),
             },
             warnings,
         ))
+    }
+}
+
+/// Extract the default header from DOCX section properties, if present.
+fn extract_docx_header(section_prop: &docx_rs::SectionProperty) -> Option<HeaderFooter> {
+    let (_rid, header) = section_prop.header.as_ref()?;
+    let paragraphs = header
+        .children
+        .iter()
+        .filter_map(|child| match child {
+            docx_rs::HeaderChild::Paragraph(para) => Some(convert_hf_paragraph(para)),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    if paragraphs.is_empty() {
+        return None;
+    }
+    Some(HeaderFooter { paragraphs })
+}
+
+/// Extract the default footer from DOCX section properties, if present.
+fn extract_docx_footer(section_prop: &docx_rs::SectionProperty) -> Option<HeaderFooter> {
+    let (_rid, footer) = section_prop.footer.as_ref()?;
+    let paragraphs = footer
+        .children
+        .iter()
+        .filter_map(|child| match child {
+            docx_rs::FooterChild::Paragraph(para) => Some(convert_hf_paragraph(para)),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    if paragraphs.is_empty() {
+        return None;
+    }
+    Some(HeaderFooter { paragraphs })
+}
+
+/// Convert a docx-rs Paragraph into a HeaderFooterParagraph.
+/// Detects PAGE field codes within runs and emits HFInline::PageNumber.
+fn convert_hf_paragraph(para: &docx_rs::Paragraph) -> HeaderFooterParagraph {
+    let style = extract_paragraph_style(&para.property);
+    let mut elements: Vec<HFInline> = Vec::new();
+
+    for child in &para.children {
+        if let docx_rs::ParagraphChild::Run(run) = child {
+            let run_style = extract_run_style(&run.run_property);
+            extract_hf_run_elements(&run.children, &run_style, &mut elements);
+        }
+    }
+
+    HeaderFooterParagraph { style, elements }
+}
+
+/// Extract inline elements from a run's children for header/footer use.
+/// Recognizes text, tabs, and PAGE field codes.
+fn extract_hf_run_elements(
+    children: &[docx_rs::RunChild],
+    style: &TextStyle,
+    elements: &mut Vec<HFInline>,
+) {
+    let mut in_field = false;
+    let mut field_is_page = false;
+    let mut past_separate = false;
+
+    for child in children {
+        match child {
+            docx_rs::RunChild::FieldChar(fc) => match fc.field_char_type {
+                docx_rs::FieldCharType::Begin => {
+                    in_field = true;
+                    field_is_page = false;
+                    past_separate = false;
+                }
+                docx_rs::FieldCharType::Separate => {
+                    past_separate = true;
+                }
+                docx_rs::FieldCharType::End => {
+                    if field_is_page {
+                        elements.push(HFInline::PageNumber);
+                    }
+                    in_field = false;
+                    field_is_page = false;
+                    past_separate = false;
+                }
+                _ => {}
+            },
+            docx_rs::RunChild::InstrText(instr) => {
+                if in_field && matches!(instr.as_ref(), docx_rs::InstrText::PAGE(_)) {
+                    field_is_page = true;
+                }
+            }
+            docx_rs::RunChild::InstrTextString(s) => {
+                // After round-tripping through build/read_docx, InstrText::PAGE
+                // becomes InstrTextString("PAGE").
+                if in_field && s.trim().eq_ignore_ascii_case("page") {
+                    field_is_page = true;
+                }
+            }
+            docx_rs::RunChild::Text(t) => {
+                // Skip display values between separate and end
+                if in_field && past_separate {
+                    continue;
+                }
+                if !in_field && !t.text.is_empty() {
+                    elements.push(HFInline::Run(Run {
+                        text: t.text.clone(),
+                        style: style.clone(),
+                    }));
+                }
+            }
+            docx_rs::RunChild::Tab(_) => {
+                if !in_field {
+                    elements.push(HFInline::Run(Run {
+                        text: "\t".to_string(),
+                        style: style.clone(),
+                    }));
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -2381,5 +2506,184 @@ mod tests {
             .count();
         assert!(list_count >= 1, "Expected at least 1 list block");
         assert!(para_count >= 1, "Expected at least 1 paragraph block");
+    }
+
+    // ----- US-020: Header/footer parsing tests -----
+
+    /// Helper: build a DOCX with a text header.
+    fn build_docx_with_header(header_text: &str) -> Vec<u8> {
+        let header = docx_rs::Header::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text(header_text)),
+        );
+        let docx = docx_rs::Docx::new().header(header).add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body text")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Helper: build a DOCX with a text footer.
+    fn build_docx_with_footer(footer_text: &str) -> Vec<u8> {
+        let footer = docx_rs::Footer::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text(footer_text)),
+        );
+        let docx = docx_rs::Docx::new().footer(footer).add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body text")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Helper: build a DOCX with a page number field in footer.
+    fn build_docx_with_page_number_footer() -> Vec<u8> {
+        let footer = docx_rs::Footer::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(
+                docx_rs::Run::new()
+                    .add_text("Page ")
+                    .add_field_char(docx_rs::FieldCharType::Begin, false)
+                    .add_instr_text(docx_rs::InstrText::PAGE(docx_rs::InstrPAGE::new()))
+                    .add_field_char(docx_rs::FieldCharType::Separate, false)
+                    .add_text("1")
+                    .add_field_char(docx_rs::FieldCharType::End, false),
+            ),
+        );
+        let docx = docx_rs::Docx::new().footer(footer).add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body text")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_parse_docx_with_text_header() {
+        let data = build_docx_with_header("My Document Header");
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Should have a header
+        assert!(page.header.is_some(), "FlowPage should have a header");
+        let header = page.header.as_ref().unwrap();
+        assert!(
+            !header.paragraphs.is_empty(),
+            "Header should have paragraphs"
+        );
+
+        // Find the text run in header
+        let has_text = header.paragraphs.iter().any(|p| {
+            p.elements.iter().any(|e| matches!(e, crate::ir::HFInline::Run(r) if r.text.contains("My Document Header")))
+        });
+        assert!(
+            has_text,
+            "Header should contain the text 'My Document Header'"
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_with_text_footer() {
+        let data = build_docx_with_footer("Footer Text");
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert!(page.footer.is_some(), "FlowPage should have a footer");
+        let footer = page.footer.as_ref().unwrap();
+
+        let has_text = footer.paragraphs.iter().any(|p| {
+            p.elements
+                .iter()
+                .any(|e| matches!(e, crate::ir::HFInline::Run(r) if r.text.contains("Footer Text")))
+        });
+        assert!(has_text, "Footer should contain 'Footer Text'");
+    }
+
+    #[test]
+    fn test_parse_docx_with_page_number_in_footer() {
+        let data = build_docx_with_page_number_footer();
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert!(page.footer.is_some(), "Should have footer");
+        let footer = page.footer.as_ref().unwrap();
+
+        // Footer should contain a PageNumber element
+        let has_page_num = footer.paragraphs.iter().any(|p| {
+            p.elements
+                .iter()
+                .any(|e| matches!(e, crate::ir::HFInline::PageNumber))
+        });
+        assert!(has_page_num, "Footer should contain a PageNumber field");
+
+        // Footer should also contain the "Page " text
+        let has_text = footer.paragraphs.iter().any(|p| {
+            p.elements
+                .iter()
+                .any(|e| matches!(e, crate::ir::HFInline::Run(r) if r.text.contains("Page ")))
+        });
+        assert!(
+            has_text,
+            "Footer should contain 'Page ' text before page number"
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_with_header_and_footer() {
+        let header = docx_rs::Header::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Header Text")),
+        );
+        let footer = docx_rs::Footer::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Footer Text")),
+        );
+        let docx = docx_rs::Docx::new()
+            .header(header)
+            .footer(footer)
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body")));
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert!(page.header.is_some(), "Should have header");
+        assert!(page.footer.is_some(), "Should have footer");
+    }
+
+    #[test]
+    fn test_parse_docx_without_header_footer() {
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Just text")),
+        ]);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert!(page.header.is_none(), "No header expected");
+        assert!(page.footer.is_none(), "No footer expected");
     }
 }

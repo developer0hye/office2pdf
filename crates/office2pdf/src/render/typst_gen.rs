@@ -3,9 +3,9 @@ use std::fmt::Write;
 use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
-    FixedPage, FlowPage, ImageData, ImageFormat, LineSpacing, List, ListKind, Margins, Page,
-    PageSize, Paragraph, ParagraphStyle, Run, Shape, ShapeKind, Table, TableCell, TablePage,
-    TextStyle,
+    FixedPage, FlowPage, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List,
+    ListKind, Margins, Page, PageSize, Paragraph, ParagraphStyle, Run, Shape, ShapeKind, Table,
+    TableCell, TablePage, TextStyle,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -74,7 +74,7 @@ fn generate_flow_page(
     page: &FlowPage,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
-    write_page_setup(out, &page.size, &page.margins);
+    write_flow_page_setup(out, page);
     out.push('\n');
 
     for (i, block) in page.content.iter().enumerate() {
@@ -224,6 +224,73 @@ fn write_page_setup(out: &mut String, size: &PageSize, margins: &Margins) {
         format_f64(margins.left),
         format_f64(margins.right),
     );
+}
+
+/// Write the full page setup for a FlowPage, including optional header/footer.
+fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
+    if page.header.is_none() && page.footer.is_none() {
+        write_page_setup(out, &page.size, &page.margins);
+        return;
+    }
+
+    let _ = write!(
+        out,
+        "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
+        format_f64(page.size.width),
+        format_f64(page.size.height),
+        format_f64(page.margins.top),
+        format_f64(page.margins.bottom),
+        format_f64(page.margins.left),
+        format_f64(page.margins.right),
+    );
+
+    if let Some(header) = &page.header {
+        if hf_has_page_number(header) {
+            out.push_str(", header: context [");
+        } else {
+            out.push_str(", header: [");
+        }
+        generate_hf_content(out, header);
+        out.push(']');
+    }
+
+    if let Some(footer) = &page.footer {
+        if hf_has_page_number(footer) {
+            out.push_str(", footer: context [");
+        } else {
+            out.push_str(", footer: [");
+        }
+        generate_hf_content(out, footer);
+        out.push(']');
+    }
+
+    out.push_str(")\n");
+}
+
+/// Check if a header/footer contains any page number fields.
+fn hf_has_page_number(hf: &HeaderFooter) -> bool {
+    hf.paragraphs
+        .iter()
+        .any(|p| p.elements.iter().any(|e| matches!(e, HFInline::PageNumber)))
+}
+
+/// Generate inline content for a header or footer.
+fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
+    for (i, para) in hf.paragraphs.iter().enumerate() {
+        if i > 0 {
+            out.push_str("\\\n");
+        }
+        for elem in &para.elements {
+            match elem {
+                HFInline::Run(run) => {
+                    generate_run(out, run);
+                }
+                HFInline::PageNumber => {
+                    out.push_str("#counter(page).display()");
+                }
+            }
+        }
+    }
 }
 
 fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(), ConvertError> {
@@ -676,6 +743,8 @@ mod tests {
             size: PageSize::default(),
             margins: Margins::default(),
             content,
+            header: None,
+            footer: None,
         })
     }
 
@@ -711,6 +780,8 @@ mod tests {
                 right: 54.0,
             },
             content: vec![make_paragraph("test")],
+            header: None,
+            footer: None,
         })]);
         let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("612pt"));
@@ -2338,6 +2409,8 @@ mod tests {
             size: PageSize::default(),
             margins: Margins::default(),
             content: vec![Block::List(list)],
+            header: None,
+            footer: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         assert!(
@@ -2381,6 +2454,8 @@ mod tests {
             size: PageSize::default(),
             margins: Margins::default(),
             content: vec![Block::List(list)],
+            header: None,
+            footer: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         assert!(
@@ -2434,6 +2509,8 @@ mod tests {
             size: PageSize::default(),
             margins: Margins::default(),
             content: vec![Block::List(list)],
+            header: None,
+            footer: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         assert!(output.source.contains("Parent"));
@@ -2443,6 +2520,125 @@ mod tests {
         assert!(
             output.source.contains("#list("),
             "Expected nested #list( in: {}",
+            output.source
+        );
+    }
+
+    // ----- US-020: Header/footer codegen tests -----
+
+    #[test]
+    fn test_generate_flow_page_with_text_header() {
+        use crate::ir::{HFInline, HeaderFooter, HeaderFooterParagraph};
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Body text")],
+            header: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle::default(),
+                    elements: vec![HFInline::Run(Run {
+                        text: "Document Title".to_string(),
+                        style: TextStyle::default(),
+                    })],
+                }],
+            }),
+            footer: None,
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("header:"),
+            "Should contain header: in page setup. Got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Document Title"),
+            "Header should contain 'Document Title'. Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_generate_flow_page_with_page_number_footer() {
+        use crate::ir::{HFInline, HeaderFooter, HeaderFooterParagraph};
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Body text")],
+            header: None,
+            footer: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle::default(),
+                    elements: vec![
+                        HFInline::Run(Run {
+                            text: "Page ".to_string(),
+                            style: TextStyle::default(),
+                        }),
+                        HFInline::PageNumber,
+                    ],
+                }],
+            }),
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("footer:"),
+            "Should contain footer: in page setup. Got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("counter(page).display()"),
+            "Footer should contain page counter. Got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Page "),
+            "Footer should contain 'Page ' text. Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_generate_flow_page_with_header_and_footer() {
+        use crate::ir::{HFInline, HeaderFooter, HeaderFooterParagraph};
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Body")],
+            header: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle::default(),
+                    elements: vec![HFInline::Run(Run {
+                        text: "Header".to_string(),
+                        style: TextStyle::default(),
+                    })],
+                }],
+            }),
+            footer: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle::default(),
+                    elements: vec![HFInline::PageNumber],
+                }],
+            }),
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("header:") && output.source.contains("footer:"),
+            "Should contain both header: and footer:. Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_generate_flow_page_without_header_footer() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Body")])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            !output.source.contains("header:"),
+            "Should NOT contain header: when no header. Got: {}",
+            output.source
+        );
+        assert!(
+            !output.source.contains("footer:"),
+            "Should NOT contain footer: when no footer. Got: {}",
             output.source
         );
     }

@@ -8,6 +8,11 @@
 - **Quality gates**: Always run `cargo fmt --all -- --check`, `cargo clippy --workspace -- -D warnings`, `cargo test --workspace`, `cargo check --workspace` before committing. Use `writeln!` not `write!(...\n)` per clippy.
 - **f64 formatting**: Use helper `format_f64()` to strip unnecessary trailing zeros (e.g., `72` not `72.0`).
 - **Pipeline testing**: Use `office2pdf::render_document(&doc)` to test IR → PDF without needing parsers. Construct `Document` with mock `FlowPage`/`FixedPage`/`TablePage` data.
+- **DOCX headers/footers**: Access via `docx.document.section_property.header` (and `.footer`) — `Option<(String, Header)>`. `Header.children` contains `HeaderChild::Paragraph(Box<Paragraph>)`. Similarly for `Footer`. Use `Docx::new().header(header).footer(footer)` to create test docs.
+- **DOCX field codes round-trip**: When docx-rs builds and then reads back, `InstrText::PAGE` becomes `RunChild::InstrTextString("PAGE")` (not `RunChild::InstrText`). Always check both `InstrText` and `InstrTextString` variants.
+- **FieldChar direct access**: `FieldChar.field_char_type` is public (`docx_rs::FieldCharType::{Begin,Separate,End}`). No need for serde — access directly.
+- **Typst context for counters**: `#counter(page).display()` requires a `context` expression in Typst 0.14. Emit `context [...]` when header/footer contains page numbers.
+- **FlowPage header/footer**: `FlowPage` has `header: Option<HeaderFooter>` and `footer: Option<HeaderFooter>`. Set to `None` for no header/footer. `HeaderFooter { paragraphs: Vec<HeaderFooterParagraph> }` with `HFInline::Run(Run)` for text and `HFInline::PageNumber` for page number fields.
 - **Typst table codegen**: Use `#table(columns: (Wpt, ...), ...)` with cells as `[content]` (simple) or `table.cell(props)[content]` (when colspan/rowspan/fill/stroke needed). Cell content uses `generate_run()` directly (no block wrapper). Borders: `stroke: (top: 1pt + rgb(r, g, b), ...)`. Background: `fill: rgb(r, g, b)`. Merging: `colspan: N`, `rowspan: N`.
 - **docx-rs reading**: `docx_rs::read_docx(&[u8])` → `Docx`. Access `docx.document.children` (Vec<DocumentChild>). Paragraphs: `DocumentChild::Paragraph(Box<Paragraph>)`. Runs: `ParagraphChild::Run(Box<Run>)`. Text: `RunChild::Text(Text)` → `t.text`. Tab: `RunChild::Tab`. Break: `RunChild::Break`.
 - **docx-rs private fields**: `PageSize` (w, h), `Bold` (val), `Italic` (val), `Sz` (val), `Color` (val), `Underline` (val), `RunFonts` (ascii, hi_ansi, etc.) all have private fields. Use `serde_json::to_value()` to extract values since they implement Serialize. **IMPORTANT**: These types serialize as their *direct inner value* (e.g. `Bold` → `true`, `Sz` → `24`, `Color` → `"FF0000"`), NOT as `{"val": ...}`. Use `json.as_bool()`, `json.as_f64()`, `json.as_str()` directly. `RunFonts` serializes as an object with `ascii`, `hi_ansi`, etc. fields. `Strike` has `pub val: bool` — accessible directly without serde.
@@ -110,4 +115,29 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - numId=0 in OOXML means "remove numbering" — must be filtered out
   - The `TaggedElement` pattern (tagging blocks with metadata before grouping) is clean for post-processing consecutive elements
   - List paragraphs with page breaks before them are demoted to plain blocks to avoid breaking list grouping
+---
+
+## 2026-02-27 - US-020: DOCX parser - headers and footers with page numbers
+- What was implemented:
+  - Added `HeaderFooter`, `HeaderFooterParagraph`, `HFInline` types to IR (elements.rs)
+  - Added `header: Option<HeaderFooter>` and `footer: Option<HeaderFooter>` fields to `FlowPage`
+  - Implemented `extract_docx_header()` and `extract_docx_footer()` to parse header/footer content from DOCX section properties
+  - Implemented `convert_hf_paragraph()` and `extract_hf_run_elements()` for header/footer paragraph parsing with field code detection
+  - Detects PAGE field codes via `FieldChar.field_char_type` (Begin/Separate/End) and `InstrText::PAGE` or `InstrTextString("PAGE")`
+  - Typst codegen: `write_flow_page_setup()` emits `header: [...]` and `footer: [...]` in `#set page(...)` when present
+  - Page numbers use `context [... #counter(page).display() ...]` to satisfy Typst 0.14's context requirement
+  - 14 new tests: 2 IR tests, 5 parser tests (text header, text footer, page number footer, both, none), 4 codegen tests, 3 integration tests (render with header, render with page number footer, e2e DOCX with header+footer)
+- Files changed:
+  - `crates/office2pdf/src/ir/elements.rs` — new HeaderFooter/HFInline types + 2 tests
+  - `crates/office2pdf/src/ir/document.rs` — FlowPage header/footer fields
+  - `crates/office2pdf/src/parser/docx.rs` — header/footer extraction + field code parsing + 5 tests
+  - `crates/office2pdf/src/render/typst_gen.rs` — write_flow_page_setup, generate_hf_content, hf_has_page_number + 4 tests
+  - `crates/office2pdf/src/lib.rs` — 3 integration tests + FlowPage field updates across existing tests
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - docx-rs round-trips `InstrText::PAGE` as `InstrTextString("PAGE")` — always check both RunChild variants
+  - `FieldChar.field_char_type` is public — no need for serde serialization to access it
+  - Typst 0.14 requires `context` for `counter(page).display()` even inside header/footer parameters
+  - The `past_separate` flag is essential: text between `Separate` and `End` field chars is the display value and should be skipped
+  - Adding optional fields to FlowPage requires updating all existing construction sites — Python scripting can help with bulk updates
 ---

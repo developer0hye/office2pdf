@@ -78,6 +78,8 @@ mod tests {
                         style: TextStyle::default(),
                     }],
                 })],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         }
@@ -184,6 +186,8 @@ mod tests {
                         },
                     ],
                 })],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -207,6 +211,8 @@ mod tests {
                             style: TextStyle::default(),
                         }],
                     })],
+                    header: None,
+                    footer: None,
                 }),
                 Page::Flow(FlowPage {
                     size: PageSize::default(),
@@ -218,6 +224,8 @@ mod tests {
                             style: TextStyle::default(),
                         }],
                     })],
+                    header: None,
+                    footer: None,
                 }),
             ],
             styles: StyleSheet::default(),
@@ -251,6 +259,8 @@ mod tests {
                         }],
                     }),
                 ],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -333,6 +343,8 @@ mod tests {
                     width: Some(100.0),
                     height: Some(80.0),
                 })],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -370,6 +382,8 @@ mod tests {
                         }],
                     }),
                 ],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -601,6 +615,8 @@ mod tests {
                         },
                     }],
                 })],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -636,6 +652,8 @@ mod tests {
                         },
                     ],
                 })],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -767,6 +785,8 @@ mod tests {
                         },
                     ],
                 })],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -827,6 +847,109 @@ mod tests {
         assert!(
             result.warnings.is_empty(),
             "Normal DOCX should produce no warnings"
+        );
+    }
+
+    // --- US-020: Header/footer integration tests ---
+
+    #[test]
+    fn test_render_document_with_header() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Body content".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                })],
+                header: Some(ir::HeaderFooter {
+                    paragraphs: vec![ir::HeaderFooterParagraph {
+                        style: ParagraphStyle::default(),
+                        elements: vec![ir::HFInline::Run(Run {
+                            text: "My Header".to_string(),
+                            style: TextStyle::default(),
+                        })],
+                    }],
+                }),
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_render_document_with_page_number_footer() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Body content".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                })],
+                header: None,
+                footer: Some(ir::HeaderFooter {
+                    paragraphs: vec![ir::HeaderFooterParagraph {
+                        style: ParagraphStyle::default(),
+                        elements: vec![
+                            ir::HFInline::Run(Run {
+                                text: "Page ".to_string(),
+                                style: TextStyle::default(),
+                            }),
+                            ir::HFInline::PageNumber,
+                        ],
+                    }],
+                }),
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_e2e_docx_with_header_footer_to_pdf() {
+        use std::io::Cursor;
+        let header = docx_rs::Header::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Document Title")),
+        );
+        let footer = docx_rs::Footer::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(
+                docx_rs::Run::new()
+                    .add_text("Page ")
+                    .add_field_char(docx_rs::FieldCharType::Begin, false)
+                    .add_instr_text(docx_rs::InstrText::PAGE(docx_rs::InstrPAGE::new()))
+                    .add_field_char(docx_rs::FieldCharType::Separate, false)
+                    .add_text("1")
+                    .add_field_char(docx_rs::FieldCharType::End, false),
+            ),
+        );
+        let docx = docx_rs::Docx::new()
+            .header(header)
+            .footer(footer)
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body paragraph")),
+            );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "DOCX with header/footer should produce valid PDF"
         );
     }
 }
