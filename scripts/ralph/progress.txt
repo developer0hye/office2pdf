@@ -14,6 +14,10 @@ Started: 2026-02-26
 - **DOCX units**: Page size and margins in OOXML are in twips (1 twip = 1/20 pt). Convert: `value_twips / 20.0 = points`. PageMargin fields are public i32. docx-rs default page size: 11906 x 16838 twips (A4).
 - **Test DOCX creation**: Use `docx_rs::Docx::new().add_paragraph(...)`, then `.build().pack(&mut Cursor::new(Vec::new()))` to get bytes. Use `Cursor::into_inner()` to extract.
 - **Typst FixedPage codegen**: Slides use `#set page(width: Wpt, height: Hpt, margin: 0pt)`. Elements use `#place(top + left, dx: Xpt, dy: Ypt)[...]` for absolute positioning. TextBox wraps content in `#block(width: Wpt, height: Hpt)[...]`. Shapes: `#rect(width, height, fill?, stroke?)`, `#ellipse(...)`, `#line(start, end, stroke?)`. Images use existing `generate_image()` inside place.
+- **PPTX parsing**: Use `zip` + `quick-xml` (both already transitive deps, no new downloads). PPTX is a ZIP: `ppt/presentation.xml` (slide size + slide refs via `<p:sldSz cx cy>` + `<p:sldId r:id>`), `ppt/_rels/presentation.xml.rels` (rId → slide path), `ppt/slides/slideN.xml` (shapes). Parse with `ZipArchive::new(Cursor::new(data))` → `read_zip_entry()` → `quick_xml::Reader::from_str()`.
+- **PPTX slide XML structure**: Shapes at `<p:spTree>/<p:sp>`. Position/size: `<a:xfrm><a:off x y/><a:ext cx cy/></a:xfrm>` (EMU ÷ 12700 = points). Text: `<p:txBody>/<a:p>/<a:r>/<a:t>`. Run props: `<a:rPr b="1" i="1" u="sng" strike="sngStrike" sz="1800">` (sz in hundredths of pt). Font color: `<a:solidFill><a:srgbClr val="RRGGBB"/></a:solidFill>`. Font family: `<a:latin typeface="..."/>`. Para alignment: `<a:pPr algn="ctr|l|r|just"/>`.
+- **Test PPTX creation**: Build ZIP in-memory with `zip::ZipWriter::new(Cursor::new(Vec::new()))`. Need `[Content_Types].xml`, `_rels/.rels`, `ppt/presentation.xml`, `ppt/_rels/presentation.xml.rels`, and `ppt/slides/slideN.xml`. Standard 4:3 size: 9144000 × 6858000 EMU = 720pt × 540pt.
+- **quick-xml 0.38 API**: Use `Reader::from_str(xml)`, `reader.read_event()` → `Event::Start/Empty/End/Text/Eof`. `BytesText::xml_content()` (NOT `unescape()`!) for text decoding. `BytesStart::local_name().as_ref()` for element name. Attributes: iterate `e.attributes().flatten()`, match `attr.key.as_ref()` (full name like `r:id`) or `attr.key.local_name().as_ref()` (local). `attr.unescape_value()` for string values.
 - **docx-rs image handling**: Images in document tree: `RunChild::Drawing(Box<Drawing>)` → `Drawing.data = Some(DrawingData::Pic(pic))`. Image binary data: stored in `Docx.images` as `Vec<(id, path, Image, Png)>` — match `pic.id` to look up data. `pic.image` is empty when reading (only used during writing). Dimensions: `pic.size = (w_emu, h_emu)` in EMU. Convert: EMU ÷ 12700 = points. All images converted to PNG by docx-rs.
 - **Test images for docx-rs**: Use `make_test_bmp()` to create a minimal 1×1 BMP, then `Pic::new(&bmp_data)` which processes through the `image` crate. Do NOT use `Pic::new_with_dimensions()` with raw PNG bytes for round-trip tests — the `image` crate may fail to decode minimal hand-crafted PNGs during `read_docx()`.
 - **Image codegen**: `generate_typst()` returns `TypstOutput { source: String, images: Vec<ImageAsset> }`. Images get virtual paths `img-N.ext` via `GenCtx`. `compile_to_pdf(source, &images)` passes images to `MinimalWorld` which serves them via `World::file()`. Image markup: `#image("img-0.png", width: Wpt, height: Hpt)`.
@@ -171,4 +175,21 @@ Started: 2026-02-26
   - Shape fill: `fill: rgb(r, g, b)`, stroke: `stroke: Wpt + rgb(r, g, b)`
   - Line uses `start: (0pt, 0pt), end: (x2pt, y2pt)` — coordinates relative to placement position
   - `write!()` with trailing `\n` triggers clippy `write-with-newline` — always use `writeln!()` instead
+
+## 2026-02-26 - US-011
+- **What was implemented**: PptxParser — extracts slides from PPTX files as FixedPage elements with positioned text boxes. Uses zip + quick-xml for direct PPTX ZIP/XML parsing (no ppt-rs — it's write-only).
+- **Files changed**:
+  - `crates/office2pdf/Cargo.toml` — added zip 0.6, quick-xml 0.38 (both already transitive deps, no new downloads)
+  - `crates/office2pdf/src/parser/pptx.rs` — full implementation: PptxParser with ZIP reading, presentation.xml parsing, rels parsing, slide XML state-machine parser, text formatting extraction; 16 unit tests
+- **Dependencies added**: zip 0.6 (ZIP reading), quick-xml 0.38 (XML parsing) — both already in dependency tree as transitive deps of docx-rs and typst
+- **Learnings for future iterations:**
+  - `ppt-rs` is a write-only crate (creates PPTX, cannot read them). For reading, use zip + quick-xml directly.
+  - PPTX is a well-structured ZIP with predictable XML paths — no need for a specialized parsing crate
+  - quick-xml 0.38 changed `BytesText` API: use `xml_content()` instead of `unescape()` for text decoding
+  - `BytesStart::local_name()` strips namespace prefix (`a:off` → `off`). Use `attr.key.as_ref()` for full qualified name matching (`r:id`).
+  - PPTX font size is in hundredths of a point (e.g., 1800 = 18pt) — different from DOCX (half-points)
+  - PPTX uses same EMU units as DOCX for positions/sizes (÷12700 → points)
+  - State machine approach with boolean flags works well for streaming XML parsing of slide shapes
+  - Track `shape_depth` to handle nested `<p:sp>` inside group shapes without confusion
+  - `<a:rPr>` can be either Empty (self-closing) or Start (with children like `<a:solidFill>`) — handle both
 ---

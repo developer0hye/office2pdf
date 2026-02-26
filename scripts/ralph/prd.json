@@ -188,8 +188,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed. 16 PptxParser tests. Uses zip + quick-xml (already transitive deps) for direct PPTX ZIP/XML parsing. Extracts slides as FixedPages with text box elements including position, size, text content, and formatting (bold, italic, underline, strikethrough, font size, color, font family, paragraph alignment)."
     },
     {
       "id": "US-012",
