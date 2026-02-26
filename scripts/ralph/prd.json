@@ -239,8 +239,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed. 13 XlsxParser tests. Uses umya-spreadsheet for XLSX parsing. Extracts all sheets as TablePage, cell values (text/numbers/dates as strings), column widths, and basic table structure (rows × cols grid). Tuple coords are (col, row) in umya-spreadsheet."
     },
     {
       "id": "US-015",

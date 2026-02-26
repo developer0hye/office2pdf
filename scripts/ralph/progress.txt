@@ -14,6 +14,8 @@ Started: 2026-02-26
 - **DOCX units**: Page size and margins in OOXML are in twips (1 twip = 1/20 pt). Convert: `value_twips / 20.0 = points`. PageMargin fields are public i32. docx-rs default page size: 11906 x 16838 twips (A4).
 - **Test DOCX creation**: Use `docx_rs::Docx::new().add_paragraph(...)`, then `.build().pack(&mut Cursor::new(Vec::new()))` to get bytes. Use `Cursor::into_inner()` to extract.
 - **Typst FixedPage codegen**: Slides use `#set page(width: Wpt, height: Hpt, margin: 0pt)`. Elements use `#place(top + left, dx: Xpt, dy: Ypt)[...]` for absolute positioning. TextBox wraps content in `#block(width: Wpt, height: Hpt)[...]`. Shapes: `#rect(width, height, fill?, stroke?)`, `#ellipse(...)`, `#line(start, end, stroke?)`. Images use existing `generate_image()` inside place.
+- **umya-spreadsheet reading**: `umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(data), true)` → `Spreadsheet`. Sheets: `book.get_sheet_collection()`. Sheet name: `sheet.get_name()`. Cell: `sheet.get_cell((col, row))` → **IMPORTANT: tuple is (column, row), NOT (row, column)**. Cell value: `cell.get_value().to_string()`. Dimensions: `sheet.get_highest_column_and_row()` → `(max_col, max_row)`. Column width: `sheet.get_column_dimension_by_number(&col)` → `Option<&Column>`, then `col.get_width()` (Excel char units, ×7.0 → points).
+- **Test XLSX creation**: `umya_spreadsheet::new_file()` → `Spreadsheet`. Set cell: `sheet.get_cell_mut("A1").set_value("text")`. Write: `umya_spreadsheet::writer::xlsx::write_writer(&book, &mut Cursor::new(Vec::new()))`. Multi-sheet: first sheet via `book.get_sheet_mut(&0)`, additional via `book.add_sheet(Worksheet::default())`.
 - **Typst TablePage codegen**: `generate_table_page()` calls `write_page_setup()` + `generate_table()`. Reuses all existing table infrastructure (cell merging, borders, backgrounds, column widths). TablePage = page setup + a single Table element.
 - **PPTX parsing**: Use `zip` + `quick-xml` (both already transitive deps, no new downloads). PPTX is a ZIP: `ppt/presentation.xml` (slide size + slide refs via `<p:sldSz cx cy>` + `<p:sldId r:id>`), `ppt/_rels/presentation.xml.rels` (rId → slide path), `ppt/slides/slideN.xml` (shapes). Parse with `ZipArchive::new(Cursor::new(data))` → `read_zip_entry()` → `quick_xml::Reader::from_str()`.
 - **PPTX slide XML structure**: Shapes at `<p:spTree>/<p:sp>`. Position/size: `<a:xfrm><a:off x y/><a:ext cx cy/></a:xfrm>` (EMU ÷ 12700 = points). Text: `<p:txBody>/<a:p>/<a:r>/<a:t>`. Run props: `<a:rPr b="1" i="1" u="sng" strike="sngStrike" sz="1800">` (sz in hundredths of pt). Font color: `<a:solidFill><a:srgbClr val="RRGGBB"/></a:solidFill>`. Font family: `<a:latin typeface="..."/>`. Para alignment: `<a:pPr algn="ctr|l|r|just"/>`.
@@ -223,4 +225,20 @@ Started: 2026-02-26
   - The only new function needed was `generate_table_page()` which calls `write_page_setup()` + `generate_table()`
   - TablePage test helpers: `make_table_page(name, width, height, margins, table)` and `make_simple_table(rows: Vec<Vec<&str>>)` for quick test setup
   - `-` is NOT a Typst special character — dates like "2024-01-15" pass through unescaped
+---
+
+## 2026-02-26 - US-014
+- **What was implemented**: XlsxParser — extracts spreadsheet data into IR TablePage elements. Reads all sheets, extracts cell values (text/numbers/dates as strings), column widths, and builds a grid-based table structure.
+- **Files changed**:
+  - `crates/office2pdf/Cargo.toml` — added umya-spreadsheet 2
+  - `crates/office2pdf/src/parser/xlsx.rs` — full implementation: XlsxParser with 13 unit tests
+- **Dependencies added**: umya-spreadsheet 2 (XLSX parsing)
+- **Learnings for future iterations:**
+  - umya-spreadsheet `get_cell` tuple is `(column, row)`, NOT `(row, column)` — critical gotcha
+  - `get_highest_column_and_row()` returns `(max_col, max_row)` — consistent with (col, row) convention
+  - Column width is in Excel "character units" — multiply by ~7.0 for approximate point conversion
+  - `get_column_dimension_by_number` returns `None` for columns without explicit widths; default column width varies slightly per umya-spreadsheet version
+  - Test XLSX creation: `new_file()` → `get_sheet_mut(&0)` → `set_name()` / `get_cell_mut("A1").set_value()` → `writer::xlsx::write_writer()`
+  - Empty sheets (max_col=0 or max_row=0) are skipped
+  - All cell values stored as strings in IR (numbers, dates, text all become Run text)
 ---
