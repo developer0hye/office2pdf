@@ -30,6 +30,17 @@ enum SolidFillCtx {
 
 pub struct PptxParser;
 
+/// Parsed theme data from ppt/theme/theme1.xml.
+#[derive(Debug, Clone, Default)]
+struct ThemeData {
+    /// Color scheme: scheme name (e.g., "dk1", "accent1") → Color.
+    colors: HashMap<String, Color>,
+    /// Major (heading) font family name.
+    major_font: Option<String>,
+    /// Minor (body) font family name.
+    minor_font: Option<String>,
+}
+
 /// Convert EMU (English Metric Units) to points.
 /// 1 inch = 914400 EMU, 1 inch = 72 points, so 1 pt = 12700 EMU.
 fn emu_to_pt(emu: i64) -> f64 {
@@ -50,6 +61,9 @@ impl Parser for PptxParser {
         let rels_xml = read_zip_entry(&mut archive, "ppt/_rels/presentation.xml.rels")?;
         let rel_map = parse_rels_xml(&rels_xml);
 
+        // Load theme data (if available)
+        let theme = load_theme(&rel_map, &mut archive);
+
         let mut warnings = Vec::new();
 
         // Parse each slide in order, skipping broken slides with warnings
@@ -62,7 +76,7 @@ impl Parser for PptxParser {
                     format!("ppt/{target}")
                 };
 
-                match parse_single_slide(&slide_path, slide_size, &mut archive) {
+                match parse_single_slide(&slide_path, slide_size, &theme, &mut archive) {
                     Ok(page) => pages.push(page),
                     Err(e) => {
                         warnings.push(ConvertWarning {
@@ -89,11 +103,12 @@ impl Parser for PptxParser {
 fn parse_single_slide<R: Read + std::io::Seek>(
     slide_path: &str,
     slide_size: PageSize,
+    theme: &ThemeData,
     archive: &mut ZipArchive<R>,
 ) -> Result<Page, ConvertError> {
     let slide_xml = read_zip_entry(archive, slide_path)?;
     let slide_images = load_slide_images(slide_path, archive);
-    let elements = parse_slide_xml(&slide_xml, &slide_images)?;
+    let elements = parse_slide_xml(&slide_xml, &slide_images, theme)?;
     Ok(Page::Fixed(FixedPage {
         size: slide_size,
         elements,
@@ -289,8 +304,124 @@ fn parse_rels_xml(xml: &str) -> HashMap<String, String> {
     map
 }
 
+/// Find and load theme data from the PPTX archive.
+///
+/// Looks for a theme relationship in the presentation rels, reads the
+/// theme XML, and parses the color scheme and font scheme.
+fn load_theme<R: Read + std::io::Seek>(
+    rel_map: &HashMap<String, String>,
+    archive: &mut ZipArchive<R>,
+) -> ThemeData {
+    // Find theme target from rels (Type contains "theme")
+    let theme_target = rel_map.values().find(|t| t.contains("theme"));
+    let Some(target) = theme_target else {
+        return ThemeData::default();
+    };
+
+    let theme_path = if let Some(stripped) = target.strip_prefix('/') {
+        stripped.to_string()
+    } else {
+        format!("ppt/{target}")
+    };
+
+    let Ok(theme_xml) = read_zip_entry(archive, &theme_path) else {
+        return ThemeData::default();
+    };
+
+    parse_theme_xml(&theme_xml)
+}
+
+/// Parse a theme XML string to extract the color scheme and font scheme.
+fn parse_theme_xml(xml: &str) -> ThemeData {
+    let mut theme = ThemeData::default();
+    let mut reader = Reader::from_str(xml);
+
+    // Color scheme element names in order
+    const COLOR_NAMES: &[&str] = &[
+        "dk1", "dk2", "lt1", "lt2", "accent1", "accent2", "accent3", "accent4", "accent5",
+        "accent6", "hlink", "folHlink",
+    ];
+
+    let mut current_color_name: Option<String> = None;
+    let mut in_major_font = false;
+    let mut in_minor_font = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                let local = e.local_name();
+                let name = std::str::from_utf8(local.as_ref()).unwrap_or("");
+
+                // Check if this is a color scheme element
+                if COLOR_NAMES.contains(&name) {
+                    current_color_name = Some(name.to_string());
+                }
+                if name == "majorFont" {
+                    in_major_font = true;
+                }
+                if name == "minorFont" {
+                    in_minor_font = true;
+                }
+            }
+            Ok(Event::Empty(ref e)) => {
+                let local = e.local_name();
+                let name = std::str::from_utf8(local.as_ref()).unwrap_or("");
+
+                // Color scheme: <a:srgbClr val="RRGGBB"/> or <a:sysClr lastClr="RRGGBB"/>
+                if let Some(ref cn) = current_color_name {
+                    if name == "srgbClr"
+                        && let Some(hex) = get_attr_str(e, b"val")
+                        && let Some(color) = parse_hex_color(&hex)
+                    {
+                        theme.colors.insert(cn.clone(), color);
+                    } else if name == "sysClr"
+                        && let Some(hex) = get_attr_str(e, b"lastClr")
+                        && let Some(color) = parse_hex_color(&hex)
+                    {
+                        theme.colors.insert(cn.clone(), color);
+                    }
+                }
+
+                // Font scheme: <a:latin typeface="..."/>
+                if name == "latin"
+                    && let Some(typeface) = get_attr_str(e, b"typeface")
+                {
+                    if in_major_font {
+                        theme.major_font = Some(typeface);
+                    } else if in_minor_font {
+                        theme.minor_font = Some(typeface);
+                    }
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                let local = e.local_name();
+                let name = std::str::from_utf8(local.as_ref()).unwrap_or("");
+
+                if current_color_name.as_deref() == Some(name) {
+                    current_color_name = None;
+                }
+                if name == "majorFont" {
+                    in_major_font = false;
+                }
+                if name == "minorFont" {
+                    in_minor_font = false;
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    theme
+}
+
 /// Parse a slide XML to extract positioned elements (text boxes, shapes, images).
-fn parse_slide_xml(xml: &str, images: &SlideImageMap) -> Result<Vec<FixedElement>, ConvertError> {
+fn parse_slide_xml(
+    xml: &str,
+    images: &SlideImageMap,
+    theme: &ThemeData,
+) -> Result<Vec<FixedElement>, ConvertError> {
     let mut reader = Reader::from_str(xml);
     let mut elements = Vec::new();
 
@@ -414,6 +545,18 @@ fn parse_slide_xml(xml: &str, images: &SlideImageMap) -> Result<Vec<FixedElement
                     b"solidFill" if in_rpr => {
                         solid_fill_ctx = SolidFillCtx::RunFill;
                     }
+                    // ── Scheme color as Start element (has children) ──
+                    b"schemeClr" if solid_fill_ctx != SolidFillCtx::None => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val") {
+                            let color = theme.colors.get(&scheme_name).copied();
+                            match solid_fill_ctx {
+                                SolidFillCtx::ShapeFill => shape_fill = color,
+                                SolidFillCtx::LineFill => ln_color = color,
+                                SolidFillCtx::RunFill => run_style.color = color,
+                                SolidFillCtx::None => {}
+                            }
+                        }
+                    }
                     b"t" if in_run => {
                         in_text = true;
                     }
@@ -491,6 +634,18 @@ fn parse_slide_xml(xml: &str, images: &SlideImageMap) -> Result<Vec<FixedElement
                             }
                         }
                     }
+                    // ── Scheme color reference (theme) ─────────────
+                    b"schemeClr" if solid_fill_ctx != SolidFillCtx::None => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val") {
+                            let color = theme.colors.get(&scheme_name).copied();
+                            match solid_fill_ctx {
+                                SolidFillCtx::ShapeFill => shape_fill = color,
+                                SolidFillCtx::LineFill => ln_color = color,
+                                SolidFillCtx::RunFill => run_style.color = color,
+                                SolidFillCtx::None => {}
+                            }
+                        }
+                    }
 
                     // ── Run properties (empty element) ───────────────
                     b"rPr" if in_run => {
@@ -501,7 +656,7 @@ fn parse_slide_xml(xml: &str, images: &SlideImageMap) -> Result<Vec<FixedElement
                     }
                     b"latin" if in_rpr => {
                         if let Some(typeface) = get_attr_str(e, b"typeface") {
-                            run_style.font_family = Some(typeface);
+                            run_style.font_family = Some(resolve_theme_font(&typeface, theme));
                         }
                     }
 
@@ -633,6 +788,25 @@ fn parse_slide_xml(xml: &str, images: &SlideImageMap) -> Result<Vec<FixedElement
     }
 
     Ok(elements)
+}
+
+/// Resolve a font typeface, substituting theme font references.
+///
+/// `+mj-lt` → major latin font from theme.
+/// `+mn-lt` → minor latin font from theme.
+/// Everything else is returned as-is.
+fn resolve_theme_font(typeface: &str, theme: &ThemeData) -> String {
+    match typeface {
+        "+mj-lt" => theme
+            .major_font
+            .clone()
+            .unwrap_or_else(|| typeface.to_string()),
+        "+mn-lt" => theme
+            .minor_font
+            .clone()
+            .unwrap_or_else(|| typeface.to_string()),
+        other => other.to_string(),
+    }
 }
 
 /// Map a PPTX preset geometry name to an IR ShapeKind.
@@ -1720,5 +1894,372 @@ mod tests {
         assert_eq!(page.elements.len(), 2, "Expected 2 image elements");
         assert!(matches!(&page.elements[0].kind, FixedElementKind::Image(_)));
         assert!(matches!(&page.elements[1].kind, FixedElementKind::Image(_)));
+    }
+
+    // ── Theme test helpers ────────────────────────────────────────────
+
+    /// Create a theme XML with the given color scheme and font scheme.
+    fn make_theme_xml(colors: &[(&str, &str)], major_font: &str, minor_font: &str) -> String {
+        let mut color_xml = String::new();
+        for (name, hex) in colors {
+            // dk1/lt1 use sysClr in real files; others use srgbClr
+            if *name == "dk1" || *name == "lt1" {
+                color_xml.push_str(&format!(
+                    r#"<a:{name}><a:sysClr val="windowText" lastClr="{hex}"/></a:{name}>"#
+                ));
+            } else {
+                color_xml.push_str(&format!(r#"<a:{name}><a:srgbClr val="{hex}"/></a:{name}>"#));
+            }
+        }
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?><a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:themeElements><a:clrScheme name="Test">{color_xml}</a:clrScheme><a:fontScheme name="Test"><a:majorFont><a:latin typeface="{major_font}"/></a:majorFont><a:minorFont><a:latin typeface="{minor_font}"/></a:minorFont></a:fontScheme></a:themeElements></a:theme>"#
+        )
+    }
+
+    /// Standard theme color set used in tests.
+    fn standard_theme_colors() -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("dk1", "000000"),
+            ("dk2", "1F4D78"),
+            ("lt1", "FFFFFF"),
+            ("lt2", "E7E6E6"),
+            ("accent1", "4472C4"),
+            ("accent2", "ED7D31"),
+            ("accent3", "A5A5A5"),
+            ("accent4", "FFC000"),
+            ("accent5", "5B9BD5"),
+            ("accent6", "70AD47"),
+            ("hlink", "0563C1"),
+            ("folHlink", "954F72"),
+        ]
+    }
+
+    /// Build a test PPTX with a theme file included.
+    fn build_test_pptx_with_theme(
+        slide_cx_emu: i64,
+        slide_cy_emu: i64,
+        slide_xmls: &[String],
+        theme_xml: &str,
+    ) -> Vec<u8> {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let opts = FileOptions::default();
+
+        // [Content_Types].xml
+        let mut ct = String::from(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
+        ct.push_str(
+            r#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">"#,
+        );
+        ct.push_str(r#"<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>"#);
+        ct.push_str(r#"<Default Extension="xml" ContentType="application/xml"/>"#);
+        for i in 0..slide_xmls.len() {
+            ct.push_str(&format!(
+                r#"<Override PartName="/ppt/slides/slide{}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>"#,
+                i + 1
+            ));
+        }
+        ct.push_str("</Types>");
+        zip.start_file("[Content_Types].xml", opts).unwrap();
+        zip.write_all(ct.as_bytes()).unwrap();
+
+        // _rels/.rels
+        zip.start_file("_rels/.rels", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>"#,
+        )
+        .unwrap();
+
+        // ppt/presentation.xml
+        let mut pres = format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldSz cx="{}" cy="{}"/><p:sldIdLst>"#,
+            slide_cx_emu, slide_cy_emu
+        );
+        for i in 0..slide_xmls.len() {
+            pres.push_str(&format!(
+                r#"<p:sldId id="{}" r:id="rId{}"/>"#,
+                256 + i,
+                2 + i
+            ));
+        }
+        pres.push_str("</p:sldIdLst></p:presentation>");
+        zip.start_file("ppt/presentation.xml", opts).unwrap();
+        zip.write_all(pres.as_bytes()).unwrap();
+
+        // ppt/_rels/presentation.xml.rels (includes theme relationship)
+        let mut pres_rels = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#,
+        );
+        // Theme relationship (rId1 in pres rels)
+        pres_rels.push_str(
+            r#"<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>"#,
+        );
+        for i in 0..slide_xmls.len() {
+            pres_rels.push_str(&format!(
+                r#"<Relationship Id="rId{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide{}.xml"/>"#,
+                2 + i,
+                1 + i
+            ));
+        }
+        pres_rels.push_str("</Relationships>");
+        zip.start_file("ppt/_rels/presentation.xml.rels", opts)
+            .unwrap();
+        zip.write_all(pres_rels.as_bytes()).unwrap();
+
+        // ppt/theme/theme1.xml
+        zip.start_file("ppt/theme/theme1.xml", opts).unwrap();
+        zip.write_all(theme_xml.as_bytes()).unwrap();
+
+        // Slides
+        for (i, slide_xml) in slide_xmls.iter().enumerate() {
+            zip.start_file(format!("ppt/slides/slide{}.xml", i + 1), opts)
+                .unwrap();
+            zip.write_all(slide_xml.as_bytes()).unwrap();
+        }
+
+        let cursor = zip.finish().unwrap();
+        cursor.into_inner()
+    }
+
+    // ── Theme unit tests ──────────────────────────────────────────────
+
+    #[test]
+    fn test_parse_theme_xml_colors() {
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let theme = parse_theme_xml(&theme_xml);
+
+        assert_eq!(theme.colors.len(), 12);
+        assert_eq!(theme.colors["dk1"], Color::new(0, 0, 0));
+        assert_eq!(theme.colors["lt1"], Color::new(255, 255, 255));
+        assert_eq!(theme.colors["accent1"], Color::new(0x44, 0x72, 0xC4));
+        assert_eq!(theme.colors["accent2"], Color::new(0xED, 0x7D, 0x31));
+        assert_eq!(theme.colors["hlink"], Color::new(0x05, 0x63, 0xC1));
+        assert_eq!(theme.colors["folHlink"], Color::new(0x95, 0x4F, 0x72));
+    }
+
+    #[test]
+    fn test_parse_theme_xml_fonts() {
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let theme = parse_theme_xml(&theme_xml);
+
+        assert_eq!(theme.major_font, Some("Calibri Light".to_string()));
+        assert_eq!(theme.minor_font, Some("Calibri".to_string()));
+    }
+
+    #[test]
+    fn test_parse_theme_xml_sys_clr() {
+        // dk1 and lt1 use sysClr with lastClr attribute
+        let theme_xml = make_theme_xml(&[("dk1", "111111"), ("lt1", "EEEEEE")], "Arial", "Arial");
+        let theme = parse_theme_xml(&theme_xml);
+
+        assert_eq!(theme.colors["dk1"], Color::new(0x11, 0x11, 0x11));
+        assert_eq!(theme.colors["lt1"], Color::new(0xEE, 0xEE, 0xEE));
+    }
+
+    #[test]
+    fn test_parse_theme_xml_empty() {
+        let theme = parse_theme_xml("");
+        assert!(theme.colors.is_empty());
+        assert!(theme.major_font.is_none());
+        assert!(theme.minor_font.is_none());
+    }
+
+    #[test]
+    fn test_resolve_theme_font_major() {
+        let theme = ThemeData {
+            major_font: Some("Calibri Light".to_string()),
+            minor_font: Some("Calibri".to_string()),
+            ..ThemeData::default()
+        };
+        assert_eq!(resolve_theme_font("+mj-lt", &theme), "Calibri Light");
+    }
+
+    #[test]
+    fn test_resolve_theme_font_minor() {
+        let theme = ThemeData {
+            major_font: Some("Calibri Light".to_string()),
+            minor_font: Some("Calibri".to_string()),
+            ..ThemeData::default()
+        };
+        assert_eq!(resolve_theme_font("+mn-lt", &theme), "Calibri");
+    }
+
+    #[test]
+    fn test_resolve_theme_font_explicit() {
+        let theme = ThemeData::default();
+        assert_eq!(resolve_theme_font("Arial", &theme), "Arial");
+    }
+
+    // ── Theme integration tests (full PPTX parsing) ───────────────────
+
+    #[test]
+    fn test_scheme_color_in_shape_fill() {
+        // Shape with <a:schemeClr val="accent1"/> should resolve to accent1 color
+        let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent1"/></a:solidFill></p:spPr></p:sp>"#;
+        let slide = make_slide_xml(&[shape_xml.to_string()]);
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 1);
+        let shape = get_shape(&page.elements[0]);
+        assert_eq!(shape.fill, Some(Color::new(0x44, 0x72, 0xC4)));
+    }
+
+    #[test]
+    fn test_scheme_color_in_line_stroke() {
+        // Shape border using scheme color
+        let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:ln w="25400"><a:solidFill><a:schemeClr val="dk1"/></a:solidFill></a:ln></p:spPr></p:sp>"#;
+        let slide = make_slide_xml(&[shape_xml.to_string()]);
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let shape = get_shape(&page.elements[0]);
+        let stroke = shape.stroke.as_ref().expect("Expected stroke");
+        assert_eq!(stroke.color, Color::new(0, 0, 0)); // dk1 = black
+    }
+
+    #[test]
+    fn test_scheme_color_in_text_run() {
+        // Text run using <a:schemeClr val="accent2"/>
+        let runs_xml = r#"<a:r><a:rPr><a:solidFill><a:schemeClr val="accent2"/></a:solidFill></a:rPr><a:t>Themed text</a:t></a:r>"#;
+        let shape = make_formatted_text_box(0, 0, 2_000_000, 500_000, runs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let para = match &blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(para.runs[0].text, "Themed text");
+        assert_eq!(para.runs[0].style.color, Some(Color::new(0xED, 0x7D, 0x31)));
+    }
+
+    #[test]
+    fn test_theme_major_font_in_text() {
+        // Text with <a:latin typeface="+mj-lt"/> should resolve to major font
+        let runs_xml =
+            r#"<a:r><a:rPr><a:latin typeface="+mj-lt"/></a:rPr><a:t>Heading</a:t></a:r>"#;
+        let shape = make_formatted_text_box(0, 0, 2_000_000, 500_000, runs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let para = match &blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(para.runs[0].text, "Heading");
+        assert_eq!(
+            para.runs[0].style.font_family,
+            Some("Calibri Light".to_string())
+        );
+    }
+
+    #[test]
+    fn test_theme_minor_font_in_text() {
+        // Text with <a:latin typeface="+mn-lt"/> should resolve to minor font
+        let runs_xml =
+            r#"<a:r><a:rPr><a:latin typeface="+mn-lt"/></a:rPr><a:t>Body text</a:t></a:r>"#;
+        let shape = make_formatted_text_box(0, 0, 2_000_000, 500_000, runs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let para = match &blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(para.runs[0].text, "Body text");
+        assert_eq!(para.runs[0].style.font_family, Some("Calibri".to_string()));
+    }
+
+    #[test]
+    fn test_pptx_with_theme_colors_and_fonts_combined() {
+        // Full test: shape with scheme color + text with scheme color and theme font
+        let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent5"/></a:solidFill></p:spPr></p:sp>"#;
+        let runs_xml = r#"<a:r><a:rPr b="1" sz="2400"><a:solidFill><a:schemeClr val="dk2"/></a:solidFill><a:latin typeface="+mj-lt"/></a:rPr><a:t>Theme styled</a:t></a:r>"#;
+        let text_box = make_formatted_text_box(3_000_000, 0, 4_000_000, 1_000_000, runs_xml);
+        let slide = make_slide_xml(&[shape_xml.to_string(), text_box]);
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 2);
+
+        // Shape fill = accent5
+        let shape = get_shape(&page.elements[0]);
+        assert_eq!(shape.fill, Some(Color::new(0x5B, 0x9B, 0xD5)));
+
+        // Text run: color = dk2, font = major font, bold, 24pt
+        let blocks = text_box_blocks(&page.elements[1]);
+        let para = match &blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        let run = &para.runs[0];
+        assert_eq!(run.text, "Theme styled");
+        assert_eq!(run.style.color, Some(Color::new(0x1F, 0x4D, 0x78)));
+        assert_eq!(run.style.font_family, Some("Calibri Light".to_string()));
+        assert_eq!(run.style.bold, Some(true));
+        assert_eq!(run.style.font_size, Some(24.0));
+    }
+
+    #[test]
+    fn test_no_theme_scheme_color_ignored() {
+        // When there's no theme, schemeClr references should produce None
+        let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent1"/></a:solidFill></p:spPr></p:sp>"#;
+        let slide = make_slide_xml(&[shape_xml.to_string()]);
+        // Use regular build_test_pptx (no theme)
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let shape = get_shape(&page.elements[0]);
+        // No theme → scheme color not resolved → fill is None
+        assert!(shape.fill.is_none());
+    }
+
+    #[test]
+    fn test_scheme_color_as_start_element() {
+        // schemeClr can have children like <a:tint val="50000"/>, test it still works
+        let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent3"><a:tint val="50000"/></a:schemeClr></a:solidFill></p:spPr></p:sp>"#;
+        let slide = make_slide_xml(&[shape_xml.to_string()]);
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let shape = get_shape(&page.elements[0]);
+        // Color is resolved from the scheme (tint is ignored for now but base color is read)
+        assert_eq!(shape.fill, Some(Color::new(0xA5, 0xA5, 0xA5)));
     }
 }
