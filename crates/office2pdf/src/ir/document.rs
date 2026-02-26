@@ -82,6 +82,8 @@ pub struct FlowPage {
 pub struct FixedPage {
     pub size: PageSize,
     pub elements: Vec<FixedElement>,
+    /// Optional background color for the page.
+    pub background_color: Option<super::style::Color>,
 }
 
 /// An element with fixed position on a page.
@@ -132,5 +134,26 @@ mod tests {
         let margins = Margins::default();
         assert!((margins.top - 72.0).abs() < 0.01);
         assert!((margins.left - 72.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_fixed_page_background_color() {
+        use crate::ir::Color;
+        let page = FixedPage {
+            size: PageSize::default(),
+            elements: vec![],
+            background_color: Some(Color::new(255, 0, 0)),
+        };
+        assert_eq!(page.background_color, Some(Color::new(255, 0, 0)));
+    }
+
+    #[test]
+    fn test_fixed_page_no_background_color() {
+        let page = FixedPage {
+            size: PageSize::default(),
+            elements: vec![],
+            background_color: None,
+        };
+        assert!(page.background_color.is_none());
     }
 }

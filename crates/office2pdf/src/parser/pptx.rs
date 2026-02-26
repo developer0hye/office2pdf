@@ -109,10 +109,73 @@ fn parse_single_slide<R: Read + std::io::Seek>(
     let slide_xml = read_zip_entry(archive, slide_path)?;
     let slide_images = load_slide_images(slide_path, archive);
     let elements = parse_slide_xml(&slide_xml, &slide_images, theme)?;
+
+    // Resolve background color: slide → layout → master
+    let background_color = parse_background_color(&slide_xml, theme)
+        .or_else(|| resolve_inherited_background(slide_path, theme, archive));
+
     Ok(Page::Fixed(FixedPage {
         size: slide_size,
         elements,
+        background_color,
     }))
+}
+
+/// Resolve inherited background color from layout or master.
+///
+/// Reads the slide's .rels to find the layout, then the layout's .rels to find the master.
+/// Returns the first background color found in the inheritance chain.
+fn resolve_inherited_background<R: Read + std::io::Seek>(
+    slide_path: &str,
+    theme: &ThemeData,
+    archive: &mut ZipArchive<R>,
+) -> Option<Color> {
+    // Read slide .rels to find layout path
+    let slide_rels_path = if let Some((dir, filename)) = slide_path.rsplit_once('/') {
+        format!("{dir}/_rels/{filename}.rels")
+    } else {
+        format!("_rels/{slide_path}.rels")
+    };
+
+    let rels_xml = read_zip_entry(archive, &slide_rels_path).ok()?;
+    let rels = parse_rels_xml(&rels_xml);
+    let slide_dir = slide_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
+
+    // Find layout relationship
+    let layout_target = rels
+        .values()
+        .find(|t| t.contains("slideLayout") || t.contains("slideLayouts"))?;
+    let layout_path = resolve_relative_path(slide_dir, layout_target);
+
+    // Try layout background
+    if let Ok(layout_xml) = read_zip_entry(archive, &layout_path) {
+        if let Some(color) = parse_background_color(&layout_xml, theme) {
+            return Some(color);
+        }
+
+        // Try master background via layout .rels
+        let layout_dir = layout_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
+        let layout_rels_path = if let Some((dir, filename)) = layout_path.rsplit_once('/') {
+            format!("{dir}/_rels/{filename}.rels")
+        } else {
+            format!("_rels/{layout_path}.rels")
+        };
+
+        if let Ok(layout_rels_xml) = read_zip_entry(archive, &layout_rels_path) {
+            let layout_rels = parse_rels_xml(&layout_rels_xml);
+            if let Some(master_target) = layout_rels
+                .values()
+                .find(|t| t.contains("slideMaster") || t.contains("slideMasters"))
+            {
+                let master_path = resolve_relative_path(layout_dir, master_target);
+                if let Ok(master_xml) = read_zip_entry(archive, &master_path) {
+                    return parse_background_color(&master_xml, theme);
+                }
+            }
+        }
+    }
+
+    None
 }
 
 /// Read a file from the ZIP archive as a UTF-8 string.
@@ -414,6 +477,67 @@ fn parse_theme_xml(xml: &str) -> ThemeData {
     }
 
     theme
+}
+
+/// Parse background color from a `<p:bg>` element within a slide/layout/master XML.
+///
+/// Looks for `<p:bg><p:bgPr><a:solidFill>` and extracts the color
+/// (either `<a:srgbClr>` or `<a:schemeClr>` resolved via theme).
+fn parse_background_color(xml: &str, theme: &ThemeData) -> Option<Color> {
+    let mut reader = Reader::from_str(xml);
+    let mut in_bg = false;
+    let mut in_bg_pr = false;
+    let mut in_solid_fill = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"bg" => in_bg = true,
+                    b"bgPr" if in_bg => in_bg_pr = true,
+                    b"solidFill" if in_bg_pr => in_solid_fill = true,
+                    // schemeClr as Start element (may have children like <a:tint>)
+                    b"schemeClr" if in_solid_fill => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val") {
+                            return theme.colors.get(&scheme_name).copied();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Empty(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"srgbClr" if in_solid_fill => {
+                        if let Some(hex) = get_attr_str(e, b"val") {
+                            return parse_hex_color(&hex);
+                        }
+                    }
+                    b"schemeClr" if in_solid_fill => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val") {
+                            return theme.colors.get(&scheme_name).copied();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"bg" => return None, // Found bg but no solid fill color
+                    b"bgPr" => in_bg_pr = false,
+                    b"solidFill" => in_solid_fill = false,
+                    _ => {}
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    None
 }
 
 /// Parse a slide XML to extract positioned elements (text boxes, shapes, images).
@@ -998,6 +1122,20 @@ mod tests {
         format!(
             r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="TextBox"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/>{paragraphs_xml}</p:txBody></p:sp>"#
         )
+    }
+
+    /// Create a slide XML with a background and optional shape elements.
+    fn make_slide_xml_with_bg(bg_xml: &str, shapes: &[String]) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld>"#,
+        );
+        xml.push_str(bg_xml);
+        xml.push_str(r#"<p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>"#);
+        for shape in shapes {
+            xml.push_str(shape);
+        }
+        xml.push_str("</p:spTree></p:cSld></p:sld>");
+        xml
     }
 
     /// Standard 4:3 slide size in EMU (10" x 7.5").
@@ -2019,6 +2157,73 @@ mod tests {
         cursor.into_inner()
     }
 
+    /// Build a test PPTX with a single slide that has layout and master relationships.
+    ///
+    /// Creates: slide1 → slideLayout1 → slideMaster1
+    fn build_test_pptx_with_layout_master(
+        slide_cx_emu: i64,
+        slide_cy_emu: i64,
+        slide_xml: &str,
+        layout_xml: &str,
+        master_xml: &str,
+    ) -> Vec<u8> {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let opts = FileOptions::default();
+
+        // [Content_Types].xml
+        let ct = r#"<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/></Types>"#;
+        zip.start_file("[Content_Types].xml", opts).unwrap();
+        zip.write_all(ct.as_bytes()).unwrap();
+
+        // _rels/.rels
+        zip.start_file("_rels/.rels", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>"#,
+        ).unwrap();
+
+        // ppt/presentation.xml
+        let pres = format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldSz cx="{slide_cx_emu}" cy="{slide_cy_emu}"/><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst></p:presentation>"#,
+        );
+        zip.start_file("ppt/presentation.xml", opts).unwrap();
+        zip.write_all(pres.as_bytes()).unwrap();
+
+        // ppt/_rels/presentation.xml.rels
+        let pres_rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/></Relationships>"#;
+        zip.start_file("ppt/_rels/presentation.xml.rels", opts)
+            .unwrap();
+        zip.write_all(pres_rels.as_bytes()).unwrap();
+
+        // ppt/slides/slide1.xml
+        zip.start_file("ppt/slides/slide1.xml", opts).unwrap();
+        zip.write_all(slide_xml.as_bytes()).unwrap();
+
+        // ppt/slides/_rels/slide1.xml.rels → points to layout
+        let slide_rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>"#;
+        zip.start_file("ppt/slides/_rels/slide1.xml.rels", opts)
+            .unwrap();
+        zip.write_all(slide_rels.as_bytes()).unwrap();
+
+        // ppt/slideLayouts/slideLayout1.xml
+        zip.start_file("ppt/slideLayouts/slideLayout1.xml", opts)
+            .unwrap();
+        zip.write_all(layout_xml.as_bytes()).unwrap();
+
+        // ppt/slideLayouts/_rels/slideLayout1.xml.rels → points to master
+        let layout_rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>"#;
+        zip.start_file("ppt/slideLayouts/_rels/slideLayout1.xml.rels", opts)
+            .unwrap();
+        zip.write_all(layout_rels.as_bytes()).unwrap();
+
+        // ppt/slideMasters/slideMaster1.xml
+        zip.start_file("ppt/slideMasters/slideMaster1.xml", opts)
+            .unwrap();
+        zip.write_all(master_xml.as_bytes()).unwrap();
+
+        let cursor = zip.finish().unwrap();
+        cursor.into_inner()
+    }
+
     // ── Theme unit tests ──────────────────────────────────────────────
 
     #[test]
@@ -2261,5 +2466,104 @@ mod tests {
         let shape = get_shape(&page.elements[0]);
         // Color is resolved from the scheme (tint is ignored for now but base color is read)
         assert_eq!(shape.fill, Some(Color::new(0xA5, 0xA5, 0xA5)));
+    }
+
+    // ── Slide background tests ───────────────────────────────────────────
+
+    #[test]
+    fn test_slide_solid_color_background() {
+        // Slide with a solid red background via <p:bg>
+        let bg_xml = r#"<p:bg><p:bgPr><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>"#;
+        let slide = make_slide_xml_with_bg(bg_xml, &[]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.background_color, Some(Color::new(255, 0, 0)));
+    }
+
+    #[test]
+    fn test_slide_no_background() {
+        // Slide with no <p:bg> → background_color is None
+        let slide = make_empty_slide_xml();
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert!(page.background_color.is_none());
+    }
+
+    #[test]
+    fn test_slide_background_with_scheme_color() {
+        // Slide background using a theme scheme color reference
+        let bg_xml = r#"<p:bg><p:bgPr><a:solidFill><a:schemeClr val="accent1"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>"#;
+        let slide = make_slide_xml_with_bg(bg_xml, &[]);
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.background_color, Some(Color::new(0x44, 0x72, 0xC4)));
+    }
+
+    #[test]
+    fn test_slide_background_with_text_content() {
+        // Slide with both background and text shapes — both should be present
+        let bg_xml = r#"<p:bg><p:bgPr><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>"#;
+        let text_box = make_text_box(100000, 100000, 5000000, 500000, "Hello");
+        let slide = make_slide_xml_with_bg(bg_xml, &[text_box]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.background_color, Some(Color::new(0, 0, 255)));
+        assert_eq!(page.elements.len(), 1);
+    }
+
+    #[test]
+    fn test_slide_inherits_master_background() {
+        // Slide has no background, but its master does → should inherit
+        let slide_xml = make_empty_slide_xml();
+        let master_xml = r#"<?xml version="1.0" encoding="UTF-8"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sldMaster>"#;
+        let layout_xml = r#"<?xml version="1.0" encoding="UTF-8"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sldLayout>"#;
+
+        // Build PPTX with slide → layout → master chain
+        let data = build_test_pptx_with_layout_master(
+            SLIDE_CX, SLIDE_CY, &slide_xml, layout_xml, master_xml,
+        );
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        // Should inherit master's green background
+        assert_eq!(page.background_color, Some(Color::new(0, 255, 0)));
+    }
+
+    #[test]
+    fn test_slide_inherits_layout_background_over_master() {
+        // Layout has a background, master has a different one → layout wins
+        let slide_xml = make_empty_slide_xml();
+        let master_xml = r#"<?xml version="1.0" encoding="UTF-8"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sldMaster>"#;
+        let layout_xml = r#"<?xml version="1.0" encoding="UTF-8"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="FF00FF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sldLayout>"#;
+
+        let data = build_test_pptx_with_layout_master(
+            SLIDE_CX, SLIDE_CY, &slide_xml, layout_xml, master_xml,
+        );
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        // Should inherit layout's magenta background (not master's green)
+        assert_eq!(page.background_color, Some(Color::new(255, 0, 255)));
     }
 }

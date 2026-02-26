@@ -92,12 +92,24 @@ fn generate_fixed_page(
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     // Slides use zero margins — all positioning is absolute
-    let _ = writeln!(
-        out,
-        "#set page(width: {}pt, height: {}pt, margin: 0pt)",
-        format_f64(page.size.width),
-        format_f64(page.size.height),
-    );
+    if let Some(ref bg) = page.background_color {
+        let _ = writeln!(
+            out,
+            "#set page(width: {}pt, height: {}pt, margin: 0pt, fill: rgb({}, {}, {}))",
+            format_f64(page.size.width),
+            format_f64(page.size.height),
+            bg.r,
+            bg.g,
+            bg.b,
+        );
+    } else {
+        let _ = writeln!(
+            out,
+            "#set page(width: {}pt, height: {}pt, margin: 0pt)",
+            format_f64(page.size.width),
+            format_f64(page.size.height),
+        );
+    }
     out.push('\n');
 
     for elem in &page.elements {
@@ -1713,6 +1725,7 @@ mod tests {
         Page::Fixed(FixedPage {
             size: PageSize { width, height },
             elements,
+            background_color: None,
         })
     }
 
@@ -2639,6 +2652,46 @@ mod tests {
         assert!(
             !output.source.contains("footer:"),
             "Should NOT contain footer: when no footer. Got: {}",
+            output.source
+        );
+    }
+
+    // ── Fixed page background tests ──────────────────────────────────────
+
+    #[test]
+    fn test_fixed_page_with_background_color() {
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: Some(Color::new(255, 0, 0)),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("fill: rgb(255, 0, 0)"),
+            "Should contain fill: rgb(255, 0, 0). Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_without_background_color() {
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: None,
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            !output.source.contains("fill:"),
+            "Should NOT contain fill: when no background. Got: {}",
             output.source
         );
     }
