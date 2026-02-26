@@ -26,8 +26,40 @@
 - **Test images for docx-rs**: Use `make_test_bmp()` to create a minimal 1×1 BMP, then `Pic::new(&bmp_data)` which processes through the `image` crate. Do NOT use `Pic::new_with_dimensions()` with raw PNG bytes for round-trip tests — the `image` crate may fail to decode minimal hand-crafted PNGs during `read_docx()`.
 - **Image codegen**: `generate_typst()` returns `TypstOutput { source: String, images: Vec<ImageAsset> }`. Images get virtual paths `img-N.ext` via `GenCtx`. `compile_to_pdf(source, &images)` passes images to `MinimalWorld` which serves them via `World::file()`. Image markup: `#image("img-0.png", width: Wpt, height: Hpt)`.
 - **Valid test PNG**: For tests that compile Typst with images, use `make_test_png()` helper which builds a 1x1 PNG with correct CRC32 checksums. For codegen-only tests, any byte slice works since Typst doesn't validate during codegen.
+- **Parser trait returns warnings**: `Parser::parse()` returns `Result<(Document, Vec<ConvertWarning>), ConvertError>`. Destructure with `let (doc, _warnings) = parser.parse(&data)?;` in existing tests.
+- **ConvertResult**: Public API (`convert`, `convert_bytes`) returns `ConvertResult { pdf: Vec<u8>, warnings: Vec<ConvertWarning> }` instead of bare `Vec<u8>`. Access PDF bytes via `.pdf`.
+- **PPTX per-slide error recovery**: Each slide is parsed independently via `parse_single_slide()`. If a slide fails (missing file, broken XML), a warning is emitted and the slide is skipped.
+- **DOCX per-element error recovery**: Each `DocumentChild` is processed inside `std::panic::catch_unwind`. If an element panics, a warning is emitted and processing continues.
 ---
 
 # Ralph Progress Log - Phase 2: P1 Features - Formatting, Styles, Font Fallback
 Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
+---
+
+## 2026-02-27 - US-017: Enhanced error handling - skip unparseable elements
+- What was implemented:
+  - Added `ConvertWarning { element: String, reason: String }` type to `error.rs`
+  - Added `ConvertResult { pdf: Vec<u8>, warnings: Vec<ConvertWarning> }` to `error.rs`
+  - Changed `Parser::parse()` trait to return `Result<(Document, Vec<ConvertWarning>), ConvertError>`
+  - Updated all 3 parsers (DOCX, PPTX, XLSX) to return warnings tuple
+  - DOCX parser: `catch_unwind` around each element in document loop
+  - PPTX parser: extracted `parse_single_slide()`, catches per-slide errors as warnings
+  - XLSX parser: returns empty warnings (framework ready for future element-level recovery)
+  - Updated `convert()`, `convert_bytes()`, `convert_with_options()` to return `ConvertResult`
+  - CLI prints warnings to stderr via `eprintln!("Warning: {warning}")`
+  - Added tests: ConvertWarning display/clone, ConvertResult fields, broken PPTX slide emits warning, normal DOCX has no warnings
+- Files changed:
+  - `crates/office2pdf/src/error.rs` — new types
+  - `crates/office2pdf/src/parser/mod.rs` — trait signature
+  - `crates/office2pdf/src/parser/docx.rs` — catch_unwind + tuple return
+  - `crates/office2pdf/src/parser/pptx.rs` — per-slide recovery + tuple return
+  - `crates/office2pdf/src/parser/xlsx.rs` — tuple return
+  - `crates/office2pdf/src/lib.rs` — ConvertResult threading + new tests
+  - `crates/office2pdf-cli/src/main.rs` — warning output
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - The `catch_unwind` approach in DOCX parser is a safety net; real-world DOCX errors are rare since docx-rs handles XML parsing before our code runs
+  - PPTX per-slide recovery is more naturally testable since slides are independent ZIP entries
+  - quick-xml with broken XML often doesn't error — it just finds no matching elements. Use missing ZIP entries for reliable failure testing.
+  - All existing parser tests needed `let (doc, _warnings) =` destructuring — use `replace_all` for bulk updates
 ---
