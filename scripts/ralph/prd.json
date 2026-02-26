@@ -1,280 +1,234 @@
 {
   "project": "office2pdf",
-  "branchName": "ralph/mvp-phase1",
-  "description": "Phase 1 MVP - Basic text, tables, images for DOCX/PPTX/XLSX to PDF conversion via Typst engine",
+  "branchName": "ralph/phase2-formatting",
+  "description": "Phase 2: P1 Features - Lists, headers/footers, styles, themes, cell formatting, font fallback, error handling",
   "userStories": [
     {
-      "id": "US-001",
-      "title": "Set up Typst rendering pipeline for FlowPage paragraphs",
-      "description": "As a developer, I need the foundational Typst codegen and PDF compilation pipeline so that IR documents can be rendered to PDF. Implement IR → Typst markup generation for FlowPage with paragraphs (including styled text runs), and Typst → PDF compilation.",
+      "id": "US-017",
+      "title": "Enhanced error handling - skip unparseable elements",
+      "description": "As a user, I want the converter to continue even when it encounters unsupported or malformed elements, so that I get a PDF with as much content as possible instead of an error.",
       "acceptanceCriteria": [
-        "Add typst, typst-pdf, and typst-kit dependencies to crates/office2pdf/Cargo.toml",
-        "Implement typst_gen.rs: convert IR Document with FlowPage containing Paragraphs and Runs to Typst markup string",
-        "Implement pdf.rs: compile Typst markup string to PDF bytes using typst crate",
-        "Support text styling in Typst output: bold, italic, underline, font size, font color",
-        "Support paragraph styling: alignment (left/right/center/justify), line spacing",
-        "Unit tests for Typst codegen with various paragraph and text style combinations",
-        "Unit tests for PDF compilation (verify non-empty PDF bytes are produced)",
-        "cargo check --workspace passes",
+        "Add a ConvertWarning type (e.g., enum with element description and reason) to the library",
+        "Modify the conversion pipeline to collect warnings instead of failing on non-fatal parse errors",
+        "Parser functions catch individual element-level errors and emit warnings while continuing",
+        "Return warnings alongside PDF bytes (e.g., ConvertResult { pdf: Vec<u8>, warnings: Vec<ConvertWarning> })",
+        "CLI prints warnings to stderr after successful conversion",
+        "Unit tests: a DOCX with valid paragraphs plus an intentionally unparseable element still produces a PDF containing the valid text",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Completed. 18 typst_gen tests + 8 pdf tests. Uses embedded fonts only."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-002",
-      "title": "Wire conversion pipeline in library API",
-      "description": "As a developer, I need the library's public convert functions to use the full pipeline (Parser → IR → Typst Codegen → PDF) so that callers can convert files end-to-end.",
+      "id": "US-018",
+      "title": "Font fallback - system font discovery",
+      "description": "As a user, I want the converter to discover and use system-installed fonts so that documents render with their intended typefaces when available.",
       "acceptanceCriteria": [
-        "Update lib.rs convert(), convert_with_options(), and convert_bytes() to call Parser → IR → typst_gen → pdf pipeline",
-        "Format detection from file extension works correctly",
-        "Appropriate errors returned for unsupported formats",
-        "Unit tests verifying the pipeline wiring (can use mock/minimal IR documents)",
+        "Enable system font searching in MinimalWorld via typst-kit FontSearcher (set system fonts to true)",
+        "Font resolution order: document-embedded fonts → system fonts → built-in fallback fonts",
+        "The existing embedded fonts (Libertinus, New Computer Modern, DejaVu Sans Mono) remain as ultimate fallback",
+        "Unit tests: verify compilation succeeds and produces valid PDF with system font names in the IR",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Completed. Added render_document() public API. 12 pipeline tests (format detection, error propagation, mock IR → PDF)."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-003",
-      "title": "DOCX parser - basic text extraction",
-      "description": "As a user, I want to convert a DOCX file with plain text paragraphs to PDF so that basic documents are supported.",
+      "id": "US-019",
+      "title": "DOCX parser - lists (numbered, bulleted, multi-level)",
+      "description": "As a user, I want numbered and bulleted lists in DOCX files to render correctly in the PDF output with proper indentation and markers.",
       "acceptanceCriteria": [
-        "Add docx-rs dependency to crates/office2pdf/Cargo.toml",
-        "Implement DocxParser to extract paragraphs and text runs from DOCX files",
-        "Each DOCX paragraph maps to an IR Paragraph with Run elements containing text",
-        "Page size and margins are extracted from DOCX document properties (or use defaults)",
-        "Unit tests with a programmatically created minimal DOCX verifying paragraph and text extraction",
+        "Add List and ListItem types to the IR: Block::List variant, ListItem with content (Vec<Paragraph>), indent level, and list kind (Ordered/Unordered)",
+        "Parse DOCX numbering definitions (abstractNum, num) from the document",
+        "Detect list paragraphs via numPr element (numId + ilvl) in paragraph properties",
+        "Group consecutive list paragraphs into List blocks with correct nesting levels",
+        "Generate Typst markup for lists: #enum() for numbered, #list() for bulleted, with indent levels",
+        "Unit tests: simple bulleted list, simple numbered list, nested multi-level list, mixed list types",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Completed. 11 DocxParser tests. Uses docx-rs + serde_json for parsing. Extracts paragraphs, text runs, page size (via serde), and margins."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-004",
-      "title": "DOCX parser - inline formatting",
-      "description": "As a user, I want bold, italic, underline, strikethrough, font, size, and color formatting preserved when converting DOCX to PDF.",
+      "id": "US-020",
+      "title": "DOCX parser - headers and footers with page numbers",
+      "description": "As a user, I want document headers and footers (including page numbers) to appear in the converted PDF.",
       "acceptanceCriteria": [
-        "DocxParser extracts inline formatting from DOCX runs: bold, italic, underline, strikethrough",
-        "DocxParser extracts font name, font size, and font color from DOCX runs",
-        "Formatting maps correctly to IR TextStyle fields",
-        "Unit tests verifying each formatting property is extracted correctly",
+        "Define HeaderFooter IR type with content (Vec<Paragraph>) if not already fully implemented",
+        "Parse default header and footer from DOCX section properties (headerReference, footerReference)",
+        "Extract header/footer content from the corresponding header*.xml and footer*.xml parts",
+        "Handle PAGE field codes (fldChar/instrText) to render page numbers",
+        "Generate Typst #set page(header: [...], footer: [...]) markup with content and page numbering via #counter(page).display()",
+        "Unit tests: document with text header, document with page number in footer, document with both",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Completed. 10 inline formatting tests. Extracts bold, italic, underline, strikethrough, font name, font size, font color via serde_json (docx-rs types serialize as direct values)."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-005",
-      "title": "DOCX parser - paragraph formatting",
-      "description": "As a user, I want paragraph alignment, indentation, and line spacing preserved when converting DOCX to PDF.",
+      "id": "US-021",
+      "title": "DOCX parser - page orientation (landscape/portrait)",
+      "description": "As a user, I want landscape-oriented DOCX documents to produce landscape PDF pages.",
       "acceptanceCriteria": [
-        "DocxParser extracts paragraph alignment (left, right, center, justify)",
-        "DocxParser extracts paragraph indentation (left, right, first-line)",
-        "DocxParser extracts line spacing settings",
-        "DocxParser extracts page breaks between paragraphs",
-        "Formatting maps correctly to IR ParagraphStyle fields",
-        "Unit tests verifying each paragraph formatting property",
+        "Parse the orient attribute from section properties (pgSz) in DOCX",
+        "When orientation is landscape, ensure page width > height in the IR FlowPage",
+        "Default remains portrait if no orientation is specified",
+        "Typst codegen already handles page dimensions correctly (no changes expected)",
+        "Unit tests: portrait document, landscape document, verify correct page dimensions",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Completed. 13 paragraph formatting tests. Extracts alignment, indentation (left/right/first-line/hanging), line spacing (auto/exact), space before/after, and page breaks."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-006",
-      "title": "Typst codegen - table rendering support",
-      "description": "As a developer, I need Typst codegen to handle Table blocks so that tables from any input format can be rendered to PDF.",
+      "id": "US-022",
+      "title": "DOCX parser - document styles (Heading 1-6)",
+      "description": "As a user, I want heading styles in DOCX documents to render with appropriate font sizes and weights in the PDF.",
       "acceptanceCriteria": [
-        "typst_gen.rs generates Typst table markup from IR Table elements",
-        "Supports basic table structure: rows, columns, cells with text content",
-        "Supports cell merging (colspan, rowspan) in Typst output",
-        "Supports cell borders and background colors in Typst output",
-        "Unit tests for table codegen with various configurations (simple table, merged cells, styled cells)",
+        "Parse styles.xml from DOCX to extract named style definitions (Heading 1 through Heading 6, Normal, etc.)",
+        "When a paragraph references a style (via pStyle), apply the style's formatting as defaults",
+        "Paragraph-level and run-level explicit formatting overrides style defaults",
+        "Map heading levels to appropriate default sizes (e.g., Heading 1 = 24pt bold, Heading 2 = 20pt bold, etc.) when the style definition doesn't specify",
+        "Unit tests: document with Heading 1, Heading 2, Normal paragraphs; verify sizes and bold are applied",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Completed. 13 table codegen tests. Supports basic tables, colspan/rowspan, cell borders, background colors, styled text in cells."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-007",
-      "title": "DOCX parser - tables",
-      "description": "As a user, I want tables in DOCX files to be converted to PDF with cell merging, borders, and background colors.",
+      "id": "US-023",
+      "title": "PPTX parser - theme colors and fonts",
+      "description": "As a user, I want theme colors and fonts from PPTX presentations to be used when rendering slides to PDF.",
       "acceptanceCriteria": [
-        "DocxParser extracts tables from DOCX files into IR Table elements",
-        "Cell content (paragraphs with formatted text) is parsed correctly",
-        "Horizontal and vertical cell merging is detected and mapped to IR",
-        "Cell borders and background colors are extracted",
-        "Unit tests verifying table parsing with merged cells and styling",
+        "Parse ppt/theme/theme1.xml for the color scheme (dk1, dk2, lt1, lt2, accent1-6, hlink, folHlink)",
+        "Parse font scheme (majorFont, minorFont) from theme XML",
+        "Resolve schemeClr references in elements to actual RGB colors using the parsed theme",
+        "Apply theme fonts as defaults when elements don't specify explicit fonts",
+        "Unit tests: presentation with theme colors in shapes and text, verify correct RGB values",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Completed. 11 DocxParser table tests. Extracts tables with cell content (paragraphs with formatted text), column widths from grid, colspan via gridSpan, rowspan via vMerge (restart/continue), cell borders, and background colors via shading."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-008",
-      "title": "Typst codegen - image rendering support",
-      "description": "As a developer, I need Typst codegen to handle Image blocks so that images from any input format can be rendered to PDF.",
+      "id": "US-024",
+      "title": "PPTX parser - slide backgrounds",
+      "description": "As a user, I want slide backgrounds (solid colors) to appear in the converted PDF.",
       "acceptanceCriteria": [
-        "typst_gen.rs generates Typst image markup from IR Image elements",
-        "Supports image sizing (width, height) in Typst output",
-        "Image data is embedded or referenced correctly for Typst compilation",
-        "Unit tests for image codegen with various sizes",
+        "Add an optional background_color field to FixedPage IR",
+        "Parse background element (p:bg) from slide XML for solid color fills",
+        "Fall back to layout background, then master background if slide has none",
+        "Generate Typst page background: #set page(fill: rgb(...))",
+        "Unit tests: slide with solid color background, slide inheriting master background, slide with no background",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Completed. 10 image codegen tests + 1 PDF compilation test. Images use virtual file paths (img-N.ext) with TypstOutput carrying both source and image assets. MinimalWorld serves images via World::file()."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-009",
-      "title": "DOCX parser - images",
-      "description": "As a user, I want inline images in DOCX files to appear in the converted PDF with correct sizing.",
+      "id": "US-025",
+      "title": "PPTX parser - slide master and layout inheritance",
+      "description": "As a user, I want elements from slide masters and layouts to appear as base content on slides, so that common elements like logos and titles render correctly.",
       "acceptanceCriteria": [
-        "DocxParser extracts inline images from DOCX files",
-        "Image binary data (PNG, JPEG, etc.) is extracted and stored in IR Image elements",
-        "Image dimensions (width, height) from DOCX are preserved in IR",
-        "Unit tests verifying image extraction from DOCX",
+        "Parse slide master XML (ppt/slideMasters/slideMaster*.xml) for base elements",
+        "Parse slide layout XML (ppt/slideLayouts/slideLayout*.xml) for layout elements",
+        "Resolve the inheritance chain: slide → layout → master for each slide",
+        "Master/layout elements appear behind slide-specific elements",
+        "Unit tests: presentation with master containing a shape, verify it appears on all slides",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": "Completed. 7 DocxParser image tests. Extracts inline images via RunChild::Drawing → DrawingData::Pic. Image data from Docx.images (PNG, via image crate). Dimensions from Pic.size (EMU → points ÷12700). Uses BMP → Pic::new() for test fixtures."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-010",
-      "title": "Typst codegen - FixedPage support for slides",
-      "description": "As a developer, I need Typst codegen to handle FixedPage (coordinate-based placement) so that PPTX slides can be rendered to PDF.",
+      "id": "US-026",
+      "title": "PPTX parser - tables in slides",
+      "description": "As a user, I want tables within PPTX slides to render in the PDF output.",
       "acceptanceCriteria": [
-        "typst_gen.rs generates Typst markup for FixedPage with absolute positioning of elements",
-        "Supports placing text boxes at specific (x, y) coordinates with (width, height)",
-        "Supports placing shapes (rectangles, circles, lines) at specific coordinates",
-        "Supports placing images at specific coordinates",
-        "Slide dimensions are applied as page size",
-        "Unit tests for FixedPage codegen with mixed elements",
+        "Parse <a:tbl> table elements within slide shape trees",
+        "Extract table rows, cells, cell text with formatting",
+        "Support cell merging (gridSpan, vMerge) in slide tables",
+        "Map to IR Table positioned as a FixedElement on the FixedPage",
+        "Generate Typst markup: #place() with table content at the correct position",
+        "Unit tests: slide with a basic table, table with merged cells, table with formatted text",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 10,
-      "passes": true,
-      "notes": "Completed. 12 FixedPage codegen tests. Uses #place(top + left, dx, dy) for absolute positioning. Supports TextBox (with block wrapper), Rectangle (#rect), Ellipse (#ellipse), Line (#line), Image (#image) with fill and stroke. Slides use zero margins."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-011",
-      "title": "PPTX parser - slides and text boxes",
-      "description": "As a user, I want to convert PPTX presentations to PDF where each slide becomes a page with correctly positioned text boxes.",
+      "id": "US-027",
+      "title": "XLSX parser - cell formatting (font, color, background, borders)",
+      "description": "As a user, I want cell-level formatting in XLSX spreadsheets to be preserved in the PDF output.",
       "acceptanceCriteria": [
-        "Add ppt-rs (or suitable PPTX parsing crate) dependency to crates/office2pdf/Cargo.toml",
-        "Implement PptxParser to extract slides as FixedPage elements",
-        "Each slide maps to one IR FixedPage with correct slide dimensions",
-        "Text boxes are extracted with position (x, y), size (width, height), and text content with formatting",
-        "Unit tests verifying slide and text box extraction",
+        "Extract font styling from cells: font name, size, color, bold, italic",
+        "Extract cell background/fill color",
+        "Extract cell border styles (color, width per side)",
+        "Extract row heights and apply them in the IR table",
+        "Map formatting to IR TextStyle in cell paragraphs and TableCell border/background properties",
+        "Unit tests: cells with bold/colored text, cells with background fill, cells with borders, custom row heights",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 11,
-      "passes": true,
-      "notes": "Completed. 16 PptxParser tests. Uses zip + quick-xml (already transitive deps) for direct PPTX ZIP/XML parsing. Extracts slides as FixedPages with text box elements including position, size, text content, and formatting (bold, italic, underline, strikethrough, font size, color, font family, paragraph alignment)."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-012",
-      "title": "PPTX parser - basic shapes and images",
-      "description": "As a user, I want basic shapes (rectangles, circles, lines) and images in PPTX slides to appear in the converted PDF.",
+      "id": "US-028",
+      "title": "XLSX parser - number formats (currency, percentage, date)",
+      "description": "As a user, I want numbers in XLSX cells to display with their original formatting (currency symbols, percentage signs, date formats) in the PDF.",
       "acceptanceCriteria": [
-        "PptxParser extracts basic shapes (rectangle, circle/ellipse, line) with position, size, fill color, and border",
-        "PptxParser extracts images from slides with position, size, and binary data",
-        "Shapes and images map correctly to IR Shape and Image elements on FixedPage",
-        "Unit tests verifying shape and image extraction from PPTX",
+        "Parse number format strings from XLSX styles (numFmt)",
+        "Apply formatting to cell values: currency (e.g., $1,234.56), percentage (e.g., 45.6%), dates (e.g., 2024-01-15)",
+        "Handle built-in number format IDs (0-49) and custom format strings",
+        "Formatted values appear as text in the IR (pre-formatted before Typst codegen)",
+        "Unit tests: cells with currency format, percentage format, date format, general number format",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 12,
-      "passes": true,
-      "notes": "Completed. 13 new tests (7 shape + 6 image). Shapes: rectangle/ellipse/line from <p:sp> with prstGeom, fill color (solidFill), border (a:ln). Images: <p:pic> with blip r:embed → slide .rels → ZIP media files. SolidFillCtx enum distinguishes shape fill vs border vs text color."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-013",
-      "title": "Typst codegen - TablePage support for spreadsheets",
-      "description": "As a developer, I need Typst codegen to handle TablePage so that XLSX spreadsheets can be rendered as tables in PDF.",
+      "id": "US-029",
+      "title": "ConvertOptions - sheet/slide selection and CLI flags",
+      "description": "As a user, I want to select specific sheets or slides for conversion via library options and CLI flags.",
       "acceptanceCriteria": [
-        "typst_gen.rs generates Typst markup for TablePage with spreadsheet-style table layout",
-        "Supports cell data rendering (text, numbers, dates)",
-        "Supports merged cells in the table layout",
-        "Applies page size and margins from TablePage configuration",
-        "Unit tests for TablePage codegen",
+        "Add sheet_names: Option<Vec<String>> to ConvertOptions for XLSX sheet filtering",
+        "Add slide_range: Option<Range> to ConvertOptions for PPTX slide filtering",
+        "XLSX parser filters sheets based on ConvertOptions.sheet_names",
+        "PPTX parser filters slides based on ConvertOptions.slide_range",
+        "Add --sheets flag to CLI (comma-separated sheet names)",
+        "Add --slides flag to CLI (range like 1-5 or single number)",
+        "Unit tests: XLSX conversion with specific sheet selected, PPTX conversion with slide range",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 13,
-      "passes": true,
-      "notes": "Completed. 8 TablePage codegen tests. Generates page setup (size + margins) and delegates to existing generate_table() for spreadsheet-style table layout. Supports cell data, merged cells (colspan/rowspan), column widths, multiple sheets."
-    },
-    {
-      "id": "US-014",
-      "title": "XLSX parser - cell data and basic table layout",
-      "description": "As a user, I want to convert XLSX spreadsheets to PDF where cell data (text, numbers, dates) is rendered in a table layout.",
-      "acceptanceCriteria": [
-        "Add umya-spreadsheet dependency to crates/office2pdf/Cargo.toml",
-        "Implement XlsxParser to extract sheet data into IR TablePage elements",
-        "Cell values (text, numbers, dates) are extracted correctly",
-        "Basic table structure (rows, columns) is preserved",
-        "Default sheet or all sheets are converted (based on ConvertOptions)",
-        "Unit tests verifying cell data extraction and table layout",
-        "cargo test --workspace passes",
-        "cargo clippy --workspace -- -D warnings passes"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": "Completed. 13 XlsxParser tests. Uses umya-spreadsheet for XLSX parsing. Extracts all sheets as TablePage, cell values (text/numbers/dates as strings), column widths, and basic table structure (rows × cols grid). Tuple coords are (col, row) in umya-spreadsheet."
-    },
-    {
-      "id": "US-015",
-      "title": "XLSX parser - cell merging",
-      "description": "As a user, I want merged cells in XLSX spreadsheets to be correctly represented in the converted PDF.",
-      "acceptanceCriteria": [
-        "XlsxParser detects merged cell ranges in XLSX sheets",
-        "Merged cells map to IR TableCell with correct colspan/rowspan values",
-        "Content of merged cells appears in the top-left cell only",
-        "Unit tests verifying cell merging extraction",
-        "cargo test --workspace passes",
-        "cargo clippy --workspace -- -D warnings passes"
-      ],
-      "priority": 15,
-      "passes": true,
-      "notes": "Completed. 7 cell merging tests. Uses sheet.get_merge_cells() → Range API with CellPos type alias. Expands grid to cover merge extents. Skips non-top-left cells in merged regions."
-    },
-    {
-      "id": "US-016",
-      "title": "Wire CLI to conversion pipeline and add integration tests",
-      "description": "As a user, I want the office2pdf CLI to actually convert DOCX, PPTX, and XLSX files to PDF. Wire the CLI to the library's conversion functions and add end-to-end integration tests.",
-      "acceptanceCriteria": [
-        "CLI main.rs calls office2pdf::convert() or convert_with_options() based on CLI arguments",
-        "CLI correctly handles input/output file paths, --output flag",
-        "CLI prints helpful error messages for unsupported formats or missing files",
-        "Integration test: create a minimal DOCX programmatically, convert to PDF, verify PDF is non-empty and valid",
-        "Integration test: create a minimal XLSX programmatically, convert to PDF, verify PDF is non-empty and valid",
-        "Integration test: create a minimal PPTX programmatically, convert to PDF, verify PDF is non-empty and valid",
-        "cargo test --workspace passes",
-        "cargo clippy --workspace -- -D warnings passes"
-      ],
-      "priority": 16,
-      "passes": true,
-      "notes": "Completed. 7 integration tests: 3 end-to-end format tests (DOCX→PDF, XLSX→PDF, PPTX→PDF), 1 DOCX-with-table test, 1 file-path round-trip test, 2 error handling tests. CLI was already wired (convert() + --output flag + error messages)."
+      "passes": false,
+      "notes": ""
     }
   ]
 }
