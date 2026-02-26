@@ -641,8 +641,14 @@ fn generate_run(out: &mut String, run: &Run) {
     let has_text_props = has_text_properties(style);
     let needs_underline = matches!(style.underline, Some(true));
     let needs_strike = matches!(style.strikethrough, Some(true));
+    let has_link = run.href.is_some();
 
-    // Wrap with decorations (outermost first)
+    // Wrap with link (outermost)
+    if let Some(ref href) = run.href {
+        let _ = write!(out, "#link(\"{href}\")[");
+    }
+
+    // Wrap with decorations
     if needs_strike {
         out.push_str("#strike[");
     }
@@ -664,6 +670,9 @@ fn generate_run(out: &mut String, run: &Run) {
         out.push(']');
     }
     if needs_strike {
+        out.push(']');
+    }
+    if has_link {
         out.push(']');
     }
 }
@@ -770,6 +779,7 @@ mod tests {
             runs: vec![Run {
                 text: text.to_string(),
                 style: TextStyle::default(),
+                href: None,
             }],
         })
     }
@@ -815,6 +825,7 @@ mod tests {
                     bold: Some(true),
                     ..TextStyle::default()
                 },
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -835,6 +846,7 @@ mod tests {
                     italic: Some(true),
                     ..TextStyle::default()
                 },
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -855,6 +867,7 @@ mod tests {
                     underline: Some(true),
                     ..TextStyle::default()
                 },
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -875,6 +888,7 @@ mod tests {
                     font_size: Some(24.0),
                     ..TextStyle::default()
                 },
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -894,6 +908,7 @@ mod tests {
                     color: Some(Color::new(255, 0, 0)),
                     ..TextStyle::default()
                 },
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -916,6 +931,7 @@ mod tests {
                     color: Some(Color::new(0, 128, 255)),
                     ..TextStyle::default()
                 },
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -936,6 +952,7 @@ mod tests {
             runs: vec![Run {
                 text: "Centered".to_string(),
                 style: TextStyle::default(),
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -955,6 +972,7 @@ mod tests {
             runs: vec![Run {
                 text: "Right".to_string(),
                 style: TextStyle::default(),
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -974,6 +992,7 @@ mod tests {
             runs: vec![Run {
                 text: "Justified text".to_string(),
                 style: TextStyle::default(),
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -993,6 +1012,7 @@ mod tests {
             runs: vec![Run {
                 text: "Double spaced".to_string(),
                 style: TextStyle::default(),
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1012,6 +1032,7 @@ mod tests {
             runs: vec![Run {
                 text: "Exact spaced".to_string(),
                 style: TextStyle::default(),
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1040,6 +1061,7 @@ mod tests {
                 Run {
                     text: "Normal ".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 },
                 Run {
                     text: "bold".to_string(),
@@ -1047,10 +1069,12 @@ mod tests {
                         bold: Some(true),
                         ..TextStyle::default()
                     },
+                    href: None,
                 },
                 Run {
                     text: " normal again".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 },
             ],
         })])]);
@@ -1094,6 +1118,7 @@ mod tests {
                 runs: vec![Run {
                     text: text.to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 }],
             })],
             ..TableCell::default()
@@ -1136,6 +1161,7 @@ mod tests {
                 runs: vec![Run {
                     text: "Merged".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 }],
             })],
             col_span: 2,
@@ -1171,6 +1197,7 @@ mod tests {
                 runs: vec![Run {
                     text: "Tall".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 }],
             })],
             row_span: 2,
@@ -1206,6 +1233,7 @@ mod tests {
                 runs: vec![Run {
                     text: "Big".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 }],
             })],
             col_span: 2,
@@ -1254,6 +1282,7 @@ mod tests {
                 runs: vec![Run {
                     text: "Colored".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 }],
             })],
             background: Some(Color::new(200, 200, 200)),
@@ -1283,6 +1312,7 @@ mod tests {
                 runs: vec![Run {
                     text: "Bordered".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 }],
             })],
             border: Some(CellBorder {
@@ -1327,6 +1357,7 @@ mod tests {
                         font_size: Some(14.0),
                         ..TextStyle::default()
                     },
+                    href: None,
                 }],
             })],
             ..TableCell::default()
@@ -1394,6 +1425,7 @@ mod tests {
                 runs: vec![Run {
                     text: "All borders".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 }],
             })],
             border: Some(CellBorder {
@@ -1449,6 +1481,7 @@ mod tests {
                     runs: vec![Run {
                         text: "First para".to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     }],
                 }),
                 Block::Paragraph(Paragraph {
@@ -1456,6 +1489,7 @@ mod tests {
                     runs: vec![Run {
                         text: "Second para".to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     }],
                 }),
             ],
@@ -1535,6 +1569,7 @@ mod tests {
             runs: vec![Run {
                 text: "Spaced paragraph".to_string(),
                 style: TextStyle::default(),
+                href: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1744,6 +1779,7 @@ mod tests {
                 runs: vec![Run {
                     text: text.to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 }],
             })]),
         }
@@ -2087,6 +2123,7 @@ mod tests {
                                 runs: vec![Run {
                                     text: text.to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2198,6 +2235,7 @@ mod tests {
                             runs: vec![Run {
                                 text: "Merged".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
                             }],
                         })],
                         col_span: 2,
@@ -2213,6 +2251,7 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Left".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2223,6 +2262,7 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Right".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2262,6 +2302,7 @@ mod tests {
                             runs: vec![Run {
                                 text: "Col1".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2272,6 +2313,7 @@ mod tests {
                             runs: vec![Run {
                                 text: "Col2".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2339,6 +2381,7 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Tall".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
                                 }],
                             })],
                             row_span: 2,
@@ -2350,6 +2393,7 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Top".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2364,6 +2408,7 @@ mod tests {
                             runs: vec![Run {
                                 text: "Bottom".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2405,6 +2450,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Apple".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 0,
@@ -2415,6 +2461,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Banana".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 0,
@@ -2450,6 +2497,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Step 1".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 0,
@@ -2460,6 +2508,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Step 2".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 0,
@@ -2495,6 +2544,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Parent".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 0,
@@ -2505,6 +2555,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Child".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 1,
@@ -2515,6 +2566,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Sibling".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 0,
@@ -2555,6 +2607,7 @@ mod tests {
                     elements: vec![HFInline::Run(Run {
                         text: "Document Title".to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     })],
                 }],
             }),
@@ -2588,6 +2641,7 @@ mod tests {
                         HFInline::Run(Run {
                             text: "Page ".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }),
                         HFInline::PageNumber,
                     ],
@@ -2625,6 +2679,7 @@ mod tests {
                     elements: vec![HFInline::Run(Run {
                         text: "Header".to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     })],
                 }],
             }),
@@ -2711,6 +2766,7 @@ mod tests {
                             runs: vec![Run {
                                 text: "A1".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2721,6 +2777,7 @@ mod tests {
                             runs: vec![Run {
                                 text: "B1".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2759,5 +2816,120 @@ mod tests {
         assert!(output.source.contains("columns: (100pt, 100pt)"));
         assert!(output.source.contains("A1"));
         assert!(output.source.contains("B1"));
+    }
+
+    // ----- Hyperlink codegen tests (US-030) -----
+
+    #[test]
+    fn test_hyperlink_generates_typst_link() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Click me".to_string(),
+                style: TextStyle::default(),
+                href: Some("https://example.com".to_string()),
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains(r#"#link("https://example.com")[Click me]"#),
+            "Expected Typst link markup, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_hyperlink_with_styled_text() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Bold link".to_string(),
+                style: TextStyle {
+                    bold: Some(true),
+                    ..TextStyle::default()
+                },
+                href: Some("https://example.com".to_string()),
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        // Should have link wrapping styled text
+        assert!(
+            output.source.contains(r#"#link("https://example.com")["#),
+            "Expected Typst link markup, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#text(weight: \"bold\")"),
+            "Expected bold text inside link, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_hyperlink_mixed_with_plain_text() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![
+                Run {
+                    text: "Visit ".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                },
+                Run {
+                    text: "Rust".to_string(),
+                    style: TextStyle::default(),
+                    href: Some("https://rust-lang.org".to_string()),
+                },
+                Run {
+                    text: " for more.".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                },
+            ],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("Visit "),
+            "Expected plain text, got: {}",
+            output.source
+        );
+        assert!(
+            output
+                .source
+                .contains(r#"#link("https://rust-lang.org")[Rust]"#),
+            "Expected Typst link markup, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains(" for more."),
+            "Expected plain text after link, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_hyperlink_url_with_special_chars_escaped() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Link".to_string(),
+                style: TextStyle::default(),
+                href: Some("https://example.com/path?q=1&r=2".to_string()),
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains(r#"#link("https://example.com/path?q=1&r=2")[Link]"#),
+            "Expected URL with special chars in link, got: {}",
+            output.source
+        );
     }
 }

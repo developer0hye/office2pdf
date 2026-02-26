@@ -262,6 +262,7 @@ impl Parser for XlsxParser {
                             runs: vec![Run {
                                 text: value,
                                 style: text_style,
+                                href: None,
                             }],
                         })]
                     };

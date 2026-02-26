@@ -15,6 +15,18 @@ pub struct DocxParser;
 /// Map from relationship ID → PNG image bytes.
 type ImageMap = HashMap<String, Vec<u8>>;
 
+/// Map from relationship ID → hyperlink URL.
+type HyperlinkMap = HashMap<String, String>;
+
+/// Build a lookup map from the DOCX's hyperlinks (reader-populated field).
+/// The reader stores hyperlinks as `(rid, url, type)` in `docx.hyperlinks`.
+fn build_hyperlink_map(docx: &docx_rs::Docx) -> HyperlinkMap {
+    docx.hyperlinks
+        .iter()
+        .map(|(rid, url, _type)| (rid.clone(), url.clone()))
+        .collect()
+}
+
 /// Build a lookup map from the DOCX's embedded images.
 /// docx-rs converts all images to PNG; we use the PNG bytes.
 fn build_image_map(docx: &docx_rs::Docx) -> ImageMap {
@@ -300,6 +312,7 @@ impl Parser for DocxParser {
 
         let (size, margins) = extract_page_setup(&docx.document.section_property);
         let images = build_image_map(&docx);
+        let hyperlinks = build_hyperlink_map(&docx);
         let num_kinds = build_num_kind_map(&docx.numberings);
         let style_map = build_style_map(&docx.styles);
         let mut warnings = Vec::new();
@@ -308,10 +321,10 @@ impl Parser for DocxParser {
         for (idx, child) in docx.document.children.iter().enumerate() {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
                 docx_rs::DocumentChild::Paragraph(para) => {
-                    convert_paragraph_element(para, &images, &style_map)
+                    convert_paragraph_element(para, &images, &hyperlinks, &style_map)
                 }
                 docx_rs::DocumentChild::Table(table) => TaggedElement::Plain(vec![Block::Table(
-                    convert_table(table, &images, &style_map),
+                    convert_table(table, &images, &hyperlinks, &style_map),
                 )]),
                 _ => TaggedElement::Plain(vec![]),
             }));
@@ -452,6 +465,7 @@ fn extract_hf_run_elements(
                     elements.push(HFInline::Run(Run {
                         text: t.text.clone(),
                         style: style.clone(),
+                        href: None,
                     }));
                 }
             }
@@ -460,6 +474,7 @@ fn extract_hf_run_elements(
                     elements.push(HFInline::Run(Run {
                         text: "\t".to_string(),
                         style: style.clone(),
+                        href: None,
                     }));
                 }
             }
@@ -514,13 +529,14 @@ fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
 fn convert_paragraph_element(
     para: &docx_rs::Paragraph,
     images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
 ) -> TaggedElement {
     let num_info = extract_num_info(para);
 
     // Build the paragraph IR
     let mut blocks = Vec::new();
-    convert_paragraph_blocks(para, &mut blocks, images, style_map);
+    convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map);
 
     match num_info {
         Some(info) => {
@@ -568,6 +584,7 @@ fn convert_paragraph_blocks(
     para: &docx_rs::Paragraph,
     out: &mut Vec<Block>,
     images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
 ) {
     // Emit page break before the paragraph if requested
@@ -583,25 +600,48 @@ fn convert_paragraph_blocks(
     let mut inline_images: Vec<Block> = Vec::new();
 
     for child in &para.children {
-        if let docx_rs::ParagraphChild::Run(run) = child {
-            // Check for inline images in this run
-            for run_child in &run.children {
-                if let docx_rs::RunChild::Drawing(drawing) = run_child
-                    && let Some(img_block) = extract_drawing_image(drawing, images)
-                {
-                    inline_images.push(img_block);
+        match child {
+            docx_rs::ParagraphChild::Run(run) => {
+                // Check for inline images in this run
+                for run_child in &run.children {
+                    if let docx_rs::RunChild::Drawing(drawing) = run_child
+                        && let Some(img_block) = extract_drawing_image(drawing, images)
+                    {
+                        inline_images.push(img_block);
+                    }
+                }
+
+                // Extract text from the run
+                let text = extract_run_text(run);
+                if !text.is_empty() {
+                    let explicit_style = extract_run_style(&run.run_property);
+                    runs.push(Run {
+                        text,
+                        style: merge_text_style(&explicit_style, resolved_style),
+                        href: None,
+                    });
                 }
             }
+            docx_rs::ParagraphChild::Hyperlink(hyperlink) => {
+                // Resolve the hyperlink URL from document relationships
+                let href = resolve_hyperlink_url(hyperlink, hyperlinks);
 
-            // Extract text from the run
-            let text = extract_run_text(run);
-            if !text.is_empty() {
-                let explicit_style = extract_run_style(&run.run_property);
-                runs.push(Run {
-                    text,
-                    style: merge_text_style(&explicit_style, resolved_style),
-                });
+                // Extract runs from inside the hyperlink element
+                for hchild in &hyperlink.children {
+                    if let docx_rs::ParagraphChild::Run(run) = hchild {
+                        let text = extract_run_text(run);
+                        if !text.is_empty() {
+                            let explicit_style = extract_run_style(&run.run_property);
+                            runs.push(Run {
+                                text,
+                                style: merge_text_style(&explicit_style, resolved_style),
+                                href: href.clone(),
+                            });
+                        }
+                    }
+                }
             }
+            _ => {}
         }
     }
 
@@ -735,11 +775,16 @@ fn extract_line_spacing(
 /// - Vertical merging via vMerge restart/continue (rowspan)
 /// - Cell background color via shading
 /// - Cell borders
-fn convert_table(table: &docx_rs::Table, images: &ImageMap, style_map: &StyleMap) -> Table {
+fn convert_table(
+    table: &docx_rs::Table,
+    images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
+    style_map: &StyleMap,
+) -> Table {
     let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
-    let raw_rows = extract_raw_rows(table, images, style_map);
+    let raw_rows = extract_raw_rows(table, images, hyperlinks, style_map);
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
@@ -764,6 +809,7 @@ struct RawCell {
 fn extract_raw_rows(
     table: &docx_rs::Table,
     images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
 ) -> Vec<Vec<RawCell>> {
     let mut raw_rows = Vec::new();
@@ -789,7 +835,7 @@ fn extract_raw_rows(
                 .and_then(|v| v.as_str())
                 .map(String::from);
 
-            let content = extract_cell_content(cell, images, style_map);
+            let content = extract_cell_content(cell, images, hyperlinks, style_map);
             let border = prop_json
                 .as_ref()
                 .and_then(|j| j.get("borders"))
@@ -884,16 +930,22 @@ fn count_vmerge_span(raw_rows: &[Vec<RawCell>], start_row: usize, col_index: usi
 fn extract_cell_content(
     cell: &docx_rs::TableCell,
     images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
 ) -> Vec<Block> {
     let mut blocks = Vec::new();
     for content in &cell.children {
         match content {
             docx_rs::TableCellContent::Paragraph(para) => {
-                convert_paragraph_blocks(para, &mut blocks, images, style_map);
+                convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map);
             }
             docx_rs::TableCellContent::Table(nested_table) => {
-                blocks.push(Block::Table(convert_table(nested_table, images, style_map)));
+                blocks.push(Block::Table(convert_table(
+                    nested_table,
+                    images,
+                    hyperlinks,
+                    style_map,
+                )));
             }
             _ => {}
         }
@@ -1018,6 +1070,27 @@ fn parse_hex_color(hex: &str) -> Option<Color> {
     let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
     let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
     Some(Color::new(r, g, b))
+}
+
+/// Resolve a hyperlink's URL from document relationships.
+/// For external hyperlinks, looks up the relationship ID in the hyperlink map.
+/// For anchor hyperlinks (internal bookmarks), returns None.
+fn resolve_hyperlink_url(
+    hyperlink: &docx_rs::Hyperlink,
+    hyperlinks: &HyperlinkMap,
+) -> Option<String> {
+    match &hyperlink.link {
+        docx_rs::HyperlinkData::External { rid, path } => {
+            // First try the path (populated during writing),
+            // then fall back to the relationship map (populated during reading)
+            if !path.is_empty() {
+                Some(path.clone())
+            } else {
+                hyperlinks.get(rid).cloned()
+            }
+        }
+        docx_rs::HyperlinkData::Anchor { .. } => None, // internal bookmark, skip
+    }
 }
 
 /// Extract text content from a docx-rs Run.
@@ -3295,5 +3368,103 @@ mod tests {
 
         assert_eq!(run.style.color, Some(Color::new(255, 0, 0)));
         assert_eq!(run.style.font_family, Some("Georgia".to_string()));
+    }
+
+    // ----- Hyperlink tests (US-030) -----
+
+    #[test]
+    fn test_hyperlink_single_link_in_paragraph() {
+        let link = docx_rs::Hyperlink::new("https://example.com", docx_rs::HyperlinkType::External)
+            .add_run(docx_rs::Run::new().add_text("Click here"));
+        let para = docx_rs::Paragraph::new().add_hyperlink(link);
+        let data = build_docx_bytes(vec![para]);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        let para = match &page.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+
+        assert_eq!(para.runs.len(), 1);
+        assert_eq!(para.runs[0].text, "Click here");
+        assert_eq!(para.runs[0].href, Some("https://example.com".to_string()));
+    }
+
+    #[test]
+    fn test_hyperlink_mixed_text_and_link() {
+        let link =
+            docx_rs::Hyperlink::new("https://rust-lang.org", docx_rs::HyperlinkType::External)
+                .add_run(docx_rs::Run::new().add_text("Rust"));
+        let para = docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("Visit "))
+            .add_hyperlink(link)
+            .add_run(docx_rs::Run::new().add_text(" for more."));
+        let data = build_docx_bytes(vec![para]);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        let para = match &page.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+
+        // Should have 3 runs: "Visit ", hyperlink "Rust", " for more."
+        assert_eq!(para.runs.len(), 3);
+
+        assert_eq!(para.runs[0].text, "Visit ");
+        assert_eq!(para.runs[0].href, None);
+
+        assert_eq!(para.runs[1].text, "Rust");
+        assert_eq!(para.runs[1].href, Some("https://rust-lang.org".to_string()));
+
+        assert_eq!(para.runs[2].text, " for more.");
+        assert_eq!(para.runs[2].href, None);
+    }
+
+    #[test]
+    fn test_hyperlink_multiple_links_in_paragraph() {
+        let link1 = docx_rs::Hyperlink::new("https://first.com", docx_rs::HyperlinkType::External)
+            .add_run(docx_rs::Run::new().add_text("First"));
+        let link2 = docx_rs::Hyperlink::new("https://second.com", docx_rs::HyperlinkType::External)
+            .add_run(docx_rs::Run::new().add_text("Second"));
+        let para = docx_rs::Paragraph::new()
+            .add_hyperlink(link1)
+            .add_run(docx_rs::Run::new().add_text(" and "))
+            .add_hyperlink(link2);
+        let data = build_docx_bytes(vec![para]);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        let para = match &page.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+
+        assert_eq!(para.runs.len(), 3);
+
+        assert_eq!(para.runs[0].text, "First");
+        assert_eq!(para.runs[0].href, Some("https://first.com".to_string()));
+
+        assert_eq!(para.runs[1].text, " and ");
+        assert_eq!(para.runs[1].href, None);
+
+        assert_eq!(para.runs[2].text, "Second");
+        assert_eq!(para.runs[2].href, Some("https://second.com".to_string()));
     }
 }

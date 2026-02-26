@@ -65,6 +65,8 @@ pub struct Paragraph {
 pub struct Run {
     pub text: String,
     pub style: TextStyle,
+    /// Optional hyperlink URL. When present, the run is rendered as a clickable link.
+    pub href: Option<String>,
 }
 
 /// A table.
@@ -189,6 +191,7 @@ mod tests {
                 runs: vec![Run {
                     text: "Item 1".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 }],
             }],
             level: 0,
@@ -208,6 +211,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Bullet 1".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 0,
@@ -218,6 +222,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Bullet 2".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 0,
@@ -238,6 +243,7 @@ mod tests {
                     runs: vec![Run {
                         text: "Step 1".to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     }],
                 }],
                 level: 0,
@@ -258,6 +264,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Top".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 0,
@@ -268,6 +275,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Nested".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }],
                     level: 1,
@@ -286,6 +294,7 @@ mod tests {
                 Run {
                     text: "Hello ".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 },
                 Run {
                     text: "world".to_string(),
@@ -293,6 +302,7 @@ mod tests {
                         bold: Some(true),
                         ..TextStyle::default()
                     },
+                    href: None,
                 },
             ],
         };
@@ -309,6 +319,7 @@ mod tests {
                 elements: vec![HFInline::Run(Run {
                     text: "My Header".to_string(),
                     style: TextStyle::default(),
+                    href: None,
                 })],
             }],
         };
@@ -329,6 +340,7 @@ mod tests {
                     HFInline::Run(Run {
                         text: "Page ".to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     }),
                     HFInline::PageNumber,
                 ],

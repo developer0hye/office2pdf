@@ -76,6 +76,7 @@ mod tests {
                     runs: vec![Run {
                         text: text.to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     }],
                 })],
                 header: None,
@@ -175,6 +176,7 @@ mod tests {
                                 font_size: Some(16.0),
                                 ..TextStyle::default()
                             },
+                            href: None,
                         },
                         Run {
                             text: "and italic".to_string(),
@@ -183,6 +185,7 @@ mod tests {
                                 color: Some(Color::new(255, 0, 0)),
                                 ..TextStyle::default()
                             },
+                            href: None,
                         },
                     ],
                 })],
@@ -209,6 +212,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Page 1".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     })],
                     header: None,
@@ -222,6 +226,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Page 2".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     })],
                     header: None,
@@ -248,6 +253,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Before break".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }),
                     Block::PageBreak,
@@ -256,6 +262,7 @@ mod tests {
                         runs: vec![Run {
                             text: "After break".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }),
                 ],
@@ -366,6 +373,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Image below:".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }),
                     Block::Image(ImageData {
@@ -379,6 +387,7 @@ mod tests {
                         runs: vec![Run {
                             text: "Image above.".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         }],
                     }),
                 ],
@@ -613,6 +622,7 @@ mod tests {
                             font_family: Some("Arial".to_string()),
                             ..TextStyle::default()
                         },
+                        href: None,
                     }],
                 })],
                 header: None,
@@ -642,6 +652,7 @@ mod tests {
                                 font_family: Some("Calibri".to_string()),
                                 ..TextStyle::default()
                             },
+                            href: None,
                         },
                         Run {
                             text: "and Times New Roman text".to_string(),
@@ -649,6 +660,7 @@ mod tests {
                                 font_family: Some("Times New Roman".to_string()),
                                 ..TextStyle::default()
                             },
+                            href: None,
                         },
                     ],
                 })],
@@ -769,6 +781,7 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Hello".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
                                 }],
                             }],
                             level: 0,
@@ -779,6 +792,7 @@ mod tests {
                                 runs: vec![Run {
                                     text: "World".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
                                 }],
                             }],
                             level: 0,
@@ -864,6 +878,7 @@ mod tests {
                     runs: vec![Run {
                         text: "Body content".to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     }],
                 })],
                 header: Some(ir::HeaderFooter {
@@ -872,6 +887,7 @@ mod tests {
                         elements: vec![ir::HFInline::Run(Run {
                             text: "My Header".to_string(),
                             style: TextStyle::default(),
+                            href: None,
                         })],
                     }],
                 }),
@@ -896,6 +912,7 @@ mod tests {
                     runs: vec![Run {
                         text: "Body content".to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     }],
                 })],
                 header: None,
@@ -906,6 +923,7 @@ mod tests {
                             ir::HFInline::Run(Run {
                                 text: "Page ".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
                             }),
                             ir::HFInline::PageNumber,
                         ],
@@ -970,6 +988,7 @@ mod tests {
                     runs: vec![Run {
                         text: "Landscape page".to_string(),
                         style: TextStyle::default(),
+                        href: None,
                     }],
                     style: ParagraphStyle::default(),
                 })],
