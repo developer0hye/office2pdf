@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 
+use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Block, BorderSide, CellBorder, Color, Document, Margins, Metadata, Page, PageSize, Paragraph,
@@ -187,7 +188,11 @@ fn build_merge_maps(
 }
 
 impl Parser for XlsxParser {
-    fn parse(&self, data: &[u8]) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
+    fn parse(
+        &self,
+        data: &[u8],
+        options: &ConvertOptions,
+    ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let cursor = Cursor::new(data);
         let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse XLSX: {e}")))?;
@@ -196,6 +201,13 @@ impl Parser for XlsxParser {
         let warnings = Vec::new();
 
         for sheet in book.get_sheet_collection() {
+            // Filter by sheet name if specified
+            if let Some(ref names) = options.sheet_names
+                && !names.iter().any(|n| n == sheet.get_name())
+            {
+                continue;
+            }
+
             let (mut max_col, mut max_row) = sheet.get_highest_column_and_row();
             if max_col == 0 || max_row == 0 {
                 continue; // skip empty sheets
@@ -374,7 +386,7 @@ mod tests {
     fn test_parse_single_cell() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Hello")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         assert_eq!(doc.pages.len(), 1);
         let tp = get_table_page(&doc, 0);
@@ -391,7 +403,7 @@ mod tests {
             &[("A1", "Name"), ("B1", "Age"), ("A2", "Alice"), ("B2", "30")],
         );
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows.len(), 2);
@@ -407,7 +419,7 @@ mod tests {
         // A1 filled, B1 empty, A2 empty, B2 filled → 2x2 grid with gaps
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Top-Left"), ("B2", "Bottom-Right")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows.len(), 2);
@@ -426,7 +438,7 @@ mod tests {
     fn test_parse_numbers() {
         let data = build_xlsx_bytes("Numbers", &[("A1", "42"), ("B1", "3.14")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "42");
@@ -437,7 +449,7 @@ mod tests {
     fn test_parse_dates_as_text() {
         let data = build_xlsx_bytes("Dates", &[("A1", "2024-01-15"), ("A2", "December 25")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "2024-01-15");
@@ -450,7 +462,7 @@ mod tests {
     fn test_sheet_name_preserved() {
         let data = build_xlsx_bytes("Financial Report", &[("A1", "Revenue")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.name, "Financial Report");
@@ -465,7 +477,7 @@ mod tests {
             ("Sheet2", &[("A1", "Data2")]),
         ]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         assert_eq!(doc.pages.len(), 2);
         let tp1 = get_table_page(&doc, 0);
@@ -482,7 +494,7 @@ mod tests {
     fn test_column_widths_default() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Hello"), ("B1", "World")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.column_widths.len(), 2);
@@ -502,7 +514,7 @@ mod tests {
     fn test_page_size_defaults() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Test")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let default_size = PageSize::default();
@@ -520,7 +532,7 @@ mod tests {
             &[("A1", "1"), ("C1", "3"), ("B2", "5"), ("C3", "9")],
         );
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows.len(), 3, "Expected 3 rows");
@@ -535,7 +547,7 @@ mod tests {
     #[test]
     fn test_parse_invalid_data_returns_error() {
         let parser = XlsxParser;
-        let result = parser.parse(b"not an xlsx file");
+        let result = parser.parse(b"not an xlsx file", &ConvertOptions::default());
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
@@ -550,7 +562,7 @@ mod tests {
     fn test_empty_cells_have_no_content() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Only A1"), ("C1", "Only C1")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         // B1 should be empty (no paragraphs)
@@ -564,7 +576,7 @@ mod tests {
     fn test_cell_default_span_values() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Test")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let cell = &tp.table.rows[0].cells[0];
@@ -603,7 +615,7 @@ mod tests {
         // A1:B1 merged → colspan=2 on A1, B1 is skipped
         let data = build_xlsx_with_merges("Sheet1", &[("A1", "Merged")], &["A1:B1"]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(
@@ -621,7 +633,7 @@ mod tests {
         // A1:A2 merged → rowspan=2 on A1, A2 is skipped
         let data = build_xlsx_with_merges("Sheet1", &[("A1", "Tall")], &["A1:A2"]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         // Row 0: one cell with rowspan 2
@@ -642,7 +654,7 @@ mod tests {
             &["A1:B2"],
         );
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         // Row 0: merged cell (A1:B2) + C1
@@ -665,7 +677,7 @@ mod tests {
             &["A1:B1"],
         );
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows[0].cells.len(), 1);
@@ -681,7 +693,7 @@ mod tests {
             &["A1:B1", "A2:A3"],
         );
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         // Row 0: A1:B1 merged (colspan=2)
@@ -703,7 +715,7 @@ mod tests {
         // No merges: cells should have default span values
         let data = build_xlsx_bytes("Sheet1", &[("A1", "X"), ("B1", "Y")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows[0].cells.len(), 2);
@@ -718,7 +730,7 @@ mod tests {
         // A1:D1 merged → colspan=4
         let data = build_xlsx_with_merges("Sheet1", &[("A1", "Title")], &["A1:D1"]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows[0].cells.len(), 1);
@@ -757,7 +769,7 @@ mod tests {
             cell.get_style_mut().get_font_mut().set_bold(true);
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let style = first_run_style(&tp.table.rows[0].cells[0]);
@@ -772,7 +784,7 @@ mod tests {
             cell.get_style_mut().get_font_mut().set_italic(true);
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let style = first_run_style(&tp.table.rows[0].cells[0]);
@@ -790,7 +802,7 @@ mod tests {
                 .set_argb("FFFF0000");
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let style = first_run_style(&tp.table.rows[0].cells[0]);
@@ -807,7 +819,7 @@ mod tests {
             font.set_size(14.0);
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let style = first_run_style(&tp.table.rows[0].cells[0]);
@@ -823,7 +835,7 @@ mod tests {
             cell.get_style_mut().set_background_color("FFFFFF00");
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let cell = &tp.table.rows[0].cells[0];
@@ -849,7 +861,7 @@ mod tests {
             borders.get_top_mut().get_color_mut().set_argb("FFFF0000");
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let cell = &tp.table.rows[0].cells[0];
@@ -871,7 +883,7 @@ mod tests {
             sheet.get_row_dimension_mut(&1).set_height(30.0);
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let row = &tp.table.rows[0];
@@ -883,7 +895,7 @@ mod tests {
         // Plain cell with no explicit formatting → default TextStyle, no border, no background
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Plain")]);
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let cell = &tp.table.rows[0].cells[0];
@@ -907,7 +919,7 @@ mod tests {
                 .set_format_code(umya_spreadsheet::NumberingFormat::FORMAT_CURRENCY_USD_SIMPLE);
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let text = cell_text(&tp.table.rows[0].cells[0]);
@@ -928,7 +940,7 @@ mod tests {
                 .set_format_code(umya_spreadsheet::NumberingFormat::FORMAT_PERCENTAGE);
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let text = cell_text(&tp.table.rows[0].cells[0]);
@@ -949,7 +961,7 @@ mod tests {
                 .set_format_code(umya_spreadsheet::NumberingFormat::FORMAT_PERCENTAGE_00);
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let text = cell_text(&tp.table.rows[0].cells[0]);
@@ -971,7 +983,7 @@ mod tests {
                 .set_format_code(umya_spreadsheet::NumberingFormat::FORMAT_DATE_YYYYMMDD);
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let text = cell_text(&tp.table.rows[0].cells[0]);
@@ -992,7 +1004,7 @@ mod tests {
                 .set_format_code("#,##0");
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let text = cell_text(&tp.table.rows[0].cells[0]);
@@ -1007,7 +1019,7 @@ mod tests {
             sheet.get_cell_mut("B1").set_value("3.14");
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "42");
@@ -1025,7 +1037,7 @@ mod tests {
                 .set_number_format_id(4);
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let text = cell_text(&tp.table.rows[0].cells[0]);
@@ -1047,7 +1059,7 @@ mod tests {
                 .set_format_code("0.000");
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let text = cell_text(&tp.table.rows[0].cells[0]);
@@ -1074,7 +1086,7 @@ mod tests {
             borders.get_left_mut().get_color_mut().set_argb("FF00FF00"); // Green border
         });
         let parser = XlsxParser;
-        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let cell = &tp.table.rows[0].cells[0];
@@ -1088,5 +1100,80 @@ mod tests {
         let left = border.left.as_ref().expect("Expected left border");
         assert!((left.width - 2.0).abs() < 0.01);
         assert_eq!(left.color, Color::new(0, 255, 0));
+    }
+
+    // ----- US-029: Sheet selection tests -----
+
+    #[test]
+    fn test_sheet_filter_single_sheet() {
+        let data = build_xlsx_multi_sheet(&[
+            ("Sales", &[("A1", "Revenue")]),
+            ("Expenses", &[("A1", "Cost")]),
+            ("Summary", &[("A1", "Total")]),
+        ]);
+        let parser = XlsxParser;
+        let opts = ConvertOptions {
+            sheet_names: Some(vec!["Expenses".to_string()]),
+            ..Default::default()
+        };
+        let (doc, _warnings) = parser.parse(&data, &opts).unwrap();
+
+        assert_eq!(doc.pages.len(), 1, "Should only include 1 sheet");
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(tp.name, "Expenses");
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Cost");
+    }
+
+    #[test]
+    fn test_sheet_filter_multiple_sheets() {
+        let data = build_xlsx_multi_sheet(&[
+            ("Sales", &[("A1", "Revenue")]),
+            ("Expenses", &[("A1", "Cost")]),
+            ("Summary", &[("A1", "Total")]),
+        ]);
+        let parser = XlsxParser;
+        let opts = ConvertOptions {
+            sheet_names: Some(vec!["Sales".to_string(), "Summary".to_string()]),
+            ..Default::default()
+        };
+        let (doc, _warnings) = parser.parse(&data, &opts).unwrap();
+
+        assert_eq!(doc.pages.len(), 2, "Should include 2 sheets");
+        let tp0 = get_table_page(&doc, 0);
+        let tp1 = get_table_page(&doc, 1);
+        assert_eq!(tp0.name, "Sales");
+        assert_eq!(tp1.name, "Summary");
+    }
+
+    #[test]
+    fn test_sheet_filter_none_includes_all() {
+        let data =
+            build_xlsx_multi_sheet(&[("Sheet1", &[("A1", "A")]), ("Sheet2", &[("A1", "B")])]);
+        let parser = XlsxParser;
+        let opts = ConvertOptions {
+            sheet_names: None,
+            ..Default::default()
+        };
+        let (doc, _warnings) = parser.parse(&data, &opts).unwrap();
+
+        assert_eq!(doc.pages.len(), 2, "None should include all sheets");
+    }
+
+    #[test]
+    fn test_sheet_filter_nonexistent_name() {
+        let data =
+            build_xlsx_multi_sheet(&[("Sheet1", &[("A1", "A")]), ("Sheet2", &[("A1", "B")])]);
+        let parser = XlsxParser;
+        let opts = ConvertOptions {
+            sheet_names: Some(vec!["DoesNotExist".to_string()]),
+            ..Default::default()
+        };
+        let (doc, _warnings) = parser.parse(&data, &opts).unwrap();
+
+        assert_eq!(
+            doc.pages.len(),
+            0,
+            "No matching sheets should produce empty document"
+        );
     }
 }

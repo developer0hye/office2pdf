@@ -3,6 +3,7 @@ use std::process;
 
 use anyhow::{Context, Result};
 use clap::Parser;
+use office2pdf::config::{ConvertOptions, SlideRange};
 
 #[derive(Parser)]
 #[command(
@@ -17,6 +18,14 @@ struct Cli {
     /// Output PDF file path (default: input with .pdf extension)
     #[arg(short, long)]
     output: Option<PathBuf>,
+
+    /// XLSX sheet names to include (comma-separated, e.g. "Sheet1,Data")
+    #[arg(long, value_delimiter = ',')]
+    sheets: Option<Vec<String>>,
+
+    /// PPTX slide range to include (e.g. "1-5" or "3")
+    #[arg(long)]
+    slides: Option<String>,
 }
 
 fn main() {
@@ -33,8 +42,19 @@ fn run() -> Result<()> {
         .output
         .unwrap_or_else(|| cli.input.with_extension("pdf"));
 
-    let result =
-        office2pdf::convert(&cli.input).with_context(|| format!("converting {:?}", cli.input))?;
+    let slide_range = cli
+        .slides
+        .map(|s| SlideRange::parse(&s))
+        .transpose()
+        .map_err(|e| anyhow::anyhow!("invalid --slides value: {e}"))?;
+
+    let options = ConvertOptions {
+        sheet_names: cli.sheets,
+        slide_range,
+    };
+
+    let result = office2pdf::convert_with_options(&cli.input, &options)
+        .with_context(|| format!("converting {:?}", cli.input))?;
 
     // Print any warnings to stderr
     for warning in &result.warnings {

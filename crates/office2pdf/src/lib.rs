@@ -37,7 +37,7 @@ pub fn convert_with_options(
 pub fn convert_bytes(
     data: &[u8],
     format: Format,
-    _options: &ConvertOptions,
+    options: &ConvertOptions,
 ) -> Result<ConvertResult, ConvertError> {
     let parser: Box<dyn Parser> = match format {
         Format::Docx => Box::new(parser::docx::DocxParser),
@@ -45,7 +45,7 @@ pub fn convert_bytes(
         Format::Xlsx => Box::new(parser::xlsx::XlsxParser),
     };
 
-    let (doc, warnings) = parser.parse(data)?;
+    let (doc, warnings) = parser.parse(data, options)?;
     let pdf = render_document(&doc)?;
     Ok(ConvertResult { pdf, warnings })
 }
