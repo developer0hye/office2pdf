@@ -3,8 +3,9 @@ use std::fmt::Write;
 use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
-    FixedPage, FlowPage, ImageData, ImageFormat, LineSpacing, Margins, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, Shape, ShapeKind, Table, TableCell, TablePage, TextStyle,
+    FixedPage, FlowPage, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List,
+    ListKind, Margins, Page, PageSize, Paragraph, ParagraphStyle, Run, Shape, ShapeKind, Table,
+    TableCell, TablePage, TextStyle,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -73,7 +74,7 @@ fn generate_flow_page(
     page: &FlowPage,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
-    write_page_setup(out, &page.size, &page.margins);
+    write_flow_page_setup(out, page);
     out.push('\n');
 
     for (i, block) in page.content.iter().enumerate() {
@@ -91,12 +92,24 @@ fn generate_fixed_page(
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     // Slides use zero margins — all positioning is absolute
-    let _ = writeln!(
-        out,
-        "#set page(width: {}pt, height: {}pt, margin: 0pt)",
-        format_f64(page.size.width),
-        format_f64(page.size.height),
-    );
+    if let Some(ref bg) = page.background_color {
+        let _ = writeln!(
+            out,
+            "#set page(width: {}pt, height: {}pt, margin: 0pt, fill: rgb({}, {}, {}))",
+            format_f64(page.size.width),
+            format_f64(page.size.height),
+            bg.r,
+            bg.g,
+            bg.b,
+        );
+    } else {
+        let _ = writeln!(
+            out,
+            "#set page(width: {}pt, height: {}pt, margin: 0pt)",
+            format_f64(page.size.width),
+            format_f64(page.size.height),
+        );
+    }
     out.push('\n');
 
     for elem in &page.elements {
@@ -148,6 +161,9 @@ fn generate_fixed_element(
         }
         FixedElementKind::Shape(shape) => {
             generate_shape(out, shape, elem.width, elem.height);
+        }
+        FixedElementKind::Table(table) => {
+            generate_table(out, table, ctx)?;
         }
     }
 
@@ -225,6 +241,73 @@ fn write_page_setup(out: &mut String, size: &PageSize, margins: &Margins) {
     );
 }
 
+/// Write the full page setup for a FlowPage, including optional header/footer.
+fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
+    if page.header.is_none() && page.footer.is_none() {
+        write_page_setup(out, &page.size, &page.margins);
+        return;
+    }
+
+    let _ = write!(
+        out,
+        "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
+        format_f64(page.size.width),
+        format_f64(page.size.height),
+        format_f64(page.margins.top),
+        format_f64(page.margins.bottom),
+        format_f64(page.margins.left),
+        format_f64(page.margins.right),
+    );
+
+    if let Some(header) = &page.header {
+        if hf_has_page_number(header) {
+            out.push_str(", header: context [");
+        } else {
+            out.push_str(", header: [");
+        }
+        generate_hf_content(out, header);
+        out.push(']');
+    }
+
+    if let Some(footer) = &page.footer {
+        if hf_has_page_number(footer) {
+            out.push_str(", footer: context [");
+        } else {
+            out.push_str(", footer: [");
+        }
+        generate_hf_content(out, footer);
+        out.push(']');
+    }
+
+    out.push_str(")\n");
+}
+
+/// Check if a header/footer contains any page number fields.
+fn hf_has_page_number(hf: &HeaderFooter) -> bool {
+    hf.paragraphs
+        .iter()
+        .any(|p| p.elements.iter().any(|e| matches!(e, HFInline::PageNumber)))
+}
+
+/// Generate inline content for a header or footer.
+fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
+    for (i, para) in hf.paragraphs.iter().enumerate() {
+        if i > 0 {
+            out.push_str("\\\n");
+        }
+        for elem in &para.elements {
+            match elem {
+                HFInline::Run(run) => {
+                    generate_run(out, run);
+                }
+                HFInline::PageNumber => {
+                    out.push_str("#counter(page).display()");
+                }
+            }
+        }
+    }
+}
+
 fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(), ConvertError> {
     match block {
         Block::Paragraph(para) => generate_paragraph(out, para),
@@ -237,7 +320,88 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             generate_image(out, img, ctx);
             Ok(())
         }
+        Block::List(list) => generate_list(out, list),
     }
+}
+
+/// Generate Typst markup for a list (ordered or unordered).
+///
+/// Uses Typst's `#enum()` for ordered lists and `#list()` for unordered lists.
+/// Nested items are wrapped in `list.item()` / `enum.item()` with a sub-list.
+fn generate_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
+    let (func, item_func) = match list.kind {
+        ListKind::Ordered => ("enum", "enum.item"),
+        ListKind::Unordered => ("list", "list.item"),
+    };
+
+    // Build nested structure from flat items with levels.
+    // We use Typst function syntax: #list(item, item, ...) or #enum(item, item, ...)
+    // Nested items use list.item(body) with a sub-list inside.
+    let _ = writeln!(out, "#{func}(");
+    generate_list_items(out, &list.items, 0, func, item_func)?;
+    out.push_str(")\n");
+    Ok(())
+}
+
+/// Recursively generate list items, grouping consecutive items at the same or deeper level.
+fn generate_list_items(
+    out: &mut String,
+    items: &[crate::ir::ListItem],
+    base_level: u32,
+    func: &str,
+    item_func: &str,
+) -> Result<(), ConvertError> {
+    let mut i = 0;
+    while i < items.len() {
+        let item = &items[i];
+        if item.level == base_level {
+            // Emit this item's content
+            let _ = write!(out, "  {item_func}[");
+            for para in &item.content {
+                for run in &para.runs {
+                    generate_run(out, run);
+                }
+            }
+            out.push(']');
+
+            // Check if next items are nested (deeper level) — they become a sub-list
+            let nested_start = i + 1;
+            let mut nested_end = nested_start;
+            while nested_end < items.len() && items[nested_end].level > base_level {
+                nested_end += 1;
+            }
+
+            if nested_end > nested_start {
+                // Emit nested sub-list
+                let _ = writeln!(out, "[#{func}(");
+                generate_list_items(
+                    out,
+                    &items[nested_start..nested_end],
+                    base_level + 1,
+                    func,
+                    item_func,
+                )?;
+                out.push_str(")]");
+                i = nested_end;
+            } else {
+                i += 1;
+            }
+
+            out.push_str(",\n");
+        } else {
+            // Item at a deeper level without a parent at base_level;
+            // treat it as if it were at base_level
+            let _ = write!(out, "  {item_func}[");
+            for para in &item.content {
+                for run in &para.runs {
+                    generate_run(out, run);
+                }
+            }
+            out.push_str("],\n");
+            i += 1;
+        }
+    }
+    Ok(())
 }
 
 fn generate_table(out: &mut String, table: &Table, ctx: &mut GenCtx) -> Result<(), ConvertError> {
@@ -359,6 +523,7 @@ fn generate_cell_content(
             Block::Paragraph(para) => generate_cell_paragraph(out, para),
             Block::Table(table) => generate_table(out, table, ctx)?,
             Block::Image(img) => generate_image(out, img, ctx),
+            Block::List(list) => generate_list(out, list)?,
             Block::PageBreak => {}
         }
     }
@@ -593,6 +758,8 @@ mod tests {
             size: PageSize::default(),
             margins: Margins::default(),
             content,
+            header: None,
+            footer: None,
         })
     }
 
@@ -628,6 +795,8 @@ mod tests {
                 right: 54.0,
             },
             content: vec![make_paragraph("test")],
+            header: None,
+            footer: None,
         })]);
         let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("612pt"));
@@ -1559,6 +1728,7 @@ mod tests {
         Page::Fixed(FixedPage {
             size: PageSize { width, height },
             elements,
+            background_color: None,
         })
     }
 
@@ -2219,5 +2389,375 @@ mod tests {
         assert!(output.source.contains("Tall"));
         assert!(output.source.contains("Top"));
         assert!(output.source.contains("Bottom"));
+    }
+
+    // ----- List codegen tests -----
+
+    #[test]
+    fn test_generate_bulleted_list() {
+        use crate::ir::{List, ListItem, ListKind};
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Apple".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Banana".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+            ],
+        };
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![Block::List(list)],
+            header: None,
+            footer: None,
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#list("),
+            "Expected #list( in: {}",
+            output.source
+        );
+        assert!(output.source.contains("Apple"));
+        assert!(output.source.contains("Banana"));
+    }
+
+    #[test]
+    fn test_generate_numbered_list() {
+        use crate::ir::{List, ListItem, ListKind};
+        let list = List {
+            kind: ListKind::Ordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Step 1".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Step 2".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+            ],
+        };
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![Block::List(list)],
+            header: None,
+            footer: None,
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#enum("),
+            "Expected #enum( in: {}",
+            output.source
+        );
+        assert!(output.source.contains("Step 1"));
+        assert!(output.source.contains("Step 2"));
+    }
+
+    #[test]
+    fn test_generate_nested_list() {
+        use crate::ir::{List, ListItem, ListKind};
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Parent".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Child".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 1,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Sibling".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+            ],
+        };
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![Block::List(list)],
+            header: None,
+            footer: None,
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(output.source.contains("Parent"));
+        assert!(output.source.contains("Child"));
+        assert!(output.source.contains("Sibling"));
+        // Nested list should contain a sub-list
+        assert!(
+            output.source.contains("#list("),
+            "Expected nested #list( in: {}",
+            output.source
+        );
+    }
+
+    // ----- US-020: Header/footer codegen tests -----
+
+    #[test]
+    fn test_generate_flow_page_with_text_header() {
+        use crate::ir::{HFInline, HeaderFooter, HeaderFooterParagraph};
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Body text")],
+            header: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle::default(),
+                    elements: vec![HFInline::Run(Run {
+                        text: "Document Title".to_string(),
+                        style: TextStyle::default(),
+                    })],
+                }],
+            }),
+            footer: None,
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("header:"),
+            "Should contain header: in page setup. Got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Document Title"),
+            "Header should contain 'Document Title'. Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_generate_flow_page_with_page_number_footer() {
+        use crate::ir::{HFInline, HeaderFooter, HeaderFooterParagraph};
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Body text")],
+            header: None,
+            footer: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle::default(),
+                    elements: vec![
+                        HFInline::Run(Run {
+                            text: "Page ".to_string(),
+                            style: TextStyle::default(),
+                        }),
+                        HFInline::PageNumber,
+                    ],
+                }],
+            }),
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("footer:"),
+            "Should contain footer: in page setup. Got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("counter(page).display()"),
+            "Footer should contain page counter. Got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Page "),
+            "Footer should contain 'Page ' text. Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_generate_flow_page_with_header_and_footer() {
+        use crate::ir::{HFInline, HeaderFooter, HeaderFooterParagraph};
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Body")],
+            header: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle::default(),
+                    elements: vec![HFInline::Run(Run {
+                        text: "Header".to_string(),
+                        style: TextStyle::default(),
+                    })],
+                }],
+            }),
+            footer: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle::default(),
+                    elements: vec![HFInline::PageNumber],
+                }],
+            }),
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("header:") && output.source.contains("footer:"),
+            "Should contain both header: and footer:. Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_generate_flow_page_without_header_footer() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Body")])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            !output.source.contains("header:"),
+            "Should NOT contain header: when no header. Got: {}",
+            output.source
+        );
+        assert!(
+            !output.source.contains("footer:"),
+            "Should NOT contain footer: when no footer. Got: {}",
+            output.source
+        );
+    }
+
+    // ── Fixed page background tests ──────────────────────────────────────
+
+    #[test]
+    fn test_fixed_page_with_background_color() {
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: Some(Color::new(255, 0, 0)),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("fill: rgb(255, 0, 0)"),
+            "Should contain fill: rgb(255, 0, 0). Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_without_background_color() {
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: None,
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            !output.source.contains("fill:"),
+            "Should NOT contain fill: when no background. Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_table_element() {
+        // A table placed at absolute position on a fixed page
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![
+                    TableCell {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "A1".to_string(),
+                                style: TextStyle::default(),
+                            }],
+                        })],
+                        ..TableCell::default()
+                    },
+                    TableCell {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "B1".to_string(),
+                                style: TextStyle::default(),
+                            }],
+                        })],
+                        ..TableCell::default()
+                    },
+                ],
+                height: None,
+            }],
+            column_widths: vec![100.0, 100.0],
+        };
+
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![FixedElement {
+                x: 50.0,
+                y: 100.0,
+                width: 200.0,
+                height: 50.0,
+                kind: FixedElementKind::Table(table),
+            }],
+            background_color: None,
+        });
+
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+
+        // Should have a #place() with table inside
+        assert!(
+            output
+                .source
+                .contains("#place(top + left, dx: 50pt, dy: 100pt)")
+        );
+        assert!(output.source.contains("#table("));
+        assert!(output.source.contains("columns: (100pt, 100pt)"));
+        assert!(output.source.contains("A1"));
+        assert!(output.source.contains("B1"));
     }
 }

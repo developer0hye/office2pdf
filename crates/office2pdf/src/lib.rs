@@ -7,11 +7,11 @@ pub mod render;
 use std::path::Path;
 
 use config::{ConvertOptions, Format};
-use error::ConvertError;
+use error::{ConvertError, ConvertResult};
 use parser::Parser;
 
-/// Convert a file at the given path to PDF bytes.
-pub fn convert(path: impl AsRef<Path>) -> Result<Vec<u8>, ConvertError> {
+/// Convert a file at the given path to PDF bytes with warnings.
+pub fn convert(path: impl AsRef<Path>) -> Result<ConvertResult, ConvertError> {
     convert_with_options(path, &ConvertOptions::default())
 }
 
@@ -19,7 +19,7 @@ pub fn convert(path: impl AsRef<Path>) -> Result<Vec<u8>, ConvertError> {
 pub fn convert_with_options(
     path: impl AsRef<Path>,
     options: &ConvertOptions,
-) -> Result<Vec<u8>, ConvertError> {
+) -> Result<ConvertResult, ConvertError> {
     let path = path.as_ref();
     let ext = path
         .extension()
@@ -33,20 +33,21 @@ pub fn convert_with_options(
     convert_bytes(&data, format, options)
 }
 
-/// Convert raw bytes of a known format to PDF bytes.
+/// Convert raw bytes of a known format to PDF bytes with warnings.
 pub fn convert_bytes(
     data: &[u8],
     format: Format,
-    _options: &ConvertOptions,
-) -> Result<Vec<u8>, ConvertError> {
+    options: &ConvertOptions,
+) -> Result<ConvertResult, ConvertError> {
     let parser: Box<dyn Parser> = match format {
         Format::Docx => Box::new(parser::docx::DocxParser),
         Format::Pptx => Box::new(parser::pptx::PptxParser),
         Format::Xlsx => Box::new(parser::xlsx::XlsxParser),
     };
 
-    let doc = parser.parse(data)?;
-    render_document(&doc)
+    let (doc, warnings) = parser.parse(data, options)?;
+    let pdf = render_document(&doc)?;
+    Ok(ConvertResult { pdf, warnings })
 }
 
 /// Render an IR Document to PDF bytes.
@@ -77,6 +78,8 @@ mod tests {
                         style: TextStyle::default(),
                     }],
                 })],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         }
@@ -183,6 +186,8 @@ mod tests {
                         },
                     ],
                 })],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -206,6 +211,8 @@ mod tests {
                             style: TextStyle::default(),
                         }],
                     })],
+                    header: None,
+                    footer: None,
                 }),
                 Page::Flow(FlowPage {
                     size: PageSize::default(),
@@ -217,6 +224,8 @@ mod tests {
                             style: TextStyle::default(),
                         }],
                     })],
+                    header: None,
+                    footer: None,
                 }),
             ],
             styles: StyleSheet::default(),
@@ -250,6 +259,8 @@ mod tests {
                         }],
                     }),
                 ],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -332,6 +343,8 @@ mod tests {
                     width: Some(100.0),
                     height: Some(80.0),
                 })],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -369,6 +382,8 @@ mod tests {
                         }],
                     }),
                 ],
+                header: None,
+                footer: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -461,25 +476,47 @@ mod tests {
     #[test]
     fn test_e2e_docx_to_pdf() {
         let docx_bytes = build_test_docx();
-        let pdf = convert_bytes(&docx_bytes, Format::Docx, &ConvertOptions::default()).unwrap();
-        assert!(!pdf.is_empty(), "DOCX→PDF should produce non-empty output");
-        assert!(pdf.starts_with(b"%PDF"), "Output should be valid PDF");
+        let result = convert_bytes(&docx_bytes, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            !result.pdf.is_empty(),
+            "DOCX→PDF should produce non-empty output"
+        );
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Output should be valid PDF"
+        );
+        assert!(
+            result.warnings.is_empty(),
+            "Normal DOCX should produce no warnings"
+        );
     }
 
     #[test]
     fn test_e2e_xlsx_to_pdf() {
         let xlsx_bytes = build_test_xlsx();
-        let pdf = convert_bytes(&xlsx_bytes, Format::Xlsx, &ConvertOptions::default()).unwrap();
-        assert!(!pdf.is_empty(), "XLSX→PDF should produce non-empty output");
-        assert!(pdf.starts_with(b"%PDF"), "Output should be valid PDF");
+        let result = convert_bytes(&xlsx_bytes, Format::Xlsx, &ConvertOptions::default()).unwrap();
+        assert!(
+            !result.pdf.is_empty(),
+            "XLSX→PDF should produce non-empty output"
+        );
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Output should be valid PDF"
+        );
     }
 
     #[test]
     fn test_e2e_pptx_to_pdf() {
         let pptx_bytes = build_test_pptx();
-        let pdf = convert_bytes(&pptx_bytes, Format::Pptx, &ConvertOptions::default()).unwrap();
-        assert!(!pdf.is_empty(), "PPTX→PDF should produce non-empty output");
-        assert!(pdf.starts_with(b"%PDF"), "Output should be valid PDF");
+        let result = convert_bytes(&pptx_bytes, Format::Pptx, &ConvertOptions::default()).unwrap();
+        assert!(
+            !result.pdf.is_empty(),
+            "PPTX→PDF should produce non-empty output"
+        );
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Output should be valid PDF"
+        );
     }
 
     #[test]
@@ -502,9 +539,9 @@ mod tests {
         docx.build().pack(&mut cursor).unwrap();
         let data = cursor.into_inner();
 
-        let pdf = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
-        assert!(!pdf.is_empty());
-        assert!(pdf.starts_with(b"%PDF"));
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(!result.pdf.is_empty());
+        assert!(result.pdf.starts_with(b"%PDF"));
     }
 
     #[test]
@@ -515,17 +552,17 @@ mod tests {
         let output = dir.join("office2pdf_test_output.pdf");
         std::fs::write(&input, &docx_bytes).unwrap();
 
-        let pdf = convert(&input).unwrap();
-        assert!(!pdf.is_empty());
-        assert!(pdf.starts_with(b"%PDF"));
+        let result = convert(&input).unwrap();
+        assert!(!result.pdf.is_empty());
+        assert!(result.pdf.starts_with(b"%PDF"));
 
         // Also test convert_with_options with the file path
-        let pdf2 = convert_with_options(&input, &ConvertOptions::default()).unwrap();
-        assert!(!pdf2.is_empty());
-        assert!(pdf2.starts_with(b"%PDF"));
+        let result2 = convert_with_options(&input, &ConvertOptions::default()).unwrap();
+        assert!(!result2.pdf.is_empty());
+        assert!(result2.pdf.starts_with(b"%PDF"));
 
         // Write PDF to output and verify file exists
-        std::fs::write(&output, &pdf).unwrap();
+        std::fs::write(&output, &result.pdf).unwrap();
         assert!(output.exists());
         let written = std::fs::read(&output).unwrap();
         assert!(written.starts_with(b"%PDF"));
@@ -553,6 +590,428 @@ mod tests {
         assert!(
             matches!(result.unwrap_err(), ConvertError::Io(_)),
             "Missing file should produce IO error"
+        );
+    }
+
+    // --- US-018: Font fallback - system font discovery tests ---
+
+    #[test]
+    fn test_render_document_with_system_font_in_ir() {
+        // A Document with a system font name (e.g., "Arial") in the IR should
+        // compile to valid PDF. With system font discovery enabled, the font
+        // is used if available; otherwise Typst falls back to embedded fonts.
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Hello with system font".to_string(),
+                        style: TextStyle {
+                            font_family: Some("Arial".to_string()),
+                            ..TextStyle::default()
+                        },
+                    }],
+                })],
+                header: None,
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_render_document_with_multiple_font_families() {
+        // Different runs can specify different system fonts — all should compile
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![
+                        Run {
+                            text: "Calibri text ".to_string(),
+                            style: TextStyle {
+                                font_family: Some("Calibri".to_string()),
+                                ..TextStyle::default()
+                            },
+                        },
+                        Run {
+                            text: "and Times New Roman text".to_string(),
+                            style: TextStyle {
+                                font_family: Some("Times New Roman".to_string()),
+                                ..TextStyle::default()
+                            },
+                        },
+                    ],
+                })],
+                header: None,
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    // --- US-017: Enhanced error handling tests ---
+
+    /// Build a PPTX with two slides: one valid, one with broken XML.
+    /// The parser should skip the broken slide with a warning and still produce a PDF.
+    fn build_pptx_with_broken_slide() -> Vec<u8> {
+        use std::io::{Cursor, Write};
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let opts = zip::write::FileOptions::default();
+
+        zip.start_file("[Content_Types].xml", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/><Override PartName="/ppt/slides/slide2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>"#,
+        ).unwrap();
+
+        zip.start_file("_rels/.rels", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>"#,
+        ).unwrap();
+
+        // Two slides referenced
+        zip.start_file("ppt/presentation.xml", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldSz cx="9144000" cy="6858000"/><p:sldIdLst><p:sldId id="256" r:id="rId2"/><p:sldId id="257" r:id="rId3"/></p:sldIdLst></p:presentation>"#,
+        ).unwrap();
+
+        zip.start_file("ppt/_rels/presentation.xml.rels", opts)
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/></Relationships>"#,
+        ).unwrap();
+
+        // Slide 1: valid
+        zip.start_file("ppt/slides/slide1.xml", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="2" name="TextBox 1"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="457200" y="274638"/><a:ext cx="8229600" cy="1143000"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Valid slide content</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>"#,
+        ).unwrap();
+
+        zip.start_file("ppt/slides/_rels/slide1.xml.rels", opts)
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>"#,
+        ).unwrap();
+
+        // Slide 2: intentionally missing from the ZIP archive.
+        // The presentation.xml references it via rId3, but no slide2.xml exists.
+        // This should trigger a warning (missing slide file), not a fatal error.
+
+        zip.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn test_convert_result_has_pdf_and_warnings() {
+        let docx_bytes = build_test_docx();
+        let result = convert_bytes(&docx_bytes, Format::Docx, &ConvertOptions::default()).unwrap();
+        // ConvertResult has both pdf and warnings fields
+        assert!(result.pdf.starts_with(b"%PDF"));
+        let _warnings: &Vec<error::ConvertWarning> = &result.warnings;
+    }
+
+    #[test]
+    fn test_pptx_broken_slide_emits_warning_and_produces_pdf() {
+        let pptx_bytes = build_pptx_with_broken_slide();
+        let result = convert_bytes(&pptx_bytes, Format::Pptx, &ConvertOptions::default()).unwrap();
+
+        // Should still produce a valid PDF (from the good slide)
+        assert!(
+            !result.pdf.is_empty(),
+            "Should produce PDF despite broken slide"
+        );
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Output should be valid PDF"
+        );
+
+        // Should have at least one warning about the broken slide
+        assert!(
+            !result.warnings.is_empty(),
+            "Should emit warning for broken slide"
+        );
+        // Verify the warning mentions the broken element
+        let warning_text = result.warnings[0].to_string();
+        assert!(
+            warning_text.contains("slide") || warning_text.contains("Slide"),
+            "Warning should mention the problematic slide: {warning_text}"
+        );
+    }
+
+    #[test]
+    fn test_render_document_with_list() {
+        use crate::ir::{
+            Document, FlowPage, List, ListItem, ListKind, Margins, Metadata, Page, PageSize,
+            Paragraph, ParagraphStyle, Run, StyleSheet, TextStyle,
+        };
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![ir::Block::List(List {
+                    kind: ListKind::Unordered,
+                    items: vec![
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "Hello".to_string(),
+                                    style: TextStyle::default(),
+                                }],
+                            }],
+                            level: 0,
+                        },
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "World".to_string(),
+                                    style: TextStyle::default(),
+                                }],
+                            }],
+                            level: 0,
+                        },
+                    ],
+                })],
+                header: None,
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(
+            pdf.starts_with(b"%PDF"),
+            "Should produce valid PDF with list"
+        );
+    }
+
+    #[test]
+    fn test_e2e_docx_with_list_produces_pdf() {
+        use std::io::Cursor;
+        // Build a DOCX with a bulleted list and verify it converts to PDF
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("bullet"),
+            docx_rs::LevelText::new("•"),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+        let nums = docx_rs::Numberings::new()
+            .add_abstract_numbering(abstract_num)
+            .add_numbering(numbering);
+
+        let docx = docx_rs::Docx::new()
+            .numberings(nums)
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Bullet 1"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Bullet 2"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Regular text")),
+            );
+
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Should produce valid PDF with list content"
+        );
+    }
+
+    #[test]
+    fn test_normal_docx_has_no_warnings() {
+        let docx_bytes = build_test_docx();
+        let result = convert_bytes(&docx_bytes, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.warnings.is_empty(),
+            "Normal DOCX should produce no warnings"
+        );
+    }
+
+    // --- US-020: Header/footer integration tests ---
+
+    #[test]
+    fn test_render_document_with_header() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Body content".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                })],
+                header: Some(ir::HeaderFooter {
+                    paragraphs: vec![ir::HeaderFooterParagraph {
+                        style: ParagraphStyle::default(),
+                        elements: vec![ir::HFInline::Run(Run {
+                            text: "My Header".to_string(),
+                            style: TextStyle::default(),
+                        })],
+                    }],
+                }),
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_render_document_with_page_number_footer() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Body content".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                })],
+                header: None,
+                footer: Some(ir::HeaderFooter {
+                    paragraphs: vec![ir::HeaderFooterParagraph {
+                        style: ParagraphStyle::default(),
+                        elements: vec![
+                            ir::HFInline::Run(Run {
+                                text: "Page ".to_string(),
+                                style: TextStyle::default(),
+                            }),
+                            ir::HFInline::PageNumber,
+                        ],
+                    }],
+                }),
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_e2e_docx_with_header_footer_to_pdf() {
+        use std::io::Cursor;
+        let header = docx_rs::Header::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Document Title")),
+        );
+        let footer = docx_rs::Footer::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(
+                docx_rs::Run::new()
+                    .add_text("Page ")
+                    .add_field_char(docx_rs::FieldCharType::Begin, false)
+                    .add_instr_text(docx_rs::InstrText::PAGE(docx_rs::InstrPAGE::new()))
+                    .add_field_char(docx_rs::FieldCharType::Separate, false)
+                    .add_text("1")
+                    .add_field_char(docx_rs::FieldCharType::End, false),
+            ),
+        );
+        let docx = docx_rs::Docx::new()
+            .header(header)
+            .footer(footer)
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body paragraph")),
+            );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "DOCX with header/footer should produce valid PDF"
+        );
+    }
+
+    // --- US-021: Page orientation (landscape/portrait) tests ---
+
+    #[test]
+    fn test_render_document_with_landscape_page() {
+        // A landscape FlowPage should render to valid PDF
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize {
+                    width: 841.9, // A4 landscape
+                    height: 595.3,
+                },
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    runs: vec![Run {
+                        text: "Landscape page".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                    style: ParagraphStyle::default(),
+                })],
+                header: None,
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(
+            !pdf.is_empty(),
+            "Landscape FlowPage should produce non-empty PDF"
+        );
+        assert!(pdf.starts_with(b"%PDF"), "Should produce valid PDF");
+    }
+
+    #[test]
+    fn test_e2e_landscape_docx_to_pdf() {
+        use std::io::Cursor;
+        // Build a landscape DOCX with swapped dimensions
+        let docx = docx_rs::Docx::new()
+            .page_size(16838, 11906)
+            .page_orient(docx_rs::PageOrientationType::Landscape)
+            .page_margin(
+                docx_rs::PageMargin::new()
+                    .top(1440)
+                    .bottom(1440)
+                    .left(1440)
+                    .right(1440),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Landscape document")),
+            );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Landscape DOCX should produce valid PDF"
         );
     }
 }

@@ -1,12 +1,56 @@
 use super::style::{Color, ParagraphStyle, TextStyle};
 
+/// Header or footer content for flow pages.
+#[derive(Debug, Clone)]
+pub struct HeaderFooter {
+    pub paragraphs: Vec<HeaderFooterParagraph>,
+}
+
+/// A paragraph within a header or footer.
+#[derive(Debug, Clone)]
+pub struct HeaderFooterParagraph {
+    pub style: ParagraphStyle,
+    pub elements: Vec<HFInline>,
+}
+
+/// An inline element within a header or footer paragraph.
+#[derive(Debug, Clone)]
+pub enum HFInline {
+    /// A text run with styling.
+    Run(Run),
+    /// Current page number field.
+    PageNumber,
+}
+
 /// Block-level content elements.
 #[derive(Debug, Clone)]
 pub enum Block {
     Paragraph(Paragraph),
     Table(Table),
     Image(ImageData),
+    List(List),
     PageBreak,
+}
+
+/// The kind of list: ordered (numbered) or unordered (bulleted).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ListKind {
+    Ordered,
+    Unordered,
+}
+
+/// A list block containing items at various indent levels.
+#[derive(Debug, Clone)]
+pub struct List {
+    pub kind: ListKind,
+    pub items: Vec<ListItem>,
+}
+
+/// A single list item with content and indent level.
+#[derive(Debug, Clone)]
+pub struct ListItem {
+    pub content: Vec<Paragraph>,
+    pub level: u32,
 }
 
 /// A paragraph consisting of styled text runs.
@@ -138,6 +182,103 @@ mod tests {
     }
 
     #[test]
+    fn test_list_item_default() {
+        let item = ListItem {
+            content: vec![Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Item 1".to_string(),
+                    style: TextStyle::default(),
+                }],
+            }],
+            level: 0,
+        };
+        assert_eq!(item.level, 0);
+        assert_eq!(item.content.len(), 1);
+    }
+
+    #[test]
+    fn test_list_unordered() {
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Bullet 1".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Bullet 2".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+            ],
+        };
+        assert_eq!(list.kind, ListKind::Unordered);
+        assert_eq!(list.items.len(), 2);
+    }
+
+    #[test]
+    fn test_list_ordered() {
+        let list = List {
+            kind: ListKind::Ordered,
+            items: vec![ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Step 1".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                }],
+                level: 0,
+            }],
+        };
+        assert_eq!(list.kind, ListKind::Ordered);
+        assert_eq!(list.items.len(), 1);
+    }
+
+    #[test]
+    fn test_list_nested() {
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Top".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Nested".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 1,
+                },
+            ],
+        };
+        assert_eq!(list.items[0].level, 0);
+        assert_eq!(list.items[1].level, 1);
+    }
+
+    #[test]
     fn test_paragraph_with_runs() {
         let para = Paragraph {
             style: ParagraphStyle::default(),
@@ -158,5 +299,42 @@ mod tests {
         assert_eq!(para.runs.len(), 2);
         assert_eq!(para.runs[0].text, "Hello ");
         assert_eq!(para.runs[1].style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_header_footer_with_text() {
+        let hf = HeaderFooter {
+            paragraphs: vec![HeaderFooterParagraph {
+                style: ParagraphStyle::default(),
+                elements: vec![HFInline::Run(Run {
+                    text: "My Header".to_string(),
+                    style: TextStyle::default(),
+                })],
+            }],
+        };
+        assert_eq!(hf.paragraphs.len(), 1);
+        assert_eq!(hf.paragraphs[0].elements.len(), 1);
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "My Header"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_header_footer_with_page_number() {
+        let hf = HeaderFooter {
+            paragraphs: vec![HeaderFooterParagraph {
+                style: ParagraphStyle::default(),
+                elements: vec![
+                    HFInline::Run(Run {
+                        text: "Page ".to_string(),
+                        style: TextStyle::default(),
+                    }),
+                    HFInline::PageNumber,
+                ],
+            }],
+        };
+        assert_eq!(hf.paragraphs[0].elements.len(), 2);
+        assert!(matches!(hf.paragraphs[0].elements[1], HFInline::PageNumber));
     }
 }

@@ -41,7 +41,7 @@ struct MinimalWorld {
 impl MinimalWorld {
     fn new(source_text: &str, images: &[ImageAsset]) -> Self {
         let mut searcher = FontSearcher::new();
-        searcher.include_system_fonts(false);
+        searcher.include_system_fonts(true);
         let font_data: Fonts = searcher.search();
 
         let main_id = FileId::new(None, VirtualPath::new("main.typ"));
@@ -244,6 +244,61 @@ Hello from a US Letter page."#;
         png.extend_from_slice(&png_crc32(iend_type, &[]).to_be_bytes());
 
         png
+    }
+
+    #[test]
+    fn test_embedded_fonts_are_available() {
+        // MinimalWorld should always have embedded fallback fonts available
+        // (Libertinus Serif, New Computer Modern, DejaVu Sans Mono)
+        let world = MinimalWorld::new("", &[]);
+        assert!(
+            !world.fonts.is_empty(),
+            "MinimalWorld should have at least the embedded fallback fonts"
+        );
+    }
+
+    #[test]
+    fn test_system_fonts_enabled() {
+        // With system font discovery enabled, on typical systems we should have
+        // more fonts than just the embedded set. On minimal systems, we at least
+        // have the embedded fonts.
+        let world = MinimalWorld::new("", &[]);
+        let embedded_only_count = {
+            let mut s = FontSearcher::new();
+            s.include_system_fonts(false);
+            s.search().fonts.len()
+        };
+        // At minimum, we should have the embedded fonts
+        assert!(
+            world.fonts.len() >= embedded_only_count,
+            "System font discovery should not reduce available fonts: total {} vs embedded-only {}",
+            world.fonts.len(),
+            embedded_only_count
+        );
+    }
+
+    #[test]
+    fn test_compile_with_system_font_name() {
+        // A document specifying a common system font should compile successfully.
+        // Typst falls back to embedded fonts if the named font isn't available,
+        // so this test always succeeds — but with system fonts enabled, the
+        // named font will be used if present on the system.
+        let source = r#"#set text(font: "Arial")
+Hello with a system font."#;
+        let result = compile_to_pdf(source, &[]).unwrap();
+        assert!(!result.is_empty());
+        assert!(result.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_embedded_fonts_still_available_as_fallback() {
+        // Embedded fonts (Libertinus Serif) must still be available even with
+        // system font discovery enabled.
+        let source = r#"#set text(font: "Libertinus Serif")
+Text in Libertinus Serif."#;
+        let result = compile_to_pdf(source, &[]).unwrap();
+        assert!(!result.is_empty());
+        assert!(result.starts_with(b"%PDF"));
     }
 
     #[test]

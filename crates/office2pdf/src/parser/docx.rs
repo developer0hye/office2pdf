@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
-use crate::error::ConvertError;
+use crate::config::ConvertOptions;
+use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, ImageData, ImageFormat,
-    LineSpacing, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet,
-    Table, TableCell, TableRow, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, HFInline, HeaderFooter,
+    HeaderFooterParagraph, ImageData, ImageFormat, LineSpacing, List, ListItem, ListKind, Margins,
+    Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell,
+    TableRow, TextStyle,
 };
 use crate::parser::Parser;
 
@@ -28,36 +30,441 @@ fn emu_to_pt(emu: u32) -> f64 {
     emu as f64 / 12700.0
 }
 
+/// Numbering info extracted from a paragraph's numPr.
+#[derive(Debug, Clone)]
+struct NumInfo {
+    num_id: usize,
+    level: u32,
+}
+
+/// Map from numId → ListKind (Ordered or Unordered).
+/// Built by resolving numId → abstractNumId → first level's format.
+type NumKindMap = HashMap<usize, ListKind>;
+
+/// Build a map from numbering instance ID → list kind by inspecting the
+/// abstract numbering definitions.
+fn build_num_kind_map(numberings: &docx_rs::Numberings) -> NumKindMap {
+    // Map abstractNumId → is bullet?
+    let mut abstract_kinds: HashMap<usize, ListKind> = HashMap::new();
+    for abs in &numberings.abstract_nums {
+        // Check the first level's format to determine if bullet or ordered
+        let kind = if abs.levels.iter().any(|lvl| {
+            let json = serde_json::to_value(&lvl.format).ok();
+            json.and_then(|j| j.as_str().map(|s| s.to_owned()))
+                .is_some_and(|val| val == "bullet")
+        }) {
+            ListKind::Unordered
+        } else {
+            ListKind::Ordered
+        };
+        abstract_kinds.insert(abs.id, kind);
+    }
+
+    // Map numId → abstractNumId → ListKind
+    let mut map = NumKindMap::new();
+    for num in &numberings.numberings {
+        if let Some(&kind) = abstract_kinds.get(&num.abstract_num_id) {
+            map.insert(num.id, kind);
+        }
+    }
+    map
+}
+
+/// Extract numbering info from a paragraph, if it has numPr.
+fn extract_num_info(para: &docx_rs::Paragraph) -> Option<NumInfo> {
+    if !para.has_numbering {
+        return None;
+    }
+    let np = para.property.numbering_property.as_ref()?;
+    let num_id = np.id.as_ref()?.id;
+    let level = np.level.as_ref().map_or(0, |l| l.val as u32);
+    // numId 0 means "no numbering" in OOXML
+    if num_id == 0 {
+        return None;
+    }
+    Some(NumInfo { num_id, level })
+}
+
+/// Resolved style formatting extracted from a document style definition.
+/// Contains text and paragraph formatting along with an optional heading level.
+struct ResolvedStyle {
+    text: TextStyle,
+    paragraph: ParagraphStyle,
+    /// Heading level from outline_lvl (0 = Heading 1, 1 = Heading 2, ..., 5 = Heading 6).
+    heading_level: Option<usize>,
+}
+
+/// Map from style_id → resolved formatting.
+type StyleMap = HashMap<String, ResolvedStyle>;
+
+/// Default font sizes for heading levels (Heading 1-6).
+/// Index 0 = Heading 1 (outline_lvl 0), index 5 = Heading 6 (outline_lvl 5).
+const HEADING_DEFAULT_SIZES: [f64; 6] = [24.0, 20.0, 16.0, 14.0, 12.0, 11.0];
+
+/// Build a map from style ID → resolved formatting by extracting formatting
+/// from each style's run_property and paragraph_property.
+fn build_style_map(styles: &docx_rs::Styles) -> StyleMap {
+    let mut map = StyleMap::new();
+    for style in &styles.styles {
+        // Only process paragraph styles (not character or table styles)
+        if style.style_type != docx_rs::StyleType::Paragraph {
+            continue;
+        }
+
+        let text = extract_run_style(&style.run_property);
+        let paragraph = extract_paragraph_style(&style.paragraph_property);
+        let heading_level = style
+            .paragraph_property
+            .outline_lvl
+            .as_ref()
+            .map(|ol| ol.v)
+            .filter(|&v| v < 6);
+
+        map.insert(
+            style.style_id.clone(),
+            ResolvedStyle {
+                text,
+                paragraph,
+                heading_level,
+            },
+        );
+    }
+    map
+}
+
+/// Merge style text formatting with explicit run formatting.
+/// Explicit formatting (from the run itself) takes priority over style formatting.
+/// For heading styles, default sizes and bold are applied when neither the style
+/// nor the run specifies them.
+fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyle>) -> TextStyle {
+    let (style_text, heading_level) = match style {
+        Some(s) => (&s.text, s.heading_level),
+        None => return explicit.clone(),
+    };
+
+    // Start with style defaults, then apply heading defaults, then explicit overrides
+    let mut merged = TextStyle {
+        bold: style_text.bold,
+        italic: style_text.italic,
+        underline: style_text.underline,
+        strikethrough: style_text.strikethrough,
+        font_size: style_text.font_size,
+        color: style_text.color,
+        font_family: style_text.font_family.clone(),
+    };
+
+    // Apply heading defaults for missing fields
+    if let Some(level) = heading_level {
+        if merged.font_size.is_none() {
+            merged.font_size = Some(HEADING_DEFAULT_SIZES[level]);
+        }
+        if merged.bold.is_none() {
+            merged.bold = Some(true);
+        }
+    }
+
+    // Explicit formatting overrides everything
+    if explicit.bold.is_some() {
+        merged.bold = explicit.bold;
+    }
+    if explicit.italic.is_some() {
+        merged.italic = explicit.italic;
+    }
+    if explicit.underline.is_some() {
+        merged.underline = explicit.underline;
+    }
+    if explicit.strikethrough.is_some() {
+        merged.strikethrough = explicit.strikethrough;
+    }
+    if explicit.font_size.is_some() {
+        merged.font_size = explicit.font_size;
+    }
+    if explicit.color.is_some() {
+        merged.color = explicit.color;
+    }
+    if explicit.font_family.is_some() {
+        merged.font_family = explicit.font_family.clone();
+    }
+
+    merged
+}
+
+/// Merge style paragraph formatting with explicit paragraph formatting.
+/// Explicit formatting takes priority.
+fn merge_paragraph_style(
+    explicit: &ParagraphStyle,
+    style: Option<&ResolvedStyle>,
+) -> ParagraphStyle {
+    let style_para = match style {
+        Some(s) => &s.paragraph,
+        None => return explicit.clone(),
+    };
+
+    ParagraphStyle {
+        alignment: explicit.alignment.or(style_para.alignment),
+        indent_left: explicit.indent_left.or(style_para.indent_left),
+        indent_right: explicit.indent_right.or(style_para.indent_right),
+        indent_first_line: explicit.indent_first_line.or(style_para.indent_first_line),
+        line_spacing: explicit.line_spacing.or(style_para.line_spacing),
+        space_before: explicit.space_before.or(style_para.space_before),
+        space_after: explicit.space_after.or(style_para.space_after),
+    }
+}
+
+/// Look up the pStyle reference from a paragraph's property.
+fn get_paragraph_style_id(prop: &docx_rs::ParagraphProperty) -> Option<&str> {
+    prop.style.as_ref().map(|s| s.val.as_str())
+}
+
+/// An intermediate element that carries optional numbering info alongside blocks.
+enum TaggedElement {
+    /// A regular block (non-list paragraph, table, image, page break, etc.)
+    Plain(Vec<Block>),
+    /// A list paragraph with its numbering info and the paragraph IR.
+    ListParagraph { info: NumInfo, paragraph: Paragraph },
+}
+
+/// Group consecutive list paragraphs (with the same numId) into List blocks.
+/// Non-list elements pass through unchanged.
+fn group_into_lists(elements: Vec<TaggedElement>, num_kinds: &NumKindMap) -> Vec<Block> {
+    let mut result: Vec<Block> = Vec::new();
+
+    // Accumulator for current list run
+    let mut current_list: Option<(usize, Vec<ListItem>)> = None; // (numId, items)
+
+    for elem in elements {
+        match elem {
+            TaggedElement::ListParagraph { info, paragraph } => {
+                if let Some((cur_num_id, ref mut items)) = current_list {
+                    if info.num_id == cur_num_id {
+                        // Same list — add item
+                        items.push(ListItem {
+                            content: vec![paragraph],
+                            level: info.level,
+                        });
+                        continue;
+                    }
+                    // Different list — flush current
+                    let kind = num_kinds
+                        .get(&cur_num_id)
+                        .copied()
+                        .unwrap_or(ListKind::Unordered);
+                    result.push(Block::List(List {
+                        kind,
+                        items: std::mem::take(items),
+                    }));
+                }
+                // Start new list
+                current_list = Some((
+                    info.num_id,
+                    vec![ListItem {
+                        content: vec![paragraph],
+                        level: info.level,
+                    }],
+                ));
+            }
+            TaggedElement::Plain(blocks) => {
+                // Flush any pending list
+                if let Some((num_id, items)) = current_list.take() {
+                    let kind = num_kinds
+                        .get(&num_id)
+                        .copied()
+                        .unwrap_or(ListKind::Unordered);
+                    result.push(Block::List(List { kind, items }));
+                }
+                result.extend(blocks);
+            }
+        }
+    }
+
+    // Flush trailing list
+    if let Some((num_id, items)) = current_list {
+        let kind = num_kinds
+            .get(&num_id)
+            .copied()
+            .unwrap_or(ListKind::Unordered);
+        result.push(Block::List(List { kind, items }));
+    }
+
+    result
+}
+
 impl Parser for DocxParser {
-    fn parse(&self, data: &[u8]) -> Result<Document, ConvertError> {
+    fn parse(
+        &self,
+        data: &[u8],
+        _options: &ConvertOptions,
+    ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let docx = docx_rs::read_docx(data)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;
 
         let (size, margins) = extract_page_setup(&docx.document.section_property);
         let images = build_image_map(&docx);
+        let num_kinds = build_num_kind_map(&docx.numberings);
+        let style_map = build_style_map(&docx.styles);
+        let mut warnings = Vec::new();
 
-        let mut content: Vec<Block> = Vec::new();
-        for child in &docx.document.children {
-            match child {
+        let mut elements: Vec<TaggedElement> = Vec::new();
+        for (idx, child) in docx.document.children.iter().enumerate() {
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
                 docx_rs::DocumentChild::Paragraph(para) => {
-                    convert_paragraph_blocks(para, &mut content, &images);
+                    convert_paragraph_element(para, &images, &style_map)
                 }
-                docx_rs::DocumentChild::Table(table) => {
-                    content.push(Block::Table(convert_table(table, &images)));
+                docx_rs::DocumentChild::Table(table) => TaggedElement::Plain(vec![Block::Table(
+                    convert_table(table, &images, &style_map),
+                )]),
+                _ => TaggedElement::Plain(vec![]),
+            }));
+
+            match result {
+                Ok(elem) => elements.push(elem),
+                Err(_) => {
+                    warnings.push(ConvertWarning {
+                        element: format!("Document element at index {idx}"),
+                        reason: "element processing panicked; skipped".to_string(),
+                    });
                 }
-                _ => {}
             }
         }
 
-        Ok(Document {
-            metadata: Metadata::default(),
-            pages: vec![Page::Flow(FlowPage {
-                size,
-                margins,
-                content,
-            })],
-            styles: StyleSheet::default(),
+        let content = group_into_lists(elements, &num_kinds);
+
+        let header = extract_docx_header(&docx.document.section_property);
+        let footer = extract_docx_footer(&docx.document.section_property);
+
+        Ok((
+            Document {
+                metadata: Metadata::default(),
+                pages: vec![Page::Flow(FlowPage {
+                    size,
+                    margins,
+                    content,
+                    header,
+                    footer,
+                })],
+                styles: StyleSheet::default(),
+            },
+            warnings,
+        ))
+    }
+}
+
+/// Extract the default header from DOCX section properties, if present.
+fn extract_docx_header(section_prop: &docx_rs::SectionProperty) -> Option<HeaderFooter> {
+    let (_rid, header) = section_prop.header.as_ref()?;
+    let paragraphs = header
+        .children
+        .iter()
+        .filter_map(|child| match child {
+            docx_rs::HeaderChild::Paragraph(para) => Some(convert_hf_paragraph(para)),
+            _ => None,
         })
+        .collect::<Vec<_>>();
+    if paragraphs.is_empty() {
+        return None;
+    }
+    Some(HeaderFooter { paragraphs })
+}
+
+/// Extract the default footer from DOCX section properties, if present.
+fn extract_docx_footer(section_prop: &docx_rs::SectionProperty) -> Option<HeaderFooter> {
+    let (_rid, footer) = section_prop.footer.as_ref()?;
+    let paragraphs = footer
+        .children
+        .iter()
+        .filter_map(|child| match child {
+            docx_rs::FooterChild::Paragraph(para) => Some(convert_hf_paragraph(para)),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    if paragraphs.is_empty() {
+        return None;
+    }
+    Some(HeaderFooter { paragraphs })
+}
+
+/// Convert a docx-rs Paragraph into a HeaderFooterParagraph.
+/// Detects PAGE field codes within runs and emits HFInline::PageNumber.
+fn convert_hf_paragraph(para: &docx_rs::Paragraph) -> HeaderFooterParagraph {
+    let style = extract_paragraph_style(&para.property);
+    let mut elements: Vec<HFInline> = Vec::new();
+
+    for child in &para.children {
+        if let docx_rs::ParagraphChild::Run(run) = child {
+            let run_style = extract_run_style(&run.run_property);
+            extract_hf_run_elements(&run.children, &run_style, &mut elements);
+        }
+    }
+
+    HeaderFooterParagraph { style, elements }
+}
+
+/// Extract inline elements from a run's children for header/footer use.
+/// Recognizes text, tabs, and PAGE field codes.
+fn extract_hf_run_elements(
+    children: &[docx_rs::RunChild],
+    style: &TextStyle,
+    elements: &mut Vec<HFInline>,
+) {
+    let mut in_field = false;
+    let mut field_is_page = false;
+    let mut past_separate = false;
+
+    for child in children {
+        match child {
+            docx_rs::RunChild::FieldChar(fc) => match fc.field_char_type {
+                docx_rs::FieldCharType::Begin => {
+                    in_field = true;
+                    field_is_page = false;
+                    past_separate = false;
+                }
+                docx_rs::FieldCharType::Separate => {
+                    past_separate = true;
+                }
+                docx_rs::FieldCharType::End => {
+                    if field_is_page {
+                        elements.push(HFInline::PageNumber);
+                    }
+                    in_field = false;
+                    field_is_page = false;
+                    past_separate = false;
+                }
+                _ => {}
+            },
+            docx_rs::RunChild::InstrText(instr) => {
+                if in_field && matches!(instr.as_ref(), docx_rs::InstrText::PAGE(_)) {
+                    field_is_page = true;
+                }
+            }
+            docx_rs::RunChild::InstrTextString(s) => {
+                // After round-tripping through build/read_docx, InstrText::PAGE
+                // becomes InstrTextString("PAGE").
+                if in_field && s.trim().eq_ignore_ascii_case("page") {
+                    field_is_page = true;
+                }
+            }
+            docx_rs::RunChild::Text(t) => {
+                // Skip display values between separate and end
+                if in_field && past_separate {
+                    continue;
+                }
+                if !in_field && !t.text.is_empty() {
+                    elements.push(HFInline::Run(Run {
+                        text: t.text.clone(),
+                        style: style.clone(),
+                    }));
+                }
+            }
+            docx_rs::RunChild::Tab(_) => {
+                if !in_field {
+                    elements.push(HFInline::Run(Run {
+                        text: "\t".to_string(),
+                        style: style.clone(),
+                    }));
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -69,17 +476,23 @@ fn extract_page_setup(section_prop: &docx_rs::SectionProperty) -> (PageSize, Mar
 }
 
 /// Extract page size from docx-rs PageSize (which has private fields).
-/// Uses serde serialization to access the private `w` and `h` fields.
+/// Uses serde serialization to access the private `w`, `h`, and `orient` fields.
 /// Values in DOCX are in twips (1/20 of a point).
+/// When orient is "landscape" and width < height, dimensions are swapped to ensure
+/// landscape pages have width > height.
 fn extract_page_size(page_size: &docx_rs::PageSize) -> PageSize {
     if let Ok(json) = serde_json::to_value(page_size) {
         let w = json.get("w").and_then(|v| v.as_f64()).unwrap_or(0.0);
         let h = json.get("h").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let orient = json.get("orient").and_then(|v| v.as_str());
         if w > 0.0 && h > 0.0 {
-            return PageSize {
-                width: w / 20.0,  // twips to points
-                height: h / 20.0, // twips to points
-            };
+            let mut width = w / 20.0; // twips to points
+            let mut height = h / 20.0; // twips to points
+            // If orient is landscape but dimensions are portrait-style, swap them
+            if orient == Some("landscape") && width < height {
+                std::mem::swap(&mut width, &mut height);
+            }
+            return PageSize { width, height };
         }
     }
     PageSize::default()
@@ -96,14 +509,74 @@ fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
     }
 }
 
+/// Convert a docx-rs Paragraph into a TaggedElement.
+/// If the paragraph has numbering, returns a `ListParagraph`; otherwise `Plain`.
+fn convert_paragraph_element(
+    para: &docx_rs::Paragraph,
+    images: &ImageMap,
+    style_map: &StyleMap,
+) -> TaggedElement {
+    let num_info = extract_num_info(para);
+
+    // Build the paragraph IR
+    let mut blocks = Vec::new();
+    convert_paragraph_blocks(para, &mut blocks, images, style_map);
+
+    match num_info {
+        Some(info) => {
+            // Extract the actual Paragraph from the blocks.
+            // List paragraphs may also produce page breaks and images before the paragraph.
+            let mut pre_blocks = Vec::new();
+            let mut paragraph = None;
+            for block in blocks {
+                match block {
+                    Block::Paragraph(p) if paragraph.is_none() => {
+                        paragraph = Some(p);
+                    }
+                    _ => pre_blocks.push(block),
+                }
+            }
+            if !pre_blocks.is_empty() {
+                // If there were pre-blocks (page break, images), emit them as plain first.
+                // We return the plain blocks — the caller will see them before the list paragraph.
+                // For simplicity, we create a combined: Plain(pre) + ListParagraph.
+                // But TaggedElement is a single value, so we need to handle this differently.
+                // Actually, let's just emit them as plain first. The caller handles ordering.
+                // Since we can only return one TaggedElement, fold the pre-blocks into the
+                // paragraph by noting that list items in a list won't have page breaks.
+                // For now, treat the paragraph as a plain block if it has pre-blocks.
+                pre_blocks.push(Block::Paragraph(paragraph.unwrap_or_else(|| Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: Vec::new(),
+                })));
+                TaggedElement::Plain(pre_blocks)
+            } else if let Some(p) = paragraph {
+                TaggedElement::ListParagraph { info, paragraph: p }
+            } else {
+                TaggedElement::Plain(vec![])
+            }
+        }
+        None => TaggedElement::Plain(blocks),
+    }
+}
+
 /// Convert a docx-rs Paragraph to IR blocks, handling page breaks and inline images.
 /// If the paragraph has `page_break_before`, a `Block::PageBreak` is emitted first.
 /// Inline images within runs are extracted as separate `Block::Image` elements.
-fn convert_paragraph_blocks(para: &docx_rs::Paragraph, out: &mut Vec<Block>, images: &ImageMap) {
+/// Style formatting from the document's style definitions is merged with explicit formatting.
+fn convert_paragraph_blocks(
+    para: &docx_rs::Paragraph,
+    out: &mut Vec<Block>,
+    images: &ImageMap,
+    style_map: &StyleMap,
+) {
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
         out.push(Block::PageBreak);
     }
+
+    // Look up the paragraph's referenced style
+    let resolved_style = get_paragraph_style_id(&para.property).and_then(|id| style_map.get(id));
 
     // Collect text runs and detect inline images
     let mut runs: Vec<Run> = Vec::new();
@@ -123,9 +596,10 @@ fn convert_paragraph_blocks(para: &docx_rs::Paragraph, out: &mut Vec<Block>, ima
             // Extract text from the run
             let text = extract_run_text(run);
             if !text.is_empty() {
+                let explicit_style = extract_run_style(&run.run_property);
                 runs.push(Run {
                     text,
-                    style: extract_run_style(&run.run_property),
+                    style: merge_text_style(&explicit_style, resolved_style),
                 });
             }
         }
@@ -134,8 +608,9 @@ fn convert_paragraph_blocks(para: &docx_rs::Paragraph, out: &mut Vec<Block>, ima
     // Emit image blocks before the paragraph (inline images are block-level in our IR)
     out.extend(inline_images);
 
+    let explicit_para_style = extract_paragraph_style(&para.property);
     out.push(Block::Paragraph(Paragraph {
-        style: extract_paragraph_style(&para.property),
+        style: merge_paragraph_style(&explicit_para_style, resolved_style),
         runs,
     }));
 }
@@ -260,11 +735,11 @@ fn extract_line_spacing(
 /// - Vertical merging via vMerge restart/continue (rowspan)
 /// - Cell background color via shading
 /// - Cell borders
-fn convert_table(table: &docx_rs::Table, images: &ImageMap) -> Table {
+fn convert_table(table: &docx_rs::Table, images: &ImageMap, style_map: &StyleMap) -> Table {
     let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
-    let raw_rows = extract_raw_rows(table, images);
+    let raw_rows = extract_raw_rows(table, images, style_map);
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
@@ -286,7 +761,11 @@ struct RawCell {
 }
 
 /// Extract raw rows from a docx-rs Table, tracking column indices and vmerge state.
-fn extract_raw_rows(table: &docx_rs::Table, images: &ImageMap) -> Vec<Vec<RawCell>> {
+fn extract_raw_rows(
+    table: &docx_rs::Table,
+    images: &ImageMap,
+    style_map: &StyleMap,
+) -> Vec<Vec<RawCell>> {
     let mut raw_rows = Vec::new();
 
     for table_child in &table.rows {
@@ -310,7 +789,7 @@ fn extract_raw_rows(table: &docx_rs::Table, images: &ImageMap) -> Vec<Vec<RawCel
                 .and_then(|v| v.as_str())
                 .map(String::from);
 
-            let content = extract_cell_content(cell, images);
+            let content = extract_cell_content(cell, images, style_map);
             let border = prop_json
                 .as_ref()
                 .and_then(|j| j.get("borders"))
@@ -402,15 +881,19 @@ fn count_vmerge_span(raw_rows: &[Vec<RawCell>], start_row: usize, col_index: usi
 }
 
 /// Extract cell content (paragraphs) from a docx-rs TableCell.
-fn extract_cell_content(cell: &docx_rs::TableCell, images: &ImageMap) -> Vec<Block> {
+fn extract_cell_content(
+    cell: &docx_rs::TableCell,
+    images: &ImageMap,
+    style_map: &StyleMap,
+) -> Vec<Block> {
     let mut blocks = Vec::new();
     for content in &cell.children {
         match content {
             docx_rs::TableCellContent::Paragraph(para) => {
-                convert_paragraph_blocks(para, &mut blocks, images);
+                convert_paragraph_blocks(para, &mut blocks, images, style_map);
             }
             docx_rs::TableCellContent::Table(nested_table) => {
-                blocks.push(Block::Table(convert_table(nested_table, images)));
+                blocks.push(Block::Table(convert_table(nested_table, images, style_map)));
             }
             _ => {}
         }
@@ -603,7 +1086,7 @@ mod tests {
     fn test_parse_empty_docx() {
         let data = build_docx_bytes(vec![]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         // An empty DOCX should produce a document with one FlowPage and no content blocks
         assert_eq!(doc.pages.len(), 1);
         match &doc.pages[0] {
@@ -620,7 +1103,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Hello, world!")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         assert_eq!(doc.pages.len(), 1);
         let page = match &doc.pages[0] {
@@ -645,7 +1128,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Third paragraph")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -676,7 +1159,7 @@ mod tests {
                 .add_run(docx_rs::Run::new().add_text("world!")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -696,7 +1179,7 @@ mod tests {
     fn test_parse_empty_paragraph() {
         let data = build_docx_bytes(vec![docx_rs::Paragraph::new()]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -720,7 +1203,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Test")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -748,7 +1231,7 @@ mod tests {
             1440,
         );
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -781,7 +1264,7 @@ mod tests {
             720,
         );
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -803,7 +1286,7 @@ mod tests {
     #[test]
     fn test_parse_invalid_data_returns_error() {
         let parser = DocxParser;
-        let result = parser.parse(b"not a valid docx file");
+        let result = parser.parse(b"not a valid docx file", &ConvertOptions::default());
         assert!(result.is_err());
         match result.unwrap_err() {
             ConvertError::Parse(_) => {}
@@ -819,7 +1302,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Plain text")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -842,7 +1325,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Test")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -877,7 +1360,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Bold text").bold()),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.bold, Some(true));
     }
@@ -888,7 +1371,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Italic text").italic()),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.italic, Some(true));
     }
@@ -903,7 +1386,7 @@ mod tests {
             ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.underline, Some(true));
     }
@@ -914,7 +1397,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Struck text").strike()),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.strikethrough, Some(true));
     }
@@ -926,7 +1409,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Sized text").size(24)),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.font_size, Some(12.0));
     }
@@ -938,7 +1421,7 @@ mod tests {
                 .add_run(docx_rs::Run::new().add_text("Red text").color("FF0000")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.color, Some(Color::new(255, 0, 0)));
     }
@@ -953,7 +1436,7 @@ mod tests {
             ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.font_family, Some("Arial".to_string()));
     }
@@ -974,7 +1457,7 @@ mod tests {
             ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.bold, Some(true));
         assert_eq!(run.style.italic, Some(true));
@@ -991,7 +1474,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Plain text")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
         assert!(run.style.bold.is_none());
         assert!(run.style.italic.is_none());
@@ -1033,7 +1516,7 @@ mod tests {
                 .align(docx_rs::AlignmentType::Center),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Center));
     }
@@ -1046,7 +1529,7 @@ mod tests {
                 .align(docx_rs::AlignmentType::Right),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Right));
     }
@@ -1059,7 +1542,7 @@ mod tests {
                 .align(docx_rs::AlignmentType::Left),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Left));
     }
@@ -1072,7 +1555,7 @@ mod tests {
                 .align(docx_rs::AlignmentType::Both),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Justify));
     }
@@ -1086,7 +1569,7 @@ mod tests {
                 .indent(Some(720), None, None, None),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.indent_left, Some(36.0));
     }
@@ -1100,7 +1583,7 @@ mod tests {
                 .indent(None, None, Some(360), None),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.indent_right, Some(18.0));
     }
@@ -1119,7 +1602,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.indent_first_line, Some(24.0));
     }
@@ -1138,7 +1621,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.indent_left, Some(36.0));
         assert_eq!(para.style.indent_first_line, Some(-18.0));
@@ -1157,7 +1640,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         match para.style.line_spacing {
             Some(LineSpacing::Proportional(factor)) => {
@@ -1183,7 +1666,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         match para.style.line_spacing {
             Some(LineSpacing::Exact(pts)) => {
@@ -1202,7 +1685,7 @@ mod tests {
                 .line_spacing(docx_rs::LineSpacing::new().before(240).after(120)),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.space_before, Some(12.0));
         assert_eq!(para.style.space_after, Some(6.0));
@@ -1217,7 +1700,7 @@ mod tests {
                 .page_break_before(true),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let blocks = all_blocks(&doc);
         // Should have: Paragraph("Before break"), PageBreak, Paragraph("After break")
         assert_eq!(blocks.len(), 3, "Expected 3 blocks, got {}", blocks.len());
@@ -1247,7 +1730,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Center));
         assert_eq!(para.style.indent_left, Some(36.0));
@@ -1274,7 +1757,7 @@ mod tests {
                 .add_run(docx_rs::Run::new().add_text("Plain")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -1342,7 +1825,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.rows.len(), 2);
@@ -1383,7 +1866,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.column_widths.len(), 2);
@@ -1411,7 +1894,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         let cell = &t.rows[0].cells[0];
@@ -1449,7 +1932,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         // First row: one merged cell with colspan=2
@@ -1495,7 +1978,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.rows.len(), 3);
@@ -1525,7 +2008,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.rows[0].cells[0].background, Some(Color::new(255, 0, 0)));
@@ -1553,7 +2036,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         let cell = &t.rows[0].cells[0];
@@ -1592,7 +2075,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         let cell = &t.rows[0].cells[0];
@@ -1630,7 +2113,7 @@ mod tests {
         };
 
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let blocks = all_blocks(&doc);
 
         // Should have: Paragraph("Before"), Table, Paragraph("After")
@@ -1684,7 +2167,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         // First row: "Big" (colspan=2, rowspan=2) + "C1"
@@ -1708,7 +2191,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.rows.len(), 1);
@@ -1783,7 +2266,7 @@ mod tests {
     fn test_docx_image_inline_basic() {
         let data = build_docx_with_image(100, 80);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let images = find_images(&doc);
         assert_eq!(images.len(), 1, "Expected exactly one image block");
@@ -1794,7 +2277,7 @@ mod tests {
     fn test_docx_image_format_is_png() {
         let data = build_docx_with_image(50, 50);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let images = find_images(&doc);
         assert_eq!(
@@ -1810,7 +2293,7 @@ mod tests {
         // EMU to points: 952500/12700=75.0, 762000/12700=60.0
         let data = build_docx_with_image(100, 80);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let images = find_images(&doc);
         let img = images[0];
@@ -1845,7 +2328,7 @@ mod tests {
         let data = cursor.into_inner();
 
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(f) => f,
@@ -1881,7 +2364,7 @@ mod tests {
         let data = cursor.into_inner();
 
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let images = find_images(&doc);
         assert!(
@@ -1895,7 +2378,7 @@ mod tests {
     fn test_docx_image_data_contains_png_header() {
         let data = build_docx_with_image(50, 50);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let images = find_images(&doc);
         let img_data = &images[0].data;
@@ -1913,7 +2396,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Just text")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(f) => f,
@@ -1941,7 +2424,7 @@ mod tests {
         let data = cursor.into_inner();
 
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
         let images = find_images(&doc);
         assert!(!images.is_empty(), "Expected at least one image");
@@ -1958,5 +2441,859 @@ mod tests {
             (height - 100.0).abs() < 0.1,
             "Expected height ~100pt, got {height}"
         );
+    }
+
+    // ----- List parsing tests -----
+
+    /// Helper: build a DOCX with numbering definitions and list paragraphs.
+    fn build_docx_with_numbering(
+        abstract_nums: Vec<docx_rs::AbstractNumbering>,
+        numberings: Vec<docx_rs::Numbering>,
+        paragraphs: Vec<docx_rs::Paragraph>,
+    ) -> Vec<u8> {
+        let mut nums = docx_rs::Numberings::new();
+        for an in abstract_nums {
+            nums = nums.add_abstract_numbering(an);
+        }
+        for n in numberings {
+            nums = nums.add_numbering(n);
+        }
+
+        let mut docx = docx_rs::Docx::new().numberings(nums);
+        for p in paragraphs {
+            docx = docx.add_paragraph(p);
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_parse_simple_bulleted_list() {
+        // Create a bullet list: abstractNum with format "bullet", numId=1, ilvl=0
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("bullet"),
+            docx_rs::LevelText::new("•"),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item A"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item B"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item C"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Should produce a single List block with 3 items
+        let lists: Vec<&List> = page
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::List(l) => Some(l),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(lists.len(), 1, "Expected 1 list block");
+        assert_eq!(lists[0].kind, ListKind::Unordered);
+        assert_eq!(lists[0].items.len(), 3);
+        assert_eq!(lists[0].items[0].level, 0);
+
+        // Verify item content
+        let text0: String = lists[0].items[0]
+            .content
+            .iter()
+            .flat_map(|p| p.runs.iter().map(|r| r.text.as_str()))
+            .collect();
+        assert_eq!(text0, "Item A");
+    }
+
+    #[test]
+    fn test_parse_simple_numbered_list() {
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("decimal"),
+            docx_rs::LevelText::new("%1."),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("First"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Second"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let lists: Vec<&List> = page
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::List(l) => Some(l),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(lists.len(), 1, "Expected 1 list block");
+        assert_eq!(lists[0].kind, ListKind::Ordered);
+        assert_eq!(lists[0].items.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_nested_multi_level_list() {
+        let abstract_num = docx_rs::AbstractNumbering::new(0)
+            .add_level(docx_rs::Level::new(
+                0,
+                docx_rs::Start::new(1),
+                docx_rs::NumberFormat::new("bullet"),
+                docx_rs::LevelText::new("•"),
+                docx_rs::LevelJc::new("left"),
+            ))
+            .add_level(docx_rs::Level::new(
+                1,
+                docx_rs::Start::new(1),
+                docx_rs::NumberFormat::new("bullet"),
+                docx_rs::LevelText::new("◦"),
+                docx_rs::LevelJc::new("left"),
+            ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Top level"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Nested item"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(1)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Back to top"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let lists: Vec<&List> = page
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::List(l) => Some(l),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(lists.len(), 1, "Expected 1 list block");
+        assert_eq!(lists[0].items.len(), 3);
+        assert_eq!(lists[0].items[0].level, 0);
+        assert_eq!(lists[0].items[1].level, 1);
+        assert_eq!(lists[0].items[2].level, 0);
+    }
+
+    #[test]
+    fn test_parse_mixed_list_and_paragraphs() {
+        // A list followed by a regular paragraph should produce two separate blocks
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("decimal"),
+            docx_rs::LevelText::new("%1."),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item 1"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item 2"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Regular paragraph")),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Should have at least a List block and a Paragraph block
+        let list_count = page
+            .content
+            .iter()
+            .filter(|b| matches!(b, Block::List(_)))
+            .count();
+        let para_count = page
+            .content
+            .iter()
+            .filter(|b| matches!(b, Block::Paragraph(_)))
+            .count();
+        assert!(list_count >= 1, "Expected at least 1 list block");
+        assert!(para_count >= 1, "Expected at least 1 paragraph block");
+    }
+
+    // ----- US-020: Header/footer parsing tests -----
+
+    /// Helper: build a DOCX with a text header.
+    fn build_docx_with_header(header_text: &str) -> Vec<u8> {
+        let header = docx_rs::Header::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text(header_text)),
+        );
+        let docx = docx_rs::Docx::new().header(header).add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body text")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Helper: build a DOCX with a text footer.
+    fn build_docx_with_footer(footer_text: &str) -> Vec<u8> {
+        let footer = docx_rs::Footer::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text(footer_text)),
+        );
+        let docx = docx_rs::Docx::new().footer(footer).add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body text")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Helper: build a DOCX with a page number field in footer.
+    fn build_docx_with_page_number_footer() -> Vec<u8> {
+        let footer = docx_rs::Footer::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(
+                docx_rs::Run::new()
+                    .add_text("Page ")
+                    .add_field_char(docx_rs::FieldCharType::Begin, false)
+                    .add_instr_text(docx_rs::InstrText::PAGE(docx_rs::InstrPAGE::new()))
+                    .add_field_char(docx_rs::FieldCharType::Separate, false)
+                    .add_text("1")
+                    .add_field_char(docx_rs::FieldCharType::End, false),
+            ),
+        );
+        let docx = docx_rs::Docx::new().footer(footer).add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body text")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_parse_docx_with_text_header() {
+        let data = build_docx_with_header("My Document Header");
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Should have a header
+        assert!(page.header.is_some(), "FlowPage should have a header");
+        let header = page.header.as_ref().unwrap();
+        assert!(
+            !header.paragraphs.is_empty(),
+            "Header should have paragraphs"
+        );
+
+        // Find the text run in header
+        let has_text = header.paragraphs.iter().any(|p| {
+            p.elements.iter().any(|e| matches!(e, crate::ir::HFInline::Run(r) if r.text.contains("My Document Header")))
+        });
+        assert!(
+            has_text,
+            "Header should contain the text 'My Document Header'"
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_with_text_footer() {
+        let data = build_docx_with_footer("Footer Text");
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert!(page.footer.is_some(), "FlowPage should have a footer");
+        let footer = page.footer.as_ref().unwrap();
+
+        let has_text = footer.paragraphs.iter().any(|p| {
+            p.elements
+                .iter()
+                .any(|e| matches!(e, crate::ir::HFInline::Run(r) if r.text.contains("Footer Text")))
+        });
+        assert!(has_text, "Footer should contain 'Footer Text'");
+    }
+
+    #[test]
+    fn test_parse_docx_with_page_number_in_footer() {
+        let data = build_docx_with_page_number_footer();
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert!(page.footer.is_some(), "Should have footer");
+        let footer = page.footer.as_ref().unwrap();
+
+        // Footer should contain a PageNumber element
+        let has_page_num = footer.paragraphs.iter().any(|p| {
+            p.elements
+                .iter()
+                .any(|e| matches!(e, crate::ir::HFInline::PageNumber))
+        });
+        assert!(has_page_num, "Footer should contain a PageNumber field");
+
+        // Footer should also contain the "Page " text
+        let has_text = footer.paragraphs.iter().any(|p| {
+            p.elements
+                .iter()
+                .any(|e| matches!(e, crate::ir::HFInline::Run(r) if r.text.contains("Page ")))
+        });
+        assert!(
+            has_text,
+            "Footer should contain 'Page ' text before page number"
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_with_header_and_footer() {
+        let header = docx_rs::Header::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Header Text")),
+        );
+        let footer = docx_rs::Footer::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Footer Text")),
+        );
+        let docx = docx_rs::Docx::new()
+            .header(header)
+            .footer(footer)
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body")));
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert!(page.header.is_some(), "Should have header");
+        assert!(page.footer.is_some(), "Should have footer");
+    }
+
+    #[test]
+    fn test_parse_docx_without_header_footer() {
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Just text")),
+        ]);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert!(page.header.is_none(), "No header expected");
+        assert!(page.footer.is_none(), "No footer expected");
+    }
+
+    // ----- Page orientation tests -----
+
+    #[test]
+    fn test_portrait_document_width_less_than_height() {
+        // Standard A4 portrait: 11906 x 16838 twips
+        let data = build_docx_bytes_with_page_setup(
+            vec![docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Portrait"))],
+            11906,
+            16838,
+            1440,
+            1440,
+            1440,
+            1440,
+        );
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        assert!(
+            page.size.width < page.size.height,
+            "Portrait: width ({}) should be < height ({})",
+            page.size.width,
+            page.size.height
+        );
+    }
+
+    #[test]
+    fn test_landscape_document_width_greater_than_height() {
+        // Landscape A4: width and height swapped → 16838 x 11906 twips
+        let data = build_docx_bytes_with_page_setup(
+            vec![docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Landscape"))],
+            16838,
+            11906,
+            1440,
+            1440,
+            1440,
+            1440,
+        );
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        assert!(
+            page.size.width > page.size.height,
+            "Landscape: width ({}) should be > height ({})",
+            page.size.width,
+            page.size.height
+        );
+        // Verify approximate values: 16838/20 = 841.9pt, 11906/20 = 595.3pt
+        assert!(
+            (page.size.width - 841.9).abs() < 1.0,
+            "Expected width ~841.9, got {}",
+            page.size.width
+        );
+        assert!(
+            (page.size.height - 595.3).abs() < 1.0,
+            "Expected height ~595.3, got {}",
+            page.size.height
+        );
+    }
+
+    #[test]
+    fn test_default_document_is_portrait() {
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Default")),
+        ]);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        // Default docx-rs page is A4 portrait
+        assert!(
+            page.size.width < page.size.height,
+            "Default should be portrait: width ({}) < height ({})",
+            page.size.width,
+            page.size.height
+        );
+    }
+
+    #[test]
+    fn test_landscape_with_orient_attribute() {
+        // Build a landscape DOCX using page_orient + swapped dimensions
+        let mut docx = docx_rs::Docx::new()
+            .page_size(16838, 11906)
+            .page_orient(docx_rs::PageOrientationType::Landscape)
+            .page_margin(
+                docx_rs::PageMargin::new()
+                    .top(1440)
+                    .bottom(1440)
+                    .left(1440)
+                    .right(1440),
+            );
+        docx = docx.add_paragraph(
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Landscape with orient")),
+        );
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        assert!(
+            page.size.width > page.size.height,
+            "Landscape with orient: width ({}) should be > height ({})",
+            page.size.width,
+            page.size.height
+        );
+    }
+
+    #[test]
+    fn test_extract_page_size_orient_landscape_swaps_dimensions() {
+        // Edge case: orient=landscape but dimensions are portrait-style (w < h).
+        // The parser should detect orient and swap width/height.
+        let page_size = docx_rs::PageSize::new()
+            .width(11906) // portrait w
+            .height(16838) // portrait h
+            .orient(docx_rs::PageOrientationType::Landscape);
+
+        let result = extract_page_size(&page_size);
+        assert!(
+            result.width > result.height,
+            "orient=landscape should ensure width ({}) > height ({})",
+            result.width,
+            result.height
+        );
+    }
+
+    #[test]
+    fn test_extract_page_size_no_orient_keeps_dimensions() {
+        // No orient attribute: dimensions should be used as-is
+        let page_size = docx_rs::PageSize::new().width(11906).height(16838);
+
+        let result = extract_page_size(&page_size);
+        // 11906/20 = 595.3, 16838/20 = 841.9
+        assert!(
+            result.width < result.height,
+            "No orient: width ({}) should be < height ({})",
+            result.width,
+            result.height
+        );
+    }
+
+    // ----- Document styles tests (US-022) -----
+
+    /// Helper: build a DOCX with custom styles and paragraphs.
+    fn build_docx_bytes_with_styles(
+        paragraphs: Vec<docx_rs::Paragraph>,
+        styles: Vec<docx_rs::Style>,
+    ) -> Vec<u8> {
+        let mut docx = docx_rs::Docx::new();
+        for s in styles {
+            docx = docx.add_style(s);
+        }
+        for p in paragraphs {
+            docx = docx.add_paragraph(p);
+        }
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_heading1_style_applies_defaults() {
+        // Create a Heading 1 style with outline level 0 (no explicit size/bold)
+        let h1_style = docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph)
+            .name("Heading 1")
+            .outline_lvl(0);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Title"))
+                    .style("Heading1"),
+            ],
+            vec![h1_style],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let run = first_run(&doc);
+
+        // Heading 1 default: 24pt bold
+        assert_eq!(run.style.font_size, Some(24.0));
+        assert_eq!(run.style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_heading2_style_applies_defaults() {
+        let h2_style = docx_rs::Style::new("Heading2", docx_rs::StyleType::Paragraph)
+            .name("Heading 2")
+            .outline_lvl(1);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Subtitle"))
+                    .style("Heading2"),
+            ],
+            vec![h2_style],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let run = first_run(&doc);
+
+        // Heading 2 default: 20pt bold
+        assert_eq!(run.style.font_size, Some(20.0));
+        assert_eq!(run.style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_heading3_through_6_defaults() {
+        // Test heading levels 3-6 with their expected default sizes
+        let expected: Vec<(usize, &str, f64)> = vec![
+            (2, "Heading3", 16.0), // H3
+            (3, "Heading4", 14.0), // H4
+            (4, "Heading5", 12.0), // H5
+            (5, "Heading6", 11.0), // H6
+        ];
+
+        for (outline_lvl, style_id, expected_size) in expected {
+            let style = docx_rs::Style::new(style_id, docx_rs::StyleType::Paragraph)
+                .name(format!("Heading {}", outline_lvl + 1))
+                .outline_lvl(outline_lvl);
+
+            let data = build_docx_bytes_with_styles(
+                vec![
+                    docx_rs::Paragraph::new()
+                        .add_run(docx_rs::Run::new().add_text("Heading text"))
+                        .style(style_id),
+                ],
+                vec![style],
+            );
+
+            let parser = DocxParser;
+            let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+            let run = first_run(&doc);
+
+            assert_eq!(
+                run.style.font_size,
+                Some(expected_size),
+                "Heading {} should have size {expected_size}pt",
+                outline_lvl + 1
+            );
+            assert_eq!(
+                run.style.bold,
+                Some(true),
+                "Heading {} should be bold",
+                outline_lvl + 1
+            );
+        }
+    }
+
+    #[test]
+    fn test_style_with_explicit_formatting() {
+        // Style defines size=36 (half-points = 18pt) and bold
+        let custom = docx_rs::Style::new("CustomStyle", docx_rs::StyleType::Paragraph)
+            .name("Custom Style")
+            .size(36) // 18pt in half-points
+            .bold();
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Custom styled"))
+                    .style("CustomStyle"),
+            ],
+            vec![custom],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let run = first_run(&doc);
+
+        assert_eq!(run.style.font_size, Some(18.0));
+        assert_eq!(run.style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_explicit_run_formatting_overrides_style() {
+        // Style says bold + 24pt (via heading defaults), but run explicitly sets size=20 (10pt)
+        let h1_style = docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph)
+            .name("Heading 1")
+            .outline_lvl(0);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Small heading").size(20)) // 10pt
+                    .style("Heading1"),
+            ],
+            vec![h1_style],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let run = first_run(&doc);
+
+        // Explicit size (10pt) overrides heading default (24pt)
+        assert_eq!(run.style.font_size, Some(10.0));
+        // Bold still comes from heading defaults since not explicitly overridden
+        assert_eq!(run.style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_style_alignment_applied_to_paragraph() {
+        let centered = docx_rs::Style::new("CenteredStyle", docx_rs::StyleType::Paragraph)
+            .name("Centered")
+            .align(docx_rs::AlignmentType::Center);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Centered paragraph"))
+                    .style("CenteredStyle"),
+            ],
+            vec![centered],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let para = first_paragraph(&doc);
+
+        assert_eq!(para.style.alignment, Some(Alignment::Center));
+    }
+
+    #[test]
+    fn test_normal_style_no_heading_defaults() {
+        // Normal paragraphs (no heading) should not get heading defaults
+        let normal = docx_rs::Style::new("Normal", docx_rs::StyleType::Paragraph).name("Normal");
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Normal text"))
+                    .style("Normal"),
+            ],
+            vec![normal],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let run = first_run(&doc);
+
+        // Normal style should NOT have heading defaults
+        assert!(run.style.font_size.is_none());
+        assert!(run.style.bold.is_none());
+    }
+
+    #[test]
+    fn test_heading_with_mixed_paragraphs() {
+        // Document with Heading 1, Normal, Heading 2 paragraphs
+        let h1 = docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph)
+            .name("Heading 1")
+            .outline_lvl(0);
+        let h2 = docx_rs::Style::new("Heading2", docx_rs::StyleType::Paragraph)
+            .name("Heading 2")
+            .outline_lvl(1);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Title"))
+                    .style("Heading1"),
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body text")),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Subtitle"))
+                    .style("Heading2"),
+            ],
+            vec![h1, h2],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let blocks = all_blocks(&doc);
+
+        // First paragraph: Heading 1
+        if let Block::Paragraph(p) = &blocks[0] {
+            assert_eq!(p.runs[0].style.font_size, Some(24.0));
+            assert_eq!(p.runs[0].style.bold, Some(true));
+        } else {
+            panic!("Expected Paragraph");
+        }
+
+        // Second paragraph: Normal (no style)
+        if let Block::Paragraph(p) = &blocks[1] {
+            assert!(p.runs[0].style.font_size.is_none());
+            assert!(p.runs[0].style.bold.is_none());
+        } else {
+            panic!("Expected Paragraph");
+        }
+
+        // Third paragraph: Heading 2
+        if let Block::Paragraph(p) = &blocks[2] {
+            assert_eq!(p.runs[0].style.font_size, Some(20.0));
+            assert_eq!(p.runs[0].style.bold, Some(true));
+        } else {
+            panic!("Expected Paragraph");
+        }
+    }
+
+    #[test]
+    fn test_style_with_color_and_font() {
+        let custom = docx_rs::Style::new("Fancy", docx_rs::StyleType::Paragraph)
+            .name("Fancy Style")
+            .color("FF0000")
+            .fonts(docx_rs::RunFonts::new().ascii("Georgia"));
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Fancy text"))
+                    .style("Fancy"),
+            ],
+            vec![custom],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let run = first_run(&doc);
+
+        assert_eq!(run.style.color, Some(Color::new(255, 0, 0)));
+        assert_eq!(run.style.font_family, Some("Georgia".to_string()));
     }
 }
