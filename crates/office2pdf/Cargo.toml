@@ -1,0 +1,13 @@
+[package]
+name = "office2pdf"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Convert DOCX, XLSX, and PPTX files to PDF using pure Rust"
+
+[dependencies]
+thiserror = "2"
+
+[dev-dependencies]
