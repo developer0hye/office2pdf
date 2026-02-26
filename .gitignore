@@ -7,3 +7,7 @@ Cargo.lock
 .idea/
 *.swp
 *.swo
+
+# Ralph runtime files
+scripts/ralph/.last-branch
+scripts/ralph/archive/

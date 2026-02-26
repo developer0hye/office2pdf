@@ -1,0 +1,186 @@
+{
+  "project": "office2pdf",
+  "branchName": "ralph/phase3-advanced",
+  "description": "Phase 3: P2 Features - Hyperlinks, footnotes, TOC, group shapes, print area, PDF/A, batch conversion",
+  "userStories": [
+    {
+      "id": "US-030",
+      "title": "DOCX parser - hyperlinks",
+      "description": "As a user, I want clickable hyperlinks in DOCX documents to become clickable links in the PDF output.",
+      "acceptanceCriteria": [
+        "Parse hyperlink elements from DOCX paragraphs (w:hyperlink with r:id referencing a relationship)",
+        "Resolve hyperlink targets from document.xml.rels",
+        "Add link URL to IR Run or create a Link wrapper type",
+        "Generate Typst #link(\"url\")[text] markup for hyperlinks",
+        "Verify links are clickable in the output PDF",
+        "Unit tests: paragraph with hyperlink, multiple links in one paragraph",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-031",
+      "title": "DOCX parser - footnotes and endnotes",
+      "description": "As a user, I want footnotes and endnotes in DOCX documents to render at the bottom of the page or end of document in the PDF.",
+      "acceptanceCriteria": [
+        "Parse footnote references (w:footnoteReference) from DOCX paragraphs",
+        "Parse footnote content from footnotes.xml",
+        "Parse endnote references and content from endnotes.xml",
+        "Add Footnote/Endnote support to IR (e.g., Run::Footnote with content)",
+        "Generate Typst #footnote[...] markup for footnotes",
+        "Endnotes rendered as footnotes (Typst doesn't distinguish) or at document end",
+        "Unit tests: document with footnotes, document with endnotes",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-032",
+      "title": "DOCX parser - table of contents",
+      "description": "As a user, I want the table of contents in DOCX documents to render in the PDF, showing heading entries.",
+      "acceptanceCriteria": [
+        "Detect TOC field in DOCX (structured document tag or field codes)",
+        "Extract TOC entries (text and page references) from the cached TOC content in the DOCX",
+        "Render TOC entries as formatted paragraphs with leader dots (best-effort)",
+        "If Typst #outline() is feasible (requires heading markup), use it; otherwise render as static text",
+        "Unit tests: document with a TOC containing heading entries",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-033",
+      "title": "PPTX parser - group shapes",
+      "description": "As a user, I want grouped shapes in PPTX slides to render correctly with their relative positions maintained.",
+      "acceptanceCriteria": [
+        "Parse <p:grpSp> group shape elements from slide XML",
+        "Extract the group transform (a:grpSpPr/a:xfrm) with child-to-group coordinate mapping",
+        "Recursively parse child shapes within the group",
+        "Apply coordinate transformation: map child positions from group space to slide space",
+        "Flatten group into individual positioned FixedElements",
+        "Unit tests: group with two shapes, nested groups, group with mixed element types",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-034",
+      "title": "PPTX parser - shape styles (rotation, transparency)",
+      "description": "As a user, I want shape visual effects like rotation and transparency in PPTX slides to be approximated in the PDF.",
+      "acceptanceCriteria": [
+        "Parse rotation angle from shape transform (a:xfrm rot attribute, in 60000ths of a degree)",
+        "Parse transparency/alpha from solid fills and shape properties",
+        "Add rotation and opacity fields to the Shape IR",
+        "Generate Typst #rotate(angle) wrapper for rotated shapes",
+        "Apply opacity via Typst fill color alpha channel",
+        "Unit tests: rotated shape, semi-transparent shape, shape with both",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-035",
+      "title": "XLSX parser - print area and page breaks",
+      "description": "As a user, I want the PDF output to respect print area settings and page breaks defined in the XLSX spreadsheet.",
+      "acceptanceCriteria": [
+        "Parse defined print area from XLSX (definedNames with _xlnm.Print_Area)",
+        "When a print area is defined, limit output to that cell range only",
+        "Parse manual row and column page breaks from XLSX",
+        "Insert IR PageBreak elements at the correct positions in the table",
+        "Unit tests: spreadsheet with print area set, spreadsheet with manual page breaks",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-036",
+      "title": "XLSX parser - sheet headers and footers",
+      "description": "As a user, I want sheet headers and footers defined in XLSX to appear in the PDF output.",
+      "acceptanceCriteria": [
+        "Parse header and footer strings from XLSX sheet print settings",
+        "Handle header/footer format codes (&L, &C, &R for left/center/right sections)",
+        "Handle &P (page number) and &N (total pages) codes",
+        "Map to IR HeaderFooter on TablePage",
+        "Generate Typst page header/footer markup",
+        "Unit tests: sheet with custom header, sheet with page numbers in footer",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-037",
+      "title": "PDF/A output support",
+      "description": "As a user, I want an option to produce PDF/A-compliant output for archival purposes.",
+      "acceptanceCriteria": [
+        "Add pdf_standard: Option<PdfStandard> to ConvertOptions (with PdfStandard::PdfA2b variant)",
+        "Configure typst-pdf export for PDF/A-2b compliance when the option is set",
+        "Add --pdf-a CLI flag that sets the PDF/A option",
+        "Verify the output PDF includes PDF/A metadata (XMP, output intent) when option is enabled",
+        "Unit tests: conversion with PDF/A option produces valid PDF bytes",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-038",
+      "title": "CLI - batch conversion and output directory",
+      "description": "As a user, I want to convert multiple files at once and specify an output directory for batch conversions.",
+      "acceptanceCriteria": [
+        "CLI accepts multiple input file paths as positional arguments",
+        "Add --outdir flag to specify output directory for all converted files",
+        "Each input file is converted independently; failures on one file don't stop others",
+        "Print summary at the end: N succeeded, M failed, with details",
+        "Output filenames default to input filename with .pdf extension in the output directory",
+        "Unit tests / integration tests: batch convert 2-3 files, verify all outputs exist",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-039",
+      "title": "ConvertOptions - paper size, font paths, landscape override",
+      "description": "As a user, I want to override paper size, add custom font directories, and force landscape orientation via options and CLI flags.",
+      "acceptanceCriteria": [
+        "Add paper_size: Option<PaperSize> to ConvertOptions (A4, Letter, Legal, custom w×h)",
+        "Add font_paths: Vec<PathBuf> to ConvertOptions for additional font directories",
+        "Add landscape: Option<bool> to ConvertOptions for orientation override",
+        "Font paths are searched in MinimalWorld in addition to system/embedded fonts",
+        "Add CLI flags: --paper (a4/letter/legal), --font-path (repeatable), --landscape",
+        "Paper size and landscape override apply to the output regardless of source document settings",
+        "Unit tests: conversion with custom paper size, conversion with landscape override",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

@@ -1,0 +1,234 @@
+{
+  "project": "office2pdf",
+  "branchName": "ralph/phase2-formatting",
+  "description": "Phase 2: P1 Features - Lists, headers/footers, styles, themes, cell formatting, font fallback, error handling",
+  "userStories": [
+    {
+      "id": "US-017",
+      "title": "Enhanced error handling - skip unparseable elements",
+      "description": "As a user, I want the converter to continue even when it encounters unsupported or malformed elements, so that I get a PDF with as much content as possible instead of an error.",
+      "acceptanceCriteria": [
+        "Add a ConvertWarning type (e.g., enum with element description and reason) to the library",
+        "Modify the conversion pipeline to collect warnings instead of failing on non-fatal parse errors",
+        "Parser functions catch individual element-level errors and emit warnings while continuing",
+        "Return warnings alongside PDF bytes (e.g., ConvertResult { pdf: Vec<u8>, warnings: Vec<ConvertWarning> })",
+        "CLI prints warnings to stderr after successful conversion",
+        "Unit tests: a DOCX with valid paragraphs plus an intentionally unparseable element still produces a PDF containing the valid text",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Font fallback - system font discovery",
+      "description": "As a user, I want the converter to discover and use system-installed fonts so that documents render with their intended typefaces when available.",
+      "acceptanceCriteria": [
+        "Enable system font searching in MinimalWorld via typst-kit FontSearcher (set system fonts to true)",
+        "Font resolution order: document-embedded fonts → system fonts → built-in fallback fonts",
+        "The existing embedded fonts (Libertinus, New Computer Modern, DejaVu Sans Mono) remain as ultimate fallback",
+        "Unit tests: verify compilation succeeds and produces valid PDF with system font names in the IR",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "DOCX parser - lists (numbered, bulleted, multi-level)",
+      "description": "As a user, I want numbered and bulleted lists in DOCX files to render correctly in the PDF output with proper indentation and markers.",
+      "acceptanceCriteria": [
+        "Add List and ListItem types to the IR: Block::List variant, ListItem with content (Vec<Paragraph>), indent level, and list kind (Ordered/Unordered)",
+        "Parse DOCX numbering definitions (abstractNum, num) from the document",
+        "Detect list paragraphs via numPr element (numId + ilvl) in paragraph properties",
+        "Group consecutive list paragraphs into List blocks with correct nesting levels",
+        "Generate Typst markup for lists: #enum() for numbered, #list() for bulleted, with indent levels",
+        "Unit tests: simple bulleted list, simple numbered list, nested multi-level list, mixed list types",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "DOCX parser - headers and footers with page numbers",
+      "description": "As a user, I want document headers and footers (including page numbers) to appear in the converted PDF.",
+      "acceptanceCriteria": [
+        "Define HeaderFooter IR type with content (Vec<Paragraph>) if not already fully implemented",
+        "Parse default header and footer from DOCX section properties (headerReference, footerReference)",
+        "Extract header/footer content from the corresponding header*.xml and footer*.xml parts",
+        "Handle PAGE field codes (fldChar/instrText) to render page numbers",
+        "Generate Typst #set page(header: [...], footer: [...]) markup with content and page numbering via #counter(page).display()",
+        "Unit tests: document with text header, document with page number in footer, document with both",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "DOCX parser - page orientation (landscape/portrait)",
+      "description": "As a user, I want landscape-oriented DOCX documents to produce landscape PDF pages.",
+      "acceptanceCriteria": [
+        "Parse the orient attribute from section properties (pgSz) in DOCX",
+        "When orientation is landscape, ensure page width > height in the IR FlowPage",
+        "Default remains portrait if no orientation is specified",
+        "Typst codegen already handles page dimensions correctly (no changes expected)",
+        "Unit tests: portrait document, landscape document, verify correct page dimensions",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "DOCX parser - document styles (Heading 1-6)",
+      "description": "As a user, I want heading styles in DOCX documents to render with appropriate font sizes and weights in the PDF.",
+      "acceptanceCriteria": [
+        "Parse styles.xml from DOCX to extract named style definitions (Heading 1 through Heading 6, Normal, etc.)",
+        "When a paragraph references a style (via pStyle), apply the style's formatting as defaults",
+        "Paragraph-level and run-level explicit formatting overrides style defaults",
+        "Map heading levels to appropriate default sizes (e.g., Heading 1 = 24pt bold, Heading 2 = 20pt bold, etc.) when the style definition doesn't specify",
+        "Unit tests: document with Heading 1, Heading 2, Normal paragraphs; verify sizes and bold are applied",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "PPTX parser - theme colors and fonts",
+      "description": "As a user, I want theme colors and fonts from PPTX presentations to be used when rendering slides to PDF.",
+      "acceptanceCriteria": [
+        "Parse ppt/theme/theme1.xml for the color scheme (dk1, dk2, lt1, lt2, accent1-6, hlink, folHlink)",
+        "Parse font scheme (majorFont, minorFont) from theme XML",
+        "Resolve schemeClr references in elements to actual RGB colors using the parsed theme",
+        "Apply theme fonts as defaults when elements don't specify explicit fonts",
+        "Unit tests: presentation with theme colors in shapes and text, verify correct RGB values",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "PPTX parser - slide backgrounds",
+      "description": "As a user, I want slide backgrounds (solid colors) to appear in the converted PDF.",
+      "acceptanceCriteria": [
+        "Add an optional background_color field to FixedPage IR",
+        "Parse background element (p:bg) from slide XML for solid color fills",
+        "Fall back to layout background, then master background if slide has none",
+        "Generate Typst page background: #set page(fill: rgb(...))",
+        "Unit tests: slide with solid color background, slide inheriting master background, slide with no background",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "PPTX parser - slide master and layout inheritance",
+      "description": "As a user, I want elements from slide masters and layouts to appear as base content on slides, so that common elements like logos and titles render correctly.",
+      "acceptanceCriteria": [
+        "Parse slide master XML (ppt/slideMasters/slideMaster*.xml) for base elements",
+        "Parse slide layout XML (ppt/slideLayouts/slideLayout*.xml) for layout elements",
+        "Resolve the inheritance chain: slide → layout → master for each slide",
+        "Master/layout elements appear behind slide-specific elements",
+        "Unit tests: presentation with master containing a shape, verify it appears on all slides",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-026",
+      "title": "PPTX parser - tables in slides",
+      "description": "As a user, I want tables within PPTX slides to render in the PDF output.",
+      "acceptanceCriteria": [
+        "Parse <a:tbl> table elements within slide shape trees",
+        "Extract table rows, cells, cell text with formatting",
+        "Support cell merging (gridSpan, vMerge) in slide tables",
+        "Map to IR Table positioned as a FixedElement on the FixedPage",
+        "Generate Typst markup: #place() with table content at the correct position",
+        "Unit tests: slide with a basic table, table with merged cells, table with formatted text",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-027",
+      "title": "XLSX parser - cell formatting (font, color, background, borders)",
+      "description": "As a user, I want cell-level formatting in XLSX spreadsheets to be preserved in the PDF output.",
+      "acceptanceCriteria": [
+        "Extract font styling from cells: font name, size, color, bold, italic",
+        "Extract cell background/fill color",
+        "Extract cell border styles (color, width per side)",
+        "Extract row heights and apply them in the IR table",
+        "Map formatting to IR TextStyle in cell paragraphs and TableCell border/background properties",
+        "Unit tests: cells with bold/colored text, cells with background fill, cells with borders, custom row heights",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-028",
+      "title": "XLSX parser - number formats (currency, percentage, date)",
+      "description": "As a user, I want numbers in XLSX cells to display with their original formatting (currency symbols, percentage signs, date formats) in the PDF.",
+      "acceptanceCriteria": [
+        "Parse number format strings from XLSX styles (numFmt)",
+        "Apply formatting to cell values: currency (e.g., $1,234.56), percentage (e.g., 45.6%), dates (e.g., 2024-01-15)",
+        "Handle built-in number format IDs (0-49) and custom format strings",
+        "Formatted values appear as text in the IR (pre-formatted before Typst codegen)",
+        "Unit tests: cells with currency format, percentage format, date format, general number format",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-029",
+      "title": "ConvertOptions - sheet/slide selection and CLI flags",
+      "description": "As a user, I want to select specific sheets or slides for conversion via library options and CLI flags.",
+      "acceptanceCriteria": [
+        "Add sheet_names: Option<Vec<String>> to ConvertOptions for XLSX sheet filtering",
+        "Add slide_range: Option<Range> to ConvertOptions for PPTX slide filtering",
+        "XLSX parser filters sheets based on ConvertOptions.sheet_names",
+        "PPTX parser filters slides based on ConvertOptions.slide_range",
+        "Add --sheets flag to CLI (comma-separated sheet names)",
+        "Add --slides flag to CLI (range like 1-5 or single number)",
+        "Unit tests: XLSX conversion with specific sheet selected, PPTX conversion with slide range",
+        "cargo test --workspace passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
