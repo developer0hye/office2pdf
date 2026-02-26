@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- **ConvertOptions threading**: `Parser::parse(&self, data: &[u8], options: &ConvertOptions)` — all parsers accept options. XLSX uses `options.sheet_names` to filter sheets. PPTX uses `options.slide_range` to filter slides. DOCX ignores options. `convert_bytes()` passes options to parser. CLI builds ConvertOptions from `--sheets` (comma-separated) and `--slides` (range "1-5" or single "3") flags.
 - **XLSX cell formatting**: `cell.get_style()` → `&Style`. Font: `style.get_font()` → `Option<&Font>` with `get_name()`, `get_size()`, `get_bold()`, `get_italic()`, `get_underline()`, `get_strikethrough()`, `get_color().get_argb()`. Background: `style.get_background_color()` → `Option<&Color>` with `get_argb()` (ARGB 8-char hex, skip first 2 for alpha). Borders: `style.get_borders()` → `Option<&Borders>` with `get_top/bottom/left/right()` → `&Border` with `get_border_style()` (str) and `get_color().get_argb()`. Border widths: hair=0.25pt, thin=0.5pt, medium=1.0pt, thick=2.0pt. Row height: `sheet.get_row_dimension(&row_idx)` → `Option<&Row>` with `get_height()` and `get_custom_height()`. Test setup: `cell.get_style_mut().get_font_mut().set_bold(true)`, `style.set_background_color("FFFFFF00")`, `style.get_borders_mut().get_bottom_mut().set_border_style("medium")`, `sheet.get_row_dimension_mut(&1).set_height(30.0)`. Defaults to skip: font name "Calibri", size 11.0, color "FF000000".
 - **XLSX number formats**: Use `cell.get_formatted_value()` instead of `cell.get_value().to_string()` to get pre-formatted cell text. umya-spreadsheet handles all formatting internally: currency ($#,##0.00), percentage (0%), dates (yyyy-mm-dd), thousands separators (#,##0), custom format strings. Set format: `cell.get_style_mut().get_number_format_mut().set_format_code("format")` or `.set_number_format_id(id)`. Built-in format IDs: 0=General, 1=0, 2=0.00, 3=#,##0, 4=#,##0.00, 9=0%, 10=0.00%, 14=m/d/yyyy. For dates: use `set_value_number(serial)` where serial is Excel date serial (days since 1900-01-01). "General" format passes through simple numbers unchanged. Constants: `NumberingFormat::FORMAT_CURRENCY_USD_SIMPLE`, `FORMAT_PERCENTAGE`, `FORMAT_DATE_YYYYMMDD`, etc.
 - **DOCX document styles**: `docx.styles.styles` is `Vec<Style>` with `style_id`, `name`, `style_type`, `run_property`, `paragraph_property`. Access via `docx.styles`. `ParagraphProperty.style: Option<ParagraphStyle>` stores the pStyle reference; `ParagraphStyle.val` is the style ID string. `Style.paragraph_property.outline_lvl: Option<OutlineLvl>` with `OutlineLvl.v: usize` (public) for heading level detection (0=H1..5=H6). `Name.name` is private — use `serde_json::to_value(&name)` → string. Create test styles: `Style::new("Heading1", StyleType::Paragraph).name("Heading 1").outline_lvl(0).bold().size(48)`. Apply to paragraph: `Paragraph::new().style("Heading1")`. The `build_style_map()` function builds `StyleMap` (HashMap<String, ResolvedStyle>) from docx styles. `merge_text_style()` and `merge_paragraph_style()` merge style defaults with explicit formatting (explicit wins). Heading defaults (when style doesn't specify): H1=24pt, H2=20pt, H3=16pt, H4=14pt, H5=12pt, H6=11pt, all bold.
@@ -333,4 +334,33 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - `set_number_format_id(4)` auto-looks up the format code from umya's built-in table, but the resulting format string may have slightly different precision than expected (e.g., "1,234.500" vs "1,234.50")
   - "General" format preserves simple numbers as-is — switching to `get_formatted_value()` is backward-compatible with existing tests
   - For test dates, use Excel serial numbers (e.g., 45306) with `set_value_number()` and a date format code
+---
+
+## 2026-02-27 - US-029: ConvertOptions - sheet/slide selection and CLI flags
+- What was implemented:
+  - Added `SlideRange` type to `config.rs` with `new()`, `contains()`, and `parse()` methods (supports "1-5" and "3" formats)
+  - Added `sheet_names: Option<Vec<String>>` and `slide_range: Option<SlideRange>` to `ConvertOptions`
+  - Updated `Parser` trait to accept `&ConvertOptions` parameter (breaking change, all 3 parsers updated)
+  - XLSX parser: filters sheets by name when `options.sheet_names` is `Some` — non-matching sheets are skipped
+  - PPTX parser: filters slides by range when `options.slide_range` is `Some` — out-of-range slides are skipped
+  - DOCX parser: accepts options parameter (unused, no DOCX-specific filtering)
+  - CLI: added `--sheets` flag (comma-separated sheet names) and `--slides` flag (range like "1-5" or "3")
+  - CLI now uses `convert_with_options()` instead of `convert()` to pass options through
+  - 15 new tests: 7 config tests (SlideRange parse/contains, ConvertOptions defaults/fields), 4 XLSX tests (filter single/multiple/none/nonexistent), 4 PPTX tests (filter single/range/none/beyond)
+- Files changed:
+  - `crates/office2pdf/src/config.rs` — SlideRange type, ConvertOptions fields + 7 tests
+  - `crates/office2pdf/src/parser/mod.rs` — Parser trait signature updated
+  - `crates/office2pdf/src/parser/docx.rs` — trait impl updated, all test call sites updated
+  - `crates/office2pdf/src/parser/pptx.rs` — slide range filtering + 4 tests
+  - `crates/office2pdf/src/parser/xlsx.rs` — sheet name filtering + 4 tests
+  - `crates/office2pdf/src/lib.rs` — `convert_bytes` passes options to parser
+  - `crates/office2pdf-cli/src/main.rs` — --sheets and --slides CLI flags
+  - `scripts/ralph/prd.json` — US-029 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - Breaking the `Parser` trait signature requires updating ALL existing test call sites (200+ locations) — use `replace_all` in Edit tool for bulk updates
+  - Clippy enforces `collapsible_if` — use `if let Some(x) = ... && condition { ... }` instead of nested `if let`/`if`
+  - clap's `value_delimiter = ','` automatically splits comma-separated values into `Vec<String>` — no manual splitting needed
+  - `SlideRange::parse()` returns `Result<Self, String>` for clean error messages via `anyhow::anyhow!()` in CLI
+  - Filter-before-parse is efficient: skipped sheets/slides don't get parsed at all
 ---
