@@ -84,6 +84,137 @@ fn extract_num_info(para: &docx_rs::Paragraph) -> Option<NumInfo> {
     Some(NumInfo { num_id, level })
 }
 
+/// Resolved style formatting extracted from a document style definition.
+/// Contains text and paragraph formatting along with an optional heading level.
+struct ResolvedStyle {
+    text: TextStyle,
+    paragraph: ParagraphStyle,
+    /// Heading level from outline_lvl (0 = Heading 1, 1 = Heading 2, ..., 5 = Heading 6).
+    heading_level: Option<usize>,
+}
+
+/// Map from style_id → resolved formatting.
+type StyleMap = HashMap<String, ResolvedStyle>;
+
+/// Default font sizes for heading levels (Heading 1-6).
+/// Index 0 = Heading 1 (outline_lvl 0), index 5 = Heading 6 (outline_lvl 5).
+const HEADING_DEFAULT_SIZES: [f64; 6] = [24.0, 20.0, 16.0, 14.0, 12.0, 11.0];
+
+/// Build a map from style ID → resolved formatting by extracting formatting
+/// from each style's run_property and paragraph_property.
+fn build_style_map(styles: &docx_rs::Styles) -> StyleMap {
+    let mut map = StyleMap::new();
+    for style in &styles.styles {
+        // Only process paragraph styles (not character or table styles)
+        if style.style_type != docx_rs::StyleType::Paragraph {
+            continue;
+        }
+
+        let text = extract_run_style(&style.run_property);
+        let paragraph = extract_paragraph_style(&style.paragraph_property);
+        let heading_level = style
+            .paragraph_property
+            .outline_lvl
+            .as_ref()
+            .map(|ol| ol.v)
+            .filter(|&v| v < 6);
+
+        map.insert(
+            style.style_id.clone(),
+            ResolvedStyle {
+                text,
+                paragraph,
+                heading_level,
+            },
+        );
+    }
+    map
+}
+
+/// Merge style text formatting with explicit run formatting.
+/// Explicit formatting (from the run itself) takes priority over style formatting.
+/// For heading styles, default sizes and bold are applied when neither the style
+/// nor the run specifies them.
+fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyle>) -> TextStyle {
+    let (style_text, heading_level) = match style {
+        Some(s) => (&s.text, s.heading_level),
+        None => return explicit.clone(),
+    };
+
+    // Start with style defaults, then apply heading defaults, then explicit overrides
+    let mut merged = TextStyle {
+        bold: style_text.bold,
+        italic: style_text.italic,
+        underline: style_text.underline,
+        strikethrough: style_text.strikethrough,
+        font_size: style_text.font_size,
+        color: style_text.color,
+        font_family: style_text.font_family.clone(),
+    };
+
+    // Apply heading defaults for missing fields
+    if let Some(level) = heading_level {
+        if merged.font_size.is_none() {
+            merged.font_size = Some(HEADING_DEFAULT_SIZES[level]);
+        }
+        if merged.bold.is_none() {
+            merged.bold = Some(true);
+        }
+    }
+
+    // Explicit formatting overrides everything
+    if explicit.bold.is_some() {
+        merged.bold = explicit.bold;
+    }
+    if explicit.italic.is_some() {
+        merged.italic = explicit.italic;
+    }
+    if explicit.underline.is_some() {
+        merged.underline = explicit.underline;
+    }
+    if explicit.strikethrough.is_some() {
+        merged.strikethrough = explicit.strikethrough;
+    }
+    if explicit.font_size.is_some() {
+        merged.font_size = explicit.font_size;
+    }
+    if explicit.color.is_some() {
+        merged.color = explicit.color;
+    }
+    if explicit.font_family.is_some() {
+        merged.font_family = explicit.font_family.clone();
+    }
+
+    merged
+}
+
+/// Merge style paragraph formatting with explicit paragraph formatting.
+/// Explicit formatting takes priority.
+fn merge_paragraph_style(
+    explicit: &ParagraphStyle,
+    style: Option<&ResolvedStyle>,
+) -> ParagraphStyle {
+    let style_para = match style {
+        Some(s) => &s.paragraph,
+        None => return explicit.clone(),
+    };
+
+    ParagraphStyle {
+        alignment: explicit.alignment.or(style_para.alignment),
+        indent_left: explicit.indent_left.or(style_para.indent_left),
+        indent_right: explicit.indent_right.or(style_para.indent_right),
+        indent_first_line: explicit.indent_first_line.or(style_para.indent_first_line),
+        line_spacing: explicit.line_spacing.or(style_para.line_spacing),
+        space_before: explicit.space_before.or(style_para.space_before),
+        space_after: explicit.space_after.or(style_para.space_after),
+    }
+}
+
+/// Look up the pStyle reference from a paragraph's property.
+fn get_paragraph_style_id(prop: &docx_rs::ParagraphProperty) -> Option<&str> {
+    prop.style.as_ref().map(|s| s.val.as_str())
+}
+
 /// An intermediate element that carries optional numbering info alongside blocks.
 enum TaggedElement {
     /// A regular block (non-list paragraph, table, image, page break, etc.)
@@ -165,15 +296,18 @@ impl Parser for DocxParser {
         let (size, margins) = extract_page_setup(&docx.document.section_property);
         let images = build_image_map(&docx);
         let num_kinds = build_num_kind_map(&docx.numberings);
+        let style_map = build_style_map(&docx.styles);
         let mut warnings = Vec::new();
 
         let mut elements: Vec<TaggedElement> = Vec::new();
         for (idx, child) in docx.document.children.iter().enumerate() {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
-                docx_rs::DocumentChild::Paragraph(para) => convert_paragraph_element(para, &images),
-                docx_rs::DocumentChild::Table(table) => {
-                    TaggedElement::Plain(vec![Block::Table(convert_table(table, &images))])
+                docx_rs::DocumentChild::Paragraph(para) => {
+                    convert_paragraph_element(para, &images, &style_map)
                 }
+                docx_rs::DocumentChild::Table(table) => TaggedElement::Plain(vec![Block::Table(
+                    convert_table(table, &images, &style_map),
+                )]),
                 _ => TaggedElement::Plain(vec![]),
             }));
 
@@ -372,12 +506,16 @@ fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
 
 /// Convert a docx-rs Paragraph into a TaggedElement.
 /// If the paragraph has numbering, returns a `ListParagraph`; otherwise `Plain`.
-fn convert_paragraph_element(para: &docx_rs::Paragraph, images: &ImageMap) -> TaggedElement {
+fn convert_paragraph_element(
+    para: &docx_rs::Paragraph,
+    images: &ImageMap,
+    style_map: &StyleMap,
+) -> TaggedElement {
     let num_info = extract_num_info(para);
 
     // Build the paragraph IR
     let mut blocks = Vec::new();
-    convert_paragraph_blocks(para, &mut blocks, images);
+    convert_paragraph_blocks(para, &mut blocks, images, style_map);
 
     match num_info {
         Some(info) => {
@@ -420,11 +558,20 @@ fn convert_paragraph_element(para: &docx_rs::Paragraph, images: &ImageMap) -> Ta
 /// Convert a docx-rs Paragraph to IR blocks, handling page breaks and inline images.
 /// If the paragraph has `page_break_before`, a `Block::PageBreak` is emitted first.
 /// Inline images within runs are extracted as separate `Block::Image` elements.
-fn convert_paragraph_blocks(para: &docx_rs::Paragraph, out: &mut Vec<Block>, images: &ImageMap) {
+/// Style formatting from the document's style definitions is merged with explicit formatting.
+fn convert_paragraph_blocks(
+    para: &docx_rs::Paragraph,
+    out: &mut Vec<Block>,
+    images: &ImageMap,
+    style_map: &StyleMap,
+) {
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
         out.push(Block::PageBreak);
     }
+
+    // Look up the paragraph's referenced style
+    let resolved_style = get_paragraph_style_id(&para.property).and_then(|id| style_map.get(id));
 
     // Collect text runs and detect inline images
     let mut runs: Vec<Run> = Vec::new();
@@ -444,9 +591,10 @@ fn convert_paragraph_blocks(para: &docx_rs::Paragraph, out: &mut Vec<Block>, ima
             // Extract text from the run
             let text = extract_run_text(run);
             if !text.is_empty() {
+                let explicit_style = extract_run_style(&run.run_property);
                 runs.push(Run {
                     text,
-                    style: extract_run_style(&run.run_property),
+                    style: merge_text_style(&explicit_style, resolved_style),
                 });
             }
         }
@@ -455,8 +603,9 @@ fn convert_paragraph_blocks(para: &docx_rs::Paragraph, out: &mut Vec<Block>, ima
     // Emit image blocks before the paragraph (inline images are block-level in our IR)
     out.extend(inline_images);
 
+    let explicit_para_style = extract_paragraph_style(&para.property);
     out.push(Block::Paragraph(Paragraph {
-        style: extract_paragraph_style(&para.property),
+        style: merge_paragraph_style(&explicit_para_style, resolved_style),
         runs,
     }));
 }
@@ -581,11 +730,11 @@ fn extract_line_spacing(
 /// - Vertical merging via vMerge restart/continue (rowspan)
 /// - Cell background color via shading
 /// - Cell borders
-fn convert_table(table: &docx_rs::Table, images: &ImageMap) -> Table {
+fn convert_table(table: &docx_rs::Table, images: &ImageMap, style_map: &StyleMap) -> Table {
     let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
-    let raw_rows = extract_raw_rows(table, images);
+    let raw_rows = extract_raw_rows(table, images, style_map);
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
@@ -607,7 +756,11 @@ struct RawCell {
 }
 
 /// Extract raw rows from a docx-rs Table, tracking column indices and vmerge state.
-fn extract_raw_rows(table: &docx_rs::Table, images: &ImageMap) -> Vec<Vec<RawCell>> {
+fn extract_raw_rows(
+    table: &docx_rs::Table,
+    images: &ImageMap,
+    style_map: &StyleMap,
+) -> Vec<Vec<RawCell>> {
     let mut raw_rows = Vec::new();
 
     for table_child in &table.rows {
@@ -631,7 +784,7 @@ fn extract_raw_rows(table: &docx_rs::Table, images: &ImageMap) -> Vec<Vec<RawCel
                 .and_then(|v| v.as_str())
                 .map(String::from);
 
-            let content = extract_cell_content(cell, images);
+            let content = extract_cell_content(cell, images, style_map);
             let border = prop_json
                 .as_ref()
                 .and_then(|j| j.get("borders"))
@@ -723,15 +876,19 @@ fn count_vmerge_span(raw_rows: &[Vec<RawCell>], start_row: usize, col_index: usi
 }
 
 /// Extract cell content (paragraphs) from a docx-rs TableCell.
-fn extract_cell_content(cell: &docx_rs::TableCell, images: &ImageMap) -> Vec<Block> {
+fn extract_cell_content(
+    cell: &docx_rs::TableCell,
+    images: &ImageMap,
+    style_map: &StyleMap,
+) -> Vec<Block> {
     let mut blocks = Vec::new();
     for content in &cell.children {
         match content {
             docx_rs::TableCellContent::Paragraph(para) => {
-                convert_paragraph_blocks(para, &mut blocks, images);
+                convert_paragraph_blocks(para, &mut blocks, images, style_map);
             }
             docx_rs::TableCellContent::Table(nested_table) => {
-                blocks.push(Block::Table(convert_table(nested_table, images)));
+                blocks.push(Block::Table(convert_table(nested_table, images, style_map)));
             }
             _ => {}
         }
@@ -2849,5 +3006,289 @@ mod tests {
             result.width,
             result.height
         );
+    }
+
+    // ----- Document styles tests (US-022) -----
+
+    /// Helper: build a DOCX with custom styles and paragraphs.
+    fn build_docx_bytes_with_styles(
+        paragraphs: Vec<docx_rs::Paragraph>,
+        styles: Vec<docx_rs::Style>,
+    ) -> Vec<u8> {
+        let mut docx = docx_rs::Docx::new();
+        for s in styles {
+            docx = docx.add_style(s);
+        }
+        for p in paragraphs {
+            docx = docx.add_paragraph(p);
+        }
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_heading1_style_applies_defaults() {
+        // Create a Heading 1 style with outline level 0 (no explicit size/bold)
+        let h1_style = docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph)
+            .name("Heading 1")
+            .outline_lvl(0);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Title"))
+                    .style("Heading1"),
+            ],
+            vec![h1_style],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let run = first_run(&doc);
+
+        // Heading 1 default: 24pt bold
+        assert_eq!(run.style.font_size, Some(24.0));
+        assert_eq!(run.style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_heading2_style_applies_defaults() {
+        let h2_style = docx_rs::Style::new("Heading2", docx_rs::StyleType::Paragraph)
+            .name("Heading 2")
+            .outline_lvl(1);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Subtitle"))
+                    .style("Heading2"),
+            ],
+            vec![h2_style],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let run = first_run(&doc);
+
+        // Heading 2 default: 20pt bold
+        assert_eq!(run.style.font_size, Some(20.0));
+        assert_eq!(run.style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_heading3_through_6_defaults() {
+        // Test heading levels 3-6 with their expected default sizes
+        let expected: Vec<(usize, &str, f64)> = vec![
+            (2, "Heading3", 16.0), // H3
+            (3, "Heading4", 14.0), // H4
+            (4, "Heading5", 12.0), // H5
+            (5, "Heading6", 11.0), // H6
+        ];
+
+        for (outline_lvl, style_id, expected_size) in expected {
+            let style = docx_rs::Style::new(style_id, docx_rs::StyleType::Paragraph)
+                .name(&format!("Heading {}", outline_lvl + 1))
+                .outline_lvl(outline_lvl);
+
+            let data = build_docx_bytes_with_styles(
+                vec![
+                    docx_rs::Paragraph::new()
+                        .add_run(docx_rs::Run::new().add_text("Heading text"))
+                        .style(style_id),
+                ],
+                vec![style],
+            );
+
+            let parser = DocxParser;
+            let (doc, _warnings) = parser.parse(&data).unwrap();
+            let run = first_run(&doc);
+
+            assert_eq!(
+                run.style.font_size,
+                Some(expected_size),
+                "Heading {} should have size {expected_size}pt",
+                outline_lvl + 1
+            );
+            assert_eq!(
+                run.style.bold,
+                Some(true),
+                "Heading {} should be bold",
+                outline_lvl + 1
+            );
+        }
+    }
+
+    #[test]
+    fn test_style_with_explicit_formatting() {
+        // Style defines size=36 (half-points = 18pt) and bold
+        let custom = docx_rs::Style::new("CustomStyle", docx_rs::StyleType::Paragraph)
+            .name("Custom Style")
+            .size(36) // 18pt in half-points
+            .bold();
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Custom styled"))
+                    .style("CustomStyle"),
+            ],
+            vec![custom],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let run = first_run(&doc);
+
+        assert_eq!(run.style.font_size, Some(18.0));
+        assert_eq!(run.style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_explicit_run_formatting_overrides_style() {
+        // Style says bold + 24pt (via heading defaults), but run explicitly sets size=20 (10pt)
+        let h1_style = docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph)
+            .name("Heading 1")
+            .outline_lvl(0);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Small heading").size(20)) // 10pt
+                    .style("Heading1"),
+            ],
+            vec![h1_style],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let run = first_run(&doc);
+
+        // Explicit size (10pt) overrides heading default (24pt)
+        assert_eq!(run.style.font_size, Some(10.0));
+        // Bold still comes from heading defaults since not explicitly overridden
+        assert_eq!(run.style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_style_alignment_applied_to_paragraph() {
+        let centered = docx_rs::Style::new("CenteredStyle", docx_rs::StyleType::Paragraph)
+            .name("Centered")
+            .align(docx_rs::AlignmentType::Center);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Centered paragraph"))
+                    .style("CenteredStyle"),
+            ],
+            vec![centered],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let para = first_paragraph(&doc);
+
+        assert_eq!(para.style.alignment, Some(Alignment::Center));
+    }
+
+    #[test]
+    fn test_normal_style_no_heading_defaults() {
+        // Normal paragraphs (no heading) should not get heading defaults
+        let normal = docx_rs::Style::new("Normal", docx_rs::StyleType::Paragraph).name("Normal");
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Normal text"))
+                    .style("Normal"),
+            ],
+            vec![normal],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let run = first_run(&doc);
+
+        // Normal style should NOT have heading defaults
+        assert!(run.style.font_size.is_none());
+        assert!(run.style.bold.is_none());
+    }
+
+    #[test]
+    fn test_heading_with_mixed_paragraphs() {
+        // Document with Heading 1, Normal, Heading 2 paragraphs
+        let h1 = docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph)
+            .name("Heading 1")
+            .outline_lvl(0);
+        let h2 = docx_rs::Style::new("Heading2", docx_rs::StyleType::Paragraph)
+            .name("Heading 2")
+            .outline_lvl(1);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Title"))
+                    .style("Heading1"),
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body text")),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Subtitle"))
+                    .style("Heading2"),
+            ],
+            vec![h1, h2],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let blocks = all_blocks(&doc);
+
+        // First paragraph: Heading 1
+        if let Block::Paragraph(p) = &blocks[0] {
+            assert_eq!(p.runs[0].style.font_size, Some(24.0));
+            assert_eq!(p.runs[0].style.bold, Some(true));
+        } else {
+            panic!("Expected Paragraph");
+        }
+
+        // Second paragraph: Normal (no style)
+        if let Block::Paragraph(p) = &blocks[1] {
+            assert!(p.runs[0].style.font_size.is_none());
+            assert!(p.runs[0].style.bold.is_none());
+        } else {
+            panic!("Expected Paragraph");
+        }
+
+        // Third paragraph: Heading 2
+        if let Block::Paragraph(p) = &blocks[2] {
+            assert_eq!(p.runs[0].style.font_size, Some(20.0));
+            assert_eq!(p.runs[0].style.bold, Some(true));
+        } else {
+            panic!("Expected Paragraph");
+        }
+    }
+
+    #[test]
+    fn test_style_with_color_and_font() {
+        let custom = docx_rs::Style::new("Fancy", docx_rs::StyleType::Paragraph)
+            .name("Fancy Style")
+            .color("FF0000")
+            .fonts(docx_rs::RunFonts::new().ascii("Georgia"));
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Fancy text"))
+                    .style("Fancy"),
+            ],
+            vec![custom],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let run = first_run(&doc);
+
+        assert_eq!(run.style.color, Some(Color::new(255, 0, 0)));
+        assert_eq!(run.style.font_family, Some("Georgia".to_string()));
     }
 }
