@@ -245,21 +245,19 @@ fn parse_rels_xml(xml: &str) -> HashMap<String, String> {
     loop {
         match reader.read_event() {
             Ok(Event::Empty(ref e)) => {
-                if e.local_name().as_ref() == b"Relationship" {
-                    if let (Some(id), Some(target)) =
+                if e.local_name().as_ref() == b"Relationship"
+                    && let (Some(id), Some(target)) =
                         (get_attr_str(e, b"Id"), get_attr_str(e, b"Target"))
-                    {
-                        map.insert(id, target);
-                    }
+                {
+                    map.insert(id, target);
                 }
             }
             Ok(Event::Start(ref e)) => {
-                if e.local_name().as_ref() == b"Relationship" {
-                    if let (Some(id), Some(target)) =
+                if e.local_name().as_ref() == b"Relationship"
+                    && let (Some(id), Some(target)) =
                         (get_attr_str(e, b"Id"), get_attr_str(e, b"Target"))
-                    {
-                        map.insert(id, target);
-                    }
+                {
+                    map.insert(id, target);
                 }
             }
             Ok(Event::Eof) => break,
@@ -491,10 +489,10 @@ fn parse_slide_xml(xml: &str, images: &SlideImageMap) -> Result<Vec<FixedElement
                 }
             }
             Ok(Event::Text(ref t)) => {
-                if in_text {
-                    if let Ok(text) = t.xml_content() {
-                        run_text.push_str(&text);
-                    }
+                if in_text
+                    && let Ok(text) = t.xml_content()
+                {
+                    run_text.push_str(&text);
                 }
             }
             Ok(Event::End(ref e)) => {
@@ -585,21 +583,21 @@ fn parse_slide_xml(xml: &str, images: &SlideImageMap) -> Result<Vec<FixedElement
 
                     // ── Picture end ──────────────────────────────────
                     b"pic" if in_pic => {
-                        if let Some(ref rid) = blip_embed {
-                            if let Some((data, format)) = images.get(rid) {
-                                elements.push(FixedElement {
-                                    x: emu_to_pt(pic_x),
-                                    y: emu_to_pt(pic_y),
-                                    width: emu_to_pt(pic_cx),
-                                    height: emu_to_pt(pic_cy),
-                                    kind: FixedElementKind::Image(ImageData {
-                                        data: data.clone(),
-                                        format: *format,
-                                        width: Some(emu_to_pt(pic_cx)),
-                                        height: Some(emu_to_pt(pic_cy)),
-                                    }),
-                                });
-                            }
+                        if let Some(ref rid) = blip_embed
+                            && let Some((data, format)) = images.get(rid)
+                        {
+                            elements.push(FixedElement {
+                                x: emu_to_pt(pic_x),
+                                y: emu_to_pt(pic_y),
+                                width: emu_to_pt(pic_cx),
+                                height: emu_to_pt(pic_cy),
+                                kind: FixedElementKind::Image(ImageData {
+                                    data: data.clone(),
+                                    format: *format,
+                                    width: Some(emu_to_pt(pic_cx)),
+                                    height: Some(emu_to_pt(pic_cy)),
+                                }),
+                            });
                         }
                         in_pic = false;
                     }
@@ -1167,6 +1165,7 @@ mod tests {
     // ── Shape test helpers ───────────────────────────────────────────────
 
     /// Create a shape XML element with preset geometry, optional fill and border.
+    #[allow(clippy::too_many_arguments)]
     fn make_shape(
         x: i64,
         y: i64,
@@ -1338,7 +1337,7 @@ mod tests {
                 // Write image media files
                 for img in slide_images {
                     // Resolve the relative path (e.g., "../media/image1.png" → "ppt/media/image1.png")
-                    let media_path = resolve_relative_path(&format!("ppt/slides"), &img.path);
+                    let media_path = resolve_relative_path("ppt/slides", &img.path);
                     zip.start_file(media_path, opts).unwrap();
                     zip.write_all(&img.data).unwrap();
                 }

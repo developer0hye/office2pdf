@@ -113,10 +113,10 @@ fn convert_paragraph_blocks(para: &docx_rs::Paragraph, out: &mut Vec<Block>, ima
         if let docx_rs::ParagraphChild::Run(run) = child {
             // Check for inline images in this run
             for run_child in &run.children {
-                if let docx_rs::RunChild::Drawing(drawing) = run_child {
-                    if let Some(img_block) = extract_drawing_image(drawing, images) {
-                        inline_images.push(img_block);
-                    }
+                if let docx_rs::RunChild::Drawing(drawing) = run_child
+                    && let Some(img_block) = extract_drawing_image(drawing, images)
+                {
+                    inline_images.push(img_block);
                 }
             }
 
