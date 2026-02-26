@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 
 use crate::error::ConvertError;
@@ -19,6 +20,62 @@ fn column_width_to_pt(char_width: f64) -> f64 {
     char_width * 7.0
 }
 
+/// A (column, row) coordinate pair (1-indexed).
+type CellPos = (u32, u32);
+
+/// Info about a merged cell region, keyed by its top-left coordinate.
+struct MergeInfo {
+    col_span: u32,
+    row_span: u32,
+}
+
+/// Build a lookup of merge info from the sheet's merged cell ranges.
+///
+/// Returns two structures:
+/// - `top_left_map`: top-left coordinate → MergeInfo for each merge
+/// - `skip_set`: set of coordinates that are inside a merge but NOT the top-left
+fn build_merge_maps(
+    sheet: &umya_spreadsheet::Worksheet,
+) -> (HashMap<CellPos, MergeInfo>, HashSet<CellPos>) {
+    let mut top_left_map: HashMap<CellPos, MergeInfo> = HashMap::new();
+    let mut skip_set: HashSet<CellPos> = HashSet::new();
+
+    for range in sheet.get_merge_cells() {
+        let start_col = range
+            .get_coordinate_start_col()
+            .map(|c| *c.get_num())
+            .unwrap_or(1);
+        let start_row = range
+            .get_coordinate_start_row()
+            .map(|r| *r.get_num())
+            .unwrap_or(1);
+        let end_col = range
+            .get_coordinate_end_col()
+            .map(|c| *c.get_num())
+            .unwrap_or(start_col);
+        let end_row = range
+            .get_coordinate_end_row()
+            .map(|r| *r.get_num())
+            .unwrap_or(start_row);
+
+        let col_span = end_col.saturating_sub(start_col) + 1;
+        let row_span = end_row.saturating_sub(start_row) + 1;
+
+        top_left_map.insert((start_col, start_row), MergeInfo { col_span, row_span });
+
+        // Mark all other cells in the range as skip
+        for r in start_row..=end_row {
+            for c in start_col..=end_col {
+                if r != start_row || c != start_col {
+                    skip_set.insert((c, r));
+                }
+            }
+        }
+    }
+
+    (top_left_map, skip_set)
+}
+
 impl Parser for XlsxParser {
     fn parse(&self, data: &[u8]) -> Result<Document, ConvertError> {
         let cursor = Cursor::new(data);
@@ -28,9 +85,19 @@ impl Parser for XlsxParser {
         let mut pages = Vec::new();
 
         for sheet in book.get_sheet_collection() {
-            let (max_col, max_row) = sheet.get_highest_column_and_row();
+            let (mut max_col, mut max_row) = sheet.get_highest_column_and_row();
             if max_col == 0 || max_row == 0 {
                 continue; // skip empty sheets
+            }
+
+            // Expand grid to include the extent of all merged ranges
+            for range in sheet.get_merge_cells() {
+                if let Some(c) = range.get_coordinate_end_col() {
+                    max_col = max_col.max(*c.get_num());
+                }
+                if let Some(r) = range.get_coordinate_end_row() {
+                    max_row = max_row.max(*r.get_num());
+                }
             }
 
             let column_widths: Vec<f64> = (1..=max_col)
@@ -42,10 +109,17 @@ impl Parser for XlsxParser {
                 })
                 .collect();
 
+            let (merge_tops, merge_skips) = build_merge_maps(sheet);
+
             let mut rows = Vec::new();
             for row_idx in 1..=max_row {
                 let mut cells = Vec::new();
                 for col_idx in 1..=max_col {
+                    // Skip cells that are part of a merge but not the top-left
+                    if merge_skips.contains(&(col_idx, row_idx)) {
+                        continue;
+                    }
+
                     // umya-spreadsheet tuple is (column, row), both 1-indexed
                     let value = sheet
                         .get_cell((col_idx, row_idx))
@@ -64,8 +138,17 @@ impl Parser for XlsxParser {
                         })]
                     };
 
+                    let (col_span, row_span) =
+                        if let Some(info) = merge_tops.get(&(col_idx, row_idx)) {
+                            (info.col_span, info.row_span)
+                        } else {
+                            (1, 1)
+                        };
+
                     cells.push(TableCell {
                         content,
+                        col_span,
+                        row_span,
                         ..TableCell::default()
                     });
                 }
@@ -365,5 +448,157 @@ mod tests {
         assert_eq!(cell.row_span, 1);
         assert!(cell.border.is_none());
         assert!(cell.background.is_none());
+    }
+
+    // ----- Cell merging tests (US-015) -----
+
+    /// Helper: build XLSX with merge ranges.
+    fn build_xlsx_with_merges(
+        sheet_name: &str,
+        cells: &[(&str, &str)],
+        merges: &[&str],
+    ) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.set_name(sheet_name);
+            for &(coord, value) in cells {
+                sheet.get_cell_mut(coord).set_value(value);
+            }
+            for &merge_range in merges {
+                sheet.add_merge_cells(merge_range);
+            }
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_merge_colspan_basic() {
+        // A1:B1 merged → colspan=2 on A1, B1 is skipped
+        let data = build_xlsx_with_merges("Sheet1", &[("A1", "Merged")], &["A1:B1"]);
+        let parser = XlsxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(
+            tp.table.rows[0].cells.len(),
+            1,
+            "Merged cells should produce 1 cell"
+        );
+        assert_eq!(tp.table.rows[0].cells[0].col_span, 2);
+        assert_eq!(tp.table.rows[0].cells[0].row_span, 1);
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Merged");
+    }
+
+    #[test]
+    fn test_merge_rowspan_basic() {
+        // A1:A2 merged → rowspan=2 on A1, A2 is skipped
+        let data = build_xlsx_with_merges("Sheet1", &[("A1", "Tall")], &["A1:A2"]);
+        let parser = XlsxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        // Row 0: one cell with rowspan 2
+        assert_eq!(tp.table.rows[0].cells.len(), 1);
+        assert_eq!(tp.table.rows[0].cells[0].row_span, 2);
+        assert_eq!(tp.table.rows[0].cells[0].col_span, 1);
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Tall");
+        // Row 1: no cells (the merged cell from row 0 spans here)
+        assert_eq!(tp.table.rows[1].cells.len(), 0);
+    }
+
+    #[test]
+    fn test_merge_colspan_and_rowspan() {
+        // A1:B2 merged → colspan=2, rowspan=2 on A1
+        let data = build_xlsx_with_merges(
+            "Sheet1",
+            &[("A1", "Big"), ("C1", "Right"), ("C2", "Below")],
+            &["A1:B2"],
+        );
+        let parser = XlsxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        // Row 0: merged cell (A1:B2) + C1
+        assert_eq!(tp.table.rows[0].cells.len(), 2);
+        assert_eq!(tp.table.rows[0].cells[0].col_span, 2);
+        assert_eq!(tp.table.rows[0].cells[0].row_span, 2);
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Big");
+        assert_eq!(cell_text(&tp.table.rows[0].cells[1]), "Right");
+        // Row 1: only C2 (A1:B2 merge continues from row 0)
+        assert_eq!(tp.table.rows[1].cells.len(), 1);
+        assert_eq!(cell_text(&tp.table.rows[1].cells[0]), "Below");
+    }
+
+    #[test]
+    fn test_merge_content_in_top_left_only() {
+        // Merge A1:B1, content only in A1
+        let data = build_xlsx_with_merges(
+            "Sheet1",
+            &[("A1", "TopLeft"), ("B1", "should be ignored")],
+            &["A1:B1"],
+        );
+        let parser = XlsxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(tp.table.rows[0].cells.len(), 1);
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "TopLeft");
+    }
+
+    #[test]
+    fn test_merge_multiple_ranges() {
+        // Two merges: A1:B1, A2:A3
+        let data = build_xlsx_with_merges(
+            "Sheet1",
+            &[("A1", "Wide"), ("A2", "Tall"), ("B2", "B2"), ("B3", "B3")],
+            &["A1:B1", "A2:A3"],
+        );
+        let parser = XlsxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        // Row 0: A1:B1 merged (colspan=2)
+        assert_eq!(tp.table.rows[0].cells.len(), 1);
+        assert_eq!(tp.table.rows[0].cells[0].col_span, 2);
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Wide");
+        // Row 1: A2:A3 (rowspan=2) + B2
+        assert_eq!(tp.table.rows[1].cells.len(), 2);
+        assert_eq!(tp.table.rows[1].cells[0].row_span, 2);
+        assert_eq!(cell_text(&tp.table.rows[1].cells[0]), "Tall");
+        assert_eq!(cell_text(&tp.table.rows[1].cells[1]), "B2");
+        // Row 2: only B3 (A2:A3 continues)
+        assert_eq!(tp.table.rows[2].cells.len(), 1);
+        assert_eq!(cell_text(&tp.table.rows[2].cells[0]), "B3");
+    }
+
+    #[test]
+    fn test_merge_no_merges_unchanged() {
+        // No merges: cells should have default span values
+        let data = build_xlsx_bytes("Sheet1", &[("A1", "X"), ("B1", "Y")]);
+        let parser = XlsxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(tp.table.rows[0].cells.len(), 2);
+        for cell in &tp.table.rows[0].cells {
+            assert_eq!(cell.col_span, 1);
+            assert_eq!(cell.row_span, 1);
+        }
+    }
+
+    #[test]
+    fn test_merge_wide_colspan() {
+        // A1:D1 merged → colspan=4
+        let data = build_xlsx_with_merges("Sheet1", &[("A1", "Title")], &["A1:D1"]);
+        let parser = XlsxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(tp.table.rows[0].cells.len(), 1);
+        assert_eq!(tp.table.rows[0].cells[0].col_span, 4);
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Title");
     }
 }
