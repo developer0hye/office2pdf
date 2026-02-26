@@ -489,9 +489,7 @@ fn parse_slide_xml(xml: &str, images: &SlideImageMap) -> Result<Vec<FixedElement
                 }
             }
             Ok(Event::Text(ref t)) => {
-                if in_text
-                    && let Ok(text) = t.xml_content()
-                {
+                if in_text && let Ok(text) = t.xml_content() {
                     run_text.push_str(&text);
                 }
             }
