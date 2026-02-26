@@ -14,6 +14,7 @@ Started: 2026-02-26
 - **DOCX units**: Page size and margins in OOXML are in twips (1 twip = 1/20 pt). Convert: `value_twips / 20.0 = points`. PageMargin fields are public i32. docx-rs default page size: 11906 x 16838 twips (A4).
 - **Test DOCX creation**: Use `docx_rs::Docx::new().add_paragraph(...)`, then `.build().pack(&mut Cursor::new(Vec::new()))` to get bytes. Use `Cursor::into_inner()` to extract.
 - **Typst FixedPage codegen**: Slides use `#set page(width: Wpt, height: Hpt, margin: 0pt)`. Elements use `#place(top + left, dx: Xpt, dy: Ypt)[...]` for absolute positioning. TextBox wraps content in `#block(width: Wpt, height: Hpt)[...]`. Shapes: `#rect(width, height, fill?, stroke?)`, `#ellipse(...)`, `#line(start, end, stroke?)`. Images use existing `generate_image()` inside place.
+- **umya-spreadsheet merge API**: `sheet.get_merge_cells()` → `&[Range]`. Range has `get_coordinate_start_col/row()` and `get_coordinate_end_col/row()` → `Option<&ColumnReference/RowReference>`. Use `*ref.get_num()` for 1-indexed u32 coordinate. `sheet.add_merge_cells("A1:C5")` for test creation. Must expand `get_highest_column_and_row()` grid to include merge extents since that method only considers cells with data.
 - **umya-spreadsheet reading**: `umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(data), true)` → `Spreadsheet`. Sheets: `book.get_sheet_collection()`. Sheet name: `sheet.get_name()`. Cell: `sheet.get_cell((col, row))` → **IMPORTANT: tuple is (column, row), NOT (row, column)**. Cell value: `cell.get_value().to_string()`. Dimensions: `sheet.get_highest_column_and_row()` → `(max_col, max_row)`. Column width: `sheet.get_column_dimension_by_number(&col)` → `Option<&Column>`, then `col.get_width()` (Excel char units, ×7.0 → points).
 - **Test XLSX creation**: `umya_spreadsheet::new_file()` → `Spreadsheet`. Set cell: `sheet.get_cell_mut("A1").set_value("text")`. Write: `umya_spreadsheet::writer::xlsx::write_writer(&book, &mut Cursor::new(Vec::new()))`. Multi-sheet: first sheet via `book.get_sheet_mut(&0)`, additional via `book.add_sheet(Worksheet::default())`.
 - **Typst TablePage codegen**: `generate_table_page()` calls `write_page_setup()` + `generate_table()`. Reuses all existing table infrastructure (cell merging, borders, backgrounds, column widths). TablePage = page setup + a single Table element.
@@ -241,4 +242,16 @@ Started: 2026-02-26
   - Test XLSX creation: `new_file()` → `get_sheet_mut(&0)` → `set_name()` / `get_cell_mut("A1").set_value()` → `writer::xlsx::write_writer()`
   - Empty sheets (max_col=0 or max_row=0) are skipped
   - All cell values stored as strings in IR (numbers, dates, text all become Run text)
+---
+
+## 2026-02-26 - US-015
+- **What was implemented**: XlsxParser cell merging — detects merged cell ranges using `sheet.get_merge_cells()`, sets correct colspan/rowspan on top-left cells, and skips non-top-left cells in merged regions.
+- **Files changed**:
+  - `crates/office2pdf/src/parser/xlsx.rs` — added `CellPos` type alias, `MergeInfo` struct, `build_merge_maps()` function; updated `parse()` to skip merged cells and set spans; added 7 new tests + `build_xlsx_with_merges()` helper
+- **Dependencies added**: None
+- **Learnings for future iterations:**
+  - `get_highest_column_and_row()` only considers cells with actual data — must expand grid extent to include merge range ends, or rows/columns covered only by merges will be missing
+  - `Range.get_coordinate_start_col/row()` and `get_coordinate_end_col/row()` return `Option<&ColumnReference/RowReference>` — use `*ref.get_num()` for 1-indexed u32
+  - clippy `type_complexity` lint triggers on `(HashMap<(u32,u32), T>, HashMap<(u32,u32), bool>)` return types — use `type CellPos = (u32, u32)` alias and `HashSet<CellPos>` for the skip set
+  - `sheet.add_merge_cells("A1:B2")` works for test setup — takes a string range
 ---

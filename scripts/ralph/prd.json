@@ -255,8 +255,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed. 7 cell merging tests. Uses sheet.get_merge_cells() → Range API with CellPos type alias. Expands grid to cover merge extents. Skips non-top-left cells in merged regions."
     },
     {
       "id": "US-016",
