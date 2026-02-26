@@ -3,8 +3,8 @@ use std::io::Cursor;
 
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Block, Document, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet,
-    Table, TableCell, TablePage, TableRow, TextStyle,
+    Block, BorderSide, CellBorder, Color, Document, Margins, Metadata, Page, PageSize, Paragraph,
+    ParagraphStyle, Run, StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 
@@ -18,6 +18,116 @@ const DEFAULT_COLUMN_WIDTH: f64 = 8.43;
 /// Empirically: width_pt ≈ char_width * 7.0 (approximate, close to Excel's rendering).
 fn column_width_to_pt(char_width: f64) -> f64 {
     char_width * 7.0
+}
+
+/// Parse an ARGB hex string (e.g. "FFFF0000") into an IR Color.
+/// Returns None if the string is too short or invalid.
+fn parse_argb_color(argb: &str) -> Option<Color> {
+    if argb.len() < 8 {
+        return None;
+    }
+    let r = u8::from_str_radix(&argb[2..4], 16).ok()?;
+    let g = u8::from_str_radix(&argb[4..6], 16).ok()?;
+    let b = u8::from_str_radix(&argb[6..8], 16).ok()?;
+    Some(Color::new(r, g, b))
+}
+
+/// Map Excel border style name to width in points.
+fn border_style_to_width(style: &str) -> Option<f64> {
+    match style {
+        "hair" => Some(0.25),
+        "thin" | "dashed" | "dotted" | "dashDot" | "dashDotDot" => Some(0.5),
+        "medium" | "mediumDashed" | "mediumDashDot" | "mediumDashDotDot" | "double"
+        | "slantDashDot" => Some(1.0),
+        "thick" => Some(2.0),
+        _ => None, // "none" or unknown
+    }
+}
+
+/// Extract font styling from a cell's style into an IR TextStyle.
+fn extract_cell_text_style(cell: &umya_spreadsheet::Cell) -> TextStyle {
+    let style = cell.get_style();
+    let Some(font) = style.get_font() else {
+        return TextStyle::default();
+    };
+
+    let bold = if *font.get_bold() { Some(true) } else { None };
+    let italic = if *font.get_italic() { Some(true) } else { None };
+    let underline = match font.get_underline() {
+        "none" | "" => None,
+        _ => Some(true),
+    };
+    let strikethrough = if *font.get_strikethrough() {
+        Some(true)
+    } else {
+        None
+    };
+
+    // Font name: skip default "Calibri" (Excel default) — only set if explicitly customized
+    let font_name = font.get_name();
+    let font_family = if font_name.is_empty() || font_name == "Calibri" {
+        None
+    } else {
+        Some(font_name.to_string())
+    };
+
+    // Font size: skip default 11.0 (Excel default)
+    let raw_size = *font.get_size();
+    let font_size = if (raw_size - 11.0).abs() < 0.01 {
+        None
+    } else {
+        Some(raw_size)
+    };
+
+    // Font color
+    let color_argb = font.get_color().get_argb();
+    let color = if color_argb.is_empty() || color_argb == "FF000000" {
+        // Default black — skip
+        None
+    } else {
+        parse_argb_color(color_argb)
+    };
+
+    TextStyle {
+        font_family,
+        font_size,
+        bold,
+        italic,
+        underline,
+        strikethrough,
+        color,
+    }
+}
+
+/// Extract background color from a cell's style.
+fn extract_cell_background(cell: &umya_spreadsheet::Cell) -> Option<Color> {
+    let bg = cell.get_style().get_background_color()?;
+    parse_argb_color(bg.get_argb())
+}
+
+/// Extract a single border side from an umya Border object.
+fn extract_border_side(border: &umya_spreadsheet::Border) -> Option<BorderSide> {
+    let width = border_style_to_width(border.get_border_style())?;
+    let color = parse_argb_color(border.get_color().get_argb()).unwrap_or(Color::black());
+    Some(BorderSide { width, color })
+}
+
+/// Extract cell border properties.
+fn extract_cell_borders(cell: &umya_spreadsheet::Cell) -> Option<CellBorder> {
+    let borders = cell.get_style().get_borders()?;
+    let top = extract_border_side(borders.get_top());
+    let bottom = extract_border_side(borders.get_bottom());
+    let left = extract_border_side(borders.get_left());
+    let right = extract_border_side(borders.get_right());
+    if top.is_none() && bottom.is_none() && left.is_none() && right.is_none() {
+        return None;
+    }
+    Some(CellBorder {
+        top,
+        bottom,
+        left,
+        right,
+    })
 }
 
 /// A (column, row) coordinate pair (1-indexed).
@@ -122,10 +232,17 @@ impl Parser for XlsxParser {
                     }
 
                     // umya-spreadsheet tuple is (column, row), both 1-indexed
-                    let value = sheet
-                        .get_cell((col_idx, row_idx))
+                    let umya_cell = sheet.get_cell((col_idx, row_idx));
+                    let value = umya_cell
                         .map(|cell| cell.get_value().to_string())
                         .unwrap_or_default();
+
+                    // Extract formatting from the cell
+                    let text_style = umya_cell
+                        .map(extract_cell_text_style)
+                        .unwrap_or_default();
+                    let background = umya_cell.and_then(extract_cell_background);
+                    let border = umya_cell.and_then(extract_cell_borders);
 
                     let content = if value.is_empty() {
                         Vec::new()
@@ -134,7 +251,7 @@ impl Parser for XlsxParser {
                             style: ParagraphStyle::default(),
                             runs: vec![Run {
                                 text: value,
-                                style: TextStyle::default(),
+                                style: text_style,
                             }],
                         })]
                     };
@@ -150,13 +267,18 @@ impl Parser for XlsxParser {
                         content,
                         col_span,
                         row_span,
-                        ..TableCell::default()
+                        border,
+                        background,
                     });
                 }
-                rows.push(TableRow {
-                    cells,
-                    height: None,
-                });
+
+                // Extract row height if custom
+                let height = sheet
+                    .get_row_dimension(&row_idx)
+                    .filter(|r| *r.get_custom_height())
+                    .map(|r| *r.get_height());
+
+                rows.push(TableRow { cells, height });
             }
 
             pages.push(Page::Table(TablePage {
@@ -604,5 +726,210 @@ mod tests {
         assert_eq!(tp.table.rows[0].cells.len(), 1);
         assert_eq!(tp.table.rows[0].cells[0].col_span, 4);
         assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Title");
+    }
+
+    // ----- US-027: Cell formatting tests -----
+
+    /// Helper: build XLSX with formatted cells.
+    fn build_xlsx_formatted(setup: impl FnOnce(&mut umya_spreadsheet::Worksheet)) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.set_name("Sheet1");
+            setup(sheet);
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Helper: extract the first run's TextStyle from a cell.
+    fn first_run_style(cell: &TableCell) -> &TextStyle {
+        match &cell.content[0] {
+            Block::Paragraph(p) => &p.runs[0].style,
+            _ => panic!("Expected Paragraph"),
+        }
+    }
+
+    #[test]
+    fn test_cell_bold_text() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value("Bold");
+            cell.get_style_mut().get_font_mut().set_bold(true);
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let style = first_run_style(&tp.table.rows[0].cells[0]);
+        assert_eq!(style.bold, Some(true));
+    }
+
+    #[test]
+    fn test_cell_italic_text() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value("Italic");
+            cell.get_style_mut().get_font_mut().set_italic(true);
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let style = first_run_style(&tp.table.rows[0].cells[0]);
+        assert_eq!(style.italic, Some(true));
+    }
+
+    #[test]
+    fn test_cell_font_color() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value("Red");
+            cell.get_style_mut()
+                .get_font_mut()
+                .get_color_mut()
+                .set_argb("FFFF0000");
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let style = first_run_style(&tp.table.rows[0].cells[0]);
+        assert_eq!(style.color, Some(Color::new(255, 0, 0)));
+    }
+
+    #[test]
+    fn test_cell_font_name_and_size() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value("Styled");
+            let font = cell.get_style_mut().get_font_mut();
+            font.set_name("Arial");
+            font.set_size(14.0);
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let style = first_run_style(&tp.table.rows[0].cells[0]);
+        assert_eq!(style.font_family.as_deref(), Some("Arial"));
+        assert_eq!(style.font_size, Some(14.0));
+    }
+
+    #[test]
+    fn test_cell_background_fill() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value("Yellow BG");
+            cell.get_style_mut().set_background_color("FFFFFF00");
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let cell = &tp.table.rows[0].cells[0];
+        assert_eq!(cell.background, Some(Color::new(255, 255, 0)));
+    }
+
+    #[test]
+    fn test_cell_borders() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value("Bordered");
+            let borders = cell.get_style_mut().get_borders_mut();
+            borders
+                .get_bottom_mut()
+                .set_border_style(umya_spreadsheet::Border::BORDER_MEDIUM);
+            borders
+                .get_bottom_mut()
+                .get_color_mut()
+                .set_argb("FF000000");
+            borders
+                .get_top_mut()
+                .set_border_style(umya_spreadsheet::Border::BORDER_THIN);
+            borders.get_top_mut().get_color_mut().set_argb("FFFF0000");
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let cell = &tp.table.rows[0].cells[0];
+        let border = cell.border.as_ref().expect("Expected border");
+        // Bottom: medium → ~1pt, black
+        let bottom = border.bottom.as_ref().expect("Expected bottom border");
+        assert!((bottom.width - 1.0).abs() < 0.01);
+        assert_eq!(bottom.color, Color::new(0, 0, 0));
+        // Top: thin → ~0.5pt, red
+        let top = border.top.as_ref().expect("Expected top border");
+        assert!((top.width - 0.5).abs() < 0.01);
+        assert_eq!(top.color, Color::new(255, 0, 0));
+    }
+
+    #[test]
+    fn test_row_height() {
+        let data = build_xlsx_formatted(|sheet| {
+            sheet.get_cell_mut("A1").set_value("Tall row");
+            sheet.get_row_dimension_mut(&1).set_height(30.0);
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let row = &tp.table.rows[0];
+        assert_eq!(row.height, Some(30.0));
+    }
+
+    #[test]
+    fn test_cell_no_formatting_defaults() {
+        // Plain cell with no explicit formatting → default TextStyle, no border, no background
+        let data = build_xlsx_bytes("Sheet1", &[("A1", "Plain")]);
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let cell = &tp.table.rows[0].cells[0];
+        let style = first_run_style(cell);
+        // No explicit formatting → all None
+        assert!(style.bold.is_none() || style.bold == Some(false));
+        assert!(style.italic.is_none() || style.italic == Some(false));
+        assert!(cell.border.is_none());
+        assert!(cell.background.is_none());
+    }
+
+    #[test]
+    fn test_cell_combined_formatting() {
+        // Cell with font + background + border all at once
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value("Full");
+            let style = cell.get_style_mut();
+            let font = style.get_font_mut();
+            font.set_bold(true);
+            font.set_size(16.0);
+            font.set_name("Helvetica");
+            font.get_color_mut().set_argb("FF0000FF"); // Blue text
+            style.set_background_color("FFFFCC00"); // Orange BG
+            let borders = style.get_borders_mut();
+            borders
+                .get_left_mut()
+                .set_border_style(umya_spreadsheet::Border::BORDER_THICK);
+            borders.get_left_mut().get_color_mut().set_argb("FF00FF00"); // Green border
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let cell = &tp.table.rows[0].cells[0];
+        let style = first_run_style(cell);
+        assert_eq!(style.bold, Some(true));
+        assert_eq!(style.font_size, Some(16.0));
+        assert_eq!(style.font_family.as_deref(), Some("Helvetica"));
+        assert_eq!(style.color, Some(Color::new(0, 0, 255)));
+        assert_eq!(cell.background, Some(Color::new(255, 204, 0)));
+        let border = cell.border.as_ref().expect("Expected border");
+        let left = border.left.as_ref().expect("Expected left border");
+        assert!((left.width - 2.0).abs() < 0.01);
+        assert_eq!(left.color, Color::new(0, 255, 0));
     }
 }
