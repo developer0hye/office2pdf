@@ -272,4 +272,108 @@ mod tests {
         let result = convert("nonexistent.docx");
         assert!(matches!(result.unwrap_err(), ConvertError::Io(_)));
     }
+
+    // --- Image pipeline integration tests ---
+
+    /// Build a minimal valid 1×1 red PNG with correct CRC checksums.
+    fn make_test_png() -> Vec<u8> {
+        /// Compute CRC32 over PNG chunk type + data.
+        fn png_crc32(chunk_type: &[u8], data: &[u8]) -> u32 {
+            let mut crc: u32 = 0xFFFF_FFFF;
+            for &byte in chunk_type.iter().chain(data.iter()) {
+                crc ^= byte as u32;
+                for _ in 0..8 {
+                    if crc & 1 != 0 {
+                        crc = (crc >> 1) ^ 0xEDB8_8320;
+                    } else {
+                        crc >>= 1;
+                    }
+                }
+            }
+            crc ^ 0xFFFF_FFFF
+        }
+
+        let mut png = Vec::new();
+        png.extend_from_slice(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        let ihdr_data: [u8; 13] = [
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00,
+        ];
+        let ihdr_type = b"IHDR";
+        png.extend_from_slice(&(ihdr_data.len() as u32).to_be_bytes());
+        png.extend_from_slice(ihdr_type);
+        png.extend_from_slice(&ihdr_data);
+        png.extend_from_slice(&png_crc32(ihdr_type, &ihdr_data).to_be_bytes());
+        let idat_data: [u8; 15] = [
+            0x78, 0x01, 0x01, 0x04, 0x00, 0xFB, 0xFF, 0x00, 0xFF, 0x00, 0x00, 0x03, 0x01, 0x01,
+            0x00,
+        ];
+        let idat_type = b"IDAT";
+        png.extend_from_slice(&(idat_data.len() as u32).to_be_bytes());
+        png.extend_from_slice(idat_type);
+        png.extend_from_slice(&idat_data);
+        png.extend_from_slice(&png_crc32(idat_type, &idat_data).to_be_bytes());
+        let iend_type = b"IEND";
+        png.extend_from_slice(&0u32.to_be_bytes());
+        png.extend_from_slice(iend_type);
+        png.extend_from_slice(&png_crc32(iend_type, &[]).to_be_bytes());
+        png
+    }
+
+    #[test]
+    fn test_render_document_with_image() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Image(ImageData {
+                    data: make_test_png(),
+                    format: ImageFormat::Png,
+                    width: Some(100.0),
+                    height: Some(80.0),
+                })],
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty(), "PDF should not be empty");
+        assert!(pdf.starts_with(b"%PDF"), "Should be valid PDF");
+    }
+
+    #[test]
+    fn test_render_document_image_mixed_with_text() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![
+                    Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Image below:".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }),
+                    Block::Image(ImageData {
+                        data: make_test_png(),
+                        format: ImageFormat::Png,
+                        width: Some(200.0),
+                        height: None,
+                    }),
+                    Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Image above.".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }),
+                ],
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
 }
