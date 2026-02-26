@@ -40,6 +40,10 @@
 - **ConvertResult**: Public API (`convert`, `convert_bytes`) returns `ConvertResult { pdf: Vec<u8>, warnings: Vec<ConvertWarning> }` instead of bare `Vec<u8>`. Access PDF bytes via `.pdf`.
 - **PPTX per-slide error recovery**: Each slide is parsed independently via `parse_single_slide()`. If a slide fails (missing file, broken XML), a warning is emitted and the slide is skipped.
 - **DOCX per-element error recovery**: Each `DocumentChild` is processed inside `std::panic::catch_unwind`. If an element panics, a warning is emitted and processing continues.
+- **PPTX theme parsing**: `ThemeData` struct holds `colors: HashMap<String, Color>`, `major_font: Option<String>`, `minor_font: Option<String>`. Parsed from `ppt/theme/theme1.xml` via `parse_theme_xml()`. Theme file located via presentation.xml.rels (relationship type containing "theme"). Color scheme elements: `dk1`, `dk2`, `lt1`, `lt2`, `accent1`-`accent6`, `hlink`, `folHlink`. Colors can be `<a:srgbClr val="RRGGBB"/>` or `<a:sysClr lastClr="RRGGBB"/>`. Font scheme: `<a:majorFont><a:latin typeface="..."/>` and `<a:minorFont><a:latin typeface="..."/>`.
+- **PPTX scheme color resolution**: In slide XML, `<a:schemeClr val="accent1"/>` resolves to RGB via `theme.colors.get(&scheme_name)`. Handled in both Start and Empty events (schemeClr can have children like `<a:tint/>`). When no theme is loaded, scheme colors resolve to `None`.
+- **PPTX theme font resolution**: `<a:latin typeface="+mj-lt"/>` → major font, `<a:latin typeface="+mn-lt"/>` → minor font. `resolve_theme_font()` substitutes these references. Explicit font names pass through unchanged.
+- **Test PPTX with theme**: Use `build_test_pptx_with_theme(cx, cy, slides, theme_xml)`. Includes `ppt/theme/theme1.xml` in ZIP and theme relationship in presentation.xml.rels. `make_theme_xml(colors, major_font, minor_font)` creates theme XML. `standard_theme_colors()` returns Office-like defaults.
 ---
 
 # Ralph Progress Log - Phase 2: P1 Features - Formatting, Styles, Font Fallback
@@ -186,4 +190,27 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - `ParagraphStyle.val` (pStyle reference) is public — direct access
   - Style resolution uses the same `extract_run_style()` and `extract_paragraph_style()` for both styles and direct formatting — clean reuse
   - Threading the StyleMap through the full call chain (including table cells) ensures consistent style application throughout the document
+---
+
+## 2026-02-27 - US-023: PPTX parser - theme colors and fonts
+- What was implemented:
+  - Added `ThemeData` struct with `colors: HashMap<String, Color>`, `major_font: Option<String>`, `minor_font: Option<String>`
+  - Implemented `parse_theme_xml()` to extract color scheme (12 named colors) and font scheme (major/minor latin fonts) from theme1.xml
+  - Added `load_theme()` to find theme file path from presentation.xml.rels and parse it
+  - Modified `parse_slide_xml()` to accept `&ThemeData` and resolve scheme colors and theme fonts
+  - Added `schemeClr` handling in both Start and Empty events: `<a:schemeClr val="accent1"/>` resolves via `theme.colors` lookup
+  - Added `resolve_theme_font()`: `+mj-lt` → major font, `+mn-lt` → minor font, explicit names pass through
+  - Supports both `<a:srgbClr>` and `<a:sysClr>` (using `lastClr` attribute) in theme color definitions
+  - 12 new tests: 4 unit tests (parse_theme_xml_colors, parse_theme_xml_fonts, parse_theme_xml_sys_clr, parse_theme_xml_empty), 3 unit tests (resolve_theme_font major/minor/explicit), 5 integration tests (scheme_color_in_shape_fill, scheme_color_in_line_stroke, scheme_color_in_text_run, theme_major/minor_font_in_text, combined_colors_and_fonts, no_theme_scheme_color_ignored, scheme_color_as_start_element)
+- Files changed:
+  - `crates/office2pdf/src/parser/pptx.rs` — ThemeData struct, parse_theme_xml(), load_theme(), resolve_theme_font(), schemeClr handling + 12 tests
+  - `scripts/ralph/prd.json` — US-023 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - Theme file path found via presentation.xml.rels — look for relationship target containing "theme"
+  - `sysClr` in theme XML (dk1, lt1) uses `lastClr` attribute for the actual RGB value, not `val` (which is a system color name like "windowText")
+  - `schemeClr` can appear as both Empty and Start elements — Start when it has child transforms like `<a:tint>` or `<a:shade>`
+  - Color transforms (tint, shade, lumMod, etc.) are not applied — we use the base theme color as-is. Future improvement.
+  - Font typeface `+mj-lt` and `+mn-lt` are OOXML conventions for referencing theme major/minor latin fonts
+  - When no theme is present, `ThemeData::default()` is used — scheme colors resolve to None and font references stay as-is
 ---
