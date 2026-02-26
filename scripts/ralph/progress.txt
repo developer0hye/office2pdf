@@ -46,6 +46,7 @@
 - **Test PPTX with theme**: Use `build_test_pptx_with_theme(cx, cy, slides, theme_xml)`. Includes `ppt/theme/theme1.xml` in ZIP and theme relationship in presentation.xml.rels. `make_theme_xml(colors, major_font, minor_font)` creates theme XML. `standard_theme_colors()` returns Office-like defaults.
 - **PPTX slide backgrounds**: `FixedPage.background_color: Option<Color>`. Parsed from `<p:bg><p:bgPr><a:solidFill>` in slide XML via `parse_background_color(xml, theme)`. Supports `<a:srgbClr>` and `<a:schemeClr>`. Inheritance chain: slide → layout → master via `resolve_inherited_background()`. Layout path from slide .rels (relationship target containing "slideLayout"), master path from layout .rels (target containing "slideMaster"). Typst codegen: `#set page(..., fill: rgb(r, g, b))` when background_color is Some.
 - **Test PPTX with layout/master**: Use `build_test_pptx_with_layout_master(cx, cy, slide_xml, layout_xml, master_xml)`. Creates full inheritance chain: slide1 → slideLayout1 → slideMaster1 with .rels files at each level. `make_slide_xml_with_bg(bg_xml, shapes)` creates slide XML with `<p:bg>` inside `<p:cSld>`.
+- **PPTX layout/master element inheritance**: `parse_single_slide()` resolves layout and master paths via `resolve_layout_master_paths()`, then parses elements from master, layout, and slide in order (master behind → layout → slide on top). Uses `rels_path_for()` helper for .rels path construction. `parse_slide_xml()` works on any XML with `<p:spTree>` — same function parses slide, layout, and master shapes. Test helpers: `make_layout_xml(shapes)`, `make_master_xml(shapes)`, `build_test_pptx_with_layout_master_multi_slide(cx, cy, slides, layout, master)` for multi-slide testing.
 ---
 
 # Ralph Progress Log - Phase 2: P1 Features - Formatting, Styles, Font Fallback
@@ -236,4 +237,25 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - Layout path from slide .rels: target containing "slideLayout". Master path from layout .rels: target containing "slideMaster"
   - `resolve_relative_path()` (existing helper) correctly handles "../" in .rels targets (e.g., "../slideLayouts/slideLayout1.xml")
   - The `build_test_pptx_with_layout_master()` test helper creates a full PPTX with .rels at slide, layout, and master levels
+---
+
+## 2026-02-27 - US-025: PPTX parser - slide master and layout inheritance
+- What was implemented:
+  - Extracted `rels_path_for()` helper for building .rels paths from file paths
+  - Extracted `resolve_layout_master_paths()` to find layout and master ZIP paths from a slide's .rels chain
+  - Refactored `resolve_inherited_background()` to use the new path resolution function
+  - Modified `parse_single_slide()` to parse elements from master, layout, and slide in order — master elements appear first (behind), then layout, then slide elements (on top)
+  - Layout/master images are also loaded via `load_slide_images()` for each level
+  - 5 new tests: master shape on slide, layout shape on slide, element ordering (master→layout→slide), master elements on all slides (multi-slide), slide without layout/master
+  - Added test helpers: `make_layout_xml(shapes)`, `make_master_xml(shapes)`, `build_test_pptx_with_layout_master_multi_slide()`
+- Files changed:
+  - `crates/office2pdf/src/parser/pptx.rs` — `rels_path_for()`, `resolve_layout_master_paths()`, refactored `resolve_inherited_background()`, modified `parse_single_slide()`, 5 tests + 3 helpers
+  - `scripts/ralph/prd.json` — US-025 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - `parse_slide_xml()` works on any XML with `<p:spTree>` — it doesn't care about the root element (sld, sldLayout, sldMaster), so it reuses cleanly for all three
+  - The .rels path pattern is consistent: `{dir}/_rels/{filename}.rels` — extracted into `rels_path_for()` for reuse
+  - `resolve_layout_master_paths()` replaces the duplicated path resolution logic that was in `resolve_inherited_background()`
+  - Element ordering matters: master elements first, layout second, slide last — this ensures correct visual layering
+  - Layout/master can also have images via their own .rels, so `load_slide_images()` is called for each level
 ---

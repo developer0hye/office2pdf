@@ -100,6 +100,9 @@ impl Parser for PptxParser {
 }
 
 /// Parse a single slide from the archive, returning a Page or an error.
+///
+/// Resolves the inheritance chain (slide → layout → master) and
+/// prepends master/layout elements behind slide elements.
 fn parse_single_slide<R: Read + std::io::Seek>(
     slide_path: &str,
     slide_size: PageSize,
@@ -108,7 +111,36 @@ fn parse_single_slide<R: Read + std::io::Seek>(
 ) -> Result<Page, ConvertError> {
     let slide_xml = read_zip_entry(archive, slide_path)?;
     let slide_images = load_slide_images(slide_path, archive);
-    let elements = parse_slide_xml(&slide_xml, &slide_images, theme)?;
+    let slide_elements = parse_slide_xml(&slide_xml, &slide_images, theme)?;
+
+    // Resolve layout and master paths
+    let (layout_path, master_path) = resolve_layout_master_paths(slide_path, archive);
+
+    // Build element list: master (behind) → layout → slide (on top)
+    let mut elements = Vec::new();
+
+    // Master elements (furthest back)
+    if let Some(ref path) = master_path
+        && let Ok(xml) = read_zip_entry(archive, path)
+    {
+        let master_images = load_slide_images(path, archive);
+        if let Ok(master_elements) = parse_slide_xml(&xml, &master_images, theme) {
+            elements.extend(master_elements);
+        }
+    }
+
+    // Layout elements (middle layer)
+    if let Some(ref path) = layout_path
+        && let Ok(xml) = read_zip_entry(archive, path)
+    {
+        let layout_images = load_slide_images(path, archive);
+        if let Ok(layout_elements) = parse_slide_xml(&xml, &layout_images, theme) {
+            elements.extend(layout_elements);
+        }
+    }
+
+    // Slide elements (on top)
+    elements.extend(slide_elements);
 
     // Resolve background color: slide → layout → master
     let background_color = parse_background_color(&slide_xml, theme)
@@ -121,6 +153,56 @@ fn parse_single_slide<R: Read + std::io::Seek>(
     }))
 }
 
+/// Build the .rels path for a given file path.
+///
+/// e.g., `ppt/slides/slide1.xml` → `ppt/slides/_rels/slide1.xml.rels`
+fn rels_path_for(path: &str) -> String {
+    if let Some((dir, filename)) = path.rsplit_once('/') {
+        format!("{dir}/_rels/{filename}.rels")
+    } else {
+        format!("_rels/{path}.rels")
+    }
+}
+
+/// Resolve the layout and master file paths from a slide's .rels.
+///
+/// Returns `(Option<layout_path>, Option<master_path>)`.
+fn resolve_layout_master_paths<R: Read + std::io::Seek>(
+    slide_path: &str,
+    archive: &mut ZipArchive<R>,
+) -> (Option<String>, Option<String>) {
+    let slide_dir = slide_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
+
+    // Read slide .rels to find layout
+    let Ok(rels_xml) = read_zip_entry(archive, &rels_path_for(slide_path)) else {
+        return (None, None);
+    };
+    let rels = parse_rels_xml(&rels_xml);
+
+    let layout_path = rels
+        .values()
+        .find(|t| t.contains("slideLayout") || t.contains("slideLayouts"))
+        .map(|target| resolve_relative_path(slide_dir, target));
+
+    let Some(ref layout_path) = layout_path else {
+        return (None, None);
+    };
+
+    // Read layout .rels to find master
+    let layout_dir = layout_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
+    let master_path = read_zip_entry(archive, &rels_path_for(layout_path))
+        .ok()
+        .and_then(|layout_rels_xml| {
+            let layout_rels = parse_rels_xml(&layout_rels_xml);
+            layout_rels
+                .values()
+                .find(|t| t.contains("slideMaster") || t.contains("slideMasters"))
+                .map(|target| resolve_relative_path(layout_dir, target))
+        });
+
+    (Some(layout_path.clone()), master_path)
+}
+
 /// Resolve inherited background color from layout or master.
 ///
 /// Reads the slide's .rels to find the layout, then the layout's .rels to find the master.
@@ -130,49 +212,21 @@ fn resolve_inherited_background<R: Read + std::io::Seek>(
     theme: &ThemeData,
     archive: &mut ZipArchive<R>,
 ) -> Option<Color> {
-    // Read slide .rels to find layout path
-    let slide_rels_path = if let Some((dir, filename)) = slide_path.rsplit_once('/') {
-        format!("{dir}/_rels/{filename}.rels")
-    } else {
-        format!("_rels/{slide_path}.rels")
-    };
-
-    let rels_xml = read_zip_entry(archive, &slide_rels_path).ok()?;
-    let rels = parse_rels_xml(&rels_xml);
-    let slide_dir = slide_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
-
-    // Find layout relationship
-    let layout_target = rels
-        .values()
-        .find(|t| t.contains("slideLayout") || t.contains("slideLayouts"))?;
-    let layout_path = resolve_relative_path(slide_dir, layout_target);
+    let (layout_path, master_path) = resolve_layout_master_paths(slide_path, archive);
 
     // Try layout background
-    if let Ok(layout_xml) = read_zip_entry(archive, &layout_path) {
-        if let Some(color) = parse_background_color(&layout_xml, theme) {
-            return Some(color);
-        }
+    if let Some(ref path) = layout_path
+        && let Ok(xml) = read_zip_entry(archive, path)
+        && let Some(color) = parse_background_color(&xml, theme)
+    {
+        return Some(color);
+    }
 
-        // Try master background via layout .rels
-        let layout_dir = layout_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
-        let layout_rels_path = if let Some((dir, filename)) = layout_path.rsplit_once('/') {
-            format!("{dir}/_rels/{filename}.rels")
-        } else {
-            format!("_rels/{layout_path}.rels")
-        };
-
-        if let Ok(layout_rels_xml) = read_zip_entry(archive, &layout_rels_path) {
-            let layout_rels = parse_rels_xml(&layout_rels_xml);
-            if let Some(master_target) = layout_rels
-                .values()
-                .find(|t| t.contains("slideMaster") || t.contains("slideMasters"))
-            {
-                let master_path = resolve_relative_path(layout_dir, master_target);
-                if let Ok(master_xml) = read_zip_entry(archive, &master_path) {
-                    return parse_background_color(&master_xml, theme);
-                }
-            }
-        }
+    // Try master background
+    if let Some(ref path) = master_path
+        && let Ok(xml) = read_zip_entry(archive, path)
+    {
+        return parse_background_color(&xml, theme);
     }
 
     None
@@ -2224,6 +2278,110 @@ mod tests {
         cursor.into_inner()
     }
 
+    /// Build a test PPTX with multiple slides that all share the same layout and master.
+    fn build_test_pptx_with_layout_master_multi_slide(
+        slide_cx_emu: i64,
+        slide_cy_emu: i64,
+        slide_xmls: &[String],
+        layout_xml: &str,
+        master_xml: &str,
+    ) -> Vec<u8> {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let opts = FileOptions::default();
+
+        // [Content_Types].xml
+        let mut ct = String::from(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
+        ct.push_str(
+            r#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">"#,
+        );
+        ct.push_str(r#"<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>"#);
+        ct.push_str(r#"<Default Extension="xml" ContentType="application/xml"/>"#);
+        for i in 0..slide_xmls.len() {
+            ct.push_str(&format!(
+                r#"<Override PartName="/ppt/slides/slide{}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>"#,
+                i + 1
+            ));
+        }
+        ct.push_str(r#"<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>"#);
+        ct.push_str(r#"<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>"#);
+        ct.push_str("</Types>");
+        zip.start_file("[Content_Types].xml", opts).unwrap();
+        zip.write_all(ct.as_bytes()).unwrap();
+
+        // _rels/.rels
+        zip.start_file("_rels/.rels", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>"#,
+        ).unwrap();
+
+        // ppt/presentation.xml
+        let mut pres = format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldSz cx="{slide_cx_emu}" cy="{slide_cy_emu}"/><p:sldIdLst>"#,
+        );
+        for i in 0..slide_xmls.len() {
+            pres.push_str(&format!(
+                r#"<p:sldId id="{}" r:id="rId{}"/>"#,
+                256 + i,
+                2 + i
+            ));
+        }
+        pres.push_str("</p:sldIdLst></p:presentation>");
+        zip.start_file("ppt/presentation.xml", opts).unwrap();
+        zip.write_all(pres.as_bytes()).unwrap();
+
+        // ppt/_rels/presentation.xml.rels
+        let mut pres_rels = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#,
+        );
+        pres_rels.push_str(
+            r#"<Relationship Id="rId100" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>"#,
+        );
+        for i in 0..slide_xmls.len() {
+            pres_rels.push_str(&format!(
+                r#"<Relationship Id="rId{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide{}.xml"/>"#,
+                2 + i,
+                1 + i
+            ));
+        }
+        pres_rels.push_str("</Relationships>");
+        zip.start_file("ppt/_rels/presentation.xml.rels", opts)
+            .unwrap();
+        zip.write_all(pres_rels.as_bytes()).unwrap();
+
+        // Slides and their .rels
+        for (i, slide_xml) in slide_xmls.iter().enumerate() {
+            let slide_num = i + 1;
+            zip.start_file(format!("ppt/slides/slide{slide_num}.xml"), opts)
+                .unwrap();
+            zip.write_all(slide_xml.as_bytes()).unwrap();
+
+            // Each slide's .rels points to the shared layout
+            let slide_rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>"#;
+            zip.start_file(format!("ppt/slides/_rels/slide{slide_num}.xml.rels"), opts)
+                .unwrap();
+            zip.write_all(slide_rels.as_bytes()).unwrap();
+        }
+
+        // ppt/slideLayouts/slideLayout1.xml
+        zip.start_file("ppt/slideLayouts/slideLayout1.xml", opts)
+            .unwrap();
+        zip.write_all(layout_xml.as_bytes()).unwrap();
+
+        // ppt/slideLayouts/_rels/slideLayout1.xml.rels → points to master
+        let layout_rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>"#;
+        zip.start_file("ppt/slideLayouts/_rels/slideLayout1.xml.rels", opts)
+            .unwrap();
+        zip.write_all(layout_rels.as_bytes()).unwrap();
+
+        // ppt/slideMasters/slideMaster1.xml
+        zip.start_file("ppt/slideMasters/slideMaster1.xml", opts)
+            .unwrap();
+        zip.write_all(master_xml.as_bytes()).unwrap();
+
+        let cursor = zip.finish().unwrap();
+        cursor.into_inner()
+    }
+
     // ── Theme unit tests ──────────────────────────────────────────────
 
     #[test]
@@ -2546,6 +2704,209 @@ mod tests {
         let page = first_fixed_page(&doc);
         // Should inherit master's green background
         assert_eq!(page.background_color, Some(Color::new(0, 255, 0)));
+    }
+
+    /// Create a slide layout XML with the given shape elements.
+    fn make_layout_xml(shapes: &[String]) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>"#,
+        );
+        for shape in shapes {
+            xml.push_str(shape);
+        }
+        xml.push_str("</p:spTree></p:cSld></p:sldLayout>");
+        xml
+    }
+
+    /// Create a slide master XML with the given shape elements.
+    fn make_master_xml(shapes: &[String]) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>"#,
+        );
+        for shape in shapes {
+            xml.push_str(shape);
+        }
+        xml.push_str("</p:spTree></p:cSld></p:sldMaster>");
+        xml
+    }
+
+    // ── US-025: Slide master and layout inheritance tests ────────────────
+
+    #[test]
+    fn test_master_shape_appears_on_slide() {
+        // Master has a rectangle shape → it should appear on the slide
+        let slide_xml = make_empty_slide_xml();
+        let layout_xml = make_layout_xml(&[]);
+        let master_shape = make_text_box(0, 0, 2_000_000, 500_000, "Master Logo");
+        let master_xml = make_master_xml(&[master_shape]);
+
+        let data = build_test_pptx_with_layout_master(
+            SLIDE_CX,
+            SLIDE_CY,
+            &slide_xml,
+            &layout_xml,
+            &master_xml,
+        );
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        // Master element should be present
+        assert_eq!(page.elements.len(), 1);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let para = match &blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(para.runs[0].text, "Master Logo");
+    }
+
+    #[test]
+    fn test_layout_shape_appears_on_slide() {
+        // Layout has a text box → it should appear on the slide
+        let slide_xml = make_empty_slide_xml();
+        let layout_shape = make_text_box(100_000, 100_000, 3_000_000, 500_000, "Layout Title");
+        let layout_xml = make_layout_xml(&[layout_shape]);
+        let master_xml = make_master_xml(&[]);
+
+        let data = build_test_pptx_with_layout_master(
+            SLIDE_CX,
+            SLIDE_CY,
+            &slide_xml,
+            &layout_xml,
+            &master_xml,
+        );
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 1);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let para = match &blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(para.runs[0].text, "Layout Title");
+    }
+
+    #[test]
+    fn test_inheritance_element_ordering() {
+        // Master, layout, and slide all have elements → order: master, layout, slide
+        let slide_shape = make_text_box(0, 0, 1_000_000, 500_000, "Slide Content");
+        let slide_xml = make_slide_xml(&[slide_shape]);
+        let layout_shape = make_text_box(0, 0, 1_000_000, 500_000, "Layout Content");
+        let layout_xml = make_layout_xml(&[layout_shape]);
+        let master_shape = make_text_box(0, 0, 1_000_000, 500_000, "Master Content");
+        let master_xml = make_master_xml(&[master_shape]);
+
+        let data = build_test_pptx_with_layout_master(
+            SLIDE_CX,
+            SLIDE_CY,
+            &slide_xml,
+            &layout_xml,
+            &master_xml,
+        );
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 3);
+
+        // Master element is first (behind)
+        let master_blocks = text_box_blocks(&page.elements[0]);
+        let master_para = match &master_blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(master_para.runs[0].text, "Master Content");
+
+        // Layout element is second
+        let layout_blocks = text_box_blocks(&page.elements[1]);
+        let layout_para = match &layout_blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(layout_para.runs[0].text, "Layout Content");
+
+        // Slide element is last (on top)
+        let slide_blocks = text_box_blocks(&page.elements[2]);
+        let slide_para = match &slide_blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(slide_para.runs[0].text, "Slide Content");
+    }
+
+    #[test]
+    fn test_master_elements_appear_on_all_slides() {
+        // Build a PPTX with 2 slides and a master shape → both slides should have it
+        let master_shape = make_text_box(0, 0, 2_000_000, 500_000, "Company Logo");
+        let master_xml = make_master_xml(&[master_shape]);
+        let layout_xml = make_layout_xml(&[]);
+
+        let slide1_shape = make_text_box(0, 1_000_000, 5_000_000, 2_000_000, "Slide 1");
+        let slide1_xml = make_slide_xml(&[slide1_shape]);
+        let slide2_shape = make_text_box(0, 1_000_000, 5_000_000, 2_000_000, "Slide 2");
+        let slide2_xml = make_slide_xml(&[slide2_shape]);
+
+        // Build PPTX with 2 slides, both pointing to same layout/master
+        let data = build_test_pptx_with_layout_master_multi_slide(
+            SLIDE_CX,
+            SLIDE_CY,
+            &[slide1_xml, slide2_xml],
+            &layout_xml,
+            &master_xml,
+        );
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        assert_eq!(doc.pages.len(), 2);
+
+        // Both slides should have master element + their own element
+        for (i, page) in doc.pages.iter().enumerate() {
+            let fixed_page = match page {
+                Page::Fixed(p) => p,
+                _ => panic!("Expected FixedPage"),
+            };
+            assert_eq!(
+                fixed_page.elements.len(),
+                2,
+                "Slide {} should have 2 elements (master + slide)",
+                i + 1
+            );
+
+            // First element is the master shape
+            let master_blocks = text_box_blocks(&fixed_page.elements[0]);
+            let master_para = match &master_blocks[0] {
+                Block::Paragraph(p) => p,
+                _ => panic!("Expected Paragraph"),
+            };
+            assert_eq!(master_para.runs[0].text, "Company Logo");
+        }
+    }
+
+    #[test]
+    fn test_slide_without_layout_master_has_only_slide_elements() {
+        // Standard PPTX without layout/master .rels → only slide elements
+        let shape = make_text_box(0, 0, 1_000_000, 500_000, "Just Slide");
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 1);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let para = match &blocks[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(para.runs[0].text, "Just Slide");
     }
 
     #[test]
