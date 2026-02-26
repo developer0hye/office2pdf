@@ -1,5 +1,8 @@
 ## Codebase Patterns
 - **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. `FontSearcher::new().include_system_fonts(true).search()` discovers system fonts with embedded fallbacks (Libertinus Serif, New Computer Modern, DejaVu Sans Mono via `embed-fonts` feature). Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`.
+- **DOCX list detection**: Check `para.has_numbering` and `para.property.numbering_property` for `NumberingProperty { id: Option<NumberingId>, level: Option<IndentLevel> }`. `NumberingId.id` is the numId, `IndentLevel.val` is the ilvl (0-based). numId=0 means "no numbering". Resolve numId → abstractNumId via `docx.numberings.numberings`, then check `abstract_num.levels[0].format` (use serde) for `"bullet"` (Unordered) vs `"decimal"`/etc. (Ordered). Group consecutive list paragraphs with same numId into `Block::List`.
+- **Typst list codegen**: Use `#list(list.item[content], ...)` for unordered, `#enum(enum.item[content], ...)` for ordered. Nested items: emit a sub-list `[#list(...)]` after the parent item. The `generate_list_items()` function recursively handles nesting based on item levels.
+- **docx-rs test list creation**: `docx_rs::Paragraph::new().add_run(...).numbering(NumberingId::new(1), IndentLevel::new(0))`. Need `AbstractNumbering::new(id).add_level(Level::new(level, Start::new(1), NumberFormat::new("bullet"|"decimal"), LevelText::new("•"|"%1."), LevelJc::new("left")))` and `Numbering::new(numId, abstractNumId)`, wrapped in `Numberings::new().add_abstract_numbering(an).add_numbering(n)` and set via `Docx::new().numberings(nums)`.
 - **Typst codegen structure**: Each FlowPage emits `#set page(...)` then paragraphs. Text runs use `#text(props)[content]` for styling. Underline/strikethrough wrap with `#underline[...]`/`#strike[...]`. Special chars (`#`, `*`, `_`, `$`, etc.) must be escaped with `\`.
 - **IR module imports**: Style types (Alignment, Color, TextStyle, ParagraphStyle, LineSpacing) are re-exported via `crate::ir::*` — do NOT import from `crate::ir::style::` (private module).
 - **Quality gates**: Always run `cargo fmt --all -- --check`, `cargo clippy --workspace -- -D warnings`, `cargo test --workspace`, `cargo check --workspace` before committing. Use `writeln!` not `write!(...\n)` per clippy.
@@ -81,4 +84,30 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - Without `embed-fonts`, MinimalWorld has 0 fonts but Typst still compiles (renders empty/fallback glyphs)
   - FontSearcher priority: font dirs (highest) → system fonts → embedded fonts (lowest)
   - System font search may be slow on first call (scans filesystem). Consider caching if perf becomes an issue.
+---
+
+## 2026-02-27 - US-019: DOCX parser - lists (numbered, bulleted, multi-level)
+- What was implemented:
+  - Added `List`, `ListItem`, `ListKind` types to IR (`Block::List` variant)
+  - Built numbering definition lookup: `build_num_kind_map()` resolves numId → abstractNumId → format ("bullet" = Unordered, else Ordered)
+  - Added `extract_num_info()` to detect numPr on paragraphs (numId + ilvl)
+  - Created `TaggedElement` enum to track whether a paragraph is a list item or plain content
+  - Added `convert_paragraph_element()` wrapper that checks numbering before delegating to existing `convert_paragraph_blocks()`
+  - Implemented `group_into_lists()` to group consecutive list paragraphs with same numId into `Block::List` blocks
+  - Typst codegen: `generate_list()` emits `#list()` for unordered, `#enum()` for ordered; `generate_list_items()` handles nesting with sub-lists
+  - Added handler in `generate_cell_content()` for lists inside table cells
+  - 9 new tests: 4 IR tests (list_item_default, list_unordered, list_ordered, list_nested), 3 codegen tests (bulleted, numbered, nested), 2 integration tests (render_document_with_list, e2e_docx_with_list)
+  - 4 parser tests: simple_bulleted, simple_numbered, nested_multi_level, mixed_list_and_paragraphs
+- Files changed:
+  - `crates/office2pdf/src/ir/elements.rs` — new List/ListItem/ListKind types + Block::List variant + 4 tests
+  - `crates/office2pdf/src/parser/docx.rs` — numbering detection, TaggedElement, grouping logic + 4 tests
+  - `crates/office2pdf/src/render/typst_gen.rs` — generate_list/generate_list_items + Block::List in match arms + 3 tests
+  - `crates/office2pdf/src/lib.rs` — 2 integration tests
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - docx-rs `NumberFormat` has a private `val` field — use `serde_json::to_value(&format)` then `.as_str()` to read it
+  - docx-rs `Paragraph.has_numbering` is the quick check; `property.numbering_property` has the details
+  - numId=0 in OOXML means "remove numbering" — must be filtered out
+  - The `TaggedElement` pattern (tagging blocks with metadata before grouping) is clean for post-processing consecutive elements
+  - List paragraphs with page breaks before them are demoted to plain blocks to avoid breaking list grouping
 ---
