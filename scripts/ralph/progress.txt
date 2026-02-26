@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - **XLSX cell formatting**: `cell.get_style()` → `&Style`. Font: `style.get_font()` → `Option<&Font>` with `get_name()`, `get_size()`, `get_bold()`, `get_italic()`, `get_underline()`, `get_strikethrough()`, `get_color().get_argb()`. Background: `style.get_background_color()` → `Option<&Color>` with `get_argb()` (ARGB 8-char hex, skip first 2 for alpha). Borders: `style.get_borders()` → `Option<&Borders>` with `get_top/bottom/left/right()` → `&Border` with `get_border_style()` (str) and `get_color().get_argb()`. Border widths: hair=0.25pt, thin=0.5pt, medium=1.0pt, thick=2.0pt. Row height: `sheet.get_row_dimension(&row_idx)` → `Option<&Row>` with `get_height()` and `get_custom_height()`. Test setup: `cell.get_style_mut().get_font_mut().set_bold(true)`, `style.set_background_color("FFFFFF00")`, `style.get_borders_mut().get_bottom_mut().set_border_style("medium")`, `sheet.get_row_dimension_mut(&1).set_height(30.0)`. Defaults to skip: font name "Calibri", size 11.0, color "FF000000".
+- **XLSX number formats**: Use `cell.get_formatted_value()` instead of `cell.get_value().to_string()` to get pre-formatted cell text. umya-spreadsheet handles all formatting internally: currency ($#,##0.00), percentage (0%), dates (yyyy-mm-dd), thousands separators (#,##0), custom format strings. Set format: `cell.get_style_mut().get_number_format_mut().set_format_code("format")` or `.set_number_format_id(id)`. Built-in format IDs: 0=General, 1=0, 2=0.00, 3=#,##0, 4=#,##0.00, 9=0%, 10=0.00%, 14=m/d/yyyy. For dates: use `set_value_number(serial)` where serial is Excel date serial (days since 1900-01-01). "General" format passes through simple numbers unchanged. Constants: `NumberingFormat::FORMAT_CURRENCY_USD_SIMPLE`, `FORMAT_PERCENTAGE`, `FORMAT_DATE_YYYYMMDD`, etc.
 - **DOCX document styles**: `docx.styles.styles` is `Vec<Style>` with `style_id`, `name`, `style_type`, `run_property`, `paragraph_property`. Access via `docx.styles`. `ParagraphProperty.style: Option<ParagraphStyle>` stores the pStyle reference; `ParagraphStyle.val` is the style ID string. `Style.paragraph_property.outline_lvl: Option<OutlineLvl>` with `OutlineLvl.v: usize` (public) for heading level detection (0=H1..5=H6). `Name.name` is private — use `serde_json::to_value(&name)` → string. Create test styles: `Style::new("Heading1", StyleType::Paragraph).name("Heading 1").outline_lvl(0).bold().size(48)`. Apply to paragraph: `Paragraph::new().style("Heading1")`. The `build_style_map()` function builds `StyleMap` (HashMap<String, ResolvedStyle>) from docx styles. `merge_text_style()` and `merge_paragraph_style()` merge style defaults with explicit formatting (explicit wins). Heading defaults (when style doesn't specify): H1=24pt, H2=20pt, H3=16pt, H4=14pt, H5=12pt, H6=11pt, all bold.
 - **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. `FontSearcher::new().include_system_fonts(true).search()` discovers system fonts with embedded fallbacks (Libertinus Serif, New Computer Modern, DejaVu Sans Mono via `embed-fonts` feature). Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`.
 - **DOCX list detection**: Check `para.has_numbering` and `para.property.numbering_property` for `NumberingProperty { id: Option<NumberingId>, level: Option<IndentLevel> }`. `NumberingId.id` is the numId, `IndentLevel.val` is the ilvl (0-based). numId=0 means "no numbering". Resolve numId → abstractNumId via `docx.numberings.numberings`, then check `abstract_num.levels[0].format` (use serde) for `"bullet"` (Unordered) vs `"decimal"`/etc. (Ordered). Group consecutive list paragraphs with same numId into `Block::List`.
@@ -313,4 +314,23 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - Border style mapping: "none" → skip, "hair" → 0.25pt, "thin" → 0.5pt, "medium" → 1.0pt, "thick" → 2.0pt
   - Row height: `sheet.get_row_dimension(&row_idx)` returns `Option<&Row>`; only use when `get_custom_height()` is true (otherwise it's Excel's auto-calculated default)
   - `set_background_color()` on Style (for test setup) is a shortcut that creates a solid pattern fill with foreground color
+---
+
+## 2026-02-27 - US-028: XLSX parser - number formats (currency, percentage, date)
+- What was implemented:
+  - Switched cell value extraction from `cell.get_value().to_string()` (raw) to `cell.get_formatted_value()` (formatted) in XLSX parser
+  - umya-spreadsheet's built-in formatting engine handles all number format types: currency, percentage, dates, thousands separators, custom format strings
+  - No additional dependencies or custom formatting code needed — umya-spreadsheet already implements the full OOXML number format specification
+  - 8 new tests: currency format (USD), percentage (0%), percentage with decimals (0.00%), date (yyyy-mm-dd), thousands separator (#,##0), general format unchanged, built-in format ID, custom format string (0.000)
+- Files changed:
+  - `crates/office2pdf/src/parser/xlsx.rs` — one-line change (`get_value()` → `get_formatted_value()`) + 8 new tests
+  - `scripts/ralph/prd.json` — US-028 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - umya-spreadsheet `Cell::get_formatted_value()` applies the cell's number format automatically — no need for manual format parsing
+  - The formatting is handled by `to_formatted_string()` in umya's `helper::number_format` module, which supports all standard OOXML format codes
+  - `set_value_number(f64)` stores as `CellRawValue::Numeric` — required for number formats to work (vs `set_value("string")` which auto-detects type)
+  - `set_number_format_id(4)` auto-looks up the format code from umya's built-in table, but the resulting format string may have slightly different precision than expected (e.g., "1,234.500" vs "1,234.50")
+  - "General" format preserves simple numbers as-is — switching to `get_formatted_value()` is backward-compatible with existing tests
+  - For test dates, use Excel serial numbers (e.g., 45306) with `set_value_number()` and a date format code
 ---

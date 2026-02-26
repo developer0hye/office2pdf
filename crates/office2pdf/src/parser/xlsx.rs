@@ -234,13 +234,11 @@ impl Parser for XlsxParser {
                     // umya-spreadsheet tuple is (column, row), both 1-indexed
                     let umya_cell = sheet.get_cell((col_idx, row_idx));
                     let value = umya_cell
-                        .map(|cell| cell.get_value().to_string())
+                        .map(|cell| cell.get_formatted_value())
                         .unwrap_or_default();
 
                     // Extract formatting from the cell
-                    let text_style = umya_cell
-                        .map(extract_cell_text_style)
-                        .unwrap_or_default();
+                    let text_style = umya_cell.map(extract_cell_text_style).unwrap_or_default();
                     let background = umya_cell.and_then(extract_cell_background);
                     let border = umya_cell.and_then(extract_cell_borders);
 
@@ -895,6 +893,165 @@ mod tests {
         assert!(style.italic.is_none() || style.italic == Some(false));
         assert!(cell.border.is_none());
         assert!(cell.background.is_none());
+    }
+
+    // ----- US-028: Number format tests -----
+
+    #[test]
+    fn test_number_format_currency() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value_number(1234.56f64);
+            cell.get_style_mut()
+                .get_number_format_mut()
+                .set_format_code(umya_spreadsheet::NumberingFormat::FORMAT_CURRENCY_USD_SIMPLE);
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let text = cell_text(&tp.table.rows[0].cells[0]);
+        // Should contain $ and formatted number, not raw "1234.56"
+        assert!(
+            text.contains('$') && text.contains("1,234.56"),
+            "Expected currency format with $ and 1,234.56, got: {text}"
+        );
+    }
+
+    #[test]
+    fn test_number_format_percentage() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value_number(0.456f64);
+            cell.get_style_mut()
+                .get_number_format_mut()
+                .set_format_code(umya_spreadsheet::NumberingFormat::FORMAT_PERCENTAGE);
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let text = cell_text(&tp.table.rows[0].cells[0]);
+        // 0.456 with "0%" format → "46%" (rounded)
+        assert!(
+            text.contains('%'),
+            "Expected percentage format with %, got: {text}"
+        );
+    }
+
+    #[test]
+    fn test_number_format_percentage_with_decimals() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value_number(0.5f64);
+            cell.get_style_mut()
+                .get_number_format_mut()
+                .set_format_code(umya_spreadsheet::NumberingFormat::FORMAT_PERCENTAGE_00);
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let text = cell_text(&tp.table.rows[0].cells[0]);
+        // 0.5 with "0.00%" format → "50.00%"
+        assert!(
+            text.contains('%') && text.contains("50.00"),
+            "Expected 50.00%, got: {text}"
+        );
+    }
+
+    #[test]
+    fn test_number_format_date() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            // Excel serial number for a date (e.g., 45306 = 2024-01-15 approximately)
+            cell.set_value_number(45306f64);
+            cell.get_style_mut()
+                .get_number_format_mut()
+                .set_format_code(umya_spreadsheet::NumberingFormat::FORMAT_DATE_YYYYMMDD);
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let text = cell_text(&tp.table.rows[0].cells[0]);
+        // Should be a date string like "2024-01-05" (exact date depends on serial), NOT "45306"
+        assert!(
+            text.contains('-') && !text.contains("45306"),
+            "Expected date format yyyy-mm-dd, got: {text}"
+        );
+    }
+
+    #[test]
+    fn test_number_format_thousands_separator() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value_number(1234567f64);
+            cell.get_style_mut()
+                .get_number_format_mut()
+                .set_format_code("#,##0");
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let text = cell_text(&tp.table.rows[0].cells[0]);
+        assert_eq!(text, "1,234,567", "Expected thousands separator formatting");
+    }
+
+    #[test]
+    fn test_number_format_general_unchanged() {
+        // General format should not change the display of simple numbers
+        let data = build_xlsx_formatted(|sheet| {
+            sheet.get_cell_mut("A1").set_value("42");
+            sheet.get_cell_mut("B1").set_value("3.14");
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "42");
+        assert_eq!(cell_text(&tp.table.rows[0].cells[1]), "3.14");
+    }
+
+    #[test]
+    fn test_number_format_builtin_id() {
+        // Use a built-in format ID (ID 4 = "#,##0.00")
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value_number(1234.5f64);
+            cell.get_style_mut()
+                .get_number_format_mut()
+                .set_number_format_id(4);
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let text = cell_text(&tp.table.rows[0].cells[0]);
+        // Format ID 4 = "#,##0.00" → should have thousands separator and decimals
+        assert!(
+            text.contains("1,234") && text.contains("50"),
+            "Expected #,##0.00 formatting via ID 4, got: {text}"
+        );
+    }
+
+    #[test]
+    fn test_number_format_custom_format_string() {
+        // Custom format: display with 3 decimal places
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value_number(3.14159f64);
+            cell.get_style_mut()
+                .get_number_format_mut()
+                .set_format_code("0.000");
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let text = cell_text(&tp.table.rows[0].cells[0]);
+        assert_eq!(text, "3.142", "Expected 3 decimal places formatting");
     }
 
     #[test]
