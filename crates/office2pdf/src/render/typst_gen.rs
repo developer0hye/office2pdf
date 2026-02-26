@@ -3,8 +3,9 @@ use std::fmt::Write;
 use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
-    FixedPage, FlowPage, ImageData, ImageFormat, LineSpacing, Margins, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, Shape, ShapeKind, Table, TableCell, TablePage, TextStyle,
+    FixedPage, FlowPage, ImageData, ImageFormat, LineSpacing, List, ListKind, Margins, Page,
+    PageSize, Paragraph, ParagraphStyle, Run, Shape, ShapeKind, Table, TableCell, TablePage,
+    TextStyle,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -237,7 +238,88 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             generate_image(out, img, ctx);
             Ok(())
         }
+        Block::List(list) => generate_list(out, list),
     }
+}
+
+/// Generate Typst markup for a list (ordered or unordered).
+///
+/// Uses Typst's `#enum()` for ordered lists and `#list()` for unordered lists.
+/// Nested items are wrapped in `list.item()` / `enum.item()` with a sub-list.
+fn generate_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
+    let (func, item_func) = match list.kind {
+        ListKind::Ordered => ("enum", "enum.item"),
+        ListKind::Unordered => ("list", "list.item"),
+    };
+
+    // Build nested structure from flat items with levels.
+    // We use Typst function syntax: #list(item, item, ...) or #enum(item, item, ...)
+    // Nested items use list.item(body) with a sub-list inside.
+    let _ = writeln!(out, "#{func}(");
+    generate_list_items(out, &list.items, 0, func, item_func)?;
+    out.push_str(")\n");
+    Ok(())
+}
+
+/// Recursively generate list items, grouping consecutive items at the same or deeper level.
+fn generate_list_items(
+    out: &mut String,
+    items: &[crate::ir::ListItem],
+    base_level: u32,
+    func: &str,
+    item_func: &str,
+) -> Result<(), ConvertError> {
+    let mut i = 0;
+    while i < items.len() {
+        let item = &items[i];
+        if item.level == base_level {
+            // Emit this item's content
+            let _ = write!(out, "  {item_func}[");
+            for para in &item.content {
+                for run in &para.runs {
+                    generate_run(out, run);
+                }
+            }
+            out.push(']');
+
+            // Check if next items are nested (deeper level) — they become a sub-list
+            let nested_start = i + 1;
+            let mut nested_end = nested_start;
+            while nested_end < items.len() && items[nested_end].level > base_level {
+                nested_end += 1;
+            }
+
+            if nested_end > nested_start {
+                // Emit nested sub-list
+                let _ = writeln!(out, "[#{func}(");
+                generate_list_items(
+                    out,
+                    &items[nested_start..nested_end],
+                    base_level + 1,
+                    func,
+                    item_func,
+                )?;
+                out.push_str(")]");
+                i = nested_end;
+            } else {
+                i += 1;
+            }
+
+            out.push_str(",\n");
+        } else {
+            // Item at a deeper level without a parent at base_level;
+            // treat it as if it were at base_level
+            let _ = write!(out, "  {item_func}[");
+            for para in &item.content {
+                for run in &para.runs {
+                    generate_run(out, run);
+                }
+            }
+            out.push_str("],\n");
+            i += 1;
+        }
+    }
+    Ok(())
 }
 
 fn generate_table(out: &mut String, table: &Table, ctx: &mut GenCtx) -> Result<(), ConvertError> {
@@ -359,6 +441,7 @@ fn generate_cell_content(
             Block::Paragraph(para) => generate_cell_paragraph(out, para),
             Block::Table(table) => generate_table(out, table, ctx)?,
             Block::Image(img) => generate_image(out, img, ctx),
+            Block::List(list) => generate_list(out, list)?,
             Block::PageBreak => {}
         }
     }
@@ -2219,5 +2302,148 @@ mod tests {
         assert!(output.source.contains("Tall"));
         assert!(output.source.contains("Top"));
         assert!(output.source.contains("Bottom"));
+    }
+
+    // ----- List codegen tests -----
+
+    #[test]
+    fn test_generate_bulleted_list() {
+        use crate::ir::{List, ListItem, ListKind};
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Apple".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Banana".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+            ],
+        };
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![Block::List(list)],
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#list("),
+            "Expected #list( in: {}",
+            output.source
+        );
+        assert!(output.source.contains("Apple"));
+        assert!(output.source.contains("Banana"));
+    }
+
+    #[test]
+    fn test_generate_numbered_list() {
+        use crate::ir::{List, ListItem, ListKind};
+        let list = List {
+            kind: ListKind::Ordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Step 1".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Step 2".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+            ],
+        };
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![Block::List(list)],
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#enum("),
+            "Expected #enum( in: {}",
+            output.source
+        );
+        assert!(output.source.contains("Step 1"));
+        assert!(output.source.contains("Step 2"));
+    }
+
+    #[test]
+    fn test_generate_nested_list() {
+        use crate::ir::{List, ListItem, ListKind};
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Parent".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Child".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 1,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Sibling".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+            ],
+        };
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![Block::List(list)],
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(output.source.contains("Parent"));
+        assert!(output.source.contains("Child"));
+        assert!(output.source.contains("Sibling"));
+        // Nested list should contain a sub-list
+        assert!(
+            output.source.contains("#list("),
+            "Expected nested #list( in: {}",
+            output.source
+        );
     }
 }

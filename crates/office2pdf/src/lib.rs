@@ -732,6 +732,95 @@ mod tests {
     }
 
     #[test]
+    fn test_render_document_with_list() {
+        use crate::ir::{
+            Document, FlowPage, List, ListItem, ListKind, Margins, Metadata, Page, PageSize,
+            Paragraph, ParagraphStyle, Run, StyleSheet, TextStyle,
+        };
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![ir::Block::List(List {
+                    kind: ListKind::Unordered,
+                    items: vec![
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "Hello".to_string(),
+                                    style: TextStyle::default(),
+                                }],
+                            }],
+                            level: 0,
+                        },
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "World".to_string(),
+                                    style: TextStyle::default(),
+                                }],
+                            }],
+                            level: 0,
+                        },
+                    ],
+                })],
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(
+            pdf.starts_with(b"%PDF"),
+            "Should produce valid PDF with list"
+        );
+    }
+
+    #[test]
+    fn test_e2e_docx_with_list_produces_pdf() {
+        use std::io::Cursor;
+        // Build a DOCX with a bulleted list and verify it converts to PDF
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("bullet"),
+            docx_rs::LevelText::new("•"),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+        let nums = docx_rs::Numberings::new()
+            .add_abstract_numbering(abstract_num)
+            .add_numbering(numbering);
+
+        let docx = docx_rs::Docx::new()
+            .numberings(nums)
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Bullet 1"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Bullet 2"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Regular text")),
+            );
+
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Should produce valid PDF with list content"
+        );
+    }
+
+    #[test]
     fn test_normal_docx_has_no_warnings() {
         let docx_bytes = build_test_docx();
         let result = convert_bytes(&docx_bytes, Format::Docx, &ConvertOptions::default()).unwrap();

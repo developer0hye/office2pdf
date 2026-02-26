@@ -6,7 +6,29 @@ pub enum Block {
     Paragraph(Paragraph),
     Table(Table),
     Image(ImageData),
+    List(List),
     PageBreak,
+}
+
+/// The kind of list: ordered (numbered) or unordered (bulleted).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ListKind {
+    Ordered,
+    Unordered,
+}
+
+/// A list block containing items at various indent levels.
+#[derive(Debug, Clone)]
+pub struct List {
+    pub kind: ListKind,
+    pub items: Vec<ListItem>,
+}
+
+/// A single list item with content and indent level.
+#[derive(Debug, Clone)]
+pub struct ListItem {
+    pub content: Vec<Paragraph>,
+    pub level: u32,
 }
 
 /// A paragraph consisting of styled text runs.
@@ -135,6 +157,103 @@ mod tests {
         assert!(cell.content.is_empty());
         assert!(cell.border.is_none());
         assert!(cell.background.is_none());
+    }
+
+    #[test]
+    fn test_list_item_default() {
+        let item = ListItem {
+            content: vec![Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Item 1".to_string(),
+                    style: TextStyle::default(),
+                }],
+            }],
+            level: 0,
+        };
+        assert_eq!(item.level, 0);
+        assert_eq!(item.content.len(), 1);
+    }
+
+    #[test]
+    fn test_list_unordered() {
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Bullet 1".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Bullet 2".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+            ],
+        };
+        assert_eq!(list.kind, ListKind::Unordered);
+        assert_eq!(list.items.len(), 2);
+    }
+
+    #[test]
+    fn test_list_ordered() {
+        let list = List {
+            kind: ListKind::Ordered,
+            items: vec![ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Step 1".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                }],
+                level: 0,
+            }],
+        };
+        assert_eq!(list.kind, ListKind::Ordered);
+        assert_eq!(list.items.len(), 1);
+    }
+
+    #[test]
+    fn test_list_nested() {
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Top".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Nested".to_string(),
+                            style: TextStyle::default(),
+                        }],
+                    }],
+                    level: 1,
+                },
+            ],
+        };
+        assert_eq!(list.items[0].level, 0);
+        assert_eq!(list.items[1].level, 1);
     }
 
     #[test]

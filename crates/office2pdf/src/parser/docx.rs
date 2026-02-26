@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, ImageData, ImageFormat,
-    LineSpacing, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet,
-    Table, TableCell, TableRow, TextStyle,
+    LineSpacing, List, ListItem, ListKind, Margins, Metadata, Page, PageSize, Paragraph,
+    ParagraphStyle, Run, StyleSheet, Table, TableCell, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 
@@ -28,6 +28,134 @@ fn emu_to_pt(emu: u32) -> f64 {
     emu as f64 / 12700.0
 }
 
+/// Numbering info extracted from a paragraph's numPr.
+#[derive(Debug, Clone)]
+struct NumInfo {
+    num_id: usize,
+    level: u32,
+}
+
+/// Map from numId → ListKind (Ordered or Unordered).
+/// Built by resolving numId → abstractNumId → first level's format.
+type NumKindMap = HashMap<usize, ListKind>;
+
+/// Build a map from numbering instance ID → list kind by inspecting the
+/// abstract numbering definitions.
+fn build_num_kind_map(numberings: &docx_rs::Numberings) -> NumKindMap {
+    // Map abstractNumId → is bullet?
+    let mut abstract_kinds: HashMap<usize, ListKind> = HashMap::new();
+    for abs in &numberings.abstract_nums {
+        // Check the first level's format to determine if bullet or ordered
+        let kind = if abs.levels.iter().any(|lvl| {
+            let json = serde_json::to_value(&lvl.format).ok();
+            json.and_then(|j| j.as_str().map(|s| s.to_owned()))
+                .is_some_and(|val| val == "bullet")
+        }) {
+            ListKind::Unordered
+        } else {
+            ListKind::Ordered
+        };
+        abstract_kinds.insert(abs.id, kind);
+    }
+
+    // Map numId → abstractNumId → ListKind
+    let mut map = NumKindMap::new();
+    for num in &numberings.numberings {
+        if let Some(&kind) = abstract_kinds.get(&num.abstract_num_id) {
+            map.insert(num.id, kind);
+        }
+    }
+    map
+}
+
+/// Extract numbering info from a paragraph, if it has numPr.
+fn extract_num_info(para: &docx_rs::Paragraph) -> Option<NumInfo> {
+    if !para.has_numbering {
+        return None;
+    }
+    let np = para.property.numbering_property.as_ref()?;
+    let num_id = np.id.as_ref()?.id;
+    let level = np.level.as_ref().map_or(0, |l| l.val as u32);
+    // numId 0 means "no numbering" in OOXML
+    if num_id == 0 {
+        return None;
+    }
+    Some(NumInfo { num_id, level })
+}
+
+/// An intermediate element that carries optional numbering info alongside blocks.
+enum TaggedElement {
+    /// A regular block (non-list paragraph, table, image, page break, etc.)
+    Plain(Vec<Block>),
+    /// A list paragraph with its numbering info and the paragraph IR.
+    ListParagraph { info: NumInfo, paragraph: Paragraph },
+}
+
+/// Group consecutive list paragraphs (with the same numId) into List blocks.
+/// Non-list elements pass through unchanged.
+fn group_into_lists(elements: Vec<TaggedElement>, num_kinds: &NumKindMap) -> Vec<Block> {
+    let mut result: Vec<Block> = Vec::new();
+
+    // Accumulator for current list run
+    let mut current_list: Option<(usize, Vec<ListItem>)> = None; // (numId, items)
+
+    for elem in elements {
+        match elem {
+            TaggedElement::ListParagraph { info, paragraph } => {
+                if let Some((cur_num_id, ref mut items)) = current_list {
+                    if info.num_id == cur_num_id {
+                        // Same list — add item
+                        items.push(ListItem {
+                            content: vec![paragraph],
+                            level: info.level,
+                        });
+                        continue;
+                    }
+                    // Different list — flush current
+                    let kind = num_kinds
+                        .get(&cur_num_id)
+                        .copied()
+                        .unwrap_or(ListKind::Unordered);
+                    result.push(Block::List(List {
+                        kind,
+                        items: std::mem::take(items),
+                    }));
+                }
+                // Start new list
+                current_list = Some((
+                    info.num_id,
+                    vec![ListItem {
+                        content: vec![paragraph],
+                        level: info.level,
+                    }],
+                ));
+            }
+            TaggedElement::Plain(blocks) => {
+                // Flush any pending list
+                if let Some((num_id, items)) = current_list.take() {
+                    let kind = num_kinds
+                        .get(&num_id)
+                        .copied()
+                        .unwrap_or(ListKind::Unordered);
+                    result.push(Block::List(List { kind, items }));
+                }
+                result.extend(blocks);
+            }
+        }
+    }
+
+    // Flush trailing list
+    if let Some((num_id, items)) = current_list {
+        let kind = num_kinds
+            .get(&num_id)
+            .copied()
+            .unwrap_or(ListKind::Unordered);
+        result.push(Block::List(List { kind, items }));
+    }
+
+    result
+}
+
 impl Parser for DocxParser {
     fn parse(&self, data: &[u8]) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let docx = docx_rs::read_docx(data)
@@ -35,26 +163,21 @@ impl Parser for DocxParser {
 
         let (size, margins) = extract_page_setup(&docx.document.section_property);
         let images = build_image_map(&docx);
+        let num_kinds = build_num_kind_map(&docx.numberings);
         let mut warnings = Vec::new();
 
-        let mut content: Vec<Block> = Vec::new();
+        let mut elements: Vec<TaggedElement> = Vec::new();
         for (idx, child) in docx.document.children.iter().enumerate() {
-            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                let mut blocks = Vec::new();
-                match child {
-                    docx_rs::DocumentChild::Paragraph(para) => {
-                        convert_paragraph_blocks(para, &mut blocks, &images);
-                    }
-                    docx_rs::DocumentChild::Table(table) => {
-                        blocks.push(Block::Table(convert_table(table, &images)));
-                    }
-                    _ => {}
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
+                docx_rs::DocumentChild::Paragraph(para) => convert_paragraph_element(para, &images),
+                docx_rs::DocumentChild::Table(table) => {
+                    TaggedElement::Plain(vec![Block::Table(convert_table(table, &images))])
                 }
-                blocks
+                _ => TaggedElement::Plain(vec![]),
             }));
 
             match result {
-                Ok(blocks) => content.extend(blocks),
+                Ok(elem) => elements.push(elem),
                 Err(_) => {
                     warnings.push(ConvertWarning {
                         element: format!("Document element at index {idx}"),
@@ -63,6 +186,8 @@ impl Parser for DocxParser {
                 }
             }
         }
+
+        let content = group_into_lists(elements, &num_kinds);
 
         Ok((
             Document {
@@ -111,6 +236,53 @@ fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
         bottom: page_margin.bottom as f64 / 20.0,
         left: page_margin.left as f64 / 20.0,
         right: page_margin.right as f64 / 20.0,
+    }
+}
+
+/// Convert a docx-rs Paragraph into a TaggedElement.
+/// If the paragraph has numbering, returns a `ListParagraph`; otherwise `Plain`.
+fn convert_paragraph_element(para: &docx_rs::Paragraph, images: &ImageMap) -> TaggedElement {
+    let num_info = extract_num_info(para);
+
+    // Build the paragraph IR
+    let mut blocks = Vec::new();
+    convert_paragraph_blocks(para, &mut blocks, images);
+
+    match num_info {
+        Some(info) => {
+            // Extract the actual Paragraph from the blocks.
+            // List paragraphs may also produce page breaks and images before the paragraph.
+            let mut pre_blocks = Vec::new();
+            let mut paragraph = None;
+            for block in blocks {
+                match block {
+                    Block::Paragraph(p) if paragraph.is_none() => {
+                        paragraph = Some(p);
+                    }
+                    _ => pre_blocks.push(block),
+                }
+            }
+            if !pre_blocks.is_empty() {
+                // If there were pre-blocks (page break, images), emit them as plain first.
+                // We return the plain blocks — the caller will see them before the list paragraph.
+                // For simplicity, we create a combined: Plain(pre) + ListParagraph.
+                // But TaggedElement is a single value, so we need to handle this differently.
+                // Actually, let's just emit them as plain first. The caller handles ordering.
+                // Since we can only return one TaggedElement, fold the pre-blocks into the
+                // paragraph by noting that list items in a list won't have page breaks.
+                // For now, treat the paragraph as a plain block if it has pre-blocks.
+                pre_blocks.push(Block::Paragraph(paragraph.unwrap_or_else(|| Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: Vec::new(),
+                })));
+                TaggedElement::Plain(pre_blocks)
+            } else if let Some(p) = paragraph {
+                TaggedElement::ListParagraph { info, paragraph: p }
+            } else {
+                TaggedElement::Plain(vec![])
+            }
+        }
+        None => TaggedElement::Plain(blocks),
     }
 }
 
@@ -1976,5 +2148,238 @@ mod tests {
             (height - 100.0).abs() < 0.1,
             "Expected height ~100pt, got {height}"
         );
+    }
+
+    // ----- List parsing tests -----
+
+    /// Helper: build a DOCX with numbering definitions and list paragraphs.
+    fn build_docx_with_numbering(
+        abstract_nums: Vec<docx_rs::AbstractNumbering>,
+        numberings: Vec<docx_rs::Numbering>,
+        paragraphs: Vec<docx_rs::Paragraph>,
+    ) -> Vec<u8> {
+        let mut nums = docx_rs::Numberings::new();
+        for an in abstract_nums {
+            nums = nums.add_abstract_numbering(an);
+        }
+        for n in numberings {
+            nums = nums.add_numbering(n);
+        }
+
+        let mut docx = docx_rs::Docx::new().numberings(nums);
+        for p in paragraphs {
+            docx = docx.add_paragraph(p);
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_parse_simple_bulleted_list() {
+        // Create a bullet list: abstractNum with format "bullet", numId=1, ilvl=0
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("bullet"),
+            docx_rs::LevelText::new("•"),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item A"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item B"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item C"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Should produce a single List block with 3 items
+        let lists: Vec<&List> = page
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::List(l) => Some(l),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(lists.len(), 1, "Expected 1 list block");
+        assert_eq!(lists[0].kind, ListKind::Unordered);
+        assert_eq!(lists[0].items.len(), 3);
+        assert_eq!(lists[0].items[0].level, 0);
+
+        // Verify item content
+        let text0: String = lists[0].items[0]
+            .content
+            .iter()
+            .flat_map(|p| p.runs.iter().map(|r| r.text.as_str()))
+            .collect();
+        assert_eq!(text0, "Item A");
+    }
+
+    #[test]
+    fn test_parse_simple_numbered_list() {
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("decimal"),
+            docx_rs::LevelText::new("%1."),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("First"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Second"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let lists: Vec<&List> = page
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::List(l) => Some(l),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(lists.len(), 1, "Expected 1 list block");
+        assert_eq!(lists[0].kind, ListKind::Ordered);
+        assert_eq!(lists[0].items.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_nested_multi_level_list() {
+        let abstract_num = docx_rs::AbstractNumbering::new(0)
+            .add_level(docx_rs::Level::new(
+                0,
+                docx_rs::Start::new(1),
+                docx_rs::NumberFormat::new("bullet"),
+                docx_rs::LevelText::new("•"),
+                docx_rs::LevelJc::new("left"),
+            ))
+            .add_level(docx_rs::Level::new(
+                1,
+                docx_rs::Start::new(1),
+                docx_rs::NumberFormat::new("bullet"),
+                docx_rs::LevelText::new("◦"),
+                docx_rs::LevelJc::new("left"),
+            ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Top level"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Nested item"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(1)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Back to top"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let lists: Vec<&List> = page
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::List(l) => Some(l),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(lists.len(), 1, "Expected 1 list block");
+        assert_eq!(lists[0].items.len(), 3);
+        assert_eq!(lists[0].items[0].level, 0);
+        assert_eq!(lists[0].items[1].level, 1);
+        assert_eq!(lists[0].items[2].level, 0);
+    }
+
+    #[test]
+    fn test_parse_mixed_list_and_paragraphs() {
+        // A list followed by a regular paragraph should produce two separate blocks
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("decimal"),
+            docx_rs::LevelText::new("%1."),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item 1"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Item 2"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Regular paragraph")),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Should have at least a List block and a Paragraph block
+        let list_count = page
+            .content
+            .iter()
+            .filter(|b| matches!(b, Block::List(_)))
+            .count();
+        let para_count = page
+            .content
+            .iter()
+            .filter(|b| matches!(b, Block::Paragraph(_)))
+            .count();
+        assert!(list_count >= 1, "Expected at least 1 list block");
+        assert!(para_count >= 1, "Expected at least 1 paragraph block");
     }
 }
