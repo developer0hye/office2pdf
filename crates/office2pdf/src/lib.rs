@@ -952,4 +952,66 @@ mod tests {
             "DOCX with header/footer should produce valid PDF"
         );
     }
+
+    // --- US-021: Page orientation (landscape/portrait) tests ---
+
+    #[test]
+    fn test_render_document_with_landscape_page() {
+        // A landscape FlowPage should render to valid PDF
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize {
+                    width: 841.9, // A4 landscape
+                    height: 595.3,
+                },
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    runs: vec![Run {
+                        text: "Landscape page".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                    style: ParagraphStyle::default(),
+                })],
+                header: None,
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(
+            !pdf.is_empty(),
+            "Landscape FlowPage should produce non-empty PDF"
+        );
+        assert!(pdf.starts_with(b"%PDF"), "Should produce valid PDF");
+    }
+
+    #[test]
+    fn test_e2e_landscape_docx_to_pdf() {
+        use std::io::Cursor;
+        // Build a landscape DOCX with swapped dimensions
+        let docx = docx_rs::Docx::new()
+            .page_size(16838, 11906)
+            .page_orient(docx_rs::PageOrientationType::Landscape)
+            .page_margin(
+                docx_rs::PageMargin::new()
+                    .top(1440)
+                    .bottom(1440)
+                    .left(1440)
+                    .right(1440),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Landscape document")),
+            );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Landscape DOCX should produce valid PDF"
+        );
+    }
 }

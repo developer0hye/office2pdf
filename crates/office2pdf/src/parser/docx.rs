@@ -337,17 +337,23 @@ fn extract_page_setup(section_prop: &docx_rs::SectionProperty) -> (PageSize, Mar
 }
 
 /// Extract page size from docx-rs PageSize (which has private fields).
-/// Uses serde serialization to access the private `w` and `h` fields.
+/// Uses serde serialization to access the private `w`, `h`, and `orient` fields.
 /// Values in DOCX are in twips (1/20 of a point).
+/// When orient is "landscape" and width < height, dimensions are swapped to ensure
+/// landscape pages have width > height.
 fn extract_page_size(page_size: &docx_rs::PageSize) -> PageSize {
     if let Ok(json) = serde_json::to_value(page_size) {
         let w = json.get("w").and_then(|v| v.as_f64()).unwrap_or(0.0);
         let h = json.get("h").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let orient = json.get("orient").and_then(|v| v.as_str());
         if w > 0.0 && h > 0.0 {
-            return PageSize {
-                width: w / 20.0,  // twips to points
-                height: h / 20.0, // twips to points
-            };
+            let mut width = w / 20.0; // twips to points
+            let mut height = h / 20.0; // twips to points
+            // If orient is landscape but dimensions are portrait-style, swap them
+            if orient == Some("landscape") && width < height {
+                std::mem::swap(&mut width, &mut height);
+            }
+            return PageSize { width, height };
         }
     }
     PageSize::default()
@@ -2685,5 +2691,163 @@ mod tests {
 
         assert!(page.header.is_none(), "No header expected");
         assert!(page.footer.is_none(), "No footer expected");
+    }
+
+    // ----- Page orientation tests -----
+
+    #[test]
+    fn test_portrait_document_width_less_than_height() {
+        // Standard A4 portrait: 11906 x 16838 twips
+        let data = build_docx_bytes_with_page_setup(
+            vec![docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Portrait"))],
+            11906,
+            16838,
+            1440,
+            1440,
+            1440,
+            1440,
+        );
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        assert!(
+            page.size.width < page.size.height,
+            "Portrait: width ({}) should be < height ({})",
+            page.size.width,
+            page.size.height
+        );
+    }
+
+    #[test]
+    fn test_landscape_document_width_greater_than_height() {
+        // Landscape A4: width and height swapped → 16838 x 11906 twips
+        let data = build_docx_bytes_with_page_setup(
+            vec![docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Landscape"))],
+            16838,
+            11906,
+            1440,
+            1440,
+            1440,
+            1440,
+        );
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        assert!(
+            page.size.width > page.size.height,
+            "Landscape: width ({}) should be > height ({})",
+            page.size.width,
+            page.size.height
+        );
+        // Verify approximate values: 16838/20 = 841.9pt, 11906/20 = 595.3pt
+        assert!(
+            (page.size.width - 841.9).abs() < 1.0,
+            "Expected width ~841.9, got {}",
+            page.size.width
+        );
+        assert!(
+            (page.size.height - 595.3).abs() < 1.0,
+            "Expected height ~595.3, got {}",
+            page.size.height
+        );
+    }
+
+    #[test]
+    fn test_default_document_is_portrait() {
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Default")),
+        ]);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        // Default docx-rs page is A4 portrait
+        assert!(
+            page.size.width < page.size.height,
+            "Default should be portrait: width ({}) < height ({})",
+            page.size.width,
+            page.size.height
+        );
+    }
+
+    #[test]
+    fn test_landscape_with_orient_attribute() {
+        // Build a landscape DOCX using page_orient + swapped dimensions
+        let mut docx = docx_rs::Docx::new()
+            .page_size(16838, 11906)
+            .page_orient(docx_rs::PageOrientationType::Landscape)
+            .page_margin(
+                docx_rs::PageMargin::new()
+                    .top(1440)
+                    .bottom(1440)
+                    .left(1440)
+                    .right(1440),
+            );
+        docx = docx.add_paragraph(
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Landscape with orient")),
+        );
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        assert!(
+            page.size.width > page.size.height,
+            "Landscape with orient: width ({}) should be > height ({})",
+            page.size.width,
+            page.size.height
+        );
+    }
+
+    #[test]
+    fn test_extract_page_size_orient_landscape_swaps_dimensions() {
+        // Edge case: orient=landscape but dimensions are portrait-style (w < h).
+        // The parser should detect orient and swap width/height.
+        let page_size = docx_rs::PageSize::new()
+            .width(11906) // portrait w
+            .height(16838) // portrait h
+            .orient(docx_rs::PageOrientationType::Landscape);
+
+        let result = extract_page_size(&page_size);
+        assert!(
+            result.width > result.height,
+            "orient=landscape should ensure width ({}) > height ({})",
+            result.width,
+            result.height
+        );
+    }
+
+    #[test]
+    fn test_extract_page_size_no_orient_keeps_dimensions() {
+        // No orient attribute: dimensions should be used as-is
+        let page_size = docx_rs::PageSize::new().width(11906).height(16838);
+
+        let result = extract_page_size(&page_size);
+        // 11906/20 = 595.3, 16838/20 = 841.9
+        assert!(
+            result.width < result.height,
+            "No orient: width ({}) should be < height ({})",
+            result.width,
+            result.height
+        );
     }
 }

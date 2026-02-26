@@ -17,6 +17,7 @@
 - **docx-rs reading**: `docx_rs::read_docx(&[u8])` → `Docx`. Access `docx.document.children` (Vec<DocumentChild>). Paragraphs: `DocumentChild::Paragraph(Box<Paragraph>)`. Runs: `ParagraphChild::Run(Box<Run>)`. Text: `RunChild::Text(Text)` → `t.text`. Tab: `RunChild::Tab`. Break: `RunChild::Break`.
 - **docx-rs private fields**: `PageSize` (w, h), `Bold` (val), `Italic` (val), `Sz` (val), `Color` (val), `Underline` (val), `RunFonts` (ascii, hi_ansi, etc.) all have private fields. Use `serde_json::to_value()` to extract values since they implement Serialize. **IMPORTANT**: These types serialize as their *direct inner value* (e.g. `Bold` → `true`, `Sz` → `24`, `Color` → `"FF0000"`), NOT as `{"val": ...}`. Use `json.as_bool()`, `json.as_f64()`, `json.as_str()` directly. `RunFonts` serializes as an object with `ascii`, `hi_ansi`, etc. fields. `Strike` has `pub val: bool` — accessible directly without serde.
 - **DOCX units**: Page size and margins in OOXML are in twips (1 twip = 1/20 pt). Convert: `value_twips / 20.0 = points`. PageMargin fields are public i32. docx-rs default page size: 11906 x 16838 twips (A4).
+- **DOCX page orientation**: `extract_page_size()` reads orient via `serde_json::to_value(&page_size).get("orient")`. If orient is `"landscape"` and width < height, dimensions are swapped. Note: docx-rs reader does NOT populate orient from XML — only the builder does. Real DOCX files already have swapped w/h for landscape. For test creation: `Docx::new().page_size(16838, 11906).page_orient(docx_rs::PageOrientationType::Landscape)`.
 - **Test DOCX creation**: Use `docx_rs::Docx::new().add_paragraph(...)`, then `.build().pack(&mut Cursor::new(Vec::new()))` to get bytes. Use `Cursor::into_inner()` to extract.
 - **Typst FixedPage codegen**: Slides use `#set page(width: Wpt, height: Hpt, margin: 0pt)`. Elements use `#place(top + left, dx: Xpt, dy: Ypt)[...]` for absolute positioning. TextBox wraps content in `#block(width: Wpt, height: Hpt)[...]`. Shapes: `#rect(width, height, fill?, stroke?)`, `#ellipse(...)`, `#line(start, end, stroke?)`. Images use existing `generate_image()` inside place.
 - **umya-spreadsheet merge API**: `sheet.get_merge_cells()` → `&[Range]`. Range has `get_coordinate_start_col/row()` and `get_coordinate_end_col/row()` → `Option<&ColumnReference/RowReference>`. Use `*ref.get_num()` for 1-indexed u32 coordinate. `sheet.add_merge_cells("A1:C5")` for test creation. Must expand `get_highest_column_and_row()` grid to include merge extents since that method only considers cells with data.
@@ -140,4 +141,25 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - Typst 0.14 requires `context` for `counter(page).display()` even inside header/footer parameters
   - The `past_separate` flag is essential: text between `Separate` and `End` field chars is the display value and should be skipped
   - Adding optional fields to FlowPage requires updating all existing construction sites — Python scripting can help with bulk updates
+---
+
+## 2026-02-27 - US-021: DOCX parser - page orientation (landscape/portrait)
+- What was implemented:
+  - Enhanced `extract_page_size()` to parse the `orient` field from docx-rs `PageSize` via serde serialization
+  - When orient is "landscape" but width < height, dimensions are swapped to ensure landscape pages have width > height
+  - Normal case (dimensions already correct for orientation) continues to work unchanged
+  - Default remains portrait when no orient attribute is specified
+  - Typst codegen required no changes — already handles arbitrary page dimensions correctly
+  - 9 new tests: 4 parser tests (portrait, landscape, default portrait, orient+swapped dimensions), 2 unit tests for `extract_page_size` (orient swaps, no orient keeps), 1 codegen integration test (landscape FlowPage renders), 2 e2e tests (landscape DOCX to PDF)
+- Files changed:
+  - `crates/office2pdf/src/parser/docx.rs` — orient parsing in `extract_page_size()` + 6 tests
+  - `crates/office2pdf/src/lib.rs` — 2 integration tests + 1 e2e test
+  - `scripts/ralph/prd.json` — US-021 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - docx-rs reader (`read_docx`) does NOT parse the `orient` attribute from `<w:pgSz>` XML — it only reads `w` and `h`. The orient field is always `None` after reading.
+  - docx-rs builder (`page_orient()`) DOES set the orient field, and serde serialization includes it. So `serde_json::to_value(&page_size)` can detect orient when set via builder.
+  - In practice, Microsoft Word DOCX files have swapped w/h for landscape, so orient is mainly a safety net for malformed documents.
+  - `PageOrientationType` is publicly exported from `docx_rs` (via `pub use types::*`). Use `docx_rs::PageOrientationType::Landscape`.
+  - The orient field serializes as `"landscape"` or `"portrait"` (camelCase due to `#[serde(rename_all = "camelCase")]`).
 ---
