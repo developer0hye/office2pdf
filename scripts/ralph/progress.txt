@@ -1,5 +1,5 @@
 ## Codebase Patterns
-- **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. Use `FontSearcher::new().include_system_fonts(false).search()` for embedded fonts only (Libertinus Serif, New Computer Modern, DejaVu Sans Mono). Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`.
+- **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. `FontSearcher::new().include_system_fonts(true).search()` discovers system fonts with embedded fallbacks (Libertinus Serif, New Computer Modern, DejaVu Sans Mono via `embed-fonts` feature). Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`.
 - **Typst codegen structure**: Each FlowPage emits `#set page(...)` then paragraphs. Text runs use `#text(props)[content]` for styling. Underline/strikethrough wrap with `#underline[...]`/`#strike[...]`. Special chars (`#`, `*`, `_`, `$`, etc.) must be escaped with `\`.
 - **IR module imports**: Style types (Alignment, Color, TextStyle, ParagraphStyle, LineSpacing) are re-exported via `crate::ir::*` — do NOT import from `crate::ir::style::` (private module).
 - **Quality gates**: Always run `cargo fmt --all -- --check`, `cargo clippy --workspace -- -D warnings`, `cargo test --workspace`, `cargo check --workspace` before committing. Use `writeln!` not `write!(...\n)` per clippy.
@@ -62,4 +62,23 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - PPTX per-slide recovery is more naturally testable since slides are independent ZIP entries
   - quick-xml with broken XML often doesn't error — it just finds no matching elements. Use missing ZIP entries for reliable failure testing.
   - All existing parser tests needed `let (doc, _warnings) =` destructuring — use `replace_all` for bulk updates
+---
+
+## 2026-02-27 - US-018: Font fallback - system font discovery
+- What was implemented:
+  - Enabled `embed-fonts` feature in typst-kit Cargo.toml to bundle Libertinus Serif, New Computer Modern, DejaVu Sans Mono as fallback fonts
+  - Changed `FontSearcher::include_system_fonts(false)` → `include_system_fonts(true)` in `MinimalWorld::new()` to discover system-installed fonts
+  - Font resolution order: system fonts → embedded fallback fonts (handled automatically by typst-kit FontSearcher priority)
+  - Added 6 new tests: embedded fonts available, system fonts enabled, compile with system font name, embedded fonts as fallback, IR with system font, IR with multiple font families
+- Files changed:
+  - `crates/office2pdf/Cargo.toml` — added `embed-fonts` feature to typst-kit
+  - `crates/office2pdf/src/render/pdf.rs` — `include_system_fonts(true)` + 3 new tests
+  - `crates/office2pdf/src/lib.rs` — 2 new integration tests for system fonts in IR
+  - `scripts/ralph/prd.json` — US-018 passes: true
+- Dependencies added: `typst-assets` (transitive, via typst-kit `embed-fonts` feature)
+- **Learnings for future iterations:**
+  - typst-kit `fonts` feature only provides FontSearcher infrastructure — `embed-fonts` is needed for actual bundled font data
+  - Without `embed-fonts`, MinimalWorld has 0 fonts but Typst still compiles (renders empty/fallback glyphs)
+  - FontSearcher priority: font dirs (highest) → system fonts → embedded fonts (lowest)
+  - System font search may be slow on first call (scans filesystem). Consider caching if perf becomes an issue.
 ---

@@ -579,6 +579,71 @@ mod tests {
         );
     }
 
+    // --- US-018: Font fallback - system font discovery tests ---
+
+    #[test]
+    fn test_render_document_with_system_font_in_ir() {
+        // A Document with a system font name (e.g., "Arial") in the IR should
+        // compile to valid PDF. With system font discovery enabled, the font
+        // is used if available; otherwise Typst falls back to embedded fonts.
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Hello with system font".to_string(),
+                        style: TextStyle {
+                            font_family: Some("Arial".to_string()),
+                            ..TextStyle::default()
+                        },
+                    }],
+                })],
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_render_document_with_multiple_font_families() {
+        // Different runs can specify different system fonts — all should compile
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![
+                        Run {
+                            text: "Calibri text ".to_string(),
+                            style: TextStyle {
+                                font_family: Some("Calibri".to_string()),
+                                ..TextStyle::default()
+                            },
+                        },
+                        Run {
+                            text: "and Times New Roman text".to_string(),
+                            style: TextStyle {
+                                font_family: Some("Times New Roman".to_string()),
+                                ..TextStyle::default()
+                            },
+                        },
+                    ],
+                })],
+            })],
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
     // --- US-017: Enhanced error handling tests ---
 
     /// Build a PPTX with two slides: one valid, one with broken XML.

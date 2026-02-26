@@ -34,7 +34,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
