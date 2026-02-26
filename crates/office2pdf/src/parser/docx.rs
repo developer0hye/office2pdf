@@ -1,7 +1,8 @@
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, Color, Document, FlowPage, LineSpacing, Margins, Metadata, Page, PageSize,
-    Paragraph, ParagraphStyle, Run, StyleSheet, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, LineSpacing, Margins,
+    Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell,
+    TableRow, TextStyle,
 };
 use crate::parser::Parser;
 
@@ -16,8 +17,14 @@ impl Parser for DocxParser {
 
         let mut content: Vec<Block> = Vec::new();
         for child in &docx.document.children {
-            if let docx_rs::DocumentChild::Paragraph(para) = child {
-                convert_paragraph_blocks(para, &mut content);
+            match child {
+                docx_rs::DocumentChild::Paragraph(para) => {
+                    convert_paragraph_blocks(para, &mut content);
+                }
+                docx_rs::DocumentChild::Table(table) => {
+                    content.push(Block::Table(convert_table(table)));
+                }
+                _ => {}
             }
         }
 
@@ -180,6 +187,234 @@ fn extract_line_spacing(
     });
 
     (line_spacing, space_before, space_after)
+}
+
+/// Convert a docx-rs Table to an IR Table.
+///
+/// Handles:
+/// - Column widths from the table grid (twips → points)
+/// - Cell content (paragraphs with formatted text)
+/// - Horizontal merging via gridSpan (colspan)
+/// - Vertical merging via vMerge restart/continue (rowspan)
+/// - Cell background color via shading
+/// - Cell borders
+fn convert_table(table: &docx_rs::Table) -> Table {
+    let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
+
+    // First pass: extract raw rows with vmerge info for rowspan calculation
+    let raw_rows = extract_raw_rows(table);
+
+    // Second pass: resolve vertical merges into rowspan values and build IR rows
+    let rows = resolve_vmerge_and_build_rows(&raw_rows);
+
+    Table {
+        rows,
+        column_widths,
+    }
+}
+
+/// Intermediate cell representation for vmerge resolution.
+struct RawCell {
+    content: Vec<Block>,
+    col_span: u32,
+    col_index: usize,
+    vmerge: Option<String>, // "restart", "continue", or None
+    border: Option<CellBorder>,
+    background: Option<Color>,
+}
+
+/// Extract raw rows from a docx-rs Table, tracking column indices and vmerge state.
+fn extract_raw_rows(table: &docx_rs::Table) -> Vec<Vec<RawCell>> {
+    let mut raw_rows = Vec::new();
+
+    for table_child in &table.rows {
+        let docx_rs::TableChild::TableRow(row) = table_child;
+        let mut cells = Vec::new();
+        let mut col_index: usize = 0;
+
+        for row_child in &row.cells {
+            let docx_rs::TableRowChild::TableCell(cell) = row_child;
+
+            let prop_json = serde_json::to_value(&cell.property).ok();
+            let grid_span = prop_json
+                .as_ref()
+                .and_then(|j| j.get("gridSpan"))
+                .and_then(|v| v.as_u64())
+                .unwrap_or(1) as u32;
+
+            let vmerge = prop_json
+                .as_ref()
+                .and_then(|j| j.get("verticalMerge"))
+                .and_then(|v| v.as_str())
+                .map(String::from);
+
+            let content = extract_cell_content(cell);
+            let border = prop_json
+                .as_ref()
+                .and_then(|j| j.get("borders"))
+                .and_then(extract_cell_borders);
+            let background = prop_json
+                .as_ref()
+                .and_then(|j| j.get("shading"))
+                .and_then(extract_cell_shading);
+
+            cells.push(RawCell {
+                content,
+                col_span: grid_span,
+                col_index,
+                vmerge,
+                border,
+                background,
+            });
+
+            col_index += grid_span as usize;
+        }
+
+        raw_rows.push(cells);
+    }
+
+    raw_rows
+}
+
+/// Resolve vertical merges: compute rowspan for "restart" cells and skip "continue" cells.
+fn resolve_vmerge_and_build_rows(raw_rows: &[Vec<RawCell>]) -> Vec<TableRow> {
+    let mut rows = Vec::new();
+
+    for (row_idx, raw_row) in raw_rows.iter().enumerate() {
+        let mut cells = Vec::new();
+
+        for raw_cell in raw_row {
+            match raw_cell.vmerge.as_deref() {
+                Some("continue") => {
+                    // Skip continue cells — they are part of a vertical merge above
+                    continue;
+                }
+                Some("restart") => {
+                    // Count how many consecutive "continue" cells follow in the same column
+                    let row_span = count_vmerge_span(raw_rows, row_idx, raw_cell.col_index);
+                    cells.push(TableCell {
+                        content: raw_cell.content.clone(),
+                        col_span: raw_cell.col_span,
+                        row_span,
+                        border: raw_cell.border.clone(),
+                        background: raw_cell.background,
+                    });
+                }
+                _ => {
+                    // Normal cell (no vmerge)
+                    cells.push(TableCell {
+                        content: raw_cell.content.clone(),
+                        col_span: raw_cell.col_span,
+                        row_span: 1,
+                        border: raw_cell.border.clone(),
+                        background: raw_cell.background,
+                    });
+                }
+            }
+        }
+
+        rows.push(TableRow {
+            cells,
+            height: None,
+        });
+    }
+
+    rows
+}
+
+/// Count the vertical merge span starting from a "restart" cell.
+/// Looks at rows below `start_row` for "continue" cells at the same column index.
+fn count_vmerge_span(raw_rows: &[Vec<RawCell>], start_row: usize, col_index: usize) -> u32 {
+    let mut span = 1u32;
+    for row in raw_rows.iter().skip(start_row + 1) {
+        let has_continue = row
+            .iter()
+            .any(|c| c.col_index == col_index && c.vmerge.as_deref() == Some("continue"));
+        if has_continue {
+            span += 1;
+        } else {
+            break;
+        }
+    }
+    span
+}
+
+/// Extract cell content (paragraphs) from a docx-rs TableCell.
+fn extract_cell_content(cell: &docx_rs::TableCell) -> Vec<Block> {
+    let mut blocks = Vec::new();
+    for content in &cell.children {
+        match content {
+            docx_rs::TableCellContent::Paragraph(para) => {
+                convert_paragraph_blocks(para, &mut blocks);
+            }
+            docx_rs::TableCellContent::Table(nested_table) => {
+                blocks.push(Block::Table(convert_table(nested_table)));
+            }
+            _ => {}
+        }
+    }
+    blocks
+}
+
+/// Extract cell borders from the serialized "borders" JSON object.
+/// Border size in docx-rs is in eighths of a point; convert to points (÷8).
+fn extract_cell_borders(borders_json: &serde_json::Value) -> Option<CellBorder> {
+    if borders_json.is_null() {
+        return None;
+    }
+
+    let extract_side = |key: &str| -> Option<BorderSide> {
+        let side = borders_json.get(key)?;
+        if side.is_null() {
+            return None;
+        }
+        let border_type = side
+            .get("borderType")
+            .and_then(|v| v.as_str())
+            .unwrap_or("none");
+        if border_type == "none" || border_type == "nil" {
+            return None;
+        }
+        let size = side.get("size").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let color_hex = side
+            .get("color")
+            .and_then(|v| v.as_str())
+            .unwrap_or("000000");
+        let color = parse_hex_color(color_hex).unwrap_or(Color::black());
+        Some(BorderSide {
+            width: size / 8.0, // eighths of a point → points
+            color,
+        })
+    };
+
+    let top = extract_side("top");
+    let bottom = extract_side("bottom");
+    let left = extract_side("left");
+    let right = extract_side("right");
+
+    if top.is_none() && bottom.is_none() && left.is_none() && right.is_none() {
+        return None;
+    }
+
+    Some(CellBorder {
+        top,
+        bottom,
+        left,
+        right,
+    })
+}
+
+/// Extract background color from the serialized "shading" JSON object.
+fn extract_cell_shading(shading_json: &serde_json::Value) -> Option<Color> {
+    if shading_json.is_null() {
+        return None;
+    }
+    let fill = shading_json.get("fill").and_then(|v| v.as_str())?;
+    // Skip auto/transparent fills
+    if fill == "auto" || fill == "FFFFFF" || fill.is_empty() {
+        return None;
+    }
+    parse_hex_color(fill)
 }
 
 /// Extract inline text style from a docx-rs RunProperty.
@@ -994,5 +1229,432 @@ mod tests {
         assert_eq!(para.runs[1].style.italic, Some(true));
         assert!(para.runs[2].style.bold.is_none());
         assert!(para.runs[2].style.italic.is_none());
+    }
+
+    // ----- Table parsing tests (US-007) -----
+
+    /// Helper: build a DOCX with a table using docx-rs builder.
+    fn build_docx_with_table(table: docx_rs::Table) -> Vec<u8> {
+        let docx = docx_rs::Docx::new().add_table(table);
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Helper: extract the first table block from a parsed document.
+    fn first_table(doc: &Document) -> &crate::ir::Table {
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        for block in &page.content {
+            if let Block::Table(t) = block {
+                return t;
+            }
+        }
+        panic!("No Table block found");
+    }
+
+    #[test]
+    fn test_table_simple_2x2() {
+        let table = docx_rs::Table::new(vec![
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("A1")),
+                ),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B1")),
+                ),
+            ]),
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("A2")),
+                ),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B2")),
+                ),
+            ]),
+        ])
+        .set_grid(vec![2000, 3000]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.rows.len(), 2);
+        assert_eq!(t.rows[0].cells.len(), 2);
+        assert_eq!(t.rows[1].cells.len(), 2);
+
+        // Check cell content
+        let cell_text = |row: usize, col: usize| -> String {
+            t.rows[row].cells[col]
+                .content
+                .iter()
+                .filter_map(|b| match b {
+                    Block::Paragraph(p) => {
+                        Some(p.runs.iter().map(|r| r.text.as_str()).collect::<String>())
+                    }
+                    _ => None,
+                })
+                .collect::<String>()
+        };
+        assert_eq!(cell_text(0, 0), "A1");
+        assert_eq!(cell_text(0, 1), "B1");
+        assert_eq!(cell_text(1, 0), "A2");
+        assert_eq!(cell_text(1, 1), "B2");
+    }
+
+    #[test]
+    fn test_table_column_widths_from_grid() {
+        // Grid widths in twips: 2000, 3000 → 100pt, 150pt
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new().add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("A")),
+            ),
+            docx_rs::TableCell::new().add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B")),
+            ),
+        ])])
+        .set_grid(vec![2000, 3000]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.column_widths.len(), 2);
+        assert!(
+            (t.column_widths[0] - 100.0).abs() < 0.1,
+            "Expected 100pt, got {}",
+            t.column_widths[0]
+        );
+        assert!(
+            (t.column_widths[1] - 150.0).abs() < 0.1,
+            "Expected 150pt, got {}",
+            t.column_widths[1]
+        );
+    }
+
+    #[test]
+    fn test_table_cell_with_formatted_text() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new().add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Bold").bold())
+                    .add_run(docx_rs::Run::new().add_text(" and italic").italic()),
+            ),
+        ])]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        let cell = &t.rows[0].cells[0];
+        let para = match &cell.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph in cell"),
+        };
+        assert_eq!(para.runs.len(), 2);
+        assert_eq!(para.runs[0].text, "Bold");
+        assert_eq!(para.runs[0].style.bold, Some(true));
+        assert_eq!(para.runs[1].text, " and italic");
+        assert_eq!(para.runs[1].style.italic, Some(true));
+    }
+
+    #[test]
+    fn test_table_colspan_via_grid_span() {
+        let table = docx_rs::Table::new(vec![
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new()
+                    .add_paragraph(
+                        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Merged")),
+                    )
+                    .grid_span(2),
+            ]),
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("A2")),
+                ),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B2")),
+                ),
+            ]),
+        ])
+        .set_grid(vec![2000, 2000]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        // First row: one merged cell with colspan=2
+        assert_eq!(t.rows[0].cells.len(), 1);
+        assert_eq!(t.rows[0].cells[0].col_span, 2);
+
+        // Second row: two normal cells
+        assert_eq!(t.rows[1].cells.len(), 2);
+        assert_eq!(t.rows[1].cells[0].col_span, 1);
+    }
+
+    #[test]
+    fn test_table_rowspan_via_vmerge() {
+        let table = docx_rs::Table::new(vec![
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new()
+                    .add_paragraph(
+                        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Tall")),
+                    )
+                    .vertical_merge(docx_rs::VMergeType::Restart),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B1")),
+                ),
+            ]),
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new()
+                    .add_paragraph(docx_rs::Paragraph::new())
+                    .vertical_merge(docx_rs::VMergeType::Continue),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B2")),
+                ),
+            ]),
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new()
+                    .add_paragraph(docx_rs::Paragraph::new())
+                    .vertical_merge(docx_rs::VMergeType::Continue),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B3")),
+                ),
+            ]),
+        ])
+        .set_grid(vec![2000, 2000]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.rows.len(), 3);
+
+        // First row: the restart cell should have rowspan=3
+        let tall_cell = &t.rows[0].cells[0];
+        assert_eq!(tall_cell.row_span, 3);
+
+        // Second and third rows: continue cells should be skipped
+        // so rows[1] and rows[2] should have only 1 cell each (B2, B3)
+        assert_eq!(t.rows[1].cells.len(), 1);
+        assert_eq!(t.rows[2].cells.len(), 1);
+    }
+
+    #[test]
+    fn test_table_cell_background_color() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new()
+                .add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Red bg")),
+                )
+                .shading(docx_rs::Shading::new().fill("FF0000")),
+            docx_rs::TableCell::new().add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("No bg")),
+            ),
+        ])]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.rows[0].cells[0].background, Some(Color::new(255, 0, 0)));
+        assert!(t.rows[0].cells[1].background.is_none());
+    }
+
+    #[test]
+    fn test_table_cell_borders() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new()
+                .add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Bordered")),
+                )
+                .set_border(
+                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Top)
+                        .size(16)
+                        .color("FF0000"),
+                )
+                .set_border(
+                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Bottom)
+                        .size(8)
+                        .color("0000FF"),
+                ),
+        ])]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        let cell = &t.rows[0].cells[0];
+        let border = cell.border.as_ref().expect("Expected cell border");
+
+        // Top: size=16 eighths → 2pt, color=FF0000
+        let top = border.top.as_ref().expect("Expected top border");
+        assert!(
+            (top.width - 2.0).abs() < 0.01,
+            "Expected 2pt, got {}",
+            top.width
+        );
+        assert_eq!(top.color, Color::new(255, 0, 0));
+
+        // Bottom: size=8 eighths → 1pt, color=0000FF
+        let bottom = border.bottom.as_ref().expect("Expected bottom border");
+        assert!(
+            (bottom.width - 1.0).abs() < 0.01,
+            "Expected 1pt, got {}",
+            bottom.width
+        );
+        assert_eq!(bottom.color, Color::new(0, 0, 255));
+    }
+
+    #[test]
+    fn test_table_cell_with_multiple_paragraphs() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new()
+                .add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Para 1")),
+                )
+                .add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Para 2")),
+                ),
+        ])]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        let cell = &t.rows[0].cells[0];
+        let paras: Vec<&str> = cell
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Paragraph(p) if !p.runs.is_empty() => Some(p.runs[0].text.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert!(paras.contains(&"Para 1"), "Expected 'Para 1' in cell");
+        assert!(paras.contains(&"Para 2"), "Expected 'Para 2' in cell");
+    }
+
+    #[test]
+    fn test_table_with_paragraph_before_and_after() {
+        let data = {
+            let docx = docx_rs::Docx::new()
+                .add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Before")),
+                )
+                .add_table(docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+                    docx_rs::TableCell::new().add_paragraph(
+                        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Cell")),
+                    ),
+                ])]))
+                .add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("After")),
+                );
+            let buf = Vec::new();
+            let mut cursor = Cursor::new(buf);
+            docx.build().pack(&mut cursor).unwrap();
+            cursor.into_inner()
+        };
+
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let blocks = all_blocks(&doc);
+
+        // Should have: Paragraph("Before"), Table, Paragraph("After")
+        assert!(
+            blocks.len() >= 3,
+            "Expected at least 3 blocks, got {}",
+            blocks.len()
+        );
+        assert!(matches!(&blocks[0], Block::Paragraph(_)));
+        let has_table = blocks.iter().any(|b| matches!(b, Block::Table(_)));
+        assert!(has_table, "Expected a Table block");
+    }
+
+    #[test]
+    fn test_table_colspan_and_rowspan_combined() {
+        // 3x3 table with top-left 2x2 merged
+        let table = docx_rs::Table::new(vec![
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new()
+                    .add_paragraph(
+                        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Big")),
+                    )
+                    .grid_span(2)
+                    .vertical_merge(docx_rs::VMergeType::Restart),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("C1")),
+                ),
+            ]),
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new()
+                    .add_paragraph(docx_rs::Paragraph::new())
+                    .grid_span(2)
+                    .vertical_merge(docx_rs::VMergeType::Continue),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("C2")),
+                ),
+            ]),
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("A3")),
+                ),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B3")),
+                ),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("C3")),
+                ),
+            ]),
+        ])
+        .set_grid(vec![2000, 2000, 2000]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        // First row: "Big" (colspan=2, rowspan=2) + "C1"
+        let big_cell = &t.rows[0].cells[0];
+        assert_eq!(big_cell.col_span, 2, "Expected colspan=2");
+        assert_eq!(big_cell.row_span, 2, "Expected rowspan=2");
+
+        // Second row: continue cell skipped, so only "C2"
+        assert_eq!(t.rows[1].cells.len(), 1);
+
+        // Third row: three normal cells
+        assert_eq!(t.rows[2].cells.len(), 3);
+    }
+
+    #[test]
+    fn test_table_empty_cells() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new().add_paragraph(docx_rs::Paragraph::new()),
+            docx_rs::TableCell::new().add_paragraph(docx_rs::Paragraph::new()),
+        ])]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.rows.len(), 1);
+        assert_eq!(t.rows[0].cells.len(), 2);
+        // Empty cells should still have content (possibly empty paragraphs)
+        for cell in &t.rows[0].cells {
+            assert_eq!(cell.col_span, 1);
+            assert_eq!(cell.row_span, 1);
+        }
     }
 }
