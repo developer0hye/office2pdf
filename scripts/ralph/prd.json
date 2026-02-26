@@ -221,8 +221,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed. 8 TablePage codegen tests. Generates page setup (size + margins) and delegates to existing generate_table() for spreadsheet-style table layout. Supports cell data, merged cells (colspan/rowspan), column widths, multiple sheets."
     },
     {
       "id": "US-014",

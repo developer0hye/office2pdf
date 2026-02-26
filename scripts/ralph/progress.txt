@@ -14,6 +14,7 @@ Started: 2026-02-26
 - **DOCX units**: Page size and margins in OOXML are in twips (1 twip = 1/20 pt). Convert: `value_twips / 20.0 = points`. PageMargin fields are public i32. docx-rs default page size: 11906 x 16838 twips (A4).
 - **Test DOCX creation**: Use `docx_rs::Docx::new().add_paragraph(...)`, then `.build().pack(&mut Cursor::new(Vec::new()))` to get bytes. Use `Cursor::into_inner()` to extract.
 - **Typst FixedPage codegen**: Slides use `#set page(width: Wpt, height: Hpt, margin: 0pt)`. Elements use `#place(top + left, dx: Xpt, dy: Ypt)[...]` for absolute positioning. TextBox wraps content in `#block(width: Wpt, height: Hpt)[...]`. Shapes: `#rect(width, height, fill?, stroke?)`, `#ellipse(...)`, `#line(start, end, stroke?)`. Images use existing `generate_image()` inside place.
+- **Typst TablePage codegen**: `generate_table_page()` calls `write_page_setup()` + `generate_table()`. Reuses all existing table infrastructure (cell merging, borders, backgrounds, column widths). TablePage = page setup + a single Table element.
 - **PPTX parsing**: Use `zip` + `quick-xml` (both already transitive deps, no new downloads). PPTX is a ZIP: `ppt/presentation.xml` (slide size + slide refs via `<p:sldSz cx cy>` + `<p:sldId r:id>`), `ppt/_rels/presentation.xml.rels` (rId → slide path), `ppt/slides/slideN.xml` (shapes). Parse with `ZipArchive::new(Cursor::new(data))` → `read_zip_entry()` → `quick_xml::Reader::from_str()`.
 - **PPTX slide XML structure**: Shapes at `<p:spTree>/<p:sp>`. Position/size: `<a:xfrm><a:off x y/><a:ext cx cy/></a:xfrm>` (EMU ÷ 12700 = points). Text: `<p:txBody>/<a:p>/<a:r>/<a:t>`. Run props: `<a:rPr b="1" i="1" u="sng" strike="sngStrike" sz="1800">` (sz in hundredths of pt). Font color: `<a:solidFill><a:srgbClr val="RRGGBB"/></a:solidFill>`. Font family: `<a:latin typeface="..."/>`. Para alignment: `<a:pPr algn="ctr|l|r|just"/>`.
 - **Test PPTX creation**: Build ZIP in-memory with `zip::ZipWriter::new(Cursor::new(Vec::new()))`. Need `[Content_Types].xml`, `_rels/.rels`, `ppt/presentation.xml`, `ppt/_rels/presentation.xml.rels`, and `ppt/slides/slideN.xml`. Standard 4:3 size: 9144000 × 6858000 EMU = 720pt × 540pt.
@@ -210,4 +211,16 @@ Started: 2026-02-26
   - Image resolution: `<a:blip r:embed="rIdN"/>` → slide .rels (`ppt/slides/_rels/slideN.xml.rels`) → relative path (`../media/image1.png`) → `resolve_relative_path()` → absolute ZIP path (`ppt/media/image1.png`)
   - `resolve_relative_path()` handles `..` components for navigating up from slide directory to media directory
   - `image_format_from_ext()` returns None for non-image paths, serving as both format detector and image filter
+---
+
+## 2026-02-26 - US-013
+- **What was implemented**: Typst codegen TablePage support for spreadsheets. Added `generate_table_page()` function that emits page setup (size + margins) and delegates to existing `generate_table()` for the table content.
+- **Files changed**:
+  - `crates/office2pdf/src/render/typst_gen.rs` — added `generate_table_page()` function, added `TablePage` import, wired `Page::Table` arm in `generate_typst()`, added 8 new tests
+- **Dependencies added**: None
+- **Learnings for future iterations:**
+  - TablePage codegen is minimal because it reuses all existing table infrastructure from US-006 (generate_table, generate_table_cell, write_cell_params, etc.)
+  - The only new function needed was `generate_table_page()` which calls `write_page_setup()` + `generate_table()`
+  - TablePage test helpers: `make_table_page(name, width, height, margins, table)` and `make_simple_table(rows: Vec<Vec<&str>>)` for quick test setup
+  - `-` is NOT a Typst special character — dates like "2024-01-15" pass through unescaped
 ---
