@@ -3094,7 +3094,7 @@ mod tests {
 
         for (outline_lvl, style_id, expected_size) in expected {
             let style = docx_rs::Style::new(style_id, docx_rs::StyleType::Paragraph)
-                .name(&format!("Heading {}", outline_lvl + 1))
+                .name(format!("Heading {}", outline_lvl + 1))
                 .outline_lvl(outline_lvl);
 
             let data = build_docx_bytes_with_styles(

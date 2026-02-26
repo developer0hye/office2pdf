@@ -1053,7 +1053,7 @@ mod tests {
         // Custom format: display with 3 decimal places
         let data = build_xlsx_formatted(|sheet| {
             let cell = sheet.get_cell_mut("A1");
-            cell.set_value_number(3.14159f64);
+            cell.set_value_number(std::f64::consts::PI);
             cell.get_style_mut()
                 .get_number_format_mut()
                 .set_format_code("0.000");
