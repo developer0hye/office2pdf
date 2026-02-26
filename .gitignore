@@ -1,0 +1,9 @@
+/target
+Cargo.lock
+*.pdf
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

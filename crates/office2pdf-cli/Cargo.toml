@@ -1,0 +1,17 @@
+[package]
+name = "office2pdf-cli"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "CLI tool to convert DOCX, XLSX, and PPTX files to PDF"
+
+[[bin]]
+name = "office2pdf"
+path = "src/main.rs"
+
+[dependencies]
+office2pdf = { path = "../office2pdf" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
