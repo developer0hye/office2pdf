@@ -273,8 +273,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed. 7 integration tests: 3 end-to-end format tests (DOCX→PDF, XLSX→PDF, PPTX→PDF), 1 DOCX-with-table test, 1 file-path round-trip test, 2 error handling tests. CLI was already wired (convert() + --output flag + error messages)."
     }
   ]
 }

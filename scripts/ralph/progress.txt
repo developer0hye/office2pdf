@@ -255,3 +255,16 @@ Started: 2026-02-26
   - clippy `type_complexity` lint triggers on `(HashMap<(u32,u32), T>, HashMap<(u32,u32), bool>)` return types — use `type CellPos = (u32, u32)` alias and `HashSet<CellPos>` for the skip set
   - `sheet.add_merge_cells("A1:B2")` works for test setup — takes a string range
 ---
+
+## 2026-02-26 - US-016
+- **What was implemented**: End-to-end integration tests verifying the full conversion pipeline (raw document bytes → PDF) for all three supported formats (DOCX, XLSX, PPTX). CLI was already wired to `office2pdf::convert()` with `--output` flag and error handling.
+- **Files changed**:
+  - `crates/office2pdf/src/lib.rs` — added 7 integration tests: `test_e2e_docx_to_pdf`, `test_e2e_xlsx_to_pdf`, `test_e2e_pptx_to_pdf`, `test_e2e_docx_with_table_to_pdf`, `test_e2e_convert_with_options_from_temp_file`, `test_e2e_unsupported_format_error_message`, `test_e2e_missing_file_error`; added test helpers `build_test_docx()`, `build_test_xlsx()`, `build_test_pptx()`
+- **Dependencies added**: None
+- **Learnings for future iterations:**
+  - CLI was already fully wired in the initial project setup (clap + `office2pdf::convert()` + `--output` flag + error display)
+  - Building a minimal PPTX from scratch requires 6 ZIP entries: `[Content_Types].xml`, `_rels/.rels`, `ppt/presentation.xml`, `ppt/_rels/presentation.xml.rels`, `ppt/slides/slide1.xml`, `ppt/slides/_rels/slide1.xml.rels`
+  - `zip::write::FileOptions::default()` — zip 0.6 does NOT use generic type parameters (unlike later versions)
+  - For XLSX test creation, `umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor)` writes directly to a writer
+  - Temp file tests should clean up after themselves with `let _ = std::fs::remove_file(path)` to avoid leaking test artifacts
+---
