@@ -9,5 +9,9 @@ description = "Convert DOCX, XLSX, and PPTX files to PDF using pure Rust"
 
 [dependencies]
 thiserror = "2"
+typst = "0.14"
+typst-pdf = "0.14"
+typst-kit = { version = "0.14", default-features = false, features = ["fonts"] }
+comemo = "0.5"
 
 [dev-dependencies]
