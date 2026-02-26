@@ -47,6 +47,7 @@
 - **PPTX slide backgrounds**: `FixedPage.background_color: Option<Color>`. Parsed from `<p:bg><p:bgPr><a:solidFill>` in slide XML via `parse_background_color(xml, theme)`. Supports `<a:srgbClr>` and `<a:schemeClr>`. Inheritance chain: slide → layout → master via `resolve_inherited_background()`. Layout path from slide .rels (relationship target containing "slideLayout"), master path from layout .rels (target containing "slideMaster"). Typst codegen: `#set page(..., fill: rgb(r, g, b))` when background_color is Some.
 - **Test PPTX with layout/master**: Use `build_test_pptx_with_layout_master(cx, cy, slide_xml, layout_xml, master_xml)`. Creates full inheritance chain: slide1 → slideLayout1 → slideMaster1 with .rels files at each level. `make_slide_xml_with_bg(bg_xml, shapes)` creates slide XML with `<p:bg>` inside `<p:cSld>`.
 - **PPTX layout/master element inheritance**: `parse_single_slide()` resolves layout and master paths via `resolve_layout_master_paths()`, then parses elements from master, layout, and slide in order (master behind → layout → slide on top). Uses `rels_path_for()` helper for .rels path construction. `parse_slide_xml()` works on any XML with `<p:spTree>` — same function parses slide, layout, and master shapes. Test helpers: `make_layout_xml(shapes)`, `make_master_xml(shapes)`, `build_test_pptx_with_layout_master_multi_slide(cx, cy, slides, layout, master)` for multi-slide testing.
+- **PPTX tables**: Tables live inside `<p:graphicFrame>` elements (not `<p:sp>`). Position from `<p:xfrm>` (not `<a:xfrm>`). Table XML: `<a:graphic><a:graphicData><a:tbl>`. Grid: `<a:tblGrid><a:gridCol w="EMU"/>`. Rows: `<a:tr h="EMU">`. Cells: `<a:tc>` with optional `gridSpan` (colspan), `rowSpan`, `hMerge`/`vMerge` (continuation). Cell content: `<a:txBody>` with same paragraph/run structure as shapes. Cell properties: `<a:tcPr>` with `<a:solidFill>` for background, `<a:lnL/lnR/lnT/lnB w="EMU">` for borders. Maps to `FixedElementKind::Table(Table)` in IR. `parse_pptx_table()` is a standalone sub-parser called from `parse_slide_xml()` when `<a:tbl>` is found. Test helpers: `make_table_graphic_frame(x, y, cx, cy, col_widths_emu, rows_xml)`, `make_table_row(cells_text)`, `table_element(elem)`.
 ---
 
 # Ralph Progress Log - Phase 2: P1 Features - Formatting, Styles, Font Fallback
@@ -258,4 +259,33 @@ Started: 2026년  2월 27일 금요일 00시 55분 34초 KST
   - `resolve_layout_master_paths()` replaces the duplicated path resolution logic that was in `resolve_inherited_background()`
   - Element ordering matters: master elements first, layout second, slide last — this ensures correct visual layering
   - Layout/master can also have images via their own .rels, so `load_slide_images()` is called for each level
+---
+
+## 2026-02-27 - US-026: PPTX parser - tables in slides
+- What was implemented:
+  - Added `FixedElementKind::Table(Table)` variant to IR for tables positioned on fixed pages
+  - Implemented `parse_pptx_table()` function to parse `<a:tbl>` elements from PPTX slide XML
+  - Handles `<a:tblGrid>` for column widths (EMU → points conversion)
+  - Handles `<a:tr>` rows with height and `<a:tc>` cells with text content
+  - Cell text parsing: reuses existing `extract_rpr_attributes()` and `extract_paragraph_props()` for formatting (bold, italic, font size, color, font family)
+  - Cell merging: `gridSpan` for horizontal merge, `rowSpan` for vertical merge, `hMerge`/`vMerge` for continuation cells (col_span=0 / row_span=0)
+  - Cell background: `<a:solidFill>` inside `<a:tcPr>` with srgbClr and schemeClr support
+  - Cell borders: `<a:lnL>`, `<a:lnR>`, `<a:lnT>`, `<a:lnB>` inside `<a:tcPr>` with width (EMU) and color
+  - Added `<p:graphicFrame>` detection in `parse_slide_xml()` with position tracking via `<p:xfrm>`
+  - Typst codegen: `generate_fixed_element()` handles `FixedElementKind::Table` by calling existing `generate_table()` inside `#place()`
+  - 8 new tests: basic table, merged cells (gridSpan), vertical merge (rowSpan/vMerge), formatted text, cell background, cell borders, table coexisting with shapes, codegen for table on fixed page
+- Files changed:
+  - `crates/office2pdf/src/ir/document.rs` — added `FixedElementKind::Table` variant
+  - `crates/office2pdf/src/parser/pptx.rs` — `parse_pptx_table()`, graphicFrame handling in `parse_slide_xml()` + 7 tests + 3 helpers
+  - `crates/office2pdf/src/render/typst_gen.rs` — Table case in `generate_fixed_element()` + 1 codegen test
+  - `scripts/ralph/prd.json` — US-026 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - PPTX tables live inside `<p:graphicFrame>` elements, not `<p:sp>` — the graphicFrame contains `<a:graphic><a:graphicData><a:tbl>` hierarchy
+  - GraphicFrame position uses `<p:xfrm>` (not `<a:xfrm>`) at the graphicFrame level, separate from spPr xfrm
+  - Cell merge in PPTX uses `gridSpan` attribute on `<a:tc>` for colspan, `rowSpan` for rowspan, and `hMerge`/`vMerge` attributes on continuation cells
+  - Continuation cells (hMerge/vMerge) are represented with col_span=0 / row_span=0 to match the existing IR convention
+  - `parse_pptx_table()` is a standalone sub-parser called from the main slide parser — keeps the main event loop from becoming unwieldy
+  - Cell property XML (`<a:tcPr>`) contains both background fills and border lines — need separate SolidFillCtx tracking for cell fill vs border line fill
+  - The existing `generate_table()` function works unchanged for tables on fixed pages — just wrap in `#place()` via `generate_fixed_element()`
 ---

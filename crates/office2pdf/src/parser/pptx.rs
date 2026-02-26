@@ -7,9 +7,9 @@ use zip::ZipArchive;
 
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, Color, Document, FixedElement, FixedElementKind, FixedPage,
-    ImageData, ImageFormat, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shape,
-    ShapeKind, StyleSheet, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
+    FixedPage, ImageData, ImageFormat, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
+    Shape, ShapeKind, StyleSheet, Table, TableCell, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 
@@ -594,6 +594,320 @@ fn parse_background_color(xml: &str, theme: &ThemeData) -> Option<Color> {
     None
 }
 
+/// Parse a `<a:tbl>` element from the reader into a Table IR.
+///
+/// The reader should be positioned right after the `<a:tbl>` Start event.
+/// Reads until the matching `</a:tbl>` End event.
+fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Table, ConvertError> {
+    let mut column_widths = Vec::new();
+    let mut rows: Vec<TableRow> = Vec::new();
+
+    // Current row state
+    let mut in_row = false;
+    let mut row_height_emu: i64 = 0;
+    let mut cells: Vec<TableCell> = Vec::new();
+
+    // Current cell state
+    let mut in_cell = false;
+    let mut cell_col_span: u32 = 1;
+    let mut cell_row_span: u32 = 1;
+    let mut is_h_merge = false;
+    let mut is_v_merge = false;
+    let mut cell_paragraphs: Vec<Paragraph> = Vec::new();
+    let mut cell_background: Option<Color> = None;
+
+    // Text parsing state (reused per cell)
+    let mut in_txbody = false;
+    let mut in_para = false;
+    let mut para_style = ParagraphStyle::default();
+    let mut runs: Vec<Run> = Vec::new();
+    let mut in_run = false;
+    let mut run_style = TextStyle::default();
+    let mut run_text = String::new();
+    let mut in_text = false;
+    let mut in_rpr = false;
+    let mut solid_fill_ctx = SolidFillCtx::None;
+
+    // Cell property state
+    let mut in_tc_pr = false;
+    let mut border_left: Option<BorderSide> = None;
+    let mut border_right: Option<BorderSide> = None;
+    let mut border_top: Option<BorderSide> = None;
+    let mut border_bottom: Option<BorderSide> = None;
+    let mut in_border_ln = false;
+    let mut border_ln_width_emu: i64 = 0;
+    let mut border_ln_color: Option<Color> = None;
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum BorderDir {
+        None,
+        Left,
+        Right,
+        Top,
+        Bottom,
+    }
+    let mut current_border_dir = BorderDir::None;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"tr" => {
+                        in_row = true;
+                        row_height_emu = get_attr_i64(e, b"h").unwrap_or(0);
+                        cells.clear();
+                    }
+                    b"tc" if in_row => {
+                        in_cell = true;
+                        cell_col_span = get_attr_i64(e, b"gridSpan").map(|v| v as u32).unwrap_or(1);
+                        cell_row_span = get_attr_i64(e, b"rowSpan").map(|v| v as u32).unwrap_or(1);
+                        is_h_merge = get_attr_str(e, b"hMerge").is_some();
+                        is_v_merge = get_attr_str(e, b"vMerge").is_some();
+                        cell_paragraphs.clear();
+                        cell_background = None;
+                        in_tc_pr = false;
+                        border_left = None;
+                        border_right = None;
+                        border_top = None;
+                        border_bottom = None;
+                    }
+                    b"txBody" if in_cell => {
+                        in_txbody = true;
+                    }
+                    b"p" if in_txbody => {
+                        in_para = true;
+                        para_style = ParagraphStyle::default();
+                        runs.clear();
+                    }
+                    b"pPr" if in_para && !in_run => {
+                        extract_paragraph_props(e, &mut para_style);
+                    }
+                    b"r" if in_para => {
+                        in_run = true;
+                        run_style = TextStyle::default();
+                        run_text.clear();
+                    }
+                    b"rPr" if in_run => {
+                        in_rpr = true;
+                        extract_rpr_attributes(e, &mut run_style);
+                    }
+                    b"solidFill" if in_rpr => {
+                        solid_fill_ctx = SolidFillCtx::RunFill;
+                    }
+                    b"solidFill" if in_tc_pr && !in_border_ln => {
+                        solid_fill_ctx = SolidFillCtx::ShapeFill;
+                    }
+                    b"solidFill" if in_border_ln => {
+                        solid_fill_ctx = SolidFillCtx::LineFill;
+                    }
+                    b"schemeClr" if solid_fill_ctx != SolidFillCtx::None => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val") {
+                            let color = theme.colors.get(&scheme_name).copied();
+                            match solid_fill_ctx {
+                                SolidFillCtx::ShapeFill => cell_background = color,
+                                SolidFillCtx::LineFill => border_ln_color = color,
+                                SolidFillCtx::RunFill => run_style.color = color,
+                                SolidFillCtx::None => {}
+                            }
+                        }
+                    }
+                    b"t" if in_run => {
+                        in_text = true;
+                    }
+                    b"tcPr" if in_cell => {
+                        in_tc_pr = true;
+                    }
+                    b"lnL" if in_tc_pr => {
+                        in_border_ln = true;
+                        current_border_dir = BorderDir::Left;
+                        border_ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+                        border_ln_color = None;
+                    }
+                    b"lnR" if in_tc_pr => {
+                        in_border_ln = true;
+                        current_border_dir = BorderDir::Right;
+                        border_ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+                        border_ln_color = None;
+                    }
+                    b"lnT" if in_tc_pr => {
+                        in_border_ln = true;
+                        current_border_dir = BorderDir::Top;
+                        border_ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+                        border_ln_color = None;
+                    }
+                    b"lnB" if in_tc_pr => {
+                        in_border_ln = true;
+                        current_border_dir = BorderDir::Bottom;
+                        border_ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+                        border_ln_color = None;
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Empty(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"gridCol" => {
+                        if let Some(w) = get_attr_i64(e, b"w") {
+                            column_widths.push(emu_to_pt(w));
+                        }
+                    }
+                    b"srgbClr" if solid_fill_ctx != SolidFillCtx::None => {
+                        if let Some(hex) = get_attr_str(e, b"val") {
+                            let color = parse_hex_color(&hex);
+                            match solid_fill_ctx {
+                                SolidFillCtx::ShapeFill => cell_background = color,
+                                SolidFillCtx::LineFill => border_ln_color = color,
+                                SolidFillCtx::RunFill => run_style.color = color,
+                                SolidFillCtx::None => {}
+                            }
+                        }
+                    }
+                    b"schemeClr" if solid_fill_ctx != SolidFillCtx::None => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val") {
+                            let color = theme.colors.get(&scheme_name).copied();
+                            match solid_fill_ctx {
+                                SolidFillCtx::ShapeFill => cell_background = color,
+                                SolidFillCtx::LineFill => border_ln_color = color,
+                                SolidFillCtx::RunFill => run_style.color = color,
+                                SolidFillCtx::None => {}
+                            }
+                        }
+                    }
+                    b"rPr" if in_run => {
+                        extract_rpr_attributes(e, &mut run_style);
+                    }
+                    b"pPr" if in_para && !in_run => {
+                        extract_paragraph_props(e, &mut para_style);
+                    }
+                    b"latin" if in_rpr => {
+                        if let Some(typeface) = get_attr_str(e, b"typeface") {
+                            run_style.font_family = Some(resolve_theme_font(&typeface, theme));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Text(ref t)) => {
+                if in_text && let Ok(text) = t.xml_content() {
+                    run_text.push_str(&text);
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"tbl" => break,
+                    b"tr" if in_row => {
+                        let height = if row_height_emu > 0 {
+                            Some(emu_to_pt(row_height_emu))
+                        } else {
+                            None
+                        };
+                        rows.push(TableRow {
+                            cells: std::mem::take(&mut cells),
+                            height,
+                        });
+                        in_row = false;
+                    }
+                    b"tc" if in_cell => {
+                        let has_border = border_left.is_some()
+                            || border_right.is_some()
+                            || border_top.is_some()
+                            || border_bottom.is_some();
+
+                        let (col_span, row_span) = if is_h_merge {
+                            (0, 1)
+                        } else if is_v_merge {
+                            (1, 0)
+                        } else {
+                            (cell_col_span, cell_row_span)
+                        };
+
+                        cells.push(TableCell {
+                            content: std::mem::take(&mut cell_paragraphs)
+                                .into_iter()
+                                .map(Block::Paragraph)
+                                .collect(),
+                            col_span,
+                            row_span,
+                            border: if has_border {
+                                Some(CellBorder {
+                                    left: border_left.take(),
+                                    right: border_right.take(),
+                                    top: border_top.take(),
+                                    bottom: border_bottom.take(),
+                                })
+                            } else {
+                                None
+                            },
+                            background: cell_background.take(),
+                        });
+                        in_cell = false;
+                        in_tc_pr = false;
+                    }
+                    b"txBody" if in_txbody => {
+                        in_txbody = false;
+                    }
+                    b"p" if in_para => {
+                        cell_paragraphs.push(Paragraph {
+                            style: para_style.clone(),
+                            runs: std::mem::take(&mut runs),
+                        });
+                        in_para = false;
+                    }
+                    b"r" if in_run => {
+                        if !run_text.is_empty() {
+                            runs.push(Run {
+                                text: std::mem::take(&mut run_text),
+                                style: run_style.clone(),
+                            });
+                        }
+                        in_run = false;
+                    }
+                    b"rPr" if in_rpr => {
+                        in_rpr = false;
+                    }
+                    b"solidFill" if solid_fill_ctx != SolidFillCtx::None => {
+                        solid_fill_ctx = SolidFillCtx::None;
+                    }
+                    b"t" if in_text => {
+                        in_text = false;
+                    }
+                    b"tcPr" if in_tc_pr => {
+                        in_tc_pr = false;
+                    }
+                    b"lnL" | b"lnR" | b"lnT" | b"lnB" if in_border_ln => {
+                        if let Some(color) = border_ln_color.take() {
+                            let side = BorderSide {
+                                width: border_ln_width_emu as f64 / 12700.0,
+                                color,
+                            };
+                            match current_border_dir {
+                                BorderDir::Left => border_left = Some(side),
+                                BorderDir::Right => border_right = Some(side),
+                                BorderDir::Top => border_top = Some(side),
+                                BorderDir::Bottom => border_bottom = Some(side),
+                                BorderDir::None => {}
+                            }
+                        }
+                        in_border_ln = false;
+                        current_border_dir = BorderDir::None;
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(e) => return Err(ConvertError::Parse(format!("XML error in table: {e}"))),
+            _ => {}
+        }
+    }
+
+    Ok(Table {
+        rows,
+        column_widths,
+    })
+}
+
 /// Parse a slide XML to extract positioned elements (text boxes, shapes, images).
 fn parse_slide_xml(
     xml: &str,
@@ -650,11 +964,44 @@ fn parse_slide_xml(
     let mut blip_embed: Option<String> = None;
     let mut in_pic_xfrm = false;
 
+    // ── GraphicFrame-level state (for tables) ───────────────────────────
+    let mut in_graphic_frame = false;
+    let mut gf_x: i64 = 0;
+    let mut gf_y: i64 = 0;
+    let mut gf_cx: i64 = 0;
+    let mut gf_cy: i64 = 0;
+    let mut in_gf_xfrm = false;
+
     loop {
         match reader.read_event() {
             Ok(Event::Start(ref e)) => {
                 let local = e.local_name();
                 match local.as_ref() {
+                    // ── GraphicFrame start ───────────────────────────
+                    b"graphicFrame" if !in_shape && !in_pic && !in_graphic_frame => {
+                        in_graphic_frame = true;
+                        gf_x = 0;
+                        gf_y = 0;
+                        gf_cx = 0;
+                        gf_cy = 0;
+                        in_gf_xfrm = false;
+                    }
+                    b"xfrm" if in_graphic_frame && !in_shape => {
+                        in_gf_xfrm = true;
+                    }
+                    b"tbl" if in_graphic_frame => {
+                        // Parse the table and emit as a FixedElement
+                        if let Ok(table) = parse_pptx_table(&mut reader, theme) {
+                            elements.push(FixedElement {
+                                x: emu_to_pt(gf_x),
+                                y: emu_to_pt(gf_y),
+                                width: emu_to_pt(gf_cx),
+                                height: emu_to_pt(gf_cy),
+                                kind: FixedElementKind::Table(table),
+                            });
+                        }
+                    }
+
                     // ── Shape start ──────────────────────────────────
                     b"sp" if !in_shape && !in_pic => {
                         in_shape = true;
@@ -781,6 +1128,16 @@ fn parse_slide_xml(
                     b"ext" if in_pic_xfrm => {
                         pic_cx = get_attr_i64(e, b"cx").unwrap_or(0);
                         pic_cy = get_attr_i64(e, b"cy").unwrap_or(0);
+                    }
+
+                    // ── GraphicFrame xfrm offset/extent ─────────────
+                    b"off" if in_gf_xfrm => {
+                        gf_x = get_attr_i64(e, b"x").unwrap_or(0);
+                        gf_y = get_attr_i64(e, b"y").unwrap_or(0);
+                    }
+                    b"ext" if in_gf_xfrm => {
+                        gf_cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                        gf_cy = get_attr_i64(e, b"cy").unwrap_or(0);
                     }
 
                     // ── Blip (image reference) ───────────────────────
@@ -954,6 +1311,14 @@ fn parse_slide_xml(
                     }
                     b"xfrm" if in_pic_xfrm => {
                         in_pic_xfrm = false;
+                    }
+
+                    // ── GraphicFrame end ─────────────────────────────
+                    b"graphicFrame" if in_graphic_frame => {
+                        in_graphic_frame = false;
+                    }
+                    b"xfrm" if in_gf_xfrm => {
+                        in_gf_xfrm = false;
                     }
 
                     _ => {}
@@ -2926,5 +3291,269 @@ mod tests {
         let page = first_fixed_page(&doc);
         // Should inherit layout's magenta background (not master's green)
         assert_eq!(page.background_color, Some(Color::new(255, 0, 255)));
+    }
+
+    // ── Table test helpers ──────────────────────────────────────────────
+
+    /// Create a graphicFrame XML containing a table.
+    /// `x`, `y`, `cx`, `cy` are in EMU.
+    fn make_table_graphic_frame(
+        x: i64,
+        y: i64,
+        cx: i64,
+        cy: i64,
+        col_widths_emu: &[i64],
+        rows_xml: &str,
+    ) -> String {
+        let mut grid = String::new();
+        for w in col_widths_emu {
+            grid.push_str(&format!(r#"<a:gridCol w="{w}"/>"#));
+        }
+        format!(
+            r#"<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Table"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr/><a:tblGrid>{grid}</a:tblGrid>{rows_xml}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>"#
+        )
+    }
+
+    /// Create a simple table row with text-only cells.
+    fn make_table_row(cells: &[&str]) -> String {
+        let mut xml = String::from(r#"<a:tr h="370840">"#);
+        for text in cells {
+            xml.push_str(&format!(
+                r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>{text}</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>"#
+            ));
+        }
+        xml.push_str("</a:tr>");
+        xml
+    }
+
+    /// Helper: get the Table from a FixedElement.
+    fn table_element(elem: &FixedElement) -> &Table {
+        match &elem.kind {
+            FixedElementKind::Table(t) => t,
+            _ => panic!("Expected Table, got {:?}", elem.kind),
+        }
+    }
+
+    // ── Table tests ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_slide_with_basic_table() {
+        // A slide with a 2×2 table
+        let rows = format!(
+            "{}{}",
+            make_table_row(&["A1", "B1"]),
+            make_table_row(&["A2", "B2"]),
+        );
+        let table_frame = make_table_graphic_frame(
+            914400,              // x = 72pt
+            914400,              // y = 72pt
+            3657600,             // cx = 288pt
+            1828800,             // cy = 144pt
+            &[1828800, 1828800], // 2 columns, 144pt each
+            &rows,
+        );
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 1);
+
+        let elem = &page.elements[0];
+        assert!((elem.x - 72.0).abs() < 0.1);
+        assert!((elem.y - 72.0).abs() < 0.1);
+
+        let table = table_element(elem);
+        assert_eq!(table.rows.len(), 2);
+        assert_eq!(table.column_widths.len(), 2);
+        assert!((table.column_widths[0] - 144.0).abs() < 0.1);
+
+        // Check cell text
+        let cell_00 = &table.rows[0].cells[0];
+        assert_eq!(cell_00.content.len(), 1);
+        if let Block::Paragraph(p) = &cell_00.content[0] {
+            assert_eq!(p.runs[0].text, "A1");
+        } else {
+            panic!("Expected paragraph in cell");
+        }
+
+        let cell_11 = &table.rows[1].cells[1];
+        if let Block::Paragraph(p) = &cell_11.content[0] {
+            assert_eq!(p.runs[0].text, "B2");
+        } else {
+            panic!("Expected paragraph in cell");
+        }
+    }
+
+    #[test]
+    fn test_slide_table_with_merged_cells() {
+        // Table with gridSpan (horizontal merge) and vMerge (vertical merge)
+        let mut rows_xml = String::new();
+        // Row 0: cell spanning 2 columns
+        rows_xml.push_str(r#"<a:tr h="370840">"#);
+        rows_xml.push_str(r#"<a:tc gridSpan="2"><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>Merged</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>"#);
+        rows_xml.push_str(r#"<a:tc hMerge="1"><a:txBody><a:bodyPr/><a:p><a:endParaRPr/></a:p></a:txBody><a:tcPr/></a:tc>"#);
+        rows_xml.push_str("</a:tr>");
+        // Row 1: two normal cells
+        rows_xml.push_str(&make_table_row(&["C1", "C2"]));
+
+        let table_frame =
+            make_table_graphic_frame(0, 0, 3657600, 1828800, &[1828800, 1828800], &rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+
+        // Row 0: merged cell should have col_span=2
+        assert_eq!(table.rows[0].cells.len(), 2);
+        assert_eq!(table.rows[0].cells[0].col_span, 2);
+        // The hMerge cell should have col_span=0 (covered by merge)
+        assert_eq!(table.rows[0].cells[1].col_span, 0);
+
+        // Row 1: normal cells
+        assert_eq!(table.rows[1].cells[0].col_span, 1);
+        assert_eq!(table.rows[1].cells[1].col_span, 1);
+    }
+
+    #[test]
+    fn test_slide_table_with_vertical_merge() {
+        // Table with rowSpan (vertical merge)
+        let mut rows_xml = String::new();
+        // Row 0: first cell starts a rowSpan of 2
+        rows_xml.push_str(r#"<a:tr h="370840">"#);
+        rows_xml.push_str(r#"<a:tc rowSpan="2"><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>VMerged</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>"#);
+        rows_xml.push_str(r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>B1</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>"#);
+        rows_xml.push_str("</a:tr>");
+        // Row 1: first cell is continuation of vMerge
+        rows_xml.push_str(r#"<a:tr h="370840">"#);
+        rows_xml.push_str(r#"<a:tc vMerge="1"><a:txBody><a:bodyPr/><a:p><a:endParaRPr/></a:p></a:txBody><a:tcPr/></a:tc>"#);
+        rows_xml.push_str(r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>B2</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>"#);
+        rows_xml.push_str("</a:tr>");
+
+        let table_frame =
+            make_table_graphic_frame(0, 0, 3657600, 1828800, &[1828800, 1828800], &rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+
+        // Row 0: first cell rowSpan=2
+        assert_eq!(table.rows[0].cells[0].row_span, 2);
+        // Row 1: first cell vMerge continuation (row_span=0)
+        assert_eq!(table.rows[1].cells[0].row_span, 0);
+    }
+
+    #[test]
+    fn test_slide_table_with_formatted_text() {
+        // Table cell with bold, colored text
+        let mut rows_xml = String::new();
+        rows_xml.push_str(r#"<a:tr h="370840">"#);
+        rows_xml.push_str(r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US" b="1" sz="1800"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></a:rPr><a:t>Bold Red</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>"#);
+        rows_xml.push_str("</a:tr>");
+
+        let table_frame = make_table_graphic_frame(0, 0, 3657600, 370840, &[3657600], &rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+
+        let cell = &table.rows[0].cells[0];
+        if let Block::Paragraph(p) = &cell.content[0] {
+            assert_eq!(p.runs[0].text, "Bold Red");
+            assert_eq!(p.runs[0].style.bold, Some(true));
+            assert_eq!(p.runs[0].style.font_size, Some(18.0));
+            assert_eq!(p.runs[0].style.color, Some(Color::new(255, 0, 0)));
+        } else {
+            panic!("Expected paragraph in cell");
+        }
+    }
+
+    #[test]
+    fn test_slide_table_with_cell_background() {
+        // Table cell with background fill
+        let mut rows_xml = String::new();
+        rows_xml.push_str(r#"<a:tr h="370840">"#);
+        rows_xml.push_str(r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>Filled</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></a:tcPr></a:tc>"#);
+        rows_xml.push_str("</a:tr>");
+
+        let table_frame = make_table_graphic_frame(0, 0, 3657600, 370840, &[3657600], &rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+
+        let cell = &table.rows[0].cells[0];
+        assert_eq!(cell.background, Some(Color::new(0, 255, 0)));
+    }
+
+    #[test]
+    fn test_slide_table_with_cell_borders() {
+        // Table cell with border specification
+        let mut rows_xml = String::new();
+        rows_xml.push_str(r#"<a:tr h="370840">"#);
+        rows_xml.push_str(r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>Bordered</a:t></a:r></a:p></a:txBody><a:tcPr><a:lnL w="12700"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:lnL><a:lnR w="12700"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:lnR><a:lnT w="12700"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:lnT><a:lnB w="12700"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:lnB></a:tcPr></a:tc>"#);
+        rows_xml.push_str("</a:tr>");
+
+        let table_frame = make_table_graphic_frame(0, 0, 3657600, 370840, &[3657600], &rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+
+        let cell = &table.rows[0].cells[0];
+        let border = cell.border.as_ref().expect("Expected border");
+        assert!(border.left.is_some());
+        assert!(border.right.is_some());
+        assert!(border.top.is_some());
+        assert!(border.bottom.is_some());
+        let left = border.left.as_ref().unwrap();
+        assert!((left.width - 1.0).abs() < 0.1); // 12700 EMU = 1pt
+        assert_eq!(left.color, Color::new(0, 0, 0));
+    }
+
+    #[test]
+    fn test_slide_table_coexists_with_shapes() {
+        // A slide with both a text box and a table
+        let text_box = make_text_box(0, 0, 914400, 457200, "Header");
+        let rows = make_table_row(&["Cell"]);
+        let table_frame = make_table_graphic_frame(0, 914400, 914400, 370840, &[914400], &rows);
+        let slide = make_slide_xml(&[text_box, table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 2);
+
+        // First element: TextBox
+        assert!(matches!(
+            &page.elements[0].kind,
+            FixedElementKind::TextBox(_)
+        ));
+        // Second element: Table
+        assert!(matches!(&page.elements[1].kind, FixedElementKind::Table(_)));
     }
 }

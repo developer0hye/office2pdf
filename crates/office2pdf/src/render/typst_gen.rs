@@ -162,6 +162,9 @@ fn generate_fixed_element(
         FixedElementKind::Shape(shape) => {
             generate_shape(out, shape, elem.width, elem.height);
         }
+        FixedElementKind::Table(table) => {
+            generate_table(out, table, ctx)?;
+        }
     }
 
     out.push_str("]\n");
@@ -2694,5 +2697,67 @@ mod tests {
             "Should NOT contain fill: when no background. Got: {}",
             output.source
         );
+    }
+
+    #[test]
+    fn test_fixed_page_table_element() {
+        // A table placed at absolute position on a fixed page
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![
+                    TableCell {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "A1".to_string(),
+                                style: TextStyle::default(),
+                            }],
+                        })],
+                        ..TableCell::default()
+                    },
+                    TableCell {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "B1".to_string(),
+                                style: TextStyle::default(),
+                            }],
+                        })],
+                        ..TableCell::default()
+                    },
+                ],
+                height: None,
+            }],
+            column_widths: vec![100.0, 100.0],
+        };
+
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![FixedElement {
+                x: 50.0,
+                y: 100.0,
+                width: 200.0,
+                height: 50.0,
+                kind: FixedElementKind::Table(table),
+            }],
+            background_color: None,
+        });
+
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+
+        // Should have a #place() with table inside
+        assert!(
+            output
+                .source
+                .contains("#place(top + left, dx: 50pt, dy: 100pt)")
+        );
+        assert!(output.source.contains("#table("));
+        assert!(output.source.contains("columns: (100pt, 100pt)"));
+        assert!(output.source.contains("A1"));
+        assert!(output.source.contains("B1"));
     }
 }

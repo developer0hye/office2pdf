@@ -107,6 +107,7 @@ pub enum FixedElementKind {
     TextBox(Vec<Block>),
     Image(super::elements::ImageData),
     Shape(super::elements::Shape),
+    Table(super::elements::Table),
 }
 
 /// A table-based page (XLSX sheets).
