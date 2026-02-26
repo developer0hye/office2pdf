@@ -204,8 +204,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed. 13 new tests (7 shape + 6 image). Shapes: rectangle/ellipse/line from <p:sp> with prstGeom, fill color (solidFill), border (a:ln). Images: <p:pic> with blip r:embed → slide .rels → ZIP media files. SolidFillCtx enum distinguishes shape fill vs border vs text color."
     },
     {
       "id": "US-013",

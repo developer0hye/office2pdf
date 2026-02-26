@@ -18,6 +18,9 @@ Started: 2026-02-26
 - **PPTX slide XML structure**: Shapes at `<p:spTree>/<p:sp>`. Position/size: `<a:xfrm><a:off x y/><a:ext cx cy/></a:xfrm>` (EMU ÷ 12700 = points). Text: `<p:txBody>/<a:p>/<a:r>/<a:t>`. Run props: `<a:rPr b="1" i="1" u="sng" strike="sngStrike" sz="1800">` (sz in hundredths of pt). Font color: `<a:solidFill><a:srgbClr val="RRGGBB"/></a:solidFill>`. Font family: `<a:latin typeface="..."/>`. Para alignment: `<a:pPr algn="ctr|l|r|just"/>`.
 - **Test PPTX creation**: Build ZIP in-memory with `zip::ZipWriter::new(Cursor::new(Vec::new()))`. Need `[Content_Types].xml`, `_rels/.rels`, `ppt/presentation.xml`, `ppt/_rels/presentation.xml.rels`, and `ppt/slides/slideN.xml`. Standard 4:3 size: 9144000 × 6858000 EMU = 720pt × 540pt.
 - **quick-xml 0.38 API**: Use `Reader::from_str(xml)`, `reader.read_event()` → `Event::Start/Empty/End/Text/Eof`. `BytesText::xml_content()` (NOT `unescape()`!) for text decoding. `BytesStart::local_name().as_ref()` for element name. Attributes: iterate `e.attributes().flatten()`, match `attr.key.as_ref()` (full name like `r:id`) or `attr.key.local_name().as_ref()` (local). `attr.unescape_value()` for string values.
+- **PPTX shapes**: `<p:sp>` without text body → Shape IR element. Geometry from `<a:prstGeom prst="rect|ellipse|line">`. Fill color: `<p:spPr><a:solidFill><a:srgbClr val="RRGGBB"/></a:solidFill>`. Border: `<a:ln w="12700"><a:solidFill>...</a:solidFill></a:ln>` (w in EMU, ÷12700 → pt). Use `SolidFillCtx` enum to distinguish shape fill vs line fill vs run fill contexts.
+- **PPTX images**: `<p:pic>` element. Position/size from `<p:spPr><a:xfrm>`. Image ref: `<a:blip r:embed="rId3"/>`. Resolve rId via slide .rels file (`ppt/slides/_rels/slideN.xml.rels`), then read image bytes from ZIP. Image format detected from file extension.
+- **PPTX slide .rels**: Path pattern: `ppt/slides/_rels/slideN.xml.rels`. Image targets are relative paths like `../media/image1.png`. Use `resolve_relative_path()` to compute full ZIP path from slide directory.
 - **docx-rs image handling**: Images in document tree: `RunChild::Drawing(Box<Drawing>)` → `Drawing.data = Some(DrawingData::Pic(pic))`. Image binary data: stored in `Docx.images` as `Vec<(id, path, Image, Png)>` — match `pic.id` to look up data. `pic.image` is empty when reading (only used during writing). Dimensions: `pic.size = (w_emu, h_emu)` in EMU. Convert: EMU ÷ 12700 = points. All images converted to PNG by docx-rs.
 - **Test images for docx-rs**: Use `make_test_bmp()` to create a minimal 1×1 BMP, then `Pic::new(&bmp_data)` which processes through the `image` crate. Do NOT use `Pic::new_with_dimensions()` with raw PNG bytes for round-trip tests — the `image` crate may fail to decode minimal hand-crafted PNGs during `read_docx()`.
 - **Image codegen**: `generate_typst()` returns `TypstOutput { source: String, images: Vec<ImageAsset> }`. Images get virtual paths `img-N.ext` via `GenCtx`. `compile_to_pdf(source, &images)` passes images to `MinimalWorld` which serves them via `World::file()`. Image markup: `#image("img-0.png", width: Wpt, height: Hpt)`.
@@ -192,4 +195,19 @@ Started: 2026-02-26
   - State machine approach with boolean flags works well for streaming XML parsing of slide shapes
   - Track `shape_depth` to handle nested `<p:sp>` inside group shapes without confusion
   - `<a:rPr>` can be either Empty (self-closing) or Start (with children like `<a:solidFill>`) — handle both
+---
+
+## 2026-02-26 - US-012
+- **What was implemented**: PptxParser shape extraction (rectangle, ellipse, line) and image extraction from PPTX slides. Shapes without text body are emitted as `FixedElementKind::Shape` with geometry, fill, and border. Images from `<p:pic>` elements resolved via slide .rels and loaded from ZIP.
+- **Files changed**:
+  - `crates/office2pdf/src/parser/pptx.rs` — added `SolidFillCtx` enum, `SlideImageMap` type, `load_slide_images()`, `resolve_relative_path()`, `image_format_from_ext()`, `prst_to_shape_kind()` functions; extended `parse_slide_xml()` with shape/image state tracking; added 13 new tests (7 shape + 6 image)
+- **Dependencies added**: None
+- **Learnings for future iterations:**
+  - `SolidFillCtx` enum cleanly distinguishes between shape fill, border fill, and text run fill — avoids bug-prone nested boolean tracking
+  - Shapes with text body → TextBox; shapes without → Shape. Check `paragraphs.iter().any(|p| !p.runs.is_empty())` to detect actual text content (empty paragraphs don't count)
+  - `<a:prstGeom prst="...">` can be either Start element (with children like `<a:avLst/>`) or Empty element — handle both in the XML parser
+  - `<a:ln w="12700">` border width is in EMU (÷12700 → points), same as other PPTX measurements
+  - Image resolution: `<a:blip r:embed="rIdN"/>` → slide .rels (`ppt/slides/_rels/slideN.xml.rels`) → relative path (`../media/image1.png`) → `resolve_relative_path()` → absolute ZIP path (`ppt/media/image1.png`)
+  - `resolve_relative_path()` handles `..` components for navigating up from slide directory to media directory
+  - `image_format_from_ext()` returns None for non-image paths, serving as both format detector and image filter
 ---
