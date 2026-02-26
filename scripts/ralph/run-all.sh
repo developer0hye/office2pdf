@@ -86,13 +86,20 @@ preflight() {
 
 # ── Cleanup trap ────────────────────────────────────────────────────
 
-# Track current worktree so we can warn on interrupt
+# Track current worktree and background PID so we can clean up on interrupt
 CURRENT_WORKTREE=""
 CURRENT_BRANCH=""
+CI_WATCH_PID=""
 
 on_interrupt() {
   echo ""
   log "Interrupted by user."
+  # Kill background CI watch process if running
+  if [ -n "$CI_WATCH_PID" ] && kill -0 "$CI_WATCH_PID" 2>/dev/null; then
+    kill "$CI_WATCH_PID" 2>/dev/null || true
+    wait "$CI_WATCH_PID" 2>/dev/null || true
+    log "Killed background CI watch process."
+  fi
   if [ -n "$CURRENT_WORKTREE" ]; then
     log "Worktree may be left at: $CURRENT_WORKTREE"
     log "Branch may be left: $CURRENT_BRANCH"
@@ -340,30 +347,31 @@ ENDOFBODY
     log "Watching CI checks on PR #$pr_num ($ci_check_count checks registered) ..."
 
     # Watch with a 30-minute timeout (background process + timer)
-    ci_watch_pid=""
+    CI_WATCH_PID=""
     ci_timed_out=false
     ci_watch_exit=0
 
     gh pr checks "$pr_num" --watch > /tmp/ralph-ci-watch-$$.log 2>&1 &
-    ci_watch_pid=$!
+    CI_WATCH_PID=$!
 
     elapsed=0
-    while kill -0 "$ci_watch_pid" 2>/dev/null; do
+    while kill -0 "$CI_WATCH_PID" 2>/dev/null; do
       sleep 10
       elapsed=$((elapsed + 10))
       if [ "$elapsed" -ge 1800 ]; then
         log "CI watch timed out after 30 minutes."
-        kill "$ci_watch_pid" 2>/dev/null || true
-        wait "$ci_watch_pid" 2>/dev/null || true
+        kill "$CI_WATCH_PID" 2>/dev/null || true
+        wait "$CI_WATCH_PID" 2>/dev/null || true
         ci_timed_out=true
         break
       fi
     done
 
     if [ "$ci_timed_out" = false ]; then
-      wait "$ci_watch_pid" 2>/dev/null
+      wait "$CI_WATCH_PID" 2>/dev/null
       ci_watch_exit=$?
     fi
+    CI_WATCH_PID=""
 
     cat /tmp/ralph-ci-watch-$$.log >> "$LOG_FILE" 2>/dev/null
     cat /tmp/ralph-ci-watch-$$.log 2>/dev/null
@@ -403,7 +411,7 @@ ENDOFBODY
         log "  Auto-fixing: running cargo fmt ..."
         if cargo fmt --all 2>/dev/null; then
           if ! git diff --quiet 2>/dev/null; then
-            git add -A
+            git add -u
             git commit -s -m "style: auto-fix formatting for CI" 2>/dev/null && fixed_something=true
           fi
         fi
@@ -421,9 +429,18 @@ ENDOFBODY
 
       if [ "$fixed_something" = true ]; then
         log "  Pushing fixes ..."
-        git push 2>&1 | tee -a "$LOG_FILE"
-        # Loop back to wait for new CI run
-        continue
+        if git push 2>&1 | tee -a "$LOG_FILE"; then
+          # Loop back to wait for new CI run
+          continue
+        else
+          log "  Push failed after auto-fix. Retrying push ..."
+          sleep 5
+          if git push 2>&1 | tee -a "$LOG_FILE"; then
+            continue
+          else
+            log "  Push still failing. Aborting CI retry."
+          fi
+        fi
       else
         log "  No auto-fix available for this failure."
       fi
