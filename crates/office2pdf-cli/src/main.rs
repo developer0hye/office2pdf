@@ -33,10 +33,15 @@ fn run() -> Result<()> {
         .output
         .unwrap_or_else(|| cli.input.with_extension("pdf"));
 
-    let pdf_bytes =
+    let result =
         office2pdf::convert(&cli.input).with_context(|| format!("converting {:?}", cli.input))?;
 
-    std::fs::write(&output, pdf_bytes)
+    // Print any warnings to stderr
+    for warning in &result.warnings {
+        eprintln!("Warning: {warning}");
+    }
+
+    std::fs::write(&output, result.pdf)
         .with_context(|| format!("writing output to {:?}", output))?;
 
     println!("Converted: {:?} -> {:?}", cli.input, output);

@@ -5,7 +5,7 @@ use quick_xml::Reader;
 use quick_xml::events::Event;
 use zip::ZipArchive;
 
-use crate::error::ConvertError;
+use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Alignment, Block, BorderSide, Color, Document, FixedElement, FixedElementKind, FixedPage,
     ImageData, ImageFormat, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shape,
@@ -37,7 +37,7 @@ fn emu_to_pt(emu: i64) -> f64 {
 }
 
 impl Parser for PptxParser {
-    fn parse(&self, data: &[u8]) -> Result<Document, ConvertError> {
+    fn parse(&self, data: &[u8]) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let cursor = Cursor::new(data);
         let mut archive = ZipArchive::new(cursor)
             .map_err(|e| ConvertError::Parse(format!("Failed to read PPTX: {e}")))?;
@@ -50,34 +50,54 @@ impl Parser for PptxParser {
         let rels_xml = read_zip_entry(&mut archive, "ppt/_rels/presentation.xml.rels")?;
         let rel_map = parse_rels_xml(&rels_xml);
 
-        // Parse each slide in order
+        let mut warnings = Vec::new();
+
+        // Parse each slide in order, skipping broken slides with warnings
         let mut pages = Vec::new();
-        for rid in &slide_rids {
+        for (slide_idx, rid) in slide_rids.iter().enumerate() {
             if let Some(target) = rel_map.get(rid) {
                 let slide_path = if let Some(stripped) = target.strip_prefix('/') {
                     stripped.to_string()
                 } else {
                     format!("ppt/{target}")
                 };
-                let slide_xml = read_zip_entry(&mut archive, &slide_path)?;
 
-                // Load images referenced by this slide
-                let slide_images = load_slide_images(&slide_path, &mut archive);
-
-                let elements = parse_slide_xml(&slide_xml, &slide_images)?;
-                pages.push(Page::Fixed(FixedPage {
-                    size: slide_size,
-                    elements,
-                }));
+                match parse_single_slide(&slide_path, slide_size, &mut archive) {
+                    Ok(page) => pages.push(page),
+                    Err(e) => {
+                        warnings.push(ConvertWarning {
+                            element: format!("Slide {} ({})", slide_idx + 1, slide_path),
+                            reason: format!("failed to parse slide: {e}"),
+                        });
+                    }
+                }
             }
         }
 
-        Ok(Document {
-            metadata: Metadata::default(),
-            pages,
-            styles: StyleSheet::default(),
-        })
+        Ok((
+            Document {
+                metadata: Metadata::default(),
+                pages,
+                styles: StyleSheet::default(),
+            },
+            warnings,
+        ))
     }
+}
+
+/// Parse a single slide from the archive, returning a Page or an error.
+fn parse_single_slide<R: Read + std::io::Seek>(
+    slide_path: &str,
+    slide_size: PageSize,
+    archive: &mut ZipArchive<R>,
+) -> Result<Page, ConvertError> {
+    let slide_xml = read_zip_entry(archive, slide_path)?;
+    let slide_images = load_slide_images(slide_path, archive);
+    let elements = parse_slide_xml(&slide_xml, &slide_images)?;
+    Ok(Page::Fixed(FixedPage {
+        size: slide_size,
+        elements,
+    }))
 }
 
 /// Read a file from the ZIP archive as a UTF-8 string.
@@ -833,7 +853,7 @@ mod tests {
         // PPTX with zero slides → document with no pages
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         assert!(doc.pages.is_empty(), "Expected no pages");
     }
 
@@ -842,7 +862,7 @@ mod tests {
         let slide = make_empty_slide_xml();
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         assert_eq!(doc.pages.len(), 1, "Expected 1 page");
         assert!(matches!(&doc.pages[0], Page::Fixed(_)));
     }
@@ -855,7 +875,7 @@ mod tests {
         let slide = make_empty_slide_xml();
         let data = build_test_pptx(cx, cy, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let expected_w = cx as f64 / 12700.0;
@@ -878,7 +898,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert_eq!(page.elements.len(), 1, "Expected 1 element");
@@ -906,7 +926,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let elem = &page.elements[0];
@@ -945,7 +965,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let blocks = text_box_blocks(&page.elements[0]);
@@ -964,7 +984,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let blocks = text_box_blocks(&page.elements[0]);
@@ -984,7 +1004,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let blocks = text_box_blocks(&page.elements[0]);
@@ -1002,7 +1022,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let blocks = text_box_blocks(&page.elements[0]);
@@ -1028,7 +1048,7 @@ mod tests {
         let slide = make_slide_xml(&[shape1, shape2]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert_eq!(page.elements.len(), 2, "Expected 2 text boxes");
@@ -1057,7 +1077,7 @@ mod tests {
         let slide3 = make_slide_xml(&[make_text_box(0, 0, 1_000_000, 500_000, "Slide 3")]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide1, slide2, slide3]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         assert_eq!(doc.pages.len(), 3, "Expected 3 pages");
         for page in &doc.pages {
@@ -1072,7 +1092,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let blocks = text_box_blocks(&page.elements[0]);
@@ -1095,7 +1115,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let blocks = text_box_blocks(&page.elements[0]);
@@ -1117,7 +1137,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let blocks = text_box_blocks(&page.elements[0]);
@@ -1145,7 +1165,7 @@ mod tests {
         let slide = make_empty_slide_xml();
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert!(
@@ -1371,7 +1391,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert_eq!(page.elements.len(), 1, "Expected 1 shape element");
@@ -1403,7 +1423,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let s = get_shape(&page.elements[0]);
@@ -1426,7 +1446,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let s = get_shape(&page.elements[0]);
@@ -1458,7 +1478,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let s = get_shape(&page.elements[0]);
@@ -1474,7 +1494,7 @@ mod tests {
         let slide = make_slide_xml(&[shape]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let s = get_shape(&page.elements[0]);
@@ -1507,7 +1527,7 @@ mod tests {
         let slide = make_slide_xml(&[rect, ellipse]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert_eq!(page.elements.len(), 2, "Expected 2 shape elements");
@@ -1537,7 +1557,7 @@ mod tests {
         let slide = make_slide_xml(&[text_box, rect]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert_eq!(page.elements.len(), 2, "Expected 2 elements");
@@ -1562,7 +1582,7 @@ mod tests {
         }];
         let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert_eq!(page.elements.len(), 1, "Expected 1 image element");
@@ -1592,7 +1612,7 @@ mod tests {
         }];
         let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let img = get_image(&page.elements[0]);
@@ -1612,7 +1632,7 @@ mod tests {
         }];
         let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         let img = get_image(&page.elements[0]);
@@ -1645,7 +1665,7 @@ mod tests {
         }];
         let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert_eq!(page.elements.len(), 3, "Expected 3 elements");
@@ -1664,7 +1684,7 @@ mod tests {
         let slide_xml = make_slide_xml(&[pic]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert_eq!(
@@ -1694,7 +1714,7 @@ mod tests {
         ];
         let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
         let parser = PptxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = first_fixed_page(&doc);
         assert_eq!(page.elements.len(), 2, "Expected 2 image elements");

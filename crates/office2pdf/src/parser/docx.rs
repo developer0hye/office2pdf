@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::error::ConvertError;
+use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, ImageData, ImageFormat,
     LineSpacing, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet,
@@ -29,35 +29,53 @@ fn emu_to_pt(emu: u32) -> f64 {
 }
 
 impl Parser for DocxParser {
-    fn parse(&self, data: &[u8]) -> Result<Document, ConvertError> {
+    fn parse(&self, data: &[u8]) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let docx = docx_rs::read_docx(data)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;
 
         let (size, margins) = extract_page_setup(&docx.document.section_property);
         let images = build_image_map(&docx);
+        let mut warnings = Vec::new();
 
         let mut content: Vec<Block> = Vec::new();
-        for child in &docx.document.children {
-            match child {
-                docx_rs::DocumentChild::Paragraph(para) => {
-                    convert_paragraph_blocks(para, &mut content, &images);
+        for (idx, child) in docx.document.children.iter().enumerate() {
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let mut blocks = Vec::new();
+                match child {
+                    docx_rs::DocumentChild::Paragraph(para) => {
+                        convert_paragraph_blocks(para, &mut blocks, &images);
+                    }
+                    docx_rs::DocumentChild::Table(table) => {
+                        blocks.push(Block::Table(convert_table(table, &images)));
+                    }
+                    _ => {}
                 }
-                docx_rs::DocumentChild::Table(table) => {
-                    content.push(Block::Table(convert_table(table, &images)));
+                blocks
+            }));
+
+            match result {
+                Ok(blocks) => content.extend(blocks),
+                Err(_) => {
+                    warnings.push(ConvertWarning {
+                        element: format!("Document element at index {idx}"),
+                        reason: "element processing panicked; skipped".to_string(),
+                    });
                 }
-                _ => {}
             }
         }
 
-        Ok(Document {
-            metadata: Metadata::default(),
-            pages: vec![Page::Flow(FlowPage {
-                size,
-                margins,
-                content,
-            })],
-            styles: StyleSheet::default(),
-        })
+        Ok((
+            Document {
+                metadata: Metadata::default(),
+                pages: vec![Page::Flow(FlowPage {
+                    size,
+                    margins,
+                    content,
+                })],
+                styles: StyleSheet::default(),
+            },
+            warnings,
+        ))
     }
 }
 
@@ -603,7 +621,7 @@ mod tests {
     fn test_parse_empty_docx() {
         let data = build_docx_bytes(vec![]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         // An empty DOCX should produce a document with one FlowPage and no content blocks
         assert_eq!(doc.pages.len(), 1);
         match &doc.pages[0] {
@@ -620,7 +638,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Hello, world!")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         assert_eq!(doc.pages.len(), 1);
         let page = match &doc.pages[0] {
@@ -645,7 +663,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Third paragraph")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -676,7 +694,7 @@ mod tests {
                 .add_run(docx_rs::Run::new().add_text("world!")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -696,7 +714,7 @@ mod tests {
     fn test_parse_empty_paragraph() {
         let data = build_docx_bytes(vec![docx_rs::Paragraph::new()]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -720,7 +738,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Test")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -748,7 +766,7 @@ mod tests {
             1440,
         );
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -781,7 +799,7 @@ mod tests {
             720,
         );
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -819,7 +837,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Plain text")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -842,7 +860,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Test")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -877,7 +895,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Bold text").bold()),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.bold, Some(true));
     }
@@ -888,7 +906,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Italic text").italic()),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.italic, Some(true));
     }
@@ -903,7 +921,7 @@ mod tests {
             ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.underline, Some(true));
     }
@@ -914,7 +932,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Struck text").strike()),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.strikethrough, Some(true));
     }
@@ -926,7 +944,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Sized text").size(24)),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.font_size, Some(12.0));
     }
@@ -938,7 +956,7 @@ mod tests {
                 .add_run(docx_rs::Run::new().add_text("Red text").color("FF0000")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.color, Some(Color::new(255, 0, 0)));
     }
@@ -953,7 +971,7 @@ mod tests {
             ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.font_family, Some("Arial".to_string()));
     }
@@ -974,7 +992,7 @@ mod tests {
             ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let run = first_run(&doc);
         assert_eq!(run.style.bold, Some(true));
         assert_eq!(run.style.italic, Some(true));
@@ -991,7 +1009,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Plain text")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let run = first_run(&doc);
         assert!(run.style.bold.is_none());
         assert!(run.style.italic.is_none());
@@ -1033,7 +1051,7 @@ mod tests {
                 .align(docx_rs::AlignmentType::Center),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Center));
     }
@@ -1046,7 +1064,7 @@ mod tests {
                 .align(docx_rs::AlignmentType::Right),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Right));
     }
@@ -1059,7 +1077,7 @@ mod tests {
                 .align(docx_rs::AlignmentType::Left),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Left));
     }
@@ -1072,7 +1090,7 @@ mod tests {
                 .align(docx_rs::AlignmentType::Both),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Justify));
     }
@@ -1086,7 +1104,7 @@ mod tests {
                 .indent(Some(720), None, None, None),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.indent_left, Some(36.0));
     }
@@ -1100,7 +1118,7 @@ mod tests {
                 .indent(None, None, Some(360), None),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.indent_right, Some(18.0));
     }
@@ -1119,7 +1137,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.indent_first_line, Some(24.0));
     }
@@ -1138,7 +1156,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.indent_left, Some(36.0));
         assert_eq!(para.style.indent_first_line, Some(-18.0));
@@ -1157,7 +1175,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         match para.style.line_spacing {
             Some(LineSpacing::Proportional(factor)) => {
@@ -1183,7 +1201,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         match para.style.line_spacing {
             Some(LineSpacing::Exact(pts)) => {
@@ -1202,7 +1220,7 @@ mod tests {
                 .line_spacing(docx_rs::LineSpacing::new().before(240).after(120)),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.space_before, Some(12.0));
         assert_eq!(para.style.space_after, Some(6.0));
@@ -1217,7 +1235,7 @@ mod tests {
                 .page_break_before(true),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let blocks = all_blocks(&doc);
         // Should have: Paragraph("Before break"), PageBreak, Paragraph("After break")
         assert_eq!(blocks.len(), 3, "Expected 3 blocks, got {}", blocks.len());
@@ -1247,7 +1265,7 @@ mod tests {
                 ),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let para = first_paragraph(&doc);
         assert_eq!(para.style.alignment, Some(Alignment::Center));
         assert_eq!(para.style.indent_left, Some(36.0));
@@ -1274,7 +1292,7 @@ mod tests {
                 .add_run(docx_rs::Run::new().add_text("Plain")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(p) => p,
@@ -1342,7 +1360,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.rows.len(), 2);
@@ -1383,7 +1401,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.column_widths.len(), 2);
@@ -1411,7 +1429,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         let cell = &t.rows[0].cells[0];
@@ -1449,7 +1467,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         // First row: one merged cell with colspan=2
@@ -1495,7 +1513,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.rows.len(), 3);
@@ -1525,7 +1543,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.rows[0].cells[0].background, Some(Color::new(255, 0, 0)));
@@ -1553,7 +1571,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         let cell = &t.rows[0].cells[0];
@@ -1592,7 +1610,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         let cell = &t.rows[0].cells[0];
@@ -1630,7 +1648,7 @@ mod tests {
         };
 
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let blocks = all_blocks(&doc);
 
         // Should have: Paragraph("Before"), Table, Paragraph("After")
@@ -1684,7 +1702,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         // First row: "Big" (colspan=2, rowspan=2) + "C1"
@@ -1708,7 +1726,7 @@ mod tests {
 
         let data = build_docx_with_table(table);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
         let t = first_table(&doc);
 
         assert_eq!(t.rows.len(), 1);
@@ -1783,7 +1801,7 @@ mod tests {
     fn test_docx_image_inline_basic() {
         let data = build_docx_with_image(100, 80);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let images = find_images(&doc);
         assert_eq!(images.len(), 1, "Expected exactly one image block");
@@ -1794,7 +1812,7 @@ mod tests {
     fn test_docx_image_format_is_png() {
         let data = build_docx_with_image(50, 50);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let images = find_images(&doc);
         assert_eq!(
@@ -1810,7 +1828,7 @@ mod tests {
         // EMU to points: 952500/12700=75.0, 762000/12700=60.0
         let data = build_docx_with_image(100, 80);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let images = find_images(&doc);
         let img = images[0];
@@ -1845,7 +1863,7 @@ mod tests {
         let data = cursor.into_inner();
 
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(f) => f,
@@ -1881,7 +1899,7 @@ mod tests {
         let data = cursor.into_inner();
 
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let images = find_images(&doc);
         assert!(
@@ -1895,7 +1913,7 @@ mod tests {
     fn test_docx_image_data_contains_png_header() {
         let data = build_docx_with_image(50, 50);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let images = find_images(&doc);
         let img_data = &images[0].data;
@@ -1913,7 +1931,7 @@ mod tests {
             docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Just text")),
         ]);
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let page = match &doc.pages[0] {
             Page::Flow(f) => f,
@@ -1941,7 +1959,7 @@ mod tests {
         let data = cursor.into_inner();
 
         let parser = DocxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let images = find_images(&doc);
         assert!(!images.is_empty(), "Expected at least one image");

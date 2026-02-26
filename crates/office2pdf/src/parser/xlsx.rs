@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 
-use crate::error::ConvertError;
+use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Block, Document, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet,
     Table, TableCell, TablePage, TableRow, TextStyle,
@@ -77,12 +77,13 @@ fn build_merge_maps(
 }
 
 impl Parser for XlsxParser {
-    fn parse(&self, data: &[u8]) -> Result<Document, ConvertError> {
+    fn parse(&self, data: &[u8]) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let cursor = Cursor::new(data);
         let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse XLSX: {e}")))?;
 
         let mut pages = Vec::new();
+        let warnings = Vec::new();
 
         for sheet in book.get_sheet_collection() {
             let (mut max_col, mut max_row) = sheet.get_highest_column_and_row();
@@ -169,11 +170,14 @@ impl Parser for XlsxParser {
             }));
         }
 
-        Ok(Document {
-            metadata: Metadata::default(),
-            pages,
-            styles: StyleSheet::default(),
-        })
+        Ok((
+            Document {
+                metadata: Metadata::default(),
+                pages,
+                styles: StyleSheet::default(),
+            },
+            warnings,
+        ))
     }
 }
 
@@ -250,7 +254,7 @@ mod tests {
     fn test_parse_single_cell() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Hello")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         assert_eq!(doc.pages.len(), 1);
         let tp = get_table_page(&doc, 0);
@@ -267,7 +271,7 @@ mod tests {
             &[("A1", "Name"), ("B1", "Age"), ("A2", "Alice"), ("B2", "30")],
         );
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows.len(), 2);
@@ -283,7 +287,7 @@ mod tests {
         // A1 filled, B1 empty, A2 empty, B2 filled → 2x2 grid with gaps
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Top-Left"), ("B2", "Bottom-Right")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows.len(), 2);
@@ -302,7 +306,7 @@ mod tests {
     fn test_parse_numbers() {
         let data = build_xlsx_bytes("Numbers", &[("A1", "42"), ("B1", "3.14")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "42");
@@ -313,7 +317,7 @@ mod tests {
     fn test_parse_dates_as_text() {
         let data = build_xlsx_bytes("Dates", &[("A1", "2024-01-15"), ("A2", "December 25")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "2024-01-15");
@@ -326,7 +330,7 @@ mod tests {
     fn test_sheet_name_preserved() {
         let data = build_xlsx_bytes("Financial Report", &[("A1", "Revenue")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.name, "Financial Report");
@@ -341,7 +345,7 @@ mod tests {
             ("Sheet2", &[("A1", "Data2")]),
         ]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         assert_eq!(doc.pages.len(), 2);
         let tp1 = get_table_page(&doc, 0);
@@ -358,7 +362,7 @@ mod tests {
     fn test_column_widths_default() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Hello"), ("B1", "World")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.column_widths.len(), 2);
@@ -378,7 +382,7 @@ mod tests {
     fn test_page_size_defaults() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Test")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let default_size = PageSize::default();
@@ -396,7 +400,7 @@ mod tests {
             &[("A1", "1"), ("C1", "3"), ("B2", "5"), ("C3", "9")],
         );
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows.len(), 3, "Expected 3 rows");
@@ -426,7 +430,7 @@ mod tests {
     fn test_empty_cells_have_no_content() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Only A1"), ("C1", "Only C1")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         // B1 should be empty (no paragraphs)
@@ -440,7 +444,7 @@ mod tests {
     fn test_cell_default_span_values() {
         let data = build_xlsx_bytes("Sheet1", &[("A1", "Test")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         let cell = &tp.table.rows[0].cells[0];
@@ -479,7 +483,7 @@ mod tests {
         // A1:B1 merged → colspan=2 on A1, B1 is skipped
         let data = build_xlsx_with_merges("Sheet1", &[("A1", "Merged")], &["A1:B1"]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(
@@ -497,7 +501,7 @@ mod tests {
         // A1:A2 merged → rowspan=2 on A1, A2 is skipped
         let data = build_xlsx_with_merges("Sheet1", &[("A1", "Tall")], &["A1:A2"]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         // Row 0: one cell with rowspan 2
@@ -518,7 +522,7 @@ mod tests {
             &["A1:B2"],
         );
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         // Row 0: merged cell (A1:B2) + C1
@@ -541,7 +545,7 @@ mod tests {
             &["A1:B1"],
         );
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows[0].cells.len(), 1);
@@ -557,7 +561,7 @@ mod tests {
             &["A1:B1", "A2:A3"],
         );
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         // Row 0: A1:B1 merged (colspan=2)
@@ -579,7 +583,7 @@ mod tests {
         // No merges: cells should have default span values
         let data = build_xlsx_bytes("Sheet1", &[("A1", "X"), ("B1", "Y")]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows[0].cells.len(), 2);
@@ -594,7 +598,7 @@ mod tests {
         // A1:D1 merged → colspan=4
         let data = build_xlsx_with_merges("Sheet1", &[("A1", "Title")], &["A1:D1"]);
         let parser = XlsxParser;
-        let doc = parser.parse(&data).unwrap();
+        let (doc, _warnings) = parser.parse(&data).unwrap();
 
         let tp = get_table_page(&doc, 0);
         assert_eq!(tp.table.rows[0].cells.len(), 1);
