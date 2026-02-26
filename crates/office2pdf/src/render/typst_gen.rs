@@ -2,9 +2,9 @@ use std::fmt::Write;
 
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, ImageData, ImageFormat,
-    LineSpacing, Margins, Page, PageSize, Paragraph, ParagraphStyle, Run, Table, TableCell,
-    TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
+    FixedPage, FlowPage, ImageData, ImageFormat, LineSpacing, Margins, Page, PageSize, Paragraph,
+    ParagraphStyle, Run, Shape, ShapeKind, Table, TableCell, TextStyle,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -58,8 +58,9 @@ pub fn generate_typst(doc: &Document) -> Result<TypstOutput, ConvertError> {
     for page in &doc.pages {
         match page {
             Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx)?,
-            Page::Fixed(_) | Page::Table(_) => {
-                // Not yet implemented — other stories will handle these
+            Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx)?,
+            Page::Table(_) => {
+                // Not yet implemented — other stories will handle this
             }
         }
     }
@@ -84,6 +85,122 @@ fn generate_flow_page(
         generate_block(out, block, ctx)?;
     }
     Ok(())
+}
+
+fn generate_fixed_page(
+    out: &mut String,
+    page: &FixedPage,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    // Slides use zero margins — all positioning is absolute
+    let _ = writeln!(
+        out,
+        "#set page(width: {}pt, height: {}pt, margin: 0pt)",
+        format_f64(page.size.width),
+        format_f64(page.size.height),
+    );
+    out.push('\n');
+
+    for elem in &page.elements {
+        generate_fixed_element(out, elem, ctx)?;
+    }
+    Ok(())
+}
+
+fn generate_fixed_element(
+    out: &mut String,
+    elem: &FixedElement,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    // Use Typst's place() for absolute positioning
+    let _ = write!(
+        out,
+        "#place(top + left, dx: {}pt, dy: {}pt",
+        format_f64(elem.x),
+        format_f64(elem.y),
+    );
+    out.push_str(")[\n");
+
+    match &elem.kind {
+        FixedElementKind::TextBox(blocks) => {
+            let _ = writeln!(
+                out,
+                "#block(width: {}pt, height: {}pt)[",
+                format_f64(elem.width),
+                format_f64(elem.height),
+            );
+            for block in blocks {
+                generate_block(out, block, ctx)?;
+            }
+            out.push_str("]\n");
+        }
+        FixedElementKind::Image(img) => {
+            generate_image(out, img, ctx);
+        }
+        FixedElementKind::Shape(shape) => {
+            generate_shape(out, shape, elem.width, elem.height);
+        }
+    }
+
+    out.push_str("]\n");
+    Ok(())
+}
+
+fn generate_shape(out: &mut String, shape: &Shape, width: f64, height: f64) {
+    match &shape.kind {
+        ShapeKind::Rectangle => {
+            out.push_str("#rect(");
+            write_shape_params(out, shape, width, height);
+            out.push_str(")\n");
+        }
+        ShapeKind::Ellipse => {
+            out.push_str("#ellipse(");
+            write_shape_params(out, shape, width, height);
+            out.push_str(")\n");
+        }
+        ShapeKind::Line { x2, y2 } => {
+            out.push_str("#line(");
+            let _ = write!(
+                out,
+                "start: (0pt, 0pt), end: ({}pt, {}pt)",
+                format_f64(*x2),
+                format_f64(*y2),
+            );
+            if let Some(stroke) = &shape.stroke {
+                let _ = write!(
+                    out,
+                    ", stroke: {}pt + rgb({}, {}, {})",
+                    format_f64(stroke.width),
+                    stroke.color.r,
+                    stroke.color.g,
+                    stroke.color.b,
+                );
+            }
+            out.push_str(")\n");
+        }
+    }
+}
+
+fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) {
+    let _ = write!(
+        out,
+        "width: {}pt, height: {}pt",
+        format_f64(width),
+        format_f64(height),
+    );
+    if let Some(fill) = &shape.fill {
+        let _ = write!(out, ", fill: rgb({}, {}, {})", fill.r, fill.g, fill.b);
+    }
+    if let Some(stroke) = &shape.stroke {
+        let _ = write!(
+            out,
+            ", stroke: {}pt + rgb({}, {}, {})",
+            format_f64(stroke.width),
+            stroke.color.r,
+            stroke.color.g,
+            stroke.color.b,
+        );
+    }
 }
 
 fn write_page_setup(out: &mut String, size: &PageSize, margins: &Margins) {
@@ -1424,5 +1541,338 @@ mod tests {
         let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Just text")])]);
         let output = generate_typst(&doc).unwrap();
         assert!(output.images.is_empty());
+    }
+
+    // ── FixedPage codegen tests (US-010) ────────────────────────────────
+
+    /// Helper to create a FixedPage (slide-like) with given elements.
+    fn make_fixed_page(width: f64, height: f64, elements: Vec<FixedElement>) -> Page {
+        Page::Fixed(FixedPage {
+            size: PageSize { width, height },
+            elements,
+        })
+    }
+
+    /// Helper to create a text box FixedElement.
+    fn make_text_box(x: f64, y: f64, w: f64, h: f64, text: &str) -> FixedElement {
+        FixedElement {
+            x,
+            y,
+            width: w,
+            height: h,
+            kind: FixedElementKind::TextBox(vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: text.to_string(),
+                    style: TextStyle::default(),
+                }],
+            })]),
+        }
+    }
+
+    /// Helper to create a shape FixedElement.
+    fn make_shape_element(
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        kind: ShapeKind,
+        fill: Option<Color>,
+        stroke: Option<BorderSide>,
+    ) -> FixedElement {
+        FixedElement {
+            x,
+            y,
+            width: w,
+            height: h,
+            kind: FixedElementKind::Shape(Shape { kind, fill, stroke }),
+        }
+    }
+
+    /// Helper to create an image FixedElement.
+    fn make_fixed_image(x: f64, y: f64, w: f64, h: f64, format: ImageFormat) -> FixedElement {
+        FixedElement {
+            x,
+            y,
+            width: w,
+            height: h,
+            kind: FixedElementKind::Image(ImageData {
+                data: vec![0x89, 0x50, 0x4E, 0x47], // PNG header stub
+                format,
+                width: Some(w),
+                height: Some(h),
+            }),
+        }
+    }
+
+    #[test]
+    fn test_fixed_page_sets_page_size() {
+        // Standard 16:9 slide: 960pt × 540pt
+        let doc = make_doc(vec![make_fixed_page(960.0, 540.0, vec![])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("width: 960pt"),
+            "Expected slide width in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 540pt"),
+            "Expected slide height in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_zero_margins() {
+        // Slides should have zero margins
+        let doc = make_doc(vec![make_fixed_page(960.0, 540.0, vec![])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("margin: 0pt"),
+            "Expected zero margins for slide in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_text_box() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_text_box(100.0, 200.0, 300.0, 50.0, "Slide Title")],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        // Text box should be placed at absolute position
+        assert!(
+            output.source.contains("Slide Title"),
+            "Expected text content in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("100pt"),
+            "Expected x position in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("200pt"),
+            "Expected y position in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_text_box_with_width_height() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_text_box(50.0, 60.0, 400.0, 100.0, "Sized box")],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("400pt"),
+            "Expected width in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("100pt"),
+            "Expected height in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_rectangle_shape() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                10.0,
+                20.0,
+                200.0,
+                150.0,
+                ShapeKind::Rectangle,
+                Some(Color::new(255, 0, 0)),
+                None,
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("rect"),
+            "Expected rect shape in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("200pt"),
+            "Expected shape width in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("rgb(255, 0, 0)"),
+            "Expected fill color in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_ellipse_shape() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                50.0,
+                50.0,
+                120.0,
+                80.0,
+                ShapeKind::Ellipse,
+                Some(Color::new(0, 128, 255)),
+                None,
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("ellipse"),
+            "Expected ellipse shape in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_line_shape() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                0.0,
+                0.0,
+                300.0,
+                0.0,
+                ShapeKind::Line { x2: 300.0, y2: 0.0 },
+                None,
+                Some(BorderSide {
+                    width: 2.0,
+                    color: Color::black(),
+                }),
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("line"),
+            "Expected line shape in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_shape_with_stroke() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                10.0,
+                10.0,
+                100.0,
+                100.0,
+                ShapeKind::Rectangle,
+                None,
+                Some(BorderSide {
+                    width: 1.5,
+                    color: Color::new(0, 0, 255),
+                }),
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("stroke"),
+            "Expected stroke in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("1.5pt"),
+            "Expected stroke width in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_image_element() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_fixed_image(
+                100.0,
+                150.0,
+                400.0,
+                300.0,
+                ImageFormat::Png,
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#image("),
+            "Expected image call in: {}",
+            output.source
+        );
+        assert_eq!(output.images.len(), 1, "Expected one image asset");
+    }
+
+    #[test]
+    fn test_fixed_page_mixed_elements() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![
+                make_text_box(50.0, 30.0, 800.0, 60.0, "Title"),
+                make_shape_element(
+                    50.0,
+                    100.0,
+                    400.0,
+                    300.0,
+                    ShapeKind::Rectangle,
+                    Some(Color::new(200, 200, 200)),
+                    None,
+                ),
+                make_fixed_image(500.0, 100.0, 350.0, 300.0, ImageFormat::Jpeg),
+                make_text_box(50.0, 420.0, 800.0, 40.0, "Footer text"),
+            ],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(output.source.contains("Title"));
+        assert!(output.source.contains("rect"));
+        assert!(output.source.contains("#image("));
+        assert!(output.source.contains("Footer text"));
+        assert_eq!(output.images.len(), 1);
+    }
+
+    #[test]
+    fn test_fixed_page_multiple_text_boxes() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![
+                make_text_box(100.0, 50.0, 300.0, 40.0, "First"),
+                make_text_box(100.0, 120.0, 300.0, 40.0, "Second"),
+                make_text_box(100.0, 190.0, 300.0, 40.0, "Third"),
+            ],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(output.source.contains("First"));
+        assert!(output.source.contains("Second"));
+        assert!(output.source.contains("Third"));
+    }
+
+    #[test]
+    fn test_fixed_page_uses_place_for_positioning() {
+        // Verify Typst uses `place()` for absolute positioning
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_text_box(100.0, 200.0, 300.0, 50.0, "Positioned")],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("place("),
+            "Expected place() for absolute positioning in: {}",
+            output.source
+        );
     }
 }

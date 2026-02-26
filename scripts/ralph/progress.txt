@@ -13,6 +13,7 @@ Started: 2026-02-26
 - **docx-rs private fields**: `PageSize` (w, h), `Bold` (val), `Italic` (val), `Sz` (val), `Color` (val), `Underline` (val), `RunFonts` (ascii, hi_ansi, etc.) all have private fields. Use `serde_json::to_value()` to extract values since they implement Serialize. **IMPORTANT**: These types serialize as their *direct inner value* (e.g. `Bold` → `true`, `Sz` → `24`, `Color` → `"FF0000"`), NOT as `{"val": ...}`. Use `json.as_bool()`, `json.as_f64()`, `json.as_str()` directly. `RunFonts` serializes as an object with `ascii`, `hi_ansi`, etc. fields. `Strike` has `pub val: bool` — accessible directly without serde.
 - **DOCX units**: Page size and margins in OOXML are in twips (1 twip = 1/20 pt). Convert: `value_twips / 20.0 = points`. PageMargin fields are public i32. docx-rs default page size: 11906 x 16838 twips (A4).
 - **Test DOCX creation**: Use `docx_rs::Docx::new().add_paragraph(...)`, then `.build().pack(&mut Cursor::new(Vec::new()))` to get bytes. Use `Cursor::into_inner()` to extract.
+- **Typst FixedPage codegen**: Slides use `#set page(width: Wpt, height: Hpt, margin: 0pt)`. Elements use `#place(top + left, dx: Xpt, dy: Ypt)[...]` for absolute positioning. TextBox wraps content in `#block(width: Wpt, height: Hpt)[...]`. Shapes: `#rect(width, height, fill?, stroke?)`, `#ellipse(...)`, `#line(start, end, stroke?)`. Images use existing `generate_image()` inside place.
 - **docx-rs image handling**: Images in document tree: `RunChild::Drawing(Box<Drawing>)` → `Drawing.data = Some(DrawingData::Pic(pic))`. Image binary data: stored in `Docx.images` as `Vec<(id, path, Image, Png)>` — match `pic.id` to look up data. `pic.image` is empty when reading (only used during writing). Dimensions: `pic.size = (w_emu, h_emu)` in EMU. Convert: EMU ÷ 12700 = points. All images converted to PNG by docx-rs.
 - **Test images for docx-rs**: Use `make_test_bmp()` to create a minimal 1×1 BMP, then `Pic::new(&bmp_data)` which processes through the `image` crate. Do NOT use `Pic::new_with_dimensions()` with raw PNG bytes for round-trip tests — the `image` crate may fail to decode minimal hand-crafted PNGs during `read_docx()`.
 - **Image codegen**: `generate_typst()` returns `TypstOutput { source: String, images: Vec<ImageAsset> }`. Images get virtual paths `img-N.ext` via `GenCtx`. `compile_to_pdf(source, &images)` passes images to `MinimalWorld` which serves them via `World::file()`. Image markup: `#image("img-0.png", width: Wpt, height: Hpt)`.
@@ -155,4 +156,19 @@ Started: 2026-02-26
   - docx-rs converts ALL images to PNG internally (via `image` crate) — so `ImageFormat::Png` is always correct for parsed DOCX images
   - Inline images appear as `RunChild::Drawing(Box<Drawing>)` → `Drawing.data = Some(DrawingData::Pic(pic))`
   - Images are emitted as `Block::Image` before the paragraph in which they appear (since our IR doesn't support inline images within paragraphs)
+---
+
+## 2026-02-26 - US-010
+- **What was implemented**: Typst codegen FixedPage support for slides — absolute positioning of text boxes, shapes (rectangle, ellipse, line), and images using Typst's `#place()` function.
+- **Files changed**:
+  - `crates/office2pdf/src/render/typst_gen.rs` — added `generate_fixed_page()`, `generate_fixed_element()`, `generate_shape()`, `write_shape_params()` functions; wired `Page::Fixed` in `generate_typst()`; added 12 new tests
+- **Dependencies added**: None
+- **Learnings for future iterations:**
+  - Typst `#place(top + left, dx: Xpt, dy: Ypt)[content]` is the way to do absolute positioning on a page
+  - Slides should use `margin: 0pt` since all elements are absolutely positioned
+  - TextBox elements need a `#block(width, height)[...]` wrapper to constrain text flow
+  - Shapes map directly to Typst primitives: `#rect()`, `#ellipse()`, `#line()`
+  - Shape fill: `fill: rgb(r, g, b)`, stroke: `stroke: Wpt + rgb(r, g, b)`
+  - Line uses `start: (0pt, 0pt), end: (x2pt, y2pt)` — coordinates relative to placement position
+  - `write!()` with trailing `\n` triggers clippy `write-with-newline` — always use `writeln!()` instead
 ---
