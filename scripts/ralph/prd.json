@@ -18,8 +18,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: href field on Run, HyperlinkMap from docx.hyperlinks, ParagraphChild::Hyperlink handling, Typst #link() codegen. 7 tests."
     },
     {
       "id": "US-031",

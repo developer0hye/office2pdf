@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- **DOCX hyperlinks**: `ParagraphChild::Hyperlink(Hyperlink)` wraps child runs. `Hyperlink.link`: `HyperlinkData::External { rid, path }` (path empty on read-back) or `HyperlinkData::Anchor { anchor }` (internal). Reader stores URLs in `docx.hyperlinks: Vec<(rid, url, type)>` — use this to build `HyperlinkMap`. `HyperlinkMap` threaded through parser pipeline (parse → convert_paragraph_element → convert_paragraph_blocks → convert_table → extract_raw_rows → extract_cell_content). `resolve_hyperlink_url()` maps rid → URL. Run IR has `href: Option<String>`. Typst codegen wraps with `#link("url")[content]` in `generate_run()`. Test: `Hyperlink::new("url", HyperlinkType::External).add_run(Run::new().add_text("text"))`, `Paragraph::new().add_hyperlink(link)`.
 - **ConvertOptions threading**: `Parser::parse(&self, data: &[u8], options: &ConvertOptions)` — all parsers accept options. XLSX uses `options.sheet_names` to filter sheets. PPTX uses `options.slide_range` to filter slides. DOCX ignores options. `convert_bytes()` passes options to parser. CLI builds ConvertOptions from `--sheets` (comma-separated) and `--slides` (range "1-5" or single "3") flags.
 - **XLSX cell formatting**: `cell.get_style()` → `&Style`. Font: `style.get_font()` → `Option<&Font>` with `get_name()`, `get_size()`, `get_bold()`, `get_italic()`, `get_underline()`, `get_strikethrough()`, `get_color().get_argb()`. Background: `style.get_background_color()` → `Option<&Color>` with `get_argb()` (ARGB 8-char hex, skip first 2 for alpha). Borders: `style.get_borders()` → `Option<&Borders>` with `get_top/bottom/left/right()` → `&Border` with `get_border_style()` (str) and `get_color().get_argb()`. Border widths: hair=0.25pt, thin=0.5pt, medium=1.0pt, thick=2.0pt. Row height: `sheet.get_row_dimension(&row_idx)` → `Option<&Row>` with `get_height()` and `get_custom_height()`. Test setup: `cell.get_style_mut().get_font_mut().set_bold(true)`, `style.set_background_color("FFFFFF00")`, `style.get_borders_mut().get_bottom_mut().set_border_style("medium")`, `sheet.get_row_dimension_mut(&1).set_height(30.0)`. Defaults to skip: font name "Calibri", size 11.0, color "FF000000".
 - **XLSX number formats**: Use `cell.get_formatted_value()` instead of `cell.get_value().to_string()` to get pre-formatted cell text. umya-spreadsheet handles all formatting internally: currency ($#,##0.00), percentage (0%), dates (yyyy-mm-dd), thousands separators (#,##0), custom format strings. Set format: `cell.get_style_mut().get_number_format_mut().set_format_code("format")` or `.set_number_format_id(id)`. Built-in format IDs: 0=General, 1=0, 2=0.00, 3=#,##0, 4=#,##0.00, 9=0%, 10=0.00%, 14=m/d/yyyy. For dates: use `set_value_number(serial)` where serial is Excel date serial (days since 1900-01-01). "General" format passes through simple numbers unchanged. Constants: `NumberingFormat::FORMAT_CURRENCY_USD_SIMPLE`, `FORMAT_PERCENTAGE`, `FORMAT_DATE_YYYYMMDD`, etc.
@@ -55,4 +56,25 @@
 
 # Ralph Progress Log - Phase 3: P2 Features - Hyperlinks, Footnotes, TOC, PDF/A, Batch
 Started: 2026년  2월 27일 금요일 08시 36분 50초 KST
+---
+
+## 2026-02-27 - US-030: DOCX parser - hyperlinks
+- What was implemented:
+  - Added `href: Option<String>` field to IR `Run` struct for hyperlink URLs
+  - Built `HyperlinkMap` (rid → URL) from `docx.hyperlinks` reader field
+  - Added `resolve_hyperlink_url()` to resolve `HyperlinkData::External { rid }` → URL
+  - Handled `ParagraphChild::Hyperlink` in `convert_paragraph_blocks()`, extracting child runs with href
+  - Threaded `HyperlinkMap` through entire call chain: parse → convert_paragraph_element → convert_paragraph_blocks → convert_table → extract_raw_rows → extract_cell_content
+  - Generated Typst `#link("url")[content]` markup in `generate_run()` as outermost wrapper
+- Files changed:
+  - `crates/office2pdf/src/ir/elements.rs` — added `href` field to `Run`
+  - `crates/office2pdf/src/parser/docx.rs` — hyperlink parsing + HyperlinkMap + resolve_hyperlink_url
+  - `crates/office2pdf/src/render/typst_gen.rs` — `#link()` codegen in generate_run
+  - `crates/office2pdf/src/parser/pptx.rs`, `xlsx.rs`, `lib.rs` — added `href: None` to existing Run literals
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - docx-rs reader stores hyperlink URLs in `docx.hyperlinks` (Vec<(rid, url, type)>), NOT in `docx.document_rels.hyperlinks` (which stays empty during reading)
+  - `HyperlinkData::External { rid, path }`: `path` is empty on read-back; must use the hyperlinks map
+  - docx-rs `Hyperlink::new("url", External)` builder + `.add_run()` + `Paragraph::add_hyperlink()` creates valid round-trip test docs
+  - Adding a new field to a widely-used struct (Run) requires updating all construction sites; Python script approach works but needs careful validation
 ---
