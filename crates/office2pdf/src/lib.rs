@@ -376,4 +376,183 @@ mod tests {
         assert!(!pdf.is_empty());
         assert!(pdf.starts_with(b"%PDF"));
     }
+
+    // --- End-to-end integration tests: raw document bytes → PDF ---
+
+    /// Build a minimal DOCX as bytes using docx-rs builder.
+    fn build_test_docx() -> Vec<u8> {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new()
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Hello from DOCX")),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Second paragraph").bold()),
+            );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Build a minimal XLSX as bytes using umya-spreadsheet.
+    fn build_test_xlsx() -> Vec<u8> {
+        use std::io::Cursor;
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.get_cell_mut("A1").set_value("Name");
+            sheet.get_cell_mut("B1").set_value("Value");
+            sheet.get_cell_mut("A2").set_value("Item 1");
+            sheet.get_cell_mut("B2").set_value("100");
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Build a minimal PPTX as bytes using zip + raw XML.
+    fn build_test_pptx() -> Vec<u8> {
+        use std::io::{Cursor, Write};
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let opts = zip::write::FileOptions::default();
+
+        // [Content_Types].xml
+        zip.start_file("[Content_Types].xml", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>"#,
+        ).unwrap();
+
+        // _rels/.rels
+        zip.start_file("_rels/.rels", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>"#,
+        ).unwrap();
+
+        // ppt/presentation.xml
+        zip.start_file("ppt/presentation.xml", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldSz cx="9144000" cy="6858000"/><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst></p:presentation>"#,
+        ).unwrap();
+
+        // ppt/_rels/presentation.xml.rels
+        zip.start_file("ppt/_rels/presentation.xml.rels", opts)
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>"#,
+        ).unwrap();
+
+        // ppt/slides/slide1.xml — one text box with "Hello from PPTX"
+        zip.start_file("ppt/slides/slide1.xml", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="2" name="TextBox 1"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="457200" y="274638"/><a:ext cx="8229600" cy="1143000"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Hello from PPTX</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>"#,
+        ).unwrap();
+
+        // ppt/slides/_rels/slide1.xml.rels (empty rels)
+        zip.start_file("ppt/slides/_rels/slide1.xml.rels", opts)
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>"#,
+        ).unwrap();
+
+        zip.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn test_e2e_docx_to_pdf() {
+        let docx_bytes = build_test_docx();
+        let pdf = convert_bytes(&docx_bytes, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(!pdf.is_empty(), "DOCX→PDF should produce non-empty output");
+        assert!(pdf.starts_with(b"%PDF"), "Output should be valid PDF");
+    }
+
+    #[test]
+    fn test_e2e_xlsx_to_pdf() {
+        let xlsx_bytes = build_test_xlsx();
+        let pdf = convert_bytes(&xlsx_bytes, Format::Xlsx, &ConvertOptions::default()).unwrap();
+        assert!(!pdf.is_empty(), "XLSX→PDF should produce non-empty output");
+        assert!(pdf.starts_with(b"%PDF"), "Output should be valid PDF");
+    }
+
+    #[test]
+    fn test_e2e_pptx_to_pdf() {
+        let pptx_bytes = build_test_pptx();
+        let pdf = convert_bytes(&pptx_bytes, Format::Pptx, &ConvertOptions::default()).unwrap();
+        assert!(!pdf.is_empty(), "PPTX→PDF should produce non-empty output");
+        assert!(pdf.starts_with(b"%PDF"), "Output should be valid PDF");
+    }
+
+    #[test]
+    fn test_e2e_docx_with_table_to_pdf() {
+        use std::io::Cursor;
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new().add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Cell A")),
+            ),
+            docx_rs::TableCell::new().add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Cell B")),
+            ),
+        ])]);
+        let docx = docx_rs::Docx::new()
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Table below:")),
+            )
+            .add_table(table);
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let pdf = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_e2e_convert_with_options_from_temp_file() {
+        let docx_bytes = build_test_docx();
+        let dir = std::env::temp_dir();
+        let input = dir.join("office2pdf_test_input.docx");
+        let output = dir.join("office2pdf_test_output.pdf");
+        std::fs::write(&input, &docx_bytes).unwrap();
+
+        let pdf = convert(&input).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+
+        // Also test convert_with_options with the file path
+        let pdf2 = convert_with_options(&input, &ConvertOptions::default()).unwrap();
+        assert!(!pdf2.is_empty());
+        assert!(pdf2.starts_with(b"%PDF"));
+
+        // Write PDF to output and verify file exists
+        std::fs::write(&output, &pdf).unwrap();
+        assert!(output.exists());
+        let written = std::fs::read(&output).unwrap();
+        assert!(written.starts_with(b"%PDF"));
+
+        // Cleanup
+        let _ = std::fs::remove_file(&input);
+        let _ = std::fs::remove_file(&output);
+    }
+
+    #[test]
+    fn test_e2e_unsupported_format_error_message() {
+        let result = convert("document.odt");
+        let err = result.unwrap_err();
+        match err {
+            ConvertError::UnsupportedFormat(ref ext) => {
+                assert_eq!(ext, "odt", "Error should mention the unsupported extension");
+            }
+            _ => panic!("Expected UnsupportedFormat error, got {err:?}"),
+        }
+    }
+
+    #[test]
+    fn test_e2e_missing_file_error() {
+        let result = convert("nonexistent_document.docx");
+        assert!(
+            matches!(result.unwrap_err(), ConvertError::Io(_)),
+            "Missing file should produce IO error"
+        );
+    }
 }
