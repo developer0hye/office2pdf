@@ -2,8 +2,8 @@ use std::fmt::Write;
 
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, Color, Document, FlowPage, LineSpacing, Margins, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, LineSpacing, Margins,
+    Page, PageSize, Paragraph, ParagraphStyle, Run, Table, TableCell, TextStyle,
 };
 
 /// Generate Typst markup from a Document IR.
@@ -53,10 +53,134 @@ fn generate_block(out: &mut String, block: &Block) -> Result<(), ConvertError> {
             out.push_str("#pagebreak()\n");
             Ok(())
         }
-        Block::Table(_) | Block::Image(_) => {
+        Block::Table(table) => generate_table(out, table),
+        Block::Image(_) => {
             // Not yet implemented — other stories will handle these
             Ok(())
         }
+    }
+}
+
+fn generate_table(out: &mut String, table: &Table) -> Result<(), ConvertError> {
+    out.push_str("#table(\n");
+
+    // Column widths
+    if !table.column_widths.is_empty() {
+        out.push_str("  columns: (");
+        for (i, w) in table.column_widths.iter().enumerate() {
+            if i > 0 {
+                out.push_str(", ");
+            }
+            let _ = write!(out, "{}pt", format_f64(*w));
+        }
+        out.push_str("),\n");
+    }
+
+    // Rows and cells
+    for row in &table.rows {
+        for cell in &row.cells {
+            generate_table_cell(out, cell)?;
+        }
+    }
+
+    out.push_str(")\n");
+    Ok(())
+}
+
+fn generate_table_cell(out: &mut String, cell: &TableCell) -> Result<(), ConvertError> {
+    let needs_cell_fn = cell.col_span > 1
+        || cell.row_span > 1
+        || cell.border.is_some()
+        || cell.background.is_some();
+
+    if needs_cell_fn {
+        out.push_str("  table.cell(");
+        write_cell_params(out, cell);
+        out.push_str(")[");
+    } else {
+        out.push_str("  [");
+    }
+
+    // Generate cell content
+    generate_cell_content(out, &cell.content)?;
+
+    out.push_str("],\n");
+    Ok(())
+}
+
+fn write_cell_params(out: &mut String, cell: &TableCell) {
+    let mut first = true;
+
+    if cell.col_span > 1 {
+        write_param(out, &mut first, &format!("colspan: {}", cell.col_span));
+    }
+    if cell.row_span > 1 {
+        write_param(out, &mut first, &format!("rowspan: {}", cell.row_span));
+    }
+    if let Some(ref bg) = cell.background {
+        write_param(out, &mut first, &format_color(bg));
+    }
+    if let Some(ref border) = cell.border {
+        let stroke = format_cell_stroke(border);
+        if !stroke.is_empty() {
+            write_param(out, &mut first, &stroke);
+        }
+    }
+}
+
+fn format_cell_stroke(border: &CellBorder) -> String {
+    let mut parts = Vec::new();
+
+    if let Some(ref side) = border.top {
+        parts.push(format!("top: {}", format_border_side(side)));
+    }
+    if let Some(ref side) = border.bottom {
+        parts.push(format!("bottom: {}", format_border_side(side)));
+    }
+    if let Some(ref side) = border.left {
+        parts.push(format!("left: {}", format_border_side(side)));
+    }
+    if let Some(ref side) = border.right {
+        parts.push(format!("right: {}", format_border_side(side)));
+    }
+
+    if parts.is_empty() {
+        String::new()
+    } else {
+        format!("stroke: ({})", parts.join(", "))
+    }
+}
+
+fn format_border_side(side: &BorderSide) -> String {
+    format!(
+        "{}pt + rgb({}, {}, {})",
+        format_f64(side.width),
+        side.color.r,
+        side.color.g,
+        side.color.b
+    )
+}
+
+/// Generate content inside a table cell (list of blocks rendered inline).
+fn generate_cell_content(out: &mut String, blocks: &[Block]) -> Result<(), ConvertError> {
+    for (i, block) in blocks.iter().enumerate() {
+        if i > 0 {
+            // Paragraph break between blocks
+            out.push('\n');
+        }
+        match block {
+            Block::Paragraph(para) => generate_cell_paragraph(out, para),
+            Block::Table(table) => generate_table(out, table)?,
+            Block::PageBreak | Block::Image(_) => {}
+        }
+    }
+    Ok(())
+}
+
+/// Generate paragraph content for inside a table cell (runs only, no block wrapper).
+fn generate_cell_paragraph(out: &mut String, para: &Paragraph) {
+    for run in &para.runs {
+        generate_run(out, run);
     }
 }
 
@@ -582,6 +706,448 @@ mod tests {
         assert!(
             result.contains("\\#") || result.contains("Price"),
             "Expected escaped or present text in: {result}"
+        );
+    }
+
+    // ── Table codegen tests ───────────────────────────────────────────
+
+    use crate::ir::{BorderSide, CellBorder, Table, TableCell, TableRow};
+
+    /// Helper to create a table cell with plain text.
+    fn make_text_cell(text: &str) -> TableCell {
+        TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: text.to_string(),
+                    style: TextStyle::default(),
+                }],
+            })],
+            ..TableCell::default()
+        }
+    }
+
+    #[test]
+    fn test_table_simple_2x2() {
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![make_text_cell("A1"), make_text_cell("B1")],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![make_text_cell("A2"), make_text_cell("B2")],
+                    height: None,
+                },
+            ],
+            column_widths: vec![100.0, 200.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(result.contains("#table("), "Expected #table( in: {result}");
+        assert!(
+            result.contains("columns: (100pt, 200pt)"),
+            "Expected column widths in: {result}"
+        );
+        assert!(result.contains("A1"), "Expected A1 in: {result}");
+        assert!(result.contains("B1"), "Expected B1 in: {result}");
+        assert!(result.contains("A2"), "Expected A2 in: {result}");
+        assert!(result.contains("B2"), "Expected B2 in: {result}");
+    }
+
+    #[test]
+    fn test_table_with_colspan() {
+        let merged_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Merged".to_string(),
+                    style: TextStyle::default(),
+                }],
+            })],
+            col_span: 2,
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![merged_cell],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![make_text_cell("A2"), make_text_cell("B2")],
+                    height: None,
+                },
+            ],
+            column_widths: vec![100.0, 200.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(
+            result.contains("colspan: 2"),
+            "Expected colspan: 2 in: {result}"
+        );
+        assert!(result.contains("Merged"), "Expected Merged in: {result}");
+    }
+
+    #[test]
+    fn test_table_with_rowspan() {
+        let tall_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Tall".to_string(),
+                    style: TextStyle::default(),
+                }],
+            })],
+            row_span: 2,
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![tall_cell, make_text_cell("B1")],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![make_text_cell("B2")],
+                    height: None,
+                },
+            ],
+            column_widths: vec![100.0, 200.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(
+            result.contains("rowspan: 2"),
+            "Expected rowspan: 2 in: {result}"
+        );
+        assert!(result.contains("Tall"), "Expected Tall in: {result}");
+    }
+
+    #[test]
+    fn test_table_with_colspan_and_rowspan() {
+        let big_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Big".to_string(),
+                    style: TextStyle::default(),
+                }],
+            })],
+            col_span: 2,
+            row_span: 2,
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![big_cell, make_text_cell("C1")],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![make_text_cell("C2")],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![
+                        make_text_cell("A3"),
+                        make_text_cell("B3"),
+                        make_text_cell("C3"),
+                    ],
+                    height: None,
+                },
+            ],
+            column_widths: vec![100.0, 100.0, 100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(
+            result.contains("colspan: 2"),
+            "Expected colspan: 2 in: {result}"
+        );
+        assert!(
+            result.contains("rowspan: 2"),
+            "Expected rowspan: 2 in: {result}"
+        );
+        assert!(result.contains("Big"), "Expected Big in: {result}");
+    }
+
+    #[test]
+    fn test_table_with_background_color() {
+        let colored_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Colored".to_string(),
+                    style: TextStyle::default(),
+                }],
+            })],
+            background: Some(Color::new(200, 200, 200)),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![colored_cell],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(
+            result.contains("fill: rgb(200, 200, 200)"),
+            "Expected fill color in: {result}"
+        );
+        assert!(result.contains("Colored"), "Expected Colored in: {result}");
+    }
+
+    #[test]
+    fn test_table_with_cell_borders() {
+        let bordered_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Bordered".to_string(),
+                    style: TextStyle::default(),
+                }],
+            })],
+            border: Some(CellBorder {
+                top: Some(BorderSide {
+                    width: 1.0,
+                    color: Color::black(),
+                }),
+                bottom: Some(BorderSide {
+                    width: 2.0,
+                    color: Color::new(255, 0, 0),
+                }),
+                left: None,
+                right: None,
+            }),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![bordered_cell],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(result.contains("stroke:"), "Expected stroke in: {result}");
+        assert!(
+            result.contains("Bordered"),
+            "Expected Bordered in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_with_styled_text_in_cell() {
+        let styled_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Bold cell".to_string(),
+                    style: TextStyle {
+                        bold: Some(true),
+                        font_size: Some(14.0),
+                        ..TextStyle::default()
+                    },
+                }],
+            })],
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![styled_cell],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(
+            result.contains("weight: \"bold\""),
+            "Expected bold in table cell: {result}"
+        );
+        assert!(
+            result.contains("size: 14pt"),
+            "Expected font size in table cell: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_empty_cells() {
+        let empty_cell = TableCell::default();
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![empty_cell, make_text_cell("Has text")],
+                height: None,
+            }],
+            column_widths: vec![100.0, 100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(result.contains("#table("), "Expected #table( in: {result}");
+        assert!(
+            result.contains("Has text"),
+            "Expected Has text in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_no_column_widths() {
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![make_text_cell("A"), make_text_cell("B")],
+                height: None,
+            }],
+            column_widths: vec![],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(result.contains("#table("), "Expected #table( in: {result}");
+        // Without explicit widths, should still produce valid table
+        assert!(result.contains("A"), "Expected A in: {result}");
+        assert!(result.contains("B"), "Expected B in: {result}");
+    }
+
+    #[test]
+    fn test_table_all_borders() {
+        let cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "All borders".to_string(),
+                    style: TextStyle::default(),
+                }],
+            })],
+            border: Some(CellBorder {
+                top: Some(BorderSide {
+                    width: 1.0,
+                    color: Color::black(),
+                }),
+                bottom: Some(BorderSide {
+                    width: 1.0,
+                    color: Color::black(),
+                }),
+                left: Some(BorderSide {
+                    width: 1.0,
+                    color: Color::black(),
+                }),
+                right: Some(BorderSide {
+                    width: 1.0,
+                    color: Color::black(),
+                }),
+            }),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![cell],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(result.contains("top:"), "Expected top border in: {result}");
+        assert!(
+            result.contains("bottom:"),
+            "Expected bottom border in: {result}"
+        );
+        assert!(
+            result.contains("left:"),
+            "Expected left border in: {result}"
+        );
+        assert!(
+            result.contains("right:"),
+            "Expected right border in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_cell_with_multiple_paragraphs() {
+        let multi_para_cell = TableCell {
+            content: vec![
+                Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "First para".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                }),
+                Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Second para".to_string(),
+                        style: TextStyle::default(),
+                    }],
+                }),
+            ],
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![multi_para_cell],
+                height: None,
+            }],
+            column_widths: vec![200.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(
+            result.contains("First para"),
+            "Expected First para in: {result}"
+        );
+        assert!(
+            result.contains("Second para"),
+            "Expected Second para in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_special_chars_in_cells() {
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![make_text_cell("Price: $100 #items")],
+                height: None,
+            }],
+            column_widths: vec![200.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap();
+        // Special chars should be escaped
+        assert!(
+            result.contains("\\$") && result.contains("\\#"),
+            "Expected escaped special chars in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_in_flow_page_with_paragraphs() {
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![make_text_cell("Cell")],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![
+            make_paragraph("Before table"),
+            Block::Table(table),
+            make_paragraph("After table"),
+        ])]);
+        let result = generate_typst(&doc).unwrap();
+        assert!(
+            result.contains("Before table"),
+            "Expected Before table in: {result}"
+        );
+        assert!(result.contains("#table("), "Expected #table( in: {result}");
+        assert!(
+            result.contains("After table"),
+            "Expected After table in: {result}"
         );
     }
 
