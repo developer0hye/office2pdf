@@ -1,12 +1,32 @@
+use std::collections::HashMap;
+
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, LineSpacing, Margins,
-    Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell,
-    TableRow, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, ImageData, ImageFormat,
+    LineSpacing, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet,
+    Table, TableCell, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 
 pub struct DocxParser;
+
+/// Map from relationship ID → PNG image bytes.
+type ImageMap = HashMap<String, Vec<u8>>;
+
+/// Build a lookup map from the DOCX's embedded images.
+/// docx-rs converts all images to PNG; we use the PNG bytes.
+fn build_image_map(docx: &docx_rs::Docx) -> ImageMap {
+    docx.images
+        .iter()
+        .map(|(id, _path, _image, png)| (id.clone(), png.0.clone()))
+        .collect()
+}
+
+/// Convert EMU (English Metric Units) to points.
+/// 1 inch = 914400 EMU, 1 inch = 72 points, so 1 pt = 12700 EMU.
+fn emu_to_pt(emu: u32) -> f64 {
+    emu as f64 / 12700.0
+}
 
 impl Parser for DocxParser {
     fn parse(&self, data: &[u8]) -> Result<Document, ConvertError> {
@@ -14,15 +34,16 @@ impl Parser for DocxParser {
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;
 
         let (size, margins) = extract_page_setup(&docx.document.section_property);
+        let images = build_image_map(&docx);
 
         let mut content: Vec<Block> = Vec::new();
         for child in &docx.document.children {
             match child {
                 docx_rs::DocumentChild::Paragraph(para) => {
-                    convert_paragraph_blocks(para, &mut content);
+                    convert_paragraph_blocks(para, &mut content, &images);
                 }
                 docx_rs::DocumentChild::Table(table) => {
-                    content.push(Block::Table(convert_table(table)));
+                    content.push(Block::Table(convert_table(table, &images)));
                 }
                 _ => {}
             }
@@ -75,37 +96,78 @@ fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
     }
 }
 
-/// Convert a docx-rs Paragraph to IR blocks, handling page breaks.
+/// Convert a docx-rs Paragraph to IR blocks, handling page breaks and inline images.
 /// If the paragraph has `page_break_before`, a `Block::PageBreak` is emitted first.
-fn convert_paragraph_blocks(para: &docx_rs::Paragraph, out: &mut Vec<Block>) {
+/// Inline images within runs are extracted as separate `Block::Image` elements.
+fn convert_paragraph_blocks(para: &docx_rs::Paragraph, out: &mut Vec<Block>, images: &ImageMap) {
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
         out.push(Block::PageBreak);
     }
 
-    let runs: Vec<Run> = para
-        .children
-        .iter()
-        .filter_map(|child| match child {
-            docx_rs::ParagraphChild::Run(run) => {
-                let text = extract_run_text(run);
-                if text.is_empty() {
-                    None
-                } else {
-                    Some(Run {
-                        text,
-                        style: extract_run_style(&run.run_property),
-                    })
+    // Collect text runs and detect inline images
+    let mut runs: Vec<Run> = Vec::new();
+    let mut inline_images: Vec<Block> = Vec::new();
+
+    for child in &para.children {
+        if let docx_rs::ParagraphChild::Run(run) = child {
+            // Check for inline images in this run
+            for run_child in &run.children {
+                if let docx_rs::RunChild::Drawing(drawing) = run_child {
+                    if let Some(img_block) = extract_drawing_image(drawing, images) {
+                        inline_images.push(img_block);
+                    }
                 }
             }
-            _ => None,
-        })
-        .collect();
+
+            // Extract text from the run
+            let text = extract_run_text(run);
+            if !text.is_empty() {
+                runs.push(Run {
+                    text,
+                    style: extract_run_style(&run.run_property),
+                });
+            }
+        }
+    }
+
+    // Emit image blocks before the paragraph (inline images are block-level in our IR)
+    out.extend(inline_images);
 
     out.push(Block::Paragraph(Paragraph {
         style: extract_paragraph_style(&para.property),
         runs,
     }));
+}
+
+/// Extract an image from a Drawing element if it contains a Pic with matching image data.
+fn extract_drawing_image(drawing: &docx_rs::Drawing, images: &ImageMap) -> Option<Block> {
+    let pic = match &drawing.data {
+        Some(docx_rs::DrawingData::Pic(pic)) => pic,
+        _ => return None,
+    };
+
+    // Look up image data by relationship ID
+    let data = images.get(&pic.id)?;
+
+    let (w_emu, h_emu) = pic.size;
+    let width = if w_emu > 0 {
+        Some(emu_to_pt(w_emu))
+    } else {
+        None
+    };
+    let height = if h_emu > 0 {
+        Some(emu_to_pt(h_emu))
+    } else {
+        None
+    };
+
+    Some(Block::Image(ImageData {
+        data: data.clone(),
+        format: ImageFormat::Png, // docx-rs converts all images to PNG
+        width,
+        height,
+    }))
 }
 
 /// Extract paragraph-level formatting from docx-rs ParagraphProperty.
@@ -198,11 +260,11 @@ fn extract_line_spacing(
 /// - Vertical merging via vMerge restart/continue (rowspan)
 /// - Cell background color via shading
 /// - Cell borders
-fn convert_table(table: &docx_rs::Table) -> Table {
+fn convert_table(table: &docx_rs::Table, images: &ImageMap) -> Table {
     let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
-    let raw_rows = extract_raw_rows(table);
+    let raw_rows = extract_raw_rows(table, images);
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
@@ -224,7 +286,7 @@ struct RawCell {
 }
 
 /// Extract raw rows from a docx-rs Table, tracking column indices and vmerge state.
-fn extract_raw_rows(table: &docx_rs::Table) -> Vec<Vec<RawCell>> {
+fn extract_raw_rows(table: &docx_rs::Table, images: &ImageMap) -> Vec<Vec<RawCell>> {
     let mut raw_rows = Vec::new();
 
     for table_child in &table.rows {
@@ -248,7 +310,7 @@ fn extract_raw_rows(table: &docx_rs::Table) -> Vec<Vec<RawCell>> {
                 .and_then(|v| v.as_str())
                 .map(String::from);
 
-            let content = extract_cell_content(cell);
+            let content = extract_cell_content(cell, images);
             let border = prop_json
                 .as_ref()
                 .and_then(|j| j.get("borders"))
@@ -340,15 +402,15 @@ fn count_vmerge_span(raw_rows: &[Vec<RawCell>], start_row: usize, col_index: usi
 }
 
 /// Extract cell content (paragraphs) from a docx-rs TableCell.
-fn extract_cell_content(cell: &docx_rs::TableCell) -> Vec<Block> {
+fn extract_cell_content(cell: &docx_rs::TableCell, images: &ImageMap) -> Vec<Block> {
     let mut blocks = Vec::new();
     for content in &cell.children {
         match content {
             docx_rs::TableCellContent::Paragraph(para) => {
-                convert_paragraph_blocks(para, &mut blocks);
+                convert_paragraph_blocks(para, &mut blocks, images);
             }
             docx_rs::TableCellContent::Table(nested_table) => {
-                blocks.push(Block::Table(convert_table(nested_table)));
+                blocks.push(Block::Table(convert_table(nested_table, images)));
             }
             _ => {}
         }
@@ -1656,5 +1718,245 @@ mod tests {
             assert_eq!(cell.col_span, 1);
             assert_eq!(cell.row_span, 1);
         }
+    }
+
+    // ── Image extraction tests ──────────────────────────────────────────
+
+    /// Build a minimal valid 1×1 red pixel BMP image.
+    /// BMP is trivially decodable by the `image` crate (no compression).
+    fn make_test_bmp() -> Vec<u8> {
+        let mut bmp = Vec::new();
+        // BMP file header (14 bytes)
+        bmp.extend_from_slice(b"BM"); // magic
+        bmp.extend_from_slice(&58u32.to_le_bytes()); // file size
+        bmp.extend_from_slice(&0u32.to_le_bytes()); // reserved
+        bmp.extend_from_slice(&54u32.to_le_bytes()); // pixel data offset
+
+        // BITMAPINFOHEADER (40 bytes)
+        bmp.extend_from_slice(&40u32.to_le_bytes()); // header size
+        bmp.extend_from_slice(&1i32.to_le_bytes()); // width
+        bmp.extend_from_slice(&1i32.to_le_bytes()); // height
+        bmp.extend_from_slice(&1u16.to_le_bytes()); // color planes
+        bmp.extend_from_slice(&24u16.to_le_bytes()); // bits per pixel (RGB)
+        bmp.extend_from_slice(&0u32.to_le_bytes()); // compression (none)
+        bmp.extend_from_slice(&4u32.to_le_bytes()); // image size (row aligned to 4 bytes)
+        bmp.extend_from_slice(&0u32.to_le_bytes()); // x pixels/meter
+        bmp.extend_from_slice(&0u32.to_le_bytes()); // y pixels/meter
+        bmp.extend_from_slice(&0u32.to_le_bytes()); // total colors
+        bmp.extend_from_slice(&0u32.to_le_bytes()); // important colors
+
+        // Pixel data: 1 pixel BGR (red = 00 00 FF) + 1 byte padding
+        bmp.extend_from_slice(&[0x00, 0x00, 0xFF, 0x00]);
+
+        bmp
+    }
+
+    /// Build a DOCX containing an inline image using Pic::new() which processes
+    /// the image through the `image` crate, ensuring valid PNG output in the ZIP.
+    fn build_docx_with_image(width_px: u32, height_px: u32) -> Vec<u8> {
+        let bmp_data = make_test_bmp();
+        // Use Pic::new() which decodes the BMP and re-encodes as PNG internally
+        let pic = docx_rs::Pic::new(&bmp_data).size(width_px * 9525, height_px * 9525);
+        let para_with_image = docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_image(pic));
+        let docx = docx_rs::Docx::new().add_paragraph(para_with_image);
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Helper: find all Image blocks in a FlowPage.
+    fn find_images(doc: &Document) -> Vec<&ImageData> {
+        let page = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        page.content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Image(img) => Some(img),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_docx_image_inline_basic() {
+        let data = build_docx_with_image(100, 80);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let images = find_images(&doc);
+        assert_eq!(images.len(), 1, "Expected exactly one image block");
+        assert!(!images[0].data.is_empty(), "Image data should not be empty");
+    }
+
+    #[test]
+    fn test_docx_image_format_is_png() {
+        let data = build_docx_with_image(50, 50);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let images = find_images(&doc);
+        assert_eq!(
+            images[0].format,
+            ImageFormat::Png,
+            "Image format should be PNG"
+        );
+    }
+
+    #[test]
+    fn test_docx_image_dimensions() {
+        // 100px × 80px → EMU: 100*9525=952500, 80*9525=762000
+        // EMU to points: 952500/12700=75.0, 762000/12700=60.0
+        let data = build_docx_with_image(100, 80);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let images = find_images(&doc);
+        let img = images[0];
+
+        let width = img.width.expect("Expected width");
+        let height = img.height.expect("Expected height");
+
+        assert!(
+            (width - 75.0).abs() < 0.1,
+            "Expected width ~75pt, got {width}"
+        );
+        assert!(
+            (height - 60.0).abs() < 0.1,
+            "Expected height ~60pt, got {height}"
+        );
+    }
+
+    #[test]
+    fn test_docx_image_with_text_paragraphs() {
+        let bmp_data = make_test_bmp();
+        let pic = docx_rs::Pic::new(&bmp_data);
+        let docx = docx_rs::Docx::new()
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Before image")),
+            )
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_image(pic)))
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("After image")),
+            );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let has_image = page.content.iter().any(|b| matches!(b, Block::Image(_)));
+        assert!(has_image, "Expected an image block in the content");
+
+        let has_before = page.content.iter().any(|b| match b {
+            Block::Paragraph(p) => p.runs.iter().any(|r| r.text.contains("Before")),
+            _ => false,
+        });
+        assert!(has_before, "Expected 'Before image' text");
+
+        let has_after = page.content.iter().any(|b| match b {
+            Block::Paragraph(p) => p.runs.iter().any(|r| r.text.contains("After")),
+            _ => false,
+        });
+        assert!(has_after, "Expected 'After image' text");
+    }
+
+    #[test]
+    fn test_docx_multiple_images() {
+        let bmp_data = make_test_bmp();
+        let pic1 = docx_rs::Pic::new(&bmp_data).size(100 * 9525, 100 * 9525);
+        let pic2 = docx_rs::Pic::new(&bmp_data).size(200 * 9525, 150 * 9525);
+        let docx = docx_rs::Docx::new()
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_image(pic1)))
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_image(pic2)));
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let images = find_images(&doc);
+        assert!(
+            images.len() >= 2,
+            "Expected at least 2 images, got {}",
+            images.len()
+        );
+    }
+
+    #[test]
+    fn test_docx_image_data_contains_png_header() {
+        let data = build_docx_with_image(50, 50);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let images = find_images(&doc);
+        let img_data = &images[0].data;
+
+        // docx-rs converts all images to PNG; verify PNG magic bytes
+        assert!(
+            img_data.len() >= 8 && img_data[0..4] == [0x89, 0x50, 0x4E, 0x47],
+            "Image data should start with PNG magic bytes"
+        );
+    }
+
+    #[test]
+    fn test_docx_no_images_produces_no_image_blocks() {
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Just text")),
+        ]);
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let image_count = page
+            .content
+            .iter()
+            .filter(|b| matches!(b, Block::Image(_)))
+            .count();
+        assert_eq!(image_count, 0, "Expected no image blocks");
+    }
+
+    #[test]
+    fn test_docx_image_with_custom_emu_size() {
+        // Create image with specific EMU size via .size() override
+        // 200pt × 100pt → 200*12700=2540000, 100*12700=1270000
+        let bmp_data = make_test_bmp();
+        let pic = docx_rs::Pic::new(&bmp_data).size(2_540_000, 1_270_000);
+        let docx = docx_rs::Docx::new()
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_image(pic)));
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let doc = parser.parse(&data).unwrap();
+
+        let images = find_images(&doc);
+        assert!(!images.is_empty(), "Expected at least one image");
+        let img = images[0];
+
+        let width = img.width.expect("Expected width");
+        let height = img.height.expect("Expected height");
+
+        assert!(
+            (width - 200.0).abs() < 0.1,
+            "Expected width ~200pt, got {width}"
+        );
+        assert!(
+            (height - 100.0).abs() < 0.1,
+            "Expected height ~100pt, got {height}"
+        );
     }
 }

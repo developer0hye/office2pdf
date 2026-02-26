@@ -13,6 +13,8 @@ Started: 2026-02-26
 - **docx-rs private fields**: `PageSize` (w, h), `Bold` (val), `Italic` (val), `Sz` (val), `Color` (val), `Underline` (val), `RunFonts` (ascii, hi_ansi, etc.) all have private fields. Use `serde_json::to_value()` to extract values since they implement Serialize. **IMPORTANT**: These types serialize as their *direct inner value* (e.g. `Bold` → `true`, `Sz` → `24`, `Color` → `"FF0000"`), NOT as `{"val": ...}`. Use `json.as_bool()`, `json.as_f64()`, `json.as_str()` directly. `RunFonts` serializes as an object with `ascii`, `hi_ansi`, etc. fields. `Strike` has `pub val: bool` — accessible directly without serde.
 - **DOCX units**: Page size and margins in OOXML are in twips (1 twip = 1/20 pt). Convert: `value_twips / 20.0 = points`. PageMargin fields are public i32. docx-rs default page size: 11906 x 16838 twips (A4).
 - **Test DOCX creation**: Use `docx_rs::Docx::new().add_paragraph(...)`, then `.build().pack(&mut Cursor::new(Vec::new()))` to get bytes. Use `Cursor::into_inner()` to extract.
+- **docx-rs image handling**: Images in document tree: `RunChild::Drawing(Box<Drawing>)` → `Drawing.data = Some(DrawingData::Pic(pic))`. Image binary data: stored in `Docx.images` as `Vec<(id, path, Image, Png)>` — match `pic.id` to look up data. `pic.image` is empty when reading (only used during writing). Dimensions: `pic.size = (w_emu, h_emu)` in EMU. Convert: EMU ÷ 12700 = points. All images converted to PNG by docx-rs.
+- **Test images for docx-rs**: Use `make_test_bmp()` to create a minimal 1×1 BMP, then `Pic::new(&bmp_data)` which processes through the `image` crate. Do NOT use `Pic::new_with_dimensions()` with raw PNG bytes for round-trip tests — the `image` crate may fail to decode minimal hand-crafted PNGs during `read_docx()`.
 - **Image codegen**: `generate_typst()` returns `TypstOutput { source: String, images: Vec<ImageAsset> }`. Images get virtual paths `img-N.ext` via `GenCtx`. `compile_to_pdf(source, &images)` passes images to `MinimalWorld` which serves them via `World::file()`. Image markup: `#image("img-0.png", width: Wpt, height: Hpt)`.
 - **Valid test PNG**: For tests that compile Typst with images, use `make_test_png()` helper which builds a 1x1 PNG with correct CRC32 checksums. For codegen-only tests, any byte slice works since Typst doesn't validate during codegen.
 ---
@@ -137,4 +139,20 @@ Started: 2026-02-26
   - For PNG test data in pdf.rs, CRC32 must be computed correctly per chunk — hand-crafted bytes break easily. Use a `make_test_png()` helper with proper CRC32 calculation.
   - `ImageFormat::extension()` maps Png→"png", Jpeg→"jpeg", Gif→"gif", Bmp→"bmp", Tiff→"tiff"
   - Image codegen tests only need arbitrary bytes (codegen doesn't validate image data); PDF compilation tests need valid image files
+---
+
+## 2026-02-26 - US-009
+- **What was implemented**: DocxParser image extraction — extracts inline images from DOCX files into IR ImageData elements with PNG binary data and EMU-to-points dimensions.
+- **Files changed**:
+  - `crates/office2pdf/src/parser/docx.rs` — added `ImageMap` type alias, `build_image_map()`, `emu_to_pt()`, `extract_drawing_image()` functions; updated `convert_paragraph_blocks()` to detect `RunChild::Drawing` with `DrawingData::Pic`; threaded `ImageMap` through `convert_table()`, `extract_raw_rows()`, `extract_cell_content()`; added 7 image extraction tests
+- **Dependencies added**: None
+- **Learnings for future iterations:**
+  - `Docx.images` stores `(id, path, Image(original_bytes), Png(png_bytes))` — populated by `add_image()` which requires `image::load_from_memory()` to succeed on the raw ZIP data
+  - `Pic.image` is EMPTY when reading a DOCX (only used during writing) — must use `Docx.images` to get binary data
+  - `Pic.id` is the relationship ID (e.g., "rIdImage1") that maps to entries in `Docx.images`
+  - `Pic.size` is `(u32, u32)` in EMU; EMU ÷ 12700 = points
+  - **CRITICAL for testing**: `Pic::new_with_dimensions(raw_bytes, w, h)` stores bytes as-is; when round-tripping through ZIP, `image::load_from_memory()` must decode them. Hand-crafted minimal PNGs often fail this. Use `make_test_bmp()` + `Pic::new()` which processes through the `image` crate, guaranteeing valid PNG in the ZIP.
+  - docx-rs converts ALL images to PNG internally (via `image` crate) — so `ImageFormat::Png` is always correct for parsed DOCX images
+  - Inline images appear as `RunChild::Drawing(Box<Drawing>)` → `Drawing.data = Some(DrawingData::Pic(pic))`
+  - Images are emitted as `Block::Image` before the paragraph in which they appear (since our IR doesn't support inline images within paragraphs)
 ---

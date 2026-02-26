@@ -153,8 +153,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed. 7 DocxParser image tests. Extracts inline images via RunChild::Drawing → DrawingData::Pic. Image data from Docx.images (PNG, via image crate). Dimensions from Pic.size (EMU → points ÷12700). Uses BMP → Pic::new() for test fixtures."
     },
     {
       "id": "US-010",
