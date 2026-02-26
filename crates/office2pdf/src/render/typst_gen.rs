@@ -2,25 +2,78 @@ use std::fmt::Write;
 
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, LineSpacing, Margins,
-    Page, PageSize, Paragraph, ParagraphStyle, Run, Table, TableCell, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, ImageData, ImageFormat,
+    LineSpacing, Margins, Page, PageSize, Paragraph, ParagraphStyle, Run, Table, TableCell,
+    TextStyle,
 };
 
+/// An image asset to be embedded in the Typst compilation.
+#[derive(Debug, Clone)]
+pub struct ImageAsset {
+    /// Virtual file path (e.g., "img-0.png").
+    pub path: String,
+    /// Raw image bytes.
+    pub data: Vec<u8>,
+}
+
+/// Output from Typst codegen: markup source and embedded image assets.
+#[derive(Debug)]
+pub struct TypstOutput {
+    /// The generated Typst markup string.
+    pub source: String,
+    /// Image assets referenced by the markup.
+    pub images: Vec<ImageAsset>,
+}
+
+/// Internal context for tracking image assets during code generation.
+struct GenCtx {
+    images: Vec<ImageAsset>,
+    next_image_id: usize,
+}
+
+impl GenCtx {
+    fn new() -> Self {
+        Self {
+            images: Vec::new(),
+            next_image_id: 0,
+        }
+    }
+
+    fn add_image(&mut self, data: &[u8], format: ImageFormat) -> String {
+        let ext = format.extension();
+        let path = format!("img-{}.{}", self.next_image_id, ext);
+        self.next_image_id += 1;
+        self.images.push(ImageAsset {
+            path: path.clone(),
+            data: data.to_vec(),
+        });
+        path
+    }
+}
+
 /// Generate Typst markup from a Document IR.
-pub fn generate_typst(doc: &Document) -> Result<String, ConvertError> {
+pub fn generate_typst(doc: &Document) -> Result<TypstOutput, ConvertError> {
     let mut out = String::new();
+    let mut ctx = GenCtx::new();
     for page in &doc.pages {
         match page {
-            Page::Flow(flow) => generate_flow_page(&mut out, flow)?,
+            Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx)?,
             Page::Fixed(_) | Page::Table(_) => {
                 // Not yet implemented — other stories will handle these
             }
         }
     }
-    Ok(out)
+    Ok(TypstOutput {
+        source: out,
+        images: ctx.images,
+    })
 }
 
-fn generate_flow_page(out: &mut String, page: &FlowPage) -> Result<(), ConvertError> {
+fn generate_flow_page(
+    out: &mut String,
+    page: &FlowPage,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
     write_page_setup(out, &page.size, &page.margins);
     out.push('\n');
 
@@ -28,7 +81,7 @@ fn generate_flow_page(out: &mut String, page: &FlowPage) -> Result<(), ConvertEr
         if i > 0 {
             out.push('\n');
         }
-        generate_block(out, block)?;
+        generate_block(out, block, ctx)?;
     }
     Ok(())
 }
@@ -46,22 +99,22 @@ fn write_page_setup(out: &mut String, size: &PageSize, margins: &Margins) {
     );
 }
 
-fn generate_block(out: &mut String, block: &Block) -> Result<(), ConvertError> {
+fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(), ConvertError> {
     match block {
         Block::Paragraph(para) => generate_paragraph(out, para),
         Block::PageBreak => {
             out.push_str("#pagebreak()\n");
             Ok(())
         }
-        Block::Table(table) => generate_table(out, table),
-        Block::Image(_) => {
-            // Not yet implemented — other stories will handle these
+        Block::Table(table) => generate_table(out, table, ctx),
+        Block::Image(img) => {
+            generate_image(out, img, ctx);
             Ok(())
         }
     }
 }
 
-fn generate_table(out: &mut String, table: &Table) -> Result<(), ConvertError> {
+fn generate_table(out: &mut String, table: &Table, ctx: &mut GenCtx) -> Result<(), ConvertError> {
     out.push_str("#table(\n");
 
     // Column widths
@@ -79,7 +132,7 @@ fn generate_table(out: &mut String, table: &Table) -> Result<(), ConvertError> {
     // Rows and cells
     for row in &table.rows {
         for cell in &row.cells {
-            generate_table_cell(out, cell)?;
+            generate_table_cell(out, cell, ctx)?;
         }
     }
 
@@ -87,7 +140,11 @@ fn generate_table(out: &mut String, table: &Table) -> Result<(), ConvertError> {
     Ok(())
 }
 
-fn generate_table_cell(out: &mut String, cell: &TableCell) -> Result<(), ConvertError> {
+fn generate_table_cell(
+    out: &mut String,
+    cell: &TableCell,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
     let needs_cell_fn = cell.col_span > 1
         || cell.row_span > 1
         || cell.border.is_some()
@@ -102,7 +159,7 @@ fn generate_table_cell(out: &mut String, cell: &TableCell) -> Result<(), Convert
     }
 
     // Generate cell content
-    generate_cell_content(out, &cell.content)?;
+    generate_cell_content(out, &cell.content, ctx)?;
 
     out.push_str("],\n");
     Ok(())
@@ -162,7 +219,11 @@ fn format_border_side(side: &BorderSide) -> String {
 }
 
 /// Generate content inside a table cell (list of blocks rendered inline).
-fn generate_cell_content(out: &mut String, blocks: &[Block]) -> Result<(), ConvertError> {
+fn generate_cell_content(
+    out: &mut String,
+    blocks: &[Block],
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
     for (i, block) in blocks.iter().enumerate() {
         if i > 0 {
             // Paragraph break between blocks
@@ -170,8 +231,9 @@ fn generate_cell_content(out: &mut String, blocks: &[Block]) -> Result<(), Conve
         }
         match block {
             Block::Paragraph(para) => generate_cell_paragraph(out, para),
-            Block::Table(table) => generate_table(out, table)?,
-            Block::PageBreak | Block::Image(_) => {}
+            Block::Table(table) => generate_table(out, table, ctx)?,
+            Block::Image(img) => generate_image(out, img, ctx),
+            Block::PageBreak => {}
         }
     }
     Ok(())
@@ -182,6 +244,22 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph) {
     for run in &para.runs {
         generate_run(out, run);
     }
+}
+
+fn generate_image(out: &mut String, img: &ImageData, ctx: &mut GenCtx) {
+    let path = ctx.add_image(&img.data, img.format);
+    out.push_str("#image(\"");
+    out.push_str(&path);
+    out.push('"');
+
+    if let Some(w) = img.width {
+        let _ = write!(out, ", width: {}pt", format_f64(w));
+    }
+    if let Some(h) = img.height {
+        let _ = write!(out, ", height: {}pt", format_f64(h));
+    }
+
+    out.push_str(")\n");
 }
 
 fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
@@ -406,7 +484,7 @@ mod tests {
     #[test]
     fn test_generate_plain_paragraph() {
         let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Hello World")])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("Hello World"));
     }
 
@@ -425,7 +503,7 @@ mod tests {
             },
             content: vec![make_paragraph("test")],
         })]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("612pt"));
         assert!(result.contains("792pt"));
         assert!(result.contains("36pt"));
@@ -444,7 +522,7 @@ mod tests {
                 },
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("weight: \"bold\""),
             "Expected bold weight in: {result}"
@@ -464,7 +542,7 @@ mod tests {
                 },
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("style: \"italic\""),
             "Expected italic style in: {result}"
@@ -484,7 +562,7 @@ mod tests {
                 },
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("#underline["),
             "Expected underline wrapper in: {result}"
@@ -504,7 +582,7 @@ mod tests {
                 },
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("size: 24pt"),
             "Expected font size in: {result}"
@@ -523,7 +601,7 @@ mod tests {
                 },
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("fill: rgb(255, 0, 0)"),
             "Expected RGB color in: {result}"
@@ -545,7 +623,7 @@ mod tests {
                 },
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("weight: \"bold\""));
         assert!(result.contains("style: \"italic\""));
         assert!(result.contains("size: 16pt"));
@@ -565,7 +643,7 @@ mod tests {
                 style: TextStyle::default(),
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("align(center"),
             "Expected center alignment in: {result}"
@@ -584,7 +662,7 @@ mod tests {
                 style: TextStyle::default(),
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("align(right"),
             "Expected right alignment in: {result}"
@@ -603,7 +681,7 @@ mod tests {
                 style: TextStyle::default(),
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("par(justify: true") || result.contains("set par(justify: true"),
             "Expected justify in: {result}"
@@ -622,7 +700,7 @@ mod tests {
                 style: TextStyle::default(),
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("leading:"),
             "Expected leading setting in: {result}"
@@ -641,7 +719,7 @@ mod tests {
                 style: TextStyle::default(),
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("leading: 18pt"),
             "Expected exact leading in: {result}"
@@ -654,7 +732,7 @@ mod tests {
             make_paragraph("First paragraph"),
             make_paragraph("Second paragraph"),
         ])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("First paragraph"));
         assert!(result.contains("Second paragraph"));
     }
@@ -681,7 +759,7 @@ mod tests {
                 },
             ],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("Normal "));
         assert!(result.contains("bold"));
         assert!(result.contains(" normal again"));
@@ -690,7 +768,7 @@ mod tests {
     #[test]
     fn test_generate_empty_document() {
         let doc = make_doc(vec![]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         // Should produce valid (possibly empty) Typst markup
         assert!(result.is_empty() || !result.is_empty()); // Just shouldn't error
     }
@@ -700,7 +778,7 @@ mod tests {
         let doc = make_doc(vec![make_flow_page(vec![make_paragraph(
             "Price: $100 #items @store",
         )])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         // The text should appear but special chars should be escaped for Typst
         // In Typst, # starts a code expression, so it needs escaping
         assert!(
@@ -743,7 +821,7 @@ mod tests {
             column_widths: vec![100.0, 200.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("#table("), "Expected #table( in: {result}");
         assert!(
             result.contains("columns: (100pt, 200pt)"),
@@ -782,7 +860,7 @@ mod tests {
             column_widths: vec![100.0, 200.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("colspan: 2"),
             "Expected colspan: 2 in: {result}"
@@ -817,7 +895,7 @@ mod tests {
             column_widths: vec![100.0, 200.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("rowspan: 2"),
             "Expected rowspan: 2 in: {result}"
@@ -861,7 +939,7 @@ mod tests {
             column_widths: vec![100.0, 100.0, 100.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("colspan: 2"),
             "Expected colspan: 2 in: {result}"
@@ -894,7 +972,7 @@ mod tests {
             column_widths: vec![100.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("fill: rgb(200, 200, 200)"),
             "Expected fill color in: {result}"
@@ -934,7 +1012,7 @@ mod tests {
             column_widths: vec![100.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("stroke:"), "Expected stroke in: {result}");
         assert!(
             result.contains("Bordered"),
@@ -966,7 +1044,7 @@ mod tests {
             column_widths: vec![100.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("weight: \"bold\""),
             "Expected bold in table cell: {result}"
@@ -988,7 +1066,7 @@ mod tests {
             column_widths: vec![100.0, 100.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("#table("), "Expected #table( in: {result}");
         assert!(
             result.contains("Has text"),
@@ -1006,7 +1084,7 @@ mod tests {
             column_widths: vec![],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("#table("), "Expected #table( in: {result}");
         // Without explicit widths, should still produce valid table
         assert!(result.contains("A"), "Expected A in: {result}");
@@ -1051,7 +1129,7 @@ mod tests {
             column_widths: vec![100.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("top:"), "Expected top border in: {result}");
         assert!(
             result.contains("bottom:"),
@@ -1096,7 +1174,7 @@ mod tests {
             column_widths: vec![200.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("First para"),
             "Expected First para in: {result}"
@@ -1117,7 +1195,7 @@ mod tests {
             column_widths: vec![200.0],
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         // Special chars should be escaped
         assert!(
             result.contains("\\$") && result.contains("\\#"),
@@ -1139,7 +1217,7 @@ mod tests {
             Block::Table(table),
             make_paragraph("After table"),
         ])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         assert!(
             result.contains("Before table"),
             "Expected Before table in: {result}"
@@ -1164,11 +1242,187 @@ mod tests {
                 style: TextStyle::default(),
             }],
         })])]);
-        let result = generate_typst(&doc).unwrap();
+        let result = generate_typst(&doc).unwrap().source;
         // Should contain spacing directives
         assert!(
             result.contains("12pt") || result.contains("above"),
             "Expected space_before in: {result}"
         );
+    }
+
+    // ── Image codegen tests ─────────────────────────────────────────────
+
+    use crate::ir::ImageData;
+
+    /// Minimal valid 1x1 red pixel PNG for testing.
+    const MINIMAL_PNG: &[u8] = &[
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44,
+        0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90,
+        0x77, 0x53, 0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0xF8,
+        0xCF, 0xC0, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC, 0x33, 0x00, 0x00, 0x00,
+        0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+    ];
+
+    fn make_image(format: ImageFormat, width: Option<f64>, height: Option<f64>) -> Block {
+        Block::Image(ImageData {
+            data: MINIMAL_PNG.to_vec(),
+            format,
+            width,
+            height,
+        })
+    }
+
+    #[test]
+    fn test_image_basic_no_size() {
+        let doc = make_doc(vec![make_flow_page(vec![make_image(
+            ImageFormat::Png,
+            None,
+            None,
+        )])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#image(\"img-0.png\")"),
+            "Expected #image(\"img-0.png\") in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_image_with_width_only() {
+        let doc = make_doc(vec![make_flow_page(vec![make_image(
+            ImageFormat::Png,
+            Some(100.0),
+            None,
+        )])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains("#image(\"img-0.png\", width: 100pt)"),
+            "Expected width param in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_image_with_height_only() {
+        let doc = make_doc(vec![make_flow_page(vec![make_image(
+            ImageFormat::Png,
+            None,
+            Some(80.0),
+        )])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains("#image(\"img-0.png\", height: 80pt)"),
+            "Expected height param in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_image_with_both_dimensions() {
+        let doc = make_doc(vec![make_flow_page(vec![make_image(
+            ImageFormat::Png,
+            Some(200.0),
+            Some(150.0),
+        )])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains("#image(\"img-0.png\", width: 200pt, height: 150pt)"),
+            "Expected both dimensions in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_image_collects_asset() {
+        let doc = make_doc(vec![make_flow_page(vec![make_image(
+            ImageFormat::Png,
+            None,
+            None,
+        )])]);
+        let output = generate_typst(&doc).unwrap();
+        assert_eq!(output.images.len(), 1);
+        assert_eq!(output.images[0].path, "img-0.png");
+        assert_eq!(output.images[0].data, MINIMAL_PNG);
+    }
+
+    #[test]
+    fn test_multiple_images_numbered_sequentially() {
+        let doc = make_doc(vec![make_flow_page(vec![
+            make_image(ImageFormat::Png, None, None),
+            make_image(ImageFormat::Jpeg, Some(50.0), None),
+        ])]);
+        let output = generate_typst(&doc).unwrap();
+        assert_eq!(output.images.len(), 2);
+        assert_eq!(output.images[0].path, "img-0.png");
+        assert_eq!(output.images[1].path, "img-1.jpeg");
+        assert!(output.source.contains("img-0.png"));
+        assert!(output.source.contains("img-1.jpeg"));
+    }
+
+    #[test]
+    fn test_image_format_extensions() {
+        let formats = [
+            (ImageFormat::Png, "png"),
+            (ImageFormat::Jpeg, "jpeg"),
+            (ImageFormat::Gif, "gif"),
+            (ImageFormat::Bmp, "bmp"),
+            (ImageFormat::Tiff, "tiff"),
+        ];
+        for (i, (format, expected_ext)) in formats.iter().enumerate() {
+            let doc = make_doc(vec![make_flow_page(vec![make_image(*format, None, None)])]);
+            let output = generate_typst(&doc).unwrap();
+            let expected_path = format!("img-0.{expected_ext}");
+            assert_eq!(
+                output.images[0].path, expected_path,
+                "Format {format:?} should produce .{expected_ext} extension (test #{i})"
+            );
+        }
+    }
+
+    #[test]
+    fn test_image_with_fractional_dimensions() {
+        let doc = make_doc(vec![make_flow_page(vec![make_image(
+            ImageFormat::Png,
+            Some(72.5),
+            Some(96.25),
+        )])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("width: 72.5pt"),
+            "Expected fractional width in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 96.25pt"),
+            "Expected fractional height in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_image_mixed_with_paragraphs() {
+        let doc = make_doc(vec![make_flow_page(vec![
+            make_paragraph("Before image"),
+            make_image(ImageFormat::Png, Some(100.0), Some(80.0)),
+            make_paragraph("After image"),
+        ])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(output.source.contains("Before image"));
+        assert!(output.source.contains("#image(\"img-0.png\""));
+        assert!(output.source.contains("After image"));
+        assert_eq!(output.images.len(), 1);
+    }
+
+    #[test]
+    fn test_no_images_produces_empty_assets() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Just text")])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(output.images.is_empty());
     }
 }

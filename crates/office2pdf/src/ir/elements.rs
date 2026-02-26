@@ -94,6 +94,19 @@ pub enum ImageFormat {
     Tiff,
 }
 
+impl ImageFormat {
+    /// Return the file extension for this image format.
+    pub fn extension(&self) -> &'static str {
+        match self {
+            Self::Png => "png",
+            Self::Jpeg => "jpeg",
+            Self::Gif => "gif",
+            Self::Bmp => "bmp",
+            Self::Tiff => "tiff",
+        }
+    }
+}
+
 /// Basic geometric shape.
 #[derive(Debug, Clone)]
 pub struct Shape {

@@ -54,8 +54,8 @@ pub fn convert_bytes(
 /// Takes a fully constructed [`ir::Document`] and runs it through
 /// the Typst codegen → PDF compilation pipeline.
 pub fn render_document(doc: &ir::Document) -> Result<Vec<u8>, ConvertError> {
-    let typst_source = render::typst_gen::generate_typst(doc)?;
-    render::pdf::compile_to_pdf(&typst_source)
+    let output = render::typst_gen::generate_typst(doc)?;
+    render::pdf::compile_to_pdf(&output.source, &output.images)
 }
 
 #[cfg(test)]
