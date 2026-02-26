@@ -4,7 +4,7 @@ use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
     FixedPage, FlowPage, ImageData, ImageFormat, LineSpacing, Margins, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, Shape, ShapeKind, Table, TableCell, TextStyle,
+    ParagraphStyle, Run, Shape, ShapeKind, Table, TableCell, TablePage, TextStyle,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -59,9 +59,7 @@ pub fn generate_typst(doc: &Document) -> Result<TypstOutput, ConvertError> {
         match page {
             Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx)?,
             Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx)?,
-            Page::Table(_) => {
-                // Not yet implemented — other stories will handle this
-            }
+            Page::Table(table_page) => generate_table_page(&mut out, table_page, &mut ctx)?,
         }
     }
     Ok(TypstOutput {
@@ -104,6 +102,17 @@ fn generate_fixed_page(
     for elem in &page.elements {
         generate_fixed_element(out, elem, ctx)?;
     }
+    Ok(())
+}
+
+fn generate_table_page(
+    out: &mut String,
+    page: &TablePage,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    write_page_setup(out, &page.size, &page.margins);
+    out.push('\n');
+    generate_table(out, &page.table, ctx)?;
     Ok(())
 }
 
@@ -1874,5 +1883,341 @@ mod tests {
             "Expected place() for absolute positioning in: {}",
             output.source
         );
+    }
+
+    // ── TablePage codegen tests ──────────────────────────────────────────
+
+    /// Helper to create a TablePage.
+    fn make_table_page(
+        name: &str,
+        width: f64,
+        height: f64,
+        margins: Margins,
+        table: Table,
+    ) -> Page {
+        Page::Table(crate::ir::TablePage {
+            name: name.to_string(),
+            size: PageSize { width, height },
+            margins,
+            table,
+        })
+    }
+
+    /// Helper to create a simple Table with text cells.
+    fn make_simple_table(rows: Vec<Vec<&str>>) -> Table {
+        Table {
+            rows: rows
+                .into_iter()
+                .map(|cells| TableRow {
+                    cells: cells
+                        .into_iter()
+                        .map(|text| TableCell {
+                            content: vec![Block::Paragraph(Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: text.to_string(),
+                                    style: TextStyle::default(),
+                                }],
+                            })],
+                            ..TableCell::default()
+                        })
+                        .collect(),
+                    height: None,
+                })
+                .collect(),
+            column_widths: vec![],
+        }
+    }
+
+    #[test]
+    fn test_table_page_basic() {
+        let table = make_simple_table(vec![vec!["A1", "B1"], vec!["A2", "B2"]]);
+        let doc = make_doc(vec![make_table_page(
+            "Sheet1",
+            595.28,
+            841.89,
+            Margins::default(),
+            table,
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#set page("),
+            "Expected page setup in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#table("),
+            "Expected table markup in: {}",
+            output.source
+        );
+        assert!(output.source.contains("A1"));
+        assert!(output.source.contains("B1"));
+        assert!(output.source.contains("A2"));
+        assert!(output.source.contains("B2"));
+    }
+
+    #[test]
+    fn test_table_page_custom_page_size_and_margins() {
+        let table = make_simple_table(vec![vec!["Data"]]);
+        let doc = make_doc(vec![make_table_page(
+            "Custom",
+            800.0,
+            600.0,
+            Margins {
+                top: 20.0,
+                bottom: 20.0,
+                left: 30.0,
+                right: 30.0,
+            },
+            table,
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("width: 800pt"),
+            "Expected custom width in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 600pt"),
+            "Expected custom height in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("top: 20pt"),
+            "Expected custom top margin in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("left: 30pt"),
+            "Expected custom left margin in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_table_page_cell_data_types() {
+        // Text, numbers, and dates are all stored as text strings in IR
+        let table = make_simple_table(vec![
+            vec!["Name", "Age", "Date"],
+            vec!["Alice", "30", "2024-01-15"],
+        ]);
+        let doc = make_doc(vec![make_table_page(
+            "Data",
+            595.28,
+            841.89,
+            Margins::default(),
+            table,
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(output.source.contains("Name"));
+        assert!(output.source.contains("Age"));
+        assert!(output.source.contains("Date"));
+        assert!(output.source.contains("Alice"));
+        assert!(output.source.contains("30"));
+        assert!(output.source.contains("2024-01-15"));
+    }
+
+    #[test]
+    fn test_table_page_merged_cells() {
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![TableCell {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "Merged".to_string(),
+                                style: TextStyle::default(),
+                            }],
+                        })],
+                        col_span: 2,
+                        ..TableCell::default()
+                    }],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![
+                        TableCell {
+                            content: vec![Block::Paragraph(Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "Left".to_string(),
+                                    style: TextStyle::default(),
+                                }],
+                            })],
+                            ..TableCell::default()
+                        },
+                        TableCell {
+                            content: vec![Block::Paragraph(Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "Right".to_string(),
+                                    style: TextStyle::default(),
+                                }],
+                            })],
+                            ..TableCell::default()
+                        },
+                    ],
+                    height: None,
+                },
+            ],
+            column_widths: vec![],
+        };
+        let doc = make_doc(vec![make_table_page(
+            "MergeSheet",
+            595.28,
+            841.89,
+            Margins::default(),
+            table,
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("colspan: 2"),
+            "Expected colspan in: {}",
+            output.source
+        );
+        assert!(output.source.contains("Merged"));
+        assert!(output.source.contains("Left"));
+        assert!(output.source.contains("Right"));
+    }
+
+    #[test]
+    fn test_table_page_with_column_widths() {
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![
+                    TableCell {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "Col1".to_string(),
+                                style: TextStyle::default(),
+                            }],
+                        })],
+                        ..TableCell::default()
+                    },
+                    TableCell {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "Col2".to_string(),
+                                style: TextStyle::default(),
+                            }],
+                        })],
+                        ..TableCell::default()
+                    },
+                ],
+                height: None,
+            }],
+            column_widths: vec![100.0, 200.0],
+        };
+        let doc = make_doc(vec![make_table_page(
+            "Widths",
+            595.28,
+            841.89,
+            Margins::default(),
+            table,
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("columns: (100pt, 200pt)"),
+            "Expected column widths in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_table_page_empty_table() {
+        let table = Table {
+            rows: vec![],
+            column_widths: vec![],
+        };
+        let doc = make_doc(vec![make_table_page(
+            "Empty",
+            595.28,
+            841.89,
+            Margins::default(),
+            table,
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        // Should still produce valid Typst with page setup
+        assert!(output.source.contains("#set page("));
+    }
+
+    #[test]
+    fn test_table_page_multiple_sheets() {
+        let table1 = make_simple_table(vec![vec!["Sheet1Data"]]);
+        let table2 = make_simple_table(vec![vec!["Sheet2Data"]]);
+        let doc = make_doc(vec![
+            make_table_page("Sheet1", 595.28, 841.89, Margins::default(), table1),
+            make_table_page("Sheet2", 595.28, 841.89, Margins::default(), table2),
+        ]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(output.source.contains("Sheet1Data"));
+        assert!(output.source.contains("Sheet2Data"));
+    }
+
+    #[test]
+    fn test_table_page_rowspan_merge() {
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![
+                        TableCell {
+                            content: vec![Block::Paragraph(Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "Tall".to_string(),
+                                    style: TextStyle::default(),
+                                }],
+                            })],
+                            row_span: 2,
+                            ..TableCell::default()
+                        },
+                        TableCell {
+                            content: vec![Block::Paragraph(Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "Top".to_string(),
+                                    style: TextStyle::default(),
+                                }],
+                            })],
+                            ..TableCell::default()
+                        },
+                    ],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![TableCell {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "Bottom".to_string(),
+                                style: TextStyle::default(),
+                            }],
+                        })],
+                        ..TableCell::default()
+                    }],
+                    height: None,
+                },
+            ],
+            column_widths: vec![],
+        };
+        let doc = make_doc(vec![make_table_page(
+            "RowMerge",
+            595.28,
+            841.89,
+            Margins::default(),
+            table,
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("rowspan: 2"),
+            "Expected rowspan in: {}",
+            output.source
+        );
+        assert!(output.source.contains("Tall"));
+        assert!(output.source.contains("Top"));
+        assert!(output.source.contains("Bottom"));
     }
 }
