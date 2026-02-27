@@ -7,7 +7,7 @@
 #   ./scripts/ralph/run-all.sh phase2 25    # Run phase2 with 25 max iterations
 #
 # Flow per phase:
-#   worktree setup → Ralph coding loop (push + PR + CI handled by Claude) → merge → cleanup
+#   worktree setup → Ralph coding loop (per-story push/PR/CI/merge by Claude) → sync main → cleanup
 #
 # Resilience: failures in one phase are logged and skipped. The script always
 # attempts ALL remaining phases instead of stopping at the first error.
@@ -268,58 +268,9 @@ for idx in $(seq "$start_index" 2); do
     log "All $total stories complete for $PHASE!"
   fi
 
-  # Skip if Ralph made zero implementation commits
-  commit_count=$(git rev-list --count "main..HEAD" 2>/dev/null || echo 0)
-  if [ "$commit_count" -le 1 ]; then
-    skip_phase "Ralph produced 0 implementation commits" && continue
-  fi
-
-  # ── Step 4: Find PR created by Ralph ──────────────────────────
-
-  # Ralph now handles push, PR creation, and CI verification internally.
-  # We just need to find the PR number to merge it.
-
-  log "Looking for PR on branch $BRANCH ..."
-  pr_num=""
-  for pr_wait in 1 2 3 4 5; do
-    pr_num=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
-    if [ -n "$pr_num" ]; then
-      break
-    fi
-    log "  PR not found yet, waiting 10s (attempt $pr_wait/5) ..."
-    sleep 10
-  done
-
-  if [ -z "$pr_num" ]; then
-    log "ERROR: No PR found for branch $BRANCH."
-    log "  Ralph may not have pushed or created a PR. Check ralph.log for details."
-    skip_phase "No PR found" && continue
-  fi
-  log "Found PR #$pr_num for $BRANCH"
-
-  # Verify CI status (Ralph should have already ensured CI passes)
-  log "Verifying CI status on PR #$pr_num ..."
-  if ! gh pr checks "$pr_num" --watch 2>&1 | tail -5 | tee -a "$LOG_FILE"; then
-    log "WARNING: CI may not have passed. Will attempt merge anyway ..."
-  fi
-
-  log "Changed files in PR #$pr_num:"
-  gh pr diff "$pr_num" --name-only 2>&1 | tee -a "$LOG_FILE" || true
-
-  # ── Step 5: Merge PR ────────────────────────────────────────────
-
-  log "Merging PR #$pr_num ..."
-  if ! gh pr merge "$pr_num" --merge 2>&1 | tee -a "$LOG_FILE"; then
-    log "Merge with --merge failed. Trying --squash ..."
-    if ! gh pr merge "$pr_num" --squash 2>&1 | tee -a "$LOG_FILE"; then
-      log "ERROR: All merge strategies failed for PR #$pr_num."
-      log "  PR #$pr_num left open."
-      skip_phase "Merge failed" && continue
-    fi
-  fi
-  log "PR #$pr_num merged!"
-
-  # ── Step 6: Sync main ───────────────────────────────────────────
+  # ── Step 4: Sync main ─────────────────────────────────────────
+  # Ralph handles per-story push/PR/CI/merge internally.
+  # We just need to sync main with whatever Ralph merged.
 
   cd "$PROJECT_ROOT"
   remove_untracked_conflicts
@@ -331,7 +282,7 @@ for idx in $(seq "$start_index" 2); do
   fi
   log "Main branch synced."
 
-  # ── Step 7: Cleanup worktree and branch ────────────────────────
+  # ── Step 5: Cleanup worktree and branch ────────────────────────
 
   log "Cleaning up worktree and branch ..."
   cleanup_worktree "$WORKTREE_DIR" "$BRANCH"

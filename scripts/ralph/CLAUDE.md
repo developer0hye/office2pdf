@@ -26,6 +26,7 @@ Read these project files for full context:
 8. If checks pass, commit ALL changes with message: `feat: [Story ID] - [Story Title]`
 9. Update the PRD to set `passes: true` for the completed story
 10. Append your progress to `scripts/ralph/progress.txt`
+11. **Push, create PR, verify CI, and merge** (see Per-Story PR Flow below)
 
 ## Quality Check Commands
 
@@ -108,34 +109,35 @@ APPEND to `scripts/ralph/progress.txt` (never replace, always append):
 
 If you discover a **reusable pattern**, add it to the `## Codebase Patterns` section at the TOP of `scripts/ralph/progress.txt` (create it if it doesn't exist). Only add patterns that are general and reusable.
 
-## Finalization (after all stories complete)
+## Per-Story PR Flow
 
-When ALL user stories have `passes: true`, you MUST push, create a PR, and verify CI before finishing:
+After EACH completed user story (step 11), you MUST push, create a PR, verify CI, and merge:
 
 1. **Push**: `git push -u origin <branchName>` (branchName from PRD)
-2. **Check for existing PR**: `gh pr list --head <branchName> --json number --jq '.[0].number'`
-3. **Create PR** if none exists:
-   - Generate a PR body summarizing all completed stories, commit list, and test plan
-   - `gh pr create --title "feat: <phase description>" --body "<body>" --base main`
-4. **Wait for CI to register** (30 seconds): `sleep 30`
-5. **Watch CI**: `gh pr checks <number> --watch` (blocks until all checks finish; typically 3-6 minutes)
-6. **If CI fails**:
-   a. Get the failed run ID: `gh run list --branch <branchName> --status failure --json databaseId --jq '.[0].databaseId'`
-   b. Read failure log: `gh run view <run-id> --log-failed 2>&1 | head -200`
-   c. Identify and fix the errors in source code
-   d. Run local quality checks again (fmt, clippy, test)
-   e. Commit: `git commit -s -m "fix: resolve CI failures"`
-   f. Push: `git push`
-   g. Go back to step 5 (retry up to 3 times)
-7. **Only after CI passes**, respond with `<promise>COMPLETE</promise>`
+2. **Create PR**:
+   - `gh pr create --title "feat: [Story ID] - [Story Title]" --body "<summary of changes + test plan>" --base main`
+   - If a PR already exists for this branch, skip creation
+3. **Wait for CI** (30s then watch): `sleep 30 && gh pr checks <number> --watch`
+4. **If CI fails** (retry up to 3 times):
+   a. `gh run list --branch <branchName> --status failure --json databaseId --jq '.[0].databaseId'`
+   b. `gh run view <run-id> --log-failed 2>&1 | head -200`
+   c. Fix errors, run local quality checks, commit: `git commit -s -m "fix: resolve CI failures for [Story ID]"`
+   d. Push and go back to step 3
+5. **Merge PR**: `gh pr merge <number> --merge`
+6. **Sync branch with main**:
+   ```bash
+   git fetch origin main
+   git reset --hard origin/main
+   git push --force-with-lease origin <branchName>
+   ```
 
-If CI still fails after 3 retries, respond with `<promise>COMPLETE</promise>` anyway (the PR will be reviewed manually).
+If merge or CI fails after retries, leave the PR open and continue to the next story (the orchestrator or a human will handle it).
 
 ## Stop Condition
 
-After completing a user story, check if ALL stories have `passes: true`.
+After completing a user story and merging its PR, check if ALL stories have `passes: true`.
 
-If ALL stories are complete and passing, proceed to **Finalization** above.
+If ALL stories are complete, respond with `<promise>COMPLETE</promise>`.
 
 If there are still stories with `passes: false`, end your response normally (another iteration will pick up the next story).
 
