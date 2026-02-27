@@ -218,3 +218,27 @@ Started: 2026년  2월 27일 금요일 12시 19분 03초 KST
   - Charts added after all TablePages as separate FlowPages
   - Test helper: build_xlsx_with_chart() creates valid XLSX then re-opens ZIP to inject chart XML entry
 ---
+
+## 2026-02-27 - US-047: Performance optimization
+- What was implemented:
+  - Criterion benchmark suite: benches/conversion.rs with DOCX (10/100 pages), PPTX (10/100 slides), XLSX (50/500 rows) benchmarks
+  - Pre-allocation optimizations:
+    - typst_gen.rs: String::with_capacity(pages * 2048) for output buffer, Vec::with_capacity(4) for border parts
+    - xlsx.rs: Vec::with_capacity(num_rows/num_cols) for table rows and cells
+    - pptx.rs: Vec::with_capacity(slide_rids.len()) for pages
+- Benchmark results (MacOS, Apple Silicon):
+  - DOCX 10 pages (~30 paragraphs): 124ms — target <1s PASS
+  - DOCX 100 pages (~300 paragraphs): 130ms — target <5s PASS
+  - PPTX 10 slides: 120ms — target <1s PASS
+  - PPTX 100 slides: 124ms — target <5s PASS
+  - XLSX 50 rows (5 cols): 125ms
+  - XLSX 500 rows (5 cols): 136ms
+  - Pipeline dominated by Typst initialization (~120ms baseline), parsing/codegen is <15ms for 100-page documents
+- Files changed:
+  - crates/office2pdf/Cargo.toml (criterion dev-dep, bench target)
+  - crates/office2pdf/benches/conversion.rs (new — benchmark suite)
+  - crates/office2pdf/src/render/typst_gen.rs (pre-allocation optimizations)
+  - crates/office2pdf/src/parser/xlsx.rs (Vec::with_capacity for rows/cells)
+  - crates/office2pdf/src/parser/pptx.rs (Vec::with_capacity for pages)
+- Dependencies added: criterion 0.5 (dev-dependency)
+---
