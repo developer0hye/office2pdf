@@ -211,6 +211,9 @@ fn generate_fixed_element(
         FixedElementKind::SmartArt(smartart) => {
             generate_smartart(out, smartart, elem.width, elem.height);
         }
+        FixedElementKind::Chart(chart) => {
+            generate_chart(out, chart);
+        }
     }
 
     out.push_str("]\n");
