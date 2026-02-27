@@ -263,6 +263,7 @@ impl Parser for XlsxParser {
                                 text: value,
                                 style: text_style,
                                 href: None,
+                                footnote: None,
                             }],
                         })]
                     };

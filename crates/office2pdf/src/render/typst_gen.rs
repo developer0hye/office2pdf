@@ -635,6 +635,13 @@ fn write_par_settings(out: &mut String, style: &ParagraphStyle) {
 }
 
 fn generate_run(out: &mut String, run: &Run) {
+    // Emit footnote if present (footnote runs have empty text)
+    if let Some(ref content) = run.footnote {
+        let escaped_content = escape_typst(content);
+        let _ = write!(out, "#footnote[{escaped_content}]");
+        return;
+    }
+
     let style = &run.style;
     let escaped = escape_typst(&run.text);
 
@@ -780,6 +787,7 @@ mod tests {
                 text: text.to_string(),
                 style: TextStyle::default(),
                 href: None,
+                footnote: None,
             }],
         })
     }
@@ -826,6 +834,7 @@ mod tests {
                     ..TextStyle::default()
                 },
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -847,6 +856,7 @@ mod tests {
                     ..TextStyle::default()
                 },
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -868,6 +878,7 @@ mod tests {
                     ..TextStyle::default()
                 },
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -889,6 +900,7 @@ mod tests {
                     ..TextStyle::default()
                 },
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -909,6 +921,7 @@ mod tests {
                     ..TextStyle::default()
                 },
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -932,6 +945,7 @@ mod tests {
                     ..TextStyle::default()
                 },
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -953,6 +967,7 @@ mod tests {
                 text: "Centered".to_string(),
                 style: TextStyle::default(),
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -973,6 +988,7 @@ mod tests {
                 text: "Right".to_string(),
                 style: TextStyle::default(),
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -993,6 +1009,7 @@ mod tests {
                 text: "Justified text".to_string(),
                 style: TextStyle::default(),
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1013,6 +1030,7 @@ mod tests {
                 text: "Double spaced".to_string(),
                 style: TextStyle::default(),
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1033,6 +1051,7 @@ mod tests {
                 text: "Exact spaced".to_string(),
                 style: TextStyle::default(),
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1062,6 +1081,7 @@ mod tests {
                     text: "Normal ".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 },
                 Run {
                     text: "bold".to_string(),
@@ -1070,11 +1090,13 @@ mod tests {
                         ..TextStyle::default()
                     },
                     href: None,
+                    footnote: None,
                 },
                 Run {
                     text: " normal again".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 },
             ],
         })])]);
@@ -1119,6 +1141,7 @@ mod tests {
                     text: text.to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 }],
             })],
             ..TableCell::default()
@@ -1162,6 +1185,7 @@ mod tests {
                     text: "Merged".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 }],
             })],
             col_span: 2,
@@ -1198,6 +1222,7 @@ mod tests {
                     text: "Tall".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 }],
             })],
             row_span: 2,
@@ -1234,6 +1259,7 @@ mod tests {
                     text: "Big".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 }],
             })],
             col_span: 2,
@@ -1283,6 +1309,7 @@ mod tests {
                     text: "Colored".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 }],
             })],
             background: Some(Color::new(200, 200, 200)),
@@ -1313,6 +1340,7 @@ mod tests {
                     text: "Bordered".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 }],
             })],
             border: Some(CellBorder {
@@ -1358,6 +1386,7 @@ mod tests {
                         ..TextStyle::default()
                     },
                     href: None,
+                    footnote: None,
                 }],
             })],
             ..TableCell::default()
@@ -1426,6 +1455,7 @@ mod tests {
                     text: "All borders".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 }],
             })],
             border: Some(CellBorder {
@@ -1482,6 +1512,7 @@ mod tests {
                         text: "First para".to_string(),
                         style: TextStyle::default(),
                         href: None,
+                        footnote: None,
                     }],
                 }),
                 Block::Paragraph(Paragraph {
@@ -1490,6 +1521,7 @@ mod tests {
                         text: "Second para".to_string(),
                         style: TextStyle::default(),
                         href: None,
+                        footnote: None,
                     }],
                 }),
             ],
@@ -1570,6 +1602,7 @@ mod tests {
                 text: "Spaced paragraph".to_string(),
                 style: TextStyle::default(),
                 href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1780,6 +1813,7 @@ mod tests {
                     text: text.to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 }],
             })]),
         }
@@ -2124,6 +2158,7 @@ mod tests {
                                     text: text.to_string(),
                                     style: TextStyle::default(),
                                     href: None,
+                                    footnote: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2236,6 +2271,7 @@ mod tests {
                                 text: "Merged".to_string(),
                                 style: TextStyle::default(),
                                 href: None,
+                                footnote: None,
                             }],
                         })],
                         col_span: 2,
@@ -2252,6 +2288,7 @@ mod tests {
                                     text: "Left".to_string(),
                                     style: TextStyle::default(),
                                     href: None,
+                                    footnote: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2263,6 +2300,7 @@ mod tests {
                                     text: "Right".to_string(),
                                     style: TextStyle::default(),
                                     href: None,
+                                    footnote: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2303,6 +2341,7 @@ mod tests {
                                 text: "Col1".to_string(),
                                 style: TextStyle::default(),
                                 href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2314,6 +2353,7 @@ mod tests {
                                 text: "Col2".to_string(),
                                 style: TextStyle::default(),
                                 href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2382,6 +2422,7 @@ mod tests {
                                     text: "Tall".to_string(),
                                     style: TextStyle::default(),
                                     href: None,
+                                    footnote: None,
                                 }],
                             })],
                             row_span: 2,
@@ -2394,6 +2435,7 @@ mod tests {
                                     text: "Top".to_string(),
                                     style: TextStyle::default(),
                                     href: None,
+                                    footnote: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2409,6 +2451,7 @@ mod tests {
                                 text: "Bottom".to_string(),
                                 style: TextStyle::default(),
                                 href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2451,6 +2494,7 @@ mod tests {
                             text: "Apple".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2462,6 +2506,7 @@ mod tests {
                             text: "Banana".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2498,6 +2543,7 @@ mod tests {
                             text: "Step 1".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2509,6 +2555,7 @@ mod tests {
                             text: "Step 2".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2545,6 +2592,7 @@ mod tests {
                             text: "Parent".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2556,6 +2604,7 @@ mod tests {
                             text: "Child".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 1,
@@ -2567,6 +2616,7 @@ mod tests {
                             text: "Sibling".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2608,6 +2658,7 @@ mod tests {
                         text: "Document Title".to_string(),
                         style: TextStyle::default(),
                         href: None,
+                        footnote: None,
                     })],
                 }],
             }),
@@ -2642,6 +2693,7 @@ mod tests {
                             text: "Page ".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }),
                         HFInline::PageNumber,
                     ],
@@ -2680,6 +2732,7 @@ mod tests {
                         text: "Header".to_string(),
                         style: TextStyle::default(),
                         href: None,
+                        footnote: None,
                     })],
                 }],
             }),
@@ -2767,6 +2820,7 @@ mod tests {
                                 text: "A1".to_string(),
                                 style: TextStyle::default(),
                                 href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2778,6 +2832,7 @@ mod tests {
                                 text: "B1".to_string(),
                                 style: TextStyle::default(),
                                 href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2828,6 +2883,7 @@ mod tests {
                 text: "Click me".to_string(),
                 style: TextStyle::default(),
                 href: Some("https://example.com".to_string()),
+                footnote: None,
             }],
         })])]);
 
@@ -2852,6 +2908,7 @@ mod tests {
                     ..TextStyle::default()
                 },
                 href: Some("https://example.com".to_string()),
+                footnote: None,
             }],
         })])]);
 
@@ -2878,16 +2935,19 @@ mod tests {
                     text: "Visit ".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 },
                 Run {
                     text: "Rust".to_string(),
                     style: TextStyle::default(),
                     href: Some("https://rust-lang.org".to_string()),
+                    footnote: None,
                 },
                 Run {
                     text: " for more.".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 },
             ],
         })])]);
@@ -2920,6 +2980,7 @@ mod tests {
                 text: "Link".to_string(),
                 style: TextStyle::default(),
                 href: Some("https://example.com/path?q=1&r=2".to_string()),
+                footnote: None,
             }],
         })])]);
 
@@ -2929,6 +2990,58 @@ mod tests {
                 .source
                 .contains(r#"#link("https://example.com/path?q=1&r=2")[Link]"#),
             "Expected URL with special chars in link, got: {}",
+            output.source
+        );
+    }
+
+    // ── Footnotes ───────────────────────────────────────────────────────
+
+    #[test]
+    fn test_footnote_generates_typst_footnote() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![
+                Run {
+                    text: "Some text".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                },
+                Run {
+                    text: String::new(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: Some("This is a footnote.".to_string()),
+                },
+            ],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#footnote[This is a footnote.]"),
+            "Expected Typst footnote markup, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_footnote_with_special_chars() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: String::new(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: Some("Note with #special *chars*".to_string()),
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains(r"#footnote[Note with \#special \*chars\*]"),
+            "Expected escaped footnote content, got: {}",
             output.source
         );
     }

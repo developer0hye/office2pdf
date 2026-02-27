@@ -67,6 +67,9 @@ pub struct Run {
     pub style: TextStyle,
     /// Optional hyperlink URL. When present, the run is rendered as a clickable link.
     pub href: Option<String>,
+    /// Optional footnote/endnote content. When present, a footnote marker is emitted and
+    /// the content is rendered at the bottom of the page.
+    pub footnote: Option<String>,
 }
 
 /// A table.
@@ -192,6 +195,7 @@ mod tests {
                     text: "Item 1".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 }],
             }],
             level: 0,
@@ -212,6 +216,7 @@ mod tests {
                             text: "Bullet 1".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -223,6 +228,7 @@ mod tests {
                             text: "Bullet 2".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -244,6 +250,7 @@ mod tests {
                         text: "Step 1".to_string(),
                         style: TextStyle::default(),
                         href: None,
+                        footnote: None,
                     }],
                 }],
                 level: 0,
@@ -265,6 +272,7 @@ mod tests {
                             text: "Top".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -276,6 +284,7 @@ mod tests {
                             text: "Nested".to_string(),
                             style: TextStyle::default(),
                             href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 1,
@@ -295,6 +304,7 @@ mod tests {
                     text: "Hello ".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 },
                 Run {
                     text: "world".to_string(),
@@ -303,6 +313,7 @@ mod tests {
                         ..TextStyle::default()
                     },
                     href: None,
+                    footnote: None,
                 },
             ],
         };
@@ -320,6 +331,7 @@ mod tests {
                     text: "My Header".to_string(),
                     style: TextStyle::default(),
                     href: None,
+                    footnote: None,
                 })],
             }],
         };
@@ -341,6 +353,7 @@ mod tests {
                         text: "Page ".to_string(),
                         style: TextStyle::default(),
                         href: None,
+                        footnote: None,
                     }),
                     HFInline::PageNumber,
                 ],

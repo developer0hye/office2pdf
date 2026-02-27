@@ -874,6 +874,7 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
                                 text: std::mem::take(&mut run_text),
                                 style: run_style.clone(),
                                 href: None,
+                                footnote: None,
                             });
                         }
                         in_run = false;
@@ -1290,6 +1291,7 @@ fn parse_slide_xml(
                                 text: std::mem::take(&mut run_text),
                                 style: run_style.clone(),
                                 href: None,
+                                footnote: None,
                             });
                         }
                         in_run = false;
