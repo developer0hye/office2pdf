@@ -1,15 +1,20 @@
 //! Pure-Rust conversion of Office documents (DOCX, PPTX, XLSX) to PDF.
 //!
-//! # Quick start
+//! # Quick start (native only)
 //!
 //! ```no_run
+//! # #[cfg(not(target_arch = "wasm32"))]
+//! # {
 //! let result = office2pdf::convert("report.docx").unwrap();
 //! std::fs::write("report.pdf", &result.pdf).unwrap();
+//! # }
 //! ```
 //!
-//! # With options
+//! # With options (native only)
 //!
 //! ```no_run
+//! # #[cfg(not(target_arch = "wasm32"))]
+//! # {
 //! use office2pdf::config::{ConvertOptions, PaperSize, SlideRange};
 //!
 //! let options = ConvertOptions {
@@ -19,9 +24,10 @@
 //! };
 //! let result = office2pdf::convert_with_options("slides.pptx", &options).unwrap();
 //! std::fs::write("slides.pdf", &result.pdf).unwrap();
+//! # }
 //! ```
 //!
-//! # In-memory conversion
+//! # In-memory conversion (works on all targets including WASM)
 //!
 //! ```no_run
 //! use office2pdf::config::{ConvertOptions, Format};
@@ -37,8 +43,6 @@ pub mod ir;
 pub mod parser;
 pub mod render;
 
-use std::path::Path;
-
 use config::{ConvertOptions, Format};
 use error::{ConvertError, ConvertResult};
 use parser::Parser;
@@ -47,12 +51,16 @@ use parser::Parser;
 ///
 /// Detects the format from the file extension (`.docx`, `.pptx`, `.xlsx`).
 ///
+/// This function is not available on `wasm32` targets because it reads from the
+/// filesystem. Use [`convert_bytes`] for in-memory conversion on WASM.
+///
 /// # Errors
 ///
 /// Returns [`ConvertError::UnsupportedFormat`] if the extension is unrecognized,
 /// [`ConvertError::Io`] if the file cannot be read, or other variants for
 /// parse/render failures.
-pub fn convert(path: impl AsRef<Path>) -> Result<ConvertResult, ConvertError> {
+#[cfg(not(target_arch = "wasm32"))]
+pub fn convert(path: impl AsRef<std::path::Path>) -> Result<ConvertResult, ConvertError> {
     convert_with_options(path, &ConvertOptions::default())
 }
 
@@ -60,11 +68,15 @@ pub fn convert(path: impl AsRef<Path>) -> Result<ConvertResult, ConvertError> {
 ///
 /// See [`ConvertOptions`] for available settings (paper size, sheet filter, etc.).
 ///
+/// This function is not available on `wasm32` targets because it reads from the
+/// filesystem. Use [`convert_bytes`] for in-memory conversion on WASM.
+///
 /// # Errors
 ///
 /// Returns [`ConvertError`] on unsupported format, I/O, parse, or render failure.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn convert_with_options(
-    path: impl AsRef<Path>,
+    path: impl AsRef<std::path::Path>,
     options: &ConvertOptions,
 ) -> Result<ConvertResult, ConvertError> {
     let path = path.as_ref();
