@@ -258,3 +258,31 @@ Started: 2026년  2월 27일 금요일 12시 19분 03초 KST
   - scripts/ralph/prd.json (US-048 passes: true)
 - Dependencies added: none
 ---
+
+## US-049: API documentation and examples
+- Status: DONE
+- Added crate-level documentation to lib.rs with three usage examples (quick start, with options, in-memory)
+- Added doc comments to all previously undocumented public items:
+  - DocxParser, PptxParser, XlsxParser structs
+  - Color::new(), Color::black(), Color::white() methods
+  - Enhanced convert(), convert_with_options(), convert_bytes(), render_document() with Errors sections
+- Created 3 example programs:
+  - examples/simple_convert.rs: basic file-to-PDF conversion
+  - examples/custom_options.rs: ConvertOptions usage (paper size, slide range, sheet filter, landscape)
+  - examples/from_bytes.rs: in-memory byte conversion with Format detection
+- 3 doc tests pass (compile-only, from crate-level examples)
+- cargo doc -p office2pdf --no-deps: clean (no warnings)
+- cargo doc --workspace --no-deps: only known cargo filename collision bug (#6313)
+- All quality checks pass: 485 lib + 7 CLI + 3 doc tests, clippy clean, fmt clean
+- Files changed:
+  - crates/office2pdf/src/lib.rs (crate-level docs, enhanced function docs)
+  - crates/office2pdf/src/ir/style.rs (Color method docs)
+  - crates/office2pdf/src/parser/docx.rs (DocxParser doc)
+  - crates/office2pdf/src/parser/pptx.rs (PptxParser doc)
+  - crates/office2pdf/src/parser/xlsx.rs (XlsxParser doc)
+  - crates/office2pdf/examples/simple_convert.rs (new)
+  - crates/office2pdf/examples/custom_options.rs (new)
+  - crates/office2pdf/examples/from_bytes.rs (new)
+  - scripts/ralph/prd.json (US-049 passes: true)
+- Dependencies added: none
+---
