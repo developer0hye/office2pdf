@@ -1182,4 +1182,220 @@ mod tests {
             "DOCX with landscape override should produce valid PDF"
         );
     }
+
+    // --- US-048: Edge case handling and robustness tests ---
+
+    #[test]
+    fn test_edge_empty_docx_produces_valid_pdf() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new();
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Empty DOCX should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_edge_empty_xlsx_produces_valid_pdf() {
+        use std::io::Cursor;
+        let book = umya_spreadsheet::new_file();
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+        let data = cursor.into_inner();
+        let result = convert_bytes(&data, Format::Xlsx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Empty XLSX should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_edge_empty_pptx_produces_valid_pdf() {
+        use std::io::{Cursor, Write};
+        // Build a PPTX with no slides
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let opts = zip::write::FileOptions::default();
+        zip.start_file("[Content_Types].xml", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/></Types>"#
+        ).unwrap();
+        zip.start_file("_rels/.rels", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>"#,
+        ).unwrap();
+        zip.start_file("ppt/presentation.xml", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldSz cx="9144000" cy="6858000"/><p:sldIdLst/></p:presentation>"#,
+        ).unwrap();
+        zip.start_file("ppt/_rels/presentation.xml.rels", opts)
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>"#,
+        ).unwrap();
+        let data = zip.finish().unwrap().into_inner();
+        let result = convert_bytes(&data, Format::Pptx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Empty PPTX should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_edge_long_paragraph_no_panic() {
+        use std::io::Cursor;
+        // Create a very long paragraph (10,000 characters)
+        let long_text: String = "Lorem ipsum dolor sit amet. ".repeat(400);
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text(&long_text)),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Long paragraph should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_edge_large_table_no_panic() {
+        use std::io::Cursor;
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            // 100 rows x 20 columns
+            for row in 1..=100u32 {
+                for col in 1..=20u32 {
+                    let coord = format!("{}{}", (b'A' + ((col - 1) % 26) as u8) as char, row);
+                    sheet
+                        .get_cell_mut(coord.as_str())
+                        .set_value(format!("R{row}C{col}"));
+                }
+            }
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+        let data = cursor.into_inner();
+        let result = convert_bytes(&data, Format::Xlsx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Large table should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_edge_corrupted_docx_returns_error() {
+        let data = b"not a valid ZIP file at all";
+        let result = convert_bytes(data, Format::Docx, &ConvertOptions::default());
+        assert!(result.is_err(), "Corrupted DOCX should return an error");
+        let err = result.unwrap_err();
+        match err {
+            ConvertError::Parse(msg) => {
+                assert!(!msg.is_empty(), "Error message should not be empty");
+            }
+            _ => panic!("Expected Parse error for corrupted DOCX, got {err:?}"),
+        }
+    }
+
+    #[test]
+    fn test_edge_corrupted_xlsx_returns_error() {
+        let data = b"this is not an xlsx file";
+        let result = convert_bytes(data, Format::Xlsx, &ConvertOptions::default());
+        assert!(result.is_err(), "Corrupted XLSX should return an error");
+    }
+
+    #[test]
+    fn test_edge_corrupted_pptx_returns_error() {
+        let data = b"garbage data that is not a pptx";
+        let result = convert_bytes(data, Format::Pptx, &ConvertOptions::default());
+        assert!(result.is_err(), "Corrupted PPTX should return an error");
+    }
+
+    #[test]
+    fn test_edge_truncated_zip_returns_error() {
+        // Create a valid DOCX then truncate it
+        let full_data = build_test_docx();
+        let truncated = &full_data[..full_data.len() / 2];
+        let result = convert_bytes(truncated, Format::Docx, &ConvertOptions::default());
+        assert!(result.is_err(), "Truncated DOCX should return an error");
+    }
+
+    #[test]
+    fn test_edge_unicode_cjk_text() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("中文测试 日本語テスト 한국어 테스트")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "CJK text should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_edge_unicode_emoji_text() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Hello 🌍🎉💡 World")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+        // Emoji may render with fallback font, but should not crash
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Emoji text should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_edge_unicode_rtl_text() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("مرحبا بالعالم")), // Arabic: Hello World
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "RTL text should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_edge_image_only_docx() {
+        // A DOCX with only an image (no text paragraphs) should convert
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Image(ImageData {
+                    data: vec![0x89, 0x50, 0x4E, 0x47], // Minimal PNG header (won't render but shouldn't panic)
+                    format: ir::ImageFormat::Png,
+                    width: Some(100.0),
+                    height: Some(100.0),
+                })],
+                header: None,
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+        // This tests the render pipeline with image-only content
+        // It may fail to compile the image (invalid PNG) but should not panic
+        let _result = render_document(&doc);
+    }
 }
