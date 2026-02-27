@@ -142,8 +142,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: PdfStandard::PdfA2b enum in config.rs, pdf_standard field on ConvertOptions, compile_to_pdf() accepts Option<PdfStandard> and configures typst_pdf::PdfStandards + Timestamp for PDF/A compliance. CLI --pdf-a flag. 8 new tests (3 config, 3 pdf renderer, 2 integration)."
     },
     {
       "id": "US-038",
