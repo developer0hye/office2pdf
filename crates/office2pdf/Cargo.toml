@@ -21,3 +21,8 @@ quick-xml = "0.38"
 umya-spreadsheet = "2"
 
 [dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "conversion"
+harness = false

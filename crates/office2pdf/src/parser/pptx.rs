@@ -75,7 +75,7 @@ impl Parser for PptxParser {
         let mut warnings = Vec::new();
 
         // Parse each slide in order, skipping broken slides with warnings
-        let mut pages = Vec::new();
+        let mut pages = Vec::with_capacity(slide_rids.len());
         for (slide_idx, rid) in slide_rids.iter().enumerate() {
             // Filter by slide range if specified (1-indexed)
             let slide_number = (slide_idx as u32) + 1;

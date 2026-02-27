@@ -476,7 +476,8 @@ impl Parser for XlsxParser {
         let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse XLSX: {e}")))?;
 
-        let mut pages = Vec::new();
+        let sheet_count = book.get_sheet_collection().len();
+        let mut pages = Vec::with_capacity(sheet_count);
         let warnings = Vec::new();
 
         for sheet in book.get_sheet_collection() {
@@ -522,9 +523,11 @@ impl Parser for XlsxParser {
             let (merge_tops, merge_skips) = build_merge_maps(sheet);
             let cond_fmt_overrides = build_cond_fmt_overrides(sheet);
 
-            let mut rows = Vec::new();
+            let num_rows = (row_end - row_start + 1) as usize;
+            let num_cols = (col_end - col_start + 1) as usize;
+            let mut rows = Vec::with_capacity(num_rows);
             for row_idx in row_start..=row_end {
-                let mut cells = Vec::new();
+                let mut cells = Vec::with_capacity(num_cols);
                 for col_idx in col_start..=col_end {
                     // Skip cells that are part of a merge but not the top-left
                     if merge_skips.contains(&(col_idx, row_idx)) {

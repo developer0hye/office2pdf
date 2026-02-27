@@ -65,7 +65,7 @@ struct MinimalWorld {
     book: LazyHash<typst::text::FontBook>,
     fonts: Vec<typst_kit::fonts::FontSlot>,
     source: Source,
-    images: HashMap<String, Vec<u8>>,
+    images: HashMap<String, Bytes>,
 }
 
 impl MinimalWorld {
@@ -81,9 +81,9 @@ impl MinimalWorld {
         let main_id = FileId::new(None, VirtualPath::new("main.typ"));
         let source = Source::new(main_id, source_text.to_string());
 
-        let image_map: HashMap<String, Vec<u8>> = images
+        let image_map: HashMap<String, Bytes> = images
             .iter()
-            .map(|a| (a.path.clone(), a.data.clone()))
+            .map(|a| (a.path.clone(), Bytes::new(a.data.clone())))
             .collect();
 
         Self {
@@ -126,7 +126,7 @@ impl World for MinimalWorld {
             // Check if it's an embedded image file
             let path = id.vpath().as_rootless_path().to_string_lossy();
             if let Some(data) = self.images.get(path.as_ref()) {
-                Ok(Bytes::new(data.clone()))
+                Ok(data.clone()) // Bytes::clone is cheap (reference-counted)
             } else {
                 Err(typst::diag::FileError::NotFound(
                     id.vpath().as_rootless_path().into(),

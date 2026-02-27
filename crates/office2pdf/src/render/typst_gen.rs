@@ -44,8 +44,9 @@ impl GenCtx {
 
     fn add_image(&mut self, data: &[u8], format: ImageFormat) -> String {
         let ext = format.extension();
-        let path = format!("img-{}.{}", self.next_image_id, ext);
+        let id = self.next_image_id;
         self.next_image_id += 1;
+        let path = format!("img-{id}.{ext}");
         self.images.push(ImageAsset {
             path: path.clone(),
             data: data.to_vec(),
@@ -89,7 +90,8 @@ pub fn generate_typst_with_options(
     doc: &Document,
     options: &ConvertOptions,
 ) -> Result<TypstOutput, ConvertError> {
-    let mut out = String::new();
+    // Pre-allocate output string: ~2KB per page is a reasonable estimate
+    let mut out = String::with_capacity(doc.pages.len() * 2048);
     let mut ctx = GenCtx::new();
     for page in &doc.pages {
         match page {
@@ -711,7 +713,7 @@ fn write_cell_params(out: &mut String, cell: &TableCell) {
 }
 
 fn format_cell_stroke(border: &CellBorder) -> String {
-    let mut parts = Vec::new();
+    let mut parts = Vec::with_capacity(4);
 
     if let Some(ref side) = border.top {
         parts.push(format!("top: {}", format_border_side(side)));
