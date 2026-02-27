@@ -12,7 +12,8 @@
 - **XLSX print area**: Print areas are stored as `DefinedName` with name `_xlnm.Print_Area` on worksheets. Use `sheet.get_defined_names()` to iterate, check `dn.get_name() == "_xlnm.Print_Area"`, parse address via `parse_print_area_range()`. Address format: `Sheet1!$A$1:$C$10` (sheet prefix optional, dollar signs optional). `parse_column_letters("AA")` → 27, `parse_cell_ref("$A$1")` → (1, 1). Test creation: `sheet.add_defined_name("_xlnm.Print_Area", "Sheet1!$A$1:$B$2")`.
 - **XLSX page breaks**: `sheet.get_row_breaks().get_break_list()` → `&[Break]`. Filter `b.get_manual_page_break() == true`. `b.get_id()` is the 1-indexed row number (break occurs after that row). `collect_row_breaks()` returns sorted, deduped Vec<u32>. Split rows into multiple TablePages at break points. Test creation: `let mut brk = Break::default(); brk.set_id(row); brk.set_manual_page_break(true); sheet.get_row_breaks_mut().add_break_list(brk);`.
 - **XLSX sheet headers/footers**: `sheet.get_header_footer()` → `&umya_spreadsheet::HeaderFooter`. `hf.get_odd_header().get_value()` / `hf.get_odd_footer().get_value()` returns Excel format string. Format codes: `&L`/`&C`/`&R` (section switches), `&P` (page number), `&N` (total pages), `&&` (literal ampersand), `&"FontName"` (font, skipped), `&NN` (font size, skipped). `parse_hf_format_string()` parses into `Option<HeaderFooter>` with sentinel chars (\x01=PageNumber, \x02=TotalPages). Test setup: `sheet.get_header_footer_mut().get_odd_header_mut().set_value("&CHeader Text")`.
-- **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. `FontSearcher::new().include_system_fonts(true).search()` discovers system fonts with embedded fallbacks (Libertinus Serif, New Computer Modern, DejaVu Sans Mono via `embed-fonts` feature). Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`.
+- **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. `FontSearcher::new().include_system_fonts(true).search()` discovers system fonts with embedded fallbacks (Libertinus Serif, New Computer Modern, DejaVu Sans Mono via `embed-fonts` feature). For custom font dirs, use `searcher.search_with(paths)` — highest priority. Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`. `compile_to_pdf(source, images, pdf_standard, font_paths)` threads font_paths to MinimalWorld.
+- **Page size / landscape override**: `ConvertOptions.paper_size: Option<PaperSize>` (A4/Letter/Legal/Custom), `landscape: Option<bool>`. `resolve_page_size(original, options)` applies overrides: paper_size replaces dimensions, landscape swaps w/h when needed. Called in each page generator (flow/fixed/table). `generate_typst_with_options(doc, options)` is the options-aware codegen; `generate_typst(doc)` uses default options. `PaperSize::parse("a4"|"letter"|"legal")` for CLI.
 - **DOCX list detection**: Check `para.has_numbering` and `para.property.numbering_property` for `NumberingProperty { id: Option<NumberingId>, level: Option<IndentLevel> }`. `NumberingId.id` is the numId, `IndentLevel.val` is the ilvl (0-based). numId=0 means "no numbering". Resolve numId → abstractNumId via `docx.numberings.numberings`, then check `abstract_num.levels[0].format` (use serde) for `"bullet"` (Unordered) vs `"decimal"`/etc. (Ordered). Group consecutive list paragraphs with same numId into `Block::List`.
 - **Typst list codegen**: Use `#list(list.item[content], ...)` for unordered, `#enum(enum.item[content], ...)` for ordered. Nested items: emit a sub-list `[#list(...)]` after the parent item. The `generate_list_items()` function recursively handles nesting based on item levels.
 - **docx-rs test list creation**: `docx_rs::Paragraph::new().add_run(...).numbering(NumberingId::new(1), IndentLevel::new(0))`. Need `AbstractNumbering::new(id).add_level(Level::new(level, Start::new(1), NumberFormat::new("bullet"|"decimal"), LevelText::new("•"|"%1."), LevelJc::new("left")))` and `Numbering::new(numId, abstractNumId)`, wrapped in `Numberings::new().add_abstract_numbering(an).add_numbering(n)` and set via `Docx::new().numberings(nums)`.
@@ -279,4 +280,31 @@ Started: 2026년  2월 27일 금요일 08시 36분 50초 KST
   - `convert_batch()` returns a struct rather than using Result — batch operations have mixed success/failure semantics
   - Test fixture creation in CLI crate requires adding parser crate (docx-rs) as dev-dependency since library test helpers are private
   - `std::env::temp_dir()` + unique subdirectory names works well for integration test isolation without the `tempfile` crate
+---
+
+## 2026-02-27 - US-039: ConvertOptions - paper size, font paths, landscape override
+- What was implemented:
+  - Added `PaperSize` enum with `A4`, `Letter`, `Legal`, `Custom { width, height }` variants and `dimensions()` / `parse()` methods
+  - Added `paper_size: Option<PaperSize>`, `font_paths: Vec<PathBuf>`, `landscape: Option<bool>` to `ConvertOptions`
+  - Modified `compile_to_pdf()` to accept `&[PathBuf]` font_paths parameter
+  - Modified `MinimalWorld::new()` to use `FontSearcher::search_with(paths)` when custom font paths provided, `search()` otherwise
+  - Added `generate_typst_with_options()` accepting `ConvertOptions`, kept `generate_typst()` as backward-compatible wrapper
+  - Added `resolve_page_size()` helper that applies paper_size override then landscape swap to produce effective `PageSize`
+  - Threaded resolved page size through `generate_flow_page`, `generate_fixed_page`, `generate_table_page`, and their setup writers
+  - Landscape logic: swap w/h when `landscape=true` and w < h, or `landscape=false` and w > h
+  - `convert_bytes()` calls `generate_typst_with_options` and passes `font_paths` to `compile_to_pdf`
+  - CLI: `--paper` (a4/letter/legal string), `--font-path` (repeatable PathBuf), `--landscape` (bool flag)
+- Files changed:
+  - `crates/office2pdf/src/config.rs` — PaperSize enum + 3 new ConvertOptions fields + 12 tests
+  - `crates/office2pdf/src/render/pdf.rs` — font_paths param on compile_to_pdf + MinimalWorld + 2 tests
+  - `crates/office2pdf/src/render/typst_gen.rs` — resolve_page_size + generate_typst_with_options + threaded options + 5 tests
+  - `crates/office2pdf/src/lib.rs` — wiring to generate_typst_with_options + 2 integration tests
+  - `crates/office2pdf-cli/src/main.rs` — --paper, --font-path, --landscape flags
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - `FontSearcher::search_with(font_dirs)` accepts any iterable of paths; highest priority for custom dirs. Non-existent paths are silently skipped.
+  - Clippy catches `if_same_then_else` — when two if-branches have identical bodies, combine conditions with `||` into a single block.
+  - `ConvertOptions` now threads through both codegen (`generate_typst_with_options`) and PDF compilation (`compile_to_pdf`). For new options that affect markup, add to codegen. For options that affect compilation (fonts, PDF standard), add to compile_to_pdf.
+  - `resolve_page_size()` is the single point of page size override logic — keeps the three page generators (flow/fixed/table) clean.
+  - Backward compatibility preserved: `generate_typst()` wraps `generate_typst_with_options` with default options, `render_document()` uses `None`/`&[]` defaults.
 ---

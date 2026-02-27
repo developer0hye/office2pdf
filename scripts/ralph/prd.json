@@ -179,8 +179,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: PaperSize enum (A4/Letter/Legal/Custom) in config.rs with dimensions() and parse(). ConvertOptions gains paper_size: Option<PaperSize>, font_paths: Vec<PathBuf>, landscape: Option<bool>. compile_to_pdf() accepts &[PathBuf] font_paths, MinimalWorld uses FontSearcher::search_with() when paths provided. generate_typst_with_options() with resolve_page_size() applies paper size and landscape overrides to all page types (Flow/Fixed/Table). CLI: --paper (a4/letter/legal), --font-path (repeatable), --landscape. 19 new tests (12 config, 2 pdf, 5 codegen, 2 integration)."
     }
   ]
 }
