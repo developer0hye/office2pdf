@@ -109,6 +109,7 @@ pub enum FixedElementKind {
     Shape(super::elements::Shape),
     Table(super::elements::Table),
     SmartArt(super::elements::SmartArt),
+    Chart(super::elements::Chart),
 }
 
 /// A table-based page (XLSX sheets).
