@@ -3,10 +3,10 @@ use std::fmt::Write;
 use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
-    FixedPage, FloatingImage, FlowPage, HFInline, HeaderFooter, ImageData, ImageFormat,
-    LineSpacing, List, ListKind, Margins, MathEquation, Page, PageSize, Paragraph, ParagraphStyle,
-    Run, Shape, ShapeKind, Table, TableCell, TablePage, TextStyle, WrapMode,
+    Alignment, Block, BorderSide, CellBorder, Chart, ChartType, Color, Document, FixedElement,
+    FixedElementKind, FixedPage, FloatingImage, FlowPage, HFInline, HeaderFooter, ImageData,
+    ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation, Page, PageSize, Paragraph,
+    ParagraphStyle, Run, Shape, ShapeKind, Table, TableCell, TablePage, TextStyle, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -453,6 +453,10 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             generate_math_equation(out, math);
             Ok(())
         }
+        Block::Chart(chart) => {
+            generate_chart(out, chart);
+            Ok(())
+        }
     }
 }
 
@@ -466,6 +470,66 @@ fn generate_math_equation(out: &mut String, math: &MathEquation) {
     } else {
         let _ = write!(out, "${}$", math.content);
     }
+}
+
+/// Generate Typst markup for a chart as a data table.
+///
+/// Renders the chart title (if any), chart type label, and a table of
+/// category labels vs. series values. This is a simplified fallback
+/// representation since full chart rendering is not feasible in Typst.
+fn generate_chart(out: &mut String, chart: &Chart) {
+    // Chart title
+    if let Some(ref title) = chart.title {
+        let _ = writeln!(out, "#align(center)[*{title}*]\n");
+    }
+
+    // Chart type label
+    let type_label = match &chart.chart_type {
+        ChartType::Bar => "Bar Chart",
+        ChartType::Column => "Column Chart",
+        ChartType::Line => "Line Chart",
+        ChartType::Pie => "Pie Chart",
+        ChartType::Area => "Area Chart",
+        ChartType::Scatter => "Scatter Chart",
+        ChartType::Other(s) => s.as_str(),
+    };
+    let _ = writeln!(out, "#align(center)[_{type_label}_]\n");
+
+    // Data table
+    if chart.series.is_empty() {
+        return;
+    }
+
+    let col_count = 1 + chart.series.len(); // category column + series columns
+    let _ = writeln!(out, "#table(");
+    let _ = writeln!(out, "  columns: {col_count},");
+
+    // Header row: "Category" + series names
+    out.push_str("  [*Category*], ");
+    for (i, series) in chart.series.iter().enumerate() {
+        let default_name = format!("Series {}", i + 1);
+        let name = series.name.as_deref().unwrap_or(&default_name);
+        let _ = write!(out, "[*{name}*]");
+        if i + 1 < chart.series.len() {
+            out.push_str(", ");
+        }
+    }
+    out.push_str(",\n");
+
+    // Data rows
+    for (row_idx, cat) in chart.categories.iter().enumerate() {
+        let _ = write!(out, "  [{cat}], ");
+        for (i, series) in chart.series.iter().enumerate() {
+            let val = series.values.get(row_idx).copied().unwrap_or(0.0);
+            let _ = write!(out, "[{val}]");
+            if i + 1 < chart.series.len() {
+                out.push_str(", ");
+            }
+        }
+        out.push_str(",\n");
+    }
+
+    let _ = writeln!(out, ")\n");
 }
 
 /// Generate Typst markup for a list (ordered or unordered).
@@ -670,6 +734,7 @@ fn generate_cell_content(
             Block::FloatingImage(fi) => generate_floating_image(out, fi, ctx),
             Block::List(list) => generate_list(out, list)?,
             Block::MathEquation(math) => generate_math_equation(out, math),
+            Block::Chart(chart) => generate_chart(out, chart),
             Block::PageBreak => {}
         }
     }
@@ -978,7 +1043,7 @@ fn escape_typst(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::{HeaderFooterParagraph, Metadata, StyleSheet};
+    use crate::ir::{ChartSeries, HeaderFooterParagraph, Metadata, StyleSheet};
 
     /// Helper to create a minimal Document with one FlowPage.
     fn make_doc(pages: Vec<Page>) -> Document {
@@ -3762,6 +3827,94 @@ mod tests {
         assert!(
             output.source.contains("$ sum_(i=1)^n i $"),
             "Expected display math with sum, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_codegen_chart_with_title_and_data() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Chart(Chart {
+            chart_type: ChartType::Bar,
+            title: Some("Sales Report".to_string()),
+            categories: vec!["Q1".to_string(), "Q2".to_string()],
+            series: vec![ChartSeries {
+                name: Some("Revenue".to_string()),
+                values: vec![100.0, 250.0],
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("Sales Report"),
+            "Expected chart title, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Bar Chart"),
+            "Expected chart type label, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Revenue"),
+            "Expected series name, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Q1"),
+            "Expected category label, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("100"),
+            "Expected data value, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_codegen_chart_no_title() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Chart(Chart {
+            chart_type: ChartType::Pie,
+            title: None,
+            categories: vec!["A".to_string(), "B".to_string()],
+            series: vec![ChartSeries {
+                name: None,
+                values: vec![60.0, 40.0],
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("Pie Chart"),
+            "Expected pie chart label, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Series 1"),
+            "Expected default series name, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_codegen_chart_empty_series() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Chart(Chart {
+            chart_type: ChartType::Line,
+            title: Some("Empty".to_string()),
+            categories: vec![],
+            series: vec![],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("Line Chart"),
+            "Expected line chart label, got:\n{}",
+            output.source
+        );
+        // No table should be generated for empty series
+        assert!(
+            !output.source.contains("#table("),
+            "Should not generate table for empty chart, got:\n{}",
             output.source
         );
     }

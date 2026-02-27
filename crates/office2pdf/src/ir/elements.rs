@@ -33,7 +33,42 @@ pub enum Block {
     FloatingImage(FloatingImage),
     List(List),
     MathEquation(MathEquation),
+    Chart(Chart),
     PageBreak,
+}
+
+/// A chart extracted from an embedded chart object.
+#[derive(Debug, Clone)]
+pub struct Chart {
+    /// The type of chart (bar, line, pie, etc.).
+    pub chart_type: ChartType,
+    /// Optional chart title.
+    pub title: Option<String>,
+    /// Category labels (x-axis or pie slice names).
+    pub categories: Vec<String>,
+    /// Data series.
+    pub series: Vec<ChartSeries>,
+}
+
+/// The type of chart.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ChartType {
+    Bar,
+    Column,
+    Line,
+    Pie,
+    Area,
+    Scatter,
+    Other(String),
+}
+
+/// A data series within a chart.
+#[derive(Debug, Clone)]
+pub struct ChartSeries {
+    /// Optional series name.
+    pub name: Option<String>,
+    /// Data values for this series.
+    pub values: Vec<f64>,
 }
 
 /// A math equation (from OMML or similar).
