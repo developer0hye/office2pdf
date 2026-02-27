@@ -6,13 +6,16 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "CLI tool to convert DOCX, XLSX, and PPTX files to PDF"
+readme = "../../README.md"
+keywords = ["pdf", "docx", "xlsx", "pptx", "cli"]
+categories = ["command-line-utilities"]
 
 [[bin]]
 name = "office2pdf"
 path = "src/main.rs"
 
 [dependencies]
-office2pdf = { path = "../office2pdf" }
+office2pdf = { version = "0.1.0", path = "../office2pdf" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 

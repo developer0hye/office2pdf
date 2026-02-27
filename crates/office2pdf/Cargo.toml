@@ -6,6 +6,9 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Convert DOCX, XLSX, and PPTX files to PDF using pure Rust"
+readme = "../../README.md"
+keywords = ["pdf", "docx", "xlsx", "pptx", "converter"]
+categories = ["text-processing"]
 
 [dependencies]
 thiserror = "2"
