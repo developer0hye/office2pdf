@@ -3862,6 +3862,7 @@ mod tests {
     // ── Group shape helpers ─────────────────────────────────────────────
 
     /// Create a group shape XML with a coordinate transform and child shapes.
+    #[allow(clippy::too_many_arguments)]
     fn make_group_shape(
         off_x: i64,
         off_y: i64,
@@ -4147,6 +4148,7 @@ mod tests {
     /// Create a shape XML with optional rotation and fill alpha.
     /// `rot` is in 60000ths of a degree (e.g. 5400000 = 90°).
     /// `alpha_thousandths` is in 1000ths of percent (e.g. 50000 = 50%).
+    #[allow(clippy::too_many_arguments)]
     fn make_styled_shape(
         x: i64,
         y: i64,
