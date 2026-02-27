@@ -84,6 +84,8 @@ pub struct FixedPage {
     pub elements: Vec<FixedElement>,
     /// Optional background color for the page.
     pub background_color: Option<super::style::Color>,
+    /// Optional gradient background (takes precedence over `background_color` when present).
+    pub background_gradient: Option<super::elements::GradientFill>,
 }
 
 /// An element with fixed position on a page.
@@ -148,6 +150,7 @@ mod tests {
             size: PageSize::default(),
             elements: vec![],
             background_color: Some(Color::new(255, 0, 0)),
+            background_gradient: None,
         };
         assert_eq!(page.background_color, Some(Color::new(255, 0, 0)));
     }
@@ -158,6 +161,7 @@ mod tests {
             size: PageSize::default(),
             elements: vec![],
             background_color: None,
+            background_gradient: None,
         };
         assert!(page.background_color.is_none());
     }

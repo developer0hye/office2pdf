@@ -59,7 +59,8 @@
 - **PPTX scheme color resolution**: In slide XML, `<a:schemeClr val="accent1"/>` resolves to RGB via `theme.colors.get(&scheme_name)`. Handled in both Start and Empty events (schemeClr can have children like `<a:tint/>`). When no theme is loaded, scheme colors resolve to `None`.
 - **PPTX theme font resolution**: `<a:latin typeface="+mj-lt"/>` → major font, `<a:latin typeface="+mn-lt"/>` → minor font. `resolve_theme_font()` substitutes these references. Explicit font names pass through unchanged.
 - **Test PPTX with theme**: Use `build_test_pptx_with_theme(cx, cy, slides, theme_xml)`. Includes `ppt/theme/theme1.xml` in ZIP and theme relationship in presentation.xml.rels. `make_theme_xml(colors, major_font, minor_font)` creates theme XML. `standard_theme_colors()` returns Office-like defaults.
-- **PPTX slide backgrounds**: `FixedPage.background_color: Option<Color>`. Parsed from `<p:bg><p:bgPr><a:solidFill>` in slide XML via `parse_background_color(xml, theme)`. Supports `<a:srgbClr>` and `<a:schemeClr>`. Inheritance chain: slide → layout → master via `resolve_inherited_background()`. Layout path from slide .rels (relationship target containing "slideLayout"), master path from layout .rels (target containing "slideMaster"). Typst codegen: `#set page(..., fill: rgb(r, g, b))` when background_color is Some.
+- **PPTX slide backgrounds**: `FixedPage.background_color: Option<Color>` and `FixedPage.background_gradient: Option<GradientFill>`. Solid: `parse_background_color(xml, theme)` from `<p:bg><p:bgPr><a:solidFill>`. Gradient: `parse_background_gradient(xml, theme)` from `<p:bg><p:bgPr><a:gradFill>` with `<a:gsLst>/<a:gs pos>` stops and `<a:lin ang>` direction. Gradient takes precedence; first stop color used as solid fallback. Supports `<a:srgbClr>` and `<a:schemeClr>`. Inheritance chain: slide → layout → master via `resolve_inherited_background()`. Typst codegen: gradient → `gradient.linear((rgb(r,g,b), N%), ..., angle: Ndeg)`, solid → `fill: rgb(r, g, b)`.
+- **PPTX gradient shape fills**: `Shape.gradient_fill: Option<GradientFill>`. Parsed via `parse_shape_gradient_fill(reader, theme)` sub-parser when `<a:gradFill>` found inside `<p:spPr>`. Same stop/angle format as backgrounds. Gradient takes precedence over solid fill in codegen. First stop color stored as solid fill fallback. Typst: `fill: gradient.linear(...)` on `#rect`/`#ellipse`.
 - **Test PPTX with layout/master**: Use `build_test_pptx_with_layout_master(cx, cy, slide_xml, layout_xml, master_xml)`. Creates full inheritance chain: slide1 → slideLayout1 → slideMaster1 with .rels files at each level. `make_slide_xml_with_bg(bg_xml, shapes)` creates slide XML with `<p:bg>` inside `<p:cSld>`.
 - **PPTX layout/master element inheritance**: `parse_single_slide()` resolves layout and master paths via `resolve_layout_master_paths()`, then parses elements from master, layout, and slide in order (master behind → layout → slide on top). Uses `rels_path_for()` helper for .rels path construction. `parse_slide_xml()` works on any XML with `<p:spTree>` — same function parses slide, layout, and master shapes. Test helpers: `make_layout_xml(shapes)`, `make_master_xml(shapes)`, `build_test_pptx_with_layout_master_multi_slide(cx, cy, slides, layout, master)` for multi-slide testing.
 - **PPTX tables**: Tables live inside `<p:graphicFrame>` elements (not `<p:sp>`). Position from `<p:xfrm>` (not `<a:xfrm>`). Table XML: `<a:graphic><a:graphicData><a:tbl>`. Grid: `<a:tblGrid><a:gridCol w="EMU"/>`. Rows: `<a:tr h="EMU">`. Cells: `<a:tc>` with optional `gridSpan` (colspan), `rowSpan`, `hMerge`/`vMerge` (continuation). Cell content: `<a:txBody>` with same paragraph/run structure as shapes. Cell properties: `<a:tcPr>` with `<a:solidFill>` for background, `<a:lnL/lnR/lnT/lnB w="EMU">` for borders. Maps to `FixedElementKind::Table(Table)` in IR. `parse_pptx_table()` is a standalone sub-parser called from `parse_slide_xml()` when `<a:tbl>` is found. Test helpers: `make_table_graphic_frame(x, y, cx, cy, col_widths_emu, rows_xml)`, `make_table_row(cells_text)`, `table_element(elem)`.
@@ -70,219 +71,32 @@
 - **DOCX floating images**: `WrapContext` scans raw document.xml for `wp:anchor` elements in document order (similar pattern to `NoteContext`). `AnchorWrapInfo` stores wrap_mode (WrapMode) and behind_doc (bool). `scan_anchor_wrap_types()` parses wp:wrapSquare→Square, wp:wrapTight/wrapThrough→Tight, wp:wrapTopAndBottom→TopAndBottom, wp:wrapNone→depends on behindDoc. `extract_drawing_image()` checks `pic.position_type == Anchor` → consumes next wrap info → `Block::FloatingImage(FloatingImage)`. Position from `DrawingPosition::Offset(emu)` → `emu / 12700.0` points. Codegen: Square/Tight → `#place(float: true)`, TopAndBottom → `#block` with `#v()` spacer, Behind/InFront/None → `#place()` absolute. Test helpers: `patch_docx_wrap_type(data, old_wrap, new_wrap)` replaces wrap elements in ZIP, `patch_docx_behind_doc(data)` sets `behindDoc="1"`. Create floating test Pic: `Pic::new(&bmp).floating().offset_x(emu).offset_y(emu)` (default: wrapSquare if !allow_overlap), `.overlapping()` → wrapNone.
 ---
 
-# Ralph Progress Log - Phase 4: P3 Features - Charts, Equations, SmartArt, Polish
-Started: 2026년  2월 27일 금요일 12시 19분 03초 KST
+# Ralph Progress Log - Phase 5: Remaining PRD Gaps - Gradients, Page Breaks, Effects, Benchmarks
+Started: 2026년  2월 27일 금요일 19시 19분 06초 KST
 ---
 
-## 2026-02-27 - US-040: DOCX parser - text wrapping around images
+## 2026-02-27 - US-050: PPTX parser - gradient background support
 - What was implemented:
-  - IR: WrapMode enum (Square, Tight, TopAndBottom, Behind, InFront, None) and FloatingImage struct
-  - Parser: WrapContext scans raw DOCX XML for wp:anchor wrap elements (wrapSquare, wrapTight, wrapTopAndBottom, wrapNone, wrapThrough) and behindDoc attribute
-  - Parser: extract_drawing_image() detects Anchor position_type from docx-rs Pic and produces Block::FloatingImage with position offsets
-  - Codegen: generate_floating_image() handles each wrap mode: #place(float:true) for Square/Tight, #block with #v() for TopAndBottom, #place() for Behind/InFront/None
-  - Tests: 5 parser tests (square, topAndBottom, behind, position offset, inline-not-floating) + 3 codegen tests
+  - Added `GradientStop` and `GradientFill` IR types in `ir/elements.rs`
+  - Added `background_gradient: Option<GradientFill>` to `FixedPage`
+  - Added `gradient_fill: Option<GradientFill>` to `Shape`
+  - Implemented `parse_background_gradient()` for slide backgrounds with `<a:gradFill>`
+  - Implemented `parse_shape_gradient_fill()` sub-parser for shape gradient fills
+  - Added gradient detection in `parse_slide_xml()` for `<a:gradFill>` inside `<p:spPr>`
+  - Implemented `write_gradient_fill()` for Typst `gradient.linear()` codegen
+  - Updated `generate_fixed_page()` and `write_shape_params()` to prefer gradient over solid fill
+  - Fallback: first stop color stored as solid `background_color`/`fill`
 - Files changed:
-  - crates/office2pdf/src/ir/elements.rs (WrapMode, FloatingImage, Block::FloatingImage)
-  - crates/office2pdf/src/parser/docx.rs (WrapContext, scan_anchor_wrap_types, modified extract_drawing_image)
-  - crates/office2pdf/src/render/typst_gen.rs (generate_floating_image, Block::FloatingImage handling)
-- Dependencies added: none
+  - `crates/office2pdf/src/ir/elements.rs` - GradientStop, GradientFill types; gradient_fill on Shape
+  - `crates/office2pdf/src/ir/document.rs` - background_gradient on FixedPage
+  - `crates/office2pdf/src/parser/pptx.rs` - gradient parsing (background + shape fill), 7 new tests
+  - `crates/office2pdf/src/render/typst_gen.rs` - gradient codegen, 4 new tests
+- Dependencies added: None
 - **Learnings for future iterations:**
-  - docx-rs parses Pic.position_type (Anchor vs Inline) and position offsets but does NOT parse wrap type elements — need raw ZIP XML scanning (same pattern as NoteContext for footnotes)
-  - docx-rs builder writes behindDoc="0" in anchor XML, so test patching must replace the existing attribute value rather than adding a new attribute
-  - DrawingPosition::Offset values are in EMU (signed i32); convert via /12700.0 for points
-  - Typst 0.14 has no native text wrapping around images — #place(float:true) only supports top/bottom float, not side-by-side wrapping. Best-effort approach is sufficient per acceptance criteria
-  - Pre-existing test failure: test_batch_convert_partial_failure in CLI crate (unrelated to this change)
----
-
-## 2026-02-27 - US-041: DOCX parser - OMML math equations
-- What was implemented:
-  - IR: Block::MathEquation(MathEquation { content: String, display: bool })
-  - Parser: omml.rs module — complete OMML→Typst converter (fractions, superscripts, subscripts, radicals, delimiters, n-ary operators, functions, limits, accents, bars, matrices, equation arrays)
-  - Parser: MathContext with raw ZIP XML scanning (docx-rs has zero OMML support)
-  - Codegen: display math → `$ content $\n`, inline math → `$content$`
-  - Tests: 13 unit tests for OMML conversion, 3 DOCX integration tests, 3 codegen tests
-- Files changed:
-  - crates/office2pdf/src/parser/omml.rs (new)
-  - crates/office2pdf/src/parser/mod.rs (module declaration)
-  - crates/office2pdf/src/parser/docx.rs (MathContext, build_math_context)
-  - crates/office2pdf/src/ir/elements.rs (MathEquation, Block::MathEquation)
-  - crates/office2pdf/src/render/typst_gen.rs (generate_math_equation)
----
-
-## 2026-02-27 - US-042: DOCX parser - embedded charts (basic)
-- What was implemented:
-  - IR: Chart, ChartType (Bar/Column/Line/Pie/Area/Scatter/Other), ChartSeries, Block::Chart
-  - Parser: chart.rs module — parses chart*.xml files from DOCX ZIP, extracts chart type, title, categories, series data from cached values (strCache/numCache)
-  - Parser: scan_chart_references() scans document.xml for c:chart elements in graphicData URIs
-  - Parser: scan_chart_rels() extracts chart relationship mappings from document.xml.rels
-  - Parser: ChartContext integration in docx.rs with build_chart_context()
-  - Codegen: renders charts as data tables — title (bold centered), chart type label (italic centered), #table() with category + series columns
-  - Tests: 4 chart parser unit tests, 2 scan tests, 3 codegen tests
-- Files changed:
-  - crates/office2pdf/src/parser/chart.rs (new)
-  - crates/office2pdf/src/parser/mod.rs (module declaration)
-  - crates/office2pdf/src/parser/docx.rs (ChartContext, build_chart_context)
-  - crates/office2pdf/src/ir/elements.rs (Chart, ChartType, ChartSeries, Block::Chart)
-  - crates/office2pdf/src/render/typst_gen.rs (generate_chart, ChartSeries import)
-- **Learnings for future iterations:**
-  - docx-rs does not parse chart drawing elements — charts silently skipped in DrawingData::Pic handler
-  - Chart data is in cached values (<c:strCache>/<c:numCache>) inside <c:ser> elements, avoiding need to parse external embedded XLSX workbooks
-  - Charts referenced via r:id in <c:chart> element within <a:graphicData uri="...chart">
-  - Relationship targets are relative to word/ directory
-  - barDir val="bar" means horizontal bars, val="col" means vertical columns
----
-
-## 2026-02-27 - US-043: PPTX parser - SmartArt diagrams (basic)
-- What was implemented:
-  - IR: SmartArt struct (items: Vec<String>), FixedElementKind::SmartArt variant
-  - Parser: smartart.rs module — parse_smartart_data_xml() extracts text from dgm:pt type="node" elements in diagram data model XML, scan_smartart_refs() detects SmartArt graphicFrames and extracts dgm:relIds r:dm relationship IDs
-  - Integration: parse_single_slide() scans slide XML for SmartArt references, resolves data files via slide .rels (targets containing "diagrams/data"), adds FixedElementKind::SmartArt elements at graphicFrame position
-  - Codegen: generate_smartart() renders as bordered box with "SmartArt Diagram" header and Typst bulleted list (- item) format
-  - Tests: 8 unit tests (data parsing including type filtering, multi-run text, ref scanning), 3 PPTX integration tests (SmartArt produces elements, mixed with text box, no SmartArt slide), 3 codegen tests (basic, empty, special chars escaping)
-- Files changed:
-  - crates/office2pdf/src/parser/smartart.rs (new — parse_smartart_data_xml, scan_smartart_refs, SmartArtRef)
-  - crates/office2pdf/src/parser/mod.rs (module declaration)
-  - crates/office2pdf/src/parser/pptx.rs (SmartArtMap, load_smartart_data, integration in parse_single_slide, test helpers and tests)
-  - crates/office2pdf/src/ir/elements.rs (SmartArt struct)
-  - crates/office2pdf/src/ir/document.rs (FixedElementKind::SmartArt variant)
-  - crates/office2pdf/src/render/typst_gen.rs (generate_smartart, SmartArt codegen tests)
-- Dependencies added: none
-- **Learnings for future iterations:**
-  - SmartArt in PPTX uses dgm:relIds inside graphicFrame's graphicData (URI contains "diagram")
-  - SmartArt data model XML has dgm:pt elements with type attribute: "doc" (root), "node" (content), "parTrans"/"sibTrans" (transitions) — only "node" types contain user content
-  - Points without explicit type attribute default to "node"
-  - Text is nested deeply: dgm:pt → dgm:t → a:p → a:r → a:t — careful match arm ordering needed to avoid matching nested a:t as dgm:t
-  - SmartArt data files are referenced in slide .rels with targets like "../diagrams/data1.xml"
-  - Detection handled outside parse_slide_xml (in parse_single_slide) since SmartArt requires ZIP archive access for data files, keeping parse_slide_xml focused on XML-only parsing
----
-
-## 2026-02-27 - US-044: PPTX parser - embedded charts (basic)
-- What was implemented:
-  - IR: FixedElementKind::Chart(Chart) variant added to support charts on fixed-layout (PPTX) pages
-  - Parser: scan_pptx_chart_refs() in chart.rs — scans slide XML for graphicFrame elements containing chart URI in graphicData, extracts position/size and r:id
-  - Parser: PptxChartRef struct holds position (EMU) and chart_rid
-  - Parser: load_chart_data() in pptx.rs — scans slide .rels for chart relationships, reads chart XML from ZIP, parses via existing parse_chart_xml()
-  - Integration: parse_single_slide() now scans for chart refs after SmartArt, adds FixedElementKind::Chart elements at graphicFrame position
-  - Codegen: FixedElementKind::Chart handled in generate_fixed_element(), delegates to existing generate_chart() which renders as data table
-  - Tests: 3 scanner tests (basic, no chart, multiple), 3 PPTX integration tests (chart produces element, chart + text box, no chart), 3 codegen tests (basic, no title, empty series)
-- Files changed:
-  - crates/office2pdf/src/ir/document.rs (FixedElementKind::Chart variant)
-  - crates/office2pdf/src/parser/chart.rs (PptxChartRef struct, scan_pptx_chart_refs function, 3 tests)
-  - crates/office2pdf/src/parser/pptx.rs (Chart import, chart module import, ChartMap type, load_chart_data function, parse_single_slide integration, test helpers + 3 tests)
-  - crates/office2pdf/src/render/typst_gen.rs (FixedElementKind::Chart codegen, 3 codegen tests)
-- Dependencies added: none
-- **Learnings for future iterations:**
-  - PPTX charts use same chart XML format as DOCX charts — parse_chart_xml() is fully reusable
-  - Charts in PPTX are in graphicFrame elements with graphicData URI containing "chart" and <c:chart r:id="rIdN"/> child element
-  - Chart files referenced in slide .rels with targets like "../charts/chart1.xml"
-  - Pattern mirrors SmartArt exactly: scan refs → load data → add FixedElements in parse_single_slide()
-  - The load_chart_data function filters .rels targets by "chart" substring — same approach as SmartArt filtering by "diagrams/data"
----
-
-## 2026-02-27 - US-045: XLSX parser - conditional formatting (basic)
-- What was implemented:
-  - New module: cond_fmt.rs — conditional formatting rule evaluation and override building
-  - CellIs rules: evaluate_cell_is_rule() supports GreaterThan, LessThan, Equal, Between operators
-  - Formatting extraction: extract_cond_fmt_style() extracts background color, font color, bold from rule styles
-  - Color scale: 2-color and 3-color gradient interpolation via interpolate_color()
-  - Integration: build_cond_fmt_overrides() builds HashMap<(col,row), CondFmtOverride> from sheet's conditional formatting collection
-  - Override application: xlsx.rs parse loop applies overrides to cell text_style and background after normal style extraction
-  - Tests: 5 unit tests in cond_fmt.rs (sqref parsing, color interpolation), 7 integration tests in xlsx.rs (greater than bg, less than font color, equal bold, between, color scale 2-color, no rules unchanged, non-numeric skipped)
-- Files changed:
-  - crates/office2pdf/src/parser/cond_fmt.rs (new — CondFmtOverride, build_cond_fmt_overrides, evaluate_cell_is_rule, extract_cond_fmt_style, interpolate_color, parse_sqref, color scale logic)
-  - crates/office2pdf/src/parser/mod.rs (module declaration)
-  - crates/office2pdf/src/parser/xlsx.rs (import + call build_cond_fmt_overrides, apply overrides in cell loop, 7 integration tests)
-- Dependencies added: none
-- **Learnings for future iterations:**
-  - umya-spreadsheet ConditionalFormattingRule only stores ONE formula (OOXML Between uses two <formula> elements but library keeps only last). Best-effort: Between = >=threshold
-  - Formula value accessed via `formula.get_address_str()` (NOT `get_value()` which doesn't exist)
-  - sheet.get_conditional_formatting_collection() returns &[ConditionalFormatting], each with SequenceOfReferences (sqref) and ConditionalFormattingRule collection
-  - Rule style accessed via rule.get_style() → Option<&Style>, same Style struct as cell formatting (get_background_color, get_font, etc.)
-  - ColorScale has cfvo_collection (min/max type markers) and color_collection (ARGB colors). Use parse_umya_color_argb() for conversion
-  - Color interpolation for 3-color scales splits at ratio 0.5: [min→mid] for lower half, [mid→max] for upper half
----
-
-## 2026-02-27 - US-046: XLSX parser - embedded charts (basic)
-- What was implemented:
-  - extract_charts_from_zip(data) scans xl/charts/chart*.xml entries in XLSX ZIP archive
-  - Parses each chart XML via shared chart::parse_chart_xml() (supports bar, line, pie, area, scatter)
-  - Charts rendered as Page::Flow(FlowPage) with Block::Chart(chart) — each chart gets its own page
-  - Reuses shared chart parsing and Typst codegen (data table rendering) from DOCX/PPTX chart support
-  - Tests: 3 integration tests (chart produces page, no chart = no extra pages, chart data correctness with pie chart)
-- Files changed:
-  - crates/office2pdf/src/parser/xlsx.rs (extract_charts_from_zip function, parse() integration, 3 tests)
-- Dependencies added: none
-- **Learnings for future iterations:**
-  - XLSX charts stored at xl/charts/chart*.xml in ZIP (same OpenXML chart format as DOCX/PPTX)
-  - No drawing relationship scanning needed — simply enumerate ZIP entries matching the prefix
-  - Charts added after all TablePages as separate FlowPages
-  - Test helper: build_xlsx_with_chart() creates valid XLSX then re-opens ZIP to inject chart XML entry
----
-
-## 2026-02-27 - US-047: Performance optimization
-- What was implemented:
-  - Criterion benchmark suite: benches/conversion.rs with DOCX (10/100 pages), PPTX (10/100 slides), XLSX (50/500 rows) benchmarks
-  - Pre-allocation optimizations:
-    - typst_gen.rs: String::with_capacity(pages * 2048) for output buffer, Vec::with_capacity(4) for border parts
-    - xlsx.rs: Vec::with_capacity(num_rows/num_cols) for table rows and cells
-    - pptx.rs: Vec::with_capacity(slide_rids.len()) for pages
-- Benchmark results (MacOS, Apple Silicon):
-  - DOCX 10 pages (~30 paragraphs): 124ms — target <1s PASS
-  - DOCX 100 pages (~300 paragraphs): 130ms — target <5s PASS
-  - PPTX 10 slides: 120ms — target <1s PASS
-  - PPTX 100 slides: 124ms — target <5s PASS
-  - XLSX 50 rows (5 cols): 125ms
-  - XLSX 500 rows (5 cols): 136ms
-  - Pipeline dominated by Typst initialization (~120ms baseline), parsing/codegen is <15ms for 100-page documents
-- Files changed:
-  - crates/office2pdf/Cargo.toml (criterion dev-dep, bench target)
-  - crates/office2pdf/benches/conversion.rs (new — benchmark suite)
-  - crates/office2pdf/src/render/typst_gen.rs (pre-allocation optimizations)
-  - crates/office2pdf/src/parser/xlsx.rs (Vec::with_capacity for rows/cells)
-  - crates/office2pdf/src/parser/pptx.rs (Vec::with_capacity for pages)
-- Dependencies added: criterion 0.5 (dev-dependency)
----
-
-## 2026-02-27 - US-048: Edge case handling and robustness
-- What was implemented:
-  - 13 edge case tests covering all acceptance criteria
-  - Empty documents: DOCX, XLSX, PPTX with no content all produce valid PDFs
-  - Long content: 10,000-char paragraph and 100x20 table (2000 cells) convert without panic
-  - Corrupted/truncated files: corrupted DOCX/XLSX/PPTX and truncated ZIP all return clear errors
-  - Unicode: CJK text (Chinese, Japanese, Korean), emoji, RTL text (Arabic) all produce valid PDFs
-  - Image-only documents: DOCX with only image blocks (no text) converts successfully
-  - Performance optimization: image data in pdf.rs World uses Bytes (ref-counted) instead of Vec<u8> clone
-- Files changed:
-  - crates/office2pdf/src/lib.rs (13 new edge case tests)
-  - crates/office2pdf/src/render/pdf.rs (Bytes optimization for image data)
-  - scripts/ralph/prd.json (US-048 passes: true)
-- Dependencies added: none
----
-
-## US-049: API documentation and examples
-- Status: DONE
-- Added crate-level documentation to lib.rs with three usage examples (quick start, with options, in-memory)
-- Added doc comments to all previously undocumented public items:
-  - DocxParser, PptxParser, XlsxParser structs
-  - Color::new(), Color::black(), Color::white() methods
-  - Enhanced convert(), convert_with_options(), convert_bytes(), render_document() with Errors sections
-- Created 3 example programs:
-  - examples/simple_convert.rs: basic file-to-PDF conversion
-  - examples/custom_options.rs: ConvertOptions usage (paper size, slide range, sheet filter, landscape)
-  - examples/from_bytes.rs: in-memory byte conversion with Format detection
-- 3 doc tests pass (compile-only, from crate-level examples)
-- cargo doc -p office2pdf --no-deps: clean (no warnings)
-- cargo doc --workspace --no-deps: only known cargo filename collision bug (#6313)
-- All quality checks pass: 485 lib + 7 CLI + 3 doc tests, clippy clean, fmt clean
-- Files changed:
-  - crates/office2pdf/src/lib.rs (crate-level docs, enhanced function docs)
-  - crates/office2pdf/src/ir/style.rs (Color method docs)
-  - crates/office2pdf/src/parser/docx.rs (DocxParser doc)
-  - crates/office2pdf/src/parser/pptx.rs (PptxParser doc)
-  - crates/office2pdf/src/parser/xlsx.rs (XlsxParser doc)
-  - crates/office2pdf/examples/simple_convert.rs (new)
-  - crates/office2pdf/examples/custom_options.rs (new)
-  - crates/office2pdf/examples/from_bytes.rs (new)
-  - scripts/ralph/prd.json (US-049 passes: true)
-- Dependencies added: none
+  - OOXML gradient positions (`pos` attribute) are in 1/100,000th of percent (0-100000), angle (`ang`) in 60,000ths of degree
+  - Gradient stops can use either `srgbClr` (direct hex) or `schemeClr` (theme reference)
+  - `<a:gradFill>` has same structure in both slide backgrounds and shape fills
+  - Typst `gradient.linear()` syntax: `gradient.linear((color, pos%), ..., angle: Ndeg)`
+  - When angle is 0, omitting the angle parameter produces cleaner output
+  - Clippy's `collapsible_if` lint applies to `if let Some(x) = ... { if let Some(y) = ... { } }` — use chained let bindings instead
 ---

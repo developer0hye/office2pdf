@@ -4,10 +4,10 @@ use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Chart, ChartType, Color, Document, FixedElement,
-    FixedElementKind, FixedPage, FloatingImage, FlowPage, HFInline, HeaderFooter, ImageData,
-    ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, Shape, ShapeKind, SmartArt, Table, TableCell, TablePage, TextStyle,
-    WrapMode,
+    FixedElementKind, FixedPage, FloatingImage, FlowPage, GradientFill, HFInline, HeaderFooter,
+    ImageData, ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation, Page, PageSize,
+    Paragraph, ParagraphStyle, Run, Shape, ShapeKind, SmartArt, Table, TableCell, TablePage,
+    TextStyle, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -135,7 +135,16 @@ fn generate_fixed_page(
 ) -> Result<(), ConvertError> {
     let size = resolve_page_size(&page.size, options);
     // Slides use zero margins — all positioning is absolute
-    if let Some(ref bg) = page.background_color {
+    if let Some(ref gradient) = page.background_gradient {
+        let _ = write!(
+            out,
+            "#set page(width: {}pt, height: {}pt, margin: 0pt, fill: ",
+            format_f64(size.width),
+            format_f64(size.height),
+        );
+        write_gradient_fill(out, gradient);
+        let _ = writeln!(out, ")");
+    } else if let Some(ref bg) = page.background_color {
         let _ = writeln!(
             out,
             "#set page(width: {}pt, height: {}pt, margin: 0pt, fill: rgb({}, {}, {}))",
@@ -287,7 +296,10 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
         format_f64(width),
         format_f64(height),
     );
-    if let Some(fill) = &shape.fill {
+    if let Some(gradient) = &shape.gradient_fill {
+        out.push_str(", fill: ");
+        write_gradient_fill(out, gradient);
+    } else if let Some(fill) = &shape.fill {
         write_fill_color(out, fill, shape.opacity);
     }
     if let Some(stroke) = &shape.stroke {
@@ -300,6 +312,26 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
             stroke.color.b,
         );
     }
+}
+
+/// Write a Typst `gradient.linear(...)` expression.
+fn write_gradient_fill(out: &mut String, gradient: &GradientFill) {
+    out.push_str("gradient.linear(");
+    for (i, stop) in gradient.stops.iter().enumerate() {
+        if i > 0 {
+            out.push_str(", ");
+        }
+        let pos_pct = (stop.position * 100.0).round() as i64;
+        let _ = write!(
+            out,
+            "(rgb({}, {}, {}), {}%)",
+            stop.color.r, stop.color.g, stop.color.b, pos_pct,
+        );
+    }
+    if gradient.angle.abs() > 0.001 {
+        let _ = write!(out, ", angle: {}deg", format_f64(gradient.angle));
+    }
+    out.push(')');
 }
 
 fn write_page_setup(out: &mut String, size: &PageSize, margins: &Margins) {
@@ -1072,7 +1104,7 @@ fn escape_typst(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::{ChartSeries, HeaderFooterParagraph, Metadata, StyleSheet};
+    use crate::ir::{ChartSeries, GradientStop, HeaderFooterParagraph, Metadata, StyleSheet};
 
     /// Helper to create a minimal Document with one FlowPage.
     fn make_doc(pages: Vec<Page>) -> Document {
@@ -2112,6 +2144,7 @@ mod tests {
             size: PageSize { width, height },
             elements,
             background_color: None,
+            background_gradient: None,
         })
     }
 
@@ -2152,6 +2185,7 @@ mod tests {
             kind: FixedElementKind::Shape(Shape {
                 kind,
                 fill,
+                gradient_fill: None,
                 stroke,
                 rotation_deg: None,
                 opacity: None,
@@ -2376,6 +2410,7 @@ mod tests {
                 kind: FixedElementKind::Shape(Shape {
                     kind: ShapeKind::Rectangle,
                     fill: Some(Color::new(255, 0, 0)),
+                    gradient_fill: None,
                     stroke: None,
                     rotation_deg: Some(90.0),
                     opacity: None,
@@ -2408,6 +2443,7 @@ mod tests {
                 kind: FixedElementKind::Shape(Shape {
                     kind: ShapeKind::Rectangle,
                     fill: Some(Color::new(0, 255, 0)),
+                    gradient_fill: None,
                     stroke: None,
                     rotation_deg: None,
                     opacity: Some(0.5),
@@ -2436,6 +2472,7 @@ mod tests {
                 kind: FixedElementKind::Shape(Shape {
                     kind: ShapeKind::Ellipse,
                     fill: Some(Color::new(0, 0, 255)),
+                    gradient_fill: None,
                     stroke: None,
                     rotation_deg: Some(45.0),
                     opacity: Some(0.75),
@@ -3198,6 +3235,7 @@ mod tests {
             },
             elements: vec![],
             background_color: Some(Color::new(255, 0, 0)),
+            background_gradient: None,
         });
         let doc = make_doc(vec![page]);
         let output = generate_typst(&doc).unwrap();
@@ -3217,6 +3255,7 @@ mod tests {
             },
             elements: vec![],
             background_color: None,
+            background_gradient: None,
         });
         let doc = make_doc(vec![page]);
         let output = generate_typst(&doc).unwrap();
@@ -3276,6 +3315,7 @@ mod tests {
                 kind: FixedElementKind::Table(table),
             }],
             background_color: None,
+            background_gradient: None,
         });
 
         let doc = make_doc(vec![page]);
@@ -4046,6 +4086,180 @@ mod tests {
             output.source.contains(r"\$"),
             "Expected escaped $, got:\n{}",
             output.source
+        );
+    }
+
+    // ── Gradient codegen tests (US-050) ─────────────────────────────────
+
+    #[test]
+    fn test_gradient_background_codegen() {
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: Some(Color::new(255, 0, 0)), // fallback
+            background_gradient: Some(GradientFill {
+                stops: vec![
+                    GradientStop {
+                        position: 0.0,
+                        color: Color::new(255, 0, 0),
+                    },
+                    GradientStop {
+                        position: 1.0,
+                        color: Color::new(0, 0, 255),
+                    },
+                ],
+                angle: 90.0,
+            }),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("gradient.linear("),
+            "Should contain gradient.linear. Got: {}",
+            output.source,
+        );
+        assert!(
+            output.source.contains("(rgb(255, 0, 0), 0%)"),
+            "Should contain first stop. Got: {}",
+            output.source,
+        );
+        assert!(
+            output.source.contains("(rgb(0, 0, 255), 100%)"),
+            "Should contain second stop. Got: {}",
+            output.source,
+        );
+        assert!(
+            output.source.contains("angle: 90deg"),
+            "Should contain angle. Got: {}",
+            output.source,
+        );
+    }
+
+    #[test]
+    fn test_gradient_background_no_angle_codegen() {
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: None,
+            background_gradient: Some(GradientFill {
+                stops: vec![
+                    GradientStop {
+                        position: 0.0,
+                        color: Color::new(255, 255, 255),
+                    },
+                    GradientStop {
+                        position: 1.0,
+                        color: Color::new(0, 0, 0),
+                    },
+                ],
+                angle: 0.0,
+            }),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("gradient.linear("),
+            "Should contain gradient.linear. Got: {}",
+            output.source,
+        );
+        // Angle of 0 should NOT be emitted
+        assert!(
+            !output.source.contains("angle:"),
+            "Should not contain angle for 0 degrees. Got: {}",
+            output.source,
+        );
+    }
+
+    #[test]
+    fn test_gradient_shape_fill_codegen() {
+        let elem = FixedElement {
+            x: 10.0,
+            y: 20.0,
+            width: 200.0,
+            height: 150.0,
+            kind: FixedElementKind::Shape(Shape {
+                kind: ShapeKind::Rectangle,
+                fill: Some(Color::new(255, 0, 0)), // fallback
+                gradient_fill: Some(GradientFill {
+                    stops: vec![
+                        GradientStop {
+                            position: 0.0,
+                            color: Color::new(0, 128, 0),
+                        },
+                        GradientStop {
+                            position: 1.0,
+                            color: Color::new(0, 0, 128),
+                        },
+                    ],
+                    angle: 45.0,
+                }),
+                stroke: None,
+                rotation_deg: None,
+                opacity: None,
+            }),
+        };
+        let doc = make_doc(vec![make_fixed_page(720.0, 540.0, vec![elem])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("gradient.linear("),
+            "Should contain gradient.linear for shape. Got: {}",
+            output.source,
+        );
+        assert!(
+            output.source.contains("(rgb(0, 128, 0), 0%)"),
+            "Should contain first stop. Got: {}",
+            output.source,
+        );
+        // Should NOT contain the fallback rgb fill since gradient takes precedence
+        assert!(
+            !output.source.contains("fill: rgb(255, 0, 0)"),
+            "Should not contain fallback solid fill. Got: {}",
+            output.source,
+        );
+    }
+
+    #[test]
+    fn test_gradient_prefers_over_solid_fill() {
+        // When both gradient_fill and fill are present, gradient should be used
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: Some(Color::new(128, 128, 128)),
+            background_gradient: Some(GradientFill {
+                stops: vec![
+                    GradientStop {
+                        position: 0.0,
+                        color: Color::new(255, 0, 0),
+                    },
+                    GradientStop {
+                        position: 1.0,
+                        color: Color::new(0, 0, 255),
+                    },
+                ],
+                angle: 180.0,
+            }),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        // Gradient should be used, not the solid fallback
+        assert!(
+            output.source.contains("gradient.linear("),
+            "Gradient should be preferred. Got: {}",
+            output.source,
+        );
+        assert!(
+            !output.source.contains("fill: rgb(128, 128, 128)"),
+            "Solid fallback should not appear. Got: {}",
+            output.source,
         );
     }
 }
