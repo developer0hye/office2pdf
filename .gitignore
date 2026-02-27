@@ -8,6 +8,9 @@ Cargo.lock
 *.swp
 *.swo
 
+# Claude local settings (machine-specific, not shared)
+.claude/settings.local.json
+
 # Ralph runtime files
 scripts/ralph/.last-branch
 scripts/ralph/archive/

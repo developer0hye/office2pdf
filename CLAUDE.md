@@ -5,6 +5,7 @@
 - **IMPORTANT: Always prefer Rust native implementations.** Avoid unnecessary external dependencies and leverage the Rust standard library as much as possible. Only use third-party crates when there is a clear, justified need.
 - **IMPORTANT: Follow Test-Driven Development (TDD).** Always write tests first before implementing functionality. Follow the Red-Green-Refactor cycle: (1) Write a failing test, (2) Write the minimal code to make it pass, (3) Refactor while keeping tests green. Every new feature or bug fix must have corresponding tests.
 - **IMPORTANT: Read and follow `METHODOLOGY.md`** before starting any task.
+- **IMPORTANT: Read and follow `CONTEXT-MANAGEMENT.md`** for project memory management. Always read `.claude/memory/INDEX.md` before starting work.
 - When editing `CLAUDE.md`, use the minimum words and sentences needed to convey 100% of the meaning.
 - After completing each planned task, run tests and commit before moving to the next task.
 
