@@ -1,5 +1,10 @@
 # office2pdf
 
+[![CI](https://github.com/developer0hye/office2pdf/actions/workflows/ci.yml/badge.svg)](https://github.com/developer0hye/office2pdf/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/office2pdf.svg)](https://crates.io/crates/office2pdf)
+[![docs.rs](https://docs.rs/office2pdf/badge.svg)](https://docs.rs/office2pdf)
+[![License](https://img.shields.io/crates/l/office2pdf.svg)](LICENSE)
+
 Pure-Rust library and CLI for converting DOCX, XLSX, and PPTX files to PDF.
 
 No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typst](https://github.com/typst/typst).
