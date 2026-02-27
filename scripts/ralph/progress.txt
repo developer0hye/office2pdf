@@ -166,3 +166,28 @@ Started: 2026년  2월 28일 토요일 01시 35분 02초 KST
   - WASM check only needs to run on one OS since WASM compilation is platform-independent
   - Two separate `cargo check` commands ensure both base library and wasm-bindgen feature compile for WASM
 ---
+
+## 2026-02-28 - US-064
+- What was implemented: WASM integration test with wasm-bindgen-test
+  - Added `wasm-bindgen-test = "0.3"` as a wasm32-target-specific dev-dependency
+  - Created 6 `#[wasm_bindgen_test]` integration tests in `src/wasm.rs::wasm_tests` module
+  - Tests verify end-to-end WASM conversion for all 3 formats: DOCX, PPTX, XLSX
+  - Tests call actual `#[wasm_bindgen]`-exported functions (`convert_docx_to_pdf`, `convert_pptx_to_pdf`, `convert_xlsx_to_pdf`, `convert_to_pdf`)
+  - Tests verify PDF output starts with `%PDF` magic bytes and has meaningful size
+  - Error case tests: invalid data returns error, unsupported format returns error
+  - Tests are gated by `#[cfg(all(target_arch = "wasm32", test))]` — only run in WASM test context
+  - Added module-level documentation with instructions for running WASM tests via `wasm-pack`
+  - Native tests completely unaffected (507 lib + 7 CLI tests pass)
+- Files changed:
+  - `crates/office2pdf/Cargo.toml` — added `[target.'cfg(target_arch = "wasm32")'.dev-dependencies]` with `wasm-bindgen-test`
+  - `crates/office2pdf/src/wasm.rs` — added wasm_tests module and module-level docs
+  - `scripts/ralph/prd.json` — marked US-064 passes: true
+- Dependencies added:
+  - `wasm-bindgen-test` 0.3 (dev-dependency, wasm32 target only)
+- **Learnings for future iterations:**
+  - `wasm-bindgen-test` tests use `#[wasm_bindgen_test]` attribute and are run via `wasm-pack test --node --features wasm`
+  - Tests gated by `#[cfg(all(target_arch = "wasm32", test))]` are completely invisible to `cargo test` on native — no overhead
+  - `[target.'cfg(target_arch = "wasm32")'.dev-dependencies]` keeps WASM-only test deps from affecting native builds
+  - Test helpers can reuse the same DOCX/PPTX/XLSX creation patterns as native tests since those libraries all compile on wasm32
+  - `wasm-pack test` can run in Node.js (`--node`) or headless browser (`--headless --chrome`)
+---
