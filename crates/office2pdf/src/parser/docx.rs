@@ -5,10 +5,10 @@ use std::io::Read;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Color, Document, FloatingImage, FlowPage, HFInline,
-    HeaderFooter, HeaderFooterParagraph, ImageData, ImageFormat, LineSpacing, List, ListItem,
-    ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
-    StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
+    Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, FloatingImage, FlowPage,
+    HFInline, HeaderFooter, HeaderFooterParagraph, ImageData, ImageFormat, LineSpacing, List,
+    ListItem, ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle,
+    Run, StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -515,6 +515,55 @@ fn build_math_context(data: &[u8]) -> MathContext {
     MathContext { equations }
 }
 
+/// Context for embedded charts extracted from raw DOCX ZIP.
+/// docx-rs does not parse chart drawing elements, so we scan the raw ZIP.
+struct ChartContext {
+    /// Charts keyed by 0-based body child index in document.xml.
+    charts: HashMap<usize, Vec<Chart>>,
+}
+
+impl ChartContext {
+    /// Take the charts for a given body child index (consuming them).
+    fn take(&mut self, index: usize) -> Vec<Chart> {
+        self.charts.remove(&index).unwrap_or_default()
+    }
+}
+
+/// Build a `ChartContext` by scanning document.xml for chart references
+/// and parsing the corresponding chart XML files from the ZIP.
+fn build_chart_context(data: &[u8]) -> ChartContext {
+    let mut charts: HashMap<usize, Vec<Chart>> = HashMap::new();
+
+    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
+        return ChartContext { charts };
+    };
+
+    // Read document.xml and relationships file
+    let doc_xml = read_zip_text(&mut archive, "word/document.xml");
+    let rels_xml = read_zip_text(&mut archive, "word/_rels/document.xml.rels");
+
+    let (Some(doc_xml), Some(rels_xml)) = (doc_xml, rels_xml) else {
+        return ChartContext { charts };
+    };
+
+    // Find chart references in document.xml
+    let refs = super::chart::scan_chart_references(&doc_xml);
+    // Build relationship ID → chart file path mapping
+    let rels = super::chart::scan_chart_rels(&rels_xml);
+
+    // For each chart reference, parse the chart XML
+    for (body_idx, rid) in refs {
+        if let Some(chart_path) = rels.get(&rid)
+            && let Some(chart_xml) = read_zip_text(&mut archive, chart_path)
+            && let Some(chart) = super::chart::parse_chart_xml(&chart_xml)
+        {
+            charts.entry(body_idx).or_default().push(chart);
+        }
+    }
+
+    ChartContext { charts }
+}
+
 /// Build a `NoteContext` by parsing footnotes/endnotes from the raw DOCX ZIP.
 /// This is needed because docx-rs reader does not parse `w:footnoteReference`
 /// or `w:endnoteReference` elements.
@@ -701,6 +750,8 @@ impl Parser for DocxParser {
         let wraps = build_wrap_context(data);
         // Build math context for OMML equations from raw ZIP
         let mut math = build_math_context(data);
+        // Build chart context for embedded charts from raw ZIP
+        let mut chart_ctx = build_chart_context(data);
 
         let docx = docx_rs::read_docx(data)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;
@@ -728,6 +779,11 @@ impl Parser for DocxParser {
                     let eqs = math.take(idx);
                     for eq in eqs {
                         tagged.push(TaggedElement::Plain(vec![Block::MathEquation(eq)]));
+                    }
+                    // Inject charts for this body child
+                    let chs = chart_ctx.take(idx);
+                    for ch in chs {
+                        tagged.push(TaggedElement::Plain(vec![Block::Chart(ch)]));
                     }
                     tagged
                 }
@@ -4771,5 +4827,206 @@ mod tests {
         assert!(!math_blocks.is_empty());
         assert_eq!(math_blocks[0].content, "E=mc^2");
         assert!(math_blocks[0].display);
+    }
+
+    /// Build a DOCX ZIP with a chart embedded in it.
+    fn build_docx_with_chart(document_xml: &str, chart_xml: &str) -> Vec<u8> {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::FileOptions::default();
+
+        // [Content_Types].xml
+        zip.start_file("[Content_Types].xml", options).unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>
+</Types>"#,
+        )
+        .unwrap();
+
+        // _rels/.rels
+        zip.start_file("_rels/.rels", options).unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#,
+        )
+        .unwrap();
+
+        // word/_rels/document.xml.rels
+        zip.start_file("word/_rels/document.xml.rels", options)
+            .unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="charts/chart1.xml"/>
+</Relationships>"#,
+        )
+        .unwrap();
+
+        // word/document.xml
+        zip.start_file("word/document.xml", options).unwrap();
+        std::io::Write::write_all(&mut zip, document_xml.as_bytes()).unwrap();
+
+        // word/charts/chart1.xml
+        zip.start_file("word/charts/chart1.xml", options).unwrap();
+        std::io::Write::write_all(&mut zip, chart_xml.as_bytes()).unwrap();
+
+        zip.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn test_parse_docx_with_bar_chart() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:drawing>
+          <wp:inline>
+            <a:graphic>
+              <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">
+                <c:chart r:id="rId4"/>
+              </a:graphicData>
+            </a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+    </w:p>
+  </w:body>
+</w:document>"#;
+
+        let chart_xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"
+              xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <c:chart>
+    <c:title><c:tx><c:rich><a:p><a:r><a:t>Sales</a:t></a:r></a:p></c:rich></c:tx></c:title>
+    <c:plotArea>
+      <c:barChart>
+        <c:ser>
+          <c:idx val="0"/>
+          <c:tx><c:strRef><c:strCache><c:pt idx="0"><c:v>Revenue</c:v></c:pt></c:strCache></c:strRef></c:tx>
+          <c:cat><c:strRef><c:strCache>
+            <c:pt idx="0"><c:v>Q1</c:v></c:pt>
+            <c:pt idx="1"><c:v>Q2</c:v></c:pt>
+          </c:strCache></c:strRef></c:cat>
+          <c:val><c:numRef><c:numCache>
+            <c:pt idx="0"><c:v>100</c:v></c:pt>
+            <c:pt idx="1"><c:v>200</c:v></c:pt>
+          </c:numCache></c:numRef></c:val>
+        </c:ser>
+      </c:barChart>
+    </c:plotArea>
+  </c:chart>
+</c:chartSpace>"#;
+
+        let data = build_docx_with_chart(document_xml, chart_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser
+            .parse(&data, &ConvertOptions::default())
+            .expect("parse should succeed");
+
+        let content = match &doc.pages[0] {
+            crate::ir::Page::Flow(fp) => &fp.content,
+            _ => panic!("Expected FlowPage"),
+        };
+        let chart_blocks: Vec<&crate::ir::Chart> = content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Chart(c) => Some(c),
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(chart_blocks.len(), 1);
+        assert_eq!(chart_blocks[0].chart_type, crate::ir::ChartType::Bar);
+        assert_eq!(chart_blocks[0].title.as_deref(), Some("Sales"));
+        assert_eq!(chart_blocks[0].categories, vec!["Q1", "Q2"]);
+        assert_eq!(chart_blocks[0].series.len(), 1);
+        assert_eq!(chart_blocks[0].series[0].name.as_deref(), Some("Revenue"));
+        assert_eq!(chart_blocks[0].series[0].values, vec![100.0, 200.0]);
+    }
+
+    #[test]
+    fn test_parse_docx_with_pie_chart() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:drawing>
+          <wp:inline>
+            <a:graphic>
+              <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">
+                <c:chart r:id="rId4"/>
+              </a:graphicData>
+            </a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+    </w:p>
+  </w:body>
+</w:document>"#;
+
+        let chart_xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">
+  <c:chart>
+    <c:plotArea>
+      <c:pieChart>
+        <c:ser>
+          <c:cat><c:strLit>
+            <c:pt idx="0"><c:v>A</c:v></c:pt>
+            <c:pt idx="1"><c:v>B</c:v></c:pt>
+            <c:pt idx="2"><c:v>C</c:v></c:pt>
+          </c:strLit></c:cat>
+          <c:val><c:numLit>
+            <c:pt idx="0"><c:v>30</c:v></c:pt>
+            <c:pt idx="1"><c:v>50</c:v></c:pt>
+            <c:pt idx="2"><c:v>20</c:v></c:pt>
+          </c:numLit></c:val>
+        </c:ser>
+      </c:pieChart>
+    </c:plotArea>
+  </c:chart>
+</c:chartSpace>"#;
+
+        let data = build_docx_with_chart(document_xml, chart_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser
+            .parse(&data, &ConvertOptions::default())
+            .expect("parse should succeed");
+
+        let content = match &doc.pages[0] {
+            crate::ir::Page::Flow(fp) => &fp.content,
+            _ => panic!("Expected FlowPage"),
+        };
+        let chart_blocks: Vec<&crate::ir::Chart> = content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Chart(c) => Some(c),
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(chart_blocks.len(), 1);
+        assert_eq!(chart_blocks[0].chart_type, crate::ir::ChartType::Pie);
+        assert!(chart_blocks[0].title.is_none());
+        assert_eq!(chart_blocks[0].categories, vec!["A", "B", "C"]);
+        assert_eq!(chart_blocks[0].series[0].values, vec![30.0, 50.0, 20.0]);
     }
 }

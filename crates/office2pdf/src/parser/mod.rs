@@ -1,3 +1,4 @@
+pub(crate) mod chart;
 pub mod docx;
 pub(crate) mod omml;
 pub mod pptx;
