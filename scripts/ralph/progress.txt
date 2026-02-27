@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- **XLSX embedded charts**: `extract_charts_from_zip(data: &[u8]) -> Vec<Chart>` scans `xl/charts/chart*.xml` entries in ZIP archive via `zip::ZipArchive`. Parses each with `chart::parse_chart_xml()`. Charts appended as `Page::Flow(FlowPage { content: vec![Block::Chart(chart)] })` after all TablePages. Test: `build_xlsx_with_chart()` creates XLSX via umya-spreadsheet, re-opens ZIP to inject chart XML entry at `xl/charts/chart1.xml`.
 - **PDF/A output**: `compile_to_pdf(source, images, pdf_standard: Option<PdfStandard>)`. When `Some(PdfStandard::PdfA2b)`, creates `typst_pdf::PdfStandards::new(&[typst_pdf::PdfStandard::A_2b])` and provides `typst_pdf::Timestamp::new_utc(Datetime)` (PDF/A requires a document date). `ConvertOptions.pdf_standard` threaded from `convert_bytes()` to `compile_to_pdf()`. `render_document()` always passes `None` (backward compat). CLI: `--pdf-a` flag sets `PdfStandard::PdfA2b`. Verify: PDF/A output contains `pdfaid` in XMP metadata.
 - **XLSX conditional formatting**: `sheet.get_conditional_formatting_collection()` → `&[ConditionalFormatting]`. Each CF has `get_sequence_of_references().get_sqref()` (space-separated ranges like "A1:C3 D5") and `get_conditional_collection()` (rules). `ConditionalFormattingRule`: `get_type()` → `ConditionalFormatValues::{CellIs, ColorScale, ...}`, `get_operator()` for CellIs, `get_formula()` → formula value via `f.get_address_str()`, `get_style()` for formatting, `get_color_scale()` for color scales. `CondFmtOverride { background, font_color, bold }`. `build_cond_fmt_overrides(sheet)` → `HashMap<(col,row), CondFmtOverride>`. Applied in cell loop after normal style extraction. Color scale: `ColorScale.get_color_collection()` for gradient colors, `interpolate_color(a, b, ratio)` for blending. Test creation: `ConditionalFormattingRule::default().set_type(CellIs).set_operator(GreaterThan).set_formula(formula).set_style(style)`, wrap in `ConditionalFormatting` with `SequenceOfReferences::default().set_sqref("A1:A3")`, apply via `sheet.set_conditional_formatting_collection(vec![cf])`.
 - **PPTX group shapes**: `<p:grpSp>` contains `<p:nvGrpSpPr>`, `<p:grpSpPr>` (with `<a:xfrm>` holding off/ext/chOff/chExt), then child shapes (sp, pic, grpSp, graphicFrame). `parse_group_shape(&mut reader, xml, images, theme)` called from `parse_slide_xml` when `grpSp` Start is encountered. Reads header sections, extracts `GroupTransform`, then uses `reader.buffer_position() as usize` to slice child XML from original `xml: &str`, wraps in namespace container `<r xmlns:a="..." xmlns:r="..." xmlns:p="...">...</r>`, and recursively calls `parse_slide_xml()`. Transform: `slide_x = off_x + (child_x - chOff_x) * (ext_cx / chExt_cx)`. Division-by-zero guarded with fallback to scale 1.0. Handles nested groups naturally via recursion. Test helper: `make_group_shape(off_x, off_y, ext_cx, ext_cy, ch_off_x, ch_off_y, ch_ext_cx, ch_ext_cy, &children)`.
@@ -199,4 +200,21 @@ Started: 2026년  2월 27일 금요일 12시 19분 03초 KST
   - Rule style accessed via rule.get_style() → Option<&Style>, same Style struct as cell formatting (get_background_color, get_font, etc.)
   - ColorScale has cfvo_collection (min/max type markers) and color_collection (ARGB colors). Use parse_umya_color_argb() for conversion
   - Color interpolation for 3-color scales splits at ratio 0.5: [min→mid] for lower half, [mid→max] for upper half
+---
+
+## 2026-02-27 - US-046: XLSX parser - embedded charts (basic)
+- What was implemented:
+  - extract_charts_from_zip(data) scans xl/charts/chart*.xml entries in XLSX ZIP archive
+  - Parses each chart XML via shared chart::parse_chart_xml() (supports bar, line, pie, area, scatter)
+  - Charts rendered as Page::Flow(FlowPage) with Block::Chart(chart) — each chart gets its own page
+  - Reuses shared chart parsing and Typst codegen (data table rendering) from DOCX/PPTX chart support
+  - Tests: 3 integration tests (chart produces page, no chart = no extra pages, chart data correctness with pie chart)
+- Files changed:
+  - crates/office2pdf/src/parser/xlsx.rs (extract_charts_from_zip function, parse() integration, 3 tests)
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - XLSX charts stored at xl/charts/chart*.xml in ZIP (same OpenXML chart format as DOCX/PPTX)
+  - No drawing relationship scanning needed — simply enumerate ZIP entries matching the prefix
+  - Charts added after all TablePages as separate FlowPages
+  - Test helper: build_xlsx_with_chart() creates valid XLSX then re-opens ZIP to inject chart XML entry
 ---
