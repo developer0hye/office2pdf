@@ -5,8 +5,8 @@ use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
     FixedPage, FloatingImage, FlowPage, HFInline, HeaderFooter, ImageData, ImageFormat,
-    LineSpacing, List, ListKind, Margins, Page, PageSize, Paragraph, ParagraphStyle, Run, Shape,
-    ShapeKind, Table, TableCell, TablePage, TextStyle, WrapMode,
+    LineSpacing, List, ListKind, Margins, MathEquation, Page, PageSize, Paragraph, ParagraphStyle,
+    Run, Shape, ShapeKind, Table, TableCell, TablePage, TextStyle, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -449,6 +449,22 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             Ok(())
         }
         Block::List(list) => generate_list(out, list),
+        Block::MathEquation(math) => {
+            generate_math_equation(out, math);
+            Ok(())
+        }
+    }
+}
+
+/// Generate Typst markup for a math equation.
+///
+/// Display math is rendered as `$ content $` (on its own line, centered).
+/// Inline math is rendered as `$content$`.
+fn generate_math_equation(out: &mut String, math: &MathEquation) {
+    if math.display {
+        let _ = writeln!(out, "$ {} $", math.content);
+    } else {
+        let _ = write!(out, "${}$", math.content);
     }
 }
 
@@ -653,6 +669,7 @@ fn generate_cell_content(
             Block::Image(img) => generate_image(out, img, ctx),
             Block::FloatingImage(fi) => generate_floating_image(out, fi, ctx),
             Block::List(list) => generate_list(out, list)?,
+            Block::MathEquation(math) => generate_math_equation(out, math),
             Block::PageBreak => {}
         }
     }
@@ -3692,6 +3709,59 @@ mod tests {
         assert!(
             !output.source.contains("float: true"),
             "Behind wrap should NOT use float, got:\n{}",
+            output.source
+        );
+    }
+
+    // ── Math equation codegen tests ──
+
+    #[test]
+    fn test_codegen_display_math() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::MathEquation(
+            MathEquation {
+                content: "frac(a, b)".to_string(),
+                display: true,
+            },
+        )])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("$ frac(a, b) $"),
+            "Expected display math '$ frac(a, b) $', got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_codegen_inline_math() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::MathEquation(
+            MathEquation {
+                content: "x^2".to_string(),
+                display: false,
+            },
+        )])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("$x^2$"),
+            "Expected inline math '$x^2$', got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_codegen_complex_math() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::MathEquation(
+            MathEquation {
+                content: "sum_(i=1)^n i".to_string(),
+                display: true,
+            },
+        )])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("$ sum_(i=1)^n i $"),
+            "Expected display math with sum, got:\n{}",
             output.source
         );
     }

@@ -32,7 +32,17 @@ pub enum Block {
     Image(ImageData),
     FloatingImage(FloatingImage),
     List(List),
+    MathEquation(MathEquation),
     PageBreak,
+}
+
+/// A math equation (from OMML or similar).
+#[derive(Debug, Clone)]
+pub struct MathEquation {
+    /// Typst math notation content (without surrounding `$` delimiters).
+    pub content: String,
+    /// Whether this is a display equation (centered, on its own line) vs inline.
+    pub display: bool,
 }
 
 /// How text wraps around a floating image.
