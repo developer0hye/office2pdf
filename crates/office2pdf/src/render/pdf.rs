@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
 use typst::diag::FileResult;
@@ -20,6 +21,10 @@ use super::typst_gen::ImageAsset;
 /// specified standard (e.g., PDF/A-2b for archival).
 /// When `font_paths` is non-empty, those directories are searched for
 /// additional fonts (highest priority).
+///
+/// On native targets, system fonts are discovered automatically. On WASM,
+/// only embedded fonts are used and `font_paths` is ignored.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn compile_to_pdf(
     typst_source: &str,
     images: &[ImageAsset],
@@ -27,8 +32,28 @@ pub fn compile_to_pdf(
     font_paths: &[PathBuf],
 ) -> Result<Vec<u8>, ConvertError> {
     let world = MinimalWorld::new(typst_source, images, font_paths);
+    compile_to_pdf_inner(&world, pdf_standard)
+}
 
-    let warned = typst::compile::<typst::layout::PagedDocument>(&world);
+/// Compile Typst markup to PDF bytes (WASM target).
+///
+/// Uses embedded fonts only. System font paths are not supported on WASM.
+#[cfg(target_arch = "wasm32")]
+pub fn compile_to_pdf(
+    typst_source: &str,
+    images: &[ImageAsset],
+    pdf_standard: Option<PdfStandard>,
+    _font_paths: &[std::path::PathBuf],
+) -> Result<Vec<u8>, ConvertError> {
+    let world = MinimalWorld::new_embedded_only(typst_source, images);
+    compile_to_pdf_inner(&world, pdf_standard)
+}
+
+fn compile_to_pdf_inner(
+    world: &MinimalWorld,
+    pdf_standard: Option<PdfStandard>,
+) -> Result<Vec<u8>, ConvertError> {
+    let warned = typst::compile::<typst::layout::PagedDocument>(world);
     let document = warned.output.map_err(|errors| {
         let messages: Vec<String> = errors.iter().map(|e| e.message.to_string()).collect();
         ConvertError::Render(format!("Typst compilation failed: {}", messages.join("; ")))
@@ -69,6 +94,12 @@ struct MinimalWorld {
 }
 
 impl MinimalWorld {
+    /// Create a new `MinimalWorld` with system fonts and optional custom font paths.
+    ///
+    /// This is the native constructor — it discovers system fonts and optionally
+    /// searches additional directories. Not available on `wasm32` targets because
+    /// system font discovery requires OS APIs.
+    #[cfg(not(target_arch = "wasm32"))]
     fn new(source_text: &str, images: &[ImageAsset], font_paths: &[PathBuf]) -> Self {
         let mut searcher = FontSearcher::new();
         searcher.include_system_fonts(true);
@@ -77,6 +108,34 @@ impl MinimalWorld {
         } else {
             searcher.search_with(font_paths.iter().map(|p| p.as_path()))
         };
+
+        let main_id = FileId::new(None, VirtualPath::new("main.typ"));
+        let source = Source::new(main_id, source_text.to_string());
+
+        let image_map: HashMap<String, Bytes> = images
+            .iter()
+            .map(|a| (a.path.clone(), Bytes::new(a.data.clone())))
+            .collect();
+
+        Self {
+            library: LazyHash::new(Library::default()),
+            book: LazyHash::new(font_data.book),
+            fonts: font_data.fonts,
+            source,
+            images: image_map,
+        }
+    }
+
+    /// Create a new `MinimalWorld` with embedded fonts only (no system font search).
+    ///
+    /// This is the constructor used on WASM targets where system font discovery
+    /// is not available. It uses only the fonts embedded in the `typst-kit` crate
+    /// (Libertinus Serif, New Computer Modern, DejaVu Sans Mono).
+    #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+    fn new_embedded_only(source_text: &str, images: &[ImageAsset]) -> Self {
+        let mut searcher = FontSearcher::new();
+        searcher.include_system_fonts(false);
+        let font_data: Fonts = searcher.search();
 
         let main_id = FileId::new(None, VirtualPath::new("main.typ"));
         let source = Source::new(main_id, source_text.to_string());
@@ -404,5 +463,39 @@ Text in Libertinus Serif."#;
         let result = compile_to_pdf(source, &images, None, &[]).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_embedded_only_world_produces_valid_pdf() {
+        // Simulates the WASM code path: embedded fonts only, no system fonts.
+        // This verifies that the embedded-only MinimalWorld can produce valid PDFs.
+        let world = MinimalWorld::new_embedded_only("Hello from embedded-only world!", &[]);
+        assert!(
+            !world.fonts.is_empty(),
+            "Embedded-only world should have fonts"
+        );
+
+        let warned = typst::compile::<typst::layout::PagedDocument>(&world);
+        let document = warned.output.expect("Compilation should succeed");
+        let pdf = typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default())
+            .expect("PDF export should succeed");
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_embedded_only_world_has_fonts() {
+        // The embedded-only constructor (used on WASM) must have at least
+        // the embedded fallback fonts (Libertinus, New Computer Modern, DejaVu).
+        let world = MinimalWorld::new_embedded_only("", &[]);
+        let embedded_count = {
+            let mut s = FontSearcher::new();
+            s.include_system_fonts(false);
+            s.search().fonts.len()
+        };
+        assert_eq!(
+            world.fonts.len(),
+            embedded_count,
+            "Embedded-only world should have exactly the embedded fonts"
+        );
     }
 }

@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- **WASM conditional compilation**: Filesystem-dependent functions (`convert`, `convert_with_options`) use `#[cfg(not(target_arch = "wasm32"))]`. In-memory functions (`convert_bytes`, `render_document`) have no guards. `pdf.rs` has dual `compile_to_pdf` — native uses `MinimalWorld::new(fonts+system)`, wasm32 uses `MinimalWorld::new_embedded_only(embedded fonts only)`. Shared logic in `compile_to_pdf_inner()`. Use `#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]` for functions used only on WASM but tested on native.
 - **XLSX embedded charts**: `extract_charts_from_zip(data: &[u8]) -> Vec<Chart>` scans `xl/charts/chart*.xml` entries in ZIP archive via `zip::ZipArchive`. Parses each with `chart::parse_chart_xml()`. Charts appended as `Page::Flow(FlowPage { content: vec![Block::Chart(chart)] })` after all TablePages. Test: `build_xlsx_with_chart()` creates XLSX via umya-spreadsheet, re-opens ZIP to inject chart XML entry at `xl/charts/chart1.xml`.
 - **PDF/A output**: `compile_to_pdf(source, images, pdf_standard: Option<PdfStandard>)`. When `Some(PdfStandard::PdfA2b)`, creates `typst_pdf::PdfStandards::new(&[typst_pdf::PdfStandard::A_2b])` and provides `typst_pdf::Timestamp::new_utc(Datetime)` (PDF/A requires a document date). `ConvertOptions.pdf_standard` threaded from `convert_bytes()` to `compile_to_pdf()`. `render_document()` always passes `None` (backward compat). CLI: `--pdf-a` flag sets `PdfStandard::PdfA2b`. Verify: PDF/A output contains `pdfaid` in XMP metadata.
 - **XLSX conditional formatting**: `sheet.get_conditional_formatting_collection()` → `&[ConditionalFormatting]`. Each CF has `get_sequence_of_references().get_sqref()` (space-separated ranges like "A1:C3 D5") and `get_conditional_collection()` (rules). `ConditionalFormattingRule`: `get_type()` → `ConditionalFormatValues::{CellIs, ColorScale, ...}`, `get_operator()` for CellIs, `get_formula()` → formula value via `f.get_address_str()`, `get_style()` for formatting, `get_color_scale()` for color scales. `CondFmtOverride { background, font_color, bold }`. `build_cond_fmt_overrides(sheet)` → `HashMap<(col,row), CondFmtOverride>`. Applied in cell loop after normal style extraction. Color scale: `ColorScale.get_color_collection()` for gradient colors, `interpolate_color(a, b, ratio)` for blending. Test creation: `ConditionalFormattingRule::default().set_type(CellIs).set_operator(GreaterThan).set_formula(formula).set_style(style)`, wrap in `ConditionalFormatting` with `SequenceOfReferences::default().set_sqref("A1:A3")`, apply via `sheet.set_conditional_formatting_collection(vec![cf])`.
@@ -74,4 +75,26 @@
 
 # Ralph Progress Log - Phase 6: WASM Support - Compile and run from WebAssembly
 Started: 2026년  2월 28일 토요일 01시 35분 02초 KST
+---
+
+## 2026-02-28 - US-060
+- What was implemented: Conditional compilation guards for WASM target
+  - `convert()` and `convert_with_options()` guarded with `#[cfg(not(target_arch = "wasm32"))]`
+  - `convert_bytes()` and `render_document()` remain available on all targets (no cfg guards)
+  - `MinimalWorld::new()` (system fonts + custom font paths) guarded with `#[cfg(not(target_arch = "wasm32"))]`
+  - Added `MinimalWorld::new_embedded_only()` for WASM: uses only embedded fonts (Libertinus, New Computer Modern, DejaVu)
+  - `compile_to_pdf()` has two versions: native (uses `MinimalWorld::new`) and wasm32 (uses `new_embedded_only`)
+  - Extracted shared compilation logic into `compile_to_pdf_inner()`
+  - `std::path::PathBuf` import in pdf.rs guarded behind `#[cfg(not(target_arch = "wasm32"))]`
+  - `std::path::Path` import removed from lib.rs, replaced with inline `std::path::Path` in function signatures
+  - Updated crate-level doc examples with `#[cfg(not(target_arch = "wasm32"))]` guards
+  - Added 2 new tests for embedded-only font path (WASM code path verification on native)
+- Files changed:
+  - `crates/office2pdf/src/lib.rs` — cfg guards on convert/convert_with_options, doc updates
+  - `crates/office2pdf/src/render/pdf.rs` — dual compile_to_pdf, new_embedded_only, compile_to_pdf_inner
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - `#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]` is useful for functions that are only used on WASM but need testing on native
+  - `compile_to_pdf` signature kept identical on both targets (accepting `&[PathBuf]`) for API compatibility; WASM version ignores font_paths
+  - All parsers (docx, pptx, xlsx) already operate on in-memory bytes — no cfg guards needed on them
 ---

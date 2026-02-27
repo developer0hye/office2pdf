@@ -16,7 +16,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "This is the foundation story. Focus on #[cfg(target_arch = \"wasm32\")] and #[cfg(not(target_arch = \"wasm32\"))] guards. Do NOT add wasm-bindgen yet. The typst-kit FontSearcher::include_system_fonts() and search_with() use system APIs not available on WASM. On WASM, create a FontSearcher with include_system_fonts(false) and call search() to get embedded fonts only."
     },
     {
