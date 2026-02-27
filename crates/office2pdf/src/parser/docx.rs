@@ -504,13 +504,11 @@ fn build_math_context(data: &[u8]) -> MathContext {
 
     if let Some(xml) = read_zip_text(&mut archive, "word/document.xml") {
         let raw = super::omml::scan_math_equations(&xml);
-        for (idx, infos) in raw {
-            for info in infos {
-                equations.entry(idx).or_default().push(MathEquation {
-                    content: info.content,
-                    display: info.display,
-                });
-            }
+        for (idx, content, display) in raw {
+            equations
+                .entry(idx)
+                .or_default()
+                .push(MathEquation { content, display });
         }
     }
 
