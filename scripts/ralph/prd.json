@@ -72,8 +72,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: GroupTransform struct for coordinate mapping (off/ext/chOff/chExt), parse_group_shape() function that reads group header sections, extracts transform, slices child XML from original string via buffer_position(), wraps in namespace container, and recursively calls parse_slide_xml(). Transform applied to each child FixedElement. Handles nested groups via recursion. 5 tests."
     },
     {
       "id": "US-034",

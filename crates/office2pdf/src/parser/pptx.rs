@@ -923,6 +923,161 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
     })
 }
 
+/// Group shape coordinate transform.
+///
+/// Maps child coordinates from the group's internal coordinate space
+/// to the parent (slide or outer group) coordinate space.
+#[derive(Debug, Default)]
+struct GroupTransform {
+    /// Group position on parent, in EMU.
+    off_x: i64,
+    off_y: i64,
+    /// Group extent (size) on parent, in EMU.
+    ext_cx: i64,
+    ext_cy: i64,
+    /// Child coordinate space origin, in EMU.
+    ch_off_x: i64,
+    ch_off_y: i64,
+    /// Child coordinate space extent, in EMU.
+    ch_ext_cx: i64,
+    ch_ext_cy: i64,
+}
+
+impl GroupTransform {
+    /// Apply the transform to a `FixedElement` whose coordinates are already in points.
+    fn apply(&self, elem: &mut FixedElement) {
+        let scale_x = if self.ch_ext_cx != 0 {
+            self.ext_cx as f64 / self.ch_ext_cx as f64
+        } else {
+            1.0
+        };
+        let scale_y = if self.ch_ext_cy != 0 {
+            self.ext_cy as f64 / self.ch_ext_cy as f64
+        } else {
+            1.0
+        };
+
+        let off_x_pt = emu_to_pt(self.off_x);
+        let off_y_pt = emu_to_pt(self.off_y);
+        let ch_off_x_pt = emu_to_pt(self.ch_off_x);
+        let ch_off_y_pt = emu_to_pt(self.ch_off_y);
+
+        elem.x = off_x_pt + (elem.x - ch_off_x_pt) * scale_x;
+        elem.y = off_y_pt + (elem.y - ch_off_y_pt) * scale_y;
+        elem.width *= scale_x;
+        elem.height *= scale_y;
+    }
+}
+
+/// Parse a `<p:grpSp>` group shape from the reader.
+///
+/// Called right after the `<p:grpSp>` start tag has been consumed.
+/// Reads through the group's header sections (`nvGrpSpPr`, `grpSpPr`),
+/// extracts the coordinate transform, then slices the original XML to
+/// get the child shapes, and recursively parses them via `parse_slide_xml`.
+fn parse_group_shape(
+    reader: &mut Reader<&[u8]>,
+    xml: &str,
+    images: &SlideImageMap,
+    theme: &ThemeData,
+) -> Result<Vec<FixedElement>, ConvertError> {
+    let mut transform = GroupTransform::default();
+    let mut in_xfrm = false;
+    let mut header_depth: usize = 0;
+    let mut children_start = reader.buffer_position() as usize;
+
+    // Phase 1: Read nvGrpSpPr and grpSpPr sections, extracting the transform.
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
+                b"nvGrpSpPr" if header_depth == 0 => header_depth = 1,
+                b"grpSpPr" if header_depth == 0 => header_depth = 1,
+                b"xfrm" if header_depth == 1 => in_xfrm = true,
+                _ if header_depth > 0 => header_depth += 1,
+                _ => break, // unexpected top-level child — treat as children start
+            },
+            Ok(Event::Empty(ref e)) => match e.local_name().as_ref() {
+                b"grpSpPr" if header_depth == 0 => {
+                    children_start = reader.buffer_position() as usize;
+                    break;
+                }
+                b"off" if in_xfrm => {
+                    transform.off_x = get_attr_i64(e, b"x").unwrap_or(0);
+                    transform.off_y = get_attr_i64(e, b"y").unwrap_or(0);
+                }
+                b"ext" if in_xfrm => {
+                    transform.ext_cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                    transform.ext_cy = get_attr_i64(e, b"cy").unwrap_or(0);
+                }
+                b"chOff" if in_xfrm => {
+                    transform.ch_off_x = get_attr_i64(e, b"x").unwrap_or(0);
+                    transform.ch_off_y = get_attr_i64(e, b"y").unwrap_or(0);
+                }
+                b"chExt" if in_xfrm => {
+                    transform.ch_ext_cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                    transform.ch_ext_cy = get_attr_i64(e, b"cy").unwrap_or(0);
+                }
+                _ => {}
+            },
+            Ok(Event::End(ref e)) => match e.local_name().as_ref() {
+                b"xfrm" if in_xfrm => in_xfrm = false,
+                b"grpSpPr" if header_depth == 1 => {
+                    children_start = reader.buffer_position() as usize;
+                    break;
+                }
+                b"nvGrpSpPr" if header_depth == 1 => header_depth = 0,
+                _ if header_depth > 1 => header_depth -= 1,
+                b"grpSp" => return Ok(Vec::new()), // empty group
+                _ => {}
+            },
+            Ok(Event::Eof) => return Ok(Vec::new()),
+            Err(e) => {
+                return Err(ConvertError::Parse(format!(
+                    "XML error in group shape: {e}"
+                )));
+            }
+            _ => {}
+        }
+    }
+
+    // Phase 2: Skip to </p:grpSp>, recording where the children end.
+    let mut grp_depth: usize = 1;
+    loop {
+        let pos = reader.buffer_position() as usize;
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) if e.local_name().as_ref() == b"grpSp" => {
+                grp_depth += 1;
+            }
+            Ok(Event::End(ref e)) if e.local_name().as_ref() == b"grpSp" => {
+                grp_depth -= 1;
+                if grp_depth == 0 {
+                    let children_xml = &xml[children_start..pos];
+                    if children_xml.trim().is_empty() {
+                        return Ok(Vec::new());
+                    }
+
+                    let wrapped = format!(
+                        r#"<r xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">{children_xml}</r>"#
+                    );
+
+                    let mut child_elements = parse_slide_xml(&wrapped, images, theme)?;
+                    for elem in &mut child_elements {
+                        transform.apply(elem);
+                    }
+                    return Ok(child_elements);
+                }
+            }
+            Ok(Event::Eof) => return Ok(Vec::new()),
+            Err(e) => {
+                return Err(ConvertError::Parse(format!(
+                    "XML error in group shape: {e}"
+                )));
+            }
+            _ => {}
+        }
+    }
+}
+
 /// Parse a slide XML to extract positioned elements (text boxes, shapes, images).
 fn parse_slide_xml(
     xml: &str,
@@ -1014,6 +1169,14 @@ fn parse_slide_xml(
                                 height: emu_to_pt(gf_cy),
                                 kind: FixedElementKind::Table(table),
                             });
+                        }
+                    }
+
+                    // ── Group shape start ────────────────────────────
+                    b"grpSp" if !in_shape && !in_pic && !in_graphic_frame => {
+                        if let Ok(group_elems) = parse_group_shape(&mut reader, xml, images, theme)
+                        {
+                            elements.extend(group_elems);
                         }
                     }
 
@@ -3657,6 +3820,289 @@ mod tests {
             doc.pages.len(),
             0,
             "Range beyond total slides should produce empty document"
+        );
+    }
+
+    // ── Group shape helpers ─────────────────────────────────────────────
+
+    /// Create a group shape XML with a coordinate transform and child shapes.
+    fn make_group_shape(
+        off_x: i64,
+        off_y: i64,
+        ext_cx: i64,
+        ext_cy: i64,
+        ch_off_x: i64,
+        ch_off_y: i64,
+        ch_ext_cx: i64,
+        ch_ext_cy: i64,
+        children: &[String],
+    ) -> String {
+        let mut xml = format!(
+            r#"<p:grpSp><p:nvGrpSpPr><p:cNvPr id="10" name="Group"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="{off_x}" y="{off_y}"/><a:ext cx="{ext_cx}" cy="{ext_cy}"/><a:chOff x="{ch_off_x}" y="{ch_off_y}"/><a:chExt cx="{ch_ext_cx}" cy="{ch_ext_cy}"/></a:xfrm></p:grpSpPr>"#
+        );
+        for child in children {
+            xml.push_str(child);
+        }
+        xml.push_str("</p:grpSp>");
+        xml
+    }
+
+    /// Create a rectangle shape XML (no text body) with a fill color.
+    fn make_shape_rect(x: i64, y: i64, cx: i64, cy: i64, fill_hex: &str) -> String {
+        format!(
+            r#"<p:sp><p:nvSpPr><p:cNvPr id="3" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="rect"/><a:solidFill><a:srgbClr val="{fill_hex}"/></a:solidFill></p:spPr></p:sp>"#
+        )
+    }
+
+    // ── Group shape tests ───────────────────────────────────────────────
+
+    #[test]
+    fn test_group_shape_two_text_boxes() {
+        // Group at (1000000, 500000) with 1:1 mapping (ext == chExt)
+        let child_a = make_text_box(0, 0, 2_000_000, 1_000_000, "Shape A");
+        let child_b = make_text_box(2_000_000, 1_000_000, 2_000_000, 1_000_000, "Shape B");
+        let group = make_group_shape(
+            1_000_000,
+            500_000, // off
+            4_000_000,
+            2_000_000, // ext
+            0,
+            0, // chOff
+            4_000_000,
+            2_000_000, // chExt
+            &[child_a, child_b],
+        );
+        let slide = make_slide_xml(&[group]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 2, "Expected 2 elements from group");
+
+        // Shape A: (1000000, 500000) in EMU → ~78.74pt, ~39.37pt
+        let a = &page.elements[0];
+        assert!(
+            (a.x - emu_to_pt(1_000_000)).abs() < 0.1,
+            "Shape A x: got {}, expected {}",
+            a.x,
+            emu_to_pt(1_000_000)
+        );
+        assert!(
+            (a.y - emu_to_pt(500_000)).abs() < 0.1,
+            "Shape A y: got {}, expected {}",
+            a.y,
+            emu_to_pt(500_000)
+        );
+
+        // Shape B: (1000000+2000000, 500000+1000000) = (3000000, 1500000) EMU
+        let b = &page.elements[1];
+        assert!(
+            (b.x - emu_to_pt(3_000_000)).abs() < 0.1,
+            "Shape B x: got {}, expected {}",
+            b.x,
+            emu_to_pt(3_000_000)
+        );
+        assert!(
+            (b.y - emu_to_pt(1_500_000)).abs() < 0.1,
+            "Shape B y: got {}, expected {}",
+            b.y,
+            emu_to_pt(1_500_000)
+        );
+
+        // Verify text content
+        let blocks_a = text_box_blocks(a);
+        let para_a = match &blocks_a[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+        assert_eq!(para_a.runs[0].text, "Shape A");
+    }
+
+    #[test]
+    fn test_group_shape_with_scaling() {
+        // Group: ext is half of chExt → children scaled down by 0.5
+        let child = make_text_box(0, 0, 4_000_000, 2_000_000, "Scaled");
+        let group = make_group_shape(
+            0,
+            0, // off
+            2_000_000,
+            1_000_000, // ext (half)
+            0,
+            0, // chOff
+            4_000_000,
+            2_000_000, // chExt (full)
+            &[child],
+        );
+        let slide = make_slide_xml(&[group]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 1);
+
+        let elem = &page.elements[0];
+        // Width: 4000000 * 0.5 = 2000000 EMU → ~157.48pt
+        let expected_w = emu_to_pt(2_000_000);
+        assert!(
+            (elem.width - expected_w).abs() < 0.1,
+            "Scaled width: got {}, expected {}",
+            elem.width,
+            expected_w
+        );
+        let expected_h = emu_to_pt(1_000_000);
+        assert!(
+            (elem.height - expected_h).abs() < 0.1,
+            "Scaled height: got {}, expected {}",
+            elem.height,
+            expected_h
+        );
+    }
+
+    #[test]
+    fn test_nested_group_shapes() {
+        // Inner group at (0, 0) with 1:1 mapping containing a text box
+        let inner_child = make_text_box(0, 0, 1_000_000, 1_000_000, "Nested");
+        let inner_group = make_group_shape(
+            0,
+            0, // off
+            2_000_000,
+            2_000_000, // ext
+            0,
+            0, // chOff
+            2_000_000,
+            2_000_000, // chExt
+            &[inner_child],
+        );
+        // Outer group at (1000000, 1000000) with 1:1 mapping
+        let outer_group = make_group_shape(
+            1_000_000,
+            1_000_000, // off
+            4_000_000,
+            4_000_000, // ext
+            0,
+            0, // chOff
+            4_000_000,
+            4_000_000, // chExt
+            &[inner_group],
+        );
+        let slide = make_slide_xml(&[outer_group]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(
+            page.elements.len(),
+            1,
+            "Expected 1 element (nested text box)"
+        );
+
+        // The inner child at (0,0) → inner group maps to (0,0) → outer group maps to (1000000, 1000000)
+        let elem = &page.elements[0];
+        assert!(
+            (elem.x - emu_to_pt(1_000_000)).abs() < 0.1,
+            "Nested x: got {}, expected {}",
+            elem.x,
+            emu_to_pt(1_000_000)
+        );
+        assert!(
+            (elem.y - emu_to_pt(1_000_000)).abs() < 0.1,
+            "Nested y: got {}, expected {}",
+            elem.y,
+            emu_to_pt(1_000_000)
+        );
+        assert_eq!(elem.width, emu_to_pt(1_000_000));
+        assert_eq!(elem.height, emu_to_pt(1_000_000));
+    }
+
+    #[test]
+    fn test_group_shape_mixed_element_types() {
+        // Group with a text box and a rectangle shape
+        let text = make_text_box(0, 0, 2_000_000, 1_000_000, "Text");
+        let rect = make_shape_rect(2_000_000, 0, 2_000_000, 1_000_000, "FF0000");
+        let group = make_group_shape(
+            0,
+            0, // off
+            4_000_000,
+            2_000_000, // ext
+            0,
+            0, // chOff
+            4_000_000,
+            2_000_000, // chExt
+            &[text, rect],
+        );
+        let slide = make_slide_xml(&[group]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 2, "Expected TextBox + Shape");
+
+        // First element: TextBox
+        assert!(
+            matches!(&page.elements[0].kind, FixedElementKind::TextBox(_)),
+            "First element should be TextBox"
+        );
+        // Second element: Shape
+        assert!(
+            matches!(&page.elements[1].kind, FixedElementKind::Shape(_)),
+            "Second element should be Shape"
+        );
+
+        // Verify shape position: (2000000, 0) in child space → (2000000, 0) in slide space
+        let shape_elem = &page.elements[1];
+        assert!(
+            (shape_elem.x - emu_to_pt(2_000_000)).abs() < 0.1,
+            "Shape x: got {}, expected {}",
+            shape_elem.x,
+            emu_to_pt(2_000_000)
+        );
+    }
+
+    #[test]
+    fn test_group_shape_with_nonzero_child_offset() {
+        // Group where chOff != (0,0) — children positioned relative to offset
+        let child = make_text_box(1_000_000, 1_000_000, 2_000_000, 1_000_000, "Offset");
+        let group = make_group_shape(
+            500_000,
+            500_000, // off (group position on slide)
+            4_000_000,
+            2_000_000, // ext
+            1_000_000,
+            1_000_000, // chOff (child space origin)
+            4_000_000,
+            2_000_000, // chExt
+            &[child],
+        );
+        let slide = make_slide_xml(&[group]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        assert_eq!(page.elements.len(), 1);
+
+        // child_x=1000000, chOff_x=1000000 → (1000000-1000000)*1.0 + 500000 = 500000
+        let elem = &page.elements[0];
+        assert!(
+            (elem.x - emu_to_pt(500_000)).abs() < 0.1,
+            "Offset x: got {}, expected {}",
+            elem.x,
+            emu_to_pt(500_000)
+        );
+        assert!(
+            (elem.y - emu_to_pt(500_000)).abs() < 0.1,
+            "Offset y: got {}, expected {}",
+            elem.y,
+            emu_to_pt(500_000)
         );
     }
 }
