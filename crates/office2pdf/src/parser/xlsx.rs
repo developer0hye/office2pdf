@@ -4,8 +4,9 @@ use std::io::Cursor;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Block, BorderSide, CellBorder, Color, Document, Margins, Metadata, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, HFInline, HeaderFooter,
+    HeaderFooterParagraph, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
+    StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 
@@ -131,6 +132,246 @@ fn extract_cell_borders(cell: &umya_spreadsheet::Cell) -> Option<CellBorder> {
     })
 }
 
+/// A cell range within a sheet (1-indexed, inclusive).
+#[derive(Debug, Clone, Copy)]
+struct CellRange {
+    start_col: u32,
+    start_row: u32,
+    end_col: u32,
+    end_row: u32,
+}
+
+/// Parse an Excel column letter string (e.g., "A", "B", "AA") into a 1-indexed column number.
+fn parse_column_letters(s: &str) -> Option<u32> {
+    if s.is_empty() {
+        return None;
+    }
+    let mut col: u32 = 0;
+    for c in s.chars() {
+        if !c.is_ascii_uppercase() {
+            return None;
+        }
+        col = col * 26 + (c as u32 - b'A' as u32 + 1);
+    }
+    Some(col)
+}
+
+/// Parse a cell reference like "$A$1", "A1", "$B$10" into (col, row), both 1-indexed.
+fn parse_cell_ref(s: &str) -> Option<(u32, u32)> {
+    // Strip dollar signs
+    let s = s.replace('$', "");
+    // Split into letter part and number part
+    let split_pos = s.find(|c: char| c.is_ascii_digit())?;
+    let col_str = &s[..split_pos];
+    let row_str = &s[split_pos..];
+    let col = parse_column_letters(col_str)?;
+    let row: u32 = row_str.parse().ok()?;
+    Some((col, row))
+}
+
+/// Parse a print area address string (e.g., "Sheet1!$A$1:$C$10") into a CellRange.
+fn parse_print_area_range(address: &str) -> Option<CellRange> {
+    // Strip optional sheet prefix (everything up to and including '!')
+    let range_part = if let Some(pos) = address.rfind('!') {
+        &address[pos + 1..]
+    } else {
+        address
+    };
+
+    let (start_str, end_str) = range_part.split_once(':')?;
+    let (start_col, start_row) = parse_cell_ref(start_str)?;
+    let (end_col, end_row) = parse_cell_ref(end_str)?;
+    Some(CellRange {
+        start_col,
+        start_row,
+        end_col,
+        end_row,
+    })
+}
+
+/// Look up the print area for a given sheet from its defined names.
+fn find_print_area(sheet: &umya_spreadsheet::Worksheet) -> Option<CellRange> {
+    for dn in sheet.get_defined_names() {
+        if dn.get_name() == "_xlnm.Print_Area" {
+            let addr = dn.get_address();
+            if let Some(range) = parse_print_area_range(&addr) {
+                return Some(range);
+            }
+        }
+    }
+    None
+}
+
+/// Collect sorted manual row page break positions from a sheet.
+fn collect_row_breaks(sheet: &umya_spreadsheet::Worksheet) -> Vec<u32> {
+    let mut breaks: Vec<u32> = sheet
+        .get_row_breaks()
+        .get_break_list()
+        .iter()
+        .filter(|b| *b.get_manual_page_break())
+        .map(|b| *b.get_id())
+        .collect();
+    breaks.sort_unstable();
+    breaks.dedup();
+    breaks
+}
+
+/// Parse an Excel header/footer format string into IR HeaderFooter.
+///
+/// Excel format strings use `&L`, `&C`, `&R` to define left/center/right sections,
+/// `&P` for current page number, and `&N` for total page count.
+/// Returns `None` if the format string is empty.
+fn parse_hf_format_string(format_str: &str) -> Option<HeaderFooter> {
+    let s = format_str.trim();
+    if s.is_empty() {
+        return None;
+    }
+
+    // Split into left/center/right sections
+    let mut left = String::new();
+    let mut center = String::new();
+    let mut right = String::new();
+    let mut current = &mut center; // Default section is center if no &L/&C/&R prefix
+
+    let chars: Vec<char> = s.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '&' && i + 1 < chars.len() {
+            match chars[i + 1] {
+                'L' => {
+                    current = &mut left;
+                    i += 2;
+                }
+                'C' => {
+                    current = &mut center;
+                    i += 2;
+                }
+                'R' => {
+                    current = &mut right;
+                    i += 2;
+                }
+                'P' => {
+                    current.push('\x01'); // Sentinel for page number
+                    i += 2;
+                }
+                'N' => {
+                    current.push('\x02'); // Sentinel for total pages
+                    i += 2;
+                }
+                '&' => {
+                    // Escaped ampersand: && → &
+                    current.push('&');
+                    i += 2;
+                }
+                '"' => {
+                    // Font name: &"FontName" — skip to closing quote
+                    i += 2; // skip &"
+                    while i < chars.len() && chars[i] != '"' {
+                        i += 1;
+                    }
+                    if i < chars.len() {
+                        i += 1; // skip closing "
+                    }
+                }
+                c if c.is_ascii_digit() => {
+                    // Font size: &NN — skip digits
+                    i += 1; // skip &
+                    while i < chars.len() && chars[i].is_ascii_digit() {
+                        i += 1;
+                    }
+                }
+                _ => {
+                    // Unknown code — skip it
+                    i += 2;
+                }
+            }
+        } else {
+            current.push(chars[i]);
+            i += 1;
+        }
+    }
+
+    let mut paragraphs = Vec::new();
+
+    // Build paragraph for each non-empty section
+    let sections = [
+        (&left, Alignment::Left),
+        (&center, Alignment::Center),
+        (&right, Alignment::Right),
+    ];
+
+    for (text, alignment) in &sections {
+        if text.is_empty() {
+            continue;
+        }
+        let elements = build_hf_elements(text);
+        if !elements.is_empty() {
+            paragraphs.push(HeaderFooterParagraph {
+                style: ParagraphStyle {
+                    alignment: Some(*alignment),
+                    ..ParagraphStyle::default()
+                },
+                elements,
+            });
+        }
+    }
+
+    if paragraphs.is_empty() {
+        None
+    } else {
+        Some(HeaderFooter { paragraphs })
+    }
+}
+
+/// Build HFInline elements from a section string, replacing sentinel chars.
+fn build_hf_elements(section: &str) -> Vec<HFInline> {
+    let mut elements = Vec::new();
+    let mut current_text = String::new();
+
+    for ch in section.chars() {
+        match ch {
+            '\x01' => {
+                // Page number sentinel
+                if !current_text.is_empty() {
+                    elements.push(HFInline::Run(Run {
+                        text: std::mem::take(&mut current_text),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }));
+                }
+                elements.push(HFInline::PageNumber);
+            }
+            '\x02' => {
+                // Total pages sentinel
+                if !current_text.is_empty() {
+                    elements.push(HFInline::Run(Run {
+                        text: std::mem::take(&mut current_text),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }));
+                }
+                elements.push(HFInline::TotalPages);
+            }
+            _ => {
+                current_text.push(ch);
+            }
+        }
+    }
+
+    if !current_text.is_empty() {
+        elements.push(HFInline::Run(Run {
+            text: current_text,
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+        }));
+    }
+
+    elements
+}
+
 /// A (column, row) coordinate pair (1-indexed).
 type CellPos = (u32, u32);
 
@@ -223,7 +464,15 @@ impl Parser for XlsxParser {
                 }
             }
 
-            let column_widths: Vec<f64> = (1..=max_col)
+            // Check for print area — limit to that range if defined
+            let print_area = find_print_area(sheet);
+            let (col_start, col_end, row_start, row_end) = if let Some(pa) = print_area {
+                (pa.start_col, pa.end_col, pa.start_row, pa.end_row)
+            } else {
+                (1, max_col, 1, max_row)
+            };
+
+            let column_widths: Vec<f64> = (col_start..=col_end)
                 .map(|col| {
                     sheet
                         .get_column_dimension_by_number(&col)
@@ -235,9 +484,9 @@ impl Parser for XlsxParser {
             let (merge_tops, merge_skips) = build_merge_maps(sheet);
 
             let mut rows = Vec::new();
-            for row_idx in 1..=max_row {
+            for row_idx in row_start..=row_end {
                 let mut cells = Vec::new();
-                for col_idx in 1..=max_col {
+                for col_idx in col_start..=col_end {
                     // Skip cells that are part of a merge but not the top-left
                     if merge_skips.contains(&(col_idx, row_idx)) {
                         continue;
@@ -262,6 +511,8 @@ impl Parser for XlsxParser {
                             runs: vec![Run {
                                 text: value,
                                 style: text_style,
+                                href: None,
+                                footnote: None,
                             }],
                         })]
                     };
@@ -291,15 +542,64 @@ impl Parser for XlsxParser {
                 rows.push(TableRow { cells, height });
             }
 
-            pages.push(Page::Table(TablePage {
-                name: sheet.get_name().to_string(),
-                size: PageSize::default(),
-                margins: Margins::default(),
-                table: Table {
-                    rows,
-                    column_widths,
-                },
-            }));
+            // Collect row page breaks and split rows into page segments
+            let row_breaks = collect_row_breaks(sheet);
+            let sheet_name = sheet.get_name().to_string();
+
+            // Extract sheet header/footer
+            let hf = sheet.get_header_footer();
+            let sheet_header = parse_hf_format_string(hf.get_odd_header().get_value());
+            let sheet_footer = parse_hf_format_string(hf.get_odd_footer().get_value());
+
+            if row_breaks.is_empty() {
+                // No page breaks — single page
+                pages.push(Page::Table(TablePage {
+                    name: sheet_name,
+                    size: PageSize::default(),
+                    margins: Margins::default(),
+                    table: Table {
+                        rows,
+                        column_widths,
+                    },
+                    header: sheet_header.clone(),
+                    footer: sheet_footer.clone(),
+                }));
+            } else {
+                // Split rows at break points
+                // Breaks are 1-indexed row numbers; break after that row
+                let mut segments: Vec<Vec<TableRow>> = Vec::new();
+                let mut current_segment: Vec<TableRow> = Vec::new();
+                let mut break_idx = 0;
+
+                for (i, row) in rows.into_iter().enumerate() {
+                    let actual_row = row_start + i as u32; // 1-indexed row number
+                    current_segment.push(row);
+
+                    // Check if this row is a break point
+                    if break_idx < row_breaks.len() && actual_row == row_breaks[break_idx] {
+                        segments.push(std::mem::take(&mut current_segment));
+                        break_idx += 1;
+                    }
+                }
+                // Push remaining rows as the last segment
+                if !current_segment.is_empty() {
+                    segments.push(current_segment);
+                }
+
+                for segment in segments {
+                    pages.push(Page::Table(TablePage {
+                        name: sheet_name.clone(),
+                        size: PageSize::default(),
+                        margins: Margins::default(),
+                        table: Table {
+                            rows: segment,
+                            column_widths: column_widths.clone(),
+                        },
+                        header: sheet_header.clone(),
+                        footer: sheet_footer.clone(),
+                    }));
+                }
+            }
         }
 
         Ok((
@@ -1175,5 +1475,361 @@ mod tests {
             0,
             "No matching sheets should produce empty document"
         );
+    }
+
+    // ----- US-035: Print area and page breaks tests -----
+
+    /// Helper: build XLSX with a print area defined name.
+    fn build_xlsx_with_print_area(cells: &[(&str, &str)], print_area: &str) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.set_name("Sheet1");
+            for &(coord, value) in cells {
+                sheet.get_cell_mut(coord).set_value(value);
+            }
+            sheet
+                .add_defined_name("_xlnm.Print_Area", print_area)
+                .unwrap();
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Helper: build XLSX with row page breaks.
+    fn build_xlsx_with_row_breaks(cells: &[(&str, &str)], break_rows: &[u32]) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.set_name("Sheet1");
+            for &(coord, value) in cells {
+                sheet.get_cell_mut(coord).set_value(value);
+            }
+            for &row in break_rows {
+                let mut brk = umya_spreadsheet::Break::default();
+                brk.set_id(row);
+                brk.set_manual_page_break(true);
+                sheet.get_row_breaks_mut().add_break_list(brk);
+            }
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_print_area_limits_output() {
+        // Sheet has data in A1:D4, but print area is A1:B2
+        let data = build_xlsx_with_print_area(
+            &[
+                ("A1", "In"),
+                ("B1", "In"),
+                ("C1", "Out"),
+                ("D1", "Out"),
+                ("A2", "In"),
+                ("B2", "In"),
+                ("C2", "Out"),
+                ("A3", "Out"),
+                ("B3", "Out"),
+                ("A4", "Out"),
+            ],
+            "Sheet1!$A$1:$B$2",
+        );
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        assert_eq!(doc.pages.len(), 1);
+        let tp = get_table_page(&doc, 0);
+        // Only rows 1-2, columns A-B
+        assert_eq!(tp.table.rows.len(), 2, "Should have 2 rows from print area");
+        assert_eq!(
+            tp.table.rows[0].cells.len(),
+            2,
+            "Should have 2 columns from print area"
+        );
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "In");
+        assert_eq!(cell_text(&tp.table.rows[0].cells[1]), "In");
+        assert_eq!(cell_text(&tp.table.rows[1].cells[0]), "In");
+        assert_eq!(cell_text(&tp.table.rows[1].cells[1]), "In");
+        // Column widths should only have 2 entries
+        assert_eq!(tp.table.column_widths.len(), 2);
+    }
+
+    #[test]
+    fn test_print_area_without_dollar_signs() {
+        // Print area without dollar signs should also work
+        let data = build_xlsx_with_print_area(
+            &[("A1", "X"), ("B1", "Y"), ("A2", "Z"), ("B2", "W")],
+            "Sheet1!A1:A2",
+        );
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(tp.table.rows.len(), 2);
+        assert_eq!(tp.table.rows[0].cells.len(), 1, "Only column A");
+        assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "X");
+        assert_eq!(cell_text(&tp.table.rows[1].cells[0]), "Z");
+    }
+
+    #[test]
+    fn test_no_print_area_includes_all() {
+        // Without print area, all data should be included (existing behavior)
+        let data = build_xlsx_bytes("Sheet1", &[("A1", "All"), ("C3", "Data")]);
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(tp.table.rows.len(), 3);
+        assert_eq!(tp.table.rows[0].cells.len(), 3);
+    }
+
+    #[test]
+    fn test_row_page_breaks_split_into_pages() {
+        // 5 rows of data, page break after row 2
+        let data = build_xlsx_with_row_breaks(
+            &[
+                ("A1", "R1"),
+                ("A2", "R2"),
+                ("A3", "R3"),
+                ("A4", "R4"),
+                ("A5", "R5"),
+            ],
+            &[2], // break after row 2
+        );
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // Should produce 2 pages: rows 1-2 and rows 3-5
+        assert_eq!(doc.pages.len(), 2, "Break should split into 2 pages");
+        let tp0 = get_table_page(&doc, 0);
+        let tp1 = get_table_page(&doc, 1);
+
+        assert_eq!(tp0.table.rows.len(), 2, "First page: rows 1-2");
+        assert_eq!(cell_text(&tp0.table.rows[0].cells[0]), "R1");
+        assert_eq!(cell_text(&tp0.table.rows[1].cells[0]), "R2");
+
+        assert_eq!(tp1.table.rows.len(), 3, "Second page: rows 3-5");
+        assert_eq!(cell_text(&tp1.table.rows[0].cells[0]), "R3");
+        assert_eq!(cell_text(&tp1.table.rows[1].cells[0]), "R4");
+        assert_eq!(cell_text(&tp1.table.rows[2].cells[0]), "R5");
+    }
+
+    #[test]
+    fn test_multiple_row_page_breaks() {
+        // 6 rows, breaks after rows 2 and 4
+        let data = build_xlsx_with_row_breaks(
+            &[
+                ("A1", "R1"),
+                ("A2", "R2"),
+                ("A3", "R3"),
+                ("A4", "R4"),
+                ("A5", "R5"),
+                ("A6", "R6"),
+            ],
+            &[2, 4], // breaks after row 2 and row 4
+        );
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // Should produce 3 pages: rows 1-2, rows 3-4, rows 5-6
+        assert_eq!(doc.pages.len(), 3, "Two breaks should produce 3 pages");
+        let tp0 = get_table_page(&doc, 0);
+        let tp1 = get_table_page(&doc, 1);
+        let tp2 = get_table_page(&doc, 2);
+
+        assert_eq!(tp0.table.rows.len(), 2);
+        assert_eq!(tp1.table.rows.len(), 2);
+        assert_eq!(tp2.table.rows.len(), 2);
+
+        assert_eq!(cell_text(&tp0.table.rows[0].cells[0]), "R1");
+        assert_eq!(cell_text(&tp1.table.rows[0].cells[0]), "R3");
+        assert_eq!(cell_text(&tp2.table.rows[0].cells[0]), "R5");
+    }
+
+    #[test]
+    fn test_no_page_breaks_single_page() {
+        // No page breaks → single page per sheet (existing behavior)
+        let data = build_xlsx_bytes("Sheet1", &[("A1", "R1"), ("A2", "R2"), ("A3", "R3")]);
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        assert_eq!(doc.pages.len(), 1);
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(tp.table.rows.len(), 3);
+    }
+
+    #[test]
+    fn test_page_break_column_widths_preserved() {
+        // Page breaks should preserve column widths across all pages
+        let data = build_xlsx_with_row_breaks(
+            &[("A1", "R1"), ("B1", "R1B"), ("A2", "R2"), ("B2", "R2B")],
+            &[1],
+        );
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        assert_eq!(doc.pages.len(), 2);
+        let tp0 = get_table_page(&doc, 0);
+        let tp1 = get_table_page(&doc, 1);
+        assert_eq!(tp0.table.column_widths.len(), 2);
+        assert_eq!(tp1.table.column_widths.len(), 2);
+        // Same column widths on both pages
+        assert_eq!(tp0.table.column_widths, tp1.table.column_widths);
+    }
+
+    // --- US-036: Sheet headers and footers ---
+
+    #[test]
+    fn test_parse_hf_format_string_empty() {
+        assert!(parse_hf_format_string("").is_none());
+        assert!(parse_hf_format_string("   ").is_none());
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_center_only() {
+        // No section prefix → defaults to center
+        let hf = parse_hf_format_string("My Report").unwrap();
+        assert_eq!(hf.paragraphs.len(), 1);
+        assert_eq!(hf.paragraphs[0].style.alignment, Some(Alignment::Center));
+        assert_eq!(hf.paragraphs[0].elements.len(), 1);
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "My Report"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_left_center_right() {
+        let hf = parse_hf_format_string("&LLeft Text&CCenter Text&RRight Text").unwrap();
+        assert_eq!(hf.paragraphs.len(), 3);
+
+        // Left section
+        assert_eq!(hf.paragraphs[0].style.alignment, Some(Alignment::Left));
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Left Text"),
+            _ => panic!("Expected Run"),
+        }
+
+        // Center section
+        assert_eq!(hf.paragraphs[1].style.alignment, Some(Alignment::Center));
+        match &hf.paragraphs[1].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Center Text"),
+            _ => panic!("Expected Run"),
+        }
+
+        // Right section
+        assert_eq!(hf.paragraphs[2].style.alignment, Some(Alignment::Right));
+        match &hf.paragraphs[2].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Right Text"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_page_numbers() {
+        // Footer with "Page X of Y"
+        let hf = parse_hf_format_string("&CPage &P of &N").unwrap();
+        assert_eq!(hf.paragraphs.len(), 1);
+        let elems = &hf.paragraphs[0].elements;
+        assert_eq!(elems.len(), 4);
+        match &elems[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Page "),
+            _ => panic!("Expected Run"),
+        }
+        assert!(matches!(elems[1], HFInline::PageNumber));
+        match &elems[2] {
+            HFInline::Run(r) => assert_eq!(r.text, " of "),
+            _ => panic!("Expected Run"),
+        }
+        assert!(matches!(elems[3], HFInline::TotalPages));
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_escaped_ampersand() {
+        let hf = parse_hf_format_string("&CA && B").unwrap();
+        assert_eq!(hf.paragraphs.len(), 1);
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "A & B"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_font_codes_skipped() {
+        // Font name and size codes should be skipped
+        let hf = parse_hf_format_string(r#"&C&"Arial"&12Hello"#).unwrap();
+        assert_eq!(hf.paragraphs.len(), 1);
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Hello"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    /// Helper: build an XLSX with a custom header on the sheet.
+    fn build_xlsx_with_header(header_str: &str) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.get_cell_mut("A1").set_value("Data");
+            sheet
+                .get_header_footer_mut()
+                .get_odd_header_mut()
+                .set_value(header_str);
+        }
+        let mut buf = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut buf).unwrap();
+        buf.into_inner()
+    }
+
+    /// Helper: build an XLSX with a custom footer on the sheet.
+    fn build_xlsx_with_footer(footer_str: &str) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.get_cell_mut("A1").set_value("Data");
+            sheet
+                .get_header_footer_mut()
+                .get_odd_footer_mut()
+                .set_value(footer_str);
+        }
+        let mut buf = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut buf).unwrap();
+        buf.into_inner()
+    }
+
+    #[test]
+    fn test_xlsx_sheet_with_custom_header() {
+        let data = build_xlsx_with_header("&CMonthly Report");
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let header = tp.header.as_ref().expect("Expected header");
+        assert_eq!(header.paragraphs.len(), 1);
+        assert_eq!(
+            header.paragraphs[0].style.alignment,
+            Some(Alignment::Center)
+        );
+        match &header.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Monthly Report"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_xlsx_sheet_with_page_number_footer() {
+        let data = build_xlsx_with_footer("&CPage &P of &N");
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let footer = tp.footer.as_ref().expect("Expected footer");
+        assert_eq!(footer.paragraphs.len(), 1);
+        let elems = &footer.paragraphs[0].elements;
+        assert_eq!(elems.len(), 4); // "Page ", PageNumber, " of ", TotalPages
+        assert!(matches!(elems[1], HFInline::PageNumber));
+        assert!(matches!(elems[3], HFInline::TotalPages));
     }
 }

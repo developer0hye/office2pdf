@@ -1,4 +1,6 @@
+use std::cell::Cell;
 use std::collections::HashMap;
+use std::io::Read;
 
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
@@ -14,6 +16,18 @@ pub struct DocxParser;
 
 /// Map from relationship ID → PNG image bytes.
 type ImageMap = HashMap<String, Vec<u8>>;
+
+/// Map from relationship ID → hyperlink URL.
+type HyperlinkMap = HashMap<String, String>;
+
+/// Build a lookup map from the DOCX's hyperlinks (reader-populated field).
+/// The reader stores hyperlinks as `(rid, url, type)` in `docx.hyperlinks`.
+fn build_hyperlink_map(docx: &docx_rs::Docx) -> HyperlinkMap {
+    docx.hyperlinks
+        .iter()
+        .map(|(rid, url, _type)| (rid.clone(), url.clone()))
+        .collect()
+}
 
 /// Build a lookup map from the DOCX's embedded images.
 /// docx-rs converts all images to PNG; we use the PNG bytes.
@@ -289,17 +303,233 @@ fn group_into_lists(elements: Vec<TaggedElement>, num_kinds: &NumKindMap) -> Vec
     result
 }
 
+// ── Footnote / Endnote support ──────────────────────────────────────────
+
+/// A note reference kind.
+#[derive(Debug, Clone, Copy)]
+enum NoteKind {
+    Footnote,
+    Endnote,
+}
+
+/// Context for resolving footnote/endnote references during parsing.
+/// The `cursor` is advanced each time a note reference run is encountered.
+struct NoteContext {
+    /// Footnote ID → plain text content.
+    footnote_content: HashMap<usize, String>,
+    /// Endnote ID → plain text content.
+    endnote_content: HashMap<usize, String>,
+    /// Ordered list of note references as they appear in document.xml.
+    note_refs: Vec<(NoteKind, usize)>,
+    /// Current position in `note_refs`.
+    cursor: Cell<usize>,
+}
+
+impl NoteContext {
+    /// Consume the next note reference and return its text content.
+    fn consume_next(&self) -> Option<String> {
+        let idx = self.cursor.get();
+        if idx >= self.note_refs.len() {
+            return None;
+        }
+        let (kind, id) = self.note_refs[idx];
+        self.cursor.set(idx + 1);
+        match kind {
+            NoteKind::Footnote => self.footnote_content.get(&id).cloned(),
+            NoteKind::Endnote => self.endnote_content.get(&id).cloned(),
+        }
+    }
+}
+
+/// Build a `NoteContext` by parsing footnotes/endnotes from the raw DOCX ZIP.
+/// This is needed because docx-rs reader does not parse `w:footnoteReference`
+/// or `w:endnoteReference` elements.
+fn build_note_context(data: &[u8]) -> NoteContext {
+    let mut footnote_content = HashMap::new();
+    let mut endnote_content = HashMap::new();
+    let mut note_refs = Vec::new();
+
+    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
+        return NoteContext {
+            footnote_content,
+            endnote_content,
+            note_refs,
+            cursor: Cell::new(0),
+        };
+    };
+
+    // Parse word/footnotes.xml
+    if let Some(xml) = read_zip_text(&mut archive, "word/footnotes.xml") {
+        footnote_content = parse_notes_xml(&xml);
+    }
+
+    // Parse word/endnotes.xml
+    if let Some(xml) = read_zip_text(&mut archive, "word/endnotes.xml") {
+        endnote_content = parse_notes_xml(&xml);
+    }
+
+    // Scan word/document.xml for note references in document order
+    if let Some(xml) = read_zip_text(&mut archive, "word/document.xml") {
+        note_refs = scan_note_refs(&xml);
+    }
+
+    NoteContext {
+        footnote_content,
+        endnote_content,
+        note_refs,
+        cursor: Cell::new(0),
+    }
+}
+
+/// Read a ZIP entry as a UTF-8 string.
+fn read_zip_text(
+    archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
+    name: &str,
+) -> Option<String> {
+    let mut file = archive.by_name(name).ok()?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).ok()?;
+    Some(contents)
+}
+
+/// Parse footnotes or endnotes XML into a map of ID → concatenated text.
+/// Works for both `<w:footnote w:id="N">` and `<w:endnote w:id="N">` elements.
+fn parse_notes_xml(xml: &str) -> HashMap<usize, String> {
+    let mut map = HashMap::new();
+    let mut reader = quick_xml::Reader::from_str(xml);
+    let mut current_id: Option<usize> = None;
+    let mut current_text = String::new();
+    let mut in_text = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e))
+            | Ok(quick_xml::events::Event::Empty(ref e)) => {
+                let local = e.local_name();
+                let name = local.as_ref();
+                match name {
+                    b"footnote" | b"endnote" => {
+                        // Save previous note if any
+                        if let Some(id) = current_id.take() {
+                            let text = current_text.trim().to_string();
+                            if !text.is_empty() {
+                                map.insert(id, text);
+                            }
+                        }
+                        current_text.clear();
+                        // Extract w:id attribute
+                        for attr in e.attributes().flatten() {
+                            if attr.key.local_name().as_ref() == b"id"
+                                && let Ok(val) = attr.unescape_value()
+                            {
+                                current_id = val.parse::<usize>().ok();
+                            }
+                        }
+                    }
+                    b"t" => in_text = true,
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::End(ref e)) => {
+                let local = e.local_name();
+                let name = local.as_ref();
+                match name {
+                    b"t" => in_text = false,
+                    b"footnote" | b"endnote" => {
+                        if let Some(id) = current_id.take() {
+                            let text = current_text.trim().to_string();
+                            if !text.is_empty() {
+                                map.insert(id, text);
+                            }
+                        }
+                        current_text.clear();
+                    }
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::Text(ref e)) => {
+                if in_text && let Ok(text) = e.xml_content() {
+                    if !current_text.is_empty() {
+                        current_text.push(' ');
+                    }
+                    current_text.push_str(&text);
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    map
+}
+
+/// Scan document.xml for `<w:footnoteReference>` and `<w:endnoteReference>` elements,
+/// returning them in document order with their IDs.
+fn scan_note_refs(xml: &str) -> Vec<(NoteKind, usize)> {
+    let mut refs = Vec::new();
+    let mut reader = quick_xml::Reader::from_str(xml);
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e))
+            | Ok(quick_xml::events::Event::Empty(ref e)) => {
+                let local = e.local_name();
+                let name = local.as_ref();
+                let kind = match name {
+                    b"footnoteReference" => Some(NoteKind::Footnote),
+                    b"endnoteReference" => Some(NoteKind::Endnote),
+                    _ => None,
+                };
+                if let Some(kind) = kind {
+                    for attr in e.attributes().flatten() {
+                        if attr.key.local_name().as_ref() == b"id"
+                            && let Ok(val) = attr.unescape_value()
+                            && let Ok(id) = val.parse::<usize>()
+                        {
+                            refs.push((kind, id));
+                        }
+                    }
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    refs
+}
+
+/// Check if a docx-rs Run represents a footnote or endnote reference.
+/// These runs have `rStyle` set to "FootnoteReference" or "EndnoteReference"
+/// and contain no text.
+fn is_note_reference_run(run: &docx_rs::Run) -> bool {
+    if let Some(ref style) = run.run_property.style {
+        let val = &style.val;
+        if val == "FootnoteReference" || val == "EndnoteReference" {
+            // Verify the run has no text content (only footnoteReference element)
+            return extract_run_text(run).is_empty();
+        }
+    }
+    false
+}
+
 impl Parser for DocxParser {
     fn parse(
         &self,
         data: &[u8],
         _options: &ConvertOptions,
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
+        // Build note context from raw ZIP before docx-rs parsing
+        let notes = build_note_context(data);
+
         let docx = docx_rs::read_docx(data)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;
 
         let (size, margins) = extract_page_setup(&docx.document.section_property);
         let images = build_image_map(&docx);
+        let hyperlinks = build_hyperlink_map(&docx);
         let num_kinds = build_num_kind_map(&docx.numberings);
         let style_map = build_style_map(&docx.styles);
         let mut warnings = Vec::new();
@@ -308,16 +538,31 @@ impl Parser for DocxParser {
         for (idx, child) in docx.document.children.iter().enumerate() {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
                 docx_rs::DocumentChild::Paragraph(para) => {
-                    convert_paragraph_element(para, &images, &style_map)
+                    vec![convert_paragraph_element(
+                        para,
+                        &images,
+                        &hyperlinks,
+                        &style_map,
+                        &notes,
+                    )]
                 }
-                docx_rs::DocumentChild::Table(table) => TaggedElement::Plain(vec![Block::Table(
-                    convert_table(table, &images, &style_map),
-                )]),
-                _ => TaggedElement::Plain(vec![]),
+                docx_rs::DocumentChild::Table(table) => {
+                    vec![TaggedElement::Plain(vec![Block::Table(convert_table(
+                        table,
+                        &images,
+                        &hyperlinks,
+                        &style_map,
+                        &notes,
+                    ))])]
+                }
+                docx_rs::DocumentChild::StructuredDataTag(sdt) => {
+                    convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &notes)
+                }
+                _ => vec![TaggedElement::Plain(vec![])],
             }));
 
             match result {
-                Ok(elem) => elements.push(elem),
+                Ok(elems) => elements.extend(elems),
                 Err(_) => {
                     warnings.push(ConvertWarning {
                         element: format!("Document element at index {idx}"),
@@ -452,6 +697,8 @@ fn extract_hf_run_elements(
                     elements.push(HFInline::Run(Run {
                         text: t.text.clone(),
                         style: style.clone(),
+                        href: None,
+                        footnote: None,
                     }));
                 }
             }
@@ -460,6 +707,8 @@ fn extract_hf_run_elements(
                     elements.push(HFInline::Run(Run {
                         text: "\t".to_string(),
                         style: style.clone(),
+                        href: None,
+                        footnote: None,
                     }));
                 }
             }
@@ -509,18 +758,54 @@ fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
     }
 }
 
+/// Extract content from a StructuredDataTag (SDT), processing its paragraph
+/// and table children through the standard conversion pipeline.
+/// SDTs are used for various structured content in DOCX, including Table of Contents.
+fn convert_sdt_children(
+    sdt: &docx_rs::StructuredDataTag,
+    images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
+    style_map: &StyleMap,
+    notes: &NoteContext,
+) -> Vec<TaggedElement> {
+    let mut result = Vec::new();
+    for child in &sdt.children {
+        match child {
+            docx_rs::StructuredDataTagChild::Paragraph(para) => {
+                result.push(convert_paragraph_element(
+                    para, images, hyperlinks, style_map, notes,
+                ));
+            }
+            docx_rs::StructuredDataTagChild::Table(table) => {
+                result.push(TaggedElement::Plain(vec![Block::Table(convert_table(
+                    table, images, hyperlinks, style_map, notes,
+                ))]));
+            }
+            docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
+                result.extend(convert_sdt_children(
+                    nested, images, hyperlinks, style_map, notes,
+                ));
+            }
+            _ => {}
+        }
+    }
+    result
+}
+
 /// Convert a docx-rs Paragraph into a TaggedElement.
 /// If the paragraph has numbering, returns a `ListParagraph`; otherwise `Plain`.
 fn convert_paragraph_element(
     para: &docx_rs::Paragraph,
     images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
+    notes: &NoteContext,
 ) -> TaggedElement {
     let num_info = extract_num_info(para);
 
     // Build the paragraph IR
     let mut blocks = Vec::new();
-    convert_paragraph_blocks(para, &mut blocks, images, style_map);
+    convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, notes);
 
     match num_info {
         Some(info) => {
@@ -568,7 +853,9 @@ fn convert_paragraph_blocks(
     para: &docx_rs::Paragraph,
     out: &mut Vec<Block>,
     images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
+    notes: &NoteContext,
 ) {
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
@@ -583,25 +870,63 @@ fn convert_paragraph_blocks(
     let mut inline_images: Vec<Block> = Vec::new();
 
     for child in &para.children {
-        if let docx_rs::ParagraphChild::Run(run) = child {
-            // Check for inline images in this run
-            for run_child in &run.children {
-                if let docx_rs::RunChild::Drawing(drawing) = run_child
-                    && let Some(img_block) = extract_drawing_image(drawing, images)
-                {
-                    inline_images.push(img_block);
+        match child {
+            docx_rs::ParagraphChild::Run(run) => {
+                // Check for footnote/endnote reference runs
+                if is_note_reference_run(run) {
+                    if let Some(content) = notes.consume_next() {
+                        runs.push(Run {
+                            text: String::new(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: Some(content),
+                        });
+                    }
+                    continue;
+                }
+
+                // Check for inline images in this run
+                for run_child in &run.children {
+                    if let docx_rs::RunChild::Drawing(drawing) = run_child
+                        && let Some(img_block) = extract_drawing_image(drawing, images)
+                    {
+                        inline_images.push(img_block);
+                    }
+                }
+
+                // Extract text from the run
+                let text = extract_run_text(run);
+                if !text.is_empty() {
+                    let explicit_style = extract_run_style(&run.run_property);
+                    runs.push(Run {
+                        text,
+                        style: merge_text_style(&explicit_style, resolved_style),
+                        href: None,
+                        footnote: None,
+                    });
                 }
             }
+            docx_rs::ParagraphChild::Hyperlink(hyperlink) => {
+                // Resolve the hyperlink URL from document relationships
+                let href = resolve_hyperlink_url(hyperlink, hyperlinks);
 
-            // Extract text from the run
-            let text = extract_run_text(run);
-            if !text.is_empty() {
-                let explicit_style = extract_run_style(&run.run_property);
-                runs.push(Run {
-                    text,
-                    style: merge_text_style(&explicit_style, resolved_style),
-                });
+                // Extract runs from inside the hyperlink element
+                for hchild in &hyperlink.children {
+                    if let docx_rs::ParagraphChild::Run(run) = hchild {
+                        let text = extract_run_text(run);
+                        if !text.is_empty() {
+                            let explicit_style = extract_run_style(&run.run_property);
+                            runs.push(Run {
+                                text,
+                                style: merge_text_style(&explicit_style, resolved_style),
+                                href: href.clone(),
+                                footnote: None,
+                            });
+                        }
+                    }
+                }
             }
+            _ => {}
         }
     }
 
@@ -735,11 +1060,17 @@ fn extract_line_spacing(
 /// - Vertical merging via vMerge restart/continue (rowspan)
 /// - Cell background color via shading
 /// - Cell borders
-fn convert_table(table: &docx_rs::Table, images: &ImageMap, style_map: &StyleMap) -> Table {
+fn convert_table(
+    table: &docx_rs::Table,
+    images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
+    style_map: &StyleMap,
+    notes: &NoteContext,
+) -> Table {
     let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
-    let raw_rows = extract_raw_rows(table, images, style_map);
+    let raw_rows = extract_raw_rows(table, images, hyperlinks, style_map, notes);
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
@@ -764,7 +1095,9 @@ struct RawCell {
 fn extract_raw_rows(
     table: &docx_rs::Table,
     images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
+    notes: &NoteContext,
 ) -> Vec<Vec<RawCell>> {
     let mut raw_rows = Vec::new();
 
@@ -789,7 +1122,7 @@ fn extract_raw_rows(
                 .and_then(|v| v.as_str())
                 .map(String::from);
 
-            let content = extract_cell_content(cell, images, style_map);
+            let content = extract_cell_content(cell, images, hyperlinks, style_map, notes);
             let border = prop_json
                 .as_ref()
                 .and_then(|j| j.get("borders"))
@@ -884,16 +1217,24 @@ fn count_vmerge_span(raw_rows: &[Vec<RawCell>], start_row: usize, col_index: usi
 fn extract_cell_content(
     cell: &docx_rs::TableCell,
     images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
+    notes: &NoteContext,
 ) -> Vec<Block> {
     let mut blocks = Vec::new();
     for content in &cell.children {
         match content {
             docx_rs::TableCellContent::Paragraph(para) => {
-                convert_paragraph_blocks(para, &mut blocks, images, style_map);
+                convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, notes);
             }
             docx_rs::TableCellContent::Table(nested_table) => {
-                blocks.push(Block::Table(convert_table(nested_table, images, style_map)));
+                blocks.push(Block::Table(convert_table(
+                    nested_table,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    notes,
+                )));
             }
             _ => {}
         }
@@ -1018,6 +1359,27 @@ fn parse_hex_color(hex: &str) -> Option<Color> {
     let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
     let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
     Some(Color::new(r, g, b))
+}
+
+/// Resolve a hyperlink's URL from document relationships.
+/// For external hyperlinks, looks up the relationship ID in the hyperlink map.
+/// For anchor hyperlinks (internal bookmarks), returns None.
+fn resolve_hyperlink_url(
+    hyperlink: &docx_rs::Hyperlink,
+    hyperlinks: &HyperlinkMap,
+) -> Option<String> {
+    match &hyperlink.link {
+        docx_rs::HyperlinkData::External { rid, path } => {
+            // First try the path (populated during writing),
+            // then fall back to the relationship map (populated during reading)
+            if !path.is_empty() {
+                Some(path.clone())
+            } else {
+                hyperlinks.get(rid).cloned()
+            }
+        }
+        docx_rs::HyperlinkData::Anchor { .. } => None, // internal bookmark, skip
+    }
 }
 
 /// Extract text content from a docx-rs Run.
@@ -3295,5 +3657,461 @@ mod tests {
 
         assert_eq!(run.style.color, Some(Color::new(255, 0, 0)));
         assert_eq!(run.style.font_family, Some("Georgia".to_string()));
+    }
+
+    // ----- Hyperlink tests (US-030) -----
+
+    #[test]
+    fn test_hyperlink_single_link_in_paragraph() {
+        let link = docx_rs::Hyperlink::new("https://example.com", docx_rs::HyperlinkType::External)
+            .add_run(docx_rs::Run::new().add_text("Click here"));
+        let para = docx_rs::Paragraph::new().add_hyperlink(link);
+        let data = build_docx_bytes(vec![para]);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        let para = match &page.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+
+        assert_eq!(para.runs.len(), 1);
+        assert_eq!(para.runs[0].text, "Click here");
+        assert_eq!(para.runs[0].href, Some("https://example.com".to_string()));
+    }
+
+    #[test]
+    fn test_hyperlink_mixed_text_and_link() {
+        let link =
+            docx_rs::Hyperlink::new("https://rust-lang.org", docx_rs::HyperlinkType::External)
+                .add_run(docx_rs::Run::new().add_text("Rust"));
+        let para = docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("Visit "))
+            .add_hyperlink(link)
+            .add_run(docx_rs::Run::new().add_text(" for more."));
+        let data = build_docx_bytes(vec![para]);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        let para = match &page.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+
+        // Should have 3 runs: "Visit ", hyperlink "Rust", " for more."
+        assert_eq!(para.runs.len(), 3);
+
+        assert_eq!(para.runs[0].text, "Visit ");
+        assert_eq!(para.runs[0].href, None);
+
+        assert_eq!(para.runs[1].text, "Rust");
+        assert_eq!(para.runs[1].href, Some("https://rust-lang.org".to_string()));
+
+        assert_eq!(para.runs[2].text, " for more.");
+        assert_eq!(para.runs[2].href, None);
+    }
+
+    #[test]
+    fn test_hyperlink_multiple_links_in_paragraph() {
+        let link1 = docx_rs::Hyperlink::new("https://first.com", docx_rs::HyperlinkType::External)
+            .add_run(docx_rs::Run::new().add_text("First"));
+        let link2 = docx_rs::Hyperlink::new("https://second.com", docx_rs::HyperlinkType::External)
+            .add_run(docx_rs::Run::new().add_text("Second"));
+        let para = docx_rs::Paragraph::new()
+            .add_hyperlink(link1)
+            .add_run(docx_rs::Run::new().add_text(" and "))
+            .add_hyperlink(link2);
+        let data = build_docx_bytes(vec![para]);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        let para = match &page.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected Paragraph"),
+        };
+
+        assert_eq!(para.runs.len(), 3);
+
+        assert_eq!(para.runs[0].text, "First");
+        assert_eq!(para.runs[0].href, Some("https://first.com".to_string()));
+
+        assert_eq!(para.runs[1].text, " and ");
+        assert_eq!(para.runs[1].href, None);
+
+        assert_eq!(para.runs[2].text, "Second");
+        assert_eq!(para.runs[2].href, Some("https://second.com".to_string()));
+    }
+
+    // ── Footnotes and endnotes ──────────────────────────────────────────
+
+    #[test]
+    fn test_footnote_single_in_paragraph() {
+        let footnote = docx_rs::Footnote::new().add_content(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("This is a footnote.")),
+        );
+
+        let para = docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("Some text"))
+            .add_run(docx_rs::Run::new().add_footnote_reference(footnote))
+            .add_run(docx_rs::Run::new().add_text(" after note."));
+
+        let data = build_docx_bytes(vec![para]);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected flow page"),
+        };
+
+        // Find the paragraph
+        let para = match &flow.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected paragraph"),
+        };
+
+        // Should have runs including a footnote reference
+        let note_run = para.runs.iter().find(|r| r.footnote.is_some());
+        assert!(note_run.is_some(), "Expected a run with footnote content");
+        assert_eq!(
+            note_run.unwrap().footnote.as_deref(),
+            Some("This is a footnote.")
+        );
+    }
+
+    #[test]
+    fn test_footnote_multiple_in_paragraph() {
+        let fn1 = docx_rs::Footnote::new().add_content(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("First note.")),
+        );
+        let fn2 = docx_rs::Footnote::new().add_content(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Second note.")),
+        );
+
+        let para = docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("A"))
+            .add_run(docx_rs::Run::new().add_footnote_reference(fn1))
+            .add_run(docx_rs::Run::new().add_text(" B"))
+            .add_run(docx_rs::Run::new().add_footnote_reference(fn2));
+
+        let data = build_docx_bytes(vec![para]);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected flow page"),
+        };
+
+        let para = match &flow.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected paragraph"),
+        };
+
+        let note_runs: Vec<_> = para.runs.iter().filter(|r| r.footnote.is_some()).collect();
+        assert_eq!(note_runs.len(), 2);
+        assert_eq!(note_runs[0].footnote.as_deref(), Some("First note."));
+        assert_eq!(note_runs[1].footnote.as_deref(), Some("Second note."));
+    }
+
+    #[test]
+    fn test_endnote_parsed_as_footnote() {
+        // docx-rs doesn't support endnotes, so we build a minimal DOCX ZIP manually
+        // with word/endnotes.xml and w:endnoteReference in document.xml
+        let data = build_docx_with_endnote("Text before endnote", 1, "This is an endnote.");
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected flow page"),
+        };
+
+        let para = match &flow.content[0] {
+            Block::Paragraph(p) => p,
+            _ => panic!("Expected paragraph"),
+        };
+
+        let note_run = para.runs.iter().find(|r| r.footnote.is_some());
+        assert!(note_run.is_some(), "Expected a run with endnote content");
+        assert_eq!(
+            note_run.unwrap().footnote.as_deref(),
+            Some("This is an endnote.")
+        );
+    }
+
+    /// Build a minimal DOCX ZIP with an endnote reference in the document body
+    /// and endnote content in word/endnotes.xml.
+    fn build_docx_with_endnote(text: &str, endnote_id: usize, endnote_text: &str) -> Vec<u8> {
+        use std::io::Write;
+        use zip::ZipWriter;
+        use zip::write::FileOptions;
+
+        let buf = Vec::new();
+        let mut zip = ZipWriter::new(Cursor::new(buf));
+        let opts = FileOptions::default();
+
+        // [Content_Types].xml
+        zip.start_file("[Content_Types].xml", opts).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/endnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"/>
+</Types>"#).unwrap();
+
+        // _rels/.rels
+        zip.start_file("_rels/.rels", opts).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#).unwrap();
+
+        // word/_rels/document.xml.rels
+        zip.start_file("word/_rels/document.xml.rels", opts)
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes" Target="endnotes.xml"/>
+</Relationships>"#).unwrap();
+
+        // word/document.xml - with endnoteReference
+        zip.start_file("word/document.xml", opts).unwrap();
+        let doc_xml = format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>
+    <w:p>
+      <w:r><w:t xml:space="preserve">{text}</w:t></w:r>
+      <w:r>
+        <w:rPr><w:rStyle w:val="EndnoteReference"/></w:rPr>
+        <w:endnoteReference w:id="{endnote_id}"/>
+      </w:r>
+    </w:p>
+  </w:body>
+</w:document>"#
+        );
+        zip.write_all(doc_xml.as_bytes()).unwrap();
+
+        // word/endnotes.xml
+        zip.start_file("word/endnotes.xml", opts).unwrap();
+        let endnotes_xml = format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:endnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:endnote w:id="{endnote_id}">
+    <w:p>
+      <w:r><w:t xml:space="preserve">{endnote_text}</w:t></w:r>
+    </w:p>
+  </w:endnote>
+</w:endnotes>"#
+        );
+        zip.write_all(endnotes_xml.as_bytes()).unwrap();
+
+        zip.finish().unwrap().into_inner()
+    }
+
+    // ----- Table of Contents (TOC) parsing tests -----
+
+    /// Helper: build a DOCX with a table of contents containing items.
+    fn build_docx_with_toc(items: Vec<docx_rs::TableOfContentsItem>) -> Vec<u8> {
+        let toc = items.into_iter().fold(
+            docx_rs::TableOfContents::new()
+                .heading_styles_range(1, 3)
+                .alias("Table of contents"),
+            |toc, item| toc.add_item(item),
+        );
+
+        let style1 =
+            docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph).name("Heading 1");
+        let style2 =
+            docx_rs::Style::new("Heading2", docx_rs::StyleType::Paragraph).name("Heading 2");
+
+        let p1 = docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("Introduction"))
+            .style("Heading1");
+        let p2 = docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("Details"))
+            .style("Heading2");
+
+        let docx = docx_rs::Docx::new()
+            .add_style(style1)
+            .add_style(style2)
+            .add_table_of_contents(toc)
+            .add_paragraph(p1)
+            .add_paragraph(p2);
+
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_docx_toc_with_entries() {
+        let items = vec![
+            docx_rs::TableOfContentsItem::new()
+                .text("Introduction")
+                .toc_key("_Toc00000000")
+                .level(1)
+                .page_ref("2"),
+            docx_rs::TableOfContentsItem::new()
+                .text("Details")
+                .toc_key("_Toc00000001")
+                .level(2)
+                .page_ref("3"),
+        ];
+
+        let data = build_docx_with_toc(items);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // The document should have content, and the TOC entry texts should be present
+        let page = &doc.pages[0];
+        let content = match page {
+            Page::Flow(fp) => &fp.content,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Collect all text from all paragraphs
+        let all_text: Vec<String> = content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Paragraph(p) => {
+                    let t: String = p.runs.iter().map(|r| r.text.clone()).collect();
+                    if t.is_empty() { None } else { Some(t) }
+                }
+                _ => None,
+            })
+            .collect();
+
+        // TOC entries "Introduction" and "Details" should appear in the output
+        // (along with the heading paragraphs themselves)
+        let has_introduction = all_text.iter().any(|t| t.contains("Introduction"));
+        let has_details = all_text.iter().any(|t| t.contains("Details"));
+        assert!(
+            has_introduction,
+            "Expected 'Introduction' in TOC output, got: {all_text:?}"
+        );
+        assert!(
+            has_details,
+            "Expected 'Details' in TOC output, got: {all_text:?}"
+        );
+    }
+
+    #[test]
+    fn test_docx_toc_multiple_entries_in_paragraph_list() {
+        let items = vec![
+            docx_rs::TableOfContentsItem::new()
+                .text("Chapter One")
+                .toc_key("_Toc10000001")
+                .level(1)
+                .page_ref("1"),
+            docx_rs::TableOfContentsItem::new()
+                .text("Chapter Two")
+                .toc_key("_Toc10000002")
+                .level(1)
+                .page_ref("5"),
+            docx_rs::TableOfContentsItem::new()
+                .text("Section A")
+                .toc_key("_Toc10000003")
+                .level(2)
+                .page_ref("10"),
+        ];
+
+        let data = build_docx_with_toc(items);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = &doc.pages[0];
+        let content = match page {
+            Page::Flow(fp) => &fp.content,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // All three TOC entry texts should appear
+        let all_text: Vec<String> = content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Paragraph(p) => {
+                    let t: String = p.runs.iter().map(|r| r.text.clone()).collect();
+                    if t.is_empty() { None } else { Some(t) }
+                }
+                _ => None,
+            })
+            .collect();
+
+        assert!(
+            all_text.iter().any(|t| t.contains("Chapter One")),
+            "Expected 'Chapter One' in output, got: {all_text:?}"
+        );
+        assert!(
+            all_text.iter().any(|t| t.contains("Chapter Two")),
+            "Expected 'Chapter Two' in output, got: {all_text:?}"
+        );
+        assert!(
+            all_text.iter().any(|t| t.contains("Section A")),
+            "Expected 'Section A' in output, got: {all_text:?}"
+        );
+    }
+
+    #[test]
+    fn test_docx_sdt_with_paragraphs() {
+        // Test that generic SDTs with paragraph content are also parsed.
+        // Build a DOCX manually using docx-rs StructuredDataTag.
+        let sdt = docx_rs::StructuredDataTag::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("SDT Content")),
+        );
+
+        let docx = docx_rs::Docx::new().add_structured_data_tag(sdt);
+
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = &doc.pages[0];
+        let content = match page {
+            Page::Flow(fp) => &fp.content,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let all_text: Vec<String> = content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Paragraph(p) => {
+                    let t: String = p.runs.iter().map(|r| r.text.clone()).collect();
+                    if t.is_empty() { None } else { Some(t) }
+                }
+                _ => None,
+            })
+            .collect();
+
+        assert!(
+            all_text.iter().any(|t| t.contains("SDT Content")),
+            "Expected 'SDT Content' in output, got: {all_text:?}"
+        );
     }
 }

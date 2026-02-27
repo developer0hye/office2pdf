@@ -1,5 +1,6 @@
 use std::fmt::Write;
 
+use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
@@ -52,15 +53,50 @@ impl GenCtx {
     }
 }
 
+/// Resolve the effective page size, applying paper_size and landscape overrides.
+fn resolve_page_size(original: &PageSize, options: &ConvertOptions) -> PageSize {
+    let (mut w, mut h) = if let Some(ref ps) = options.paper_size {
+        let (pw, ph) = ps.dimensions();
+        (pw, ph)
+    } else {
+        (original.width, original.height)
+    };
+
+    if let Some(landscape) = options.landscape {
+        let needs_swap = (landscape && w < h) || (!landscape && w > h);
+        if needs_swap {
+            std::mem::swap(&mut w, &mut h);
+        }
+    }
+
+    PageSize {
+        width: w,
+        height: h,
+    }
+}
+
 /// Generate Typst markup from a Document IR.
 pub fn generate_typst(doc: &Document) -> Result<TypstOutput, ConvertError> {
+    generate_typst_with_options(doc, &ConvertOptions::default())
+}
+
+/// Generate Typst markup from a Document IR with conversion options.
+///
+/// When `options.paper_size` is set, all pages use the specified paper size.
+/// When `options.landscape` is set, page orientation is forced.
+pub fn generate_typst_with_options(
+    doc: &Document,
+    options: &ConvertOptions,
+) -> Result<TypstOutput, ConvertError> {
     let mut out = String::new();
     let mut ctx = GenCtx::new();
     for page in &doc.pages {
         match page {
-            Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx)?,
-            Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx)?,
-            Page::Table(table_page) => generate_table_page(&mut out, table_page, &mut ctx)?,
+            Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx, options)?,
+            Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx, options)?,
+            Page::Table(table_page) => {
+                generate_table_page(&mut out, table_page, &mut ctx, options)?;
+            }
         }
     }
     Ok(TypstOutput {
@@ -73,8 +109,10 @@ fn generate_flow_page(
     out: &mut String,
     page: &FlowPage,
     ctx: &mut GenCtx,
+    options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
-    write_flow_page_setup(out, page);
+    let size = resolve_page_size(&page.size, options);
+    write_flow_page_setup(out, page, &size);
     out.push('\n');
 
     for (i, block) in page.content.iter().enumerate() {
@@ -90,14 +128,16 @@ fn generate_fixed_page(
     out: &mut String,
     page: &FixedPage,
     ctx: &mut GenCtx,
+    options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
+    let size = resolve_page_size(&page.size, options);
     // Slides use zero margins — all positioning is absolute
     if let Some(ref bg) = page.background_color {
         let _ = writeln!(
             out,
             "#set page(width: {}pt, height: {}pt, margin: 0pt, fill: rgb({}, {}, {}))",
-            format_f64(page.size.width),
-            format_f64(page.size.height),
+            format_f64(size.width),
+            format_f64(size.height),
             bg.r,
             bg.g,
             bg.b,
@@ -106,8 +146,8 @@ fn generate_fixed_page(
         let _ = writeln!(
             out,
             "#set page(width: {}pt, height: {}pt, margin: 0pt)",
-            format_f64(page.size.width),
-            format_f64(page.size.height),
+            format_f64(size.width),
+            format_f64(size.height),
         );
     }
     out.push('\n');
@@ -122,8 +162,10 @@ fn generate_table_page(
     out: &mut String,
     page: &TablePage,
     ctx: &mut GenCtx,
+    options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
-    write_page_setup(out, &page.size, &page.margins);
+    let size = resolve_page_size(&page.size, options);
+    write_table_page_setup(out, page, &size);
     out.push('\n');
     generate_table(out, &page.table, ctx)?;
     Ok(())
@@ -172,6 +214,11 @@ fn generate_fixed_element(
 }
 
 fn generate_shape(out: &mut String, shape: &Shape, width: f64, height: f64) {
+    let has_rotation = shape.rotation_deg.is_some();
+    if let Some(deg) = shape.rotation_deg {
+        let _ = write!(out, "#rotate({}deg)[", format_f64(deg));
+    }
+
     match &shape.kind {
         ShapeKind::Rectangle => {
             out.push_str("#rect(");
@@ -204,6 +251,24 @@ fn generate_shape(out: &mut String, shape: &Shape, width: f64, height: f64) {
             out.push_str(")\n");
         }
     }
+
+    if has_rotation {
+        out.push_str("]\n");
+    }
+}
+
+/// Write fill color, using rgba when opacity is set, rgb otherwise.
+fn write_fill_color(out: &mut String, fill: &Color, opacity: Option<f64>) {
+    if let Some(op) = opacity {
+        let alpha = (op * 255.0).round() as u8;
+        let _ = write!(
+            out,
+            ", fill: rgba({}, {}, {}, {})",
+            fill.r, fill.g, fill.b, alpha
+        );
+    } else {
+        let _ = write!(out, ", fill: rgb({}, {}, {})", fill.r, fill.g, fill.b);
+    }
 }
 
 fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) {
@@ -214,7 +279,7 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
         format_f64(height),
     );
     if let Some(fill) = &shape.fill {
-        let _ = write!(out, ", fill: rgb({}, {}, {})", fill.r, fill.g, fill.b);
+        write_fill_color(out, fill, shape.opacity);
     }
     if let Some(stroke) = &shape.stroke {
         let _ = write!(
@@ -242,17 +307,17 @@ fn write_page_setup(out: &mut String, size: &PageSize, margins: &Margins) {
 }
 
 /// Write the full page setup for a FlowPage, including optional header/footer.
-fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
+fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize) {
     if page.header.is_none() && page.footer.is_none() {
-        write_page_setup(out, &page.size, &page.margins);
+        write_page_setup(out, size, &page.margins);
         return;
     }
 
     let _ = write!(
         out,
         "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
-        format_f64(page.size.width),
-        format_f64(page.size.height),
+        format_f64(size.width),
+        format_f64(size.height),
         format_f64(page.margins.top),
         format_f64(page.margins.bottom),
         format_f64(page.margins.left),
@@ -260,7 +325,7 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
     );
 
     if let Some(header) = &page.header {
-        if hf_has_page_number(header) {
+        if hf_needs_context(header) {
             out.push_str(", header: context [");
         } else {
             out.push_str(", header: [");
@@ -270,7 +335,7 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
     }
 
     if let Some(footer) = &page.footer {
-        if hf_has_page_number(footer) {
+        if hf_needs_context(footer) {
             out.push_str(", footer: context [");
         } else {
             out.push_str(", footer: [");
@@ -282,11 +347,54 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
     out.push_str(")\n");
 }
 
-/// Check if a header/footer contains any page number fields.
-fn hf_has_page_number(hf: &HeaderFooter) -> bool {
-    hf.paragraphs
-        .iter()
-        .any(|p| p.elements.iter().any(|e| matches!(e, HFInline::PageNumber)))
+/// Write the full page setup for a TablePage, including optional header/footer.
+fn write_table_page_setup(out: &mut String, page: &TablePage, size: &PageSize) {
+    if page.header.is_none() && page.footer.is_none() {
+        write_page_setup(out, size, &page.margins);
+        return;
+    }
+
+    let _ = write!(
+        out,
+        "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
+        format_f64(size.width),
+        format_f64(size.height),
+        format_f64(page.margins.top),
+        format_f64(page.margins.bottom),
+        format_f64(page.margins.left),
+        format_f64(page.margins.right),
+    );
+
+    if let Some(header) = &page.header {
+        if hf_needs_context(header) {
+            out.push_str(", header: context [");
+        } else {
+            out.push_str(", header: [");
+        }
+        generate_hf_content(out, header);
+        out.push(']');
+    }
+
+    if let Some(footer) = &page.footer {
+        if hf_needs_context(footer) {
+            out.push_str(", footer: context [");
+        } else {
+            out.push_str(", footer: [");
+        }
+        generate_hf_content(out, footer);
+        out.push(']');
+    }
+
+    out.push_str(")\n");
+}
+
+/// Check if a header/footer contains any context-dependent fields (page number or total pages).
+fn hf_needs_context(hf: &HeaderFooter) -> bool {
+    hf.paragraphs.iter().any(|p| {
+        p.elements
+            .iter()
+            .any(|e| matches!(e, HFInline::PageNumber | HFInline::TotalPages))
+    })
 }
 
 /// Generate inline content for a header or footer.
@@ -294,6 +402,16 @@ fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
     for (i, para) in hf.paragraphs.iter().enumerate() {
         if i > 0 {
             out.push_str("\\\n");
+        }
+        // Apply paragraph alignment if set
+        if let Some(align) = para.style.alignment {
+            let align_str = match align {
+                Alignment::Left => "left",
+                Alignment::Center => "center",
+                Alignment::Right => "right",
+                Alignment::Justify => "left",
+            };
+            let _ = write!(out, "#align({align_str})[");
         }
         for elem in &para.elements {
             match elem {
@@ -303,7 +421,13 @@ fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
                 HFInline::PageNumber => {
                     out.push_str("#counter(page).display()");
                 }
+                HFInline::TotalPages => {
+                    out.push_str("#counter(page).final().first()");
+                }
             }
+        }
+        if para.style.alignment.is_some() {
+            out.push(']');
         }
     }
 }
@@ -635,14 +759,27 @@ fn write_par_settings(out: &mut String, style: &ParagraphStyle) {
 }
 
 fn generate_run(out: &mut String, run: &Run) {
+    // Emit footnote if present (footnote runs have empty text)
+    if let Some(ref content) = run.footnote {
+        let escaped_content = escape_typst(content);
+        let _ = write!(out, "#footnote[{escaped_content}]");
+        return;
+    }
+
     let style = &run.style;
     let escaped = escape_typst(&run.text);
 
     let has_text_props = has_text_properties(style);
     let needs_underline = matches!(style.underline, Some(true));
     let needs_strike = matches!(style.strikethrough, Some(true));
+    let has_link = run.href.is_some();
 
-    // Wrap with decorations (outermost first)
+    // Wrap with link (outermost)
+    if let Some(ref href) = run.href {
+        let _ = write!(out, "#link(\"{href}\")[");
+    }
+
+    // Wrap with decorations
     if needs_strike {
         out.push_str("#strike[");
     }
@@ -664,6 +801,9 @@ fn generate_run(out: &mut String, run: &Run) {
         out.push(']');
     }
     if needs_strike {
+        out.push(']');
+    }
+    if has_link {
         out.push(']');
     }
 }
@@ -741,7 +881,7 @@ fn escape_typst(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::{Metadata, StyleSheet};
+    use crate::ir::{HeaderFooterParagraph, Metadata, StyleSheet};
 
     /// Helper to create a minimal Document with one FlowPage.
     fn make_doc(pages: Vec<Page>) -> Document {
@@ -770,6 +910,8 @@ mod tests {
             runs: vec![Run {
                 text: text.to_string(),
                 style: TextStyle::default(),
+                href: None,
+                footnote: None,
             }],
         })
     }
@@ -815,6 +957,8 @@ mod tests {
                     bold: Some(true),
                     ..TextStyle::default()
                 },
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -835,6 +979,8 @@ mod tests {
                     italic: Some(true),
                     ..TextStyle::default()
                 },
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -855,6 +1001,8 @@ mod tests {
                     underline: Some(true),
                     ..TextStyle::default()
                 },
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -875,6 +1023,8 @@ mod tests {
                     font_size: Some(24.0),
                     ..TextStyle::default()
                 },
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -894,6 +1044,8 @@ mod tests {
                     color: Some(Color::new(255, 0, 0)),
                     ..TextStyle::default()
                 },
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -916,6 +1068,8 @@ mod tests {
                     color: Some(Color::new(0, 128, 255)),
                     ..TextStyle::default()
                 },
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -936,6 +1090,8 @@ mod tests {
             runs: vec![Run {
                 text: "Centered".to_string(),
                 style: TextStyle::default(),
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -955,6 +1111,8 @@ mod tests {
             runs: vec![Run {
                 text: "Right".to_string(),
                 style: TextStyle::default(),
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -974,6 +1132,8 @@ mod tests {
             runs: vec![Run {
                 text: "Justified text".to_string(),
                 style: TextStyle::default(),
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -993,6 +1153,8 @@ mod tests {
             runs: vec![Run {
                 text: "Double spaced".to_string(),
                 style: TextStyle::default(),
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1012,6 +1174,8 @@ mod tests {
             runs: vec![Run {
                 text: "Exact spaced".to_string(),
                 style: TextStyle::default(),
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1040,6 +1204,8 @@ mod tests {
                 Run {
                     text: "Normal ".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 },
                 Run {
                     text: "bold".to_string(),
@@ -1047,10 +1213,14 @@ mod tests {
                         bold: Some(true),
                         ..TextStyle::default()
                     },
+                    href: None,
+                    footnote: None,
                 },
                 Run {
                     text: " normal again".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 },
             ],
         })])]);
@@ -1094,6 +1264,8 @@ mod tests {
                 runs: vec![Run {
                     text: text.to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 }],
             })],
             ..TableCell::default()
@@ -1136,6 +1308,8 @@ mod tests {
                 runs: vec![Run {
                     text: "Merged".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 }],
             })],
             col_span: 2,
@@ -1171,6 +1345,8 @@ mod tests {
                 runs: vec![Run {
                     text: "Tall".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 }],
             })],
             row_span: 2,
@@ -1206,6 +1382,8 @@ mod tests {
                 runs: vec![Run {
                     text: "Big".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 }],
             })],
             col_span: 2,
@@ -1254,6 +1432,8 @@ mod tests {
                 runs: vec![Run {
                     text: "Colored".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 }],
             })],
             background: Some(Color::new(200, 200, 200)),
@@ -1283,6 +1463,8 @@ mod tests {
                 runs: vec![Run {
                     text: "Bordered".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 }],
             })],
             border: Some(CellBorder {
@@ -1327,6 +1509,8 @@ mod tests {
                         font_size: Some(14.0),
                         ..TextStyle::default()
                     },
+                    href: None,
+                    footnote: None,
                 }],
             })],
             ..TableCell::default()
@@ -1394,6 +1578,8 @@ mod tests {
                 runs: vec![Run {
                     text: "All borders".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 }],
             })],
             border: Some(CellBorder {
@@ -1449,6 +1635,8 @@ mod tests {
                     runs: vec![Run {
                         text: "First para".to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     }],
                 }),
                 Block::Paragraph(Paragraph {
@@ -1456,6 +1644,8 @@ mod tests {
                     runs: vec![Run {
                         text: "Second para".to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     }],
                 }),
             ],
@@ -1535,6 +1725,8 @@ mod tests {
             runs: vec![Run {
                 text: "Spaced paragraph".to_string(),
                 style: TextStyle::default(),
+                href: None,
+                footnote: None,
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -1744,6 +1936,8 @@ mod tests {
                 runs: vec![Run {
                     text: text.to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 }],
             })]),
         }
@@ -1764,7 +1958,13 @@ mod tests {
             y,
             width: w,
             height: h,
-            kind: FixedElementKind::Shape(Shape { kind, fill, stroke }),
+            kind: FixedElementKind::Shape(Shape {
+                kind,
+                fill,
+                stroke,
+                rotation_deg: None,
+                opacity: None,
+            }),
         }
     }
 
@@ -1973,6 +2173,103 @@ mod tests {
     }
 
     #[test]
+    fn test_shape_rotation_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 10.0,
+                y: 20.0,
+                width: 200.0,
+                height: 150.0,
+                kind: FixedElementKind::Shape(Shape {
+                    kind: ShapeKind::Rectangle,
+                    fill: Some(Color::new(255, 0, 0)),
+                    stroke: None,
+                    rotation_deg: Some(90.0),
+                    opacity: None,
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("rotate"),
+            "Expected rotate wrapper in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("90deg"),
+            "Expected 90deg angle in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_shape_opacity_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 10.0,
+                y: 20.0,
+                width: 200.0,
+                height: 150.0,
+                kind: FixedElementKind::Shape(Shape {
+                    kind: ShapeKind::Rectangle,
+                    fill: Some(Color::new(0, 255, 0)),
+                    stroke: None,
+                    rotation_deg: None,
+                    opacity: Some(0.5),
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        // With 50% opacity, the fill color should include alpha
+        assert!(
+            output.source.contains("rgba(0, 255, 0, 128)"),
+            "Expected rgba fill with alpha in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_shape_rotation_and_opacity_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 50.0,
+                y: 50.0,
+                width: 100.0,
+                height: 100.0,
+                kind: FixedElementKind::Shape(Shape {
+                    kind: ShapeKind::Ellipse,
+                    fill: Some(Color::new(0, 0, 255)),
+                    stroke: None,
+                    rotation_deg: Some(45.0),
+                    opacity: Some(0.75),
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("rotate"),
+            "Expected rotate in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("45deg"),
+            "Expected 45deg in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("rgba(0, 0, 255, 191)"),
+            "Expected rgba fill in: {}",
+            output.source
+        );
+    }
+
+    #[test]
     fn test_fixed_page_image_element() {
         let doc = make_doc(vec![make_fixed_page(
             960.0,
@@ -2070,6 +2367,8 @@ mod tests {
             size: PageSize { width, height },
             margins,
             table,
+            header: None,
+            footer: None,
         })
     }
 
@@ -2087,6 +2386,8 @@ mod tests {
                                 runs: vec![Run {
                                     text: text.to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2198,6 +2499,8 @@ mod tests {
                             runs: vec![Run {
                                 text: "Merged".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
                             }],
                         })],
                         col_span: 2,
@@ -2213,6 +2516,8 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Left".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2223,6 +2528,8 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Right".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2262,6 +2569,8 @@ mod tests {
                             runs: vec![Run {
                                 text: "Col1".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2272,6 +2581,8 @@ mod tests {
                             runs: vec![Run {
                                 text: "Col2".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2339,6 +2650,8 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Tall".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
                                 }],
                             })],
                             row_span: 2,
@@ -2350,6 +2663,8 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Top".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
                                 }],
                             })],
                             ..TableCell::default()
@@ -2364,6 +2679,8 @@ mod tests {
                             runs: vec![Run {
                                 text: "Bottom".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2405,6 +2722,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Apple".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2415,6 +2734,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Banana".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2450,6 +2771,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Step 1".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2460,6 +2783,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Step 2".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2495,6 +2820,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Parent".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2505,6 +2832,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Child".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 1,
@@ -2515,6 +2844,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Sibling".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -2555,6 +2886,8 @@ mod tests {
                     elements: vec![HFInline::Run(Run {
                         text: "Document Title".to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     })],
                 }],
             }),
@@ -2588,6 +2921,8 @@ mod tests {
                         HFInline::Run(Run {
                             text: "Page ".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }),
                         HFInline::PageNumber,
                     ],
@@ -2625,6 +2960,8 @@ mod tests {
                     elements: vec![HFInline::Run(Run {
                         text: "Header".to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     })],
                 }],
             }),
@@ -2711,6 +3048,8 @@ mod tests {
                             runs: vec![Run {
                                 text: "A1".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2721,6 +3060,8 @@ mod tests {
                             runs: vec![Run {
                                 text: "B1".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
                             }],
                         })],
                         ..TableCell::default()
@@ -2759,5 +3100,398 @@ mod tests {
         assert!(output.source.contains("columns: (100pt, 100pt)"));
         assert!(output.source.contains("A1"));
         assert!(output.source.contains("B1"));
+    }
+
+    // ----- Hyperlink codegen tests (US-030) -----
+
+    #[test]
+    fn test_hyperlink_generates_typst_link() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Click me".to_string(),
+                style: TextStyle::default(),
+                href: Some("https://example.com".to_string()),
+                footnote: None,
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains(r#"#link("https://example.com")[Click me]"#),
+            "Expected Typst link markup, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_hyperlink_with_styled_text() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Bold link".to_string(),
+                style: TextStyle {
+                    bold: Some(true),
+                    ..TextStyle::default()
+                },
+                href: Some("https://example.com".to_string()),
+                footnote: None,
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        // Should have link wrapping styled text
+        assert!(
+            output.source.contains(r#"#link("https://example.com")["#),
+            "Expected Typst link markup, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#text(weight: \"bold\")"),
+            "Expected bold text inside link, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_hyperlink_mixed_with_plain_text() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![
+                Run {
+                    text: "Visit ".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                },
+                Run {
+                    text: "Rust".to_string(),
+                    style: TextStyle::default(),
+                    href: Some("https://rust-lang.org".to_string()),
+                    footnote: None,
+                },
+                Run {
+                    text: " for more.".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                },
+            ],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("Visit "),
+            "Expected plain text, got: {}",
+            output.source
+        );
+        assert!(
+            output
+                .source
+                .contains(r#"#link("https://rust-lang.org")[Rust]"#),
+            "Expected Typst link markup, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains(" for more."),
+            "Expected plain text after link, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_hyperlink_url_with_special_chars_escaped() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Link".to_string(),
+                style: TextStyle::default(),
+                href: Some("https://example.com/path?q=1&r=2".to_string()),
+                footnote: None,
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains(r#"#link("https://example.com/path?q=1&r=2")[Link]"#),
+            "Expected URL with special chars in link, got: {}",
+            output.source
+        );
+    }
+
+    // ── Footnotes ───────────────────────────────────────────────────────
+
+    #[test]
+    fn test_footnote_generates_typst_footnote() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![
+                Run {
+                    text: "Some text".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                },
+                Run {
+                    text: String::new(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: Some("This is a footnote.".to_string()),
+                },
+            ],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#footnote[This is a footnote.]"),
+            "Expected Typst footnote markup, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_footnote_with_special_chars() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: String::new(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: Some("Note with #special *chars*".to_string()),
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains(r"#footnote[Note with \#special \*chars\*]"),
+            "Expected escaped footnote content, got: {}",
+            output.source
+        );
+    }
+
+    // --- US-036: TablePage header/footer codegen ---
+
+    #[test]
+    fn test_table_page_with_header() {
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table: make_simple_table(vec![vec!["A"]]),
+            header: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    elements: vec![HFInline::Run(Run {
+                        text: "My Header".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    })],
+                }],
+            }),
+            footer: None,
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("header: ["),
+            "Expected header in page setup, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("My Header"),
+            "Expected header text, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_table_page_with_page_number_footer() {
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table: make_simple_table(vec![vec!["A"]]),
+            header: None,
+            footer: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    elements: vec![
+                        HFInline::Run(Run {
+                            text: "Page ".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }),
+                        HFInline::PageNumber,
+                        HFInline::Run(Run {
+                            text: " of ".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }),
+                        HFInline::TotalPages,
+                    ],
+                }],
+            }),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        // Footer with page numbers needs context
+        assert!(
+            output.source.contains("footer: context ["),
+            "Expected context footer, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#counter(page).display()"),
+            "Expected page number counter, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#counter(page).final().first()"),
+            "Expected total pages counter, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_table_page_no_header_footer() {
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table: make_simple_table(vec![vec!["A"]]),
+            header: None,
+            footer: None,
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        // Should use simple page setup without header/footer
+        assert!(
+            !output.source.contains("header:"),
+            "Expected no header, got: {}",
+            output.source
+        );
+        assert!(
+            !output.source.contains("footer:"),
+            "Expected no footer, got: {}",
+            output.source
+        );
+    }
+
+    // --- Paper size and landscape override tests ---
+
+    #[test]
+    fn test_paper_size_override_letter() {
+        use crate::config::PaperSize;
+
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions {
+            paper_size: Some(PaperSize::Letter),
+            ..Default::default()
+        };
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        assert!(
+            output.source.contains("width: 612pt"),
+            "Expected Letter width 612pt, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 792pt"),
+            "Expected Letter height 792pt, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_landscape_override_swaps_dimensions() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions {
+            landscape: Some(true),
+            ..Default::default()
+        };
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        // A4 default is 595.28 x 841.89; landscape should swap to 841.89 x 595.28
+        assert!(
+            output.source.contains("width: 841.89pt"),
+            "Expected landscape width 841.89pt, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 595.28pt"),
+            "Expected landscape height 595.28pt, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_portrait_override_keeps_portrait() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions {
+            landscape: Some(false),
+            ..Default::default()
+        };
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        // A4 is already portrait, should remain unchanged
+        assert!(
+            output.source.contains("width: 595.28pt"),
+            "Expected portrait width, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 841.89pt"),
+            "Expected portrait height, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_paper_size_with_landscape() {
+        use crate::config::PaperSize;
+
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions {
+            paper_size: Some(PaperSize::Letter),
+            landscape: Some(true),
+            ..Default::default()
+        };
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        // Letter landscape: 792 x 612
+        assert!(
+            output.source.contains("width: 792pt"),
+            "Expected landscape Letter width 792pt, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 612pt"),
+            "Expected landscape Letter height 612pt, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_no_override_uses_original_size() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions::default();
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        // Default A4 dimensions
+        assert!(
+            output.source.contains("width: 595.28pt"),
+            "Expected A4 width, got: {}",
+            output.source
+        );
     }
 }
