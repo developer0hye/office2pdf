@@ -162,6 +162,10 @@ pub struct Shape {
     pub kind: ShapeKind,
     pub fill: Option<Color>,
     pub stroke: Option<BorderSide>,
+    /// Rotation angle in degrees (clockwise).
+    pub rotation_deg: Option<f64>,
+    /// Opacity from 0.0 (fully transparent) to 1.0 (fully opaque).
+    pub opacity: Option<f64>,
 }
 
 /// Shape types.

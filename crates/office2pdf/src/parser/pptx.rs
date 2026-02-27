@@ -1102,6 +1102,8 @@ fn parse_slide_xml(
     let mut in_ln = false;
     let mut ln_width_emu: i64 = 0;
     let mut ln_color: Option<Color> = None;
+    let mut shape_rotation_deg: Option<f64> = None;
+    let mut shape_opacity: Option<f64> = None;
 
     // Transform state (for shapes)
     let mut in_xfrm = false;
@@ -1194,6 +1196,8 @@ fn parse_slide_xml(
                         in_ln = false;
                         ln_width_emu = 0;
                         ln_color = None;
+                        shape_rotation_deg = None;
+                        shape_opacity = None;
                         in_txbody = false;
                         paragraphs.clear();
                     }
@@ -1207,6 +1211,10 @@ fn parse_slide_xml(
                     }
                     b"xfrm" if in_shape && in_sp_pr => {
                         in_xfrm = true;
+                        // rot attribute: rotation in 60000ths of a degree
+                        if let Some(rot) = get_attr_i64(e, b"rot") {
+                            shape_rotation_deg = Some(rot as f64 / 60_000.0);
+                        }
                     }
                     b"prstGeom" if in_sp_pr => {
                         if let Some(prst) = get_attr_str(e, b"prst") {
@@ -1258,6 +1266,25 @@ fn parse_slide_xml(
                                 SolidFillCtx::RunFill => run_style.color = color,
                                 SolidFillCtx::None => {}
                             }
+                        }
+                    }
+                    // ── srgbClr as Start element (has alpha/tint children) ──
+                    b"srgbClr" if solid_fill_ctx != SolidFillCtx::None => {
+                        if let Some(hex) = get_attr_str(e, b"val") {
+                            let color = parse_hex_color(&hex);
+                            match solid_fill_ctx {
+                                SolidFillCtx::ShapeFill => shape_fill = color,
+                                SolidFillCtx::LineFill => ln_color = color,
+                                SolidFillCtx::RunFill => run_style.color = color,
+                                SolidFillCtx::None => {}
+                            }
+                        }
+                    }
+                    // ── Alpha element inside srgbClr ──
+                    b"alpha" if solid_fill_ctx == SolidFillCtx::ShapeFill => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            // val is in 1000ths of percent (e.g. 50000 = 50%)
+                            shape_opacity = Some(val as f64 / 100_000.0);
                         }
                     }
                     b"t" if in_run => {
@@ -1360,6 +1387,13 @@ fn parse_slide_xml(
                         }
                     }
 
+                    // ── Alpha element (empty, self-closing) ──────────
+                    b"alpha" if solid_fill_ctx == SolidFillCtx::ShapeFill => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            shape_opacity = Some(val as f64 / 100_000.0);
+                        }
+                    }
+
                     // ── Run properties (empty element) ───────────────
                     b"rPr" if in_run => {
                         extract_rpr_attributes(e, &mut run_style);
@@ -1421,6 +1455,8 @@ fn parse_slide_xml(
                                         kind,
                                         fill: shape_fill,
                                         stroke,
+                                        rotation_deg: shape_rotation_deg,
+                                        opacity: shape_opacity,
                                     }),
                                 });
                             }
@@ -4104,5 +4140,128 @@ mod tests {
             elem.y,
             emu_to_pt(500_000)
         );
+    }
+
+    // ── Shape style (rotation, transparency) test helpers ────────────────
+
+    /// Create a shape XML with optional rotation and fill alpha.
+    /// `rot` is in 60000ths of a degree (e.g. 5400000 = 90°).
+    /// `alpha_thousandths` is in 1000ths of percent (e.g. 50000 = 50%).
+    fn make_styled_shape(
+        x: i64,
+        y: i64,
+        cx: i64,
+        cy: i64,
+        prst: &str,
+        fill_hex: Option<&str>,
+        rot: Option<i64>,
+        alpha_thousandths: Option<i64>,
+    ) -> String {
+        let rot_attr = rot.map(|r| format!(r#" rot="{r}""#)).unwrap_or_default();
+
+        let fill_xml = match (fill_hex, alpha_thousandths) {
+            (Some(h), Some(a)) => format!(
+                r#"<a:solidFill><a:srgbClr val="{h}"><a:alpha val="{a}"/></a:srgbClr></a:solidFill>"#
+            ),
+            (Some(h), None) => {
+                format!(r#"<a:solidFill><a:srgbClr val="{h}"/></a:solidFill>"#)
+            }
+            _ => String::new(),
+        };
+
+        format!(
+            r#"<p:sp><p:nvSpPr><p:cNvPr id="3" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm{rot_attr}><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="{prst}"><a:avLst/></a:prstGeom>{fill_xml}</p:spPr></p:sp>"#
+        )
+    }
+
+    // ── Shape style tests (US-034) ──────────────────────────────────────
+
+    #[test]
+    fn test_shape_rotation() {
+        // 90° rotation = 5400000 (60000ths of a degree)
+        let shape = make_styled_shape(
+            0,
+            0,
+            2_000_000,
+            1_000_000,
+            "rect",
+            Some("FF0000"),
+            Some(5_400_000),
+            None,
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        assert!(s.rotation_deg.is_some(), "Expected rotation_deg to be set");
+        assert!(
+            (s.rotation_deg.unwrap() - 90.0).abs() < 0.01,
+            "Expected 90°, got {}",
+            s.rotation_deg.unwrap()
+        );
+    }
+
+    #[test]
+    fn test_shape_transparency() {
+        // 50% opacity = alpha val 50000 (in 1000ths of percent)
+        let shape = make_styled_shape(
+            0,
+            0,
+            2_000_000,
+            1_000_000,
+            "rect",
+            Some("00FF00"),
+            None,
+            Some(50_000),
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        assert!(s.opacity.is_some(), "Expected opacity to be set");
+        assert!(
+            (s.opacity.unwrap() - 0.5).abs() < 0.01,
+            "Expected 0.5 opacity, got {}",
+            s.opacity.unwrap()
+        );
+    }
+
+    #[test]
+    fn test_shape_rotation_and_transparency() {
+        // 45° rotation (2700000) + 75% opacity (75000)
+        let shape = make_styled_shape(
+            1_000_000,
+            500_000,
+            3_000_000,
+            2_000_000,
+            "ellipse",
+            Some("0000FF"),
+            Some(2_700_000),
+            Some(75_000),
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        assert!(
+            (s.rotation_deg.unwrap() - 45.0).abs() < 0.01,
+            "Expected 45°, got {}",
+            s.rotation_deg.unwrap()
+        );
+        assert!(
+            (s.opacity.unwrap() - 0.75).abs() < 0.01,
+            "Expected 0.75 opacity, got {}",
+            s.opacity.unwrap()
+        );
+        assert!(matches!(s.kind, ShapeKind::Ellipse));
     }
 }

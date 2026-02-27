@@ -172,6 +172,11 @@ fn generate_fixed_element(
 }
 
 fn generate_shape(out: &mut String, shape: &Shape, width: f64, height: f64) {
+    let has_rotation = shape.rotation_deg.is_some();
+    if let Some(deg) = shape.rotation_deg {
+        let _ = write!(out, "#rotate({}deg)[", format_f64(deg));
+    }
+
     match &shape.kind {
         ShapeKind::Rectangle => {
             out.push_str("#rect(");
@@ -204,6 +209,24 @@ fn generate_shape(out: &mut String, shape: &Shape, width: f64, height: f64) {
             out.push_str(")\n");
         }
     }
+
+    if has_rotation {
+        out.push_str("]\n");
+    }
+}
+
+/// Write fill color, using rgba when opacity is set, rgb otherwise.
+fn write_fill_color(out: &mut String, fill: &Color, opacity: Option<f64>) {
+    if let Some(op) = opacity {
+        let alpha = (op * 255.0).round() as u8;
+        let _ = write!(
+            out,
+            ", fill: rgba({}, {}, {}, {})",
+            fill.r, fill.g, fill.b, alpha
+        );
+    } else {
+        let _ = write!(out, ", fill: rgb({}, {}, {})", fill.r, fill.g, fill.b);
+    }
 }
 
 fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) {
@@ -214,7 +237,7 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
         format_f64(height),
     );
     if let Some(fill) = &shape.fill {
-        let _ = write!(out, ", fill: rgb({}, {}, {})", fill.r, fill.g, fill.b);
+        write_fill_color(out, fill, shape.opacity);
     }
     if let Some(stroke) = &shape.stroke {
         let _ = write!(
@@ -1834,7 +1857,13 @@ mod tests {
             y,
             width: w,
             height: h,
-            kind: FixedElementKind::Shape(Shape { kind, fill, stroke }),
+            kind: FixedElementKind::Shape(Shape {
+                kind,
+                fill,
+                stroke,
+                rotation_deg: None,
+                opacity: None,
+            }),
         }
     }
 
@@ -2038,6 +2067,103 @@ mod tests {
         assert!(
             output.source.contains("1.5pt"),
             "Expected stroke width in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_shape_rotation_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 10.0,
+                y: 20.0,
+                width: 200.0,
+                height: 150.0,
+                kind: FixedElementKind::Shape(Shape {
+                    kind: ShapeKind::Rectangle,
+                    fill: Some(Color::new(255, 0, 0)),
+                    stroke: None,
+                    rotation_deg: Some(90.0),
+                    opacity: None,
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("rotate"),
+            "Expected rotate wrapper in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("90deg"),
+            "Expected 90deg angle in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_shape_opacity_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 10.0,
+                y: 20.0,
+                width: 200.0,
+                height: 150.0,
+                kind: FixedElementKind::Shape(Shape {
+                    kind: ShapeKind::Rectangle,
+                    fill: Some(Color::new(0, 255, 0)),
+                    stroke: None,
+                    rotation_deg: None,
+                    opacity: Some(0.5),
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        // With 50% opacity, the fill color should include alpha
+        assert!(
+            output.source.contains("rgba(0, 255, 0, 128)"),
+            "Expected rgba fill with alpha in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_shape_rotation_and_opacity_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 50.0,
+                y: 50.0,
+                width: 100.0,
+                height: 100.0,
+                kind: FixedElementKind::Shape(Shape {
+                    kind: ShapeKind::Ellipse,
+                    fill: Some(Color::new(0, 0, 255)),
+                    stroke: None,
+                    rotation_deg: Some(45.0),
+                    opacity: Some(0.75),
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("rotate"),
+            "Expected rotate in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("45deg"),
+            "Expected 45deg in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("rgba(0, 0, 255, 191)"),
+            "Expected rgba fill in: {}",
             output.source
         );
     }
