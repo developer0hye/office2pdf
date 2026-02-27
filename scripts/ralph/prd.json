@@ -107,8 +107,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: parse_print_area_range() parses cell range from _xlnm.Print_Area defined names on worksheets. find_print_area() looks up the print area. collect_row_breaks() gets sorted manual row break positions. Print area limits col/row iteration. Row breaks split table rows into multiple TablePages. 6 tests (2 print area, 4 page breaks)."
     },
     {
       "id": "US-036",
