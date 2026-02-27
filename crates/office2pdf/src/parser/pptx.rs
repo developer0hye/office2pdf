@@ -5205,9 +5205,9 @@ mod tests {
     #[test]
     fn test_gradient_shape_fill() {
         // Shape with gradient fill
-        let shape_xml = format!(
+        let shape_xml =
             r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="200000"/><a:ext cx="500000" cy="300000"/></a:xfrm><a:prstGeom prst="rect"/><a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs><a:gs pos="100000"><a:srgbClr val="00FF00"/></a:gs></a:gsLst><a:lin ang="5400000"/></a:gradFill></p:spPr></p:sp>"#
-        );
+            .to_string();
         let slide_xml = make_slide_xml(&[shape_xml]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
         let parser = PptxParser;
@@ -5234,9 +5234,9 @@ mod tests {
     #[test]
     fn test_shape_solid_fill_no_gradient() {
         // Shape with only solid fill — gradient_fill should be None
-        let shape_xml = format!(
+        let shape_xml =
             r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="200000"/><a:ext cx="500000" cy="300000"/></a:xfrm><a:prstGeom prst="rect"/><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></p:spPr></p:sp>"#
-        );
+            .to_string();
         let slide_xml = make_slide_xml(&[shape_xml]);
         let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
         let parser = PptxParser;
