@@ -90,8 +90,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: rotation_deg and opacity fields on Shape IR. Parser reads rot attribute from <a:xfrm rot=\"N\"> (60000ths of degree), reads <a:alpha val=\"N\"/> inside solidFill srgbClr (1000ths of percent). Codegen wraps with #rotate(Xdeg)[...] for rotation, uses rgba(r,g,b,a) for opacity. 6 tests (3 parser, 3 codegen)."
     },
     {
       "id": "US-035",

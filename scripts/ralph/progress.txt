@@ -151,3 +151,26 @@ Started: 2026년  2월 27일 금요일 08시 36분 50초 KST
   - Wrapping extracted child XML in a namespace container `<r xmlns:a="..." xmlns:r="..." xmlns:p="...">...</r>` allows `parse_slide_xml()` to parse it as standalone XML
   - Key insight: slice original `xml: &str` using buffer positions (before group end = children end), avoiding any XML reconstruction
 ---
+
+## 2026-02-27 - US-034: PPTX parser - shape styles (rotation, transparency)
+- What was implemented:
+  - Added `rotation_deg: Option<f64>` and `opacity: Option<f64>` fields to Shape IR
+  - Parses `rot` attribute from `<a:xfrm rot="5400000">` in shape spPr (60000ths of degree → degrees)
+  - Parses `<a:alpha val="50000"/>` inside `<a:srgbClr>` within solidFill context (1000ths of percent → 0.0-1.0)
+  - Handles `<a:srgbClr>` as Start element (when it has children like `<a:alpha>`) in addition to existing Empty element handling
+  - Handles `<a:alpha>` in both Start and Empty event paths
+  - Typst codegen wraps shapes with `#rotate(Xdeg)[...]` when rotation is set
+  - Typst codegen uses `rgba(r, g, b, alpha)` instead of `rgb(r, g, b)` when opacity is set (alpha = opacity * 255)
+  - Added `write_fill_color()` helper to centralize fill color output with/without opacity
+- Files changed:
+  - `crates/office2pdf/src/ir/elements.rs` — added rotation_deg and opacity fields to Shape
+  - `crates/office2pdf/src/parser/pptx.rs` — rotation/opacity parsing + state variables + make_styled_shape helper + 3 tests
+  - `crates/office2pdf/src/render/typst_gen.rs` — rotate wrapper + rgba fill + write_fill_color helper + 3 tests
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - `<a:xfrm rot="N">` — rotation in 60000ths of degree. 5400000 = 90°, 2700000 = 45°.
+  - `<a:srgbClr>` can be either self-closing (`Empty` event) or have children like `<a:alpha>`, `<a:tint>` (`Start` event). Must handle both.
+  - `<a:alpha val="N"/>` — transparency in 1000ths of percent. 100000 = 100% (fully opaque), 50000 = 50%.
+  - Typst `rgba(r, g, b, alpha)` — alpha is 0-255, where 255 = fully opaque.
+  - Alpha on solidFill applies to the fill only, not the entire shape. Stroke opacity would need separate handling.
+---
