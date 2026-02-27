@@ -61,8 +61,29 @@
 - **Test PPTX with layout/master**: Use `build_test_pptx_with_layout_master(cx, cy, slide_xml, layout_xml, master_xml)`. Creates full inheritance chain: slide1 → slideLayout1 → slideMaster1 with .rels files at each level. `make_slide_xml_with_bg(bg_xml, shapes)` creates slide XML with `<p:bg>` inside `<p:cSld>`.
 - **PPTX layout/master element inheritance**: `parse_single_slide()` resolves layout and master paths via `resolve_layout_master_paths()`, then parses elements from master, layout, and slide in order (master behind → layout → slide on top). Uses `rels_path_for()` helper for .rels path construction. `parse_slide_xml()` works on any XML with `<p:spTree>` — same function parses slide, layout, and master shapes. Test helpers: `make_layout_xml(shapes)`, `make_master_xml(shapes)`, `build_test_pptx_with_layout_master_multi_slide(cx, cy, slides, layout, master)` for multi-slide testing.
 - **PPTX tables**: Tables live inside `<p:graphicFrame>` elements (not `<p:sp>`). Position from `<p:xfrm>` (not `<a:xfrm>`). Table XML: `<a:graphic><a:graphicData><a:tbl>`. Grid: `<a:tblGrid><a:gridCol w="EMU"/>`. Rows: `<a:tr h="EMU">`. Cells: `<a:tc>` with optional `gridSpan` (colspan), `rowSpan`, `hMerge`/`vMerge` (continuation). Cell content: `<a:txBody>` with same paragraph/run structure as shapes. Cell properties: `<a:tcPr>` with `<a:solidFill>` for background, `<a:lnL/lnR/lnT/lnB w="EMU">` for borders. Maps to `FixedElementKind::Table(Table)` in IR. `parse_pptx_table()` is a standalone sub-parser called from `parse_slide_xml()` when `<a:tbl>` is found. Test helpers: `make_table_graphic_frame(x, y, cx, cy, col_widths_emu, rows_xml)`, `make_table_row(cells_text)`, `table_element(elem)`.
+- **DOCX floating images**: `WrapContext` scans raw document.xml for `wp:anchor` elements in document order (similar pattern to `NoteContext`). `AnchorWrapInfo` stores wrap_mode (WrapMode) and behind_doc (bool). `scan_anchor_wrap_types()` parses wp:wrapSquare→Square, wp:wrapTight/wrapThrough→Tight, wp:wrapTopAndBottom→TopAndBottom, wp:wrapNone→depends on behindDoc. `extract_drawing_image()` checks `pic.position_type == Anchor` → consumes next wrap info → `Block::FloatingImage(FloatingImage)`. Position from `DrawingPosition::Offset(emu)` → `emu / 12700.0` points. Codegen: Square/Tight → `#place(float: true)`, TopAndBottom → `#block` with `#v()` spacer, Behind/InFront/None → `#place()` absolute. Test helpers: `patch_docx_wrap_type(data, old_wrap, new_wrap)` replaces wrap elements in ZIP, `patch_docx_behind_doc(data)` sets `behindDoc="1"`. Create floating test Pic: `Pic::new(&bmp).floating().offset_x(emu).offset_y(emu)` (default: wrapSquare if !allow_overlap), `.overlapping()` → wrapNone.
 ---
 
 # Ralph Progress Log - Phase 4: P3 Features - Charts, Equations, SmartArt, Polish
 Started: 2026년  2월 27일 금요일 12시 19분 03초 KST
+---
+
+## 2026-02-27 - US-040: DOCX parser - text wrapping around images
+- What was implemented:
+  - IR: WrapMode enum (Square, Tight, TopAndBottom, Behind, InFront, None) and FloatingImage struct
+  - Parser: WrapContext scans raw DOCX XML for wp:anchor wrap elements (wrapSquare, wrapTight, wrapTopAndBottom, wrapNone, wrapThrough) and behindDoc attribute
+  - Parser: extract_drawing_image() detects Anchor position_type from docx-rs Pic and produces Block::FloatingImage with position offsets
+  - Codegen: generate_floating_image() handles each wrap mode: #place(float:true) for Square/Tight, #block with #v() for TopAndBottom, #place() for Behind/InFront/None
+  - Tests: 5 parser tests (square, topAndBottom, behind, position offset, inline-not-floating) + 3 codegen tests
+- Files changed:
+  - crates/office2pdf/src/ir/elements.rs (WrapMode, FloatingImage, Block::FloatingImage)
+  - crates/office2pdf/src/parser/docx.rs (WrapContext, scan_anchor_wrap_types, modified extract_drawing_image)
+  - crates/office2pdf/src/render/typst_gen.rs (generate_floating_image, Block::FloatingImage handling)
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - docx-rs parses Pic.position_type (Anchor vs Inline) and position offsets but does NOT parse wrap type elements — need raw ZIP XML scanning (same pattern as NoteContext for footnotes)
+  - docx-rs builder writes behindDoc="0" in anchor XML, so test patching must replace the existing attribute value rather than adding a new attribute
+  - DrawingPosition::Offset values are in EMU (signed i32); convert via /12700.0 for points
+  - Typst 0.14 has no native text wrapping around images — #place(float:true) only supports top/bottom float, not side-by-side wrapping. Best-effort approach is sufficient per acceptance criteria
+  - Pre-existing test failure: test_batch_convert_partial_failure in CLI crate (unrelated to this change)
 ---
