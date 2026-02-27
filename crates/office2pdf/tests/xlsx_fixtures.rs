@@ -300,7 +300,10 @@ xlsx_fixture_tests!(with_various_data, "WithVariousData.xlsx");
 
 // --- MIT: Open-Xml-PowerTools (Microsoft) ----------------------------------
 
-xlsx_fixture_tests!(sh003_date_first_col, "SH003-TableWithDateInFirstColumn.xlsx");
+xlsx_fixture_tests!(
+    sh003_date_first_col,
+    "SH003-TableWithDateInFirstColumn.xlsx"
+);
 xlsx_fixture_tests!(sh004_offset_location, "SH004-TableAtOffsetLocation.xlsx");
 xlsx_fixture_tests!(sh005_shared_strings, "SH005-Table-With-SharedStrings.xlsx");
 xlsx_fixture_tests!(sh006_no_shared_strings, "SH006-Table-No-SharedStrings.xlsx");
@@ -312,7 +315,10 @@ xlsx_fixture_tests!(sh103_no_shared_string, "SH103-No-SharedString.xlsx");
 xlsx_fixture_tests!(sh104_with_shared_string, "SH104-With-SharedString.xlsx");
 xlsx_fixture_tests!(sh105_no_shared_string2, "SH105-No-SharedString.xlsx");
 xlsx_fixture_tests!(sh107_formatted_table, "SH107-9-x-9-Formatted-Table.xlsx");
-xlsx_fixture_tests!(sh108_simple_formatted_cell, "SH108-SimpleFormattedCell.xlsx");
+xlsx_fixture_tests!(
+    sh108_simple_formatted_cell,
+    "SH108-SimpleFormattedCell.xlsx"
+);
 
 // --- MIT: calamine (Rust) --------------------------------------------------
 
