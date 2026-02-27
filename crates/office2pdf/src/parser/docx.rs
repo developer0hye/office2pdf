@@ -12,6 +12,7 @@ use crate::ir::{
 };
 use crate::parser::Parser;
 
+/// Parser for DOCX (Office Open XML Word) documents.
 pub struct DocxParser;
 
 /// Map from relationship ID → PNG image bytes.

@@ -1,3 +1,36 @@
+//! Pure-Rust conversion of Office documents (DOCX, PPTX, XLSX) to PDF.
+//!
+//! # Quick start
+//!
+//! ```no_run
+//! let result = office2pdf::convert("report.docx").unwrap();
+//! std::fs::write("report.pdf", &result.pdf).unwrap();
+//! ```
+//!
+//! # With options
+//!
+//! ```no_run
+//! use office2pdf::config::{ConvertOptions, PaperSize, SlideRange};
+//!
+//! let options = ConvertOptions {
+//!     paper_size: Some(PaperSize::A4),
+//!     slide_range: Some(SlideRange::new(1, 5)),
+//!     ..Default::default()
+//! };
+//! let result = office2pdf::convert_with_options("slides.pptx", &options).unwrap();
+//! std::fs::write("slides.pdf", &result.pdf).unwrap();
+//! ```
+//!
+//! # In-memory conversion
+//!
+//! ```no_run
+//! use office2pdf::config::{ConvertOptions, Format};
+//!
+//! let docx_bytes = std::fs::read("report.docx").unwrap();
+//! let result = office2pdf::convert_bytes(&docx_bytes, Format::Docx, &ConvertOptions::default()).unwrap();
+//! std::fs::write("report.pdf", &result.pdf).unwrap();
+//! ```
+
 pub mod config;
 pub mod error;
 pub mod ir;
@@ -11,11 +44,25 @@ use error::{ConvertError, ConvertResult};
 use parser::Parser;
 
 /// Convert a file at the given path to PDF bytes with warnings.
+///
+/// Detects the format from the file extension (`.docx`, `.pptx`, `.xlsx`).
+///
+/// # Errors
+///
+/// Returns [`ConvertError::UnsupportedFormat`] if the extension is unrecognized,
+/// [`ConvertError::Io`] if the file cannot be read, or other variants for
+/// parse/render failures.
 pub fn convert(path: impl AsRef<Path>) -> Result<ConvertResult, ConvertError> {
     convert_with_options(path, &ConvertOptions::default())
 }
 
 /// Convert a file at the given path to PDF bytes with options.
+///
+/// See [`ConvertOptions`] for available settings (paper size, sheet filter, etc.).
+///
+/// # Errors
+///
+/// Returns [`ConvertError`] on unsupported format, I/O, parse, or render failure.
 pub fn convert_with_options(
     path: impl AsRef<Path>,
     options: &ConvertOptions,
@@ -34,6 +81,13 @@ pub fn convert_with_options(
 }
 
 /// Convert raw bytes of a known format to PDF bytes with warnings.
+///
+/// Use this when you already have the file contents in memory and know the
+/// [`Format`].
+///
+/// # Errors
+///
+/// Returns [`ConvertError`] on parse or render failure.
 pub fn convert_bytes(
     data: &[u8],
     format: Format,
@@ -58,8 +112,14 @@ pub fn convert_bytes(
 
 /// Render an IR Document to PDF bytes.
 ///
+///// Render an IR [`Document`](ir::Document) directly to PDF bytes.
+///
 /// Takes a fully constructed [`ir::Document`] and runs it through
 /// the Typst codegen → PDF compilation pipeline.
+///
+/// # Errors
+///
+/// Returns [`ConvertError::Render`] if Typst compilation or PDF export fails.
 pub fn render_document(doc: &ir::Document) -> Result<Vec<u8>, ConvertError> {
     let output = render::typst_gen::generate_typst(doc)?;
     render::pdf::compile_to_pdf(&output.source, &output.images, None, &[])

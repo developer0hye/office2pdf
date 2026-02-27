@@ -64,14 +64,17 @@ pub struct Color {
 }
 
 impl Color {
+    /// Create a color from RGB components.
     pub fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
 
+    /// Black (`#000000`).
     pub fn black() -> Self {
         Self { r: 0, g: 0, b: 0 }
     }
 
+    /// White (`#FFFFFF`).
     pub fn white() -> Self {
         Self {
             r: 255,

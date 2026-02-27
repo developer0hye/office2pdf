@@ -12,6 +12,7 @@ use crate::parser::Parser;
 use crate::parser::chart::parse_chart_xml;
 use crate::parser::cond_fmt::build_cond_fmt_overrides;
 
+/// Parser for XLSX (Office Open XML Excel) spreadsheets.
 pub struct XlsxParser;
 
 /// Default column width in Excel character units.
