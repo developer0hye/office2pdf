@@ -117,6 +117,8 @@ pub struct TablePage {
     pub size: PageSize,
     pub margins: Margins,
     pub table: super::elements::Table,
+    pub header: Option<super::elements::HeaderFooter>,
+    pub footer: Option<super::elements::HeaderFooter>,
 }
 
 #[cfg(test)]

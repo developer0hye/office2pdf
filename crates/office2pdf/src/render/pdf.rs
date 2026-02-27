@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use typst::diag::FileResult;
 use typst::foundations::{Bytes, Datetime};
@@ -8,13 +9,24 @@ use typst::utils::LazyHash;
 use typst::{Library, LibraryExt, World};
 use typst_kit::fonts::{FontSearcher, Fonts};
 
+use crate::config::PdfStandard;
 use crate::error::ConvertError;
 
 use super::typst_gen::ImageAsset;
 
 /// Compile Typst markup to PDF bytes.
-pub fn compile_to_pdf(typst_source: &str, images: &[ImageAsset]) -> Result<Vec<u8>, ConvertError> {
-    let world = MinimalWorld::new(typst_source, images);
+///
+/// When `pdf_standard` is `Some`, the output PDF will conform to the
+/// specified standard (e.g., PDF/A-2b for archival).
+/// When `font_paths` is non-empty, those directories are searched for
+/// additional fonts (highest priority).
+pub fn compile_to_pdf(
+    typst_source: &str,
+    images: &[ImageAsset],
+    pdf_standard: Option<PdfStandard>,
+    font_paths: &[PathBuf],
+) -> Result<Vec<u8>, ConvertError> {
+    let world = MinimalWorld::new(typst_source, images, font_paths);
 
     let warned = typst::compile::<typst::layout::PagedDocument>(&world);
     let document = warned.output.map_err(|errors| {
@@ -22,7 +34,25 @@ pub fn compile_to_pdf(typst_source: &str, images: &[ImageAsset]) -> Result<Vec<u
         ConvertError::Render(format!("Typst compilation failed: {}", messages.join("; ")))
     })?;
 
-    let options = typst_pdf::PdfOptions::default();
+    let standards = match pdf_standard {
+        Some(PdfStandard::PdfA2b) => typst_pdf::PdfStandards::new(&[typst_pdf::PdfStandard::A_2b])
+            .map_err(|e| ConvertError::Render(format!("PDF standard configuration error: {e}")))?,
+        None => typst_pdf::PdfStandards::default(),
+    };
+
+    // PDF/A requires a document creation timestamp
+    let timestamp = if pdf_standard.is_some() {
+        let now = Datetime::from_ymd_hms(2024, 1, 1, 0, 0, 0).unwrap();
+        Some(typst_pdf::Timestamp::new_utc(now))
+    } else {
+        None
+    };
+
+    let options = typst_pdf::PdfOptions {
+        standards,
+        timestamp,
+        ..Default::default()
+    };
     typst_pdf::pdf(&document, &options).map_err(|errors| {
         let messages: Vec<String> = errors.iter().map(|e| e.message.to_string()).collect();
         ConvertError::Render(format!("PDF export failed: {}", messages.join("; ")))
@@ -39,10 +69,14 @@ struct MinimalWorld {
 }
 
 impl MinimalWorld {
-    fn new(source_text: &str, images: &[ImageAsset]) -> Self {
+    fn new(source_text: &str, images: &[ImageAsset], font_paths: &[PathBuf]) -> Self {
         let mut searcher = FontSearcher::new();
         searcher.include_system_fonts(true);
-        let font_data: Fonts = searcher.search();
+        let font_data: Fonts = if font_paths.is_empty() {
+            searcher.search()
+        } else {
+            searcher.search_with(font_paths.iter().map(|p| p.as_path()))
+        };
 
         let main_id = FileId::new(None, VirtualPath::new("main.typ"));
         let source = Source::new(main_id, source_text.to_string());
@@ -116,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_compile_simple_text() {
-        let result = compile_to_pdf("Hello, World!", &[]).unwrap();
+        let result = compile_to_pdf("Hello, World!", &[], None, &[]).unwrap();
         assert!(!result.is_empty(), "PDF bytes should not be empty");
         assert!(
             result.starts_with(b"%PDF"),
@@ -128,7 +162,7 @@ mod tests {
     fn test_compile_with_page_setup() {
         let source = r#"#set page(width: 612pt, height: 792pt)
 Hello from a US Letter page."#;
-        let result = compile_to_pdf(source, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -140,7 +174,7 @@ Hello from a US Letter page."#;
 #text(style: "italic")[Italic body text]
 
 #underline[Underlined text]"#;
-        let result = compile_to_pdf(source, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -149,7 +183,7 @@ Hello from a US Letter page."#;
     fn test_compile_colored_text() {
         let source = r#"#text(fill: rgb(255, 0, 0))[Red text]
 #text(fill: rgb(0, 128, 255))[Blue text]"#;
-        let result = compile_to_pdf(source, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -159,7 +193,7 @@ Hello from a US Letter page."#;
         let source = r#"#align(center)[Centered text]
 
 #align(right)[Right-aligned text]"#;
-        let result = compile_to_pdf(source, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -167,14 +201,14 @@ Hello from a US Letter page."#;
     #[test]
     fn test_compile_invalid_source_returns_error() {
         // Invalid Typst source should produce a compilation error
-        let result = compile_to_pdf("#invalid-func-that-does-not-exist()", &[]);
+        let result = compile_to_pdf("#invalid-func-that-does-not-exist()", &[], None, &[]);
         assert!(result.is_err(), "Invalid source should produce an error");
     }
 
     #[test]
     fn test_compile_empty_source() {
         // Empty source should still produce valid PDF (empty page)
-        let result = compile_to_pdf("", &[]).unwrap();
+        let result = compile_to_pdf("", &[], None, &[]).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -182,7 +216,7 @@ Hello from a US Letter page."#;
     #[test]
     fn test_compile_multiple_paragraphs() {
         let source = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.";
-        let result = compile_to_pdf(source, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -250,7 +284,7 @@ Hello from a US Letter page."#;
     fn test_embedded_fonts_are_available() {
         // MinimalWorld should always have embedded fallback fonts available
         // (Libertinus Serif, New Computer Modern, DejaVu Sans Mono)
-        let world = MinimalWorld::new("", &[]);
+        let world = MinimalWorld::new("", &[], &[]);
         assert!(
             !world.fonts.is_empty(),
             "MinimalWorld should have at least the embedded fallback fonts"
@@ -262,7 +296,7 @@ Hello from a US Letter page."#;
         // With system font discovery enabled, on typical systems we should have
         // more fonts than just the embedded set. On minimal systems, we at least
         // have the embedded fonts.
-        let world = MinimalWorld::new("", &[]);
+        let world = MinimalWorld::new("", &[], &[]);
         let embedded_only_count = {
             let mut s = FontSearcher::new();
             s.include_system_fonts(false);
@@ -285,7 +319,7 @@ Hello from a US Letter page."#;
         // named font will be used if present on the system.
         let source = r#"#set text(font: "Arial")
 Hello with a system font."#;
-        let result = compile_to_pdf(source, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -296,7 +330,65 @@ Hello with a system font."#;
         // system font discovery enabled.
         let source = r#"#set text(font: "Libertinus Serif")
 Text in Libertinus Serif."#;
-        let result = compile_to_pdf(source, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
+        assert!(!result.is_empty());
+        assert!(result.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_compile_pdfa2b_produces_valid_pdf() {
+        let result = compile_to_pdf(
+            "Hello PDF/A!",
+            &[],
+            Some(crate::config::PdfStandard::PdfA2b),
+            &[],
+        )
+        .unwrap();
+        assert!(!result.is_empty());
+        assert!(result.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_compile_pdfa2b_contains_xmp_metadata() {
+        let result = compile_to_pdf(
+            "PDF/A metadata test",
+            &[],
+            Some(crate::config::PdfStandard::PdfA2b),
+            &[],
+        )
+        .unwrap();
+        // PDF/A-2b requires XMP metadata with pdfaid namespace
+        let pdf_str = String::from_utf8_lossy(&result);
+        assert!(
+            pdf_str.contains("pdfaid") || pdf_str.contains("PDF/A"),
+            "PDF/A output should contain PDF/A identification metadata"
+        );
+    }
+
+    #[test]
+    fn test_compile_default_no_pdfa_metadata() {
+        let result = compile_to_pdf("Regular PDF", &[], None, &[]).unwrap();
+        let pdf_str = String::from_utf8_lossy(&result);
+        // A regular PDF should not have pdfaid conformance metadata
+        assert!(
+            !pdf_str.contains("pdfaid:conformance"),
+            "Regular PDF should not contain PDF/A conformance metadata"
+        );
+    }
+
+    #[test]
+    fn test_compile_with_font_paths_empty() {
+        // Empty font paths should work the same as without
+        let result = compile_to_pdf("Hello!", &[], None, &[]).unwrap();
+        assert!(!result.is_empty());
+        assert!(result.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_compile_with_nonexistent_font_path() {
+        // Non-existent font path should not crash — FontSearcher skips invalid dirs
+        let paths = vec![PathBuf::from("/nonexistent/font/path")];
+        let result = compile_to_pdf("Hello!", &[], None, &paths).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -309,7 +401,7 @@ Text in Libertinus Serif."#;
             data: png_data,
         }];
         let source = r#"#image("img-0.png", width: 100pt)"#;
-        let result = compile_to_pdf(source, &images).unwrap();
+        let result = compile_to_pdf(source, &images, None, &[]).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }

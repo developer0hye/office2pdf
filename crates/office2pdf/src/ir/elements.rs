@@ -20,6 +20,8 @@ pub enum HFInline {
     Run(Run),
     /// Current page number field.
     PageNumber,
+    /// Total page count field.
+    TotalPages,
 }
 
 /// Block-level content elements.
@@ -65,6 +67,11 @@ pub struct Paragraph {
 pub struct Run {
     pub text: String,
     pub style: TextStyle,
+    /// Optional hyperlink URL. When present, the run is rendered as a clickable link.
+    pub href: Option<String>,
+    /// Optional footnote/endnote content. When present, a footnote marker is emitted and
+    /// the content is rendered at the bottom of the page.
+    pub footnote: Option<String>,
 }
 
 /// A table.
@@ -157,6 +164,10 @@ pub struct Shape {
     pub kind: ShapeKind,
     pub fill: Option<Color>,
     pub stroke: Option<BorderSide>,
+    /// Rotation angle in degrees (clockwise).
+    pub rotation_deg: Option<f64>,
+    /// Opacity from 0.0 (fully transparent) to 1.0 (fully opaque).
+    pub opacity: Option<f64>,
 }
 
 /// Shape types.
@@ -189,6 +200,8 @@ mod tests {
                 runs: vec![Run {
                     text: "Item 1".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 }],
             }],
             level: 0,
@@ -208,6 +221,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Bullet 1".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -218,6 +233,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Bullet 2".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -238,6 +255,8 @@ mod tests {
                     runs: vec![Run {
                         text: "Step 1".to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     }],
                 }],
                 level: 0,
@@ -258,6 +277,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Top".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 0,
@@ -268,6 +289,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Nested".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }],
                     level: 1,
@@ -286,6 +309,8 @@ mod tests {
                 Run {
                     text: "Hello ".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 },
                 Run {
                     text: "world".to_string(),
@@ -293,6 +318,8 @@ mod tests {
                         bold: Some(true),
                         ..TextStyle::default()
                     },
+                    href: None,
+                    footnote: None,
                 },
             ],
         };
@@ -309,6 +336,8 @@ mod tests {
                 elements: vec![HFInline::Run(Run {
                     text: "My Header".to_string(),
                     style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
                 })],
             }],
         };
@@ -329,6 +358,8 @@ mod tests {
                     HFInline::Run(Run {
                         text: "Page ".to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     }),
                     HFInline::PageNumber,
                 ],

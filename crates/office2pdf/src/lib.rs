@@ -46,7 +46,13 @@ pub fn convert_bytes(
     };
 
     let (doc, warnings) = parser.parse(data, options)?;
-    let pdf = render_document(&doc)?;
+    let output = render::typst_gen::generate_typst_with_options(&doc, options)?;
+    let pdf = render::pdf::compile_to_pdf(
+        &output.source,
+        &output.images,
+        options.pdf_standard,
+        &options.font_paths,
+    )?;
     Ok(ConvertResult { pdf, warnings })
 }
 
@@ -56,7 +62,7 @@ pub fn convert_bytes(
 /// the Typst codegen → PDF compilation pipeline.
 pub fn render_document(doc: &ir::Document) -> Result<Vec<u8>, ConvertError> {
     let output = render::typst_gen::generate_typst(doc)?;
-    render::pdf::compile_to_pdf(&output.source, &output.images)
+    render::pdf::compile_to_pdf(&output.source, &output.images, None, &[])
 }
 
 #[cfg(test)]
@@ -76,6 +82,8 @@ mod tests {
                     runs: vec![Run {
                         text: text.to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     }],
                 })],
                 header: None,
@@ -175,6 +183,8 @@ mod tests {
                                 font_size: Some(16.0),
                                 ..TextStyle::default()
                             },
+                            href: None,
+                            footnote: None,
                         },
                         Run {
                             text: "and italic".to_string(),
@@ -183,6 +193,8 @@ mod tests {
                                 color: Some(Color::new(255, 0, 0)),
                                 ..TextStyle::default()
                             },
+                            href: None,
+                            footnote: None,
                         },
                     ],
                 })],
@@ -209,6 +221,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Page 1".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     })],
                     header: None,
@@ -222,6 +236,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Page 2".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     })],
                     header: None,
@@ -248,6 +264,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Before break".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }),
                     Block::PageBreak,
@@ -256,6 +274,8 @@ mod tests {
                         runs: vec![Run {
                             text: "After break".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }),
                 ],
@@ -366,6 +386,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Image below:".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }),
                     Block::Image(ImageData {
@@ -379,6 +401,8 @@ mod tests {
                         runs: vec![Run {
                             text: "Image above.".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         }],
                     }),
                 ],
@@ -613,6 +637,8 @@ mod tests {
                             font_family: Some("Arial".to_string()),
                             ..TextStyle::default()
                         },
+                        href: None,
+                        footnote: None,
                     }],
                 })],
                 header: None,
@@ -642,6 +668,8 @@ mod tests {
                                 font_family: Some("Calibri".to_string()),
                                 ..TextStyle::default()
                             },
+                            href: None,
+                            footnote: None,
                         },
                         Run {
                             text: "and Times New Roman text".to_string(),
@@ -649,6 +677,8 @@ mod tests {
                                 font_family: Some("Times New Roman".to_string()),
                                 ..TextStyle::default()
                             },
+                            href: None,
+                            footnote: None,
                         },
                     ],
                 })],
@@ -769,6 +799,8 @@ mod tests {
                                 runs: vec![Run {
                                     text: "Hello".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
                                 }],
                             }],
                             level: 0,
@@ -779,6 +811,8 @@ mod tests {
                                 runs: vec![Run {
                                     text: "World".to_string(),
                                     style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
                                 }],
                             }],
                             level: 0,
@@ -864,6 +898,8 @@ mod tests {
                     runs: vec![Run {
                         text: "Body content".to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     }],
                 })],
                 header: Some(ir::HeaderFooter {
@@ -872,6 +908,8 @@ mod tests {
                         elements: vec![ir::HFInline::Run(Run {
                             text: "My Header".to_string(),
                             style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
                         })],
                     }],
                 }),
@@ -896,6 +934,8 @@ mod tests {
                     runs: vec![Run {
                         text: "Body content".to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     }],
                 })],
                 header: None,
@@ -906,6 +946,8 @@ mod tests {
                             ir::HFInline::Run(Run {
                                 text: "Page ".to_string(),
                                 style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
                             }),
                             ir::HFInline::PageNumber,
                         ],
@@ -970,6 +1012,8 @@ mod tests {
                     runs: vec![Run {
                         text: "Landscape page".to_string(),
                         style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
                     }],
                     style: ParagraphStyle::default(),
                 })],
@@ -1012,6 +1056,130 @@ mod tests {
         assert!(
             result.pdf.starts_with(b"%PDF"),
             "Landscape DOCX should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_docx_toc_pipeline_produces_pdf() {
+        use std::io::Cursor;
+        let toc = docx_rs::TableOfContents::new()
+            .heading_styles_range(1, 3)
+            .alias("Table of contents")
+            .add_item(
+                docx_rs::TableOfContentsItem::new()
+                    .text("Chapter 1")
+                    .toc_key("_Toc00000001")
+                    .level(1)
+                    .page_ref("2"),
+            )
+            .add_item(
+                docx_rs::TableOfContentsItem::new()
+                    .text("Chapter 2")
+                    .toc_key("_Toc00000002")
+                    .level(1)
+                    .page_ref("5"),
+            );
+
+        let docx = docx_rs::Docx::new()
+            .add_style(
+                docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph).name("Heading 1"),
+            )
+            .add_table_of_contents(toc)
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Chapter 1"))
+                    .style("Heading1"),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Some body text")),
+            );
+
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "DOCX with TOC should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_convert_bytes_with_pdfa_option() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("PDF/A test")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let options = ConvertOptions {
+            pdf_standard: Some(config::PdfStandard::PdfA2b),
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, Format::Docx, &options).unwrap();
+        assert!(result.pdf.starts_with(b"%PDF"));
+        // PDF/A output should contain PDF/A identification
+        let pdf_str = String::from_utf8_lossy(&result.pdf);
+        assert!(
+            pdf_str.contains("pdfaid") || pdf_str.contains("PDF/A"),
+            "PDF/A conversion should include PDF/A metadata"
+        );
+    }
+
+    #[test]
+    fn test_render_document_default_no_pdfa() {
+        let doc = make_simple_document("No PDF/A");
+        let pdf = render_document(&doc).unwrap();
+        let pdf_str = String::from_utf8_lossy(&pdf);
+        assert!(
+            !pdf_str.contains("pdfaid:conformance"),
+            "Default render_document should not produce PDF/A"
+        );
+    }
+
+    #[test]
+    fn test_convert_bytes_with_paper_size_override() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Paper size test")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let options = ConvertOptions {
+            paper_size: Some(config::PaperSize::Letter),
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, Format::Docx, &options).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "DOCX with Letter paper override should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_convert_bytes_with_landscape_override() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Landscape override test")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let options = ConvertOptions {
+            landscape: Some(true),
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, Format::Docx, &options).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "DOCX with landscape override should produce valid PDF"
         );
     }
 }
