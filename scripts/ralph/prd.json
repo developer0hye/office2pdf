@@ -1,181 +1,93 @@
 {
   "project": "office2pdf",
-  "branchName": "ralph/phase4-polish",
-  "description": "Phase 4: P3 Features - Text wrapping, equations, charts, SmartArt, conditional formatting, performance, documentation",
+  "branchName": "ralph/phase5-remaining-gaps",
+  "description": "Phase 5: Remaining PRD gaps - PPTX gradients, XLSX page breaks, PPTX shape effects, XLSX advanced conditional formatting, performance benchmarks",
   "userStories": [
     {
-      "id": "US-040",
-      "title": "DOCX parser - text wrapping around images",
-      "description": "As a user, I want floating images with text wrapping in DOCX documents to be approximated in the PDF output.",
+      "id": "US-050",
+      "title": "PPTX parser - gradient background support",
+      "description": "As a user, I want gradient backgrounds in PPTX slides to render in the PDF output instead of being ignored.",
       "acceptanceCriteria": [
-        "Parse anchor-based (wp:anchor) image placements from DOCX (in addition to existing inline images)",
-        "Extract wrapping type (square, tight, topAndBottom, behind, inFront) and position",
-        "Add floating image support to IR (positioned image with wrap mode)",
-        "Generate Typst #place() or #wrap-content for floating images with appropriate positioning",
-        "Text flow around image is best-effort (exact DOCX text wrapping may not map perfectly to Typst)",
-        "Unit tests: floating image with square wrap, image with topAndBottom wrap",
+        "Parse <a:gradFill> elements in slide backgrounds and shape fills",
+        "Extract gradient stops: position (pos), color (srgbClr/schemeClr)",
+        "Support linear gradient direction (lin ang attribute)",
+        "Render gradient as Typst gradient.linear() on page background or shape fill",
+        "Fallback: if gradient cannot be rendered, use the first stop color as solid fill",
+        "Unit tests: slide with gradient background, shape with gradient fill",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
-      "id": "US-041",
-      "title": "DOCX parser - OMML math equations",
-      "description": "As a user, I want math equations in DOCX documents (Office Math Markup Language) to render in the PDF.",
+      "id": "US-051",
+      "title": "PPTX parser - shape shadow and reflection effects",
+      "description": "As a user, I want shadow effects on PPTX shapes to be approximated in the PDF output.",
       "acceptanceCriteria": [
-        "Parse OMML (Office Math Markup Language) elements from DOCX paragraphs (m:oMath, m:oMathPara)",
-        "Convert OMML elements to Typst math notation: fractions (m:f → $/frac()/$ ), superscripts (m:sSup), subscripts (m:sSub), radicals (m:rad), etc.",
-        "Handle basic math structures: fractions, super/subscripts, square roots, parentheses, operators",
-        "Render as Typst inline math ($...$) or display math ($ ... $) depending on context",
-        "Unit tests: simple fraction, superscript expression, complex equation with multiple elements",
+        "Parse <a:effectLst> within shape properties for shadow effects (<a:outerShdw>)",
+        "Extract shadow parameters: blur radius, distance, direction, color, opacity",
+        "Render shadow as a Typst approximation (e.g., offset duplicate shape with reduced opacity, or use #box(shadow: ...))",
+        "Reflection effects: parse but render as best-effort or skip with warning",
+        "Unit tests: shape with outer shadow, shape with no effects (no regression)",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
-      "id": "US-042",
-      "title": "DOCX parser - embedded charts (basic)",
-      "description": "As a user, I want embedded charts in DOCX documents to have a visible representation in the PDF, even if simplified.",
+      "id": "US-052",
+      "title": "XLSX parser - manual page breaks",
+      "description": "As a user, I want manual page breaks in XLSX spreadsheets to be reflected in the PDF output.",
       "acceptanceCriteria": [
-        "Detect chart references in DOCX (c:chart relationship in drawing elements)",
-        "Parse basic chart data from chart*.xml: chart type (bar, line, pie), series data, category labels",
-        "Render a simplified chart representation: a labeled data table as a fallback, or a basic Typst visualization",
-        "If full chart rendering is not feasible, render a placeholder box with chart title and data summary",
-        "Unit tests: document with embedded chart produces PDF with chart data visible",
+        "Parse row breaks from sheet XML via sheet.get_row_breaks().get_break_list()",
+        "Filter for manual page breaks (get_manual_page_break() == true)",
+        "Split table rows into separate TablePages at each page break point",
+        "Preserve column widths and cell formatting across page breaks",
+        "Unit tests: spreadsheet with manual page break splits into multiple pages",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
-      "id": "US-043",
-      "title": "PPTX parser - SmartArt diagrams (basic)",
-      "description": "As a user, I want SmartArt diagrams in PPTX presentations to have a visible representation in the PDF.",
+      "id": "US-053",
+      "title": "XLSX parser - DataBar and IconSet conditional formatting",
+      "description": "As a user, I want DataBar and IconSet conditional formatting in XLSX to be approximated in the PDF.",
       "acceptanceCriteria": [
-        "Detect SmartArt elements in slide XML (dgm:relIds or graphicData with SmartArt URI)",
-        "Parse the SmartArt data XML to extract text content from data points",
-        "Render SmartArt as a simplified layout: text items in boxes or a list format",
-        "If SmartArt has a cached drawing (drs/e*.xml), prefer parsing that as regular shapes",
-        "Unit tests: slide with SmartArt produces PDF with text content visible",
+        "Parse DataBar conditional formatting rules from XLSX",
+        "Render DataBar as a colored bar within the cell (proportional to value range)",
+        "Parse IconSet conditional formatting rules from XLSX",
+        "Render IconSet as text symbols (e.g., arrows ↑↓→, traffic lights ●) based on thresholds",
+        "Unit tests: spreadsheet with DataBar rules, spreadsheet with IconSet rules",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
-      "id": "US-044",
-      "title": "PPTX parser - embedded charts (basic)",
-      "description": "As a user, I want embedded charts in PPTX slides to have a visible representation in the PDF.",
+      "id": "US-054",
+      "title": "Performance benchmarks and validation",
+      "description": "As a developer, I want benchmark tests to validate the performance targets defined in the PRD.",
       "acceptanceCriteria": [
-        "Detect chart elements in slide XML (c:chart relationship)",
-        "Parse basic chart data from chart*.xml: chart type, series data, category labels",
-        "Render a simplified representation: data table or basic visualization at the chart's position on the slide",
-        "If full rendering is not feasible, show a placeholder with chart title",
-        "Unit tests: slide with chart produces PDF with chart data visible",
+        "Add Criterion benchmarks for DOCX, PPTX, XLSX conversion (small and medium documents)",
+        "Generate synthetic test documents: 10-page DOCX, 10-slide PPTX, 10-sheet XLSX",
+        "Benchmark end-to-end conversion time for each format",
+        "Document benchmark results in progress notes",
+        "Verify 10-page document converts in < 2 seconds on local hardware",
         "cargo test --workspace passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-045",
-      "title": "XLSX parser - conditional formatting (basic)",
-      "description": "As a user, I want basic conditional formatting rules in XLSX spreadsheets to be reflected in the PDF output.",
-      "acceptanceCriteria": [
-        "Parse conditional formatting rules from XLSX (conditionalFormatting elements)",
-        "Support cell value-based rules: greater than, less than, equal to, between",
-        "Apply formatting effects: background color, font color, bold for matched cells",
-        "Color scale formatting: apply min/max colors with interpolation",
-        "Unit tests: spreadsheet with conditional formatting rules, verify cell styles in IR",
-        "cargo test --workspace passes",
-        "cargo clippy --workspace -- -D warnings passes"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-046",
-      "title": "XLSX parser - embedded charts (basic)",
-      "description": "As a user, I want embedded charts in XLSX spreadsheets to have a visible representation in the PDF.",
-      "acceptanceCriteria": [
-        "Detect chart objects embedded in XLSX sheets (drawing relationships)",
-        "Parse basic chart data: chart type, series values, category labels",
-        "Render a simplified representation on a separate page or within the sheet layout",
-        "If full rendering is not feasible, show a labeled data table summarizing the chart",
-        "Unit tests: spreadsheet with chart produces PDF with chart data visible",
-        "cargo test --workspace passes",
-        "cargo clippy --workspace -- -D warnings passes"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-047",
-      "title": "Performance optimization",
-      "description": "As a developer, I want the conversion pipeline to meet performance targets from the PRD.",
-      "acceptanceCriteria": [
-        "Add benchmark tests using Criterion or built-in benchmarks for DOCX, PPTX, XLSX conversion",
-        "Identify and optimize hot paths in the conversion pipeline",
-        "Reduce unnecessary allocations (String cloning, Vec resizing) in parsers and codegen",
-        "Verify: 10-page document converts in < 1 second, 100-page document in < 5 seconds (on CI hardware may be approximate)",
-        "Memory usage stays under 500MB for 100-page documents",
-        "Add benchmark results to progress notes for tracking",
-        "cargo test --workspace passes",
-        "cargo clippy --workspace -- -D warnings passes"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-048",
-      "title": "Edge case handling and robustness",
-      "description": "As a user, I want the converter to handle edge cases gracefully without crashing.",
-      "acceptanceCriteria": [
-        "Empty documents (no content) produce a valid empty PDF",
-        "Documents with only images (no text) convert successfully",
-        "Documents with extremely long paragraphs or large tables don't panic",
-        "Corrupted/truncated files return clear error messages",
-        "Unicode edge cases: RTL text, CJK characters, emoji are handled (may render with fallback font)",
-        "Unit tests for each edge case listed above",
-        "cargo test --workspace passes",
-        "cargo clippy --workspace -- -D warnings passes"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-049",
-      "title": "API documentation and examples",
-      "description": "As a Rust developer, I want comprehensive API documentation and example programs to quickly learn how to use the library.",
-      "acceptanceCriteria": [
-        "All public types, functions, and methods in the office2pdf crate have doc comments with examples",
-        "Create examples/simple_convert.rs showing basic file conversion",
-        "Create examples/custom_options.rs showing ConvertOptions usage (paper size, sheets, slides)",
-        "Create examples/from_bytes.rs showing in-memory conversion",
-        "cargo doc --workspace --no-deps produces clean documentation without warnings",
-        "All doc examples compile (cargo test --doc)",
-        "cargo test --workspace passes",
-        "cargo clippy --workspace -- -D warnings passes"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Existing Criterion benchmarks may exist from US-047. Extend or validate them."
     }
   ]
 }
