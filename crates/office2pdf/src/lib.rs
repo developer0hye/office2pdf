@@ -46,7 +46,8 @@ pub fn convert_bytes(
     };
 
     let (doc, warnings) = parser.parse(data, options)?;
-    let pdf = render_document(&doc)?;
+    let output = render::typst_gen::generate_typst(&doc)?;
+    let pdf = render::pdf::compile_to_pdf(&output.source, &output.images, options.pdf_standard)?;
     Ok(ConvertResult { pdf, warnings })
 }
 
@@ -56,7 +57,7 @@ pub fn convert_bytes(
 /// the Typst codegen → PDF compilation pipeline.
 pub fn render_document(doc: &ir::Document) -> Result<Vec<u8>, ConvertError> {
     let output = render::typst_gen::generate_typst(doc)?;
-    render::pdf::compile_to_pdf(&output.source, &output.images)
+    render::pdf::compile_to_pdf(&output.source, &output.images, None)
 }
 
 #[cfg(test)]
@@ -1096,6 +1097,41 @@ mod tests {
         assert!(
             result.pdf.starts_with(b"%PDF"),
             "DOCX with TOC should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_convert_bytes_with_pdfa_option() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("PDF/A test")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let options = ConvertOptions {
+            pdf_standard: Some(config::PdfStandard::PdfA2b),
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, Format::Docx, &options).unwrap();
+        assert!(result.pdf.starts_with(b"%PDF"));
+        // PDF/A output should contain PDF/A identification
+        let pdf_str = String::from_utf8_lossy(&result.pdf);
+        assert!(
+            pdf_str.contains("pdfaid") || pdf_str.contains("PDF/A"),
+            "PDF/A conversion should include PDF/A metadata"
+        );
+    }
+
+    #[test]
+    fn test_render_document_default_no_pdfa() {
+        let doc = make_simple_document("No PDF/A");
+        let pdf = render_document(&doc).unwrap();
+        let pdf_str = String::from_utf8_lossy(&pdf);
+        assert!(
+            !pdf_str.contains("pdfaid:conformance"),
+            "Default render_document should not produce PDF/A"
         );
     }
 }

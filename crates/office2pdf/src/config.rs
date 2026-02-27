@@ -69,6 +69,13 @@ impl SlideRange {
     }
 }
 
+/// PDF standard to enforce compliance with.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PdfStandard {
+    /// PDF/A-2b for archival purposes.
+    PdfA2b,
+}
+
 /// Options controlling the conversion process.
 #[derive(Debug, Clone, Default)]
 pub struct ConvertOptions {
@@ -77,6 +84,8 @@ pub struct ConvertOptions {
     pub sheet_names: Option<Vec<String>>,
     /// Filter PPTX slides by range (1-indexed). If `None`, all slides are included.
     pub slide_range: Option<SlideRange>,
+    /// PDF standard to enforce. If `None`, produces a standard PDF 1.7.
+    pub pdf_standard: Option<PdfStandard>,
 }
 
 #[cfg(test)]
@@ -147,5 +156,26 @@ mod tests {
             ..Default::default()
         };
         assert!(opts.slide_range.as_ref().unwrap().contains(2));
+    }
+
+    #[test]
+    fn test_pdf_standard_enum_exists() {
+        let std = PdfStandard::PdfA2b;
+        assert_eq!(format!("{std:?}"), "PdfA2b");
+    }
+
+    #[test]
+    fn test_convert_options_pdf_standard_default_none() {
+        let opts = ConvertOptions::default();
+        assert!(opts.pdf_standard.is_none());
+    }
+
+    #[test]
+    fn test_convert_options_with_pdf_standard() {
+        let opts = ConvertOptions {
+            pdf_standard: Some(PdfStandard::PdfA2b),
+            ..Default::default()
+        };
+        assert_eq!(opts.pdf_standard, Some(PdfStandard::PdfA2b));
     }
 }

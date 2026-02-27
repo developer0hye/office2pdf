@@ -3,7 +3,7 @@ use std::process;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use office2pdf::config::{ConvertOptions, SlideRange};
+use office2pdf::config::{ConvertOptions, PdfStandard, SlideRange};
 
 #[derive(Parser)]
 #[command(
@@ -26,6 +26,10 @@ struct Cli {
     /// PPTX slide range to include (e.g. "1-5" or "3")
     #[arg(long)]
     slides: Option<String>,
+
+    /// Produce PDF/A-2b compliant output for archival purposes
+    #[arg(long = "pdf-a")]
+    pdf_a: bool,
 }
 
 fn main() {
@@ -48,9 +52,16 @@ fn run() -> Result<()> {
         .transpose()
         .map_err(|e| anyhow::anyhow!("invalid --slides value: {e}"))?;
 
+    let pdf_standard = if cli.pdf_a {
+        Some(PdfStandard::PdfA2b)
+    } else {
+        None
+    };
+
     let options = ConvertOptions {
         sheet_names: cli.sheets,
         slide_range,
+        pdf_standard,
     };
 
     let result = office2pdf::convert_with_options(&cli.input, &options)
