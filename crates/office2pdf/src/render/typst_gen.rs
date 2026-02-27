@@ -1,5 +1,6 @@
 use std::fmt::Write;
 
+use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
@@ -52,15 +53,50 @@ impl GenCtx {
     }
 }
 
+/// Resolve the effective page size, applying paper_size and landscape overrides.
+fn resolve_page_size(original: &PageSize, options: &ConvertOptions) -> PageSize {
+    let (mut w, mut h) = if let Some(ref ps) = options.paper_size {
+        let (pw, ph) = ps.dimensions();
+        (pw, ph)
+    } else {
+        (original.width, original.height)
+    };
+
+    if let Some(landscape) = options.landscape {
+        let needs_swap = (landscape && w < h) || (!landscape && w > h);
+        if needs_swap {
+            std::mem::swap(&mut w, &mut h);
+        }
+    }
+
+    PageSize {
+        width: w,
+        height: h,
+    }
+}
+
 /// Generate Typst markup from a Document IR.
 pub fn generate_typst(doc: &Document) -> Result<TypstOutput, ConvertError> {
+    generate_typst_with_options(doc, &ConvertOptions::default())
+}
+
+/// Generate Typst markup from a Document IR with conversion options.
+///
+/// When `options.paper_size` is set, all pages use the specified paper size.
+/// When `options.landscape` is set, page orientation is forced.
+pub fn generate_typst_with_options(
+    doc: &Document,
+    options: &ConvertOptions,
+) -> Result<TypstOutput, ConvertError> {
     let mut out = String::new();
     let mut ctx = GenCtx::new();
     for page in &doc.pages {
         match page {
-            Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx)?,
-            Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx)?,
-            Page::Table(table_page) => generate_table_page(&mut out, table_page, &mut ctx)?,
+            Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx, options)?,
+            Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx, options)?,
+            Page::Table(table_page) => {
+                generate_table_page(&mut out, table_page, &mut ctx, options)?;
+            }
         }
     }
     Ok(TypstOutput {
@@ -73,8 +109,10 @@ fn generate_flow_page(
     out: &mut String,
     page: &FlowPage,
     ctx: &mut GenCtx,
+    options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
-    write_flow_page_setup(out, page);
+    let size = resolve_page_size(&page.size, options);
+    write_flow_page_setup(out, page, &size);
     out.push('\n');
 
     for (i, block) in page.content.iter().enumerate() {
@@ -90,14 +128,16 @@ fn generate_fixed_page(
     out: &mut String,
     page: &FixedPage,
     ctx: &mut GenCtx,
+    options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
+    let size = resolve_page_size(&page.size, options);
     // Slides use zero margins — all positioning is absolute
     if let Some(ref bg) = page.background_color {
         let _ = writeln!(
             out,
             "#set page(width: {}pt, height: {}pt, margin: 0pt, fill: rgb({}, {}, {}))",
-            format_f64(page.size.width),
-            format_f64(page.size.height),
+            format_f64(size.width),
+            format_f64(size.height),
             bg.r,
             bg.g,
             bg.b,
@@ -106,8 +146,8 @@ fn generate_fixed_page(
         let _ = writeln!(
             out,
             "#set page(width: {}pt, height: {}pt, margin: 0pt)",
-            format_f64(page.size.width),
-            format_f64(page.size.height),
+            format_f64(size.width),
+            format_f64(size.height),
         );
     }
     out.push('\n');
@@ -122,8 +162,10 @@ fn generate_table_page(
     out: &mut String,
     page: &TablePage,
     ctx: &mut GenCtx,
+    options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
-    write_table_page_setup(out, page);
+    let size = resolve_page_size(&page.size, options);
+    write_table_page_setup(out, page, &size);
     out.push('\n');
     generate_table(out, &page.table, ctx)?;
     Ok(())
@@ -265,17 +307,17 @@ fn write_page_setup(out: &mut String, size: &PageSize, margins: &Margins) {
 }
 
 /// Write the full page setup for a FlowPage, including optional header/footer.
-fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
+fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize) {
     if page.header.is_none() && page.footer.is_none() {
-        write_page_setup(out, &page.size, &page.margins);
+        write_page_setup(out, size, &page.margins);
         return;
     }
 
     let _ = write!(
         out,
         "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
-        format_f64(page.size.width),
-        format_f64(page.size.height),
+        format_f64(size.width),
+        format_f64(size.height),
         format_f64(page.margins.top),
         format_f64(page.margins.bottom),
         format_f64(page.margins.left),
@@ -306,17 +348,17 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
 }
 
 /// Write the full page setup for a TablePage, including optional header/footer.
-fn write_table_page_setup(out: &mut String, page: &TablePage) {
+fn write_table_page_setup(out: &mut String, page: &TablePage, size: &PageSize) {
     if page.header.is_none() && page.footer.is_none() {
-        write_page_setup(out, &page.size, &page.margins);
+        write_page_setup(out, size, &page.margins);
         return;
     }
 
     let _ = write!(
         out,
         "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
-        format_f64(page.size.width),
-        format_f64(page.size.height),
+        format_f64(size.width),
+        format_f64(size.height),
         format_f64(page.margins.top),
         format_f64(page.margins.bottom),
         format_f64(page.margins.left),
@@ -3346,6 +3388,109 @@ mod tests {
         assert!(
             !output.source.contains("footer:"),
             "Expected no footer, got: {}",
+            output.source
+        );
+    }
+
+    // --- Paper size and landscape override tests ---
+
+    #[test]
+    fn test_paper_size_override_letter() {
+        use crate::config::PaperSize;
+
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions {
+            paper_size: Some(PaperSize::Letter),
+            ..Default::default()
+        };
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        assert!(
+            output.source.contains("width: 612pt"),
+            "Expected Letter width 612pt, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 792pt"),
+            "Expected Letter height 792pt, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_landscape_override_swaps_dimensions() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions {
+            landscape: Some(true),
+            ..Default::default()
+        };
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        // A4 default is 595.28 x 841.89; landscape should swap to 841.89 x 595.28
+        assert!(
+            output.source.contains("width: 841.89pt"),
+            "Expected landscape width 841.89pt, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 595.28pt"),
+            "Expected landscape height 595.28pt, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_portrait_override_keeps_portrait() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions {
+            landscape: Some(false),
+            ..Default::default()
+        };
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        // A4 is already portrait, should remain unchanged
+        assert!(
+            output.source.contains("width: 595.28pt"),
+            "Expected portrait width, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 841.89pt"),
+            "Expected portrait height, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_paper_size_with_landscape() {
+        use crate::config::PaperSize;
+
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions {
+            paper_size: Some(PaperSize::Letter),
+            landscape: Some(true),
+            ..Default::default()
+        };
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        // Letter landscape: 792 x 612
+        assert!(
+            output.source.contains("width: 792pt"),
+            "Expected landscape Letter width 792pt, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 612pt"),
+            "Expected landscape Letter height 612pt, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_no_override_uses_original_size() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Test")])]);
+        let options = ConvertOptions::default();
+        let output = generate_typst_with_options(&doc, &options).unwrap();
+        // Default A4 dimensions
+        assert!(
+            output.source.contains("width: 595.28pt"),
+            "Expected A4 width, got: {}",
             output.source
         );
     }

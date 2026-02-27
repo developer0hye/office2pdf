@@ -46,8 +46,13 @@ pub fn convert_bytes(
     };
 
     let (doc, warnings) = parser.parse(data, options)?;
-    let output = render::typst_gen::generate_typst(&doc)?;
-    let pdf = render::pdf::compile_to_pdf(&output.source, &output.images, options.pdf_standard)?;
+    let output = render::typst_gen::generate_typst_with_options(&doc, options)?;
+    let pdf = render::pdf::compile_to_pdf(
+        &output.source,
+        &output.images,
+        options.pdf_standard,
+        &options.font_paths,
+    )?;
     Ok(ConvertResult { pdf, warnings })
 }
 
@@ -57,7 +62,7 @@ pub fn convert_bytes(
 /// the Typst codegen → PDF compilation pipeline.
 pub fn render_document(doc: &ir::Document) -> Result<Vec<u8>, ConvertError> {
     let output = render::typst_gen::generate_typst(doc)?;
-    render::pdf::compile_to_pdf(&output.source, &output.images, None)
+    render::pdf::compile_to_pdf(&output.source, &output.images, None, &[])
 }
 
 #[cfg(test)]
@@ -1132,6 +1137,49 @@ mod tests {
         assert!(
             !pdf_str.contains("pdfaid:conformance"),
             "Default render_document should not produce PDF/A"
+        );
+    }
+
+    #[test]
+    fn test_convert_bytes_with_paper_size_override() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Paper size test")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let options = ConvertOptions {
+            paper_size: Some(config::PaperSize::Letter),
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, Format::Docx, &options).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "DOCX with Letter paper override should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_convert_bytes_with_landscape_override() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Landscape override test")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let options = ConvertOptions {
+            landscape: Some(true),
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, Format::Docx, &options).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "DOCX with landscape override should produce valid PDF"
         );
     }
 }

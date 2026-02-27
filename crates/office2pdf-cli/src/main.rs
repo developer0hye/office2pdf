@@ -3,7 +3,7 @@ use std::process;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use office2pdf::config::{ConvertOptions, PdfStandard, SlideRange};
+use office2pdf::config::{ConvertOptions, PaperSize, PdfStandard, SlideRange};
 
 #[derive(Parser)]
 #[command(
@@ -35,6 +35,18 @@ struct Cli {
     /// Produce PDF/A-2b compliant output for archival purposes
     #[arg(long = "pdf-a")]
     pdf_a: bool,
+
+    /// Paper size for output (a4, letter, legal)
+    #[arg(long)]
+    paper: Option<String>,
+
+    /// Additional font directory to search (can be repeated)
+    #[arg(long = "font-path")]
+    font_path: Vec<PathBuf>,
+
+    /// Force landscape orientation
+    #[arg(long)]
+    landscape: bool,
 }
 
 /// Result of a batch conversion.
@@ -127,10 +139,21 @@ fn run() -> Result<()> {
         None
     };
 
+    let paper_size = cli
+        .paper
+        .map(|s| PaperSize::parse(&s))
+        .transpose()
+        .map_err(|e| anyhow::anyhow!("invalid --paper value: {e}"))?;
+
+    let landscape = if cli.landscape { Some(true) } else { None };
+
     let options = ConvertOptions {
         sheet_names: cli.sheets,
         slide_range,
         pdf_standard,
+        paper_size,
+        font_paths: cli.font_path,
+        landscape,
     };
 
     // Create outdir if specified and doesn't exist

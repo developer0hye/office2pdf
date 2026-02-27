@@ -76,6 +76,43 @@ pub enum PdfStandard {
     PdfA2b,
 }
 
+/// Paper size for output PDF.
+#[derive(Debug, Clone, PartialEq)]
+pub enum PaperSize {
+    /// A4: 595.28pt × 841.89pt (210mm × 297mm).
+    A4,
+    /// US Letter: 612pt × 792pt (8.5in × 11in).
+    Letter,
+    /// US Legal: 612pt × 1008pt (8.5in × 14in).
+    Legal,
+    /// Custom dimensions in points.
+    Custom { width: f64, height: f64 },
+}
+
+impl PaperSize {
+    /// Returns (width, height) in points.
+    pub fn dimensions(&self) -> (f64, f64) {
+        match self {
+            Self::A4 => (595.28, 841.89),
+            Self::Letter => (612.0, 792.0),
+            Self::Legal => (612.0, 1008.0),
+            Self::Custom { width, height } => (*width, *height),
+        }
+    }
+
+    /// Parse a paper size string (case-insensitive): "a4", "letter", "legal".
+    pub fn parse(s: &str) -> Result<Self, String> {
+        match s.to_ascii_lowercase().as_str() {
+            "a4" => Ok(Self::A4),
+            "letter" => Ok(Self::Letter),
+            "legal" => Ok(Self::Legal),
+            _ => Err(format!(
+                "unknown paper size: {s}; expected one of: a4, letter, legal"
+            )),
+        }
+    }
+}
+
 /// Options controlling the conversion process.
 #[derive(Debug, Clone, Default)]
 pub struct ConvertOptions {
@@ -86,6 +123,13 @@ pub struct ConvertOptions {
     pub slide_range: Option<SlideRange>,
     /// PDF standard to enforce. If `None`, produces a standard PDF 1.7.
     pub pdf_standard: Option<PdfStandard>,
+    /// Override paper size for the output PDF. If `None`, uses the source document's size.
+    pub paper_size: Option<PaperSize>,
+    /// Additional font directories to search for fonts.
+    pub font_paths: Vec<std::path::PathBuf>,
+    /// Force landscape orientation. If `Some(true)`, swaps width/height so width > height.
+    /// If `Some(false)`, forces portrait. If `None`, uses source document orientation.
+    pub landscape: Option<bool>,
 }
 
 #[cfg(test)]
@@ -177,5 +221,95 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(opts.pdf_standard, Some(PdfStandard::PdfA2b));
+    }
+
+    // --- PaperSize tests ---
+
+    #[test]
+    fn test_paper_size_a4_dimensions() {
+        let (w, h) = PaperSize::A4.dimensions();
+        assert!((w - 595.28).abs() < 0.01);
+        assert!((h - 841.89).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_paper_size_letter_dimensions() {
+        let (w, h) = PaperSize::Letter.dimensions();
+        assert!((w - 612.0).abs() < 0.01);
+        assert!((h - 792.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_paper_size_legal_dimensions() {
+        let (w, h) = PaperSize::Legal.dimensions();
+        assert!((w - 612.0).abs() < 0.01);
+        assert!((h - 1008.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_paper_size_custom_dimensions() {
+        let ps = PaperSize::Custom {
+            width: 400.0,
+            height: 600.0,
+        };
+        assert_eq!(ps.dimensions(), (400.0, 600.0));
+    }
+
+    #[test]
+    fn test_paper_size_parse() {
+        assert_eq!(PaperSize::parse("a4").unwrap(), PaperSize::A4);
+        assert_eq!(PaperSize::parse("A4").unwrap(), PaperSize::A4);
+        assert_eq!(PaperSize::parse("letter").unwrap(), PaperSize::Letter);
+        assert_eq!(PaperSize::parse("LETTER").unwrap(), PaperSize::Letter);
+        assert_eq!(PaperSize::parse("legal").unwrap(), PaperSize::Legal);
+        assert!(PaperSize::parse("tabloid").is_err());
+    }
+
+    #[test]
+    fn test_convert_options_paper_size_default_none() {
+        let opts = ConvertOptions::default();
+        assert!(opts.paper_size.is_none());
+    }
+
+    #[test]
+    fn test_convert_options_font_paths_default_empty() {
+        let opts = ConvertOptions::default();
+        assert!(opts.font_paths.is_empty());
+    }
+
+    #[test]
+    fn test_convert_options_landscape_default_none() {
+        let opts = ConvertOptions::default();
+        assert!(opts.landscape.is_none());
+    }
+
+    #[test]
+    fn test_convert_options_with_paper_size() {
+        let opts = ConvertOptions {
+            paper_size: Some(PaperSize::Letter),
+            ..Default::default()
+        };
+        assert_eq!(opts.paper_size, Some(PaperSize::Letter));
+    }
+
+    #[test]
+    fn test_convert_options_with_font_paths() {
+        let opts = ConvertOptions {
+            font_paths: vec![
+                std::path::PathBuf::from("/usr/share/fonts"),
+                std::path::PathBuf::from("/home/user/.fonts"),
+            ],
+            ..Default::default()
+        };
+        assert_eq!(opts.font_paths.len(), 2);
+    }
+
+    #[test]
+    fn test_convert_options_with_landscape() {
+        let opts = ConvertOptions {
+            landscape: Some(true),
+            ..Default::default()
+        };
+        assert_eq!(opts.landscape, Some(true));
     }
 }
