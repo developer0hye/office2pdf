@@ -4,11 +4,12 @@ use std::io::Cursor;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Color, Document, HFInline, HeaderFooter,
-    HeaderFooterParagraph, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
-    StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, FlowPage, HFInline,
+    HeaderFooter, HeaderFooterParagraph, Margins, Metadata, Page, PageSize, Paragraph,
+    ParagraphStyle, Run, StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
 };
 use crate::parser::Parser;
+use crate::parser::chart::parse_chart_xml;
 use crate::parser::cond_fmt::build_cond_fmt_overrides;
 
 pub struct XlsxParser;
@@ -429,6 +430,42 @@ fn build_merge_maps(
     (top_left_map, skip_set)
 }
 
+/// Scan the XLSX ZIP for embedded chart XML files and parse them.
+///
+/// XLSX charts live in `xl/charts/chart*.xml`. We scan all ZIP entries
+/// matching that prefix and parse each with the shared chart parser.
+fn extract_charts_from_zip(data: &[u8]) -> Vec<Chart> {
+    let Ok(mut archive) = zip::ZipArchive::new(Cursor::new(data)) else {
+        return Vec::new();
+    };
+
+    let chart_paths: Vec<String> = (0..archive.len())
+        .filter_map(|i| {
+            let entry = archive.by_index(i).ok()?;
+            let name = entry.name().to_string();
+            if name.starts_with("xl/charts/chart") && name.ends_with(".xml") {
+                Some(name)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let mut charts = Vec::new();
+    for path in chart_paths {
+        if let Ok(mut entry) = archive.by_name(&path) {
+            let mut xml = String::new();
+            if std::io::Read::read_to_string(&mut entry, &mut xml).is_ok()
+                && let Some(chart) = parse_chart_xml(&xml)
+            {
+                charts.push(chart);
+            }
+        }
+    }
+
+    charts
+}
+
 impl Parser for XlsxParser {
     fn parse(
         &self,
@@ -615,6 +652,18 @@ impl Parser for XlsxParser {
                     }));
                 }
             }
+        }
+
+        // Extract embedded charts from the ZIP and add as flow pages
+        let charts = extract_charts_from_zip(data);
+        for chart in charts {
+            pages.push(Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Chart(chart)],
+                header: None,
+                footer: None,
+            }));
         }
 
         Ok((
@@ -2148,5 +2197,175 @@ mod tests {
             tp.table.rows[1].cells[0].background,
             Some(Color::new(255, 0, 0))
         );
+    }
+
+    // ----- Chart integration tests -----
+
+    /// Helper: build an XLSX ZIP with an embedded chart XML file.
+    /// Creates a valid XLSX via umya-spreadsheet, then injects a chart XML
+    /// entry into the ZIP archive.
+    fn build_xlsx_with_chart(cells: &[(&str, &str)], chart_xml: &str) -> Vec<u8> {
+        // First create a valid XLSX
+        let base = build_xlsx_bytes("Sheet1", cells);
+
+        // Re-open as ZIP and inject chart XML
+        let reader = std::io::Cursor::new(&base);
+        let mut archive = zip::ZipArchive::new(reader).unwrap();
+
+        let mut out_buf = Vec::new();
+        {
+            let cursor = std::io::Cursor::new(&mut out_buf);
+            let mut writer = zip::ZipWriter::new(cursor);
+
+            // Copy all existing entries
+            for i in 0..archive.len() {
+                let mut entry = archive.by_index(i).unwrap();
+                let options: zip::write::FileOptions =
+                    zip::write::FileOptions::default().compression_method(entry.compression());
+                writer
+                    .start_file(entry.name().to_string(), options)
+                    .unwrap();
+                std::io::copy(&mut entry, &mut writer).unwrap();
+            }
+
+            // Add chart XML
+            let options: zip::write::FileOptions = zip::write::FileOptions::default();
+            writer.start_file("xl/charts/chart1.xml", options).unwrap();
+            use std::io::Write;
+            writer.write_all(chart_xml.as_bytes()).unwrap();
+
+            writer.finish().unwrap();
+        }
+
+        out_buf
+    }
+
+    fn make_bar_chart_xml() -> String {
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+        <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"
+                      xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+            <c:chart>
+                <c:title><c:tx><c:rich><a:p><a:r><a:t>Sales</a:t></a:r></a:p></c:rich></c:tx></c:title>
+                <c:plotArea>
+                    <c:barChart>
+                        <c:ser>
+                            <c:idx val="0"/>
+                            <c:tx><c:strRef><c:strCache><c:pt idx="0"><c:v>Revenue</c:v></c:pt></c:strCache></c:strRef></c:tx>
+                            <c:cat>
+                                <c:strRef><c:strCache>
+                                    <c:pt idx="0"><c:v>Q1</c:v></c:pt>
+                                    <c:pt idx="1"><c:v>Q2</c:v></c:pt>
+                                </c:strCache></c:strRef>
+                            </c:cat>
+                            <c:val>
+                                <c:numRef><c:numCache>
+                                    <c:pt idx="0"><c:v>100</c:v></c:pt>
+                                    <c:pt idx="1"><c:v>200</c:v></c:pt>
+                                </c:numCache></c:numRef>
+                            </c:val>
+                        </c:ser>
+                    </c:barChart>
+                </c:plotArea>
+            </c:chart>
+        </c:chartSpace>"#
+            .to_string()
+    }
+
+    #[test]
+    fn test_xlsx_with_chart_produces_chart_page() {
+        let data = build_xlsx_with_chart(&[("A1", "Hello")], &make_bar_chart_xml());
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // Should have at least 2 pages: the table page + the chart page
+        assert!(
+            doc.pages.len() >= 2,
+            "Expected at least 2 pages, got {}",
+            doc.pages.len()
+        );
+
+        // First page should be the table
+        assert!(matches!(&doc.pages[0], Page::Table(_)));
+
+        // Last page should be a flow page with a chart block
+        let chart_page = &doc.pages[doc.pages.len() - 1];
+        match chart_page {
+            Page::Flow(fp) => {
+                let has_chart = fp.content.iter().any(|b| matches!(b, Block::Chart(_)));
+                assert!(has_chart, "Expected chart block in flow page");
+
+                // Verify chart data
+                let chart = fp
+                    .content
+                    .iter()
+                    .find_map(|b| match b {
+                        Block::Chart(c) => Some(c),
+                        _ => None,
+                    })
+                    .unwrap();
+                assert_eq!(chart.chart_type, ChartType::Bar);
+                assert_eq!(chart.title.as_deref(), Some("Sales"));
+                assert_eq!(chart.categories, vec!["Q1", "Q2"]);
+                assert_eq!(chart.series[0].values, vec![100.0, 200.0]);
+            }
+            _ => panic!("Expected FlowPage for chart"),
+        }
+    }
+
+    #[test]
+    fn test_xlsx_without_chart_no_extra_pages() {
+        let data = build_xlsx_bytes("Sheet1", &[("A1", "Hello")]);
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // Should have exactly 1 table page
+        assert_eq!(doc.pages.len(), 1);
+        assert!(matches!(&doc.pages[0], Page::Table(_)));
+    }
+
+    #[test]
+    fn test_xlsx_chart_data_is_correct() {
+        let chart_xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+        <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">
+            <c:chart>
+                <c:plotArea>
+                    <c:pieChart>
+                        <c:ser>
+                            <c:idx val="0"/>
+                            <c:cat>
+                                <c:strLit>
+                                    <c:pt idx="0"><c:v>Apple</c:v></c:pt>
+                                    <c:pt idx="1"><c:v>Banana</c:v></c:pt>
+                                </c:strLit>
+                            </c:cat>
+                            <c:val>
+                                <c:numLit>
+                                    <c:pt idx="0"><c:v>60</c:v></c:pt>
+                                    <c:pt idx="1"><c:v>40</c:v></c:pt>
+                                </c:numLit>
+                            </c:val>
+                        </c:ser>
+                    </c:pieChart>
+                </c:plotArea>
+            </c:chart>
+        </c:chartSpace>"#;
+
+        let data = build_xlsx_with_chart(&[("A1", "Data")], chart_xml);
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // Find chart page
+        let chart = doc.pages.iter().find_map(|p| match p {
+            Page::Flow(fp) => fp.content.iter().find_map(|b| match b {
+                Block::Chart(c) => Some(c),
+                _ => None,
+            }),
+            _ => None,
+        });
+        let chart = chart.expect("Expected a chart in the output");
+        assert_eq!(chart.chart_type, ChartType::Pie);
+        assert!(chart.title.is_none());
+        assert_eq!(chart.categories, vec!["Apple", "Banana"]);
+        assert_eq!(chart.series[0].values, vec![60.0, 40.0]);
     }
 }
