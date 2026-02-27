@@ -538,16 +538,31 @@ impl Parser for DocxParser {
         for (idx, child) in docx.document.children.iter().enumerate() {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
                 docx_rs::DocumentChild::Paragraph(para) => {
-                    convert_paragraph_element(para, &images, &hyperlinks, &style_map, &notes)
+                    vec![convert_paragraph_element(
+                        para,
+                        &images,
+                        &hyperlinks,
+                        &style_map,
+                        &notes,
+                    )]
                 }
-                docx_rs::DocumentChild::Table(table) => TaggedElement::Plain(vec![Block::Table(
-                    convert_table(table, &images, &hyperlinks, &style_map, &notes),
-                )]),
-                _ => TaggedElement::Plain(vec![]),
+                docx_rs::DocumentChild::Table(table) => {
+                    vec![TaggedElement::Plain(vec![Block::Table(convert_table(
+                        table,
+                        &images,
+                        &hyperlinks,
+                        &style_map,
+                        &notes,
+                    ))])]
+                }
+                docx_rs::DocumentChild::StructuredDataTag(sdt) => {
+                    convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &notes)
+                }
+                _ => vec![TaggedElement::Plain(vec![])],
             }));
 
             match result {
-                Ok(elem) => elements.push(elem),
+                Ok(elems) => elements.extend(elems),
                 Err(_) => {
                     warnings.push(ConvertWarning {
                         element: format!("Document element at index {idx}"),
@@ -741,6 +756,40 @@ fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
         left: page_margin.left as f64 / 20.0,
         right: page_margin.right as f64 / 20.0,
     }
+}
+
+/// Extract content from a StructuredDataTag (SDT), processing its paragraph
+/// and table children through the standard conversion pipeline.
+/// SDTs are used for various structured content in DOCX, including Table of Contents.
+fn convert_sdt_children(
+    sdt: &docx_rs::StructuredDataTag,
+    images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
+    style_map: &StyleMap,
+    notes: &NoteContext,
+) -> Vec<TaggedElement> {
+    let mut result = Vec::new();
+    for child in &sdt.children {
+        match child {
+            docx_rs::StructuredDataTagChild::Paragraph(para) => {
+                result.push(convert_paragraph_element(
+                    para, images, hyperlinks, style_map, notes,
+                ));
+            }
+            docx_rs::StructuredDataTagChild::Table(table) => {
+                result.push(TaggedElement::Plain(vec![Block::Table(convert_table(
+                    table, images, hyperlinks, style_map, notes,
+                ))]));
+            }
+            docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
+                result.extend(convert_sdt_children(
+                    nested, images, hyperlinks, style_map, notes,
+                ));
+            }
+            _ => {}
+        }
+    }
+    result
 }
 
 /// Convert a docx-rs Paragraph into a TaggedElement.
@@ -3879,5 +3928,190 @@ mod tests {
         zip.write_all(endnotes_xml.as_bytes()).unwrap();
 
         zip.finish().unwrap().into_inner()
+    }
+
+    // ----- Table of Contents (TOC) parsing tests -----
+
+    /// Helper: build a DOCX with a table of contents containing items.
+    fn build_docx_with_toc(items: Vec<docx_rs::TableOfContentsItem>) -> Vec<u8> {
+        let toc = items.into_iter().fold(
+            docx_rs::TableOfContents::new()
+                .heading_styles_range(1, 3)
+                .alias("Table of contents"),
+            |toc, item| toc.add_item(item),
+        );
+
+        let style1 =
+            docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph).name("Heading 1");
+        let style2 =
+            docx_rs::Style::new("Heading2", docx_rs::StyleType::Paragraph).name("Heading 2");
+
+        let p1 = docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("Introduction"))
+            .style("Heading1");
+        let p2 = docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("Details"))
+            .style("Heading2");
+
+        let docx = docx_rs::Docx::new()
+            .add_style(style1)
+            .add_style(style2)
+            .add_table_of_contents(toc)
+            .add_paragraph(p1)
+            .add_paragraph(p2);
+
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_docx_toc_with_entries() {
+        let items = vec![
+            docx_rs::TableOfContentsItem::new()
+                .text("Introduction")
+                .toc_key("_Toc00000000")
+                .level(1)
+                .page_ref("2"),
+            docx_rs::TableOfContentsItem::new()
+                .text("Details")
+                .toc_key("_Toc00000001")
+                .level(2)
+                .page_ref("3"),
+        ];
+
+        let data = build_docx_with_toc(items);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // The document should have content, and the TOC entry texts should be present
+        let page = &doc.pages[0];
+        let content = match page {
+            Page::Flow(fp) => &fp.content,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Collect all text from all paragraphs
+        let all_text: Vec<String> = content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Paragraph(p) => {
+                    let t: String = p.runs.iter().map(|r| r.text.clone()).collect();
+                    if t.is_empty() { None } else { Some(t) }
+                }
+                _ => None,
+            })
+            .collect();
+
+        // TOC entries "Introduction" and "Details" should appear in the output
+        // (along with the heading paragraphs themselves)
+        let has_introduction = all_text.iter().any(|t| t.contains("Introduction"));
+        let has_details = all_text.iter().any(|t| t.contains("Details"));
+        assert!(
+            has_introduction,
+            "Expected 'Introduction' in TOC output, got: {all_text:?}"
+        );
+        assert!(
+            has_details,
+            "Expected 'Details' in TOC output, got: {all_text:?}"
+        );
+    }
+
+    #[test]
+    fn test_docx_toc_multiple_entries_in_paragraph_list() {
+        let items = vec![
+            docx_rs::TableOfContentsItem::new()
+                .text("Chapter One")
+                .toc_key("_Toc10000001")
+                .level(1)
+                .page_ref("1"),
+            docx_rs::TableOfContentsItem::new()
+                .text("Chapter Two")
+                .toc_key("_Toc10000002")
+                .level(1)
+                .page_ref("5"),
+            docx_rs::TableOfContentsItem::new()
+                .text("Section A")
+                .toc_key("_Toc10000003")
+                .level(2)
+                .page_ref("10"),
+        ];
+
+        let data = build_docx_with_toc(items);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = &doc.pages[0];
+        let content = match page {
+            Page::Flow(fp) => &fp.content,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // All three TOC entry texts should appear
+        let all_text: Vec<String> = content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Paragraph(p) => {
+                    let t: String = p.runs.iter().map(|r| r.text.clone()).collect();
+                    if t.is_empty() { None } else { Some(t) }
+                }
+                _ => None,
+            })
+            .collect();
+
+        assert!(
+            all_text.iter().any(|t| t.contains("Chapter One")),
+            "Expected 'Chapter One' in output, got: {all_text:?}"
+        );
+        assert!(
+            all_text.iter().any(|t| t.contains("Chapter Two")),
+            "Expected 'Chapter Two' in output, got: {all_text:?}"
+        );
+        assert!(
+            all_text.iter().any(|t| t.contains("Section A")),
+            "Expected 'Section A' in output, got: {all_text:?}"
+        );
+    }
+
+    #[test]
+    fn test_docx_sdt_with_paragraphs() {
+        // Test that generic SDTs with paragraph content are also parsed.
+        // Build a DOCX manually using docx-rs StructuredDataTag.
+        let sdt = docx_rs::StructuredDataTag::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("SDT Content")),
+        );
+
+        let docx = docx_rs::Docx::new().add_structured_data_tag(sdt);
+
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = &doc.pages[0];
+        let content = match page {
+            Page::Flow(fp) => &fp.content,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let all_text: Vec<String> = content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Paragraph(p) => {
+                    let t: String = p.runs.iter().map(|r| r.text.clone()).collect();
+                    if t.is_empty() { None } else { Some(t) }
+                }
+                _ => None,
+            })
+            .collect();
+
+        assert!(
+            all_text.iter().any(|t| t.contains("SDT Content")),
+            "Expected 'SDT Content' in output, got: {all_text:?}"
+        );
     }
 }

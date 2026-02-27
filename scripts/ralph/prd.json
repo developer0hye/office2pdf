@@ -54,8 +54,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: StructuredDataTag (SDT) handling in DOCX parser. convert_sdt_children() recursively extracts Paragraph, Table, and nested SDT children from SDTs and processes them through the standard conversion pipeline. TOC cached content (stored as paragraphs inside SDTs when reading real DOCX files) renders as static text paragraphs. No new IR types or Typst codegen changes needed. 4 tests."
     },
     {
       "id": "US-033",

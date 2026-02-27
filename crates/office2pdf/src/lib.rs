@@ -1052,4 +1052,50 @@ mod tests {
             "Landscape DOCX should produce valid PDF"
         );
     }
+
+    #[test]
+    fn test_docx_toc_pipeline_produces_pdf() {
+        use std::io::Cursor;
+        let toc = docx_rs::TableOfContents::new()
+            .heading_styles_range(1, 3)
+            .alias("Table of contents")
+            .add_item(
+                docx_rs::TableOfContentsItem::new()
+                    .text("Chapter 1")
+                    .toc_key("_Toc00000001")
+                    .level(1)
+                    .page_ref("2"),
+            )
+            .add_item(
+                docx_rs::TableOfContentsItem::new()
+                    .text("Chapter 2")
+                    .toc_key("_Toc00000002")
+                    .level(1)
+                    .page_ref("5"),
+            );
+
+        let docx = docx_rs::Docx::new()
+            .add_style(
+                docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph).name("Heading 1"),
+            )
+            .add_table_of_contents(toc)
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Chapter 1"))
+                    .style("Heading1"),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Some body text")),
+            );
+
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "DOCX with TOC should produce valid PDF"
+        );
+    }
 }
