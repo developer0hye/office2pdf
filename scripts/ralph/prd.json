@@ -37,8 +37,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: footnote field on Run IR, NoteContext with raw ZIP parsing (footnotes.xml, endnotes.xml, document.xml scanning), cursor-based note reference correlation, Typst #footnote[] codegen. Endnotes treated as footnotes. 5 tests."
     },
     {
       "id": "US-032",

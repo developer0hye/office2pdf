@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- **DOCX footnotes/endnotes**: docx-rs reader does NOT parse `w:footnoteReference`/`w:endnoteReference` — must extract from raw ZIP. `NoteContext` struct holds: `footnote_content: HashMap<usize, String>`, `endnote_content: HashMap<usize, String>`, `note_refs: Vec<(NoteKind, usize)>`, `cursor: Cell<usize>`. Built by `build_note_context(data)` which opens ZIP, parses `word/footnotes.xml` + `word/endnotes.xml` via `parse_notes_xml()`, and scans `word/document.xml` via `scan_note_refs()`. Detection: `is_note_reference_run()` checks `run.run_property.style.val == "FootnoteReference"|"EndnoteReference"` + empty text. Correlation: `consume_next()` advances cursor through ordered note refs. IR: `Run.footnote: Option<String>`. Typst: `#footnote[escaped_content]` in `generate_run()`. Test footnotes: `docx_rs::Run::new().add_footnote_reference(Footnote::new().add_content(para))`. Test endnotes: manually build DOCX ZIP with `zip::ZipWriter` including `word/endnotes.xml` and `<w:endnoteReference>` in document.xml.
 - **DOCX hyperlinks**: `ParagraphChild::Hyperlink(Hyperlink)` wraps child runs. `Hyperlink.link`: `HyperlinkData::External { rid, path }` (path empty on read-back) or `HyperlinkData::Anchor { anchor }` (internal). Reader stores URLs in `docx.hyperlinks: Vec<(rid, url, type)>` — use this to build `HyperlinkMap`. `HyperlinkMap` threaded through parser pipeline (parse → convert_paragraph_element → convert_paragraph_blocks → convert_table → extract_raw_rows → extract_cell_content). `resolve_hyperlink_url()` maps rid → URL. Run IR has `href: Option<String>`. Typst codegen wraps with `#link("url")[content]` in `generate_run()`. Test: `Hyperlink::new("url", HyperlinkType::External).add_run(Run::new().add_text("text"))`, `Paragraph::new().add_hyperlink(link)`.
 - **ConvertOptions threading**: `Parser::parse(&self, data: &[u8], options: &ConvertOptions)` — all parsers accept options. XLSX uses `options.sheet_names` to filter sheets. PPTX uses `options.slide_range` to filter slides. DOCX ignores options. `convert_bytes()` passes options to parser. CLI builds ConvertOptions from `--sheets` (comma-separated) and `--slides` (range "1-5" or single "3") flags.
 - **XLSX cell formatting**: `cell.get_style()` → `&Style`. Font: `style.get_font()` → `Option<&Font>` with `get_name()`, `get_size()`, `get_bold()`, `get_italic()`, `get_underline()`, `get_strikethrough()`, `get_color().get_argb()`. Background: `style.get_background_color()` → `Option<&Color>` with `get_argb()` (ARGB 8-char hex, skip first 2 for alpha). Borders: `style.get_borders()` → `Option<&Borders>` with `get_top/bottom/left/right()` → `&Border` with `get_border_style()` (str) and `get_color().get_argb()`. Border widths: hair=0.25pt, thin=0.5pt, medium=1.0pt, thick=2.0pt. Row height: `sheet.get_row_dimension(&row_idx)` → `Option<&Row>` with `get_height()` and `get_custom_height()`. Test setup: `cell.get_style_mut().get_font_mut().set_bold(true)`, `style.set_background_color("FFFFFF00")`, `style.get_borders_mut().get_bottom_mut().set_border_style("medium")`, `sheet.get_row_dimension_mut(&1).set_height(30.0)`. Defaults to skip: font name "Calibri", size 11.0, color "FF000000".
@@ -77,4 +78,31 @@ Started: 2026년  2월 27일 금요일 08시 36분 50초 KST
   - `HyperlinkData::External { rid, path }`: `path` is empty on read-back; must use the hyperlinks map
   - docx-rs `Hyperlink::new("url", External)` builder + `.add_run()` + `Paragraph::add_hyperlink()` creates valid round-trip test docs
   - Adding a new field to a widely-used struct (Run) requires updating all construction sites; Python script approach works but needs careful validation
+---
+
+## 2026-02-27 - US-031: DOCX parser - footnotes and endnotes
+- What was implemented:
+  - Added `footnote: Option<String>` field to IR `Run` struct for footnote/endnote content
+  - Built `NoteContext` system: parses raw DOCX ZIP independently from docx-rs to extract footnote/endnote data
+  - `parse_notes_xml()`: parses `word/footnotes.xml` and `word/endnotes.xml` into `HashMap<usize, String>` (id → text)
+  - `scan_note_refs()`: scans `word/document.xml` for `<w:footnoteReference>` and `<w:endnoteReference>` elements in document order
+  - `is_note_reference_run()`: detects footnote/endnote reference runs by checking `rStyle = "FootnoteReference"` or `"EndnoteReference"` with empty text
+  - Cursor-based note reference correlation: `NoteContext.consume_next()` matches note reference runs to their IDs in document order using `Cell<usize>`
+  - Threaded `&NoteContext` through entire call chain: parse → convert_paragraph_element → convert_paragraph_blocks → convert_table → extract_raw_rows → extract_cell_content
+  - Generated Typst `#footnote[content]` markup in `generate_run()` with escaped content
+  - Endnotes treated identically to footnotes (Typst `#footnote` renders both at page bottom)
+- Files changed:
+  - `crates/office2pdf/src/ir/elements.rs` — added `footnote` field to `Run`
+  - `crates/office2pdf/src/parser/docx.rs` — NoteContext, ZIP parsing, note detection, pipeline threading
+  - `crates/office2pdf/src/render/typst_gen.rs` — `#footnote[]` codegen in generate_run
+  - `crates/office2pdf/src/parser/pptx.rs`, `xlsx.rs`, `lib.rs` — added `footnote: None` to existing Run literals
+- Dependencies added: None (zip and quick-xml already in use)
+- **Learnings for future iterations:**
+  - docx-rs reader does NOT parse `w:footnoteReference` elements — the `RunChild::FootnoteReference` variant exists but the reader's run parser silently skips unrecognized XML elements via `_ => {}`. This means footnote data must be extracted from raw ZIP.
+  - docx-rs builder DOES support footnotes: `Run::new().add_footnote_reference(Footnote::new().add_content(Paragraph::new().add_run(...)))` creates valid DOCX with `word/footnotes.xml` and `<w:footnoteReference>` in document.xml.
+  - The builder sets `rStyle = "FootnoteReference"` on the run property, which IS preserved by the reader. This allows detecting footnote reference runs in the parsed tree (empty text + specific rStyle).
+  - For endnotes: docx-rs has zero endnote support. Created test DOCX manually using zip::ZipWriter with word/endnotes.xml and w:endnoteReference elements.
+  - Cell<usize> in NoteContext allows shared immutable reference (&NoteContext) while advancing a cursor — good pattern for consuming ordered items during tree traversal.
+  - quick-xml 0.38 text API: `e.xml_content()` returns `Result<Cow<str>>`, not plain `Cow<str>`. Must use `if let Ok(text) = e.xml_content()`.
+  - Footnote IDs in docx-rs test mode: `generate_footnote_id()` always returns 1 in `#[cfg(test)]`. Real Word docs use IDs >= 2 (0 and 1 are separators), but test docs use ID 1.
 ---
