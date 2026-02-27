@@ -1,6 +1,6 @@
 [package]
 name = "office2pdf-cli"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -15,7 +15,7 @@ name = "office2pdf"
 path = "src/main.rs"
 
 [dependencies]
-office2pdf = { version = "0.2.0", path = "../office2pdf" }
+office2pdf = { version = "0.3.0", path = "../office2pdf" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 
