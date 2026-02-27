@@ -1,93 +1,94 @@
 {
   "project": "office2pdf",
-  "branchName": "ralph/phase5-remaining-gaps",
-  "description": "Phase 5: Remaining PRD gaps - PPTX gradients, XLSX page breaks, PPTX shape effects, XLSX advanced conditional formatting, performance benchmarks",
+  "branchName": "ralph/phase6-wasm-support",
+  "description": "Phase 6: WASM Support - Make all features compilable and usable from WebAssembly",
   "userStories": [
     {
-      "id": "US-050",
-      "title": "PPTX parser - gradient background support",
-      "description": "As a user, I want gradient backgrounds in PPTX slides to render in the PDF output instead of being ignored.",
+      "id": "US-060",
+      "title": "Conditional compilation guards for WASM target",
+      "description": "As a library user, I want the office2pdf library crate to compile on the wasm32-unknown-unknown target so I can use it in browser and Node.js WASM environments.\n\nThe library currently has filesystem-dependent code (convert(), convert_with_options() use std::fs::read; ConvertOptions has font_paths: Vec<PathBuf>; pdf.rs uses typst-kit FontSearcher with system font discovery). These must be conditionally compiled.\n\nKey changes:\n- Guard convert() and convert_with_options() behind #[cfg(not(target_arch = \"wasm32\"))]\n- convert_bytes() and render_document() must remain available on ALL targets (they are the WASM-friendly API)\n- In pdf.rs MinimalWorld::new(): on wasm32 skip FontSearcher::include_system_fonts(true) and use embedded fonts only\n- ConvertOptions::font_paths should compile on WASM but be documented as ignored (or conditionally compiled)\n- The Parser trait and all three parsers (docx, pptx, xlsx) must compile on wasm32 since they operate on in-memory bytes\n- All existing native tests must continue to pass unchanged",
       "acceptanceCriteria": [
-        "Parse <a:gradFill> elements in slide backgrounds and shape fills",
-        "Extract gradient stops: position (pos), color (srgbClr/schemeClr)",
-        "Support linear gradient direction (lin ang attribute)",
-        "Render gradient as Typst gradient.linear() on page background or shape fill",
-        "Fallback: if gradient cannot be rendered, use the first stop color as solid fill",
-        "Unit tests: slide with gradient background, shape with gradient fill",
-        "cargo test --workspace passes",
+        "convert() and convert_with_options() are behind #[cfg(not(target_arch = \"wasm32\"))]",
+        "convert_bytes() and render_document() remain available on wasm32",
+        "pdf.rs MinimalWorld uses embedded-only fonts on wasm32 (no system font search)",
+        "All existing tests pass on native target (cargo test --workspace)",
+        "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Implemented gradient parsing for backgrounds and shape fills with Typst gradient.linear() codegen"
+      "passes": false,
+      "notes": "This is the foundation story. Focus on #[cfg(target_arch = \"wasm32\")] and #[cfg(not(target_arch = \"wasm32\"))] guards. Do NOT add wasm-bindgen yet. The typst-kit FontSearcher::include_system_fonts() and search_with() use system APIs not available on WASM. On WASM, create a FontSearcher with include_system_fonts(false) and call search() to get embedded fonts only."
     },
     {
-      "id": "US-051",
-      "title": "PPTX parser - shape shadow and reflection effects",
-      "description": "As a user, I want shadow effects on PPTX shapes to be approximated in the PDF output.",
+      "id": "US-061",
+      "title": "Resolve third-party dependency WASM compilation issues",
+      "description": "As a developer, I want `cargo check --target wasm32-unknown-unknown -p office2pdf` to succeed so the library is verified to compile for WASM.\n\nAfter US-060 adds cfg guards, the next step is to resolve any remaining compilation failures from third-party dependencies when targeting wasm32-unknown-unknown.\n\nCommon WASM compilation issues to anticipate:\n- `getrandom` crate (used by many deps) needs the `js` feature for WASM browser targets\n- `typst-kit` may pull in system-specific code; ensure the feature set is minimal\n- `umya-spreadsheet` may have filesystem or threading deps that fail on WASM — if so, feature-gate the xlsx parser behind #[cfg(not(target_arch = \"wasm32\"))] as a fallback\n- `docx-rs` depends on `zip` which uses std::io — this should work on wasm32 since std::io::Read/Write are available, but verify\n- Some crates may need explicit WASM-compatible feature flags\n\nApproach: Install wasm32-unknown-unknown target (rustup target add wasm32-unknown-unknown), run cargo check, fix errors iteratively. If a parser's dependencies absolutely cannot compile on WASM, guard that parser behind cfg and document the limitation.",
       "acceptanceCriteria": [
-        "Parse <a:effectLst> within shape properties for shadow effects (<a:outerShdw>)",
-        "Extract shadow parameters: blur radius, distance, direction, color, opacity",
-        "Render shadow as a Typst approximation (e.g., offset duplicate shape with reduced opacity, or use #box(shadow: ...))",
-        "Reflection effects: parse but render as best-effort or skip with warning",
-        "Unit tests: shape with outer shadow, shape with no effects (no regression)",
-        "cargo test --workspace passes",
+        "cargo check --target wasm32-unknown-unknown -p office2pdf succeeds",
+        "If any parser had to be excluded on WASM, it is clearly documented with cfg guards",
+        "getrandom/js or equivalent fixes are added to Cargo.toml if needed",
+        "All existing native tests still pass (cargo test --workspace)",
+        "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Implemented shadow parsing from effectLst/outerShdw with Typst offset duplicate shape approximation"
+      "passes": false,
+      "notes": "Install the WASM target first: rustup target add wasm32-unknown-unknown. Then iterate on cargo check --target wasm32-unknown-unknown -p office2pdf. Common fix: add `getrandom = { version = \"0.2\", features = [\"js\"] }` to [target.'cfg(target_arch = \"wasm32\")'.dependencies]. If umya-spreadsheet doesn't compile on WASM, wrap the xlsx module: #[cfg(not(target_arch = \"wasm32\"))] pub mod xlsx; and guard Format::Xlsx match arm similarly. Prefer making all formats available on WASM, but accept partial support if dependencies are truly incompatible."
     },
     {
-      "id": "US-052",
-      "title": "XLSX parser - manual page breaks",
-      "description": "As a user, I want manual page breaks in XLSX spreadsheets to be reflected in the PDF output.",
+      "id": "US-062",
+      "title": "wasm-bindgen JavaScript API module",
+      "description": "As a JavaScript/TypeScript developer, I want a wasm-bindgen API to convert Office documents to PDF in the browser or Node.js.\n\nAdd a `wasm` feature flag to the office2pdf library crate that enables wasm-bindgen bindings. Create a `src/wasm.rs` module (conditionally compiled with #[cfg(feature = \"wasm\")]) that exports JavaScript-callable functions.\n\nExported functions:\n- convert_to_pdf(data: &[u8], format: &str) -> Result<Vec<u8>, JsValue> — generic conversion\n- convert_docx_to_pdf(data: &[u8]) -> Result<Vec<u8>, JsValue> — DOCX shortcut\n- convert_pptx_to_pdf(data: &[u8]) -> Result<Vec<u8>, JsValue> — PPTX shortcut\n- convert_xlsx_to_pdf(data: &[u8]) -> Result<Vec<u8>, JsValue> — XLSX shortcut (if xlsx is available on WASM)\n\nError handling: convert ConvertError to a JS string error via JsValue::from_str().\nOptions: For now, use ConvertOptions::default(). A follow-up story can add options support.\n\nThe `wasm` feature must NOT be enabled by default (it should not affect native builds).",
       "acceptanceCriteria": [
-        "Parse row breaks from sheet XML via sheet.get_row_breaks().get_break_list()",
-        "Filter for manual page breaks (get_manual_page_break() == true)",
-        "Split table rows into separate TablePages at each page break point",
-        "Preserve column widths and cell formatting across page breaks",
-        "Unit tests: spreadsheet with manual page break splits into multiple pages",
-        "cargo test --workspace passes",
+        "Cargo.toml has a `wasm` feature that enables wasm-bindgen dependency",
+        "wasm-bindgen is listed as optional dependency in [dependencies]",
+        "src/wasm.rs module exists with #[wasm_bindgen] exported functions",
+        "convert_to_pdf, convert_docx_to_pdf, convert_pptx_to_pdf are exported (convert_xlsx_to_pdf if XLSX available on WASM)",
+        "Each function takes &[u8] and returns Result with JsValue error",
+        "The wasm feature is NOT enabled by default",
+        "cargo check --target wasm32-unknown-unknown -p office2pdf --features wasm succeeds",
+        "Native build without wasm feature is unaffected (cargo test --workspace)",
+        "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Already implemented with collect_row_breaks(), row splitting logic, and 4 comprehensive tests"
+      "passes": false,
+      "notes": "Add to Cargo.toml: [features] wasm = [\"wasm-bindgen\"] and [dependencies] wasm-bindgen = { version = \"0.2\", optional = true }. In lib.rs: #[cfg(feature = \"wasm\")] pub mod wasm; The wasm module should use convert_bytes internally. Use #[wasm_bindgen] attribute on exported functions. For &[u8] parameters, wasm-bindgen uses js_sys::Uint8Array — use #[wasm_bindgen(js_name = convertToPdf)] for JS-friendly naming."
     },
     {
-      "id": "US-053",
-      "title": "XLSX parser - DataBar and IconSet conditional formatting",
-      "description": "As a user, I want DataBar and IconSet conditional formatting in XLSX to be approximated in the PDF.",
+      "id": "US-063",
+      "title": "WASM compilation check in CI pipeline",
+      "description": "As a maintainer, I want CI to verify that the library compiles for the wasm32-unknown-unknown target so WASM support doesn't regress.\n\nAdd a new CI job (or extend existing) that:\n1. Installs wasm32-unknown-unknown target\n2. Runs cargo check --target wasm32-unknown-unknown -p office2pdf\n3. Runs cargo check --target wasm32-unknown-unknown -p office2pdf --features wasm\n\nThis ensures every PR is verified for WASM compatibility.",
       "acceptanceCriteria": [
-        "Parse DataBar conditional formatting rules from XLSX",
-        "Render DataBar as a colored bar within the cell (proportional to value range)",
-        "Parse IconSet conditional formatting rules from XLSX",
-        "Render IconSet as text symbols (e.g., arrows ↑↓→, traffic lights ●) based on thresholds",
-        "Unit tests: spreadsheet with DataBar rules, spreadsheet with IconSet rules",
-        "cargo test --workspace passes",
+        ".github/workflows/ci.yml has a WASM check job",
+        "Job installs wasm32-unknown-unknown target",
+        "Job runs cargo check for wasm32 target (both with and without wasm feature)",
+        "Job uses stable Rust toolchain",
+        "Existing CI jobs are not broken",
+        "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Implemented DataBar as colored box with fill percentage, IconSet as arrow symbols based on value thresholds"
+      "passes": false,
+      "notes": "Add a new job to .github/workflows/ci.yml: wasm-check with steps: checkout, install rust toolchain with target wasm32-unknown-unknown, run cargo check commands. Use dtolnay/rust-toolchain@stable with targets: wasm32-unknown-unknown."
     },
     {
-      "id": "US-054",
-      "title": "Performance benchmarks and validation",
-      "description": "As a developer, I want benchmark tests to validate the performance targets defined in the PRD.",
+      "id": "US-064",
+      "title": "WASM integration test with wasm-pack",
+      "description": "As a developer, I want a basic wasm-pack test to verify that the WASM build actually works end-to-end (not just compiles).\n\nCreate a minimal wasm-pack test that:\n1. Builds the library with wasm-pack for the wasm32-unknown-unknown target\n2. Loads the resulting WASM module\n3. Calls convert_docx_to_pdf (or convert_to_pdf) with a minimal DOCX byte array\n4. Verifies the output starts with %PDF magic bytes\n\nThis can be a #[wasm_bindgen_test] in the library crate or a separate test.\n\nNote: wasm-pack tests require wasm-pack to be installed. If wasm-pack is not available in CI, this test should be documented as a manual verification step.",
       "acceptanceCriteria": [
-        "Add Criterion benchmarks for DOCX, PPTX, XLSX conversion (small and medium documents)",
-        "Generate synthetic test documents: 10-page DOCX, 10-slide PPTX, 10-sheet XLSX",
-        "Benchmark end-to-end conversion time for each format",
-        "Document benchmark results in progress notes",
-        "Verify 10-page document converts in < 2 seconds on local hardware",
-        "cargo test --workspace passes",
+        "A wasm_bindgen_test exists that verifies WASM conversion works",
+        "Test creates or uses a minimal DOCX byte fixture",
+        "Test calls the wasm-bindgen exported function and verifies PDF output",
+        "Test is behind #[cfg(target_arch = \"wasm32\")] so it only runs in WASM test context",
+        "Documentation in README or code comments explains how to run WASM tests",
+        "Native tests are not affected (cargo test --workspace still passes)",
+        "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Extended Criterion benchmarks with multi-sheet XLSX. Added 3 perf validation tests. All formats convert in <130ms (release), well under 2s target."
+      "passes": false,
+      "notes": "Add dev-dependencies: wasm-bindgen-test = \"0.3\" (behind cfg). Create tests in src/wasm.rs or a separate test file. The test fixture can be a minimal valid DOCX (ZIP file with [Content_Types].xml and a minimal document.xml). If creating a real DOCX programmatically is too complex, use the smallest fixture from tests/fixtures/docx/. wasm-bindgen-test requires: cargo install wasm-pack, then wasm-pack test --node. If wasm-pack is unavailable in the CI environment, add the test as a separate optional CI step or document it."
     }
   ]
 }
