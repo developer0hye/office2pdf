@@ -35,8 +35,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented shadow parsing from effectLst/outerShdw with Typst offset duplicate shape approximation"
     },
     {
       "id": "US-052",

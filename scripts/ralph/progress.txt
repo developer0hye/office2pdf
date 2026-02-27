@@ -61,6 +61,7 @@
 - **Test PPTX with theme**: Use `build_test_pptx_with_theme(cx, cy, slides, theme_xml)`. Includes `ppt/theme/theme1.xml` in ZIP and theme relationship in presentation.xml.rels. `make_theme_xml(colors, major_font, minor_font)` creates theme XML. `standard_theme_colors()` returns Office-like defaults.
 - **PPTX slide backgrounds**: `FixedPage.background_color: Option<Color>` and `FixedPage.background_gradient: Option<GradientFill>`. Solid: `parse_background_color(xml, theme)` from `<p:bg><p:bgPr><a:solidFill>`. Gradient: `parse_background_gradient(xml, theme)` from `<p:bg><p:bgPr><a:gradFill>` with `<a:gsLst>/<a:gs pos>` stops and `<a:lin ang>` direction. Gradient takes precedence; first stop color used as solid fallback. Supports `<a:srgbClr>` and `<a:schemeClr>`. Inheritance chain: slide → layout → master via `resolve_inherited_background()`. Typst codegen: gradient → `gradient.linear((rgb(r,g,b), N%), ..., angle: Ndeg)`, solid → `fill: rgb(r, g, b)`.
 - **PPTX gradient shape fills**: `Shape.gradient_fill: Option<GradientFill>`. Parsed via `parse_shape_gradient_fill(reader, theme)` sub-parser when `<a:gradFill>` found inside `<p:spPr>`. Same stop/angle format as backgrounds. Gradient takes precedence over solid fill in codegen. First stop color stored as solid fill fallback. Typst: `fill: gradient.linear(...)` on `#rect`/`#ellipse`.
+- **PPTX shape shadow effects**: `Shape.shadow: Option<Shadow>` with `Shadow { blur_radius, distance, direction, color, opacity }`. Parsed via `parse_effect_list(reader, theme)` sub-parser when `<a:effectLst>` found inside `<p:spPr>`. Extracts `<a:outerShdw blurRad dist dir>` attributes (EMU/60000ths) and child `<a:srgbClr>`/`<a:schemeClr>` with optional `<a:alpha>`. Codegen: offset duplicate shape via `#place(dx, dy)[#rect/ellipse(fill: rgba(r,g,b,a))]` rendered before main shape. Offset: `dx = dist * cos(dir)`, `dy = dist * sin(dir)`.
 - **Test PPTX with layout/master**: Use `build_test_pptx_with_layout_master(cx, cy, slide_xml, layout_xml, master_xml)`. Creates full inheritance chain: slide1 → slideLayout1 → slideMaster1 with .rels files at each level. `make_slide_xml_with_bg(bg_xml, shapes)` creates slide XML with `<p:bg>` inside `<p:cSld>`.
 - **PPTX layout/master element inheritance**: `parse_single_slide()` resolves layout and master paths via `resolve_layout_master_paths()`, then parses elements from master, layout, and slide in order (master behind → layout → slide on top). Uses `rels_path_for()` helper for .rels path construction. `parse_slide_xml()` works on any XML with `<p:spTree>` — same function parses slide, layout, and master shapes. Test helpers: `make_layout_xml(shapes)`, `make_master_xml(shapes)`, `build_test_pptx_with_layout_master_multi_slide(cx, cy, slides, layout, master)` for multi-slide testing.
 - **PPTX tables**: Tables live inside `<p:graphicFrame>` elements (not `<p:sp>`). Position from `<p:xfrm>` (not `<a:xfrm>`). Table XML: `<a:graphic><a:graphicData><a:tbl>`. Grid: `<a:tblGrid><a:gridCol w="EMU"/>`. Rows: `<a:tr h="EMU">`. Cells: `<a:tc>` with optional `gridSpan` (colspan), `rowSpan`, `hMerge`/`vMerge` (continuation). Cell content: `<a:txBody>` with same paragraph/run structure as shapes. Cell properties: `<a:tcPr>` with `<a:solidFill>` for background, `<a:lnL/lnR/lnT/lnB w="EMU">` for borders. Maps to `FixedElementKind::Table(Table)` in IR. `parse_pptx_table()` is a standalone sub-parser called from `parse_slide_xml()` when `<a:tbl>` is found. Test helpers: `make_table_graphic_frame(x, y, cx, cy, col_widths_emu, rows_xml)`, `make_table_row(cells_text)`, `table_element(elem)`.
@@ -99,4 +100,25 @@ Started: 2026년  2월 27일 금요일 19시 19분 06초 KST
   - Typst `gradient.linear()` syntax: `gradient.linear((color, pos%), ..., angle: Ndeg)`
   - When angle is 0, omitting the angle parameter produces cleaner output
   - Clippy's `collapsible_if` lint applies to `if let Some(x) = ... { if let Some(y) = ... { } }` — use chained let bindings instead
+---
+
+## 2026-02-27 - US-051: PPTX parser - shape shadow and reflection effects
+- What was implemented:
+  - Added `Shadow` IR type in `ir/elements.rs` (blur_radius, distance, direction, color, opacity)
+  - Added `shadow: Option<Shadow>` to `Shape`
+  - Implemented `parse_effect_list()` sub-parser for `<a:effectLst>/<a:outerShdw>` in `pptx.rs`
+  - Hooked effectLst detection into shape property parsing in `parse_slide_xml()`
+  - Implemented `write_shadow_shape()` in `typst_gen.rs` as offset duplicate shape approximation
+  - Shadow rendered as `#place(top + left, dx: Xpt, dy: Ypt)[#rect/ellipse(fill: rgba(...))]` before main shape
+  - Reflection effects: not parsed (best-effort skip per acceptance criteria)
+- Files changed:
+  - `crates/office2pdf/src/ir/elements.rs` - Shadow struct, shadow field on Shape
+  - `crates/office2pdf/src/parser/pptx.rs` - parse_effect_list(), 3 new tests
+  - `crates/office2pdf/src/render/typst_gen.rs` - write_shadow_shape(), 2 new codegen tests
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - `<a:outerShdw>` attributes: blurRad (EMU), dist (EMU), dir (60000ths of degree)
+  - Shadow color from `<a:srgbClr>` with optional `<a:alpha val="50000"/>` (100000 = 100%)
+  - Typst has no native shadow support — must approximate with offset duplicate shape
+  - Shadow offset calculated via trigonometry: dx = dist * cos(dir_rad), dy = dist * sin(dir_rad)
 ---

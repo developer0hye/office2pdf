@@ -10,8 +10,8 @@ use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, FixedElement,
     FixedElementKind, FixedPage, GradientFill, GradientStop, ImageData, ImageFormat, Metadata,
-    Page, PageSize, Paragraph, ParagraphStyle, Run, Shape, ShapeKind, SmartArt, StyleSheet, Table,
-    TableCell, TableRow, TextStyle,
+    Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, StyleSheet,
+    Table, TableCell, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::chart as chart_parser;
@@ -1040,6 +1040,111 @@ fn parse_shape_gradient_fill(
     None
 }
 
+/// Parse `<a:effectLst>` and extract outer shadow if present.
+///
+/// The reader should be positioned right after the `<a:effectLst>` Start event.
+/// Reads until the matching `</a:effectLst>` End event.
+fn parse_effect_list(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Option<Shadow> {
+    let mut shadow: Option<Shadow> = None;
+    let mut in_outer_shdw = false;
+    let mut shdw_blur: f64 = 0.0;
+    let mut shdw_dist: f64 = 0.0;
+    let mut shdw_dir: f64 = 0.0;
+    let mut shdw_color: Option<Color> = None;
+    let mut shdw_opacity: f64 = 1.0;
+    let mut depth: usize = 1; // already inside <a:effectLst>
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                depth += 1;
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"outerShdw" => {
+                        in_outer_shdw = true;
+                        // EMU values: 1 pt = 12700 EMU
+                        shdw_blur = get_attr_i64(e, b"blurRad").unwrap_or(0) as f64 / 12_700.0;
+                        shdw_dist = get_attr_i64(e, b"dist").unwrap_or(0) as f64 / 12_700.0;
+                        // Direction in 60000ths of a degree
+                        shdw_dir = get_attr_i64(e, b"dir").unwrap_or(0) as f64 / 60_000.0;
+                        shdw_color = None;
+                        shdw_opacity = 1.0;
+                    }
+                    b"srgbClr" if in_outer_shdw => {
+                        if let Some(hex) = get_attr_str(e, b"val") {
+                            shdw_color = parse_hex_color(&hex);
+                        }
+                    }
+                    b"schemeClr" if in_outer_shdw => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val") {
+                            shdw_color = theme.colors.get(&scheme_name).copied();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Empty(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"outerShdw" => {
+                        // Self-closing <a:outerShdw/> with attributes
+                        let blur = get_attr_i64(e, b"blurRad").unwrap_or(0) as f64 / 12_700.0;
+                        let dist = get_attr_i64(e, b"dist").unwrap_or(0) as f64 / 12_700.0;
+                        let dir = get_attr_i64(e, b"dir").unwrap_or(0) as f64 / 60_000.0;
+                        shadow = Some(Shadow {
+                            blur_radius: blur,
+                            distance: dist,
+                            direction: dir,
+                            color: Color::new(0, 0, 0),
+                            opacity: 1.0,
+                        });
+                    }
+                    b"srgbClr" if in_outer_shdw => {
+                        if let Some(hex) = get_attr_str(e, b"val") {
+                            shdw_color = parse_hex_color(&hex);
+                        }
+                    }
+                    b"schemeClr" if in_outer_shdw => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val") {
+                            shdw_color = theme.colors.get(&scheme_name).copied();
+                        }
+                    }
+                    b"alpha" if in_outer_shdw => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            shdw_opacity = val as f64 / 100_000.0;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                depth -= 1;
+                if depth == 0 {
+                    break; // End of effectLst
+                }
+                let local = e.local_name();
+                if local.as_ref() == b"outerShdw" && in_outer_shdw {
+                    in_outer_shdw = false;
+                    if let Some(color) = shdw_color {
+                        shadow = Some(Shadow {
+                            blur_radius: shdw_blur,
+                            distance: shdw_dist,
+                            direction: shdw_dir,
+                            color,
+                            opacity: shdw_opacity,
+                        });
+                    }
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    shadow
+}
+
 /// Parse a `<a:tbl>` element from the reader into a Table IR.
 ///
 /// The reader should be positioned right after the `<a:tbl>` Start event.
@@ -1538,6 +1643,7 @@ fn parse_slide_xml(
     let mut ln_color: Option<Color> = None;
     let mut shape_rotation_deg: Option<f64> = None;
     let mut shape_opacity: Option<f64> = None;
+    let mut shape_shadow: Option<Shadow> = None;
 
     // Transform state (for shapes)
     let mut in_xfrm = false;
@@ -1632,6 +1738,7 @@ fn parse_slide_xml(
                         ln_color = None;
                         shape_rotation_deg = None;
                         shape_opacity = None;
+                        shape_shadow = None;
                         in_txbody = false;
                         paragraphs.clear();
                     }
@@ -1667,6 +1774,9 @@ fn parse_slide_xml(
                         {
                             shape_fill = gf.stops.first().map(|s| s.color);
                         }
+                    }
+                    b"effectLst" if in_sp_pr && !in_ln => {
+                        shape_shadow = parse_effect_list(&mut reader, theme);
                     }
                     b"ln" if in_sp_pr => {
                         in_ln = true;
@@ -1902,6 +2012,7 @@ fn parse_slide_xml(
                                         stroke,
                                         rotation_deg: shape_rotation_deg,
                                         opacity: shape_opacity,
+                                        shadow: shape_shadow.take(),
                                     }),
                                 });
                             }
@@ -5268,6 +5379,116 @@ mod tests {
         assert!(
             (gradient.angle - 0.0).abs() < 0.001,
             "Default angle should be 0"
+        );
+    }
+
+    // ── Shadow / effects tests ─────────────────────────────────────────
+
+    #[test]
+    fn test_shape_outer_shadow_parsed() {
+        // Shape with <a:effectLst><a:outerShdw> inside <p:spPr>
+        let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="200000"/><a:ext cx="500000" cy="300000"/></a:xfrm><a:prstGeom prst="rect"/><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:effectLst><a:outerShdw blurRad="50800" dist="38100" dir="2700000"><a:srgbClr val="000000"><a:alpha val="50000"/></a:srgbClr></a:outerShdw></a:effectLst></p:spPr></p:sp>"#.to_string();
+        let slide_xml = make_slide_xml(&[shape_xml]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        let shape = get_shape(&page.elements[0]);
+        let shadow = shape.shadow.as_ref().expect("Expected shadow");
+
+        // blurRad=50800 EMU → 50800/12700 = 4.0 pt
+        assert!(
+            (shadow.blur_radius - 4.0).abs() < 0.01,
+            "Expected blur_radius ~4.0, got {}",
+            shadow.blur_radius
+        );
+        // dist=38100 EMU → 38100/12700 = 3.0 pt
+        assert!(
+            (shadow.distance - 3.0).abs() < 0.01,
+            "Expected distance ~3.0, got {}",
+            shadow.distance
+        );
+        // dir=2700000 → 2700000/60000 = 45.0 degrees
+        assert!(
+            (shadow.direction - 45.0).abs() < 0.01,
+            "Expected direction ~45.0, got {}",
+            shadow.direction
+        );
+        // color = black
+        assert_eq!(shadow.color, Color::new(0, 0, 0));
+        // alpha val=50000 → 50000/100000 = 0.5
+        assert!(
+            (shadow.opacity - 0.5).abs() < 0.01,
+            "Expected opacity ~0.5, got {}",
+            shadow.opacity
+        );
+    }
+
+    #[test]
+    fn test_shape_no_effects_no_shadow() {
+        // Shape with no <a:effectLst> → shadow should be None
+        let shape_xml = make_shape(
+            100_000,
+            200_000,
+            500_000,
+            300_000,
+            "rect",
+            Some("00FF00"),
+            None,
+            None,
+        );
+        let slide_xml = make_slide_xml(&[shape_xml]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        let shape = get_shape(&page.elements[0]);
+        assert!(
+            shape.shadow.is_none(),
+            "Shape without effectLst should have no shadow"
+        );
+    }
+
+    #[test]
+    fn test_shape_shadow_default_opacity() {
+        // Shadow with no <a:alpha> element → opacity defaults to 1.0
+        let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="200000"/><a:ext cx="500000" cy="300000"/></a:xfrm><a:prstGeom prst="rect"/><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:effectLst><a:outerShdw blurRad="25400" dist="12700" dir="5400000"><a:srgbClr val="333333"/></a:outerShdw></a:effectLst></p:spPr></p:sp>"#.to_string();
+        let slide_xml = make_slide_xml(&[shape_xml]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        let shape = get_shape(&page.elements[0]);
+        let shadow = shape.shadow.as_ref().expect("Expected shadow");
+
+        // blurRad=25400 EMU → 2.0 pt
+        assert!(
+            (shadow.blur_radius - 2.0).abs() < 0.01,
+            "Expected blur ~2.0, got {}",
+            shadow.blur_radius
+        );
+        // dist=12700 EMU → 1.0 pt
+        assert!(
+            (shadow.distance - 1.0).abs() < 0.01,
+            "Expected dist ~1.0, got {}",
+            shadow.distance
+        );
+        // dir=5400000 → 90.0 degrees
+        assert!(
+            (shadow.direction - 90.0).abs() < 0.01,
+            "Expected dir ~90.0, got {}",
+            shadow.direction
+        );
+        // color = #333333
+        assert_eq!(shadow.color, Color::new(0x33, 0x33, 0x33));
+        // No alpha element → defaults to 1.0
+        assert!(
+            (shadow.opacity - 1.0).abs() < 0.01,
+            "Expected opacity ~1.0 (default), got {}",
+            shadow.opacity
         );
     }
 }
