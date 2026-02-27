@@ -45,6 +45,17 @@ jobs:
           components: clippy
       - run: cargo clippy --workspace --all-targets -- -D warnings
 
+  wasm-check:
+    name: WASM Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo check --target wasm32-unknown-unknown -p office2pdf
+      - run: cargo check --target wasm32-unknown-unknown -p office2pdf --features wasm
+
   fmt:
     name: Format
     runs-on: ubuntu-latest
