@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - **WASM conditional compilation**: Filesystem-dependent functions (`convert`, `convert_with_options`) use `#[cfg(not(target_arch = "wasm32"))]`. In-memory functions (`convert_bytes`, `render_document`) have no guards. `pdf.rs` has dual `compile_to_pdf` — native uses `MinimalWorld::new(fonts+system)`, wasm32 uses `MinimalWorld::new_embedded_only(embedded fonts only)`. Shared logic in `compile_to_pdf_inner()`. Use `#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]` for functions used only on WASM but tested on native.
+- **WASM dependency fixes**: `zip` must use `default-features = false, features = ["deflate"]` (default pulls in bzip2-sys/zstd-sys C libs). `getrandom` v0.2 needs `js` feature, v0.3 needs `wasm_js` feature — both in `[target.'cfg(target_arch = "wasm32")'.dependencies]`. Use `getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }` for the v0.2 rename trick. All three parsers (DOCX/PPTX/XLSX) and their deps compile on WASM without exclusions.
 - **XLSX embedded charts**: `extract_charts_from_zip(data: &[u8]) -> Vec<Chart>` scans `xl/charts/chart*.xml` entries in ZIP archive via `zip::ZipArchive`. Parses each with `chart::parse_chart_xml()`. Charts appended as `Page::Flow(FlowPage { content: vec![Block::Chart(chart)] })` after all TablePages. Test: `build_xlsx_with_chart()` creates XLSX via umya-spreadsheet, re-opens ZIP to inject chart XML entry at `xl/charts/chart1.xml`.
 - **PDF/A output**: `compile_to_pdf(source, images, pdf_standard: Option<PdfStandard>)`. When `Some(PdfStandard::PdfA2b)`, creates `typst_pdf::PdfStandards::new(&[typst_pdf::PdfStandard::A_2b])` and provides `typst_pdf::Timestamp::new_utc(Datetime)` (PDF/A requires a document date). `ConvertOptions.pdf_standard` threaded from `convert_bytes()` to `compile_to_pdf()`. `render_document()` always passes `None` (backward compat). CLI: `--pdf-a` flag sets `PdfStandard::PdfA2b`. Verify: PDF/A output contains `pdfaid` in XMP metadata.
 - **XLSX conditional formatting**: `sheet.get_conditional_formatting_collection()` → `&[ConditionalFormatting]`. Each CF has `get_sequence_of_references().get_sqref()` (space-separated ranges like "A1:C3 D5") and `get_conditional_collection()` (rules). `ConditionalFormattingRule`: `get_type()` → `ConditionalFormatValues::{CellIs, ColorScale, ...}`, `get_operator()` for CellIs, `get_formula()` → formula value via `f.get_address_str()`, `get_style()` for formatting, `get_color_scale()` for color scales. `CondFmtOverride { background, font_color, bold }`. `build_cond_fmt_overrides(sheet)` → `HashMap<(col,row), CondFmtOverride>`. Applied in cell loop after normal style extraction. Color scale: `ColorScale.get_color_collection()` for gradient colors, `interpolate_color(a, b, ratio)` for blending. Test creation: `ConditionalFormattingRule::default().set_type(CellIs).set_operator(GreaterThan).set_formula(formula).set_style(style)`, wrap in `ConditionalFormatting` with `SequenceOfReferences::default().set_sqref("A1:A3")`, apply via `sheet.set_conditional_formatting_collection(vec![cf])`.
@@ -97,4 +98,27 @@ Started: 2026년  2월 28일 토요일 01시 35분 02초 KST
   - `#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]` is useful for functions that are only used on WASM but need testing on native
   - `compile_to_pdf` signature kept identical on both targets (accepting `&[PathBuf]`) for API compatibility; WASM version ignores font_paths
   - All parsers (docx, pptx, xlsx) already operate on in-memory bytes — no cfg guards needed on them
+---
+
+## 2026-02-28 - US-061
+- What was implemented: Resolved all third-party dependency WASM compilation issues
+  - `zip` crate: changed to `default-features = false, features = ["deflate"]` — removes `bzip2-sys` and `zstd-sys` C library dependencies that cannot compile to WASM. OOXML formats only use deflate compression.
+  - `getrandom` v0.3 (transitive via `umya-spreadsheet` → `ahash`): added `wasm_js` feature for `wasm32` target
+  - `getrandom` v0.2 (transitive via `umya-spreadsheet`): added `js` feature for `wasm32` target using package rename (`getrandom_02`)
+  - All three parsers (DOCX, PPTX, XLSX) compile on WASM without exclusions
+  - `cargo check --target wasm32-unknown-unknown -p office2pdf` succeeds
+- Files changed:
+  - `crates/office2pdf/Cargo.toml` — zip default-features, target-specific getrandom deps
+- Dependencies added:
+  - `getrandom` v0.3 with `wasm_js` (wasm32 only, activates feature on transitive dep)
+  - `getrandom` v0.2 with `js` (wasm32 only, via `getrandom_02` package rename)
+- Dependencies modified:
+  - `zip` 0.6: `default-features = false, features = ["deflate"]` (removed bzip2/zstd)
+- **Learnings for future iterations:**
+  - `zip` default features pull in `bzip2-sys` and `zstd-sys` which are C libraries requiring a C compiler and cannot compile for wasm32-unknown-unknown
+  - OOXML formats (DOCX/PPTX/XLSX) only use deflate compression, so disabling bzip2/zstd has no functional impact
+  - `getrandom` v0.2 and v0.3 coexist in the dependency tree (v0.2 from umya-spreadsheet, v0.3 from ahash via umya-spreadsheet) — each needs separate WASM backend configuration
+  - Use `package = "getrandom"` rename in Cargo.toml when you need to add the same crate twice with different major versions
+  - `[target.'cfg(target_arch = "wasm32")'.dependencies]` section ensures WASM deps don't affect native builds
+  - `docx-rs`, `umya-spreadsheet`, and all other deps compile fine on WASM after these fixes — no parser exclusions needed
 ---

@@ -32,7 +32,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Install the WASM target first: rustup target add wasm32-unknown-unknown. Then iterate on cargo check --target wasm32-unknown-unknown -p office2pdf. Common fix: add `getrandom = { version = \"0.2\", features = [\"js\"] }` to [target.'cfg(target_arch = \"wasm32\")'.dependencies]. If umya-spreadsheet doesn't compile on WASM, wrap the xlsx module: #[cfg(not(target_arch = \"wasm32\"))] pub mod xlsx; and guard Format::Xlsx match arm similarly. Prefer making all formats available on WASM, but accept partial support if dependencies are truly incompatible."
     },
     {
