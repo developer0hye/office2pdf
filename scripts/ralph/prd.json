@@ -52,7 +52,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Add to Cargo.toml: [features] wasm = [\"wasm-bindgen\"] and [dependencies] wasm-bindgen = { version = \"0.2\", optional = true }. In lib.rs: #[cfg(feature = \"wasm\")] pub mod wasm; The wasm module should use convert_bytes internally. Use #[wasm_bindgen] attribute on exported functions. For &[u8] parameters, wasm-bindgen uses js_sys::Uint8Array — use #[wasm_bindgen(js_name = convertToPdf)] for JS-friendly naming."
     },
     {

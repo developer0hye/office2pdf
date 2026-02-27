@@ -42,6 +42,8 @@ pub mod error;
 pub mod ir;
 pub mod parser;
 pub mod render;
+#[cfg(feature = "wasm")]
+pub mod wasm;
 
 use config::{ConvertOptions, Format};
 use error::{ConvertError, ConvertResult};
