@@ -87,7 +87,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Add dev-dependencies: wasm-bindgen-test = \"0.3\" (behind cfg). Create tests in src/wasm.rs or a separate test file. The test fixture can be a minimal valid DOCX (ZIP file with [Content_Types].xml and a minimal document.xml). If creating a real DOCX programmatically is too complex, use the smallest fixture from tests/fixtures/docx/. wasm-bindgen-test requires: cargo install wasm-pack, then wasm-pack test --node. If wasm-pack is unavailable in the CI environment, add the test as a separate optional CI step or document it."
     }
   ]
