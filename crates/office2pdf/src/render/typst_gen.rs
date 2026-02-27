@@ -123,7 +123,7 @@ fn generate_table_page(
     page: &TablePage,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
-    write_page_setup(out, &page.size, &page.margins);
+    write_table_page_setup(out, page);
     out.push('\n');
     generate_table(out, &page.table, ctx)?;
     Ok(())
@@ -283,7 +283,7 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
     );
 
     if let Some(header) = &page.header {
-        if hf_has_page_number(header) {
+        if hf_needs_context(header) {
             out.push_str(", header: context [");
         } else {
             out.push_str(", header: [");
@@ -293,7 +293,7 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
     }
 
     if let Some(footer) = &page.footer {
-        if hf_has_page_number(footer) {
+        if hf_needs_context(footer) {
             out.push_str(", footer: context [");
         } else {
             out.push_str(", footer: [");
@@ -305,11 +305,54 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage) {
     out.push_str(")\n");
 }
 
-/// Check if a header/footer contains any page number fields.
-fn hf_has_page_number(hf: &HeaderFooter) -> bool {
-    hf.paragraphs
-        .iter()
-        .any(|p| p.elements.iter().any(|e| matches!(e, HFInline::PageNumber)))
+/// Write the full page setup for a TablePage, including optional header/footer.
+fn write_table_page_setup(out: &mut String, page: &TablePage) {
+    if page.header.is_none() && page.footer.is_none() {
+        write_page_setup(out, &page.size, &page.margins);
+        return;
+    }
+
+    let _ = write!(
+        out,
+        "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
+        format_f64(page.size.width),
+        format_f64(page.size.height),
+        format_f64(page.margins.top),
+        format_f64(page.margins.bottom),
+        format_f64(page.margins.left),
+        format_f64(page.margins.right),
+    );
+
+    if let Some(header) = &page.header {
+        if hf_needs_context(header) {
+            out.push_str(", header: context [");
+        } else {
+            out.push_str(", header: [");
+        }
+        generate_hf_content(out, header);
+        out.push(']');
+    }
+
+    if let Some(footer) = &page.footer {
+        if hf_needs_context(footer) {
+            out.push_str(", footer: context [");
+        } else {
+            out.push_str(", footer: [");
+        }
+        generate_hf_content(out, footer);
+        out.push(']');
+    }
+
+    out.push_str(")\n");
+}
+
+/// Check if a header/footer contains any context-dependent fields (page number or total pages).
+fn hf_needs_context(hf: &HeaderFooter) -> bool {
+    hf.paragraphs.iter().any(|p| {
+        p.elements
+            .iter()
+            .any(|e| matches!(e, HFInline::PageNumber | HFInline::TotalPages))
+    })
 }
 
 /// Generate inline content for a header or footer.
@@ -317,6 +360,16 @@ fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
     for (i, para) in hf.paragraphs.iter().enumerate() {
         if i > 0 {
             out.push_str("\\\n");
+        }
+        // Apply paragraph alignment if set
+        if let Some(align) = para.style.alignment {
+            let align_str = match align {
+                Alignment::Left => "left",
+                Alignment::Center => "center",
+                Alignment::Right => "right",
+                Alignment::Justify => "left",
+            };
+            let _ = write!(out, "#align({align_str})[");
         }
         for elem in &para.elements {
             match elem {
@@ -326,7 +379,13 @@ fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
                 HFInline::PageNumber => {
                     out.push_str("#counter(page).display()");
                 }
+                HFInline::TotalPages => {
+                    out.push_str("#counter(page).final().first()");
+                }
             }
+        }
+        if para.style.alignment.is_some() {
+            out.push(']');
         }
     }
 }
@@ -780,7 +839,7 @@ fn escape_typst(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::{Metadata, StyleSheet};
+    use crate::ir::{HeaderFooterParagraph, Metadata, StyleSheet};
 
     /// Helper to create a minimal Document with one FlowPage.
     fn make_doc(pages: Vec<Page>) -> Document {
@@ -2266,6 +2325,8 @@ mod tests {
             size: PageSize { width, height },
             margins,
             table,
+            header: None,
+            footer: None,
         })
     }
 
@@ -3168,6 +3229,123 @@ mod tests {
                 .source
                 .contains(r"#footnote[Note with \#special \*chars\*]"),
             "Expected escaped footnote content, got: {}",
+            output.source
+        );
+    }
+
+    // --- US-036: TablePage header/footer codegen ---
+
+    #[test]
+    fn test_table_page_with_header() {
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table: make_simple_table(vec![vec!["A"]]),
+            header: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    elements: vec![HFInline::Run(Run {
+                        text: "My Header".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    })],
+                }],
+            }),
+            footer: None,
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("header: ["),
+            "Expected header in page setup, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("My Header"),
+            "Expected header text, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_table_page_with_page_number_footer() {
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table: make_simple_table(vec![vec!["A"]]),
+            header: None,
+            footer: Some(HeaderFooter {
+                paragraphs: vec![HeaderFooterParagraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    elements: vec![
+                        HFInline::Run(Run {
+                            text: "Page ".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }),
+                        HFInline::PageNumber,
+                        HFInline::Run(Run {
+                            text: " of ".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }),
+                        HFInline::TotalPages,
+                    ],
+                }],
+            }),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        // Footer with page numbers needs context
+        assert!(
+            output.source.contains("footer: context ["),
+            "Expected context footer, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#counter(page).display()"),
+            "Expected page number counter, got: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#counter(page).final().first()"),
+            "Expected total pages counter, got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_table_page_no_header_footer() {
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table: make_simple_table(vec![vec!["A"]]),
+            header: None,
+            footer: None,
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        // Should use simple page setup without header/footer
+        assert!(
+            !output.source.contains("header:"),
+            "Expected no header, got: {}",
+            output.source
+        );
+        assert!(
+            !output.source.contains("footer:"),
+            "Expected no footer, got: {}",
             output.source
         );
     }

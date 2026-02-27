@@ -20,6 +20,8 @@ pub enum HFInline {
     Run(Run),
     /// Current page number field.
     PageNumber,
+    /// Total page count field.
+    TotalPages,
 }
 
 /// Block-level content elements.

@@ -4,8 +4,9 @@ use std::io::Cursor;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Block, BorderSide, CellBorder, Color, Document, Margins, Metadata, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, HFInline, HeaderFooter,
+    HeaderFooterParagraph, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
+    StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 
@@ -215,6 +216,162 @@ fn collect_row_breaks(sheet: &umya_spreadsheet::Worksheet) -> Vec<u32> {
     breaks
 }
 
+/// Parse an Excel header/footer format string into IR HeaderFooter.
+///
+/// Excel format strings use `&L`, `&C`, `&R` to define left/center/right sections,
+/// `&P` for current page number, and `&N` for total page count.
+/// Returns `None` if the format string is empty.
+fn parse_hf_format_string(format_str: &str) -> Option<HeaderFooter> {
+    let s = format_str.trim();
+    if s.is_empty() {
+        return None;
+    }
+
+    // Split into left/center/right sections
+    let mut left = String::new();
+    let mut center = String::new();
+    let mut right = String::new();
+    let mut current = &mut center; // Default section is center if no &L/&C/&R prefix
+
+    let chars: Vec<char> = s.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '&' && i + 1 < chars.len() {
+            match chars[i + 1] {
+                'L' => {
+                    current = &mut left;
+                    i += 2;
+                }
+                'C' => {
+                    current = &mut center;
+                    i += 2;
+                }
+                'R' => {
+                    current = &mut right;
+                    i += 2;
+                }
+                'P' => {
+                    current.push('\x01'); // Sentinel for page number
+                    i += 2;
+                }
+                'N' => {
+                    current.push('\x02'); // Sentinel for total pages
+                    i += 2;
+                }
+                '&' => {
+                    // Escaped ampersand: && → &
+                    current.push('&');
+                    i += 2;
+                }
+                '"' => {
+                    // Font name: &"FontName" — skip to closing quote
+                    i += 2; // skip &"
+                    while i < chars.len() && chars[i] != '"' {
+                        i += 1;
+                    }
+                    if i < chars.len() {
+                        i += 1; // skip closing "
+                    }
+                }
+                c if c.is_ascii_digit() => {
+                    // Font size: &NN — skip digits
+                    i += 1; // skip &
+                    while i < chars.len() && chars[i].is_ascii_digit() {
+                        i += 1;
+                    }
+                }
+                _ => {
+                    // Unknown code — skip it
+                    i += 2;
+                }
+            }
+        } else {
+            current.push(chars[i]);
+            i += 1;
+        }
+    }
+
+    let mut paragraphs = Vec::new();
+
+    // Build paragraph for each non-empty section
+    let sections = [
+        (&left, Alignment::Left),
+        (&center, Alignment::Center),
+        (&right, Alignment::Right),
+    ];
+
+    for (text, alignment) in &sections {
+        if text.is_empty() {
+            continue;
+        }
+        let elements = build_hf_elements(text);
+        if !elements.is_empty() {
+            paragraphs.push(HeaderFooterParagraph {
+                style: ParagraphStyle {
+                    alignment: Some(*alignment),
+                    ..ParagraphStyle::default()
+                },
+                elements,
+            });
+        }
+    }
+
+    if paragraphs.is_empty() {
+        None
+    } else {
+        Some(HeaderFooter { paragraphs })
+    }
+}
+
+/// Build HFInline elements from a section string, replacing sentinel chars.
+fn build_hf_elements(section: &str) -> Vec<HFInline> {
+    let mut elements = Vec::new();
+    let mut current_text = String::new();
+
+    for ch in section.chars() {
+        match ch {
+            '\x01' => {
+                // Page number sentinel
+                if !current_text.is_empty() {
+                    elements.push(HFInline::Run(Run {
+                        text: std::mem::take(&mut current_text),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }));
+                }
+                elements.push(HFInline::PageNumber);
+            }
+            '\x02' => {
+                // Total pages sentinel
+                if !current_text.is_empty() {
+                    elements.push(HFInline::Run(Run {
+                        text: std::mem::take(&mut current_text),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }));
+                }
+                elements.push(HFInline::TotalPages);
+            }
+            _ => {
+                current_text.push(ch);
+            }
+        }
+    }
+
+    if !current_text.is_empty() {
+        elements.push(HFInline::Run(Run {
+            text: current_text,
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+        }));
+    }
+
+    elements
+}
+
 /// A (column, row) coordinate pair (1-indexed).
 type CellPos = (u32, u32);
 
@@ -389,6 +546,11 @@ impl Parser for XlsxParser {
             let row_breaks = collect_row_breaks(sheet);
             let sheet_name = sheet.get_name().to_string();
 
+            // Extract sheet header/footer
+            let hf = sheet.get_header_footer();
+            let sheet_header = parse_hf_format_string(hf.get_odd_header().get_value());
+            let sheet_footer = parse_hf_format_string(hf.get_odd_footer().get_value());
+
             if row_breaks.is_empty() {
                 // No page breaks — single page
                 pages.push(Page::Table(TablePage {
@@ -399,6 +561,8 @@ impl Parser for XlsxParser {
                         rows,
                         column_widths,
                     },
+                    header: sheet_header.clone(),
+                    footer: sheet_footer.clone(),
                 }));
             } else {
                 // Split rows at break points
@@ -431,6 +595,8 @@ impl Parser for XlsxParser {
                             rows: segment,
                             column_widths: column_widths.clone(),
                         },
+                        header: sheet_header.clone(),
+                        footer: sheet_footer.clone(),
                     }));
                 }
             }
@@ -1511,5 +1677,159 @@ mod tests {
         assert_eq!(tp1.table.column_widths.len(), 2);
         // Same column widths on both pages
         assert_eq!(tp0.table.column_widths, tp1.table.column_widths);
+    }
+
+    // --- US-036: Sheet headers and footers ---
+
+    #[test]
+    fn test_parse_hf_format_string_empty() {
+        assert!(parse_hf_format_string("").is_none());
+        assert!(parse_hf_format_string("   ").is_none());
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_center_only() {
+        // No section prefix → defaults to center
+        let hf = parse_hf_format_string("My Report").unwrap();
+        assert_eq!(hf.paragraphs.len(), 1);
+        assert_eq!(hf.paragraphs[0].style.alignment, Some(Alignment::Center));
+        assert_eq!(hf.paragraphs[0].elements.len(), 1);
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "My Report"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_left_center_right() {
+        let hf = parse_hf_format_string("&LLeft Text&CCenter Text&RRight Text").unwrap();
+        assert_eq!(hf.paragraphs.len(), 3);
+
+        // Left section
+        assert_eq!(hf.paragraphs[0].style.alignment, Some(Alignment::Left));
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Left Text"),
+            _ => panic!("Expected Run"),
+        }
+
+        // Center section
+        assert_eq!(hf.paragraphs[1].style.alignment, Some(Alignment::Center));
+        match &hf.paragraphs[1].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Center Text"),
+            _ => panic!("Expected Run"),
+        }
+
+        // Right section
+        assert_eq!(hf.paragraphs[2].style.alignment, Some(Alignment::Right));
+        match &hf.paragraphs[2].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Right Text"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_page_numbers() {
+        // Footer with "Page X of Y"
+        let hf = parse_hf_format_string("&CPage &P of &N").unwrap();
+        assert_eq!(hf.paragraphs.len(), 1);
+        let elems = &hf.paragraphs[0].elements;
+        assert_eq!(elems.len(), 4);
+        match &elems[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Page "),
+            _ => panic!("Expected Run"),
+        }
+        assert!(matches!(elems[1], HFInline::PageNumber));
+        match &elems[2] {
+            HFInline::Run(r) => assert_eq!(r.text, " of "),
+            _ => panic!("Expected Run"),
+        }
+        assert!(matches!(elems[3], HFInline::TotalPages));
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_escaped_ampersand() {
+        let hf = parse_hf_format_string("&CA && B").unwrap();
+        assert_eq!(hf.paragraphs.len(), 1);
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "A & B"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_parse_hf_format_string_font_codes_skipped() {
+        // Font name and size codes should be skipped
+        let hf = parse_hf_format_string(r#"&C&"Arial"&12Hello"#).unwrap();
+        assert_eq!(hf.paragraphs.len(), 1);
+        match &hf.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Hello"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    /// Helper: build an XLSX with a custom header on the sheet.
+    fn build_xlsx_with_header(header_str: &str) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.get_cell_mut("A1").set_value("Data");
+            sheet
+                .get_header_footer_mut()
+                .get_odd_header_mut()
+                .set_value(header_str);
+        }
+        let mut buf = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut buf).unwrap();
+        buf.into_inner()
+    }
+
+    /// Helper: build an XLSX with a custom footer on the sheet.
+    fn build_xlsx_with_footer(footer_str: &str) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.get_cell_mut("A1").set_value("Data");
+            sheet
+                .get_header_footer_mut()
+                .get_odd_footer_mut()
+                .set_value(footer_str);
+        }
+        let mut buf = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut buf).unwrap();
+        buf.into_inner()
+    }
+
+    #[test]
+    fn test_xlsx_sheet_with_custom_header() {
+        let data = build_xlsx_with_header("&CMonthly Report");
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let header = tp.header.as_ref().expect("Expected header");
+        assert_eq!(header.paragraphs.len(), 1);
+        assert_eq!(
+            header.paragraphs[0].style.alignment,
+            Some(Alignment::Center)
+        );
+        match &header.paragraphs[0].elements[0] {
+            HFInline::Run(r) => assert_eq!(r.text, "Monthly Report"),
+            _ => panic!("Expected Run"),
+        }
+    }
+
+    #[test]
+    fn test_xlsx_sheet_with_page_number_footer() {
+        let data = build_xlsx_with_footer("&CPage &P of &N");
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let footer = tp.footer.as_ref().expect("Expected footer");
+        assert_eq!(footer.paragraphs.len(), 1);
+        let elems = &footer.paragraphs[0].elements;
+        assert_eq!(elems.len(), 4); // "Page ", PageNumber, " of ", TotalPages
+        assert!(matches!(elems[1], HFInline::PageNumber));
+        assert!(matches!(elems[3], HFInline::TotalPages));
     }
 }
