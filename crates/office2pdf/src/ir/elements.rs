@@ -162,6 +162,15 @@ pub struct TableRow {
     pub height: Option<f64>,
 }
 
+/// A data bar rendering within a cell (conditional formatting).
+#[derive(Debug, Clone)]
+pub struct DataBarInfo {
+    /// Bar color.
+    pub color: Color,
+    /// Fill percentage from 0.0 to 1.0.
+    pub fill_pct: f64,
+}
+
 /// A table cell.
 #[derive(Debug, Clone)]
 pub struct TableCell {
@@ -170,6 +179,10 @@ pub struct TableCell {
     pub row_span: u32,
     pub border: Option<CellBorder>,
     pub background: Option<Color>,
+    /// DataBar conditional formatting render info.
+    pub data_bar: Option<DataBarInfo>,
+    /// IconSet text symbol prepended to cell content.
+    pub icon_text: Option<String>,
 }
 
 impl Default for TableCell {
@@ -180,6 +193,8 @@ impl Default for TableCell {
             row_span: 1,
             border: None,
             background: None,
+            data_bar: None,
+            icon_text: None,
         }
     }
 }

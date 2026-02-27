@@ -1463,6 +1463,8 @@ fn resolve_vmerge_and_build_rows(raw_rows: &[Vec<RawCell>]) -> Vec<TableRow> {
                         row_span,
                         border: raw_cell.border.clone(),
                         background: raw_cell.background,
+                        data_bar: None,
+                        icon_text: None,
                     });
                 }
                 _ => {
@@ -1473,6 +1475,8 @@ fn resolve_vmerge_and_build_rows(raw_rows: &[Vec<RawCell>]) -> Vec<TableRow> {
                         row_span: 1,
                         border: raw_cell.border.clone(),
                         background: raw_cell.background,
+                        data_bar: None,
+                        icon_text: None,
                     });
                 }
             }

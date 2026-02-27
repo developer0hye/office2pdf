@@ -759,6 +759,24 @@ fn generate_table_cell(
         out.push_str("  [");
     }
 
+    // Render DataBar: colored box at fill percentage
+    if let Some(ref db) = cell.data_bar {
+        let pct = db.fill_pct.clamp(0.0, 100.0);
+        let _ = write!(
+            out,
+            "#box(width: 100%, height: 0.8em, fill: rgb(240, 240, 240))[#box(width: {}%, height: 100%, fill: rgb({}, {}, {}))]",
+            format_f64(pct),
+            db.color.r,
+            db.color.g,
+            db.color.b,
+        );
+    }
+
+    // Render IconSet: prepend icon text
+    if let Some(ref icon) = cell.icon_text {
+        let _ = write!(out, "{} ", icon);
+    }
+
     // Generate cell content
     generate_cell_content(out, &cell.content, ctx)?;
 
@@ -4376,6 +4394,95 @@ mod tests {
         assert!(
             !output.source.contains("fill: rgb(128, 128, 128)"),
             "Solid fallback should not appear. Got: {}",
+            output.source,
+        );
+    }
+
+    // ── DataBar / IconSet codegen tests ──────────────────────────────
+
+    #[test]
+    fn test_data_bar_codegen() {
+        use crate::ir::DataBarInfo;
+        let cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "50".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            data_bar: Some(DataBarInfo {
+                color: Color::new(0x63, 0x8E, 0xC6),
+                fill_pct: 50.0,
+            }),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![cell],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+        };
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table,
+            header: None,
+            footer: None,
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("fill: rgb(99, 142, 198)"),
+            "DataBar should contain bar color fill. Got: {}",
+            output.source,
+        );
+        assert!(
+            output.source.contains("width: 50%"),
+            "DataBar should contain 50% width. Got: {}",
+            output.source,
+        );
+    }
+
+    #[test]
+    fn test_icon_text_codegen() {
+        let cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "90".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            icon_text: Some("↑".to_string()),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![cell],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+        };
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table,
+            header: None,
+            footer: None,
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("↑"),
+            "Icon text should appear in output. Got: {}",
             output.source,
         );
     }

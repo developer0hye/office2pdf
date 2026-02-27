@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ir::Color;
+use crate::ir::{Color, DataBarInfo};
 
 /// A (column, row) coordinate pair (1-indexed).
 type CellPos = (u32, u32);
@@ -10,6 +10,8 @@ pub(crate) struct CondFmtOverride {
     pub background: Option<Color>,
     pub font_color: Option<Color>,
     pub bold: Option<bool>,
+    pub data_bar: Option<DataBarInfo>,
+    pub icon_text: Option<String>,
 }
 
 /// A cell range within a sheet (1-indexed, inclusive).
@@ -130,6 +132,8 @@ fn extract_cond_fmt_style(rule: &umya_spreadsheet::ConditionalFormattingRule) ->
         background: None,
         font_color: None,
         bold: None,
+        data_bar: None,
+        icon_text: None,
     };
 
     if let Some(style) = rule.get_style() {
@@ -222,6 +226,8 @@ pub(crate) fn build_cond_fmt_overrides(
                                             background: None,
                                             font_color: None,
                                             bold: None,
+                                            data_bar: None,
+                                            icon_text: None,
                                         });
                                     if fmt.background.is_some() {
                                         entry.background = fmt.background;
@@ -297,10 +303,127 @@ pub(crate) fn build_cond_fmt_overrides(
                                                 background: None,
                                                 font_color: None,
                                                 bold: None,
+                                                data_bar: None,
+                                                icon_text: None,
                                             },
                                         );
                                         entry.background = Some(color);
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+                ConditionalFormatValues::DataBar => {
+                    if let Some(db) = rule.get_data_bar() {
+                        let bar_color = db
+                            .get_color_collection()
+                            .first()
+                            .and_then(parse_umya_color_argb)
+                            .unwrap_or(Color::new(0x63, 0x8E, 0xC6)); // default blue
+
+                        let numeric_vals = collect_numeric_values_in_ranges(sheet, &ranges);
+                        if numeric_vals.is_empty() {
+                            continue;
+                        }
+
+                        let min_val = numeric_vals.iter().cloned().fold(f64::INFINITY, f64::min);
+                        let max_val = numeric_vals
+                            .iter()
+                            .cloned()
+                            .fold(f64::NEG_INFINITY, f64::max);
+                        let val_range = max_val - min_val;
+
+                        for range in &ranges {
+                            for row in range.start_row..=range.end_row {
+                                for col in range.start_col..=range.end_col {
+                                    if let Some(cell) = sheet.get_cell((col, row))
+                                        && let Some(val) = cell_numeric_value(cell)
+                                    {
+                                        let pct = if val_range.abs() < f64::EPSILON {
+                                            50.0
+                                        } else {
+                                            ((val - min_val) / val_range) * 100.0
+                                        };
+                                        let entry = overrides.entry((col, row)).or_insert(
+                                            CondFmtOverride {
+                                                background: None,
+                                                font_color: None,
+                                                bold: None,
+                                                data_bar: None,
+                                                icon_text: None,
+                                            },
+                                        );
+                                        entry.data_bar = Some(DataBarInfo {
+                                            color: bar_color,
+                                            fill_pct: pct,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                ConditionalFormatValues::IconSet => {
+                    let numeric_vals = collect_numeric_values_in_ranges(sheet, &ranges);
+                    if numeric_vals.is_empty() {
+                        continue;
+                    }
+
+                    let min_val = numeric_vals.iter().cloned().fold(f64::INFINITY, f64::min);
+                    let max_val = numeric_vals
+                        .iter()
+                        .cloned()
+                        .fold(f64::NEG_INFINITY, f64::max);
+                    let val_range = max_val - min_val;
+
+                    // Try to parse thresholds from IconSet cfvos
+                    let cfvo_thresholds: Vec<f64> = rule
+                        .get_icon_set()
+                        .map(|is| is.get_cfvo_collection())
+                        .unwrap_or(&[])
+                        .iter()
+                        .filter_map(|cfvo| {
+                            let pct: f64 = cfvo.get_val().parse().ok()?;
+                            Some(min_val + val_range * (pct / 100.0))
+                        })
+                        .collect();
+
+                    // Default to 3-icon equal-thirds if no thresholds available
+                    let thresholds = if cfvo_thresholds.len() >= 2 {
+                        cfvo_thresholds
+                    } else {
+                        vec![
+                            min_val,
+                            min_val + val_range / 3.0,
+                            min_val + val_range * 2.0 / 3.0,
+                        ]
+                    };
+
+                    // Default 3-icon arrows: ↓ (low), → (mid), ↑ (high)
+                    let icons: &[&str] = if thresholds.len() >= 5 {
+                        &["⇊", "↓", "→", "↑", "⇈"]
+                    } else {
+                        &["↓", "→", "↑"]
+                    };
+
+                    for range in &ranges {
+                        for row in range.start_row..=range.end_row {
+                            for col in range.start_col..=range.end_col {
+                                if let Some(cell) = sheet.get_cell((col, row))
+                                    && let Some(val) = cell_numeric_value(cell)
+                                {
+                                    let icon_idx =
+                                        evaluate_icon_index(val, &thresholds, icons.len());
+                                    let entry =
+                                        overrides.entry((col, row)).or_insert(CondFmtOverride {
+                                            background: None,
+                                            font_color: None,
+                                            bold: None,
+                                            data_bar: None,
+                                            icon_text: None,
+                                        });
+                                    entry.icon_text = Some(icons[icon_idx].to_string());
                                 }
                             }
                         }
@@ -312,6 +435,20 @@ pub(crate) fn build_cond_fmt_overrides(
     }
 
     overrides
+}
+
+/// Determine which icon index a value falls into based on thresholds.
+fn evaluate_icon_index(val: f64, thresholds: &[f64], num_icons: usize) -> usize {
+    if num_icons == 0 {
+        return 0;
+    }
+    // Iterate thresholds from highest to lowest
+    for i in (1..thresholds.len()).rev() {
+        if val >= thresholds[i] {
+            return (i).min(num_icons - 1);
+        }
+    }
+    0
 }
 
 #[cfg(test)]
