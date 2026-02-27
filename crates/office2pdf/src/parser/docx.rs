@@ -5,10 +5,10 @@ use std::io::Read;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Color, Document, FlowPage, HFInline, HeaderFooter,
-    HeaderFooterParagraph, ImageData, ImageFormat, LineSpacing, List, ListItem, ListKind, Margins,
-    Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell,
-    TableRow, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Color, Document, FloatingImage, FlowPage, HFInline,
+    HeaderFooter, HeaderFooterParagraph, ImageData, ImageFormat, LineSpacing, List, ListItem,
+    ListKind, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, Table,
+    TableCell, TableRow, TextStyle, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -341,6 +341,143 @@ impl NoteContext {
     }
 }
 
+/// Wrap type info for an anchor image, scanned from raw document XML.
+struct AnchorWrapInfo {
+    wrap_mode: WrapMode,
+    behind_doc: bool,
+}
+
+/// Context for resolving wrap modes of anchor images during parsing.
+/// The `cursor` is advanced each time an anchor image is encountered.
+struct WrapContext {
+    /// Ordered list of wrap info for anchor images as they appear in document.xml.
+    wraps: Vec<AnchorWrapInfo>,
+    /// Current position in `wraps`.
+    cursor: Cell<usize>,
+}
+
+impl WrapContext {
+    /// Consume the next anchor wrap info and return its wrap mode.
+    fn consume_next(&self) -> WrapMode {
+        let idx = self.cursor.get();
+        if idx >= self.wraps.len() {
+            return WrapMode::None;
+        }
+        let info = &self.wraps[idx];
+        self.cursor.set(idx + 1);
+        // behindDoc attribute overrides to Behind mode
+        if info.behind_doc {
+            WrapMode::Behind
+        } else {
+            info.wrap_mode
+        }
+    }
+}
+
+/// Build a `WrapContext` by scanning document.xml for anchor wrap types.
+/// docx-rs does not parse wrap type elements (wrapSquare, wrapNone, etc.),
+/// so we scan the raw XML like we do for footnotes.
+fn build_wrap_context(data: &[u8]) -> WrapContext {
+    let mut wraps = Vec::new();
+
+    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
+        return WrapContext {
+            wraps,
+            cursor: Cell::new(0),
+        };
+    };
+
+    if let Some(xml) = read_zip_text(&mut archive, "word/document.xml") {
+        wraps = scan_anchor_wrap_types(&xml);
+    }
+
+    WrapContext {
+        wraps,
+        cursor: Cell::new(0),
+    }
+}
+
+/// Scan document.xml for `<wp:anchor>` elements and extract their wrap type.
+/// Returns wrap info in document order for correlation with docx-rs parsed images.
+fn scan_anchor_wrap_types(xml: &str) -> Vec<AnchorWrapInfo> {
+    let mut results = Vec::new();
+    let mut reader = quick_xml::Reader::from_str(xml);
+
+    let mut in_anchor = false;
+    let mut behind_doc = false;
+    let mut found_wrap = false;
+    let mut current_wrap = WrapMode::None;
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e))
+            | Ok(quick_xml::events::Event::Empty(ref e)) => {
+                let local = e.local_name();
+                let name = local.as_ref();
+                match name {
+                    b"anchor" => {
+                        in_anchor = true;
+                        behind_doc = false;
+                        found_wrap = false;
+                        current_wrap = WrapMode::None;
+                        // Check for behindDoc attribute
+                        for attr in e.attributes().flatten() {
+                            if attr.key.local_name().as_ref() == b"behindDoc"
+                                && let Ok(val) = attr.unescape_value()
+                                && (val == "1" || val == "true")
+                            {
+                                behind_doc = true;
+                            }
+                        }
+                    }
+                    b"wrapSquare" if in_anchor => {
+                        current_wrap = WrapMode::Square;
+                        found_wrap = true;
+                    }
+                    b"wrapTight" if in_anchor => {
+                        current_wrap = WrapMode::Tight;
+                        found_wrap = true;
+                    }
+                    b"wrapTopAndBottom" if in_anchor => {
+                        current_wrap = WrapMode::TopAndBottom;
+                        found_wrap = true;
+                    }
+                    b"wrapNone" if in_anchor => {
+                        current_wrap = WrapMode::None;
+                        found_wrap = true;
+                    }
+                    b"wrapThrough" if in_anchor => {
+                        // Treat wrapThrough similar to Tight
+                        current_wrap = WrapMode::Tight;
+                        found_wrap = true;
+                    }
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::End(ref e)) => {
+                let local = e.local_name();
+                if local.as_ref() == b"anchor" && in_anchor {
+                    // If no explicit wrap element was found and behindDoc is set,
+                    // treat as Behind. Otherwise default to None.
+                    if !found_wrap && behind_doc {
+                        current_wrap = WrapMode::None; // behind_doc flag handled in WrapContext
+                    }
+                    results.push(AnchorWrapInfo {
+                        wrap_mode: current_wrap,
+                        behind_doc,
+                    });
+                    in_anchor = false;
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    results
+}
+
 /// Build a `NoteContext` by parsing footnotes/endnotes from the raw DOCX ZIP.
 /// This is needed because docx-rs reader does not parse `w:footnoteReference`
 /// or `w:endnoteReference` elements.
@@ -523,6 +660,8 @@ impl Parser for DocxParser {
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         // Build note context from raw ZIP before docx-rs parsing
         let notes = build_note_context(data);
+        // Build wrap context for anchor image wrap types from raw ZIP
+        let wraps = build_wrap_context(data);
 
         let docx = docx_rs::read_docx(data)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;
@@ -544,6 +683,7 @@ impl Parser for DocxParser {
                         &hyperlinks,
                         &style_map,
                         &notes,
+                        &wraps,
                     )]
                 }
                 docx_rs::DocumentChild::Table(table) => {
@@ -553,10 +693,11 @@ impl Parser for DocxParser {
                         &hyperlinks,
                         &style_map,
                         &notes,
+                        &wraps,
                     ))])]
                 }
                 docx_rs::DocumentChild::StructuredDataTag(sdt) => {
-                    convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &notes)
+                    convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &notes, &wraps)
                 }
                 _ => vec![TaggedElement::Plain(vec![])],
             }));
@@ -767,23 +908,24 @@ fn convert_sdt_children(
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
     notes: &NoteContext,
+    wraps: &WrapContext,
 ) -> Vec<TaggedElement> {
     let mut result = Vec::new();
     for child in &sdt.children {
         match child {
             docx_rs::StructuredDataTagChild::Paragraph(para) => {
                 result.push(convert_paragraph_element(
-                    para, images, hyperlinks, style_map, notes,
+                    para, images, hyperlinks, style_map, notes, wraps,
                 ));
             }
             docx_rs::StructuredDataTagChild::Table(table) => {
                 result.push(TaggedElement::Plain(vec![Block::Table(convert_table(
-                    table, images, hyperlinks, style_map, notes,
+                    table, images, hyperlinks, style_map, notes, wraps,
                 ))]));
             }
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
                 result.extend(convert_sdt_children(
-                    nested, images, hyperlinks, style_map, notes,
+                    nested, images, hyperlinks, style_map, notes, wraps,
                 ));
             }
             _ => {}
@@ -800,12 +942,21 @@ fn convert_paragraph_element(
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
     notes: &NoteContext,
+    wraps: &WrapContext,
 ) -> TaggedElement {
     let num_info = extract_num_info(para);
 
     // Build the paragraph IR
     let mut blocks = Vec::new();
-    convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, notes);
+    convert_paragraph_blocks(
+        para,
+        &mut blocks,
+        images,
+        hyperlinks,
+        style_map,
+        notes,
+        wraps,
+    );
 
     match num_info {
         Some(info) => {
@@ -856,6 +1007,7 @@ fn convert_paragraph_blocks(
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
     notes: &NoteContext,
+    wraps: &WrapContext,
 ) {
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
@@ -885,10 +1037,10 @@ fn convert_paragraph_blocks(
                     continue;
                 }
 
-                // Check for inline images in this run
+                // Check for images in this run (inline or floating)
                 for run_child in &run.children {
                     if let docx_rs::RunChild::Drawing(drawing) = run_child
-                        && let Some(img_block) = extract_drawing_image(drawing, images)
+                        && let Some(img_block) = extract_drawing_image(drawing, images, wraps)
                     {
                         inline_images.push(img_block);
                     }
@@ -940,8 +1092,19 @@ fn convert_paragraph_blocks(
     }));
 }
 
+/// Convert EMU (English Metric Units) to points for signed values (position offsets).
+fn emu_to_pt_signed(emu: i32) -> f64 {
+    emu as f64 / 12700.0
+}
+
 /// Extract an image from a Drawing element if it contains a Pic with matching image data.
-fn extract_drawing_image(drawing: &docx_rs::Drawing, images: &ImageMap) -> Option<Block> {
+/// Anchor images (floating) are returned as `Block::FloatingImage` with wrap mode from context.
+/// Inline images are returned as `Block::Image`.
+fn extract_drawing_image(
+    drawing: &docx_rs::Drawing,
+    images: &ImageMap,
+    wraps: &WrapContext,
+) -> Option<Block> {
     let pic = match &drawing.data {
         Some(docx_rs::DrawingData::Pic(pic)) => pic,
         _ => return None,
@@ -962,12 +1125,36 @@ fn extract_drawing_image(drawing: &docx_rs::Drawing, images: &ImageMap) -> Optio
         None
     };
 
-    Some(Block::Image(ImageData {
+    let image_data = ImageData {
         data: data.clone(),
         format: ImageFormat::Png, // docx-rs converts all images to PNG
         width,
         height,
-    }))
+    };
+
+    // Check if this is an anchor (floating) image
+    if pic.position_type == docx_rs::DrawingPositionType::Anchor {
+        let wrap_mode = wraps.consume_next();
+
+        // Extract position offsets from the Pic
+        let offset_x = match pic.position_h {
+            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt_signed(emu),
+            docx_rs::DrawingPosition::Align(_) => 0.0,
+        };
+        let offset_y = match pic.position_v {
+            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt_signed(emu),
+            docx_rs::DrawingPosition::Align(_) => 0.0,
+        };
+
+        Some(Block::FloatingImage(FloatingImage {
+            image: image_data,
+            wrap_mode,
+            offset_x,
+            offset_y,
+        }))
+    } else {
+        Some(Block::Image(image_data))
+    }
 }
 
 /// Extract paragraph-level formatting from docx-rs ParagraphProperty.
@@ -1066,11 +1253,12 @@ fn convert_table(
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
     notes: &NoteContext,
+    wraps: &WrapContext,
 ) -> Table {
     let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
-    let raw_rows = extract_raw_rows(table, images, hyperlinks, style_map, notes);
+    let raw_rows = extract_raw_rows(table, images, hyperlinks, style_map, notes, wraps);
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
@@ -1098,6 +1286,7 @@ fn extract_raw_rows(
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
     notes: &NoteContext,
+    wraps: &WrapContext,
 ) -> Vec<Vec<RawCell>> {
     let mut raw_rows = Vec::new();
 
@@ -1122,7 +1311,7 @@ fn extract_raw_rows(
                 .and_then(|v| v.as_str())
                 .map(String::from);
 
-            let content = extract_cell_content(cell, images, hyperlinks, style_map, notes);
+            let content = extract_cell_content(cell, images, hyperlinks, style_map, notes, wraps);
             let border = prop_json
                 .as_ref()
                 .and_then(|j| j.get("borders"))
@@ -1220,12 +1409,21 @@ fn extract_cell_content(
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
     notes: &NoteContext,
+    wraps: &WrapContext,
 ) -> Vec<Block> {
     let mut blocks = Vec::new();
     for content in &cell.children {
         match content {
             docx_rs::TableCellContent::Paragraph(para) => {
-                convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, notes);
+                convert_paragraph_blocks(
+                    para,
+                    &mut blocks,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    notes,
+                    wraps,
+                );
             }
             docx_rs::TableCellContent::Table(nested_table) => {
                 blocks.push(Block::Table(convert_table(
@@ -1234,6 +1432,7 @@ fn extract_cell_content(
                     hyperlinks,
                     style_map,
                     notes,
+                    wraps,
                 )));
             }
             _ => {}
@@ -4113,5 +4312,225 @@ mod tests {
             all_text.iter().any(|t| t.contains("SDT Content")),
             "Expected 'SDT Content' in output, got: {all_text:?}"
         );
+    }
+
+    // ── Floating image (anchor) tests ──
+
+    /// Helper: find all FloatingImage blocks in a FlowPage.
+    fn find_floating_images(doc: &Document) -> Vec<&FloatingImage> {
+        let page = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        page.content
+            .iter()
+            .filter_map(|b| match b {
+                Block::FloatingImage(fi) => Some(fi),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_docx_floating_image_square_wrap() {
+        // Build a floating image with wrapSquare (allow_overlap = false, floating)
+        let bmp_data = make_test_bmp();
+        let pic = docx_rs::Pic::new(&bmp_data)
+            .size(2_540_000, 1_270_000) // 200pt × 100pt
+            .floating()
+            .offset_x(914_400) // 72pt (1 inch)
+            .offset_y(457_200); // 36pt (0.5 inch)
+        // allow_overlap defaults to false for floating() → docx-rs writes wrapSquare
+
+        let docx = docx_rs::Docx::new()
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_image(pic)));
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let floating = find_floating_images(&doc);
+        assert_eq!(floating.len(), 1, "Expected one floating image");
+
+        let fi = floating[0];
+        assert_eq!(fi.wrap_mode, WrapMode::Square);
+        assert!(!fi.image.data.is_empty(), "Image data should not be empty");
+
+        // Check dimensions
+        let width = fi.image.width.expect("Expected width");
+        let height = fi.image.height.expect("Expected height");
+        assert!(
+            (width - 200.0).abs() < 0.5,
+            "Expected width ~200pt, got {width}"
+        );
+        assert!(
+            (height - 100.0).abs() < 0.5,
+            "Expected height ~100pt, got {height}"
+        );
+    }
+
+    #[test]
+    fn test_docx_floating_image_top_and_bottom_wrap() {
+        // Build a DOCX manually with wrapTopAndBottom
+        let bmp_data = make_test_bmp();
+        let pic = docx_rs::Pic::new(&bmp_data)
+            .size(1_270_000, 1_270_000) // 100pt × 100pt
+            .floating()
+            .overlapping(); // allow_overlap=true → docx-rs writes wrapNone
+
+        // Build DOCX bytes
+        let docx = docx_rs::Docx::new()
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_image(pic)));
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let mut data = cursor.into_inner();
+
+        // Patch the DOCX XML to replace wrapNone with wrapTopAndBottom
+        data = patch_docx_wrap_type(&data, "wp:wrapNone", "wp:wrapTopAndBottom");
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let floating = find_floating_images(&doc);
+        assert_eq!(floating.len(), 1, "Expected one floating image");
+        assert_eq!(floating[0].wrap_mode, WrapMode::TopAndBottom);
+    }
+
+    #[test]
+    fn test_docx_floating_image_behind_wrap() {
+        let bmp_data = make_test_bmp();
+        let pic = docx_rs::Pic::new(&bmp_data)
+            .size(1_270_000, 1_270_000)
+            .floating()
+            .overlapping(); // generates wrapNone
+
+        let docx = docx_rs::Docx::new()
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_image(pic)));
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let mut data = cursor.into_inner();
+
+        // Patch to wrapNone → behindDoc attribute + wrapNone
+        // Behind text is indicated by behindDoc="1" attribute on wp:anchor,
+        // combined with wrapNone. Our scan should detect this.
+        data = patch_docx_behind_doc(&data);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let floating = find_floating_images(&doc);
+        assert_eq!(floating.len(), 1, "Expected one floating image");
+        // behindDoc with wrapNone → Behind wrap mode
+        assert_eq!(floating[0].wrap_mode, WrapMode::Behind);
+    }
+
+    #[test]
+    fn test_docx_floating_image_position_offset() {
+        let bmp_data = make_test_bmp();
+        let pic = docx_rs::Pic::new(&bmp_data)
+            .size(1_270_000, 1_270_000) // 100pt × 100pt
+            .floating()
+            .offset_x(914_400) // 72pt (1 inch in EMU)
+            .offset_y(457_200); // 36pt (0.5 inch in EMU)
+
+        let docx = docx_rs::Docx::new()
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_image(pic)));
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let floating = find_floating_images(&doc);
+        assert_eq!(floating.len(), 1, "Expected one floating image");
+
+        let fi = floating[0];
+        assert!(
+            (fi.offset_x - 72.0).abs() < 0.5,
+            "Expected offset_x ~72pt, got {}",
+            fi.offset_x
+        );
+        assert!(
+            (fi.offset_y - 36.0).abs() < 0.5,
+            "Expected offset_y ~36pt, got {}",
+            fi.offset_y
+        );
+    }
+
+    #[test]
+    fn test_docx_inline_image_not_floating() {
+        // Inline images should NOT become FloatingImage
+        let data = build_docx_with_image(100, 80);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let floating = find_floating_images(&doc);
+        assert_eq!(
+            floating.len(),
+            0,
+            "Inline images should not be floating images"
+        );
+
+        let images = find_images(&doc);
+        assert_eq!(images.len(), 1, "Should still find the inline image");
+    }
+
+    /// Helper: Patch a DOCX ZIP by replacing a wrap element in document.xml.
+    fn patch_docx_wrap_type(data: &[u8], old_wrap: &str, new_wrap: &str) -> Vec<u8> {
+        let mut archive = zip::ZipArchive::new(Cursor::new(data)).unwrap();
+        let mut new_zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).unwrap();
+            let name = file.name().to_string();
+            let options = zip::write::FileOptions::default();
+            new_zip.start_file(&name, options).unwrap();
+
+            let mut contents = Vec::new();
+            file.read_to_end(&mut contents).unwrap();
+
+            if name == "word/document.xml" {
+                let xml = String::from_utf8(contents).unwrap();
+                // Replace self-closing: <wp:wrapNone /> → <wp:wrapTopAndBottom />
+                let xml = xml
+                    .replace(&format!("<{old_wrap} />"), &format!("<{new_wrap} />"))
+                    .replace(&format!("<{old_wrap}/>"), &format!("<{new_wrap}/>"));
+                std::io::Write::write_all(&mut new_zip, xml.as_bytes()).unwrap();
+            } else {
+                std::io::Write::write_all(&mut new_zip, &contents).unwrap();
+            }
+        }
+
+        new_zip.finish().unwrap().into_inner()
+    }
+
+    /// Helper: Patch a DOCX ZIP to set behindDoc="1" on wp:anchor in document.xml.
+    fn patch_docx_behind_doc(data: &[u8]) -> Vec<u8> {
+        let mut archive = zip::ZipArchive::new(Cursor::new(data)).unwrap();
+        let mut new_zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).unwrap();
+            let name = file.name().to_string();
+            let options = zip::write::FileOptions::default();
+            new_zip.start_file(&name, options).unwrap();
+
+            let mut contents = Vec::new();
+            file.read_to_end(&mut contents).unwrap();
+
+            if name == "word/document.xml" {
+                let xml = String::from_utf8(contents).unwrap();
+                // Replace existing behindDoc="0" with behindDoc="1"
+                let xml = xml.replace("behindDoc=\"0\"", "behindDoc=\"1\"");
+                std::io::Write::write_all(&mut new_zip, xml.as_bytes()).unwrap();
+            } else {
+                std::io::Write::write_all(&mut new_zip, &contents).unwrap();
+            }
+        }
+
+        new_zip.finish().unwrap().into_inner()
     }
 }

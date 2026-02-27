@@ -4,9 +4,9 @@ use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FixedElement, FixedElementKind,
-    FixedPage, FlowPage, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List,
-    ListKind, Margins, Page, PageSize, Paragraph, ParagraphStyle, Run, Shape, ShapeKind, Table,
-    TableCell, TablePage, TextStyle,
+    FixedPage, FloatingImage, FlowPage, HFInline, HeaderFooter, ImageData, ImageFormat,
+    LineSpacing, List, ListKind, Margins, Page, PageSize, Paragraph, ParagraphStyle, Run, Shape,
+    ShapeKind, Table, TableCell, TablePage, TextStyle, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -444,6 +444,10 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             generate_image(out, img, ctx);
             Ok(())
         }
+        Block::FloatingImage(fi) => {
+            generate_floating_image(out, fi, ctx);
+            Ok(())
+        }
         Block::List(list) => generate_list(out, list),
     }
 }
@@ -647,6 +651,7 @@ fn generate_cell_content(
             Block::Paragraph(para) => generate_cell_paragraph(out, para),
             Block::Table(table) => generate_table(out, table, ctx)?,
             Block::Image(img) => generate_image(out, img, ctx),
+            Block::FloatingImage(fi) => generate_floating_image(out, fi, ctx),
             Block::List(list) => generate_list(out, list)?,
             Block::PageBreak => {}
         }
@@ -675,6 +680,81 @@ fn generate_image(out: &mut String, img: &ImageData, ctx: &mut GenCtx) {
     }
 
     out.push_str(")\n");
+}
+
+/// Generate Typst markup for a floating image.
+///
+/// Uses `#place()` for absolute positioning. The wrap mode determines how text
+/// interacts with the image:
+/// - Behind/InFront/None: `#place()` with no text wrapping
+/// - Square/Tight/TopAndBottom: `#place()` with `float: true` for best-effort text flow
+fn generate_floating_image(out: &mut String, fi: &FloatingImage, ctx: &mut GenCtx) {
+    let path = ctx.add_image(&fi.image.data, fi.image.format);
+
+    match fi.wrap_mode {
+        WrapMode::TopAndBottom => {
+            // Emit a block-level image — text above and below only
+            out.push_str("#block(width: 100%)[\n");
+            let _ = write!(
+                out,
+                "  #place(top + left, dx: {}pt, dy: 0pt)[",
+                format_f64(fi.offset_x)
+            );
+            out.push_str("#image(\"");
+            out.push_str(&path);
+            out.push('"');
+            if let Some(w) = fi.image.width {
+                let _ = write!(out, ", width: {}pt", format_f64(w));
+            }
+            if let Some(h) = fi.image.height {
+                let _ = write!(out, ", height: {}pt", format_f64(h));
+            }
+            out.push_str(")]\n");
+            // Reserve vertical space equal to image height
+            if let Some(h) = fi.image.height {
+                let _ = writeln!(out, "  #v({}pt)", format_f64(h));
+            }
+            out.push_str("]\n");
+        }
+        WrapMode::Behind | WrapMode::InFront | WrapMode::None => {
+            // Place the image at absolute position, no text wrapping
+            let _ = write!(
+                out,
+                "#place(top + left, dx: {}pt, dy: {}pt)[",
+                format_f64(fi.offset_x),
+                format_f64(fi.offset_y)
+            );
+            out.push_str("#image(\"");
+            out.push_str(&path);
+            out.push('"');
+            if let Some(w) = fi.image.width {
+                let _ = write!(out, ", width: {}pt", format_f64(w));
+            }
+            if let Some(h) = fi.image.height {
+                let _ = write!(out, ", height: {}pt", format_f64(h));
+            }
+            out.push_str(")]\n");
+        }
+        WrapMode::Square | WrapMode::Tight => {
+            // Best-effort text wrapping: use #place with float: true
+            let _ = write!(
+                out,
+                "#place(top + left, dx: {}pt, dy: {}pt, float: true)[",
+                format_f64(fi.offset_x),
+                format_f64(fi.offset_y)
+            );
+            out.push_str("#image(\"");
+            out.push_str(&path);
+            out.push('"');
+            if let Some(w) = fi.image.width {
+                let _ = write!(out, ", width: {}pt", format_f64(w));
+            }
+            if let Some(h) = fi.image.height {
+                let _ = write!(out, ", height: {}pt", format_f64(h));
+            }
+            out.push_str(")]\n");
+        }
+    }
 }
 
 fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
@@ -3491,6 +3571,127 @@ mod tests {
         assert!(
             output.source.contains("width: 595.28pt"),
             "Expected A4 width, got: {}",
+            output.source
+        );
+    }
+
+    // ── Floating image codegen tests ──
+
+    #[test]
+    fn test_floating_image_square_wrap_codegen() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::FloatingImage(FloatingImage {
+                    image: ImageData {
+                        data: vec![0x89, 0x50, 0x4E, 0x47],
+                        format: ImageFormat::Png,
+                        width: Some(200.0),
+                        height: Some(100.0),
+                    },
+                    wrap_mode: WrapMode::Square,
+                    offset_x: 72.0,
+                    offset_y: 36.0,
+                })],
+                header: None,
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+
+        let output = generate_typst(&doc).unwrap();
+        // Square wrap should use #place with float: true
+        assert!(
+            output.source.contains("#place("),
+            "Expected #place() for floating image, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("float: true"),
+            "Expected float: true for square wrap, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("dx: 72pt"),
+            "Expected dx: 72pt, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_floating_image_top_and_bottom_codegen() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::FloatingImage(FloatingImage {
+                    image: ImageData {
+                        data: vec![0x89, 0x50, 0x4E, 0x47],
+                        format: ImageFormat::Png,
+                        width: Some(150.0),
+                        height: Some(75.0),
+                    },
+                    wrap_mode: WrapMode::TopAndBottom,
+                    offset_x: 10.0,
+                    offset_y: 0.0,
+                })],
+                header: None,
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+
+        let output = generate_typst(&doc).unwrap();
+        // TopAndBottom should use a block with vertical space
+        assert!(
+            output.source.contains("#block("),
+            "Expected #block() for topAndBottom wrap, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#v(75pt)"),
+            "Expected vertical space for image height, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_floating_image_behind_codegen() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::FloatingImage(FloatingImage {
+                    image: ImageData {
+                        data: vec![0x89, 0x50, 0x4E, 0x47],
+                        format: ImageFormat::Png,
+                        width: Some(100.0),
+                        height: Some(50.0),
+                    },
+                    wrap_mode: WrapMode::Behind,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                })],
+                header: None,
+                footer: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+
+        let output = generate_typst(&doc).unwrap();
+        // Behind should use #place without float
+        assert!(
+            output.source.contains("#place("),
+            "Expected #place() for behind wrap, got:\n{}",
+            output.source
+        );
+        assert!(
+            !output.source.contains("float: true"),
+            "Behind wrap should NOT use float, got:\n{}",
             output.source
         );
     }
