@@ -7,8 +7,8 @@ use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Color, Document, FloatingImage, FlowPage, HFInline,
     HeaderFooter, HeaderFooterParagraph, ImageData, ImageFormat, LineSpacing, List, ListItem,
-    ListKind, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, Table,
-    TableCell, TableRow, TextStyle, WrapMode,
+    ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
+    StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -478,6 +478,43 @@ fn scan_anchor_wrap_types(xml: &str) -> Vec<AnchorWrapInfo> {
     results
 }
 
+/// Context for OMML math equations extracted from raw document XML.
+/// docx-rs does not parse `m:oMath` / `m:oMathPara` elements — they are
+/// completely absent from the `ParagraphChild` enum — so we scan the raw ZIP.
+struct MathContext {
+    /// Math equations keyed by 0-based body child index in document.xml.
+    /// A paragraph can contain multiple equations.
+    equations: HashMap<usize, Vec<MathEquation>>,
+}
+
+impl MathContext {
+    /// Take the math equations for a given body child index (consuming them).
+    fn take(&mut self, index: usize) -> Vec<MathEquation> {
+        self.equations.remove(&index).unwrap_or_default()
+    }
+}
+
+/// Build a `MathContext` by scanning document.xml for OMML elements.
+fn build_math_context(data: &[u8]) -> MathContext {
+    let mut equations: HashMap<usize, Vec<MathEquation>> = HashMap::new();
+
+    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
+        return MathContext { equations };
+    };
+
+    if let Some(xml) = read_zip_text(&mut archive, "word/document.xml") {
+        let raw = super::omml::scan_math_equations(&xml);
+        for (idx, content, display) in raw {
+            equations
+                .entry(idx)
+                .or_default()
+                .push(MathEquation { content, display });
+        }
+    }
+
+    MathContext { equations }
+}
+
 /// Build a `NoteContext` by parsing footnotes/endnotes from the raw DOCX ZIP.
 /// This is needed because docx-rs reader does not parse `w:footnoteReference`
 /// or `w:endnoteReference` elements.
@@ -662,6 +699,8 @@ impl Parser for DocxParser {
         let notes = build_note_context(data);
         // Build wrap context for anchor image wrap types from raw ZIP
         let wraps = build_wrap_context(data);
+        // Build math context for OMML equations from raw ZIP
+        let mut math = build_math_context(data);
 
         let docx = docx_rs::read_docx(data)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;
@@ -677,14 +716,20 @@ impl Parser for DocxParser {
         for (idx, child) in docx.document.children.iter().enumerate() {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
                 docx_rs::DocumentChild::Paragraph(para) => {
-                    vec![convert_paragraph_element(
+                    let mut tagged = vec![convert_paragraph_element(
                         para,
                         &images,
                         &hyperlinks,
                         &style_map,
                         &notes,
                         &wraps,
-                    )]
+                    )];
+                    // Inject math equations for this body child
+                    let eqs = math.take(idx);
+                    for eq in eqs {
+                        tagged.push(TaggedElement::Plain(vec![Block::MathEquation(eq)]));
+                    }
+                    tagged
                 }
                 docx_rs::DocumentChild::Table(table) => {
                     vec![TaggedElement::Plain(vec![Block::Table(convert_table(
@@ -4532,5 +4577,199 @@ mod tests {
         }
 
         new_zip.finish().unwrap().into_inner()
+    }
+
+    // ── OMML math equation tests ──
+
+    /// Build a DOCX ZIP with a custom document.xml containing OMML math.
+    fn build_docx_with_math(document_xml: &str) -> Vec<u8> {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::FileOptions::default();
+
+        // [Content_Types].xml
+        zip.start_file("[Content_Types].xml", options).unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#,
+        )
+        .unwrap();
+
+        // _rels/.rels
+        zip.start_file("_rels/.rels", options).unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#,
+        )
+        .unwrap();
+
+        // word/_rels/document.xml.rels
+        zip.start_file("word/_rels/document.xml.rels", options)
+            .unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+</Relationships>"#,
+        )
+        .unwrap();
+
+        // word/document.xml
+        zip.start_file("word/document.xml", options).unwrap();
+        std::io::Write::write_all(&mut zip, document_xml.as_bytes()).unwrap();
+
+        zip.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn test_parse_docx_with_display_math_fraction() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
+    <w:body>
+        <w:p>
+            <w:r><w:t>Before math</w:t></w:r>
+        </w:p>
+        <w:p>
+            <m:oMathPara>
+                <m:oMath>
+                    <m:f>
+                        <m:num><m:r><m:t>a</m:t></m:r></m:num>
+                        <m:den><m:r><m:t>b</m:t></m:r></m:den>
+                    </m:f>
+                </m:oMath>
+            </m:oMathPara>
+        </w:p>
+        <w:p>
+            <w:r><w:t>After math</w:t></w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_math(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(fp) => fp,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Should find a MathEquation block
+        let math_blocks: Vec<&MathEquation> = page
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::MathEquation(m) => Some(m),
+                _ => None,
+            })
+            .collect();
+
+        assert!(
+            !math_blocks.is_empty(),
+            "Expected at least one MathEquation block, found none"
+        );
+        assert_eq!(math_blocks[0].content, "frac(a, b)");
+        assert!(math_blocks[0].display);
+    }
+
+    #[test]
+    fn test_parse_docx_with_inline_math_superscript() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
+    <w:body>
+        <w:p>
+            <w:r><w:t>The value of </w:t></w:r>
+            <m:oMath>
+                <m:sSup>
+                    <m:e><m:r><m:t>x</m:t></m:r></m:e>
+                    <m:sup><m:r><m:t>2</m:t></m:r></m:sup>
+                </m:sSup>
+            </m:oMath>
+            <w:r><w:t> is positive</w:t></w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_math(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(fp) => fp,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let math_blocks: Vec<&MathEquation> = page
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::MathEquation(m) => Some(m),
+                _ => None,
+            })
+            .collect();
+
+        assert!(
+            !math_blocks.is_empty(),
+            "Expected at least one MathEquation block"
+        );
+        assert_eq!(math_blocks[0].content, "x^2");
+        assert!(!math_blocks[0].display);
+    }
+
+    #[test]
+    fn test_parse_docx_with_complex_math() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
+    <w:body>
+        <w:p>
+            <m:oMathPara>
+                <m:oMath>
+                    <m:r><m:t>E</m:t></m:r>
+                    <m:r><m:t>=</m:t></m:r>
+                    <m:r><m:t>m</m:t></m:r>
+                    <m:sSup>
+                        <m:e><m:r><m:t>c</m:t></m:r></m:e>
+                        <m:sup><m:r><m:t>2</m:t></m:r></m:sup>
+                    </m:sSup>
+                </m:oMath>
+            </m:oMathPara>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_math(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(fp) => fp,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let math_blocks: Vec<&MathEquation> = page
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::MathEquation(m) => Some(m),
+                _ => None,
+            })
+            .collect();
+
+        assert!(!math_blocks.is_empty());
+        assert_eq!(math_blocks[0].content, "E=mc^2");
+        assert!(math_blocks[0].display);
     }
 }

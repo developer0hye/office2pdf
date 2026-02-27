@@ -1,4 +1,5 @@
 pub mod docx;
+pub(crate) mod omml;
 pub mod pptx;
 pub mod xlsx;
 
