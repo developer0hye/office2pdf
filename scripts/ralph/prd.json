@@ -86,8 +86,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "Existing Criterion benchmarks may exist from US-047. Extend or validate them."
+      "passes": true,
+      "notes": "Extended Criterion benchmarks with multi-sheet XLSX. Added 3 perf validation tests. All formats convert in <130ms (release), well under 2s target."
     }
   ]
 }

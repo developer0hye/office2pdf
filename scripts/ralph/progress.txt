@@ -146,3 +146,28 @@ Started: 2026년  2월 27일 금요일 19시 19분 06초 KST
   - ConditionalFormatValueObjectValues: Min/Max/Percent/Percentile/Number/Formula
   - DataBar fill_pct = (value - min) / (max - min) * 100
 ---
+
+## 2026-02-27 - US-054: Performance benchmarks and validation
+- What was implemented:
+  - Extended existing Criterion benchmarks with `build_xlsx_sheets()` for multi-sheet XLSX
+  - Added `xlsx/10_sheets` benchmark (10 sheets × 20 rows × 5 cols)
+  - Added performance validation integration tests in `tests/perf_validation.rs`
+  - 3 assertion-based tests: perf_docx_10_pages_under_2s, perf_pptx_10_slides_under_2s, perf_xlsx_10_sheets_under_2s
+- Benchmark results (Apple Silicon, release mode, Criterion 10-sample):
+  - docx/10_pages:   119.07 ms (well under 2s target)
+  - docx/100_pages:  124.78 ms
+  - pptx/10_slides:  117.00 ms (well under 2s target)
+  - pptx/100_slides: 119.27 ms
+  - xlsx/50_rows:    117.79 ms
+  - xlsx/500_rows:   129.17 ms
+  - xlsx/10_sheets:  122.56 ms (well under 2s target)
+- PRD target: 10-page document converts in < 2 seconds → **PASS** (all under 130ms in release mode)
+- Files changed:
+  - `crates/office2pdf/benches/conversion.rs` - added build_xlsx_sheets(), xlsx/10_sheets bench
+  - `crates/office2pdf/tests/perf_validation.rs` - new file, 3 performance validation tests
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - Typst compilation dominates conversion time (~100ms baseline), parsing itself is fast
+  - 10× more content only adds ~5-10ms, showing good scaling
+  - Performance validation tests use debug profile (~2× slower), still well under budget
+---
