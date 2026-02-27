@@ -32,6 +32,7 @@ enum SolidFillCtx {
     RunFill,
 }
 
+/// Parser for PPTX (Office Open XML PowerPoint) presentations.
 pub struct PptxParser;
 
 /// Parsed theme data from ppt/theme/theme1.xml.
