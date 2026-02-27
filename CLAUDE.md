@@ -53,7 +53,14 @@ This project follows a **6-month rolling MSRV policy** (aligned with [tokio](htt
 2. Confirm all dependencies compile on the target version (`cargo check` with the target toolchain, or review dependency MSRV metadata)
 3. Update CI matrix to include the new MSRV version
 
-## Releases
+## Release Procedure
 
-- When creating a GitHub Release, include a **Contributors** section crediting all external contributors since the previous release.
-- Use `git log <prev-tag>..HEAD --format='%an' | sort -u` to find contributors. List each with their GitHub profile link and a brief summary of their contribution.
+When asked to "release", always perform **both** GitHub Release and crates.io publish:
+
+1. **Version bump** — Create a PR (`chore/publish-<version>`) that bumps `version` in both `crates/office2pdf/Cargo.toml` and `crates/office2pdf-cli/Cargo.toml`, and updates the CLI's `office2pdf` dependency version. Merge via standard PR workflow.
+2. **GitHub Release** — `gh release create v<version>` with changelog and contributors section.
+   - Use `git log <prev-tag>..HEAD --format='%an' | sort -u` to find contributors. List each with their GitHub profile link.
+3. **crates.io publish** — Publish lib first, then CLI:
+   - `cargo publish -p office2pdf`
+   - `cargo publish -p office2pdf-cli`
+4. **Tag alignment** — Ensure the GitHub release tag (`v<version>`) and Cargo.toml versions match.
