@@ -160,8 +160,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: CLI accepts Vec<PathBuf> inputs, --outdir flag, --output conflicts_with outdir. determine_output_path() resolves output for each file. convert_batch() iterates independently with per-file error handling. Summary printed for multi-file runs (N succeeded, M failed). 7 tests (4 unit for output path, 3 integration for batch conversion)."
     },
     {
       "id": "US-039",
