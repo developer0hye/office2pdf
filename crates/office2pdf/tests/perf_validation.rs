@@ -1,15 +1,23 @@
-use std::io::Cursor;
+//! Performance validation tests.
+//!
+//! These tests verify that conversion of 10-page equivalent documents completes
+//! within the PRD-defined 2-second budget on local hardware.
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use std::io::Cursor;
+use std::time::Instant;
+
 use office2pdf::config::{ConvertOptions, Format};
 
-/// Build a DOCX with the given number of paragraphs.
-fn build_docx(paragraphs: usize) -> Vec<u8> {
+const BUDGET: std::time::Duration = std::time::Duration::from_secs(2);
+
+fn build_docx_10_pages() -> Vec<u8> {
     let mut doc = docx_rs::Docx::new();
-    for i in 0..paragraphs {
+    for i in 0..30 {
         doc = doc.add_paragraph(
-            docx_rs::Paragraph::new()
-                .add_run(docx_rs::Run::new().add_text(format!("Paragraph {i}. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."))),
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text(format!(
+                "Paragraph {i}. Lorem ipsum dolor sit amet, consectetur adipiscing elit. \
+                     Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+            ))),
         );
     }
     let mut buf = Cursor::new(Vec::new());
@@ -17,17 +25,15 @@ fn build_docx(paragraphs: usize) -> Vec<u8> {
     buf.into_inner()
 }
 
-/// Build a PPTX with the given number of slides, each containing a text box.
-fn build_pptx(slides: usize) -> Vec<u8> {
-    let buf = Vec::new();
-    let cursor = Cursor::new(buf);
+fn build_pptx_10_slides() -> Vec<u8> {
+    let slides = 10;
+    let cursor = Cursor::new(Vec::new());
     let mut writer = zip::ZipWriter::new(cursor);
     let opts: zip::write::FileOptions = zip::write::FileOptions::default();
 
-    // [Content_Types].xml
-    let mut slide_content_types = String::new();
+    let mut slide_ct = String::new();
     for i in 1..=slides {
-        slide_content_types.push_str(&format!(
+        slide_ct.push_str(&format!(
             r#"<Override PartName="/ppt/slides/slide{i}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>"#
         ));
     }
@@ -40,14 +46,13 @@ fn build_pptx(slides: usize) -> Vec<u8> {
   <Default Extension="xml" ContentType="application/xml"/>
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
-  {slide_content_types}
+  {slide_ct}
 </Types>"#
         )
         .as_bytes(),
     )
     .unwrap();
 
-    // _rels/.rels
     writer.start_file("_rels/.rels", opts).unwrap();
     std::io::Write::write_all(
         &mut writer,
@@ -58,10 +63,9 @@ fn build_pptx(slides: usize) -> Vec<u8> {
     )
     .unwrap();
 
-    // ppt/presentation.xml
-    let mut slide_id_list = String::new();
+    let mut sid = String::new();
     for i in 1..=slides {
-        slide_id_list.push_str(&format!(r#"<p:sldId id="{}" r:id="rId{i}"/>"#, 255 + i));
+        sid.push_str(&format!(r#"<p:sldId id="{}" r:id="rId{i}"/>"#, 255 + i));
     }
     writer.start_file("ppt/presentation.xml", opts).unwrap();
     std::io::Write::write_all(
@@ -72,7 +76,7 @@ fn build_pptx(slides: usize) -> Vec<u8> {
                 xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
                 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:sldMasterIdLst/>
-  <p:sldIdLst>{slide_id_list}</p:sldIdLst>
+  <p:sldIdLst>{sid}</p:sldIdLst>
   <p:sldSz cx="9144000" cy="6858000"/>
 </p:presentation>"#
         )
@@ -80,10 +84,9 @@ fn build_pptx(slides: usize) -> Vec<u8> {
     )
     .unwrap();
 
-    // ppt/_rels/presentation.xml.rels
-    let mut slide_rels = String::new();
+    let mut srels = String::new();
     for i in 1..=slides {
-        slide_rels.push_str(&format!(
+        srels.push_str(&format!(
             r#"<Relationship Id="rId{i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide{i}.xml"/>"#
         ));
     }
@@ -95,14 +98,13 @@ fn build_pptx(slides: usize) -> Vec<u8> {
         format!(
             r#"<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  {slide_rels}
+  {srels}
 </Relationships>"#
         )
         .as_bytes(),
     )
     .unwrap();
 
-    // Slides
     for i in 1..=slides {
         writer
             .start_file(format!("ppt/slides/slide{i}.xml"), opts)
@@ -125,7 +127,7 @@ fn build_pptx(slides: usize) -> Vec<u8> {
         </p:spPr>
         <p:txBody>
           <a:bodyPr/>
-          <a:p><a:r><a:t>Slide {i}: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</a:t></a:r></a:p>
+          <a:p><a:r><a:t>Slide {i}: Lorem ipsum dolor sit amet.</a:t></a:r></a:p>
         </p:txBody>
       </p:sp>
     </p:spTree>
@@ -140,28 +142,8 @@ fn build_pptx(slides: usize) -> Vec<u8> {
     writer.finish().unwrap().into_inner()
 }
 
-/// Build an XLSX with the given number of rows on a single sheet.
-fn build_xlsx(rows: usize) -> Vec<u8> {
+fn build_xlsx_10_sheets() -> Vec<u8> {
     let mut book = umya_spreadsheet::new_file();
-    let sheet = book.get_sheet_mut(&0).unwrap();
-    sheet.set_name("Data");
-    for row in 1..=rows {
-        for col in 1..=5u32 {
-            let coord = format!("{}{}", (b'A' + (col - 1) as u8) as char, row);
-            sheet
-                .get_cell_mut(coord.as_str())
-                .set_value(format!("R{row}C{col}"));
-        }
-    }
-    let mut cursor = Cursor::new(Vec::new());
-    umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
-    cursor.into_inner()
-}
-
-/// Build an XLSX with multiple sheets, each containing 20 rows x 5 columns.
-fn build_xlsx_sheets(sheets: usize) -> Vec<u8> {
-    let mut book = umya_spreadsheet::new_file();
-    // First sheet already exists at index 0
     let sheet = book.get_sheet_mut(&0).unwrap();
     sheet.set_name("Sheet1");
     for row in 1..=20u32 {
@@ -172,8 +154,7 @@ fn build_xlsx_sheets(sheets: usize) -> Vec<u8> {
                 .set_value(format!("S1R{row}C{col}"));
         }
     }
-    // Add remaining sheets
-    for s in 2..=sheets {
+    for s in 2..=10 {
         let name = format!("Sheet{s}");
         book.new_sheet(&name).unwrap();
         let sheet = book.get_sheet_by_name_mut(&name).unwrap();
@@ -191,86 +172,38 @@ fn build_xlsx_sheets(sheets: usize) -> Vec<u8> {
     cursor.into_inner()
 }
 
-fn bench_docx_conversion(c: &mut Criterion) {
-    let data_10 = build_docx(30); // ~10 pages worth
-    let data_100 = build_docx(300); // ~100 pages worth
-
-    let mut group = c.benchmark_group("docx");
-    group.sample_size(10);
-
-    group.bench_function("10_pages", |b| {
-        b.iter(|| {
-            office2pdf::convert_bytes(&data_10, Format::Docx, &ConvertOptions::default()).unwrap()
-        })
-    });
-
-    group.bench_function("100_pages", |b| {
-        b.iter(|| {
-            office2pdf::convert_bytes(&data_100, Format::Docx, &ConvertOptions::default()).unwrap()
-        })
-    });
-
-    group.finish();
+#[test]
+fn perf_docx_10_pages_under_2s() {
+    let data = build_docx_10_pages();
+    let start = Instant::now();
+    office2pdf::convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+    let elapsed = start.elapsed();
+    assert!(
+        elapsed < BUDGET,
+        "DOCX 10-page conversion took {elapsed:?}, exceeds {BUDGET:?} budget"
+    );
 }
 
-fn bench_pptx_conversion(c: &mut Criterion) {
-    let data_10 = build_pptx(10);
-    let data_100 = build_pptx(100);
-
-    let mut group = c.benchmark_group("pptx");
-    group.sample_size(10);
-
-    group.bench_function("10_slides", |b| {
-        b.iter(|| {
-            office2pdf::convert_bytes(&data_10, Format::Pptx, &ConvertOptions::default()).unwrap()
-        })
-    });
-
-    group.bench_function("100_slides", |b| {
-        b.iter(|| {
-            office2pdf::convert_bytes(&data_100, Format::Pptx, &ConvertOptions::default()).unwrap()
-        })
-    });
-
-    group.finish();
+#[test]
+fn perf_pptx_10_slides_under_2s() {
+    let data = build_pptx_10_slides();
+    let start = Instant::now();
+    office2pdf::convert_bytes(&data, Format::Pptx, &ConvertOptions::default()).unwrap();
+    let elapsed = start.elapsed();
+    assert!(
+        elapsed < BUDGET,
+        "PPTX 10-slide conversion took {elapsed:?}, exceeds {BUDGET:?} budget"
+    );
 }
 
-fn bench_xlsx_conversion(c: &mut Criterion) {
-    let data_small = build_xlsx(50);
-    let data_large = build_xlsx(500);
-    let data_10_sheets = build_xlsx_sheets(10);
-
-    let mut group = c.benchmark_group("xlsx");
-    group.sample_size(10);
-
-    group.bench_function("50_rows", |b| {
-        b.iter(|| {
-            office2pdf::convert_bytes(&data_small, Format::Xlsx, &ConvertOptions::default())
-                .unwrap()
-        })
-    });
-
-    group.bench_function("500_rows", |b| {
-        b.iter(|| {
-            office2pdf::convert_bytes(&data_large, Format::Xlsx, &ConvertOptions::default())
-                .unwrap()
-        })
-    });
-
-    group.bench_function("10_sheets", |b| {
-        b.iter(|| {
-            office2pdf::convert_bytes(&data_10_sheets, Format::Xlsx, &ConvertOptions::default())
-                .unwrap()
-        })
-    });
-
-    group.finish();
+#[test]
+fn perf_xlsx_10_sheets_under_2s() {
+    let data = build_xlsx_10_sheets();
+    let start = Instant::now();
+    office2pdf::convert_bytes(&data, Format::Xlsx, &ConvertOptions::default()).unwrap();
+    let elapsed = start.elapsed();
+    assert!(
+        elapsed < BUDGET,
+        "XLSX 10-sheet conversion took {elapsed:?}, exceeds {BUDGET:?} budget"
+    );
 }
-
-criterion_group!(
-    benches,
-    bench_docx_conversion,
-    bench_pptx_conversion,
-    bench_xlsx_conversion
-);
-criterion_main!(benches);
