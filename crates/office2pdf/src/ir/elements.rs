@@ -30,8 +30,37 @@ pub enum Block {
     Paragraph(Paragraph),
     Table(Table),
     Image(ImageData),
+    FloatingImage(FloatingImage),
     List(List),
     PageBreak,
+}
+
+/// How text wraps around a floating image.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WrapMode {
+    /// Text wraps around the image on both sides (square bounding box).
+    Square,
+    /// Text wraps tightly around the image contour.
+    Tight,
+    /// Text appears above and below the image only (no side wrapping).
+    TopAndBottom,
+    /// Image is behind the text (no wrapping, text flows over).
+    Behind,
+    /// Image is in front of the text (no wrapping, image covers text).
+    InFront,
+    /// No text wrapping.
+    None,
+}
+
+/// A floating image with positioning and text wrap mode.
+#[derive(Debug, Clone)]
+pub struct FloatingImage {
+    pub image: ImageData,
+    pub wrap_mode: WrapMode,
+    /// Horizontal offset in points from the anchor reference.
+    pub offset_x: f64,
+    /// Vertical offset in points from the anchor reference.
+    pub offset_y: f64,
 }
 
 /// The kind of list: ordered (numbered) or unordered (bulleted).
