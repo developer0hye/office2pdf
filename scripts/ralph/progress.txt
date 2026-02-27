@@ -62,6 +62,7 @@
 - **PPTX layout/master element inheritance**: `parse_single_slide()` resolves layout and master paths via `resolve_layout_master_paths()`, then parses elements from master, layout, and slide in order (master behind → layout → slide on top). Uses `rels_path_for()` helper for .rels path construction. `parse_slide_xml()` works on any XML with `<p:spTree>` — same function parses slide, layout, and master shapes. Test helpers: `make_layout_xml(shapes)`, `make_master_xml(shapes)`, `build_test_pptx_with_layout_master_multi_slide(cx, cy, slides, layout, master)` for multi-slide testing.
 - **PPTX tables**: Tables live inside `<p:graphicFrame>` elements (not `<p:sp>`). Position from `<p:xfrm>` (not `<a:xfrm>`). Table XML: `<a:graphic><a:graphicData><a:tbl>`. Grid: `<a:tblGrid><a:gridCol w="EMU"/>`. Rows: `<a:tr h="EMU">`. Cells: `<a:tc>` with optional `gridSpan` (colspan), `rowSpan`, `hMerge`/`vMerge` (continuation). Cell content: `<a:txBody>` with same paragraph/run structure as shapes. Cell properties: `<a:tcPr>` with `<a:solidFill>` for background, `<a:lnL/lnR/lnT/lnB w="EMU">` for borders. Maps to `FixedElementKind::Table(Table)` in IR. `parse_pptx_table()` is a standalone sub-parser called from `parse_slide_xml()` when `<a:tbl>` is found. Test helpers: `make_table_graphic_frame(x, y, cx, cy, col_widths_emu, rows_xml)`, `make_table_row(cells_text)`, `table_element(elem)`.
 - **DOCX OMML math equations**: docx-rs v0.4.19 does NOT parse `m:` namespace elements — they are completely absent from `ParagraphChild`/`RunChild` enums. Use raw ZIP scanning pattern (like WrapContext/NoteContext). `MathContext` struct with `HashMap<usize, Vec<MathEquation>>` keyed by body child index. `build_math_context(data)` opens ZIP, reads `word/document.xml`, calls `omml::scan_math_equations(xml)`. `scan_math_equations()` tracks `depth_in_body` to count top-level body children, processes `m:oMath`/`m:oMathPara` inline via `parse_omml_children()`. IR: `Block::MathEquation(MathEquation { content: String, display: bool })`. Codegen: display → `$ content $\n`, inline → `$content$`. OMML elements handled: `m:f` (fraction→`frac()`), `m:sSup`/`m:sSub`/`m:sSubSup` (scripts→`^`/`_`), `m:rad` (radical→`sqrt()`/`root()`), `m:d` (delimiter→parens), `m:nary` (n-ary→`sum`/`product`/`integral`), `m:func`, `m:limLow`/`m:limUpp`, `m:acc`, `m:bar`, `m:eqArr`. Math run text: `m:r`→`m:t` via `xml_content()`. Test DOCX with math: `build_docx_with_math(document_xml)` creates minimal ZIP with custom `word/document.xml`.
+- **DOCX embedded charts**: docx-rs does NOT parse chart drawings — `DrawingData::Pic` handler silently skips charts. Use raw ZIP scanning. `ChartContext` with `HashMap<usize, Vec<Chart>>` keyed by body child index. `build_chart_context(data)` reads `word/_rels/document.xml.rels` for chart relationships (`scan_chart_rels`), scans `word/document.xml` for `<c:chart r:id="...">` in `<a:graphicData uri="...chart">` (`scan_chart_references`), reads each `word/charts/chartN.xml`, and calls `parse_chart_xml()`. IR: `Chart { chart_type: ChartType, title: Option<String>, categories: Vec<String>, series: Vec<ChartSeries> }`, `ChartSeries { name: Option<String>, values: Vec<f64> }`. Chart types: `barChart`→Bar, `barChart barDir=col`→Column (but currently just Bar), `lineChart`→Line, `pieChart`→Pie, `areaChart`→Area, `scatterChart`→Scatter. Data from `<c:strCache>/<c:numCache>` within `<c:ser>`. Codegen: title as bold centered text, type label as italic, data table with `#table(columns: N, ...)`. Test DOCX with chart: `build_docx_with_chart()` creates ZIP with `[Content_Types].xml`, `_rels/.rels`, `word/_rels/document.xml.rels` (chart relationship), `word/document.xml` (with `<c:chart r:id>`), `word/charts/chart1.xml` (barChart with data).
 - **DOCX floating images**: `WrapContext` scans raw document.xml for `wp:anchor` elements in document order (similar pattern to `NoteContext`). `AnchorWrapInfo` stores wrap_mode (WrapMode) and behind_doc (bool). `scan_anchor_wrap_types()` parses wp:wrapSquare→Square, wp:wrapTight/wrapThrough→Tight, wp:wrapTopAndBottom→TopAndBottom, wp:wrapNone→depends on behindDoc. `extract_drawing_image()` checks `pic.position_type == Anchor` → consumes next wrap info → `Block::FloatingImage(FloatingImage)`. Position from `DrawingPosition::Offset(emu)` → `emu / 12700.0` points. Codegen: Square/Tight → `#place(float: true)`, TopAndBottom → `#block` with `#v()` spacer, Behind/InFront/None → `#place()` absolute. Test helpers: `patch_docx_wrap_type(data, old_wrap, new_wrap)` replaces wrap elements in ZIP, `patch_docx_behind_doc(data)` sets `behindDoc="1"`. Create floating test Pic: `Pic::new(&bmp).floating().offset_x(emu).offset_y(emu)` (default: wrapSquare if !allow_overlap), `.overlapping()` → wrapNone.
 ---
 
@@ -87,4 +88,42 @@ Started: 2026년  2월 27일 금요일 12시 19분 03초 KST
   - DrawingPosition::Offset values are in EMU (signed i32); convert via /12700.0 for points
   - Typst 0.14 has no native text wrapping around images — #place(float:true) only supports top/bottom float, not side-by-side wrapping. Best-effort approach is sufficient per acceptance criteria
   - Pre-existing test failure: test_batch_convert_partial_failure in CLI crate (unrelated to this change)
+---
+
+## 2026-02-27 - US-041: DOCX parser - OMML math equations
+- What was implemented:
+  - IR: Block::MathEquation(MathEquation { content: String, display: bool })
+  - Parser: omml.rs module — complete OMML→Typst converter (fractions, superscripts, subscripts, radicals, delimiters, n-ary operators, functions, limits, accents, bars, matrices, equation arrays)
+  - Parser: MathContext with raw ZIP XML scanning (docx-rs has zero OMML support)
+  - Codegen: display math → `$ content $\n`, inline math → `$content$`
+  - Tests: 13 unit tests for OMML conversion, 3 DOCX integration tests, 3 codegen tests
+- Files changed:
+  - crates/office2pdf/src/parser/omml.rs (new)
+  - crates/office2pdf/src/parser/mod.rs (module declaration)
+  - crates/office2pdf/src/parser/docx.rs (MathContext, build_math_context)
+  - crates/office2pdf/src/ir/elements.rs (MathEquation, Block::MathEquation)
+  - crates/office2pdf/src/render/typst_gen.rs (generate_math_equation)
+---
+
+## 2026-02-27 - US-042: DOCX parser - embedded charts (basic)
+- What was implemented:
+  - IR: Chart, ChartType (Bar/Column/Line/Pie/Area/Scatter/Other), ChartSeries, Block::Chart
+  - Parser: chart.rs module — parses chart*.xml files from DOCX ZIP, extracts chart type, title, categories, series data from cached values (strCache/numCache)
+  - Parser: scan_chart_references() scans document.xml for c:chart elements in graphicData URIs
+  - Parser: scan_chart_rels() extracts chart relationship mappings from document.xml.rels
+  - Parser: ChartContext integration in docx.rs with build_chart_context()
+  - Codegen: renders charts as data tables — title (bold centered), chart type label (italic centered), #table() with category + series columns
+  - Tests: 4 chart parser unit tests, 2 scan tests, 3 codegen tests
+- Files changed:
+  - crates/office2pdf/src/parser/chart.rs (new)
+  - crates/office2pdf/src/parser/mod.rs (module declaration)
+  - crates/office2pdf/src/parser/docx.rs (ChartContext, build_chart_context)
+  - crates/office2pdf/src/ir/elements.rs (Chart, ChartType, ChartSeries, Block::Chart)
+  - crates/office2pdf/src/render/typst_gen.rs (generate_chart, ChartSeries import)
+- **Learnings for future iterations:**
+  - docx-rs does not parse chart drawing elements — charts silently skipped in DrawingData::Pic handler
+  - Chart data is in cached values (<c:strCache>/<c:numCache>) inside <c:ser> elements, avoiding need to parse external embedded XLSX workbooks
+  - Charts referenced via r:id in <c:chart> element within <a:graphicData uri="...chart">
+  - Relationship targets are relative to word/ directory
+  - barDir val="bar" means horizontal bars, val="col" means vertical columns
 ---
