@@ -18,8 +18,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented gradient parsing for backgrounds and shape fills with Typst gradient.linear() codegen"
     },
     {
       "id": "US-051",

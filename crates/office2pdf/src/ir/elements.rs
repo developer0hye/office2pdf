@@ -243,11 +243,31 @@ pub struct SmartArt {
     pub items: Vec<String>,
 }
 
+/// A single stop in a gradient fill.
+#[derive(Debug, Clone)]
+pub struct GradientStop {
+    /// Position along the gradient axis, from 0.0 (start) to 1.0 (end).
+    pub position: f64,
+    /// Color at this stop.
+    pub color: Color,
+}
+
+/// A linear gradient fill.
+#[derive(Debug, Clone)]
+pub struct GradientFill {
+    /// Gradient color stops, ordered by position.
+    pub stops: Vec<GradientStop>,
+    /// Angle of the linear gradient in degrees (0 = left-to-right, 90 = top-to-bottom).
+    pub angle: f64,
+}
+
 /// Basic geometric shape.
 #[derive(Debug, Clone)]
 pub struct Shape {
     pub kind: ShapeKind,
     pub fill: Option<Color>,
+    /// Gradient fill for the shape (takes precedence over solid fill when present).
+    pub gradient_fill: Option<GradientFill>,
     pub stroke: Option<BorderSide>,
     /// Rotation angle in degrees (clockwise).
     pub rotation_deg: Option<f64>,

@@ -9,9 +9,9 @@ use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, FixedElement,
-    FixedElementKind, FixedPage, ImageData, ImageFormat, Metadata, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, Shape, ShapeKind, SmartArt, StyleSheet, Table, TableCell, TableRow,
-    TextStyle,
+    FixedElementKind, FixedPage, GradientFill, GradientStop, ImageData, ImageFormat, Metadata,
+    Page, PageSize, Paragraph, ParagraphStyle, Run, Shape, ShapeKind, SmartArt, StyleSheet, Table,
+    TableCell, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::chart as chart_parser;
@@ -197,14 +197,23 @@ fn parse_single_slide<R: Read + std::io::Seek>(
         }
     }
 
-    // Resolve background color: slide → layout → master
-    let background_color = parse_background_color(&slide_xml, theme)
-        .or_else(|| resolve_inherited_background(slide_path, theme, archive));
+    // Resolve background: try gradient first, then solid color
+    let background_gradient = parse_background_gradient(&slide_xml, theme);
+    let background_color = if background_gradient.is_some() {
+        // When gradient is present, also extract first stop as fallback color
+        background_gradient
+            .as_ref()
+            .and_then(|g| g.stops.first().map(|s| s.color))
+    } else {
+        parse_background_color(&slide_xml, theme)
+            .or_else(|| resolve_inherited_background(slide_path, theme, archive))
+    };
 
     Ok(Page::Fixed(FixedPage {
         size: slide_size,
         elements,
         background_color,
+        background_gradient,
     }))
 }
 
@@ -818,6 +827,219 @@ fn parse_background_color(xml: &str, theme: &ThemeData) -> Option<Color> {
     None
 }
 
+/// Parse gradient fill from a `<p:bg>` element within a slide/layout/master XML.
+///
+/// Looks for `<p:bg><p:bgPr><a:gradFill>` and extracts gradient stops and angle.
+/// Returns `None` if no gradient background is found.
+fn parse_background_gradient(xml: &str, theme: &ThemeData) -> Option<GradientFill> {
+    let mut reader = Reader::from_str(xml);
+    let mut in_bg = false;
+    let mut in_bg_pr = false;
+    let mut in_grad_fill = false;
+    let mut in_gs_lst = false;
+    let mut in_gs = false;
+    let mut current_pos: f64 = 0.0;
+
+    let mut stops: Vec<GradientStop> = Vec::new();
+    let mut angle: f64 = 0.0;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"bg" => in_bg = true,
+                    b"bgPr" if in_bg => in_bg_pr = true,
+                    b"gradFill" if in_bg_pr => in_grad_fill = true,
+                    b"gsLst" if in_grad_fill => in_gs_lst = true,
+                    b"gs" if in_gs_lst => {
+                        in_gs = true;
+                        current_pos = get_attr_i64(e, b"pos").unwrap_or(0) as f64 / 100_000.0;
+                    }
+                    b"srgbClr" if in_gs => {
+                        if let Some(hex) = get_attr_str(e, b"val")
+                            && let Some(color) = parse_hex_color(&hex)
+                        {
+                            stops.push(GradientStop {
+                                position: current_pos,
+                                color,
+                            });
+                        }
+                    }
+                    b"schemeClr" if in_gs => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val")
+                            && let Some(color) = theme.colors.get(&scheme_name).copied()
+                        {
+                            stops.push(GradientStop {
+                                position: current_pos,
+                                color,
+                            });
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Empty(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"srgbClr" if in_gs => {
+                        if let Some(hex) = get_attr_str(e, b"val")
+                            && let Some(color) = parse_hex_color(&hex)
+                        {
+                            stops.push(GradientStop {
+                                position: current_pos,
+                                color,
+                            });
+                        }
+                    }
+                    b"schemeClr" if in_gs => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val")
+                            && let Some(color) = theme.colors.get(&scheme_name).copied()
+                        {
+                            stops.push(GradientStop {
+                                position: current_pos,
+                                color,
+                            });
+                        }
+                    }
+                    b"lin" if in_grad_fill => {
+                        // ang is in 60000ths of a degree
+                        if let Some(ang) = get_attr_i64(e, b"ang") {
+                            angle = ang as f64 / 60_000.0;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"bg" => {
+                        if !stops.is_empty() {
+                            return Some(GradientFill { stops, angle });
+                        }
+                        return None;
+                    }
+                    b"bgPr" => in_bg_pr = false,
+                    b"gradFill" => in_grad_fill = false,
+                    b"gsLst" => in_gs_lst = false,
+                    b"gs" => in_gs = false,
+                    _ => {}
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    None
+}
+
+/// Parse gradient fill from shape properties XML.
+///
+/// Looks for `<a:gradFill>` within shape properties and extracts gradient stops and angle.
+fn parse_shape_gradient_fill(
+    reader: &mut Reader<&[u8]>,
+    theme: &ThemeData,
+) -> Option<GradientFill> {
+    let mut in_gs_lst = false;
+    let mut in_gs = false;
+    let mut current_pos: f64 = 0.0;
+    let mut stops: Vec<GradientStop> = Vec::new();
+    let mut angle: f64 = 0.0;
+    let mut depth: usize = 1; // we're already inside <a:gradFill>
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                depth += 1;
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"gsLst" => in_gs_lst = true,
+                    b"gs" if in_gs_lst => {
+                        in_gs = true;
+                        current_pos = get_attr_i64(e, b"pos").unwrap_or(0) as f64 / 100_000.0;
+                    }
+                    b"srgbClr" if in_gs => {
+                        if let Some(hex) = get_attr_str(e, b"val")
+                            && let Some(color) = parse_hex_color(&hex)
+                        {
+                            stops.push(GradientStop {
+                                position: current_pos,
+                                color,
+                            });
+                        }
+                    }
+                    b"schemeClr" if in_gs => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val")
+                            && let Some(color) = theme.colors.get(&scheme_name).copied()
+                        {
+                            stops.push(GradientStop {
+                                position: current_pos,
+                                color,
+                            });
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Empty(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"srgbClr" if in_gs => {
+                        if let Some(hex) = get_attr_str(e, b"val")
+                            && let Some(color) = parse_hex_color(&hex)
+                        {
+                            stops.push(GradientStop {
+                                position: current_pos,
+                                color,
+                            });
+                        }
+                    }
+                    b"schemeClr" if in_gs => {
+                        if let Some(scheme_name) = get_attr_str(e, b"val")
+                            && let Some(color) = theme.colors.get(&scheme_name).copied()
+                        {
+                            stops.push(GradientStop {
+                                position: current_pos,
+                                color,
+                            });
+                        }
+                    }
+                    b"lin" => {
+                        if let Some(ang) = get_attr_i64(e, b"ang") {
+                            angle = ang as f64 / 60_000.0;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                depth -= 1;
+                if depth == 0 {
+                    // End of gradFill
+                    if stops.is_empty() {
+                        return None;
+                    }
+                    return Some(GradientFill { stops, angle });
+                }
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"gsLst" => in_gs_lst = false,
+                    b"gs" => in_gs = false,
+                    _ => {}
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    None
+}
+
 /// Parse a `<a:tbl>` element from the reader into a Table IR.
 ///
 /// The reader should be positioned right after the `<a:tbl>` Start event.
@@ -1310,6 +1532,7 @@ fn parse_slide_xml(
     let mut in_sp_pr = false;
     let mut prst_geom: Option<String> = None;
     let mut shape_fill: Option<Color> = None;
+    let mut shape_gradient_fill: Option<GradientFill> = None;
     let mut in_ln = false;
     let mut ln_width_emu: i64 = 0;
     let mut ln_color: Option<Color> = None;
@@ -1403,6 +1626,7 @@ fn parse_slide_xml(
                         in_sp_pr = false;
                         prst_geom = None;
                         shape_fill = None;
+                        shape_gradient_fill = None;
                         in_ln = false;
                         ln_width_emu = 0;
                         ln_color = None;
@@ -1433,6 +1657,16 @@ fn parse_slide_xml(
                     }
                     b"solidFill" if in_sp_pr && !in_ln && !in_rpr => {
                         solid_fill_ctx = SolidFillCtx::ShapeFill;
+                    }
+                    b"gradFill" if in_sp_pr && !in_ln && !in_rpr => {
+                        // Parse gradient fill using sub-parser; reader is consumed up to </gradFill>
+                        shape_gradient_fill = parse_shape_gradient_fill(&mut reader, theme);
+                        // Also set solid fill as fallback (first stop color)
+                        if let Some(ref gf) = shape_gradient_fill
+                            && shape_fill.is_none()
+                        {
+                            shape_fill = gf.stops.first().map(|s| s.color);
+                        }
                     }
                     b"ln" if in_sp_pr => {
                         in_ln = true;
@@ -1664,6 +1898,7 @@ fn parse_slide_xml(
                                     kind: FixedElementKind::Shape(Shape {
                                         kind,
                                         fill: shape_fill,
+                                        gradient_fill: shape_gradient_fill.take(),
                                         stroke,
                                         rotation_deg: shape_rotation_deg,
                                         opacity: shape_opacity,
@@ -4873,5 +5108,166 @@ mod tests {
 
         let refs = scan_chart_refs(slide_xml);
         assert!(refs.is_empty());
+    }
+
+    // ── Gradient background tests (US-050) ──────────────────────────────
+
+    #[test]
+    fn test_gradient_background_two_stops() {
+        let bg_xml = r#"<p:bg><p:bgPr><a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs><a:gs pos="100000"><a:srgbClr val="0000FF"/></a:gs></a:gsLst><a:lin ang="5400000" scaled="1"/></a:gradFill></p:bgPr></p:bg>"#;
+        let slide_xml = make_slide_xml_with_bg(bg_xml, &[]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        // Should have a gradient background
+        let gradient = page
+            .background_gradient
+            .as_ref()
+            .expect("Expected gradient background");
+        assert_eq!(gradient.stops.len(), 2);
+
+        // First stop: red at 0%
+        assert!((gradient.stops[0].position - 0.0).abs() < 0.001);
+        assert_eq!(gradient.stops[0].color, Color::new(255, 0, 0));
+
+        // Second stop: blue at 100%
+        assert!((gradient.stops[1].position - 1.0).abs() < 0.001);
+        assert_eq!(gradient.stops[1].color, Color::new(0, 0, 255));
+
+        // Angle: 5400000 / 60000 = 90 degrees
+        assert!((gradient.angle - 90.0).abs() < 0.001);
+
+        // Fallback solid color should be first stop color
+        assert_eq!(page.background_color, Some(Color::new(255, 0, 0)));
+    }
+
+    #[test]
+    fn test_gradient_background_three_stops() {
+        let bg_xml = r#"<p:bg><p:bgPr><a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs><a:gs pos="50000"><a:srgbClr val="00FF00"/></a:gs><a:gs pos="100000"><a:srgbClr val="0000FF"/></a:gs></a:gsLst><a:lin ang="0"/></a:gradFill></p:bgPr></p:bg>"#;
+        let slide_xml = make_slide_xml_with_bg(bg_xml, &[]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        let gradient = page
+            .background_gradient
+            .as_ref()
+            .expect("Expected gradient");
+        assert_eq!(gradient.stops.len(), 3);
+        assert!((gradient.stops[1].position - 0.5).abs() < 0.001);
+        assert_eq!(gradient.stops[1].color, Color::new(0, 255, 0));
+        assert!((gradient.angle - 0.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_gradient_background_with_scheme_colors() {
+        // Use theme colors in gradient stops
+        let bg_xml = r#"<p:bg><p:bgPr><a:gradFill><a:gsLst><a:gs pos="0"><a:schemeClr val="accent1"/></a:gs><a:gs pos="100000"><a:schemeClr val="accent2"/></a:gs></a:gsLst><a:lin ang="2700000"/></a:gradFill></p:bgPr></p:bg>"#;
+        let slide_xml = make_slide_xml_with_bg(bg_xml, &[]);
+
+        // Build with theme
+        let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri", "Calibri");
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide_xml], &theme_xml);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        let gradient = page
+            .background_gradient
+            .as_ref()
+            .expect("Expected gradient");
+        assert_eq!(gradient.stops.len(), 2);
+        // angle = 2700000 / 60000 = 45 degrees
+        assert!((gradient.angle - 45.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_solid_background_no_gradient() {
+        // Solid fill background should NOT produce a gradient
+        let bg_xml =
+            r#"<p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFCC00"/></a:solidFill></p:bgPr></p:bg>"#;
+        let slide_xml = make_slide_xml_with_bg(bg_xml, &[]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        assert!(
+            page.background_gradient.is_none(),
+            "Solid fill should not produce gradient"
+        );
+        assert_eq!(page.background_color, Some(Color::new(255, 204, 0)));
+    }
+
+    #[test]
+    fn test_gradient_shape_fill() {
+        // Shape with gradient fill
+        let shape_xml = format!(
+            r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="200000"/><a:ext cx="500000" cy="300000"/></a:xfrm><a:prstGeom prst="rect"/><a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs><a:gs pos="100000"><a:srgbClr val="00FF00"/></a:gs></a:gsLst><a:lin ang="5400000"/></a:gradFill></p:spPr></p:sp>"#
+        );
+        let slide_xml = make_slide_xml(&[shape_xml]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        assert_eq!(page.elements.len(), 1);
+        let shape = get_shape(&page.elements[0]);
+
+        // Should have gradient fill
+        let gf = shape
+            .gradient_fill
+            .as_ref()
+            .expect("Expected gradient fill on shape");
+        assert_eq!(gf.stops.len(), 2);
+        assert_eq!(gf.stops[0].color, Color::new(255, 0, 0));
+        assert_eq!(gf.stops[1].color, Color::new(0, 255, 0));
+        assert!((gf.angle - 90.0).abs() < 0.001);
+
+        // Solid fill fallback should be first stop color
+        assert_eq!(shape.fill, Some(Color::new(255, 0, 0)));
+    }
+
+    #[test]
+    fn test_shape_solid_fill_no_gradient() {
+        // Shape with only solid fill — gradient_fill should be None
+        let shape_xml = format!(
+            r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="200000"/><a:ext cx="500000" cy="300000"/></a:xfrm><a:prstGeom prst="rect"/><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></p:spPr></p:sp>"#
+        );
+        let slide_xml = make_slide_xml(&[shape_xml]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        let shape = get_shape(&page.elements[0]);
+        assert!(
+            shape.gradient_fill.is_none(),
+            "Solid fill shape should have no gradient"
+        );
+        assert_eq!(shape.fill, Some(Color::new(255, 0, 0)));
+    }
+
+    #[test]
+    fn test_gradient_background_no_angle() {
+        // Gradient with no <a:lin> element → angle defaults to 0
+        let bg_xml = r#"<p:bg><p:bgPr><a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FFFFFF"/></a:gs><a:gs pos="100000"><a:srgbClr val="000000"/></a:gs></a:gsLst></a:gradFill></p:bgPr></p:bg>"#;
+        let slide_xml = make_slide_xml_with_bg(bg_xml, &[]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = first_fixed_page(&doc);
+
+        let gradient = page
+            .background_gradient
+            .as_ref()
+            .expect("Expected gradient");
+        assert!(
+            (gradient.angle - 0.0).abs() < 0.001,
+            "Default angle should be 0"
+        );
     }
 }
