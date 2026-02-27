@@ -547,6 +547,8 @@ impl Parser for XlsxParser {
                     let border = umya_cell.and_then(extract_cell_borders);
 
                     // Apply conditional formatting overrides
+                    let mut data_bar = None;
+                    let mut icon_text = None;
                     if let Some(ovr) = cond_fmt_overrides.get(&(col_idx, row_idx)) {
                         if ovr.background.is_some() {
                             background = ovr.background;
@@ -557,6 +559,8 @@ impl Parser for XlsxParser {
                         if let Some(bold) = ovr.bold {
                             text_style.bold = Some(bold);
                         }
+                        data_bar = ovr.data_bar.clone();
+                        icon_text = ovr.icon_text.clone();
                     }
 
                     let content = if value.is_empty() {
@@ -586,6 +590,8 @@ impl Parser for XlsxParser {
                         row_span,
                         border,
                         background,
+                        data_bar,
+                        icon_text,
                     });
                 }
 
@@ -2201,6 +2207,141 @@ mod tests {
             tp.table.rows[1].cells[0].background,
             Some(Color::new(255, 0, 0))
         );
+    }
+
+    // ----- DataBar / IconSet conditional formatting tests -----
+
+    #[test]
+    fn test_cond_fmt_data_bar() {
+        let data = build_xlsx_with_cond_fmt(|sheet| {
+            sheet.get_cell_mut("A1").set_value_number(10.0);
+            sheet.get_cell_mut("A2").set_value_number(50.0);
+            sheet.get_cell_mut("A3").set_value_number(100.0);
+
+            let mut rule = umya_spreadsheet::ConditionalFormattingRule::default();
+            rule.set_type(umya_spreadsheet::ConditionalFormatValues::DataBar);
+            rule.set_priority(1);
+
+            let mut db = umya_spreadsheet::DataBar::default();
+            let mut cfvo_min = umya_spreadsheet::ConditionalFormatValueObject::default();
+            cfvo_min.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Min);
+            let mut cfvo_max = umya_spreadsheet::ConditionalFormatValueObject::default();
+            cfvo_max.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Max);
+            db.add_cfvo_collection(cfvo_min);
+            db.add_cfvo_collection(cfvo_max);
+            let mut bar_color = umya_spreadsheet::Color::default();
+            bar_color.set_argb("FF638EC6"); // Default blue
+            db.add_color_collection(bar_color);
+            rule.set_data_bar(db);
+
+            let mut seq = umya_spreadsheet::SequenceOfReferences::default();
+            seq.set_sqref("A1:A3");
+            let mut cf = umya_spreadsheet::ConditionalFormatting::default();
+            cf.set_sequence_of_references(seq);
+            cf.add_conditional_collection(rule);
+            sheet.set_conditional_formatting_collection(vec![cf]);
+        });
+
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let tp = get_table_page(&doc, 0);
+
+        // A1 = 10 (min), bar should be ~0%
+        let db1 = tp.table.rows[0].cells[0]
+            .data_bar
+            .as_ref()
+            .expect("A1 should have data_bar");
+        assert!(
+            db1.fill_pct < 0.01,
+            "Min value should have ~0% fill, got {}",
+            db1.fill_pct
+        );
+
+        // A2 = 50 (mid), bar should be ~44.4% = (50-10)/(100-10)
+        let db2 = tp.table.rows[1].cells[0]
+            .data_bar
+            .as_ref()
+            .expect("A2 should have data_bar");
+        assert!(
+            (db2.fill_pct - 100.0 * (50.0 - 10.0) / (100.0 - 10.0)).abs() < 1.0,
+            "Mid value should have ~44% fill, got {}",
+            db2.fill_pct
+        );
+
+        // A3 = 100 (max), bar should be 100%
+        let db3 = tp.table.rows[2].cells[0]
+            .data_bar
+            .as_ref()
+            .expect("A3 should have data_bar");
+        assert!(
+            (db3.fill_pct - 100.0).abs() < 0.01,
+            "Max value should have 100% fill, got {}",
+            db3.fill_pct
+        );
+
+        // Bar color should be #638EC6
+        assert_eq!(db1.color, Color::new(0x63, 0x8E, 0xC6));
+    }
+
+    #[test]
+    fn test_cond_fmt_icon_set() {
+        let data = build_xlsx_with_cond_fmt(|sheet| {
+            sheet.get_cell_mut("A1").set_value_number(10.0);
+            sheet.get_cell_mut("A2").set_value_number(50.0);
+            sheet.get_cell_mut("A3").set_value_number(90.0);
+
+            let mut rule = umya_spreadsheet::ConditionalFormattingRule::default();
+            rule.set_type(umya_spreadsheet::ConditionalFormatValues::IconSet);
+            rule.set_priority(1);
+
+            let mut is = umya_spreadsheet::IconSet::default();
+            // 3-icon: thresholds at 0, 33, 67 (percent)
+            let mut cfvo0 = umya_spreadsheet::ConditionalFormatValueObject::default();
+            cfvo0.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Percent);
+            cfvo0.set_val("0");
+            let mut cfvo1 = umya_spreadsheet::ConditionalFormatValueObject::default();
+            cfvo1.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Percent);
+            cfvo1.set_val("33");
+            let mut cfvo2 = umya_spreadsheet::ConditionalFormatValueObject::default();
+            cfvo2.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Percent);
+            cfvo2.set_val("67");
+            is.add_cfvo_collection(cfvo0);
+            is.add_cfvo_collection(cfvo1);
+            is.add_cfvo_collection(cfvo2);
+            rule.set_icon_set(is);
+
+            let mut seq = umya_spreadsheet::SequenceOfReferences::default();
+            seq.set_sqref("A1:A3");
+            let mut cf = umya_spreadsheet::ConditionalFormatting::default();
+            cf.set_sequence_of_references(seq);
+            cf.add_conditional_collection(rule);
+            sheet.set_conditional_formatting_collection(vec![cf]);
+        });
+
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let tp = get_table_page(&doc, 0);
+
+        // A1 = 10 (low) → down arrow
+        let icon1 = tp.table.rows[0].cells[0]
+            .icon_text
+            .as_ref()
+            .expect("A1 should have icon_text");
+        assert_eq!(icon1, "↓", "Low value should get down arrow");
+
+        // A2 = 50 (mid) → right arrow
+        let icon2 = tp.table.rows[1].cells[0]
+            .icon_text
+            .as_ref()
+            .expect("A2 should have icon_text");
+        assert_eq!(icon2, "→", "Mid value should get right arrow");
+
+        // A3 = 90 (high) → up arrow
+        let icon3 = tp.table.rows[2].cells[0]
+            .icon_text
+            .as_ref()
+            .expect("A3 should have icon_text");
+        assert_eq!(icon3, "↑", "High value should get up arrow");
     }
 
     // ----- Chart integration tests -----

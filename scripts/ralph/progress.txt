@@ -122,3 +122,27 @@ Started: 2026년  2월 27일 금요일 19시 19분 06초 KST
   - Typst has no native shadow support — must approximate with offset duplicate shape
   - Shadow offset calculated via trigonometry: dx = dist * cos(dir_rad), dy = dist * sin(dir_rad)
 ---
+
+## 2026-02-27 - US-053: XLSX DataBar and IconSet conditional formatting
+- What was implemented:
+  - Added `DataBarInfo` IR type (color, fill_pct) in `ir/elements.rs`
+  - Added `data_bar: Option<DataBarInfo>` and `icon_text: Option<String>` to `TableCell`
+  - Extended `CondFmtOverride` to carry data_bar and icon_text
+  - Implemented DataBar parsing: calculates fill percentage from value range min/max
+  - Implemented IconSet parsing: evaluates thresholds to select arrow icons (↓→↑)
+  - DataBar codegen: `#box(width: 100%, fill: gray)[#box(width: N%, fill: color)]` in cell
+  - IconSet codegen: prepends icon text symbol before cell content
+  - Note: umya-spreadsheet has bug in IconSet write (writes `<dataBar>` tags) — handled with default thresholds fallback
+- Files changed:
+  - `crates/office2pdf/src/ir/elements.rs` - DataBarInfo, new fields on TableCell
+  - `crates/office2pdf/src/parser/cond_fmt.rs` - DataBar/IconSet match arms, evaluate_icon_index()
+  - `crates/office2pdf/src/parser/xlsx.rs` - wire data_bar/icon_text from overrides, 2 new tests
+  - `crates/office2pdf/src/render/typst_gen.rs` - DataBar/IconSet rendering in generate_table_cell(), 2 new codegen tests
+  - Also updated `crates/office2pdf/src/parser/docx.rs` and `pptx.rs` for new TableCell fields
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - umya-spreadsheet IconSet struct has a bug: write_to() writes `<dataBar>` instead of `<iconSet>` tags
+  - For IconSet, fall back to default equal-thirds thresholds if cfvos unavailable
+  - ConditionalFormatValueObjectValues: Min/Max/Percent/Percentile/Number/Formula
+  - DataBar fill_pct = (value - min) / (max - min) * 100
+---
