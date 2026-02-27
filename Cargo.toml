@@ -5,5 +5,5 @@ resolver = "3"
 [workspace.package]
 edition = "2024"
 rust-version = "1.89"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/yhkwon-nb01/office2pdf"
+license = "Apache-2.0"
+repository = "https://github.com/developer0hye/office2pdf"
