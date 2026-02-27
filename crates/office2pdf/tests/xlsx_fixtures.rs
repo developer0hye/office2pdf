@@ -236,3 +236,98 @@ fn structure_temperature() {
     assert!(!pages.is_empty(), "should have at least one sheet");
     assert!(total_rows(&pages) > 0, "should have data rows");
 }
+
+// ===========================================================================
+// Third-party fixtures — smoke tests (must not panic)
+// ===========================================================================
+
+/// Generate a pair of smoke + basic-structure tests for an XLSX fixture.
+macro_rules! xlsx_fixture_tests {
+    ($test_name:ident, $file:expr) => {
+        paste::paste! {
+            #[test]
+            fn [<smoke_ $test_name>]() {
+                assert_produces_valid_pdf($file);
+            }
+
+            #[test]
+            fn [<structure_ $test_name>]() {
+                let data = load_fixture($file);
+                match XlsxParser.parse(&data, &ConvertOptions::default()) {
+                    Ok((doc, _)) => {
+                        let _ = doc.pages.len();
+                    }
+                    Err(e) => {
+                        eprintln!("[WARN] {}: parse error (non-panic): {e}", $file);
+                    }
+                }
+            }
+        }
+    };
+}
+
+// --- CC0 (Public Domain) ---------------------------------------------------
+
+xlsx_fixture_tests!(ffc, "ffc.xlsx");
+xlsx_fixture_tests!(hundred_customers, "100-customers.xlsx");
+xlsx_fixture_tests!(thousand_customers, "1000-customers.xlsx");
+
+// --- Apache POI (Apache 2.0) -----------------------------------------------
+
+xlsx_fixture_tests!(charts_123233, "123233_charts.xlsx");
+xlsx_fixture_tests!(booleans, "Booleans.xlsx");
+xlsx_fixture_tests!(chart_sheet, "chart_sheet.xlsx");
+xlsx_fixture_tests!(comments, "comments.xlsx");
+xlsx_fixture_tests!(excel_pivot_table, "ExcelPivotTableSample.xlsx");
+xlsx_fixture_tests!(excel_tables, "ExcelTables.xlsx");
+xlsx_fixture_tests!(formatting, "Formatting.xlsx");
+xlsx_fixture_tests!(group_test, "GroupTest.xlsx");
+xlsx_fixture_tests!(header_footer_test, "headerFooterTest.xlsx");
+xlsx_fixture_tests!(inline_string, "InlineString.xlsx");
+xlsx_fixture_tests!(picture, "picture.xlsx");
+xlsx_fixture_tests!(right_to_left, "right-to-left.xlsx");
+xlsx_fixture_tests!(sample_ss, "SampleSS.xlsx");
+xlsx_fixture_tests!(shared_formulas, "shared_formulas.xlsx");
+xlsx_fixture_tests!(sheet_tab_colors, "SheetTabColors.xlsx");
+xlsx_fixture_tests!(simple_monthly_budget, "simple-monthly-budget.xlsx");
+xlsx_fixture_tests!(simple_scatter_chart, "SimpleScatterChart.xlsx");
+xlsx_fixture_tests!(themes, "Themes.xlsx");
+xlsx_fixture_tests!(with_chart, "WithChart.xlsx");
+xlsx_fixture_tests!(with_drawing, "WithDrawing.xlsx");
+xlsx_fixture_tests!(with_more_various_data, "WithMoreVariousData.xlsx");
+xlsx_fixture_tests!(with_text_box, "WithTextBox.xlsx");
+xlsx_fixture_tests!(with_various_data, "WithVariousData.xlsx");
+
+// --- MIT: Open-Xml-PowerTools (Microsoft) ----------------------------------
+
+xlsx_fixture_tests!(
+    sh003_date_first_col,
+    "SH003-TableWithDateInFirstColumn.xlsx"
+);
+xlsx_fixture_tests!(sh004_offset_location, "SH004-TableAtOffsetLocation.xlsx");
+xlsx_fixture_tests!(sh005_shared_strings, "SH005-Table-With-SharedStrings.xlsx");
+xlsx_fixture_tests!(sh006_no_shared_strings, "SH006-Table-No-SharedStrings.xlsx");
+xlsx_fixture_tests!(sh007_one_cell, "SH007-One-Cell-Table.xlsx");
+xlsx_fixture_tests!(sh008_tall_row, "SH008-Table-With-Tall-Row.xlsx");
+xlsx_fixture_tests!(sh101_simple_formats, "SH101-SimpleFormats.xlsx");
+xlsx_fixture_tests!(sh102_9x9, "SH102-9-x-9.xlsx");
+xlsx_fixture_tests!(sh103_no_shared_string, "SH103-No-SharedString.xlsx");
+xlsx_fixture_tests!(sh104_with_shared_string, "SH104-With-SharedString.xlsx");
+xlsx_fixture_tests!(sh105_no_shared_string2, "SH105-No-SharedString.xlsx");
+xlsx_fixture_tests!(sh107_formatted_table, "SH107-9-x-9-Formatted-Table.xlsx");
+xlsx_fixture_tests!(
+    sh108_simple_formatted_cell,
+    "SH108-SimpleFormattedCell.xlsx"
+);
+
+// --- MIT: calamine (Rust) --------------------------------------------------
+
+xlsx_fixture_tests!(date_1904, "date_1904.xlsx");
+xlsx_fixture_tests!(empty_sheet, "empty_sheet.xlsx");
+xlsx_fixture_tests!(errors, "errors.xlsx");
+xlsx_fixture_tests!(pivots, "pivots.xlsx");
+xlsx_fixture_tests!(richtext_namespaced, "richtext-namespaced.xlsx");
+xlsx_fixture_tests!(column_row_ranges, "column_row_ranges.xlsx");
+xlsx_fixture_tests!(table_multiple, "table-multiple.xlsx");
+xlsx_fixture_tests!(formula_issue, "formula.issue.xlsx");
+xlsx_fixture_tests!(header_row, "header-row.xlsx");

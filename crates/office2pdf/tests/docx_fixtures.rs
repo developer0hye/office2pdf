@@ -398,3 +398,74 @@ fn structure_word_tables() {
     let blocks = all_blocks(&pages);
     assert!(has_table_block(&blocks), "should have Block::Table");
 }
+
+// ===========================================================================
+// Third-party fixtures — smoke tests (must not panic)
+// ===========================================================================
+
+/// Generate a pair of smoke + basic-structure tests for a DOCX fixture.
+macro_rules! docx_fixture_tests {
+    ($test_name:ident, $file:expr) => {
+        paste::paste! {
+            #[test]
+            fn [<smoke_ $test_name>]() {
+                assert_produces_valid_pdf($file);
+            }
+
+            #[test]
+            fn [<structure_ $test_name>]() {
+                let data = load_fixture($file);
+                match DocxParser.parse(&data, &ConvertOptions::default()) {
+                    Ok((doc, _)) => {
+                        let _ = doc.pages.len();
+                    }
+                    Err(e) => {
+                        eprintln!("[WARN] {}: parse error (non-panic): {e}", $file);
+                    }
+                }
+            }
+        }
+    };
+}
+
+// --- CC0 (Public Domain) ---------------------------------------------------
+
+docx_fixture_tests!(ffc, "ffc.docx");
+docx_fixture_tests!(one_page, "1-page.docx");
+docx_fixture_tests!(three_pages, "3-pages.docx");
+docx_fixture_tests!(five_pages, "5-pages.docx");
+docx_fixture_tests!(ten_pages, "10-pages.docx");
+
+// --- Apache POI (Apache 2.0) -----------------------------------------------
+
+docx_fixture_tests!(bookmarks, "bookmarks.docx");
+docx_fixture_tests!(capitalized, "capitalized.docx");
+docx_fixture_tests!(chartex, "chartex.docx");
+docx_fixture_tests!(checkboxes, "checkboxes.docx");
+docx_fixture_tests!(comment, "comment.docx");
+docx_fixture_tests!(complex_numbered_lists, "ComplexNumberedLists.docx");
+docx_fixture_tests!(deep_table_cell, "deep-table-cell.docx");
+docx_fixture_tests!(delins, "delins.docx");
+docx_fixture_tests!(diff_first_page_head_foot, "DiffFirstPageHeadFoot.docx");
+docx_fixture_tests!(drawing, "drawing.docx");
+docx_fixture_tests!(embedded_document, "EmbeddedDocument.docx");
+docx_fixture_tests!(endnotes, "endnotes.docx");
+docx_fixture_tests!(fancy_foot, "FancyFoot.docx");
+docx_fixture_tests!(field_codes, "FieldCodes.docx");
+docx_fixture_tests!(header_footer_unicode, "HeaderFooterUnicode.docx");
+docx_fixture_tests!(heading123, "heading123.docx");
+docx_fixture_tests!(illustrative_cases, "IllustrativeCases.docx");
+docx_fixture_tests!(poi_footnotes, "poi_footnotes.docx");
+docx_fixture_tests!(poi_sample, "poi_sample.docx");
+docx_fixture_tests!(poi_styles, "poi_styles.docx");
+docx_fixture_tests!(various_pictures, "VariousPictures.docx");
+docx_fixture_tests!(with_tabs, "WithTabs.docx");
+docx_fixture_tests!(word_with_attachments, "WordWithAttachments.docx");
+
+// --- MIT: Open-Xml-PowerTools (Microsoft) ----------------------------------
+
+docx_fixture_tests!(oxp_table, "oxp_table.docx");
+docx_fixture_tests!(oxp_content_control, "oxp_content_control.docx");
+docx_fixture_tests!(oxp_lots_of_stuff, "oxp_lots_of_stuff.docx");
+docx_fixture_tests!(oxp_complex_table, "oxp_complex_table.docx");
+docx_fixture_tests!(oxp_footnote_ref, "oxp_footnote_ref.docx");

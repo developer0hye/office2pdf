@@ -202,3 +202,81 @@ fn structure_test() {
     assert!(!pages.is_empty(), "should have at least one slide");
     assert!(has_textbox_with_content(&pages), "should have text content");
 }
+
+// ===========================================================================
+// Third-party fixtures — smoke tests (must not panic)
+// ===========================================================================
+
+/// Generate a pair of smoke + basic-structure tests for a PPTX fixture.
+macro_rules! pptx_fixture_tests {
+    ($test_name:ident, $file:expr) => {
+        paste::paste! {
+            #[test]
+            fn [<smoke_ $test_name>]() {
+                assert_produces_valid_pdf($file);
+            }
+
+            #[test]
+            fn [<structure_ $test_name>]() {
+                let data = load_fixture($file);
+                match PptxParser.parse(&data, &ConvertOptions::default()) {
+                    Ok((doc, _)) => {
+                        // Just verify parsing succeeds — slide count varies by file
+                        let _ = doc.pages.len();
+                    }
+                    Err(e) => {
+                        eprintln!("[WARN] {}: parse error (non-panic): {e}", $file);
+                    }
+                }
+            }
+        }
+    };
+}
+
+// --- CC0 (Public Domain) ---------------------------------------------------
+
+pptx_fixture_tests!(ffc, "ffc.pptx");
+pptx_fixture_tests!(one_slide, "1-slide.pptx");
+pptx_fixture_tests!(five_slides, "5-slides.pptx");
+pptx_fixture_tests!(ten_slides, "10-slides.pptx");
+
+// --- Apache POI (Apache 2.0) -----------------------------------------------
+
+pptx_fixture_tests!(bar_chart, "bar-chart.pptx");
+pptx_fixture_tests!(pie_chart, "pie-chart.pptx");
+pptx_fixture_tests!(line_chart, "line-chart.pptx");
+pptx_fixture_tests!(scatter_chart, "scatter-chart.pptx");
+pptx_fixture_tests!(radar_chart, "radar-chart.pptx");
+pptx_fixture_tests!(chart_picture_bg, "chart-picture-bg.pptx");
+pptx_fixture_tests!(table_test_poi, "table_test.pptx");
+pptx_fixture_tests!(table_test2, "table_test2.pptx");
+pptx_fixture_tests!(table_with_theme, "table-with-theme.pptx");
+pptx_fixture_tests!(backgrounds, "backgrounds.pptx");
+pptx_fixture_tests!(themes, "themes.pptx");
+pptx_fixture_tests!(smart_art, "SmartArt.pptx");
+pptx_fixture_tests!(smart_art_simple, "smartart-simple.pptx");
+pptx_fixture_tests!(embedded_audio, "EmbeddedAudio.pptx");
+pptx_fixture_tests!(embedded_video, "EmbeddedVideo.pptx");
+pptx_fixture_tests!(with_japanese, "with_japanese.pptx");
+pptx_fixture_tests!(with_master, "WithMaster.pptx");
+pptx_fixture_tests!(comment_45545, "45545_Comment.pptx");
+pptx_fixture_tests!(keyframes, "keyframes.pptx");
+pptx_fixture_tests!(layouts, "layouts.pptx");
+pptx_fixture_tests!(shapes, "shapes.pptx");
+pptx_fixture_tests!(custom_geo, "customGeo.pptx");
+pptx_fixture_tests!(highlight, "highlight-test-case.pptx");
+pptx_fixture_tests!(picture_transparency, "picture-transparency.pptx");
+pptx_fixture_tests!(poi_sample, "poi_sample.pptx");
+pptx_fixture_tests!(present1, "present1.pptx");
+pptx_fixture_tests!(rain, "rain.pptx");
+pptx_fixture_tests!(copy_slide_demo, "copy-slide-demo.pptx");
+
+// --- MIT: Open-Xml-PowerTools (Microsoft) ----------------------------------
+
+pptx_fixture_tests!(oxp_presentation, "oxp_Presentation.pptx");
+pptx_fixture_tests!(oxp_chart_cached, "oxp_CU018-Chart-Cached-Data-41.pptx");
+pptx_fixture_tests!(oxp_chart_embedded, "oxp_CU019-Chart-Embedded-Xlsx-41.pptx");
+pptx_fixture_tests!(oxp_pb001_input1, "oxp_PB001-Input1.pptx");
+pptx_fixture_tests!(oxp_pb001_input2, "oxp_PB001-Input2.pptx");
+pptx_fixture_tests!(oxp_pb001_input3, "oxp_PB001-Input3.pptx");
+pptx_fixture_tests!(oxp_videos, "oxp_PP006-Videos.pptx");

@@ -25,6 +25,7 @@ umya-spreadsheet = "2"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+paste = "1"
 
 [[bench]]
 name = "conversion"
