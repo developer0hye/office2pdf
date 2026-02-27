@@ -69,7 +69,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Add a new job to .github/workflows/ci.yml: wasm-check with steps: checkout, install rust toolchain with target wasm32-unknown-unknown, run cargo check commands. Use dtolnay/rust-toolchain@stable with targets: wasm32-unknown-unknown."
     },
     {

@@ -149,3 +149,20 @@ Started: 2026년  2월 28일 토요일 01시 35분 02초 KST
   - Use `docx_rs::Docx::new().build().pack()` for test DOCX creation (not manual ZIP) — docx-rs reader requires specific ZIP structure
   - `wasm-bindgen` `js_name` attribute controls the JS function name: `#[wasm_bindgen(js_name = "convertToPdf")]`
 ---
+
+## 2026-02-28 - US-063
+- What was implemented: WASM compilation check in CI pipeline
+  - Added `wasm-check` job to `.github/workflows/ci.yml`
+  - Job uses `dtolnay/rust-toolchain@stable` with `targets: wasm32-unknown-unknown`
+  - Runs `cargo check --target wasm32-unknown-unknown -p office2pdf` (without wasm feature)
+  - Runs `cargo check --target wasm32-unknown-unknown -p office2pdf --features wasm` (with wasm feature)
+  - Job runs on `ubuntu-latest` (WASM check is platform-independent)
+  - Existing CI jobs (check, test, clippy, fmt) are unchanged
+- Files changed:
+  - `.github/workflows/ci.yml` — added wasm-check job
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - `dtolnay/rust-toolchain` supports `targets` parameter to install additional compilation targets alongside the toolchain
+  - WASM check only needs to run on one OS since WASM compilation is platform-independent
+  - Two separate `cargo check` commands ensure both base library and wasm-bindgen feature compile for WASM
+---
