@@ -5,7 +5,30 @@
       "Bash(gh repo:*)",
       "Bash(gh auth:*)",
       "Bash(sed:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(jq:*)",
+      "Bash(claude:*)",
+      "Bash(chmod +x:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh run:*)",
+      "Bash(rm:*)",
+      "Bash(bash:*)",
+      "Bash(command:*)",
+      "Bash(pkill:*)",
+      "Bash(cargo build:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(for dir in table picture \"footer & header\" format chart numbering)",
+      "Bash(do echo \"=== $dir ===\")",
+      "Bash(done)",
+      "Bash(curl:*)",
+      "Bash(ps:*)",
+      "Bash(pgrep:*)",
+      "Bash(kill:*)"
     ]
   }
 }

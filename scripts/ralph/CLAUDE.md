@@ -108,12 +108,34 @@ APPEND to `scripts/ralph/progress.txt` (never replace, always append):
 
 If you discover a **reusable pattern**, add it to the `## Codebase Patterns` section at the TOP of `scripts/ralph/progress.txt` (create it if it doesn't exist). Only add patterns that are general and reusable.
 
+## Finalization (after all stories complete)
+
+When ALL user stories have `passes: true`, you MUST push, create a PR, and verify CI before finishing:
+
+1. **Push**: `git push -u origin <branchName>` (branchName from PRD)
+2. **Check for existing PR**: `gh pr list --head <branchName> --json number --jq '.[0].number'`
+3. **Create PR** if none exists:
+   - Generate a PR body summarizing all completed stories, commit list, and test plan
+   - `gh pr create --title "feat: <phase description>" --body "<body>" --base main`
+4. **Wait for CI to register** (30 seconds): `sleep 30`
+5. **Watch CI**: `gh pr checks <number> --watch` (blocks until all checks finish; typically 3-6 minutes)
+6. **If CI fails**:
+   a. Get the failed run ID: `gh run list --branch <branchName> --status failure --json databaseId --jq '.[0].databaseId'`
+   b. Read failure log: `gh run view <run-id> --log-failed 2>&1 | head -200`
+   c. Identify and fix the errors in source code
+   d. Run local quality checks again (fmt, clippy, test)
+   e. Commit: `git commit -s -m "fix: resolve CI failures"`
+   f. Push: `git push`
+   g. Go back to step 5 (retry up to 3 times)
+7. **Only after CI passes**, respond with `<promise>COMPLETE</promise>`
+
+If CI still fails after 3 retries, respond with `<promise>COMPLETE</promise>` anyway (the PR will be reviewed manually).
+
 ## Stop Condition
 
 After completing a user story, check if ALL stories have `passes: true`.
 
-If ALL stories are complete and passing, reply with:
-<promise>COMPLETE</promise>
+If ALL stories are complete and passing, proceed to **Finalization** above.
 
 If there are still stories with `passes: false`, end your response normally (another iteration will pick up the next story).
 

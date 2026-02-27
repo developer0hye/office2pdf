@@ -7,7 +7,7 @@
 #   ./scripts/ralph/run-all.sh phase2 25    # Run phase2 with 25 max iterations
 #
 # Flow per phase:
-#   worktree setup → Ralph coding loop → push → PR create → CI wait → merge → cleanup
+#   worktree setup → Ralph coding loop (push + PR + CI handled by Claude) → merge → cleanup
 #
 # Resilience: failures in one phase are logged and skipped. The script always
 # attempts ALL remaining phases instead of stopping at the first error.
@@ -97,20 +97,13 @@ preflight() {
 
 # ── Cleanup trap ────────────────────────────────────────────────────
 
-# Track current worktree and background PID so we can clean up on interrupt
+# Track current worktree so we can clean up on interrupt
 CURRENT_WORKTREE=""
 CURRENT_BRANCH=""
-CI_WATCH_PID=""
 
 on_interrupt() {
   echo ""
   log "Interrupted by user."
-  # Kill background CI watch process if running
-  if [ -n "$CI_WATCH_PID" ] && kill -0 "$CI_WATCH_PID" 2>/dev/null; then
-    kill "$CI_WATCH_PID" 2>/dev/null || true
-    wait "$CI_WATCH_PID" 2>/dev/null || true
-    log "Killed background CI watch process."
-  fi
   if [ -n "$CURRENT_WORKTREE" ]; then
     log "Worktree may be left at: $CURRENT_WORKTREE"
     log "Branch may be left: $CURRENT_BRANCH"
@@ -281,226 +274,52 @@ for idx in $(seq "$start_index" 2); do
     skip_phase "Ralph produced 0 implementation commits" && continue
   fi
 
-  # ── Step 4: Push to remote ──────────────────────────────────────
+  # ── Step 4: Find PR created by Ralph ──────────────────────────
 
-  log "Pushing $BRANCH to origin ..."
-  if ! git push -u origin "$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
-    log "Push failed. Retrying in 10s ..."
-    sleep 10
-    if ! git push -u origin "$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
-      skip_phase "Failed to push branch after retry" && continue
-    fi
-  fi
+  # Ralph now handles push, PR creation, and CI verification internally.
+  # We just need to find the PR number to merge it.
 
-  # ── Step 5: Create PR ───────────────────────────────────────────
-
-  commit_log=$(git log --oneline main..HEAD 2>/dev/null | head -30 || echo "(unable to read)")
-  story_list=$(jq -r '.userStories[] | "- [" + (if .passes then "x" else " " end) + "] **" + .id + "**: " + .title' scripts/ralph/prd.json 2>/dev/null || echo "- (unable to read)")
-
-  pr_title="feat: ${DESC}"
-  # Truncate to 70 chars
-  if [ ${#pr_title} -gt 70 ]; then
-    pr_title="${pr_title:0:67}..."
-  fi
-
-  # Write PR body to a temp file (avoids heredoc-in-subshell escaping issues)
-  pr_body_file="$(mktemp)"
-  cat > "$pr_body_file" <<ENDOFBODY
-## Summary
-
-${DESC} — automated implementation by Ralph agent.
-
-**Progress: ${passed} / ${total} user stories completed.**
-
-### Commits
-
-\`\`\`
-${commit_log}
-\`\`\`
-
-### User stories
-
-${story_list}
-
-## Test plan
-
-- [ ] \`cargo test --workspace\` passes
-- [ ] \`cargo clippy --workspace -- -D warnings\` passes
-- [ ] \`cargo fmt --all -- --check\` passes
-- [ ] CI checks pass on all platforms
-
-Generated with [Claude Code](https://claude.com/claude-code) via Ralph
-ENDOFBODY
-
-  log "Creating PR ..."
-  pr_url=""
-  if ! pr_url=$(gh pr create --title "$pr_title" --body-file "$pr_body_file" --base main 2>&1); then
-    log "ERROR: gh pr create failed: $pr_url"
-    rm -f "$pr_body_file"
-    skip_phase "Failed to create PR" && continue
-  fi
-  rm -f "$pr_body_file"
-
-  pr_num=$(echo "$pr_url" | grep -oE '[0-9]+$' || echo "")
-  if [ -z "$pr_num" ]; then
-    log "ERROR: Could not extract PR number from: $pr_url"
-    skip_phase "Failed to extract PR number" && continue
-  fi
-  log "Created PR #$pr_num: $pr_url"
-
-  # ── Step 6: Wait for CI (with auto-fix retry) ───────────────────
-
-  ci_passed=false
-
-  for ci_attempt in 1 2 3; do
-    # Give GitHub Actions time to register the workflow run
-    log "Waiting 30s for CI to register (attempt $ci_attempt/3) ..."
-    sleep 30
-
-    # Ensure CI checks actually exist before watching
-    # (gh pr checks --watch can return immediately if no checks are registered yet)
-    ci_check_count=0
-    for wait_round in 1 2 3 4 5 6; do
-      ci_check_count=$(gh pr checks "$pr_num" 2>&1 | grep -cE "(pass|fail|pending)" || true)
-      if [ "$ci_check_count" -ge 3 ]; then
-        break
-      fi
-      log "  Only $ci_check_count checks registered, waiting 10s ..."
-      sleep 10
-    done
-
-    log "Watching CI checks on PR #$pr_num ($ci_check_count checks registered) ..."
-
-    # Watch with a 30-minute timeout (background process + timer)
-    CI_WATCH_PID=""
-    ci_timed_out=false
-    ci_watch_exit=0
-
-    gh pr checks "$pr_num" --watch > /tmp/ralph-ci-watch-$$.log 2>&1 &
-    CI_WATCH_PID=$!
-
-    elapsed=0
-    while kill -0 "$CI_WATCH_PID" 2>/dev/null; do
-      sleep 10
-      elapsed=$((elapsed + 10))
-      if [ "$elapsed" -ge 1800 ]; then
-        log "CI watch timed out after 30 minutes."
-        kill "$CI_WATCH_PID" 2>/dev/null || true
-        wait "$CI_WATCH_PID" 2>/dev/null || true
-        ci_timed_out=true
-        break
-      fi
-    done
-
-    if [ "$ci_timed_out" = false ]; then
-      wait "$CI_WATCH_PID" 2>/dev/null
-      ci_watch_exit=$?
-    fi
-    CI_WATCH_PID=""
-
-    cat /tmp/ralph-ci-watch-$$.log >> "$LOG_FILE" 2>/dev/null
-    cat /tmp/ralph-ci-watch-$$.log 2>/dev/null
-    rm -f /tmp/ralph-ci-watch-$$.log
-
-    if [ "$ci_timed_out" = true ]; then
-      log "ERROR: CI timed out for PR #$pr_num."
-      break  # exit CI loop — will try merge anyway below
-    fi
-
-    if [ "$ci_watch_exit" -eq 0 ]; then
-      ci_passed=true
+  log "Looking for PR on branch $BRANCH ..."
+  pr_num=""
+  for pr_wait in 1 2 3 4 5; do
+    pr_num=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
+    if [ -n "$pr_num" ]; then
       break
     fi
-
-    # CI failed — identify what failed
-    log "CI checks failed (attempt $ci_attempt). Checking what went wrong ..."
-    ci_output=$(gh pr checks "$pr_num" 2>&1 || true)
-    echo "$ci_output" >> "$LOG_FILE"
-
-    fmt_failed=false
-    clippy_failed=false
-    if echo "$ci_output" | grep -i "format" | grep -q "fail"; then
-      fmt_failed=true
-    fi
-    if echo "$ci_output" | grep -i "clippy" | grep -q "fail"; then
-      clippy_failed=true
-    fi
-
-    # Attempt auto-fix only on attempts 1 and 2
-    if [ "$ci_attempt" -lt 3 ]; then
-      cd "$WORKTREE_DIR"
-      fixed_something=false
-
-      if [ "$fmt_failed" = true ]; then
-        log "  Auto-fixing: running cargo fmt ..."
-        if cargo fmt --all 2>/dev/null; then
-          if ! git diff --quiet 2>/dev/null; then
-            git add -u
-            git commit -s -m "style: auto-fix formatting for CI" 2>/dev/null && fixed_something=true
-          fi
-        fi
-      fi
-
-      if [ "$clippy_failed" = true ]; then
-        log "  Auto-fixing: running claude to fix clippy warnings ..."
-        fix_prompt="Run 'cargo clippy --workspace --all-targets -- -D warnings 2>&1' and fix ALL clippy errors/warnings. Then run 'cargo fmt --all'. Then 'cargo test --workspace'. Commit all fixes with: git commit -s -m 'fix: resolve clippy warnings for CI'"
-        if claude --dangerously-skip-permissions --print -p "$fix_prompt" > /tmp/ralph-clippy-fix-$$.log 2>&1; then
-          fixed_something=true
-        fi
-        cat /tmp/ralph-clippy-fix-$$.log >> "$LOG_FILE" 2>/dev/null
-        rm -f /tmp/ralph-clippy-fix-$$.log
-      fi
-
-      if [ "$fixed_something" = true ]; then
-        log "  Pushing fixes ..."
-        if git push 2>&1 | tee -a "$LOG_FILE"; then
-          # Loop back to wait for new CI run
-          continue
-        else
-          log "  Push failed after auto-fix. Retrying push ..."
-          sleep 5
-          if git push 2>&1 | tee -a "$LOG_FILE"; then
-            continue
-          else
-            log "  Push still failing. Moving on."
-          fi
-        fi
-      else
-        log "  No auto-fix available for this failure."
-      fi
-    fi
-
-    # This attempt failed
-    log "CI attempt $ci_attempt failed for PR #$pr_num."
-    # Don't break 2 — let the loop continue to try more attempts,
-    # or fall through to merge-anyway below
+    log "  PR not found yet, waiting 10s (attempt $pr_wait/5) ..."
+    sleep 10
   done
 
-  # ── Step 7: Final diff review (logged) ──────────────────────────
+  if [ -z "$pr_num" ]; then
+    log "ERROR: No PR found for branch $BRANCH."
+    log "  Ralph may not have pushed or created a PR. Check ralph.log for details."
+    skip_phase "No PR found" && continue
+  fi
+  log "Found PR #$pr_num for $BRANCH"
 
-  if [ "$ci_passed" = true ]; then
-    log "CI checks passed for PR #$pr_num!"
-  else
-    log "WARNING: CI did not pass for $PHASE. Will attempt merge anyway ..."
+  # Verify CI status (Ralph should have already ensured CI passes)
+  log "Verifying CI status on PR #$pr_num ..."
+  if ! gh pr checks "$pr_num" --watch 2>&1 | tail -5 | tee -a "$LOG_FILE"; then
+    log "WARNING: CI may not have passed. Will attempt merge anyway ..."
   fi
 
   log "Changed files in PR #$pr_num:"
   gh pr diff "$pr_num" --name-only 2>&1 | tee -a "$LOG_FILE" || true
 
-  # ── Step 8: Merge PR ────────────────────────────────────────────
+  # ── Step 5: Merge PR ────────────────────────────────────────────
 
   log "Merging PR #$pr_num ..."
   if ! gh pr merge "$pr_num" --merge 2>&1 | tee -a "$LOG_FILE"; then
     log "Merge with --merge failed. Trying --squash ..."
     if ! gh pr merge "$pr_num" --squash 2>&1 | tee -a "$LOG_FILE"; then
       log "ERROR: All merge strategies failed for PR #$pr_num."
-      log "  PR left open: $pr_url"
+      log "  PR #$pr_num left open."
       skip_phase "Merge failed" && continue
     fi
   fi
   log "PR #$pr_num merged!"
 
-  # ── Step 9: Sync main ───────────────────────────────────────────
+  # ── Step 6: Sync main ───────────────────────────────────────────
 
   cd "$PROJECT_ROOT"
   remove_untracked_conflicts
@@ -512,7 +331,7 @@ ENDOFBODY
   fi
   log "Main branch synced."
 
-  # ── Step 10: Cleanup worktree and branch ────────────────────────
+  # ── Step 7: Cleanup worktree and branch ────────────────────────
 
   log "Cleaning up worktree and branch ..."
   cleanup_worktree "$WORKTREE_DIR" "$BRANCH"
