@@ -2,6 +2,7 @@ pub(crate) mod chart;
 pub mod docx;
 pub(crate) mod omml;
 pub mod pptx;
+pub(crate) mod smartart;
 pub mod xlsx;
 
 use crate::config::ConvertOptions;

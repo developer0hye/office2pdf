@@ -232,6 +232,17 @@ impl ImageFormat {
     }
 }
 
+/// SmartArt diagram content extracted from a presentation.
+///
+/// Contains text items extracted from the SmartArt data model.
+/// Rendered as a simplified list or boxed layout since full SmartArt
+/// layout engines are not feasible in a pure-Rust converter.
+#[derive(Debug, Clone)]
+pub struct SmartArt {
+    /// Text items extracted from SmartArt data points (type="node").
+    pub items: Vec<String>,
+}
+
 /// Basic geometric shape.
 #[derive(Debug, Clone)]
 pub struct Shape {

@@ -6,7 +6,8 @@ use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Chart, ChartType, Color, Document, FixedElement,
     FixedElementKind, FixedPage, FloatingImage, FlowPage, HFInline, HeaderFooter, ImageData,
     ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, Shape, ShapeKind, Table, TableCell, TablePage, TextStyle, WrapMode,
+    ParagraphStyle, Run, Shape, ShapeKind, SmartArt, Table, TableCell, TablePage, TextStyle,
+    WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -206,6 +207,9 @@ fn generate_fixed_element(
         }
         FixedElementKind::Table(table) => {
             generate_table(out, table, ctx)?;
+        }
+        FixedElementKind::SmartArt(smartart) => {
+            generate_smartart(out, smartart, elem.width, elem.height);
         }
     }
 
@@ -530,6 +534,26 @@ fn generate_chart(out: &mut String, chart: &Chart) {
     }
 
     let _ = writeln!(out, ")\n");
+}
+
+/// Generate Typst markup for a SmartArt diagram.
+///
+/// Renders SmartArt as a bordered box containing a bulleted list of text items.
+/// This is a simplified representation since full SmartArt layout is not feasible.
+fn generate_smartart(out: &mut String, smartart: &SmartArt, width: f64, height: f64) {
+    let _ = writeln!(
+        out,
+        "#block(width: {}pt, height: {}pt, stroke: 0.5pt + gray, inset: 8pt)[",
+        format_f64(width),
+        format_f64(height),
+    );
+    let _ = writeln!(out, "#align(center)[*SmartArt Diagram*]\n");
+
+    for item in &smartart.items {
+        let escaped = escape_typst(item);
+        let _ = writeln!(out, "- {escaped}");
+    }
+    out.push_str("]\n");
 }
 
 /// Generate Typst markup for a list (ordered or unordered).
@@ -3915,6 +3939,107 @@ mod tests {
         assert!(
             !output.source.contains("#table("),
             "Should not generate table for empty chart, got:\n{}",
+            output.source
+        );
+    }
+
+    // ── SmartArt codegen tests ──────────────────────────────────────────
+
+    #[test]
+    fn test_smartart_codegen_basic() {
+        let doc = make_doc(vec![make_fixed_page(
+            720.0,
+            540.0,
+            vec![FixedElement {
+                x: 72.0,
+                y: 100.0,
+                width: 400.0,
+                height: 300.0,
+                kind: FixedElementKind::SmartArt(SmartArt {
+                    items: vec![
+                        "Step 1".to_string(),
+                        "Step 2".to_string(),
+                        "Step 3".to_string(),
+                    ],
+                }),
+            }],
+        )]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("SmartArt Diagram"),
+            "Expected SmartArt header, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("- Step 1"),
+            "Expected Step 1, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("- Step 2"),
+            "Expected Step 2, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("- Step 3"),
+            "Expected Step 3, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_smartart_codegen_empty_items() {
+        let doc = make_doc(vec![make_fixed_page(
+            720.0,
+            540.0,
+            vec![FixedElement {
+                x: 0.0,
+                y: 0.0,
+                width: 200.0,
+                height: 100.0,
+                kind: FixedElementKind::SmartArt(SmartArt { items: vec![] }),
+            }],
+        )]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("SmartArt Diagram"),
+            "Expected SmartArt header even for empty SmartArt"
+        );
+        // No list items
+        assert!(
+            !output.source.contains("- "),
+            "Should not contain list items for empty SmartArt"
+        );
+    }
+
+    #[test]
+    fn test_smartart_codegen_special_chars() {
+        let doc = make_doc(vec![make_fixed_page(
+            720.0,
+            540.0,
+            vec![FixedElement {
+                x: 0.0,
+                y: 0.0,
+                width: 200.0,
+                height: 100.0,
+                kind: FixedElementKind::SmartArt(SmartArt {
+                    items: vec!["Item #1".to_string(), "Price $10".to_string()],
+                }),
+            }],
+        )]);
+
+        let output = generate_typst(&doc).unwrap();
+        // # and $ should be escaped
+        assert!(
+            output.source.contains(r"\#"),
+            "Expected escaped #, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains(r"\$"),
+            "Expected escaped $, got:\n{}",
             output.source
         );
     }
