@@ -12,9 +12,10 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 ## Features
 
 - **DOCX** — paragraphs, inline formatting (bold/italic/underline/color), tables, images, lists, headers/footers, page setup
-- **PPTX** — slides, text boxes, shapes, images, slide masters, speaker notes
-- **XLSX** — sheets, cell formatting, merged cells, column widths, row heights
+- **PPTX** — slides, text boxes, shapes, images, slide masters, speaker notes, gradient backgrounds, shadow/reflection effects
+- **XLSX** — sheets, cell formatting, merged cells, column widths, row heights, conditional formatting (DataBar, IconSet)
 - **PDF/A-2b** — archival-compliant output via `--pdf-a`
+- **WASM** — runs in browsers and Node.js via WebAssembly (optional `wasm` feature)
 - **Zero external dependencies** — runs as a standalone executable
 
 ## Installation
@@ -23,7 +24,7 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 
 ```toml
 [dependencies]
-office2pdf = "0.1"
+office2pdf = "0.3"
 ```
 
 ### CLI
@@ -82,6 +83,30 @@ office2pdf document.docx --pdf-a
 office2pdf report.docx --font-path /usr/share/fonts/custom
 ```
 
+### WASM (Browser / Node.js)
+
+Build with `wasm-pack`:
+
+```sh
+wasm-pack build crates/office2pdf --target web --features wasm
+```
+
+Use from JavaScript:
+
+```js
+import init, { convertDocxToPdf, convertToPdf } from './pkg/office2pdf.js';
+
+await init();
+
+const docxBytes = new Uint8Array(await file.arrayBuffer());
+const pdfBytes = convertDocxToPdf(docxBytes);
+
+// Or use the generic API with a format string
+const pdfBytes2 = convertToPdf(xlsxBytes, "xlsx");
+```
+
+Available functions: `convertToPdf(data, format)`, `convertDocxToPdf(data)`, `convertPptxToPdf(data)`, `convertXlsxToPdf(data)`.
+
 ## CLI Options
 
 | Flag | Description |
@@ -100,8 +125,8 @@ office2pdf report.docx --font-path /usr/share/fonts/custom
 | Format | Status | Key Features |
 |--------|--------|-------------|
 | DOCX | Supported | Text, tables, images, lists, headers/footers, page setup |
-| PPTX | Supported | Slides, text boxes, shapes, images, masters |
-| XLSX | Supported | Sheets, formatting, merged cells, column/row sizing |
+| PPTX | Supported | Slides, text boxes, shapes, images, masters, gradients, effects |
+| XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
 
 ## License
 
