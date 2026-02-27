@@ -9,6 +9,7 @@
 - **DOCX document styles**: `docx.styles.styles` is `Vec<Style>` with `style_id`, `name`, `style_type`, `run_property`, `paragraph_property`. Access via `docx.styles`. `ParagraphProperty.style: Option<ParagraphStyle>` stores the pStyle reference; `ParagraphStyle.val` is the style ID string. `Style.paragraph_property.outline_lvl: Option<OutlineLvl>` with `OutlineLvl.v: usize` (public) for heading level detection (0=H1..5=H6). `Name.name` is private — use `serde_json::to_value(&name)` → string. Create test styles: `Style::new("Heading1", StyleType::Paragraph).name("Heading 1").outline_lvl(0).bold().size(48)`. Apply to paragraph: `Paragraph::new().style("Heading1")`. The `build_style_map()` function builds `StyleMap` (HashMap<String, ResolvedStyle>) from docx styles. `merge_text_style()` and `merge_paragraph_style()` merge style defaults with explicit formatting (explicit wins). Heading defaults (when style doesn't specify): H1=24pt, H2=20pt, H3=16pt, H4=14pt, H5=12pt, H6=11pt, all bold.
 - **XLSX print area**: Print areas are stored as `DefinedName` with name `_xlnm.Print_Area` on worksheets. Use `sheet.get_defined_names()` to iterate, check `dn.get_name() == "_xlnm.Print_Area"`, parse address via `parse_print_area_range()`. Address format: `Sheet1!$A$1:$C$10` (sheet prefix optional, dollar signs optional). `parse_column_letters("AA")` → 27, `parse_cell_ref("$A$1")` → (1, 1). Test creation: `sheet.add_defined_name("_xlnm.Print_Area", "Sheet1!$A$1:$B$2")`.
 - **XLSX page breaks**: `sheet.get_row_breaks().get_break_list()` → `&[Break]`. Filter `b.get_manual_page_break() == true`. `b.get_id()` is the 1-indexed row number (break occurs after that row). `collect_row_breaks()` returns sorted, deduped Vec<u32>. Split rows into multiple TablePages at break points. Test creation: `let mut brk = Break::default(); brk.set_id(row); brk.set_manual_page_break(true); sheet.get_row_breaks_mut().add_break_list(brk);`.
+- **XLSX sheet headers/footers**: `sheet.get_header_footer()` → `&umya_spreadsheet::HeaderFooter`. `hf.get_odd_header().get_value()` / `hf.get_odd_footer().get_value()` returns Excel format string. Format codes: `&L`/`&C`/`&R` (section switches), `&P` (page number), `&N` (total pages), `&&` (literal ampersand), `&"FontName"` (font, skipped), `&NN` (font size, skipped). `parse_hf_format_string()` parses into `Option<HeaderFooter>` with sentinel chars (\x01=PageNumber, \x02=TotalPages). Test setup: `sheet.get_header_footer_mut().get_odd_header_mut().set_value("&CHeader Text")`.
 - **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. `FontSearcher::new().include_system_fonts(true).search()` discovers system fonts with embedded fallbacks (Libertinus Serif, New Computer Modern, DejaVu Sans Mono via `embed-fonts` feature). Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`.
 - **DOCX list detection**: Check `para.has_numbering` and `para.property.numbering_property` for `NumberingProperty { id: Option<NumberingId>, level: Option<IndentLevel> }`. `NumberingId.id` is the numId, `IndentLevel.val` is the ilvl (0-based). numId=0 means "no numbering". Resolve numId → abstractNumId via `docx.numberings.numberings`, then check `abstract_num.levels[0].format` (use serde) for `"bullet"` (Unordered) vs `"decimal"`/etc. (Ordered). Group consecutive list paragraphs with same numId into `Block::List`.
 - **Typst list codegen**: Use `#list(list.item[content], ...)` for unordered, `#enum(enum.item[content], ...)` for ordered. Nested items: emit a sub-list `[#list(...)]` after the parent item. The `generate_list_items()` function recursively handles nesting based on item levels.
@@ -197,4 +198,33 @@ Started: 2026년  2월 27일 금요일 08시 36분 50초 KST
   - Row breaks use `Break` struct with `get_id()` for row number and `get_manual_page_break()` to filter manual breaks. Accessed via `sheet.get_row_breaks().get_break_list()`.
   - Column breaks exist (`sheet.get_column_breaks()`) but are not implemented yet — only row breaks are handled.
   - When splitting by page breaks, use `std::mem::take()` to efficiently move current segment and reset the accumulator.
+---
+
+## 2026-02-27 - US-036: XLSX parser - sheet headers and footers
+- What was implemented:
+  - Added `HFInline::TotalPages` variant to IR for `&N` (total page count) support
+  - Added `header: Option<HeaderFooter>` and `footer: Option<HeaderFooter>` fields to `TablePage` IR
+  - Implemented `parse_hf_format_string()` to parse Excel header/footer format codes:
+    - `&L`/`&C`/`&R` section switches → paragraphs with Left/Center/Right alignment
+    - `&P` → `HFInline::PageNumber`, `&N` → `HFInline::TotalPages`
+    - `&&` → literal ampersand, `&"FontName"` and `&NN` font codes → skipped
+    - Uses sentinel chars (\x01, \x02) for inline field markers during parsing
+  - Implemented `build_hf_elements()` helper to convert section strings with sentinels into `Vec<HFInline>`
+  - Integrated parsing into XLSX parser: reads `sheet.get_header_footer().get_odd_header/footer().get_value()`
+  - Added `write_table_page_setup()` in Typst codegen to handle TablePage headers/footers
+  - Renamed `hf_has_page_number()` to `hf_needs_context()` to also check for `TotalPages`
+  - Added `#counter(page).final().first()` Typst output for `HFInline::TotalPages`
+  - Added `#align(left|center|right)[...]` wrapper for paragraph alignment in header/footer content
+- Files changed:
+  - `crates/office2pdf/src/ir/elements.rs` — added `TotalPages` to `HFInline`
+  - `crates/office2pdf/src/ir/document.rs` — added header/footer fields to `TablePage`
+  - `crates/office2pdf/src/parser/xlsx.rs` — `parse_hf_format_string()`, `build_hf_elements()`, integration, 8 tests
+  - `crates/office2pdf/src/render/typst_gen.rs` — `write_table_page_setup()`, TotalPages codegen, alignment, 3 tests
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - umya-spreadsheet HeaderFooter API: `get_header_footer()` → `get_odd_header()/get_odd_footer()` → `get_value()` for format string. Mutate: `get_header_footer_mut().get_odd_header_mut().set_value(str)`
+  - Excel format string uses `&` prefix codes. Default section (no `&L/C/R` prefix) is center.
+  - Sentinel char approach (using \x01/\x02 as internal markers during parsing) cleanly separates format code parsing from IR element construction.
+  - Typst `#counter(page).final().first()` requires `context` wrapper, same as `#counter(page).display()`.
+  - `hf_needs_context()` replaces `hf_has_page_number()` to generalize the context detection for both PageNumber and TotalPages.
 ---

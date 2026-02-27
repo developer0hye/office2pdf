@@ -125,8 +125,8 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: parse_hf_format_string() parses Excel format codes (&L/&C/&R sections, &P page number, &N total pages, && escaped ampersand, font codes skipped). Added header/footer fields to TablePage IR. Added HFInline::TotalPages variant. Typst codegen: write_table_page_setup() with header/footer, #counter(page).final().first() for total pages, #align() for L/C/R sections. 14 tests (6 parser format string, 2 XLSX integration, 3 codegen, 3 existing updated)."
     },
     {
       "id": "US-037",
