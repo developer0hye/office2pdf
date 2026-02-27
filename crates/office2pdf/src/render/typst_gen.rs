@@ -6,8 +6,8 @@ use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Chart, ChartType, Color, Document, FixedElement,
     FixedElementKind, FixedPage, FloatingImage, FlowPage, GradientFill, HFInline, HeaderFooter,
     ImageData, ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation, Page, PageSize,
-    Paragraph, ParagraphStyle, Run, Shape, ShapeKind, SmartArt, Table, TableCell, TablePage,
-    TextStyle, WrapMode,
+    Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, Table, TableCell,
+    TablePage, TextStyle, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -232,6 +232,11 @@ fn generate_fixed_element(
 }
 
 fn generate_shape(out: &mut String, shape: &Shape, width: f64, height: f64) {
+    // Render shadow as offset duplicate before main shape
+    if let Some(shadow) = &shape.shadow {
+        write_shadow_shape(out, shape, width, height, shadow);
+    }
+
     let has_rotation = shape.rotation_deg.is_some();
     if let Some(deg) = shape.rotation_deg {
         let _ = write!(out, "#rotate({}deg)[", format_f64(deg));
@@ -273,6 +278,43 @@ fn generate_shape(out: &mut String, shape: &Shape, width: f64, height: f64) {
     if has_rotation {
         out.push_str("]\n");
     }
+}
+
+/// Render a shadow approximation as an offset duplicate shape with reduced opacity.
+fn write_shadow_shape(out: &mut String, shape: &Shape, width: f64, height: f64, shadow: &Shadow) {
+    let dir_rad = shadow.direction.to_radians();
+    let dx = shadow.distance * dir_rad.cos();
+    let dy = shadow.distance * dir_rad.sin();
+    let alpha = (shadow.opacity * 255.0).round() as u8;
+
+    let _ = write!(
+        out,
+        "#place(top + left, dx: {}pt, dy: {}pt)[",
+        format_f64(dx),
+        format_f64(dy),
+    );
+
+    let shape_cmd = match &shape.kind {
+        ShapeKind::Rectangle => "#rect(",
+        ShapeKind::Ellipse => "#ellipse(",
+        ShapeKind::Line { .. } => {
+            // Lines don't have meaningful shadows; skip
+            out.push_str("]\n");
+            return;
+        }
+    };
+    out.push_str(shape_cmd);
+    let _ = write!(
+        out,
+        "width: {}pt, height: {}pt, fill: rgba({}, {}, {}, {})",
+        format_f64(width),
+        format_f64(height),
+        shadow.color.r,
+        shadow.color.g,
+        shadow.color.b,
+        alpha,
+    );
+    out.push_str(")]\n");
 }
 
 /// Write fill color, using rgba when opacity is set, rgb otherwise.
@@ -2189,6 +2231,7 @@ mod tests {
                 stroke,
                 rotation_deg: None,
                 opacity: None,
+                shadow: None,
             }),
         }
     }
@@ -2414,6 +2457,7 @@ mod tests {
                     stroke: None,
                     rotation_deg: Some(90.0),
                     opacity: None,
+                    shadow: None,
                 }),
             }],
         )]);
@@ -2447,6 +2491,7 @@ mod tests {
                     stroke: None,
                     rotation_deg: None,
                     opacity: Some(0.5),
+                    shadow: None,
                 }),
             }],
         )]);
@@ -2476,6 +2521,7 @@ mod tests {
                     stroke: None,
                     rotation_deg: Some(45.0),
                     opacity: Some(0.75),
+                    shadow: None,
                 }),
             }],
         )]);
@@ -4202,6 +4248,7 @@ mod tests {
                 stroke: None,
                 rotation_deg: None,
                 opacity: None,
+                shadow: None,
             }),
         };
         let doc = make_doc(vec![make_fixed_page(720.0, 540.0, vec![elem])]);
@@ -4220,6 +4267,76 @@ mod tests {
         assert!(
             !output.source.contains("fill: rgb(255, 0, 0)"),
             "Should not contain fallback solid fill. Got: {}",
+            output.source,
+        );
+    }
+
+    // ── Shadow codegen tests ──────────────────────────────────────────
+
+    #[test]
+    fn test_shape_shadow_codegen() {
+        use crate::ir::Shadow;
+        let elem = FixedElement {
+            x: 10.0,
+            y: 20.0,
+            width: 200.0,
+            height: 150.0,
+            kind: FixedElementKind::Shape(Shape {
+                kind: ShapeKind::Rectangle,
+                fill: Some(Color::new(255, 0, 0)),
+                gradient_fill: None,
+                stroke: None,
+                rotation_deg: None,
+                opacity: None,
+                shadow: Some(Shadow {
+                    blur_radius: 4.0,
+                    distance: 3.0,
+                    direction: 45.0,
+                    color: Color::new(0, 0, 0),
+                    opacity: 0.5,
+                }),
+            }),
+        };
+        let doc = make_doc(vec![make_fixed_page(720.0, 540.0, vec![elem])]);
+        let output = generate_typst(&doc).unwrap();
+        // Shadow should render as an offset duplicate with rgba fill
+        assert!(
+            output.source.contains("rgba(0, 0, 0, 128)"),
+            "Shadow should use rgba with alpha. Got: {}",
+            output.source,
+        );
+        // The shadow shape should be placed before the main shape
+        let shadow_pos = output.source.find("rgba(0, 0, 0, 128)");
+        let main_pos = output.source.find("rgb(255, 0, 0)");
+        assert!(
+            shadow_pos < main_pos,
+            "Shadow should appear before main shape in output",
+        );
+    }
+
+    #[test]
+    fn test_shape_no_shadow_no_extra_output() {
+        let elem = FixedElement {
+            x: 10.0,
+            y: 20.0,
+            width: 200.0,
+            height: 150.0,
+            kind: FixedElementKind::Shape(Shape {
+                kind: ShapeKind::Rectangle,
+                fill: Some(Color::new(255, 0, 0)),
+                gradient_fill: None,
+                stroke: None,
+                rotation_deg: None,
+                opacity: None,
+                shadow: None,
+            }),
+        };
+        let doc = make_doc(vec![make_fixed_page(720.0, 540.0, vec![elem])]);
+        let output = generate_typst(&doc).unwrap();
+        // No shadow → no rgba for shadow color
+        assert!(
+            !output.source.contains("rgba(0, 0, 0,"),
+            "No shadow should produce no rgba shadow. Got: {}",
             output.source,
         );
     }

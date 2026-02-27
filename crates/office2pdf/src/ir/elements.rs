@@ -261,6 +261,21 @@ pub struct GradientFill {
     pub angle: f64,
 }
 
+/// An outer shadow effect on a shape.
+#[derive(Debug, Clone)]
+pub struct Shadow {
+    /// Blur radius in points.
+    pub blur_radius: f64,
+    /// Distance from the shape in points.
+    pub distance: f64,
+    /// Direction angle in degrees (0 = right, 90 = down, 180 = left, 270 = up).
+    pub direction: f64,
+    /// Shadow color.
+    pub color: Color,
+    /// Opacity from 0.0 (fully transparent) to 1.0 (fully opaque).
+    pub opacity: f64,
+}
+
 /// Basic geometric shape.
 #[derive(Debug, Clone)]
 pub struct Shape {
@@ -273,6 +288,8 @@ pub struct Shape {
     pub rotation_deg: Option<f64>,
     /// Opacity from 0.0 (fully transparent) to 1.0 (fully opaque).
     pub opacity: Option<f64>,
+    /// Outer shadow effect.
+    pub shadow: Option<Shadow>,
 }
 
 /// Shape types.
