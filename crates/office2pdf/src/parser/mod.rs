@@ -1,4 +1,5 @@
 pub(crate) mod chart;
+pub(crate) mod cond_fmt;
 pub mod docx;
 pub(crate) mod omml;
 pub mod pptx;
