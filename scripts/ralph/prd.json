@@ -78,7 +78,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "The current perf test budget of 3s (perf_validation.rs:11) still fails at ~3.5-4.0s. After US-091 optimizations, re-measure and set realistic targets. For synthetic documents, use docx-rs to generate DOCX, ZIP+quick-xml for PPTX, and umya-spreadsheet for XLSX. P95 budgets should include CI variance. Consider using #[ignore] for large tier tests that may not pass on GitHub Actions runners."
     },
     {
