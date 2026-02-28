@@ -77,7 +77,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Typst columns: `#columns(2, gutter: 12pt)[content]`. For sections with different column counts, wrap each section's content in its own columns() call. The DOCX sectPr can appear at the end of a section (within the last paragraph's pPr) or as the document's final sectPr. Parse both cases. For unequal columns, Typst doesn't have direct per-column width support in columns(), so use #grid() with explicit column widths as a fallback."
     },
     {
