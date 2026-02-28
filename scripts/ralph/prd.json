@@ -57,7 +57,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "The Typst stroke API supports dash patterns: `stroke(paint: color, thickness: 1pt, dash: \"dashed\")`. Valid dash values include: 'solid', 'dotted', 'densely-dotted', 'loosely-dotted', 'dashed', 'densely-dashed', 'loosely-dashed', 'dash-dotted', 'densely-dash-dotted', 'loosely-dash-dotted'. Map OOXML border values to the closest Typst dash pattern. For Double borders, emit two parallel strokes or use Typst's table stroke capabilities."
     },
     {

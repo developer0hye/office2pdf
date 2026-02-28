@@ -124,3 +124,23 @@ Started: 2026년  2월 28일 토요일 22시 20분 56초 KST
   - Korean NFD uses Hangul Jamo (U+1100–U+11FF), NFC composes them to Hangul Syllables (U+AC00–U+D7AF)
   - Combining diacritics (e.g., U+0301 COMBINING ACUTE ACCENT) compose with preceding base chars to form precomposed NFC characters
 ---
+
+## 2026-02-28 - US-102
+- Implemented dash patterns and line styles for border/shape rendering across all three formats
+- Added `BorderLineStyle` enum to IR: Solid, Dashed, Dotted, DashDot, DashDotDot, Double, None (with Default = Solid)
+- Added `style: BorderLineStyle` field to `BorderSide` struct
+- DOCX parser: Maps `borderType` values (dashed, dotted, dotDash, dotDotDash, double, triple, thinThick*, thickThin* variants) to `BorderLineStyle`
+- PPTX parser: Parses `<a:prstDash val="..."/>` from both shape outlines (`<a:ln>`) and table cell borders (`<a:lnL/R/T/B>`); maps OOXML preset dash values (dash, dot, dashDot, sysDash, lgDash, etc.) to `BorderLineStyle`
+- XLSX parser: Added `border_style_to_line_style()` mapping (dashed, mediumDashed → Dashed; dotted → Dotted; dashDot, mediumDashDot, slantDashDot → DashDot; dashDotDot, mediumDashDotDot → DashDotDot; double → Double)
+- Typst codegen: Solid borders use simple format (`1pt + rgb(r,g,b)`); non-solid borders use full stroke object `(paint: rgb(...), thickness: Npt, dash: "dashed"|"dotted"|"dash-dotted")`. Both cell borders and shape strokes handle dash patterns
+- Added 11 new tests: 5 codegen (dashed border, dashed shape, dash-dot shape, style mapping, solid no-dash), 3 DOCX (border styles, solid default), 3 PPTX (table dash, shape dash), 3 XLSX (border styles, medium-dashed)
+- Files changed: `ir/elements.rs`, `parser/docx.rs`, `parser/pptx.rs`, `parser/xlsx.rs`, `render/typst_gen.rs`
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - `docx_rs::TableCellBorder` has `.border_type(BorderType::Dashed)` builder method and serializes `borderType` to the JSON representation
+  - PPTX `<a:prstDash/>` appears as either Start or Empty event — handle both to cover all XML serialization variants
+  - PPTX table cell borders use separate state variables (`border_ln_dash_style`) from shape outlines (`ln_dash_style`) due to separate parsing contexts
+  - Typst stroke dash values: 'dashed', 'dotted', 'dash-dotted' (not 'dashDot'); no 'dashDotDot' — map to 'dash-dotted' as closest
+  - Typst stroke object format: `(paint: color, thickness: size, dash: pattern)` vs simple `size + color` for solid
+  - `umya_spreadsheet::Border` constants: `BORDER_DASHED`, `BORDER_DOTTED`, `BORDER_DASHDOT`, `BORDER_DOUBLE`, etc.
+---

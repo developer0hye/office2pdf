@@ -5,10 +5,10 @@ use std::io::Read;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, FloatingImage, FlowPage,
-    HFInline, HeaderFooter, HeaderFooterParagraph, ImageData, ImageFormat, LineSpacing, List,
-    ListItem, ListKind, Margins, MathEquation, Page, PageSize, Paragraph, ParagraphStyle, Run,
-    StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, Document,
+    FloatingImage, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph, ImageData, ImageFormat,
+    LineSpacing, List, ListItem, ListKind, Margins, MathEquation, Page, PageSize, Paragraph,
+    ParagraphStyle, Run, StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -1627,9 +1627,28 @@ fn extract_cell_borders(borders_json: &serde_json::Value) -> Option<CellBorder> 
             .and_then(|v| v.as_str())
             .unwrap_or("000000");
         let color = parse_hex_color(color_hex).unwrap_or(Color::black());
+        let style = match border_type {
+            "dashed" | "dashSmallGap" => BorderLineStyle::Dashed,
+            "dotted" => BorderLineStyle::Dotted,
+            "dashDotStroked" | "dotDash" => BorderLineStyle::DashDot,
+            "dotDotDash" => BorderLineStyle::DashDotDot,
+            "double"
+            | "thinThickSmallGap"
+            | "thickThinSmallGap"
+            | "thinThickMediumGap"
+            | "thickThinMediumGap"
+            | "thinThickLargeGap"
+            | "thickThinLargeGap"
+            | "thinThickThinSmallGap"
+            | "thinThickThinMediumGap"
+            | "thinThickThinLargeGap"
+            | "triple" => BorderLineStyle::Double,
+            _ => BorderLineStyle::Solid,
+        };
         Some(BorderSide {
             width: size / 8.0, // eighths of a point → points
             color,
+            style,
         })
     };
 
@@ -2781,6 +2800,103 @@ mod tests {
             bottom.width
         );
         assert_eq!(bottom.color, Color::new(0, 0, 255));
+    }
+
+    #[test]
+    fn test_table_cell_border_styles() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new()
+                .add_paragraph(
+                    docx_rs::Paragraph::new()
+                        .add_run(docx_rs::Run::new().add_text("Styled borders")),
+                )
+                .set_border(
+                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Top)
+                        .size(16)
+                        .color("000000")
+                        .border_type(docx_rs::BorderType::Dashed),
+                )
+                .set_border(
+                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Bottom)
+                        .size(8)
+                        .color("0000FF")
+                        .border_type(docx_rs::BorderType::Dotted),
+                )
+                .set_border(
+                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Left)
+                        .size(12)
+                        .color("FF0000")
+                        .border_type(docx_rs::BorderType::DotDash),
+                )
+                .set_border(
+                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Right)
+                        .size(16)
+                        .color("00FF00")
+                        .border_type(docx_rs::BorderType::Double),
+                ),
+        ])]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let t = first_table(&doc);
+
+        let cell = &t.rows[0].cells[0];
+        let border = cell.border.as_ref().expect("Expected cell border");
+
+        // Top: dashed
+        let top = border.top.as_ref().expect("Expected top border");
+        assert_eq!(top.style, BorderLineStyle::Dashed, "Top should be dashed");
+
+        // Bottom: dotted
+        let bottom = border.bottom.as_ref().expect("Expected bottom border");
+        assert_eq!(
+            bottom.style,
+            BorderLineStyle::Dotted,
+            "Bottom should be dotted"
+        );
+
+        // Left: dashDot
+        let left = border.left.as_ref().expect("Expected left border");
+        assert_eq!(
+            left.style,
+            BorderLineStyle::DashDot,
+            "Left should be dashDot"
+        );
+
+        // Right: double
+        let right = border.right.as_ref().expect("Expected right border");
+        assert_eq!(
+            right.style,
+            BorderLineStyle::Double,
+            "Right should be double"
+        );
+    }
+
+    #[test]
+    fn test_table_cell_solid_border_default_style() {
+        // Single (default) border type should map to Solid
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new()
+                .add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Solid")),
+                )
+                .set_border(
+                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Top)
+                        .size(16)
+                        .color("000000"),
+                    // Default border_type is Single → should map to Solid
+                ),
+        ])]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let t = first_table(&doc);
+        let cell = &t.rows[0].cells[0];
+        let border = cell.border.as_ref().expect("Expected cell border");
+        let top = border.top.as_ref().expect("Expected top border");
+        assert_eq!(top.style, BorderLineStyle::Solid, "Single → Solid");
     }
 
     #[test]

@@ -8,10 +8,10 @@ use zip::ZipArchive;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, FixedElement,
-    FixedElementKind, FixedPage, GradientFill, GradientStop, ImageData, ImageFormat, Page,
-    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, SmartArtNode,
-    StyleSheet, Table, TableCell, TableRow, TextStyle,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, Document,
+    FixedElement, FixedElementKind, FixedPage, GradientFill, GradientStop, ImageData, ImageFormat,
+    Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt,
+    SmartArtNode, StyleSheet, Table, TableCell, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::chart as chart_parser;
@@ -50,6 +50,18 @@ struct ThemeData {
 /// 1 inch = 914400 EMU, 1 inch = 72 points, so 1 pt = 12700 EMU.
 fn emu_to_pt(emu: i64) -> f64 {
     emu as f64 / 12700.0
+}
+
+/// Map OOXML preset dash values to `BorderLineStyle`.
+fn pptx_dash_to_border_style(val: &str) -> BorderLineStyle {
+    match val {
+        "dash" | "lgDash" | "sysDash" => BorderLineStyle::Dashed,
+        "dot" | "sysDot" | "lgDashDot" => BorderLineStyle::Dotted,
+        "dashDot" | "sysDashDot" => BorderLineStyle::DashDot,
+        "lgDashDotDot" | "sysDashDotDot" => BorderLineStyle::DashDotDot,
+        "solid" => BorderLineStyle::Solid,
+        _ => BorderLineStyle::Solid,
+    }
 }
 
 impl Parser for PptxParser {
@@ -1232,6 +1244,7 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
     let mut in_border_ln = false;
     let mut border_ln_width_emu: i64 = 0;
     let mut border_ln_color: Option<Color> = None;
+    let mut border_ln_dash_style: BorderLineStyle = BorderLineStyle::Solid;
     #[derive(Clone, Copy, PartialEq, Eq)]
     enum BorderDir {
         None,
@@ -1317,24 +1330,34 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
                         current_border_dir = BorderDir::Left;
                         border_ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
                         border_ln_color = None;
+                        border_ln_dash_style = BorderLineStyle::Solid;
                     }
                     b"lnR" if in_tc_pr => {
                         in_border_ln = true;
                         current_border_dir = BorderDir::Right;
                         border_ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
                         border_ln_color = None;
+                        border_ln_dash_style = BorderLineStyle::Solid;
                     }
                     b"lnT" if in_tc_pr => {
                         in_border_ln = true;
                         current_border_dir = BorderDir::Top;
                         border_ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
                         border_ln_color = None;
+                        border_ln_dash_style = BorderLineStyle::Solid;
                     }
                     b"lnB" if in_tc_pr => {
                         in_border_ln = true;
                         current_border_dir = BorderDir::Bottom;
                         border_ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
                         border_ln_color = None;
+                        border_ln_dash_style = BorderLineStyle::Solid;
+                    }
+                    b"prstDash" if in_border_ln => {
+                        border_ln_dash_style = get_attr_str(e, b"val")
+                            .as_deref()
+                            .map(pptx_dash_to_border_style)
+                            .unwrap_or(BorderLineStyle::Solid);
                     }
                     _ => {}
                 }
@@ -1368,6 +1391,12 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
                                 SolidFillCtx::None => {}
                             }
                         }
+                    }
+                    b"prstDash" if in_border_ln => {
+                        border_ln_dash_style = get_attr_str(e, b"val")
+                            .as_deref()
+                            .map(pptx_dash_to_border_style)
+                            .unwrap_or(BorderLineStyle::Solid);
                     }
                     b"rPr" if in_run => {
                         extract_rpr_attributes(e, &mut run_style);
@@ -1480,6 +1509,7 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
                             let side = BorderSide {
                                 width: border_ln_width_emu as f64 / 12700.0,
                                 color,
+                                style: border_ln_dash_style,
                             };
                             match current_border_dir {
                                 BorderDir::Left => border_left = Some(side),
@@ -1687,6 +1717,7 @@ fn parse_slide_xml(
     let mut in_ln = false;
     let mut ln_width_emu: i64 = 0;
     let mut ln_color: Option<Color> = None;
+    let mut ln_dash_style: BorderLineStyle = BorderLineStyle::Solid;
     let mut shape_rotation_deg: Option<f64> = None;
     let mut shape_opacity: Option<f64> = None;
     let mut shape_shadow: Option<Shadow> = None;
@@ -1827,6 +1858,13 @@ fn parse_slide_xml(
                     b"ln" if in_sp_pr => {
                         in_ln = true;
                         ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+                        ln_dash_style = BorderLineStyle::Solid;
+                    }
+                    b"prstDash" if in_ln => {
+                        ln_dash_style = get_attr_str(e, b"val")
+                            .as_deref()
+                            .map(pptx_dash_to_border_style)
+                            .unwrap_or(BorderLineStyle::Solid);
                     }
                     b"solidFill" if in_ln => {
                         solid_fill_ctx = SolidFillCtx::LineFill;
@@ -1962,6 +2000,14 @@ fn parse_slide_xml(
                         ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
                     }
 
+                    // ── Dash pattern (often self-closing) ───────────
+                    b"prstDash" if in_ln => {
+                        ln_dash_style = get_attr_str(e, b"val")
+                            .as_deref()
+                            .map(pptx_dash_to_border_style)
+                            .unwrap_or(BorderLineStyle::Solid);
+                    }
+
                     // ── Color value ──────────────────────────────────
                     b"srgbClr" if solid_fill_ctx != SolidFillCtx::None => {
                         if let Some(hex) = get_attr_str(e, b"val") {
@@ -2045,6 +2091,7 @@ fn parse_slide_xml(
                                 let stroke = ln_color.map(|color| BorderSide {
                                     width: ln_width_emu as f64 / 12700.0,
                                     color,
+                                    style: ln_dash_style,
                                 });
                                 elements.push(FixedElement {
                                     x: emu_to_pt(shape_x),
@@ -4445,6 +4492,64 @@ mod tests {
         let left = border.left.as_ref().unwrap();
         assert!((left.width - 1.0).abs() < 0.1); // 12700 EMU = 1pt
         assert_eq!(left.color, Color::new(0, 0, 0));
+    }
+
+    #[test]
+    fn test_slide_table_cell_border_dash_styles() {
+        // Table cell with dashed top and dotted bottom borders
+        let mut rows_xml = String::new();
+        rows_xml.push_str(r#"<a:tr h="370840">"#);
+        rows_xml.push_str(r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>Dashed</a:t></a:r></a:p></a:txBody><a:tcPr>"#);
+        rows_xml.push_str(r#"<a:lnT w="12700"><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:prstDash val="dash"/></a:lnT>"#);
+        rows_xml.push_str(r#"<a:lnB w="12700"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:prstDash val="dot"/></a:lnB>"#);
+        rows_xml.push_str(r#"</a:tcPr></a:tc>"#);
+        rows_xml.push_str("</a:tr>");
+
+        let table_frame = make_table_graphic_frame(0, 0, 3657600, 370840, &[3657600], &rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+        let cell = &table.rows[0].cells[0];
+        let border = cell.border.as_ref().expect("Expected border");
+
+        let top = border.top.as_ref().expect("Expected top border");
+        assert_eq!(top.style, BorderLineStyle::Dashed, "Top should be dashed");
+
+        let bottom = border.bottom.as_ref().expect("Expected bottom border");
+        assert_eq!(
+            bottom.style,
+            BorderLineStyle::Dotted,
+            "Bottom should be dotted"
+        );
+    }
+
+    #[test]
+    fn test_shape_outline_dash_style() {
+        // Shape with dashed outline
+        let shape = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:ln w="25400"><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:prstDash val="dash"/></a:ln></p:spPr></p:sp>"#.to_string();
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let shape_elem = &page.elements[0];
+        if let FixedElementKind::Shape(ref s) = shape_elem.kind {
+            let stroke = s.stroke.as_ref().expect("Expected stroke");
+            assert_eq!(
+                stroke.style,
+                BorderLineStyle::Dashed,
+                "Shape stroke should be dashed"
+            );
+        } else {
+            panic!("Expected Shape element");
+        }
     }
 
     #[test]
