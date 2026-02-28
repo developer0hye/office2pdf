@@ -1,104 +1,111 @@
 {
   "project": "office2pdf",
-  "branchName": "ralph/phase12-text-fidelity",
-  "description": "Phase 12: Text Fidelity & Visual Polish - PDF text verification, Unicode normalization, border styles, multi-column layout, BiDi text",
+  "branchName": "ralph/phase13-bulk-fixture-robustness",
+  "description": "Phase 13: Bulk Fixture Robustness - Smoke test all 1000+ third-party fixtures, eliminate panics, improve error recovery",
   "userStories": [
     {
-      "id": "US-100",
-      "title": "Add PDF text content verification to test suite",
-      "description": "Add a lightweight PDF text extraction step to selected fixture tests to verify that actual text in generated PDFs matches the source document.\n\nImplement:\n1. Add `pdf-extract` or `lopdf` as a dev-dependency for text extraction from PDFs\n2. Create a test utility function `extract_pdf_text(pdf_bytes: &[u8]) -> String` in a test helpers module\n3. Add golden text assertions to at least 5 DOCX, 3 PPTX, and 3 XLSX fixture tests\n4. Assertions should check for presence of key content markers (headings, table headers, specific words) — not exact layout\n5. Include CJK content verification if Korean/Chinese/Japanese fixtures exist\n\nThis catches regressions where text is correct in IR but missing/garbled in the final PDF due to codegen or compilation bugs.\n\nRelated: #60",
+      "id": "US-200",
+      "title": "Create bulk conversion smoke test infrastructure",
+      "description": "Build an integration test that iterates over ALL fixture files in tests/fixtures/ (including subdirectories libreoffice/ and poi/) and attempts to convert each one to PDF.\n\nImplement:\n1. Create `tests/bulk_conversion.rs` with a test function per format (docx, pptx, xlsx)\n2. Each test discovers all files recursively under `tests/fixtures/{format}/` using glob patterns\n3. For each file, call `office2pdf::convert()` and categorize results:\n   - SUCCESS: conversion completed without error\n   - ERROR: returned a ConvertError (expected for some edge cases)\n   - PANIC: test panics (this is the critical failure mode)\n4. Print a summary table at the end: total files, successes, errors, panics\n5. The test should NOT fail on ConvertError (some files may have unsupported features) — it should only fail if any file causes a panic\n6. Use `std::panic::catch_unwind` to catch panics and continue testing remaining files\n7. Write results to `tests/bulk_conversion_results.txt` for analysis\n\nThis is the foundation for all subsequent robustness work.",
       "acceptanceCriteria": [
-        "PDF text extraction utility function available in test helpers",
-        "At least 5 DOCX fixture tests have text content assertions",
-        "At least 3 PPTX fixture tests have text content assertions",
-        "At least 3 XLSX fixture tests have text content assertions",
-        "Tests verify presence of key content markers, not exact layout",
-        "No false positives from font encoding differences",
+        "tests/bulk_conversion.rs exists with per-format test functions",
+        "Tests discover all fixture files recursively including libreoffice/ and poi/ subdirectories",
+        "Tests use catch_unwind to prevent panics from aborting the full test run",
+        "Summary output shows total/success/error/panic counts per format",
+        "Tests pass (no panics) OR clearly identify which files cause panics",
         "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Use lopdf (already a dependency behind pdf-ops feature) or pdf-extract as a dev-dependency. The key is spot-checking: assert that known strings from the source document appear in the extracted PDF text. This is not a full round-trip test — just content markers. Place the helper in tests/common/mod.rs or a similar shared test utility. If lopdf's text extraction is limited, consider pdf-extract crate which provides better text extraction."
+      "passes": false,
+      "notes": "Use #[test] functions, not a custom binary. The test should be runnable via `cargo test -p office2pdf --test bulk_conversion -- --nocapture`. Use std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| { ... })) to catch panics. For file discovery, use std::fs::read_dir recursively or the glob crate (already in dev-dependencies). Mark the test with #[ignore] so it doesn't run in normal CI — only when explicitly requested. Print results to stdout AND write to a file."
     },
     {
-      "id": "US-101",
-      "title": "Add Unicode NFC normalization to the text pipeline",
-      "description": "Normalize all text to NFC form before Typst codegen to prevent decomposed Unicode issues in generated PDFs.\n\nImplement:\n1. Use `unicode-normalization` crate (likely already a transitive dependency via Typst) to apply NFC\n2. Add normalization at the IR boundary — when text enters `Run.text` from any parser, or as a single chokepoint in `escape_typst()`\n3. Test with Korean NFD input (decomposed jamo) to verify composed output\n4. Test with combining diacritics (e.g., cafe with combining accent) to verify NFC output\n5. Ensure no regression in existing fixture tests\n\nRelated: #57",
+      "id": "US-201",
+      "title": "Fix all DOCX parser panics from bulk fixtures",
+      "description": "Run the bulk conversion smoke test on DOCX fixtures and fix ALL panics.\n\nProcess:\n1. Run `cargo test -p office2pdf --test bulk_conversion test_bulk_docx -- --nocapture --ignored` to identify panicking files\n2. For each panicking file, diagnose the root cause (usually unwrap() on None, index out of bounds, or unhandled XML variants)\n3. Fix the parser to handle the edge case gracefully — return ConvertError instead of panicking\n4. Common fixes: replace unwrap() with ok_or/unwrap_or_default, add bounds checks, handle missing XML attributes\n5. Re-run until zero panics on ALL DOCX fixtures (errors are OK, panics are not)\n\nTarget: 0 panics across all DOCX fixtures (libreoffice + poi + existing).",
       "acceptanceCriteria": [
-        "All Run.text values are NFC-normalized before reaching Typst codegen",
-        "Test with Korean NFD input produces composed hangul in output",
-        "Test with combining diacritics produces NFC characters in output",
-        "unicode-normalization is added as a dependency (or reused from transitive)",
-        "No regression in existing fixture tests",
+        "Zero panics on all DOCX fixture files (libreoffice/, poi/, and root)",
+        "All unwrap()/expect() calls in DOCX parser that could trigger on real data are replaced with error handling",
+        "Bulk DOCX test reports 0 panics in summary",
+        "No regressions in existing unit/integration tests",
         "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Check if unicode-normalization is already a transitive dependency via typst or typst-kit. If so, just add it as a direct dependency without version conflict. The simplest approach is to normalize in escape_typst() as a single chokepoint — all text passes through there. Alternatively normalize in each parser when constructing Run structs. Prefer the chokepoint approach for maintainability."
+      "passes": false,
+      "notes": "Focus on panics ONLY, not on conversion quality. A file that returns ConvertError::Parse is fine — a file that crashes with 'index out of bounds' is not. Common panic sources in DOCX parsing: serde_json path navigation (.get().unwrap()), numbering definition lookups, image relationship resolution, header/footer parsing. Use .unwrap_or_default(), .ok_or(), or early return with ? to handle missing data."
     },
     {
-      "id": "US-102",
-      "title": "Add dash patterns and line styles to border/shape rendering",
-      "description": "Extend the IR and parsers to support border line styles beyond solid lines.\n\nImplement:\n1. Add `BorderStyle` enum to IR: Solid, Dashed, Dotted, DashDot, DashDotDot, Double, None\n2. Add `style: BorderStyle` field to `BorderSide` struct (default: Solid)\n3. Parse DOCX border styles from `<w:bdr w:val=\"dashed\">` etc.\n4. Parse PPTX outline dash patterns from `<a:prstDash val=\"dash\"/>`\n5. Parse XLSX cell border style types (thin, medium, dashed, dotted, etc.)\n6. Map border styles to Typst stroke patterns using `stroke(dash: \"dashed\")` or custom dash arrays\n7. Add test fixtures for dashed/dotted borders in each format\n\nRelated: #59",
+      "id": "US-202",
+      "title": "Fix all PPTX parser panics from bulk fixtures",
+      "description": "Run the bulk conversion smoke test on PPTX fixtures and fix ALL panics.\n\nProcess:\n1. Run `cargo test -p office2pdf --test bulk_conversion test_bulk_pptx -- --nocapture --ignored` to identify panicking files\n2. For each panicking file, diagnose root cause\n3. Fix the PPTX parser to handle edge cases gracefully\n4. Re-run until zero panics on ALL PPTX fixtures\n\nTarget: 0 panics across all PPTX fixtures (libreoffice + poi + existing).",
       "acceptanceCriteria": [
-        "BorderStyle enum covers common Office line styles (Solid, Dashed, Dotted, DashDot, DashDotDot, Double, None)",
-        "BorderSide struct has a style field with default Solid",
-        "DOCX paragraph/table borders parse dash pattern from w:val attribute",
-        "PPTX shape outline parses prstDash element",
-        "XLSX cell borders map style types (thin, medium, dashed, dotted)",
-        "Typst codegen emits correct dash patterns for non-solid borders",
-        "Test fixtures verify dashed/dotted borders render correctly",
+        "Zero panics on all PPTX fixture files (libreoffice/, poi/, and root)",
+        "All unwrap()/expect() calls in PPTX parser that could trigger on real data are replaced with error handling",
+        "Bulk PPTX test reports 0 panics in summary",
+        "No regressions in existing unit/integration tests",
         "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "The Typst stroke API supports dash patterns: `stroke(paint: color, thickness: 1pt, dash: \"dashed\")`. Valid dash values include: 'solid', 'dotted', 'densely-dotted', 'loosely-dotted', 'dashed', 'densely-dashed', 'loosely-dashed', 'dash-dotted', 'densely-dash-dotted', 'loosely-dash-dotted'. Map OOXML border values to the closest Typst dash pattern. For Double borders, emit two parallel strokes or use Typst's table stroke capabilities."
+      "passes": false,
+      "notes": "Common PPTX panic sources: XML attribute parsing (.attribute().unwrap()), missing slide relationships, theme color resolution, shape geometry parsing, SmartArt/chart XML navigation. The PPTX parser uses quick-xml directly so look for unchecked .unwrap() calls on attribute reads and element iteration."
     },
     {
-      "id": "US-103",
-      "title": "Support DOCX multi-column section layout",
-      "description": "Parse and render multi-column section layouts from DOCX documents.\n\nImplement:\n1. Parse `<w:cols>` from `<w:sectPr>` in the DOCX parser — extract column count, spacing, equalWidth flag, and optional per-column widths\n2. Add column layout information to IR (e.g., ColumnLayout struct with num_columns, spacing, column_widths)\n3. Emit Typst `#columns(n, gutter: ...)` for multi-column sections\n4. Handle column breaks (`<w:br w:type=\"column\"/>`) by emitting `#colbreak()`\n5. Test with 2-column and 3-column DOCX fixtures\n6. Support unequal column widths if specified\n\nRelated: #58",
+      "id": "US-203",
+      "title": "Fix all XLSX parser panics from bulk fixtures",
+      "description": "Run the bulk conversion smoke test on XLSX fixtures and fix ALL panics.\n\nProcess:\n1. Run `cargo test -p office2pdf --test bulk_conversion test_bulk_xlsx -- --nocapture --ignored` to identify panicking files\n2. For each panicking file, diagnose root cause\n3. Fix the XLSX parser to handle edge cases gracefully\n4. Re-run until zero panics on ALL XLSX fixtures\n\nTarget: 0 panics across all XLSX fixtures (libreoffice + poi + existing).",
       "acceptanceCriteria": [
-        "Parse w:cols from sectPr with num, space, equalWidth, per-column widths",
-        "IR has ColumnLayout type with column count, spacing, and optional widths",
-        "Typst codegen emits columns() for multi-column sections",
-        "Column breaks (w:br type=column) emit colbreak() in Typst",
-        "Test with 2-column DOCX fixture renders correctly",
-        "Test with 3-column DOCX fixture renders correctly",
-        "Unequal column widths are respected when specified",
+        "Zero panics on all XLSX fixture files (libreoffice/, poi/, and root)",
+        "All unwrap()/expect() calls in XLSX parser that could trigger on real data are replaced with error handling",
+        "Bulk XLSX test reports 0 panics in summary",
+        "No regressions in existing unit/integration tests",
         "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Typst columns: `#columns(2, gutter: 12pt)[content]`. For sections with different column counts, wrap each section's content in its own columns() call. The DOCX sectPr can appear at the end of a section (within the last paragraph's pPr) or as the document's final sectPr. Parse both cases. For unequal columns, Typst doesn't have direct per-column width support in columns(), so use #grid() with explicit column widths as a fallback."
+      "passes": false,
+      "notes": "Common XLSX panic sources: umya-spreadsheet API calls returning unexpected None, cell type mismatches, shared string index out of bounds, date/number format parsing, conditional formatting evaluation. The XLSX parser wraps umya-spreadsheet so most panics will be in the boundary code between umya and our IR."
     },
     {
-      "id": "US-104",
-      "title": "Support BiDi (right-to-left) text and complex script shaping",
-      "description": "Add support for bidirectional text rendering for Arabic, Hebrew, and other RTL scripts.\n\nImplement:\n1. Add `TextDirection` enum (LTR, RTL) to IR\n2. Add `direction: Option<TextDirection>` to ParagraphStyle and TextStyle\n3. Parse DOCX `<w:bidi/>` on paragraphs and `<w:rtl/>` on runs\n4. Parse PPTX `<a:pPr rtl=\"1\"/>` and `<a:rPr lang=\"ar-SA\"/>` attributes\n5. Emit Typst `#set text(dir: rtl)` for RTL paragraphs/runs\n6. Ensure font substitution can select RTL-capable fonts (e.g., Noto Sans Arabic)\n7. Create test fixtures with Arabic/Hebrew DOCX content\n8. Test mixed LTR/RTL paragraph (Arabic with English numbers)\n\nTypst has built-in BiDi support via the Unicode Bidirectional Algorithm, so the main work is passing direction hints from the source document through to Typst.\n\nRelated: #61",
+      "id": "US-204",
+      "title": "Fix all Typst codegen and PDF render panics",
+      "description": "After fixing parser panics, some files may still panic during Typst codegen or PDF rendering. Fix these too.\n\nProcess:\n1. Re-run full bulk conversion tests to find remaining panics (should only be in codegen/render now)\n2. Common codegen panics: unhandled IR variants, string formatting edge cases, image asset resolution\n3. Common render panics: Typst compilation errors that aren't caught, font issues\n4. Fix all remaining panics across ALL formats\n\nTarget: 0 panics on ANY fixture file in the entire tests/fixtures/ tree.",
       "acceptanceCriteria": [
-        "TextDirection enum (LTR, RTL) exists in IR",
-        "ParagraphStyle and TextStyle have optional direction field",
-        "DOCX w:bidi and w:rtl are parsed correctly",
-        "PPTX rtl attribute on pPr is parsed correctly",
-        "Typst codegen emits set text(dir: rtl) for RTL content",
-        "Test fixture with Arabic/Hebrew content renders RTL",
-        "Mixed LTR/RTL paragraph test passes (Arabic with English numbers)",
+        "Zero panics on ANY fixture file across all three formats",
+        "Typst codegen handles all IR variants without panicking",
+        "PDF render catches Typst compilation errors and returns ConvertError",
+        "Bulk conversion summary shows 0 panics for all formats combined",
+        "No regressions in existing unit/integration tests",
         "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Typst's text direction: `#set text(dir: rtl)` or inline `#text(dir: rtl)[content]`. Typst handles the Unicode BiDi algorithm internally — we just need to signal the base direction. For mixed content, Typst auto-detects script direction within a paragraph if the base direction is set. Focus on paragraph-level direction first (w:bidi), then run-level (w:rtl) for overrides. Font substitution for Arabic/Hebrew may require adding Noto Sans Arabic to the embedded fonts or ensuring system font discovery includes RTL fonts."
+      "passes": false,
+      "notes": "This is the final sweep. By this point, parser panics should be fixed. Remaining panics are likely in typst_gen.rs (unhandled match arms, string building) or pdf.rs (Typst world trait implementation, font loading). The goal is ZERO panics on any input — malformed files should return errors, never crash."
+    },
+    {
+      "id": "US-205",
+      "title": "Achieve 70%+ overall conversion success rate",
+      "description": "After eliminating panics, improve the conversion success rate by fixing the most common ConvertError patterns.\n\nProcess:\n1. Run bulk tests and analyze the error distribution — group errors by type/message\n2. Identify the top 3-5 most frequent error patterns\n3. Fix each pattern (usually missing feature support or parser limitations)\n4. Target: at least 70% of all fixtures convert successfully to PDF\n\nThis is about improving coverage, not perfection. Focus on the errors that affect the most files.",
+      "acceptanceCriteria": [
+        "Bulk conversion success rate is 70% or higher across all formats combined",
+        "Top 3 most common error patterns are identified and addressed",
+        "Error messages are descriptive enough to diagnose remaining failures",
+        "No regressions in existing unit/integration tests",
+        "cargo test --workspace passes",
+        "cargo fmt --all -- --check passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Common error patterns that block many files: missing image relationships (broken refs), unsupported XML namespaces, Typst compilation failures from invalid markup, password-protected files. For password-protected or intentionally broken files, classify them as 'expected failures' and exclude from the success rate calculation. The 70% target is deliberately achievable — it means fixing the most impactful issues without getting stuck on obscure edge cases."
     }
   ]
 }
