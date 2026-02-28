@@ -155,3 +155,19 @@ Started: 2026년  3월  1일 일요일 01시 22분 39초 KST
   - umya-spreadsheet API returns Option types that the parser correctly handles with unwrap_or_default()
   - Chart extraction via ZIP uses Ok/Err pattern with early returns, preventing panics
 ---
+
+## 2026-03-01 - US-204
+- What was implemented: Fixed all Typst codegen and PDF render panics
+  - Replaced `unreachable!()` in shadow shape kind match with graceful skip
+  - Replaced `alignment.unwrap()` + `unreachable!()` in paragraph generation with pattern match
+  - Replaced `segments.last_mut().unwrap()` in column break splitting with `if let Some`
+  - Added 8 robustness tests: empty document, empty pages, all alignment variants, all shape shadow kinds, column break edge cases
+- Files changed: crates/office2pdf/src/render/typst_gen.rs
+- Dependencies added: none
+- Bulk conversion results: 0 panics across all 146 fixtures (45 DOCX + 45 PPTX + 56 XLSX), 100% success rate
+- **Learnings for future iterations:**
+  - Previous parser fixes (US-201/202/203) had already eliminated all real-world panics
+  - The codegen/render layer was mostly safe, with only 2 `unreachable!()` and 1 `unwrap()` in production code
+  - All were logically safe (guarded by prior checks) but replaced for defense-in-depth
+  - PDF render already properly catches Typst compilation errors via `map_err` in `compile_to_pdf_inner`
+---
