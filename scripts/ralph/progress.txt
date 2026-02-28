@@ -33,7 +33,7 @@
 - **docx-rs test list creation**: `docx_rs::Paragraph::new().add_run(...).numbering(NumberingId::new(1), IndentLevel::new(0))`. Need `AbstractNumbering::new(id).add_level(Level::new(level, Start::new(1), NumberFormat::new("bullet"|"decimal"), LevelText::new("•"|"%1."), LevelJc::new("left")))` and `Numbering::new(numId, abstractNumId)`, wrapped in `Numberings::new().add_abstract_numbering(an).add_numbering(n)` and set via `Docx::new().numberings(nums)`.
 - **Typst codegen structure**: Each FlowPage emits `#set page(...)` then paragraphs. Text runs use `#text(props)[content]` for styling. Underline/strikethrough wrap with `#underline[...]`/`#strike[...]`. Special chars (`#`, `*`, `_`, `$`, etc.) must be escaped with `\`.
 - **IR module imports**: Style types (Alignment, Color, TextStyle, ParagraphStyle, LineSpacing) are re-exported via `crate::ir::*` — do NOT import from `crate::ir::style::` (private module).
-- **Quality gates**: Always run `cargo fmt --all -- --check`, `cargo clippy --workspace -- -D warnings`, `cargo test --workspace`, `cargo check --workspace` before committing. Use `writeln!` not `write!(...\n)` per clippy.
+- **Quality gates**: Always run `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo check --workspace` before committing. Use `writeln!` not `write!(...\n)` per clippy. CI uses `--all-targets` for clippy — always match locally.
 - **f64 formatting**: Use helper `format_f64()` to strip unnecessary trailing zeros (e.g., `72` not `72.0`).
 - **Pipeline testing**: Use `office2pdf::render_document(&doc)` to test IR → PDF without needing parsers. Construct `Document` with mock `FlowPage`/`FixedPage`/`TablePage` data.
 - **DOCX headers/footers**: Access via `docx.document.section_property.header` (and `.footer`) — `Option<(String, Header)>`. `Header.children` contains `HeaderChild::Paragraph(Box<Paragraph>)`. Similarly for `Footer`. Use `Docx::new().header(header).footer(footer)` to create test docs.
@@ -111,4 +111,21 @@ Started: 2026년  3월  1일 일요일 01시 22분 39초 KST
   - `std::fmt::Write` is needed for `writeln!` to `String`, `std::io::Write` for `flush()`
   - Fixture counts: 45 DOCX, 45 PPTX, 56 XLSX = 146 total files
   - No subdirectories (libreoffice/poi/) exist yet — just flat `tests/fixtures/{format}/`
+  - CI runs clippy with `--all-targets` — local `cargo clippy --workspace` may miss test target lints. Always use `cargo clippy --workspace --all-targets -- -D warnings` locally
+  - `is_some_and()` is preferred over `if let Some(x) = ... { if x ... }` by clippy collapsible_if lint
+---
+
+## 2026-03-01 - US-201
+- Ran bulk DOCX conversion test: 45 files, 0 panics, 100% success rate
+- Audited all DOCX parser production code for unsafe unwrap()/expect() calls
+- All production code already uses safe patterns: .unwrap_or_default(), .unwrap_or(), .filter(), bounds checks before indexing
+- HEADING_DEFAULT_SIZES indexing is safe because heading_level is filtered to < 6 at build_style_map()
+- NoteContext::consume_next and WrapContext::consume_next both have bounds checks before array indexing
+- No bare unwrap()/expect() calls exist in production code (docx.rs, omml.rs, chart.rs, metadata.rs, cond_fmt.rs)
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - The DOCX parser was already defensively programmed from previous phases
+  - Per-element error recovery via catch_unwind (documented in codebase patterns) provides an extra safety net
+  - All 45 DOCX fixtures convert successfully to PDF with no errors at all (100% success rate)
 ---

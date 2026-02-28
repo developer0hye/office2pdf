@@ -35,7 +35,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Focus on panics ONLY, not on conversion quality. A file that returns ConvertError::Parse is fine — a file that crashes with 'index out of bounds' is not. Common panic sources in DOCX parsing: serde_json path navigation (.get().unwrap()), numbering definition lookups, image relationship resolution, header/footer parsing. Use .unwrap_or_default(), .ok_or(), or early return with ? to handle missing data."
     },
     {
