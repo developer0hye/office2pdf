@@ -5694,7 +5694,7 @@ mod tests {
             "Should have a ColumnBreak block. Blocks: {:?}",
             flow.content
                 .iter()
-                .map(|b| std::mem::discriminant(b))
+                .map(std::mem::discriminant)
                 .collect::<Vec<_>>()
         );
     }
