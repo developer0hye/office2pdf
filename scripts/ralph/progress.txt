@@ -127,3 +127,33 @@ Started: 2026년  2월 28일 토요일 13시 48분 17초 KST
   - Localized OOXML style IDs: German Word uses "Funotenzeichen" for footnote references, "Endnotenzeichen" for endnote references. Always resolve via canonical name, not style ID
   - Fixture files must contain the actual OOXML parts to test parser features — a document with heading paragraphs is not the same as a document with page headers
 ---
+
+## 2026-02-28 - US-083
+- Added structured warning taxonomy across all parsers
+- Converted `ConvertWarning` from plain struct (element/reason strings) to enum with 4 variants:
+  - `UnsupportedElement { format, element }` — element type not supported
+  - `PartialElement { format, element, detail }` — element partially rendered
+  - `FallbackUsed { format, from, to }` — fallback rendering applied
+  - `ParseSkipped { format, reason }` — element skipped during parsing
+- Each variant includes document format (DOCX/PPTX/XLSX) for programmatic filtering
+- Added `format()` accessor method and `PartialEq` derive for testing
+- Updated existing warning sites:
+  - DOCX: panic recovery → `ParseSkipped`
+  - PPTX: slide failure → `ParseSkipped`
+- Added new structured warnings:
+  - DOCX: chart blocks → `FallbackUsed` (chart rendered as data table)
+  - PPTX: chart elements → `FallbackUsed`, SmartArt elements → `FallbackUsed`
+  - XLSX: chart blocks → `FallbackUsed` (chart rendered as data table)
+- Files changed:
+  - `crates/office2pdf/src/error.rs` — ConvertWarning struct → enum with 4 variants, updated tests
+  - `crates/office2pdf/src/parser/docx.rs` — Structured warnings for panic recovery + chart fallback
+  - `crates/office2pdf/src/parser/pptx.rs` — Structured warnings for slide failure + chart/SmartArt fallback
+  - `crates/office2pdf/src/parser/xlsx.rs` — Structured warnings for chart fallback, mut warnings vec
+  - `scripts/ralph/prd.json` — US-083 passes: true
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - ConvertWarning enum variants allow callers to `match` on warning type and filter by format
+  - XLSX parser had immutable `warnings` vec — needed `mut` to push chart warnings
+  - Chart/SmartArt fallback warnings are emitted at parse time (not codegen) since parsers know the element type
+  - Existing test `test_pptx_broken_slide_emits_warning_and_produces_pdf` works unchanged because Display output still contains "slide"
+---

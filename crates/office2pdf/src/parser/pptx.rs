@@ -97,11 +97,44 @@ impl Parser for PptxParser {
                 };
 
                 match parse_single_slide(&slide_path, slide_size, &theme, &mut archive) {
-                    Ok(page) => pages.push(page),
+                    Ok(page) => {
+                        // Emit structured warnings for fallback-rendered elements
+                        if let Page::Fixed(ref fp) = page {
+                            for elem in &fp.elements {
+                                match &elem.kind {
+                                    FixedElementKind::Chart(chart) => {
+                                        let title = chart
+                                            .title
+                                            .as_deref()
+                                            .unwrap_or("untitled")
+                                            .to_string();
+                                        warnings.push(ConvertWarning::FallbackUsed {
+                                            format: "PPTX".to_string(),
+                                            from: format!("chart ({title})"),
+                                            to: "data table".to_string(),
+                                        });
+                                    }
+                                    FixedElementKind::SmartArt(_) => {
+                                        warnings.push(ConvertWarning::FallbackUsed {
+                                            format: "PPTX".to_string(),
+                                            from: "SmartArt diagram".to_string(),
+                                            to: "text list".to_string(),
+                                        });
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        pages.push(page);
+                    }
                     Err(e) => {
-                        warnings.push(ConvertWarning {
-                            element: format!("Slide {} ({})", slide_idx + 1, slide_path),
-                            reason: format!("failed to parse slide: {e}"),
+                        warnings.push(ConvertWarning::ParseSkipped {
+                            format: "PPTX".to_string(),
+                            reason: format!(
+                                "slide {} ({}) failed to parse: {e}",
+                                slide_idx + 1,
+                                slide_path
+                            ),
                         });
                     }
                 }

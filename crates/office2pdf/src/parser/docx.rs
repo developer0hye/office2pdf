@@ -843,15 +843,29 @@ impl Parser for DocxParser {
             match result {
                 Ok(elems) => elements.extend(elems),
                 Err(_) => {
-                    warnings.push(ConvertWarning {
-                        element: format!("Document element at index {idx}"),
-                        reason: "element processing panicked; skipped".to_string(),
+                    warnings.push(ConvertWarning::ParseSkipped {
+                        format: "DOCX".to_string(),
+                        reason: format!(
+                            "document element at index {idx} processing panicked; skipped"
+                        ),
                     });
                 }
             }
         }
 
         let content = group_into_lists(elements, &num_kinds);
+
+        // Emit structured warnings for fallback-rendered elements
+        for block in &content {
+            if let Block::Chart(chart) = block {
+                let title = chart.title.as_deref().unwrap_or("untitled").to_string();
+                warnings.push(ConvertWarning::FallbackUsed {
+                    format: "DOCX".to_string(),
+                    from: format!("chart ({title})"),
+                    to: "data table".to_string(),
+                });
+            }
+        }
 
         let header = extract_docx_header(&docx.document.section_property);
         let footer = extract_docx_footer(&docx.document.section_property);

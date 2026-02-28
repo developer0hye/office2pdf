@@ -482,7 +482,7 @@ impl Parser for XlsxParser {
 
         let sheet_count = book.get_sheet_collection().len();
         let mut pages = Vec::with_capacity(sheet_count);
-        let warnings = Vec::new();
+        let mut warnings = Vec::new();
 
         for sheet in book.get_sheet_collection() {
             // Filter by sheet name if specified
@@ -670,6 +670,12 @@ impl Parser for XlsxParser {
         // Extract embedded charts from the ZIP and add as flow pages
         let charts = extract_charts_from_zip(data);
         for chart in charts {
+            let title = chart.title.as_deref().unwrap_or("untitled").to_string();
+            warnings.push(ConvertWarning::FallbackUsed {
+                format: "XLSX".to_string(),
+                from: format!("chart ({title})"),
+                to: "data table".to_string(),
+            });
             pages.push(Page::Flow(FlowPage {
                 size: PageSize::default(),
                 margins: Margins::default(),
