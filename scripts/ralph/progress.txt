@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- **TypeScript type generation**: `typescript = ["ts-rs"]` feature flag in library crate. Types derive `#[cfg_attr(feature = "typescript", derive(ts_rs::TS))]`. ts-rs 12.0 API: `T::decl(&cfg)`, `T::export_all(&cfg)`, `T::export_to_string(&cfg)` — all take `&ts_rs::Config`. Config: `ts_rs::Config::new().with_out_dir(path)`. Generated files go to `crates/office2pdf/bindings/`. Types: Format, PaperSize, PdfStandard, SlideRange, ConvertOptions, ConvertWarning, ConvertMetrics. For `PathBuf` fields: `#[cfg_attr(feature = "typescript", ts(type = "Array<string>"))]`. For `Duration` fields: `#[cfg_attr(feature = "typescript", ts(type = "number"))]`. u64 maps to `bigint` by default. Tests behind `#[cfg(all(test, feature = "typescript"))]`.
 - **Tagged PDF / PDF/UA**: `ConvertOptions.tagged: bool` and `ConvertOptions.pdf_ua: bool` (both default `false`). `compile_to_pdf()` accepts `tagged` and `pdf_ua` params, sets `PdfOptions { tagged: tagged || pdf_ua, ... }`. PDF/UA adds `PdfStandard::Ua_1` and requires a document title. Heading paragraphs: `ParagraphStyle.heading_level: Option<u8>` (1-6), set from DOCX `outline_lvl + 1` in `merge_paragraph_style()`. Codegen: `#heading(level: N)[content]` for heading paragraphs, normal `#block`/text for others. CLI: `--tagged`, `--pdf-ua` flags.
 - **Server feature flag pattern**: CLI crate has `server = ["tiny_http"]` feature. Module `server.rs` imported with `#[cfg(feature = "server")] mod server;`. Serve variant in Commands enum uses `#[cfg(feature = "server")]`. Tests run with `cargo test -p office2pdf-cli --features server`.
 - **PDF ops feature flag pattern**: Library crate has `pdf-ops = ["lopdf"]` feature. Module `pdf_ops.rs` imported with `#[cfg(feature = "pdf-ops")] pub mod pdf_ops;`. CLI always enables pdf-ops via `office2pdf = { features = ["pdf-ops"] }`. CLI subcommands `merge` and `split` are always available. `PageRange` for parsing page range strings like "1-5". Tests create minimal PDFs with `lopdf::Document::with_version("1.7")` + manual page/catalog construction.
@@ -136,4 +137,27 @@ Started: 2026년  2월 28일 토요일 19시 00분 28초 KST
   - Typst automatically tags semantic elements: `#heading` → H1-H6, `#table` → Table/TR/TD, paragraphs → P
   - `PdfOptions.tagged` defaults to `true` in typst-pdf, so current output was already tagged
   - `heading_level` must be set in `merge_paragraph_style()` (not `extract_paragraph_style()`) to access resolved style info
+---
+
+## 2026-02-28 - US-097
+- Auto-generated TypeScript types for WASM API using ts-rs 12.0
+- Added `ts-rs = { version = "12", optional = true }` behind `typescript` feature flag
+- Derived `TS` on 7 public API types: Format, PaperSize, PdfStandard, SlideRange, ConvertOptions, ConvertWarning, ConvertMetrics
+- Generated .ts files placed in `crates/office2pdf/bindings/`
+- ConvertOptions.ts includes proper imports of dependent types (PaperSize, PdfStandard, SlideRange)
+- Duration fields mapped to `number`, PathBuf fields to `Array<string>`, u64 to `bigint`
+- Files changed:
+  - `crates/office2pdf/Cargo.toml` — added ts-rs optional dep + typescript feature
+  - `crates/office2pdf/src/config.rs` — `#[cfg_attr(feature = "typescript", derive(ts_rs::TS))]` on Format, PaperSize, PdfStandard, SlideRange, ConvertOptions + ts_tests module (8 tests)
+  - `crates/office2pdf/src/error.rs` — TS derives on ConvertWarning, ConvertMetrics + ts_tests module (4 tests)
+  - `crates/office2pdf/src/lib.rs` — ts_integration_tests module (2 tests: export + content verification)
+  - `crates/office2pdf/bindings/*.ts` — 7 generated TypeScript files
+- Dependencies added: `ts-rs = "12"` (optional, behind typescript feature flag)
+- **Learnings for future iterations:**
+  - ts-rs 12.0 API requires `&Config` for all methods (decl, export, export_all, export_to_string)
+  - ts-rs default export dir is `./bindings` relative to working dir; use `Config::new().with_out_dir()` for custom
+  - `Duration` not supported by ts-rs — use `#[ts(type = "number")]`
+  - `PathBuf` could be handled by ts-rs but safer to use `#[ts(type = "Array<string>")]`
+  - `export_all()` exports the type AND all its dependencies (useful for ConvertOptions → SlideRange, etc.)
+  - ts-rs MSRV is 1.88.0; project MSRV is 1.89 — compatible
 ---

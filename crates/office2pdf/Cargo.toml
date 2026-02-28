@@ -13,6 +13,7 @@ categories = ["text-processing"]
 [features]
 wasm = ["wasm-bindgen"]
 pdf-ops = ["lopdf"]
+typescript = ["ts-rs"]
 
 [dependencies]
 thiserror = "2"
@@ -28,6 +29,7 @@ zip = { version = "0.6", default-features = false, features = ["deflate"] }
 quick-xml = "0.38"
 umya-spreadsheet = "2"
 wasm-bindgen = { version = "0.2", optional = true }
+ts-rs = { version = "12", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
