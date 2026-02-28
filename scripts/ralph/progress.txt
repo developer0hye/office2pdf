@@ -155,3 +155,14 @@ Started: 2026년  2월 28일 토요일 09시 05분 04초 KST
   - Known function names like sin/cos/log must be preserved intact, not split into individual characters
   - The `ensure_math_separator()` pattern works well: check if the output ends with an alphanumeric char and add a space before the next element
 ---
+
+## 2026-02-28 - US-075
+- Removed corrupt `deep-table-cell.docx` fixture that always failed with "Failed to read from zip"
+- Deleted `tests/fixtures/docx/deep-table-cell.docx`
+- Removed `docx_fixture_tests!(deep_table_cell, "deep-table-cell.docx")` from `crates/office2pdf/tests/docx_fixtures.rs`
+- Removed `- \`docx/deep-table-cell.docx\`` from `tests/fixtures/THIRD-PARTY-LICENSES.md`
+- Files changed: `crates/office2pdf/tests/docx_fixtures.rs`, `tests/fixtures/THIRD-PARTY-LICENSES.md`
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - Corrupt fixture files that can't be parsed are not code bugs — remove them rather than trying to handle them
+---
