@@ -394,23 +394,9 @@ impl WrapContext {
     }
 }
 
-/// Build a `WrapContext` by scanning document.xml for anchor wrap types.
-/// docx-rs does not parse wrap type elements (wrapSquare, wrapNone, etc.),
-/// so we scan the raw XML like we do for footnotes.
-fn build_wrap_context(data: &[u8]) -> WrapContext {
-    let mut wraps = Vec::new();
-
-    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
-        return WrapContext {
-            wraps,
-            cursor: Cell::new(0),
-        };
-    };
-
-    if let Some(xml) = read_zip_text(&mut archive, "word/document.xml") {
-        wraps = scan_anchor_wrap_types(&xml);
-    }
-
+/// Build a `WrapContext` from a pre-read document.xml string.
+fn build_wrap_context_from_xml(doc_xml: Option<&str>) -> WrapContext {
+    let wraps = doc_xml.map(scan_anchor_wrap_types).unwrap_or_default();
     WrapContext {
         wraps,
         cursor: Cell::new(0),
@@ -514,16 +500,12 @@ impl MathContext {
     }
 }
 
-/// Build a `MathContext` by scanning document.xml for OMML elements.
-fn build_math_context(data: &[u8]) -> MathContext {
+/// Build a `MathContext` from a pre-read document.xml string.
+fn build_math_context_from_xml(doc_xml: Option<&str>) -> MathContext {
     let mut equations: HashMap<usize, Vec<MathEquation>> = HashMap::new();
 
-    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
-        return MathContext { equations };
-    };
-
-    if let Some(xml) = read_zip_text(&mut archive, "word/document.xml") {
-        let raw = super::omml::scan_math_equations(&xml);
+    if let Some(xml) = doc_xml {
+        let raw = super::omml::scan_math_equations(xml);
         for (idx, content, display) in raw {
             equations
                 .entry(idx)
@@ -549,32 +531,31 @@ impl ChartContext {
     }
 }
 
-/// Build a `ChartContext` by scanning document.xml for chart references
-/// and parsing the corresponding chart XML files from the ZIP.
-fn build_chart_context(data: &[u8]) -> ChartContext {
+/// Build a `ChartContext` from pre-read XML strings and a shared ZIP archive.
+fn build_chart_context_from_xml(
+    doc_xml: Option<&str>,
+    archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
+) -> ChartContext {
     let mut charts: HashMap<usize, Vec<Chart>> = HashMap::new();
 
-    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
+    let Some(doc_xml) = doc_xml else {
         return ChartContext { charts };
     };
 
-    // Read document.xml and relationships file
-    let doc_xml = read_zip_text(&mut archive, "word/document.xml");
-    let rels_xml = read_zip_text(&mut archive, "word/_rels/document.xml.rels");
-
-    let (Some(doc_xml), Some(rels_xml)) = (doc_xml, rels_xml) else {
+    let rels_xml = read_zip_text(archive, "word/_rels/document.xml.rels");
+    let Some(rels_xml) = rels_xml else {
         return ChartContext { charts };
     };
 
     // Find chart references in document.xml
-    let refs = super::chart::scan_chart_references(&doc_xml);
+    let refs = super::chart::scan_chart_references(doc_xml);
     // Build relationship ID → chart file path mapping
     let rels = super::chart::scan_chart_rels(&rels_xml);
 
     // For each chart reference, parse the chart XML
     for (body_idx, rid) in refs {
         if let Some(chart_path) = rels.get(&rid)
-            && let Some(chart_xml) = read_zip_text(&mut archive, chart_path)
+            && let Some(chart_xml) = read_zip_text(archive, chart_path)
             && let Some(chart) = super::chart::parse_chart_xml(&chart_xml)
         {
             charts.entry(body_idx).or_default().push(chart);
@@ -584,42 +565,31 @@ fn build_chart_context(data: &[u8]) -> ChartContext {
     ChartContext { charts }
 }
 
-/// Build a `NoteContext` by parsing footnotes/endnotes from the raw DOCX ZIP.
-/// This is needed because docx-rs reader does not parse `w:footnoteReference`
-/// or `w:endnoteReference` elements.
-fn build_note_context(data: &[u8]) -> NoteContext {
-    let mut footnote_content = HashMap::new();
-    let mut endnote_content = HashMap::new();
-    let mut note_refs = Vec::new();
+/// Build a `NoteContext` from pre-read XML strings and a shared ZIP archive.
+fn build_note_context_from_xml(
+    doc_xml: Option<&str>,
+    archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
+) -> NoteContext {
     let default_style_ids: HashSet<String> = ["FootnoteReference", "EndnoteReference"]
         .iter()
         .map(|s| (*s).to_string())
         .collect();
 
-    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
-        return NoteContext {
-            footnote_content,
-            endnote_content,
-            note_refs,
-            cursor: Cell::new(0),
-            note_style_ids: default_style_ids,
-        };
-    };
+    let mut footnote_content = HashMap::new();
+    let mut endnote_content = HashMap::new();
 
     // Parse word/footnotes.xml
-    if let Some(xml) = read_zip_text(&mut archive, "word/footnotes.xml") {
+    if let Some(xml) = read_zip_text(archive, "word/footnotes.xml") {
         footnote_content = parse_notes_xml(&xml);
     }
 
     // Parse word/endnotes.xml
-    if let Some(xml) = read_zip_text(&mut archive, "word/endnotes.xml") {
+    if let Some(xml) = read_zip_text(archive, "word/endnotes.xml") {
         endnote_content = parse_notes_xml(&xml);
     }
 
     // Scan word/document.xml for note references in document order
-    if let Some(xml) = read_zip_text(&mut archive, "word/document.xml") {
-        note_refs = scan_note_refs(&xml);
-    }
+    let note_refs = doc_xml.map(scan_note_refs).unwrap_or_default();
 
     NoteContext {
         footnote_content,
@@ -770,22 +740,52 @@ impl Parser for DocxParser {
         data: &[u8],
         _options: &ConvertOptions,
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
-        // Extract metadata from docProps/core.xml in the ZIP
-        let metadata = {
+        // Open ZIP once and build all pre-parse contexts from a single pass.
+        // This consolidates what was previously 5 separate ZIP opens + multiple
+        // reads of word/document.xml into a single archive + single doc read.
+        let (metadata, mut notes, wraps, mut math, mut chart_ctx) = {
             let cursor = std::io::Cursor::new(data);
-            zip::ZipArchive::new(cursor)
-                .map(|mut archive| crate::parser::metadata::extract_metadata_from_zip(&mut archive))
-                .unwrap_or_default()
+            match zip::ZipArchive::new(cursor) {
+                Ok(mut archive) => {
+                    let metadata = crate::parser::metadata::extract_metadata_from_zip(&mut archive);
+                    let doc_xml = read_zip_text(&mut archive, "word/document.xml");
+                    let notes = build_note_context_from_xml(doc_xml.as_deref(), &mut archive);
+                    let wraps = build_wrap_context_from_xml(doc_xml.as_deref());
+                    let math = build_math_context_from_xml(doc_xml.as_deref());
+                    let chart_ctx = build_chart_context_from_xml(doc_xml.as_deref(), &mut archive);
+                    (metadata, notes, wraps, math, chart_ctx)
+                }
+                Err(_) => {
+                    // ZIP open failed — return empty contexts; docx-rs will
+                    // produce a proper parse error downstream.
+                    let default_style_ids: HashSet<String> =
+                        ["FootnoteReference", "EndnoteReference"]
+                            .iter()
+                            .map(|s| (*s).to_string())
+                            .collect();
+                    (
+                        crate::ir::Metadata::default(),
+                        NoteContext {
+                            footnote_content: HashMap::new(),
+                            endnote_content: HashMap::new(),
+                            note_refs: Vec::new(),
+                            cursor: Cell::new(0),
+                            note_style_ids: default_style_ids,
+                        },
+                        WrapContext {
+                            wraps: Vec::new(),
+                            cursor: Cell::new(0),
+                        },
+                        MathContext {
+                            equations: HashMap::new(),
+                        },
+                        ChartContext {
+                            charts: HashMap::new(),
+                        },
+                    )
+                }
+            }
         };
-
-        // Build note context from raw ZIP before docx-rs parsing
-        let mut notes = build_note_context(data);
-        // Build wrap context for anchor image wrap types from raw ZIP
-        let wraps = build_wrap_context(data);
-        // Build math context for OMML equations from raw ZIP
-        let mut math = build_math_context(data);
-        // Build chart context for embedded charts from raw ZIP
-        let mut chart_ctx = build_chart_context(data);
 
         let docx = docx_rs::read_docx(data)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;

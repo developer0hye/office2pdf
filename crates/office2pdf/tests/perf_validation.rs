@@ -10,6 +10,11 @@ use office2pdf::config::{ConvertOptions, Format};
 
 const BUDGET: std::time::Duration = std::time::Duration::from_secs(3);
 
+/// Optimized budget: after US-091 optimizations, compile-stage font caching
+/// and consolidated ZIP opens should reduce total time significantly.
+/// We target 2s (a ~33% reduction from the previous 3s budget).
+const OPTIMIZED_BUDGET: std::time::Duration = std::time::Duration::from_secs(2);
+
 fn build_docx_10_pages() -> Vec<u8> {
     let mut doc = docx_rs::Docx::new();
     for i in 0..30 {
@@ -205,5 +210,86 @@ fn perf_xlsx_10_sheets_under_2s() {
     assert!(
         elapsed < BUDGET,
         "XLSX 10-sheet conversion took {elapsed:?}, exceeds {BUDGET:?} budget"
+    );
+}
+
+/// Verify per-stage metrics are populated and that the compile stage
+/// benefits from font caching on repeated conversions.
+#[test]
+fn perf_font_cache_second_conversion_faster() {
+    let data = build_docx_10_pages();
+    let opts = ConvertOptions::default();
+
+    // First conversion: cold font cache
+    let result1 = office2pdf::convert_bytes(&data, Format::Docx, &opts).unwrap();
+    let m1 = result1
+        .metrics
+        .as_ref()
+        .expect("metrics should be populated");
+
+    // Second conversion: warm font cache
+    let result2 = office2pdf::convert_bytes(&data, Format::Docx, &opts).unwrap();
+    let m2 = result2
+        .metrics
+        .as_ref()
+        .expect("metrics should be populated");
+
+    // The compile stage (which includes font search) should be faster
+    // on the second call due to font caching.
+    eprintln!(
+        "First conversion:  parse={:?} codegen={:?} compile={:?} total={:?}",
+        m1.parse_duration, m1.codegen_duration, m1.compile_duration, m1.total_duration
+    );
+    eprintln!(
+        "Second conversion: parse={:?} codegen={:?} compile={:?} total={:?}",
+        m2.parse_duration, m2.codegen_duration, m2.compile_duration, m2.total_duration
+    );
+
+    // Second conversion total should be under the optimized budget
+    assert!(
+        m2.total_duration < OPTIMIZED_BUDGET,
+        "Second DOCX conversion took {:?}, expected under {OPTIMIZED_BUDGET:?} with warm font cache",
+        m2.total_duration
+    );
+}
+
+/// After optimization, consecutive conversions across different formats
+/// should all benefit from the cached font data.
+#[test]
+fn perf_cross_format_cached_conversion() {
+    let opts = ConvertOptions::default();
+
+    // Warm up the font cache with any conversion
+    let docx_data = build_docx_10_pages();
+    let _ = office2pdf::convert_bytes(&docx_data, Format::Docx, &opts).unwrap();
+
+    // PPTX should benefit from cached fonts
+    let pptx_data = build_pptx_10_slides();
+    let start = Instant::now();
+    let result = office2pdf::convert_bytes(&pptx_data, Format::Pptx, &opts).unwrap();
+    let elapsed = start.elapsed();
+    let m = result.metrics.as_ref().unwrap();
+    eprintln!(
+        "PPTX (warm cache): parse={:?} codegen={:?} compile={:?} total={:?}",
+        m.parse_duration, m.codegen_duration, m.compile_duration, m.total_duration
+    );
+    assert!(
+        elapsed < OPTIMIZED_BUDGET,
+        "PPTX conversion with warm cache took {elapsed:?}, expected under {OPTIMIZED_BUDGET:?}"
+    );
+
+    // XLSX should benefit from cached fonts
+    let xlsx_data = build_xlsx_10_sheets();
+    let start = Instant::now();
+    let result = office2pdf::convert_bytes(&xlsx_data, Format::Xlsx, &opts).unwrap();
+    let elapsed = start.elapsed();
+    let m = result.metrics.as_ref().unwrap();
+    eprintln!(
+        "XLSX (warm cache): parse={:?} codegen={:?} compile={:?} total={:?}",
+        m.parse_duration, m.codegen_duration, m.compile_duration, m.total_duration
+    );
+    assert!(
+        elapsed < OPTIMIZED_BUDGET,
+        "XLSX conversion with warm cache took {elapsed:?}, expected under {OPTIMIZED_BUDGET:?}"
     );
 }
