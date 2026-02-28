@@ -25,18 +25,21 @@ fn fixture_path(format: &str, name: &str) -> PathBuf {
 
 #[test]
 fn validation_skipped_without_env_var() {
-    // When OFFICE2PDF_VALIDATE_PDF is not "1", validation returns false (skipped).
-    // This test verifies the gating logic by checking the return value.
+    // This test verifies the gating logic: when the env var is not set,
+    // validation should be skipped (return false). We can only test this
+    // path when the env var is actually unset.
+    if std::env::var("OFFICE2PDF_VALIDATE_PDF").unwrap_or_default() == "1" {
+        // In CI the env var is set — skip this test since we cannot safely
+        // unset it in a parallel test environment.
+        return;
+    }
+
     let dummy_pdf = b"%PDF-1.4 dummy content";
     let result = common::validate_pdf_with_qpdf(dummy_pdf);
-
-    if std::env::var("OFFICE2PDF_VALIDATE_PDF").unwrap_or_default() != "1" {
-        assert!(
-            !result,
-            "validation should be skipped when env var is not set"
-        );
-    }
-    // If env var IS set, result depends on qpdf availability — either way is fine.
+    assert!(
+        !result,
+        "validation should be skipped when env var is not set"
+    );
 }
 
 // ---------------------------------------------------------------------------
