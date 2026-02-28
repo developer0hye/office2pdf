@@ -21,6 +21,7 @@ pub enum ConvertError {
 /// Warnings are structured so that callers can programmatically inspect
 /// what was degraded during conversion.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "typescript", derive(ts_rs::TS))]
 pub enum ConvertWarning {
     /// An element type is not supported and was completely omitted.
     UnsupportedElement {
@@ -93,14 +94,19 @@ impl std::fmt::Display for ConvertWarning {
 
 /// Per-stage timing and size metrics from a conversion.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "typescript", derive(ts_rs::TS))]
 pub struct ConvertMetrics {
     /// Time spent parsing the input document (DOCX/PPTX/XLSX → IR).
+    #[cfg_attr(feature = "typescript", ts(type = "number"))]
     pub parse_duration: std::time::Duration,
     /// Time spent generating Typst source code (IR → Typst).
+    #[cfg_attr(feature = "typescript", ts(type = "number"))]
     pub codegen_duration: std::time::Duration,
     /// Time spent compiling Typst to PDF (Typst → PDF).
+    #[cfg_attr(feature = "typescript", ts(type = "number"))]
     pub compile_duration: std::time::Duration,
     /// Total end-to-end conversion time.
+    #[cfg_attr(feature = "typescript", ts(type = "number"))]
     pub total_duration: std::time::Duration,
     /// Size of the input file in bytes.
     pub input_size_bytes: u64,
@@ -277,6 +283,13 @@ mod tests {
     }
 
     #[test]
+    fn test_convert_error_debug_format() {
+        let e = ConvertError::UnsupportedFormat("txt".to_string());
+        let dbg = format!("{e:?}");
+        assert!(dbg.contains("UnsupportedFormat"));
+    }
+
+    #[test]
     fn test_all_variants_carry_format() {
         let variants = [
             ConvertWarning::UnsupportedElement {
@@ -302,5 +315,61 @@ mod tests {
         for (w, expected) in variants.iter().zip(expected_formats.iter()) {
             assert_eq!(w.format(), *expected);
         }
+    }
+}
+
+#[cfg(all(test, feature = "typescript"))]
+mod ts_tests {
+    use super::*;
+    use ts_rs::TS;
+
+    fn cfg() -> ts_rs::Config {
+        ts_rs::Config::new()
+    }
+
+    #[test]
+    fn test_convert_warning_ts_declaration() {
+        let decl = ConvertWarning::decl(&cfg());
+        assert!(
+            decl.contains("ConvertWarning"),
+            "ConvertWarning TS decl: {decl}"
+        );
+        assert!(
+            decl.contains("UnsupportedElement"),
+            "should contain UnsupportedElement variant: {decl}"
+        );
+        assert!(
+            decl.contains("PartialElement"),
+            "should contain PartialElement variant: {decl}"
+        );
+    }
+
+    #[test]
+    fn test_convert_metrics_ts_declaration() {
+        let decl = ConvertMetrics::decl(&cfg());
+        assert!(
+            decl.contains("ConvertMetrics"),
+            "ConvertMetrics TS decl: {decl}"
+        );
+        assert!(
+            decl.contains("page_count"),
+            "should contain page_count field: {decl}"
+        );
+        assert!(
+            decl.contains("number"),
+            "numeric fields should be number type: {decl}"
+        );
+    }
+
+    #[test]
+    fn test_convert_warning_ts_export() {
+        let ts = ConvertWarning::export_to_string(&cfg()).unwrap();
+        assert!(ts.contains("ConvertWarning"));
+    }
+
+    #[test]
+    fn test_convert_metrics_ts_export() {
+        let ts = ConvertMetrics::export_to_string(&cfg()).unwrap();
+        assert!(ts.contains("ConvertMetrics"));
     }
 }

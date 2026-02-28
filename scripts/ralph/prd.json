@@ -61,7 +61,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "ts-rs is a well-established crate for Rust-to-TypeScript type generation. Add it as: `ts-rs = { version = '...', optional = true }` with a feature flag like `typescript`. The #[derive(TS)] attribute auto-generates .d.ts files. Place output in a bindings/ directory. This pairs well with the existing wasm-bindgen module in wasm.rs."
     },
     {
