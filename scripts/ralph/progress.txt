@@ -77,6 +77,7 @@
 - **PPTX embedded charts**: Charts in PPTX use `<p:graphicFrame>` with `<a:graphicData uri="...chart">` containing `<c:chart r:id="rIdN"/>`. Detection via `chart::scan_pptx_chart_refs(slide_xml)` → `Vec<PptxChartRef>` (position in EMU + chart_rid). Chart data resolved by `load_chart_data(slide_path, archive)` which reads slide .rels for targets containing "chart", then reads chart XML from ZIP and parses via `chart::parse_chart_xml()`. Returns `ChartMap` (HashMap<String, Chart>). Chart XML is the same format as DOCX charts — `parse_chart_xml()` is fully reusable. IR: `FixedElementKind::Chart(Chart)`. Codegen delegates to existing `generate_chart()`. Integration in `parse_single_slide()` after SmartArt block. Test helpers: `build_test_pptx_with_chart(cx, cy, slide_xml, chart_rid, chart_xml)`, `make_chart_graphic_frame(x, y, cx, cy, chart_rid)`, `make_chart_xml(title, chart_type, categories, series_name, values)`.
 - **DOCX floating images**: `WrapContext` scans raw document.xml for `wp:anchor` elements in document order (similar pattern to `NoteContext`). `AnchorWrapInfo` stores wrap_mode (WrapMode) and behind_doc (bool). `scan_anchor_wrap_types()` parses wp:wrapSquare→Square, wp:wrapTight/wrapThrough→Tight, wp:wrapTopAndBottom→TopAndBottom, wp:wrapNone→depends on behindDoc. `extract_drawing_image()` checks `pic.position_type == Anchor` → consumes next wrap info → `Block::FloatingImage(FloatingImage)`. Position from `DrawingPosition::Offset(emu)` → `emu / 12700.0` points. Codegen: Square/Tight → `#place(float: true)`, TopAndBottom → `#block` with `#v()` spacer, Behind/InFront/None → `#place()` absolute. Test helpers: `patch_docx_wrap_type(data, old_wrap, new_wrap)` replaces wrap elements in ZIP, `patch_docx_behind_doc(data)` sets `behindDoc="1"`. Create floating test Pic: `Pic::new(&bmp).floating().offset_x(emu).offset_y(emu)` (default: wrapSquare if !allow_overlap), `.overlapping()` → wrapNone.
 - **OOXML metadata extraction**: Shared `parser::metadata` module. `extract_metadata_from_zip(archive)` reads `docProps/core.xml`. `parse_core_xml(xml)` extracts Dublin Core fields: `dc:title`, `dc:creator`, `dc:subject`, `dc:description`, `dcterms:created`, `dcterms:modified`. DOCX: opens data as ZIP before docx-rs parsing. PPTX: uses already-open ZipArchive. XLSX: uses `umya_spreadsheet::Properties` API (`get_title()`, `get_creator()`, `get_subject()`, `get_description()`, `get_created()`, `get_modified()`). Codegen: `generate_document_metadata()` emits `#set document(title: "...", author: "...")` before page content. `escape_typst_string()` handles backslashes and quotes. Test helpers: `build_docx_with_metadata(core_xml)`, `build_test_pptx_with_metadata(core_xml)`.
+- **XLSX chart anchor positioning**: `extract_charts_with_anchors(data)` → `HashMap<String, Vec<(u32, Chart)>>` mapping sheet name → (anchor_row, chart). Resolution chain: `xl/workbook.xml` (sheet name→rId) → `xl/_rels/workbook.xml.rels` (rId→sheet path) → `xl/worksheets/_rels/sheetN.xml.rels` (drawing rel) → `xl/drawings/drawingN.xml` (`<xdr:twoCellAnchor>/<xdr:from>/<xdr:row>` + `<c:chart r:id>`) → `xl/drawings/_rels/drawingN.xml.rels` (chart rId→chart path) → `xl/charts/chartN.xml`. `TablePage.charts: Vec<(u32, Chart)>` stores positioned charts. Codegen: `generate_table_with_charts()` splits table rows into segments at chart anchor rows, emitting charts between segments. Charts with `u32::MAX` sentinel render after all rows. Test helper: `build_xlsx_with_anchored_chart(cells, chart_xml, anchor_row)` creates XLSX with sheet rels, drawing XML, drawing rels, and chart XML.
 ---
 
 # Ralph Progress Log - Phase 9: Quality & Fidelity - Geometry, SmartArt/Chart, Font Substitution, Compression
@@ -126,4 +127,33 @@ Started: 2026년  2월 28일 토요일 15시 39분 36초 KST
   - Pie percentages: sum all values in first series, divide each by total
   - Line trend indicators compare consecutive values per series
   - `SmartArtNode { text, depth }` with `PartialEq` derive enables clean test assertions
+---
+
+## 2026-02-28 - US-087
+- Preserved XLSX chart position within sheet layout instead of appending as separate pages
+- Charts with drawing anchors are now embedded in their TablePage at the anchor row
+- Charts without anchors fall back to end-of-sheet (u32::MAX sentinel row)
+- Codegen splits table into segments at chart positions, rendering charts between segments
+- IR change: added `charts: Vec<(u32, Chart)>` to `TablePage`
+- New parser infrastructure for XLSX drawing XML parsing:
+  - `extract_charts_with_anchors()` — full chart-to-sheet mapping via workbook → sheet rels → drawing → chart chain
+  - `parse_workbook_sheet_rids()` — extract sheet name → rId from workbook.xml
+  - `parse_rels_targets()` / `parse_rels_by_type()` — .rels file parsing helpers
+  - `parse_drawing_chart_anchors()` — extract (anchor_row, chart_rId) from drawing XML
+  - `resolve_relative_xl_path()` — resolve `../` relative paths in OOXML
+- Codegen: `generate_table_with_charts()` splits table rows into segments at chart anchor positions
+- Updated 3 existing chart tests to reflect new embedding behavior
+- Added 4 new tests (2 parser + 2 codegen)
+- Files changed:
+  - `crates/office2pdf/src/ir/document.rs` — added `charts` field to TablePage
+  - `crates/office2pdf/src/parser/xlsx.rs` — replaced extract_charts_from_zip with extract_charts_with_anchors, new XML parsing helpers, updated tests
+  - `crates/office2pdf/src/render/typst_gen.rs` — generate_table_with_charts function, new codegen tests, updated TablePage constructions
+  - `scripts/ralph/prd.json` — marked US-087 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - XLSX charts are positioned via drawing XML: workbook.xml → workbook.rels → sheet.rels → drawing.xml → drawing.rels → chart.xml
+  - Drawing anchors use `<xdr:twoCellAnchor>/<xdr:from>/<xdr:row>` for row position (0-indexed in OOXML)
+  - `oneCellAnchor` also used for chart positioning (same `<xdr:from>/<xdr:row>` pattern)
+  - Table splitting at chart positions uses row cloning — acceptable performance for this use case
+  - Orphan charts (in ZIP but not referenced by drawings) handled via path deduplication
 ---
