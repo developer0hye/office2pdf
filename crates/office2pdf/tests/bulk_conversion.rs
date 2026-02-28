@@ -63,10 +63,11 @@ fn collect_files_recursive(dir: &Path, extension: &str, out: &mut Vec<PathBuf>) 
         let path = entry.path();
         if path.is_dir() {
             collect_files_recursive(&path, extension, out);
-        } else if let Some(ext) = path.extension() {
-            if ext.eq_ignore_ascii_case(extension) {
-                out.push(path);
-            }
+        } else if path
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case(extension))
+        {
+            out.push(path);
         }
     }
 }
