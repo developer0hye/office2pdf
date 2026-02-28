@@ -171,3 +171,13 @@ Started: 2026년  3월  1일 일요일 01시 22분 39초 KST
   - All were logically safe (guarded by prior checks) but replaced for defense-in-depth
   - PDF render already properly catches Typst compilation errors via `map_err` in `compile_to_pdf_inner`
 ---
+
+## 2026-03-01 - US-205
+- What was implemented: Added `test_bulk_success_rate_target` test to assert 70%+ overall conversion success rate across all formats. Ran full bulk conversion tests confirming 100% success rate (146/146 files: 45 DOCX, 45 PPTX, 56 XLSX — all converting successfully with 0 panics, 0 errors).
+- Files changed: `crates/office2pdf/tests/bulk_conversion.rs` (added success rate assertion test), `scripts/ralph/prd.json` (marked US-205 passes: true)
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - The robustness fixes in US-201 through US-204 were so thorough that all 146 fixture files now convert successfully (100% rate), far exceeding the 70% target
+  - The combination of defensive parsing (unwrap → error handling) and robust codegen/render (unreachable → fallback) resulted in zero conversion errors across the entire fixture corpus
+  - Having a separate success rate assertion test is good practice — it encodes the quality gate as executable code
+---

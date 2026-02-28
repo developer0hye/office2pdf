@@ -386,3 +386,46 @@ fn test_bulk_all_formats() {
         "{total_panics} file(s) caused panics across all formats! See output above for details."
     );
 }
+
+/// Asserts that the overall conversion success rate meets the 70% target (US-205).
+///
+/// This test runs all formats and verifies the combined success rate is at or
+/// above 70%. Password-protected or intentionally broken files that return
+/// `ConvertError` are acceptable — only the success rate matters.
+#[test]
+#[ignore]
+fn test_bulk_success_rate_target() {
+    const TARGET_RATE: f64 = 70.0;
+
+    let (_docx_results, docx_summary) = run_bulk_test("DOCX", "docx", Format::Docx);
+    let (_pptx_results, pptx_summary) = run_bulk_test("PPTX", "pptx", Format::Pptx);
+    let (_xlsx_results, xlsx_summary) = run_bulk_test("XLSX", "xlsx", Format::Xlsx);
+
+    let summaries = [&docx_summary, &pptx_summary, &xlsx_summary];
+    print_summary_table(&summaries);
+
+    let total: usize = summaries.iter().map(|s| s.total).sum();
+    let success: usize = summaries.iter().map(|s| s.success).sum();
+    let rate = if total > 0 {
+        (success as f64 / total as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    // Per-format rates
+    for s in &summaries {
+        let fmt_rate = if s.total > 0 {
+            (s.success as f64 / s.total as f64) * 100.0
+        } else {
+            0.0
+        };
+        println!("{}: {}/{} ({:.1}%)", s.format, s.success, s.total, fmt_rate);
+    }
+    println!("Overall: {success}/{total} ({rate:.1}%)");
+
+    assert!(
+        rate >= TARGET_RATE,
+        "Overall success rate {rate:.1}% is below the {TARGET_RATE}% target. \
+         {success}/{total} files converted successfully."
+    );
+}
