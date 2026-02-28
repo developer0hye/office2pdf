@@ -99,7 +99,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "This story is more investigative than coding-heavy. Start by examining the typst-pdf API and its PdfOptions/export settings. Check if there's a compression level setting. Then measure actual output sizes for existing fixtures and compare to expected sizes. The Typst team maintains typst-pdf so compression should already be good — but verify. If typst-pdf handles everything well, the story becomes mostly about adding size regression tests."
     }
   ]

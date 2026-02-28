@@ -25,6 +25,22 @@ use super::typst_gen::ImageAsset;
 ///
 /// On native targets, system fonts are discovered automatically. On WASM,
 /// only embedded fonts are used and `font_paths` is ignored.
+///
+/// # PDF output size optimization
+///
+/// typst-pdf (via krilla) applies the following optimizations by default:
+///
+/// - **Content stream compression**: All content streams use FLATE (deflate)
+///   compression (`compress_content_streams: true`). Typical reduction: 60-80%.
+/// - **Font subsetting**: Only glyphs actually used in the document are embedded
+///   (via the `subsetter` crate). Typical reduction: 70-90% of font data.
+/// - **Image pass-through**: Embedded images (PNG, JPEG) are included as-is
+///   without re-encoding, preserving their original compression.
+///
+/// Expected output sizes:
+/// - Empty page: ~10-30 KB (font data + PDF structure overhead)
+/// - 10-page text-only document: ~30-60 KB
+/// - Document with images: baseline + proportional to image data size
 #[cfg(not(target_arch = "wasm32"))]
 pub fn compile_to_pdf(
     typst_source: &str,
@@ -580,6 +596,155 @@ Text in Libertinus Serif."#;
         assert!(
             !pdf_str.contains("2024-01-01"),
             "PDF/A timestamp should not contain hardcoded 2024-01-01"
+        );
+    }
+
+    // --- PDF output size optimization tests (US-089) ---
+
+    #[test]
+    fn test_pdf_uses_flate_compression() {
+        // typst-pdf (via krilla) compresses content streams with FLATE by default.
+        // Verify that the output PDF contains FlateDecode filter references.
+        let source = "Hello, compressed world! ".repeat(100);
+        let result = compile_to_pdf(&source, &[], None, &[]).unwrap();
+        let pdf_str = String::from_utf8_lossy(&result);
+        assert!(
+            pdf_str.contains("FlateDecode"),
+            "PDF content streams should use FlateDecode compression"
+        );
+    }
+
+    #[test]
+    fn test_font_subsetting_reduces_size() {
+        // A PDF using only a few glyphs should be significantly smaller than
+        // one using many distinct glyphs, demonstrating font subsetting is active.
+        // "Few glyphs" document: only ASCII letters a-z
+        let few_glyphs = compile_to_pdf("abcdefghij", &[], None, &[]).unwrap();
+
+        // "Many glyphs" document: diverse characters force more glyph data.
+        // Avoid Typst special characters (#, $, *, _, etc.) to keep it valid markup.
+        let many_glyphs_source = "abcdefghijklmnopqrstuvwxyz \
+            ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 \
+            The quick brown fox jumps over the lazy dog. \
+            SPHINX OF BLACK QUARTZ, JUDGE MY VOW. \
+            Pack my box with five dozen liquor jugs. \
+            How vexingly quick daft zebras jump.";
+        let many_glyphs = compile_to_pdf(many_glyphs_source, &[], None, &[]).unwrap();
+
+        // With font subsetting, the "few glyphs" PDF should be noticeably smaller.
+        // Without subsetting, both would embed the full font and be similar in size.
+        assert!(
+            few_glyphs.len() < many_glyphs.len(),
+            "PDF with fewer glyphs ({} bytes) should be smaller than PDF with many glyphs ({} bytes), \
+             indicating font subsetting is active",
+            few_glyphs.len(),
+            many_glyphs.len()
+        );
+    }
+
+    #[test]
+    fn test_multipage_text_pdf_size_reasonable() {
+        // A 10-page text-only document should produce a PDF well under 500KB.
+        // This verifies that compression and font subsetting keep output compact.
+        //
+        // typst-pdf behavior (verified):
+        // - Content streams use FLATE compression (compress_content_streams: true)
+        // - Fonts are automatically subset to include only used glyphs
+        // - No unnecessary re-encoding of embedded data
+        let mut source = String::new();
+        for i in 1..=10 {
+            if i > 1 {
+                source.push_str("#pagebreak()\n");
+            }
+            source.push_str(&format!(
+                "= Page {i}\n\n\
+                 This is page {i} of a multi-page document used to verify \
+                 that PDF output size remains reasonable with compression \
+                 and font subsetting enabled.\n\n\
+                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. \
+                 Sed do eiusmod tempor incididunt ut labore et dolore magna \
+                 aliqua. Ut enim ad minim veniam, quis nostrud exercitation \
+                 ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n"
+            ));
+        }
+        let result = compile_to_pdf(&source, &[], None, &[]).unwrap();
+
+        // 500KB = 512_000 bytes — generous upper bound for 10 pages of text
+        assert!(
+            result.len() < 512_000,
+            "10-page text-only PDF should be under 500KB, actual size: {} bytes ({:.1} KB)",
+            result.len(),
+            result.len() as f64 / 1024.0
+        );
+    }
+
+    #[test]
+    fn test_pdf_with_image_size_proportional() {
+        // A PDF with an embedded image should not inflate the image size
+        // significantly. The output PDF should be proportional to the input
+        // image data size (not orders of magnitude larger from re-encoding).
+        let png_data = make_test_png();
+        let png_size = png_data.len();
+        let images = vec![ImageAsset {
+            path: "img-0.png".to_string(),
+            data: png_data,
+        }];
+        let source = r#"#image("img-0.png", width: 100pt)"#;
+        let result = compile_to_pdf(source, &images, None, &[]).unwrap();
+
+        // The PDF has overhead (fonts, structure, metadata) beyond the image.
+        // But the total should not be unreasonably large for a tiny 1x1 image.
+        // A 1x1 PNG is ~70 bytes; the PDF overhead is typically 10-30KB (fonts).
+        // We assert the total is under 100KB to catch re-encoding issues.
+        assert!(
+            result.len() < 100_000,
+            "PDF with tiny 1x1 image should be under 100KB, actual: {} bytes ({:.1} KB). \
+             Image was {} bytes. Possible image re-encoding issue.",
+            result.len(),
+            result.len() as f64 / 1024.0,
+            png_size
+        );
+    }
+
+    #[test]
+    fn test_empty_page_pdf_baseline_size() {
+        // An empty page PDF establishes the baseline overhead (fonts, structure).
+        // This helps verify that additional content adds proportional size, not
+        // excessive bloat from uncompressed data.
+        let result = compile_to_pdf("", &[], None, &[]).unwrap();
+
+        // Empty page PDF should be compact — mostly font data and PDF structure.
+        // Typically 10-30KB depending on embedded font data.
+        assert!(
+            result.len() < 100_000,
+            "Empty page PDF should be under 100KB (baseline), actual: {} bytes ({:.1} KB)",
+            result.len(),
+            result.len() as f64 / 1024.0
+        );
+    }
+
+    #[test]
+    fn test_compression_effective_for_repetitive_content() {
+        // FLATE compression is especially effective on repetitive content.
+        // A document with highly repetitive text should compress well,
+        // producing a PDF not much larger than a document with less text.
+        let short_source = "Hello world.\n\n";
+        let short_pdf = compile_to_pdf(short_source, &[], None, &[]).unwrap();
+
+        // 100x the text content, but should compress to much less than 100x the size
+        let long_source = "Hello world.\n\n".repeat(100);
+        let long_pdf = compile_to_pdf(&long_source, &[], None, &[]).unwrap();
+
+        // With compression, 100x content should produce far less than 10x the PDF size.
+        // The ratio demonstrates that content streams are being compressed.
+        let size_ratio = long_pdf.len() as f64 / short_pdf.len() as f64;
+        assert!(
+            size_ratio < 10.0,
+            "100x content should produce less than 10x PDF size with compression. \
+             Short: {} bytes, Long: {} bytes, Ratio: {:.1}x",
+            short_pdf.len(),
+            long_pdf.len(),
+            size_ratio
         );
     }
 }

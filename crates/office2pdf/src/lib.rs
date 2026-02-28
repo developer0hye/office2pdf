@@ -1472,4 +1472,110 @@ mod tests {
         // It may fail to compile the image (invalid PNG) but should not panic
         let _result = render_document(&doc);
     }
+
+    // --- PDF output size regression tests (US-089) ---
+
+    #[test]
+    fn test_render_multipage_document_size() {
+        // A 10-page document produced via the full IR → Typst → PDF pipeline
+        // should be under 500KB, verifying end-to-end compression behavior.
+        let mut pages = Vec::new();
+        for i in 1..=10 {
+            pages.push(Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![
+                    Block::Paragraph(Paragraph {
+                        style: ParagraphStyle {
+                            alignment: Some(Alignment::Center),
+                            ..ParagraphStyle::default()
+                        },
+                        runs: vec![Run {
+                            text: format!("Page {i} Heading"),
+                            style: TextStyle {
+                                bold: Some(true),
+                                font_size: Some(24.0),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        }],
+                    }),
+                    Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: format!(
+                                "This is page {i}. Lorem ipsum dolor sit amet, \
+                                 consectetur adipiscing elit. Sed do eiusmod tempor \
+                                 incididunt ut labore et dolore magna aliqua."
+                            ),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }),
+                ],
+                header: None,
+                footer: None,
+            }));
+        }
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages,
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(
+            pdf.len() < 512_000,
+            "10-page IR document PDF should be under 500KB, actual: {} bytes ({:.1} KB)",
+            pdf.len(),
+            pdf.len() as f64 / 1024.0
+        );
+    }
+
+    #[test]
+    fn test_render_pptx_style_document_size() {
+        // A slide-style (FixedPage) document should produce reasonably sized PDF.
+        let mut pages = Vec::new();
+        for i in 1..=5 {
+            pages.push(Page::Fixed(FixedPage {
+                size: PageSize {
+                    width: 720.0,
+                    height: 540.0,
+                },
+                background_color: None,
+                background_gradient: None,
+                elements: vec![FixedElement {
+                    x: 50.0,
+                    y: 50.0,
+                    width: 620.0,
+                    height: 80.0,
+                    kind: FixedElementKind::TextBox(vec![Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: format!("Slide {i} content"),
+                            style: TextStyle {
+                                font_size: Some(32.0),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        }],
+                    })]),
+                }],
+            }));
+        }
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages,
+            styles: StyleSheet::default(),
+        };
+        let pdf = render_document(&doc).unwrap();
+        assert!(
+            pdf.len() < 512_000,
+            "5-slide FixedPage PDF should be under 500KB, actual: {} bytes ({:.1} KB)",
+            pdf.len(),
+            pdf.len() as f64 / 1024.0
+        );
+    }
 }
