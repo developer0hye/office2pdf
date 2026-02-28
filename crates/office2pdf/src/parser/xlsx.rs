@@ -477,6 +477,9 @@ impl Parser for XlsxParser {
         let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse XLSX: {e}")))?;
 
+        // Extract metadata from umya-spreadsheet properties
+        let metadata = extract_xlsx_metadata(&book);
+
         let sheet_count = book.get_sheet_collection().len();
         let mut pages = Vec::with_capacity(sheet_count);
         let warnings = Vec::new();
@@ -678,12 +681,33 @@ impl Parser for XlsxParser {
 
         Ok((
             Document {
-                metadata: Metadata::default(),
+                metadata,
                 pages,
                 styles: StyleSheet::default(),
             },
             warnings,
         ))
+    }
+}
+
+/// Extract metadata from umya-spreadsheet Properties.
+/// Empty strings are converted to None.
+fn extract_xlsx_metadata(book: &umya_spreadsheet::Spreadsheet) -> Metadata {
+    let props = book.get_properties();
+    let non_empty = |s: &str| {
+        if s.is_empty() {
+            None
+        } else {
+            Some(s.to_string())
+        }
+    };
+    Metadata {
+        title: non_empty(props.get_title()),
+        author: non_empty(props.get_creator()),
+        subject: non_empty(props.get_subject()),
+        description: non_empty(props.get_description()),
+        created: non_empty(props.get_created()),
+        modified: non_empty(props.get_modified()),
     }
 }
 
@@ -2512,5 +2536,60 @@ mod tests {
         assert!(chart.title.is_none());
         assert_eq!(chart.categories, vec!["Apple", "Banana"]);
         assert_eq!(chart.series[0].values, vec![60.0, 40.0]);
+    }
+
+    // ── Metadata extraction tests ──────────────────────────────────────
+
+    #[test]
+    fn test_parse_xlsx_extracts_metadata() {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let props = book.get_properties_mut();
+            props.set_title("My XLSX Title");
+            props.set_creator("XLSX Author");
+            props.set_subject("XLSX Subject");
+            props.set_description("XLSX description text");
+            props.set_created("2024-01-10T07:00:00Z");
+            props.set_modified("2024-02-20T15:45:00Z");
+        }
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.set_name("Sheet1");
+            sheet.get_cell_mut("A1").set_value("Hello");
+        }
+
+        let mut buf = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut buf).unwrap();
+        let data = buf.into_inner();
+
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        assert_eq!(doc.metadata.title.as_deref(), Some("My XLSX Title"));
+        assert_eq!(doc.metadata.author.as_deref(), Some("XLSX Author"));
+        assert_eq!(doc.metadata.subject.as_deref(), Some("XLSX Subject"));
+        assert_eq!(
+            doc.metadata.description.as_deref(),
+            Some("XLSX description text")
+        );
+        assert_eq!(
+            doc.metadata.created.as_deref(),
+            Some("2024-01-10T07:00:00Z")
+        );
+        assert_eq!(
+            doc.metadata.modified.as_deref(),
+            Some("2024-02-20T15:45:00Z")
+        );
+    }
+
+    #[test]
+    fn test_parse_xlsx_without_metadata_no_crash() {
+        let data = build_xlsx_bytes("Sheet1", &[("A1", "test")]);
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // Should not crash; default metadata has no values
+        // (umya-spreadsheet defaults may have empty strings)
+        let _ = doc.metadata;
     }
 }

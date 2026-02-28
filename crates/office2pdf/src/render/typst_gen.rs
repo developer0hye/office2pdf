@@ -5,8 +5,8 @@ use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Chart, ChartType, Color, Document, FixedElement,
     FixedElementKind, FixedPage, FloatingImage, FlowPage, GradientFill, HFInline, HeaderFooter,
-    ImageData, ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation, Page, PageSize,
-    Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, Table, TableCell,
+    ImageData, ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation, Metadata, Page,
+    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, Table, TableCell,
     TablePage, TextStyle, WrapMode,
 };
 
@@ -77,6 +77,34 @@ fn resolve_page_size(original: &PageSize, options: &ConvertOptions) -> PageSize 
     }
 }
 
+/// Emit `#set document(title: ..., author: ...)` if metadata is present.
+fn generate_document_metadata(out: &mut String, metadata: &Metadata) {
+    let has_title = metadata.title.is_some();
+    let has_author = metadata.author.is_some();
+    if !has_title && !has_author {
+        return;
+    }
+
+    out.push_str("#set document(");
+    let mut first = true;
+    if let Some(ref title) = metadata.title {
+        let _ = write!(out, "title: \"{}\"", escape_typst_string(title));
+        first = false;
+    }
+    if let Some(ref author) = metadata.author {
+        if !first {
+            out.push_str(", ");
+        }
+        let _ = write!(out, "author: \"{}\"", escape_typst_string(author));
+    }
+    out.push_str(")\n");
+}
+
+/// Escape a string for use inside Typst double quotes.
+fn escape_typst_string(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
 /// Generate Typst markup from a Document IR.
 pub fn generate_typst(doc: &Document) -> Result<TypstOutput, ConvertError> {
     generate_typst_with_options(doc, &ConvertOptions::default())
@@ -92,6 +120,10 @@ pub fn generate_typst_with_options(
 ) -> Result<TypstOutput, ConvertError> {
     // Pre-allocate output string: ~2KB per page is a reasonable estimate
     let mut out = String::with_capacity(doc.pages.len() * 2048);
+
+    // Emit document metadata (title/author) if present
+    generate_document_metadata(&mut out, &doc.metadata);
+
     let mut ctx = GenCtx::new();
     for page in &doc.pages {
         match page {
@@ -4788,6 +4820,77 @@ mod tests {
         assert!(
             !result.contains("colspan: 5"),
             "colspan: 5 should have been clamped, got: {result}"
+        );
+    }
+
+    // ── Metadata codegen tests ─────────────────────────────────────────
+
+    #[test]
+    fn test_generate_typst_with_metadata_title_and_author() {
+        let doc = Document {
+            metadata: Metadata {
+                title: Some("Test Title".to_string()),
+                author: Some("Test Author".to_string()),
+                ..Default::default()
+            },
+            pages: vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+                runs: vec![Run {
+                    text: "Hello".to_string(),
+                    style: TextStyle::default(),
+                    footnote: None,
+                    href: None,
+                }],
+                style: ParagraphStyle::default(),
+            })])],
+            styles: StyleSheet::default(),
+        };
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#set document(title: \"Test Title\", author: \"Test Author\")"),
+            "Expected document metadata in Typst output, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_typst_with_metadata_title_only() {
+        let doc = Document {
+            metadata: Metadata {
+                title: Some("Only Title".to_string()),
+                ..Default::default()
+            },
+            pages: vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+                runs: vec![Run {
+                    text: "Hello".to_string(),
+                    style: TextStyle::default(),
+                    footnote: None,
+                    href: None,
+                }],
+                style: ParagraphStyle::default(),
+            })])],
+            styles: StyleSheet::default(),
+        };
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#set document(title: \"Only Title\")"),
+            "Expected title-only metadata in Typst output, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_typst_without_metadata() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            runs: vec![Run {
+                text: "Hello".to_string(),
+                style: TextStyle::default(),
+                footnote: None,
+                href: None,
+            }],
+            style: ParagraphStyle::default(),
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            !result.contains("#set document("),
+            "Should not emit #set document when no metadata, got: {result}"
         );
     }
 }
