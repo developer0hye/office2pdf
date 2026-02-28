@@ -41,7 +41,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Read the Chart and SmartArt IR types in ir/elements.rs to understand what data is available. The Chart struct likely has series/categories/data_points. SmartArt likely has nodes with text and level. Typst can render simple bar charts with #box(width: X%, fill: color)[]. For hierarchy, use nested #pad(left: N*indent)[]. Don't overcomplicate — clear text representation is better than a broken visual one."
     },
     {
