@@ -157,3 +157,26 @@ Started: 2026년  2월 28일 토요일 13시 48분 17초 KST
   - Chart/SmartArt fallback warnings are emitted at parse time (not codegen) since parsers know the element type
   - Existing test `test_pptx_broken_slide_emits_warning_and_produces_pdf` works unchanged because Display output still contains "slide"
 ---
+
+## 2026-02-28 - US-084
+- Added PDF validation with QPDF in CI test suite
+- Created shared test utility `validate_pdf_with_qpdf()` in `tests/common/mod.rs`
+- Created dedicated `pdf_validation.rs` with 7 tests (env-var gating + 2 DOCX + 2 PPTX + 2 XLSX fixtures)
+- Integrated validation into all 3 fixture test files' `assert_produces_valid_pdf()` helper
+- Updated CI to install qpdf on Ubuntu and set `OFFICE2PDF_VALIDATE_PDF=1`
+- Files changed:
+  - `crates/office2pdf/tests/common/mod.rs` — New shared test utility with `validate_pdf_with_qpdf()`
+  - `crates/office2pdf/tests/pdf_validation.rs` — New dedicated PDF validation tests (7 tests)
+  - `crates/office2pdf/tests/docx_fixtures.rs` — Added `mod common;` and qpdf validation in smoke helper
+  - `crates/office2pdf/tests/pptx_fixtures.rs` — Added `mod common;` and qpdf validation in smoke helper
+  - `crates/office2pdf/tests/xlsx_fixtures.rs` — Added `mod common;` and qpdf validation in smoke helper
+  - `.github/workflows/ci.yml` — Install qpdf on Linux, set OFFICE2PDF_VALIDATE_PDF=1 for test job
+  - `scripts/ralph/prd.json` — US-084 passes: true
+- Dependencies added: None (uses `std::process::Command` for qpdf invocation, `std::env::temp_dir` for temp files)
+- **Learnings for future iterations:**
+  - Rust integration tests share code via `tests/common/mod.rs` pattern — each test binary includes `mod common;`
+  - qpdf is available via `apt-get install qpdf` on Ubuntu GitHub Actions runners
+  - `OFFICE2PDF_VALIDATE_PDF` env var gates validation — tests pass with or without qpdf
+  - Temp file naming uses PID + nanosecond timestamp for uniqueness in parallel test execution
+  - The validation helper returns `bool` to indicate whether validation ran (useful for diagnostic output)
+---

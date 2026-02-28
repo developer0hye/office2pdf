@@ -33,7 +33,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Install qpdf
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y qpdf
       - run: cargo test --workspace
+        env:
+          OFFICE2PDF_VALIDATE_PDF: "1"
 
   clippy:
     name: Clippy

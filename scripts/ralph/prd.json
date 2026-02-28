@@ -96,7 +96,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Check if qpdf is available on GitHub Actions runners (Ubuntu). It's usually installable via `apt-get install qpdf`. For CI, add a step in `.github/workflows/` to install qpdf before running tests. The test helper should write PDF bytes to a temp file, run qpdf --check, parse exit code. VeraPDF (for PDF/A validation) can be added in a later phase as it requires Java."
     }
   ]
