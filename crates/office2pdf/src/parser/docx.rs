@@ -8,7 +8,8 @@ use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, ColumnLayout,
     Document, FloatingImage, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph, ImageData,
     ImageFormat, LineSpacing, List, ListItem, ListKind, Margins, MathEquation, Page, PageSize,
-    Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
+    Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell, TableRow, TextDirection,
+    TextStyle, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -227,6 +228,7 @@ fn merge_paragraph_style(
         heading_level: style
             .and_then(|s| s.heading_level)
             .map(|lvl| (lvl + 1) as u8),
+        direction: explicit.direction,
     }
 }
 
@@ -486,6 +488,77 @@ fn scan_anchor_wrap_types(xml: &str) -> Vec<AnchorWrapInfo> {
     }
 
     results
+}
+
+/// Context for tracking bidi (right-to-left) paragraphs.
+/// Built by scanning the raw document XML for `<w:bidi/>` elements within `<w:pPr>`.
+/// docx-rs does not read `w:bidi` back during parsing, so raw XML scanning is needed.
+struct BidiContext {
+    /// Set of 0-based paragraph indices (ALL `<w:p>` in document order) that are bidi.
+    bidi_indices: HashSet<usize>,
+    /// Auto-incrementing counter consumed by the paragraph converter.
+    cursor: Cell<usize>,
+}
+
+impl BidiContext {
+    fn from_xml(xml: Option<&str>) -> Self {
+        let bidi_indices = xml.map(Self::scan).unwrap_or_default();
+        Self {
+            bidi_indices,
+            cursor: Cell::new(0),
+        }
+    }
+
+    /// Advance the cursor and return whether the current paragraph is bidi.
+    fn next_is_bidi(&self) -> bool {
+        let idx = self.cursor.get();
+        self.cursor.set(idx + 1);
+        self.bidi_indices.contains(&idx)
+    }
+
+    fn scan(xml: &str) -> HashSet<usize> {
+        let mut reader = quick_xml::Reader::from_str(xml);
+        let mut buf = Vec::new();
+        let mut result = HashSet::new();
+        let mut para_index: usize = 0;
+        let mut in_ppr = false;
+        let mut in_body = false;
+
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Ok(
+                    quick_xml::events::Event::Start(ref e) | quick_xml::events::Event::Empty(ref e),
+                ) => {
+                    let local = e.local_name();
+                    match local.as_ref() {
+                        b"body" => in_body = true,
+                        b"pPr" if in_body => in_ppr = true,
+                        b"bidi" if in_ppr => {
+                            result.insert(para_index);
+                        }
+                        _ => {}
+                    }
+                }
+                Ok(quick_xml::events::Event::End(ref e)) => {
+                    let local = e.local_name();
+                    match local.as_ref() {
+                        b"body" => in_body = false,
+                        b"p" if in_body => {
+                            para_index += 1;
+                            in_ppr = false;
+                        }
+                        b"pPr" => in_ppr = false,
+                        _ => {}
+                    }
+                }
+                Ok(quick_xml::events::Event::Eof) => break,
+                Err(_) => break,
+                _ => {}
+            }
+            buf.clear();
+        }
+        result
+    }
 }
 
 /// Scan document.xml for `<w:cols>` within `<w:sectPr>` to extract column layout.
@@ -845,7 +918,7 @@ impl Parser for DocxParser {
         // Open ZIP once and build all pre-parse contexts from a single pass.
         // This consolidates what was previously 5 separate ZIP opens + multiple
         // reads of word/document.xml into a single archive + single doc read.
-        let (metadata, mut notes, wraps, mut math, mut chart_ctx, column_layout) = {
+        let (metadata, mut notes, wraps, mut math, mut chart_ctx, column_layout, bidi) = {
             let cursor = std::io::Cursor::new(data);
             match zip::ZipArchive::new(cursor) {
                 Ok(mut archive) => {
@@ -856,7 +929,8 @@ impl Parser for DocxParser {
                     let math = build_math_context_from_xml(doc_xml.as_deref());
                     let chart_ctx = build_chart_context_from_xml(doc_xml.as_deref(), &mut archive);
                     let column_layout = doc_xml.as_deref().and_then(scan_column_layout);
-                    (metadata, notes, wraps, math, chart_ctx, column_layout)
+                    let bidi = BidiContext::from_xml(doc_xml.as_deref());
+                    (metadata, notes, wraps, math, chart_ctx, column_layout, bidi)
                 }
                 Err(_) => {
                     // ZIP open failed — return empty contexts; docx-rs will
@@ -886,6 +960,7 @@ impl Parser for DocxParser {
                             charts: HashMap::new(),
                         },
                         None,
+                        BidiContext::from_xml(None),
                     )
                 }
             }
@@ -915,6 +990,7 @@ impl Parser for DocxParser {
                         &style_map,
                         &notes,
                         &wraps,
+                        &bidi,
                     )];
                     // Inject math equations for this body child
                     let eqs = math.take(idx);
@@ -936,11 +1012,18 @@ impl Parser for DocxParser {
                         &style_map,
                         &notes,
                         &wraps,
+                        &bidi,
                     ))])]
                 }
-                docx_rs::DocumentChild::StructuredDataTag(sdt) => {
-                    convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &notes, &wraps)
-                }
+                docx_rs::DocumentChild::StructuredDataTag(sdt) => convert_sdt_children(
+                    sdt,
+                    &images,
+                    &hyperlinks,
+                    &style_map,
+                    &notes,
+                    &wraps,
+                    &bidi,
+                ),
                 _ => vec![TaggedElement::Plain(vec![])],
             }));
 
@@ -1166,23 +1249,24 @@ fn convert_sdt_children(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    bidi: &BidiContext,
 ) -> Vec<TaggedElement> {
     let mut result = Vec::new();
     for child in &sdt.children {
         match child {
             docx_rs::StructuredDataTagChild::Paragraph(para) => {
                 result.push(convert_paragraph_element(
-                    para, images, hyperlinks, style_map, notes, wraps,
+                    para, images, hyperlinks, style_map, notes, wraps, bidi,
                 ));
             }
             docx_rs::StructuredDataTagChild::Table(table) => {
                 result.push(TaggedElement::Plain(vec![Block::Table(convert_table(
-                    table, images, hyperlinks, style_map, notes, wraps,
+                    table, images, hyperlinks, style_map, notes, wraps, bidi,
                 ))]));
             }
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
                 result.extend(convert_sdt_children(
-                    nested, images, hyperlinks, style_map, notes, wraps,
+                    nested, images, hyperlinks, style_map, notes, wraps, bidi,
                 ));
             }
             _ => {}
@@ -1200,6 +1284,7 @@ fn convert_paragraph_element(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    bidi: &BidiContext,
 ) -> TaggedElement {
     let num_info = extract_num_info(para);
 
@@ -1213,6 +1298,7 @@ fn convert_paragraph_element(
         style_map,
         notes,
         wraps,
+        bidi,
     );
 
     match num_info {
@@ -1257,6 +1343,7 @@ fn convert_paragraph_element(
 /// If the paragraph has `page_break_before`, a `Block::PageBreak` is emitted first.
 /// Inline images within runs are extracted as separate `Block::Image` elements.
 /// Style formatting from the document's style definitions is merged with explicit formatting.
+#[allow(clippy::too_many_arguments)]
 fn convert_paragraph_blocks(
     para: &docx_rs::Paragraph,
     out: &mut Vec<Block>,
@@ -1265,7 +1352,11 @@ fn convert_paragraph_blocks(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    bidi: &BidiContext,
 ) {
+    // Check bidi direction for this paragraph (must be called once per XML <w:p>)
+    let is_rtl = bidi.next_is_bidi();
+
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
         out.push(Block::PageBreak);
@@ -1314,8 +1405,12 @@ fn convert_paragraph_blocks(
                     if !runs.is_empty() {
                         out.append(&mut inline_images);
                         let explicit_para_style = extract_paragraph_style(&para.property);
+                        let mut style = merge_paragraph_style(&explicit_para_style, resolved_style);
+                        if is_rtl {
+                            style.direction = Some(TextDirection::Rtl);
+                        }
                         out.push(Block::Paragraph(Paragraph {
-                            style: merge_paragraph_style(&explicit_para_style, resolved_style),
+                            style,
                             runs: std::mem::take(&mut runs),
                         }));
                     }
@@ -1374,10 +1469,11 @@ fn convert_paragraph_blocks(
     out.extend(inline_images);
 
     let explicit_para_style = extract_paragraph_style(&para.property);
-    out.push(Block::Paragraph(Paragraph {
-        style: merge_paragraph_style(&explicit_para_style, resolved_style),
-        runs,
-    }));
+    let mut style = merge_paragraph_style(&explicit_para_style, resolved_style);
+    if is_rtl {
+        style.direction = Some(TextDirection::Rtl);
+    }
+    out.push(Block::Paragraph(Paragraph { style, runs }));
 }
 
 /// Convert EMU (English Metric Units) to points for signed values (position offsets).
@@ -1468,6 +1564,7 @@ fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> ParagraphStyle 
         space_before,
         space_after,
         heading_level: None,
+        direction: None, // Set by BidiContext after style merge
     }
 }
 
@@ -1543,11 +1640,12 @@ fn convert_table(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    bidi: &BidiContext,
 ) -> Table {
     let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
-    let raw_rows = extract_raw_rows(table, images, hyperlinks, style_map, notes, wraps);
+    let raw_rows = extract_raw_rows(table, images, hyperlinks, style_map, notes, wraps, bidi);
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
@@ -1576,6 +1674,7 @@ fn extract_raw_rows(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    bidi: &BidiContext,
 ) -> Vec<Vec<RawCell>> {
     let mut raw_rows = Vec::new();
 
@@ -1600,7 +1699,8 @@ fn extract_raw_rows(
                 .and_then(|v| v.as_str())
                 .map(String::from);
 
-            let content = extract_cell_content(cell, images, hyperlinks, style_map, notes, wraps);
+            let content =
+                extract_cell_content(cell, images, hyperlinks, style_map, notes, wraps, bidi);
             let border = prop_json
                 .as_ref()
                 .and_then(|j| j.get("borders"))
@@ -1703,6 +1803,7 @@ fn extract_cell_content(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    bidi: &BidiContext,
 ) -> Vec<Block> {
     let mut blocks = Vec::new();
     for content in &cell.children {
@@ -1716,6 +1817,7 @@ fn extract_cell_content(
                     style_map,
                     notes,
                     wraps,
+                    bidi,
                 );
             }
             docx_rs::TableCellContent::Table(nested_table) => {
@@ -1726,6 +1828,7 @@ fn extract_cell_content(
                     style_map,
                     notes,
                     wraps,
+                    bidi,
                 )));
             }
             _ => {}
@@ -5722,6 +5825,96 @@ mod tests {
         assert!(
             flow.columns.is_none(),
             "Single column should not produce column layout"
+        );
+    }
+
+    // ── BiDi / RTL tests ──────────────────────────────────────────────
+
+    /// Helper: create a bidi paragraph with the given text.
+    fn make_bidi_paragraph(text: &str) -> docx_rs::Paragraph {
+        let mut para = docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text(text));
+        para.property = docx_rs::ParagraphProperty::new().bidi(true);
+        para
+    }
+
+    #[test]
+    fn test_parse_docx_bidi_paragraph() {
+        // Build a DOCX with a bidi paragraph containing Arabic text
+        let para = make_bidi_paragraph("مرحبا بالعالم");
+        let data = build_docx_bytes(vec![para]);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        let para_block = flow.content.iter().find_map(|b| match b {
+            Block::Paragraph(p) => Some(p),
+            _ => None,
+        });
+        let p = para_block.expect("Should have a paragraph");
+        assert_eq!(
+            p.style.direction,
+            Some(TextDirection::Rtl),
+            "bidi paragraph should have RTL direction"
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_no_bidi_paragraph() {
+        // Normal LTR paragraph should have direction: None
+        let para = docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Hello World"));
+        let data = build_docx_bytes(vec![para]);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        let para_block = flow.content.iter().find_map(|b| match b {
+            Block::Paragraph(p) => Some(p),
+            _ => None,
+        });
+        let p = para_block.expect("Should have a paragraph");
+        assert!(
+            p.style.direction.is_none(),
+            "Non-bidi paragraph should have no direction"
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_mixed_bidi_paragraphs() {
+        // Mixed: first paragraph is RTL Arabic, second is LTR English
+        let para_rtl = make_bidi_paragraph("مرحبا 123");
+        let para_ltr =
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Hello World"));
+        let data = build_docx_bytes(vec![para_rtl, para_ltr]);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        let paras: Vec<&Paragraph> = flow
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                Block::Paragraph(p) => Some(p),
+                _ => None,
+            })
+            .collect();
+        assert!(paras.len() >= 2, "Should have at least 2 paragraphs");
+        assert_eq!(
+            paras[0].style.direction,
+            Some(TextDirection::Rtl),
+            "First paragraph (Arabic) should be RTL"
+        );
+        assert!(
+            paras[1].style.direction.is_none(),
+            "Second paragraph (English) should have no direction"
         );
     }
 }

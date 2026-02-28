@@ -26,6 +26,17 @@ pub struct ParagraphStyle {
     /// Heading level (1 = H1, 2 = H2, ..., 6 = H6). When set, the paragraph
     /// is emitted as a Typst `#heading` element for proper PDF structure tagging.
     pub heading_level: Option<u8>,
+    /// Text direction for bidirectional rendering (RTL for Arabic/Hebrew).
+    pub direction: Option<TextDirection>,
+}
+
+/// Text direction for bidirectional (BiDi) rendering.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TextDirection {
+    /// Left-to-right (default for Latin, CJK scripts).
+    Ltr,
+    /// Right-to-left (Arabic, Hebrew scripts).
+    Rtl,
 }
 
 /// Text alignment.

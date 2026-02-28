@@ -1667,6 +1667,65 @@ mod tests {
     }
 
     #[test]
+    fn test_bidi_docx_rtl_direction_in_typst() {
+        use std::io::Cursor;
+        // Build a DOCX with bidi paragraph property
+        let mut bidi_para =
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("مرحبا بالعالم"));
+        bidi_para.property = docx_rs::ParagraphProperty::new().bidi(true);
+        let docx = docx_rs::Docx::new().add_paragraph(bidi_para);
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        // Parse to IR and verify direction
+        let parser = crate::parser::docx::DocxParser;
+        use crate::parser::Parser;
+        let (doc, _) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        let para = flow.content.iter().find_map(|b| match b {
+            Block::Paragraph(p) => Some(p),
+            _ => None,
+        });
+        assert_eq!(
+            para.unwrap().style.direction,
+            Some(TextDirection::Rtl),
+            "Bidi DOCX paragraph should parse as RTL"
+        );
+
+        // Convert to PDF and verify it's valid
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "RTL bidi text should produce valid PDF"
+        );
+    }
+
+    #[test]
+    fn test_bidi_mixed_rtl_ltr_docx() {
+        use std::io::Cursor;
+        // Arabic paragraph with embedded numbers (mixed BiDi)
+        let mut bidi_para =
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("العدد 42 والعدد 100"));
+        bidi_para.property = docx_rs::ParagraphProperty::new().bidi(true);
+        let docx = docx_rs::Docx::new().add_paragraph(bidi_para).add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("This is English")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "Mixed RTL/LTR DOCX should produce valid PDF"
+        );
+    }
+
+    #[test]
     fn test_edge_image_only_docx() {
         // A DOCX with only an image (no text paragraphs) should convert
         let doc = Document {
