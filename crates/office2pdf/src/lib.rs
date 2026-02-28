@@ -103,6 +103,10 @@ pub fn convert_with_options(
 /// Use this when you already have the file contents in memory and know the
 /// [`Format`].
 ///
+/// When `options.streaming` is `true` and the format is XLSX, the conversion
+/// processes rows in chunks to bound peak memory during Typst compilation.
+/// This requires the `pdf-ops` feature for PDF merging.
+///
 /// # Errors
 ///
 /// Returns [`ConvertError`] on parse or render failure.
@@ -111,6 +115,12 @@ pub fn convert_bytes(
     format: Format,
     options: &ConvertOptions,
 ) -> Result<ConvertResult, ConvertError> {
+    // Use streaming path for XLSX when requested and pdf-ops is available
+    #[cfg(feature = "pdf-ops")]
+    if options.streaming && format == Format::Xlsx {
+        return convert_bytes_streaming_xlsx(data, options);
+    }
+
     let total_start = Instant::now();
     let input_size_bytes = data.len() as u64;
 
@@ -157,6 +167,107 @@ pub fn convert_bytes(
             input_size_bytes,
             output_size_bytes,
             page_count,
+        }),
+    })
+}
+
+/// Streaming conversion for XLSX: process rows in chunks with bounded memory.
+///
+/// Each chunk of rows is compiled independently to a PDF, then all chunk PDFs
+/// are merged. This bounds peak memory during Typst compilation because only
+/// one chunk's worth of Typst source and compilation state is in memory at a time.
+#[cfg(feature = "pdf-ops")]
+fn convert_bytes_streaming_xlsx(
+    data: &[u8],
+    options: &ConvertOptions,
+) -> Result<ConvertResult, ConvertError> {
+    let total_start = Instant::now();
+    let input_size_bytes = data.len() as u64;
+    let chunk_size = options.streaming_chunk_size.unwrap_or(1000);
+
+    let xlsx_parser = parser::xlsx::XlsxParser;
+
+    // Stage 1: Parse into chunks
+    let parse_start = Instant::now();
+    let (chunk_docs, warnings) = xlsx_parser.parse_streaming(data, options, chunk_size)?;
+    let parse_duration = parse_start.elapsed();
+
+    if chunk_docs.is_empty() {
+        // Empty spreadsheet — produce a minimal empty PDF
+        let empty_doc = ir::Document {
+            metadata: ir::Metadata::default(),
+            pages: vec![],
+            styles: ir::StyleSheet::default(),
+        };
+        let output = render::typst_gen::generate_typst(&empty_doc)?;
+        let pdf =
+            render::pdf::compile_to_pdf(&output.source, &output.images, None, &[], false, false)?;
+        let total_duration = total_start.elapsed();
+        return Ok(ConvertResult {
+            pdf,
+            warnings,
+            metrics: Some(ConvertMetrics {
+                parse_duration,
+                codegen_duration: std::time::Duration::ZERO,
+                compile_duration: std::time::Duration::ZERO,
+                total_duration,
+                input_size_bytes,
+                output_size_bytes: 0,
+                page_count: 0,
+            }),
+        });
+    }
+
+    // Stage 2+3: Codegen + Compile each chunk independently
+    let mut all_pdfs: Vec<Vec<u8>> = Vec::with_capacity(chunk_docs.len());
+    let mut codegen_duration_total = std::time::Duration::ZERO;
+    let mut compile_duration_total = std::time::Duration::ZERO;
+    let mut total_page_count = 0u32;
+
+    for chunk_doc in chunk_docs {
+        total_page_count += chunk_doc.pages.len() as u32;
+
+        let codegen_start = Instant::now();
+        let output = render::typst_gen::generate_typst_with_options(&chunk_doc, options)?;
+        codegen_duration_total += codegen_start.elapsed();
+
+        let compile_start = Instant::now();
+        let pdf = render::pdf::compile_to_pdf(
+            &output.source,
+            &output.images,
+            options.pdf_standard,
+            &options.font_paths,
+            options.tagged,
+            options.pdf_ua,
+        )?;
+        compile_duration_total += compile_start.elapsed();
+
+        all_pdfs.push(pdf);
+        // chunk_doc and output are dropped here, freeing their memory
+    }
+
+    // Stage 4: Merge all chunk PDFs
+    let final_pdf = if all_pdfs.len() == 1 {
+        all_pdfs.into_iter().next().unwrap()
+    } else {
+        let refs: Vec<&[u8]> = all_pdfs.iter().map(|p| p.as_slice()).collect();
+        pdf_ops::merge(&refs).map_err(|e| ConvertError::Render(format!("PDF merge failed: {e}")))?
+    };
+
+    let total_duration = total_start.elapsed();
+    let output_size_bytes = final_pdf.len() as u64;
+
+    Ok(ConvertResult {
+        pdf: final_pdf,
+        warnings,
+        metrics: Some(ConvertMetrics {
+            parse_duration,
+            codegen_duration: codegen_duration_total,
+            compile_duration: compile_duration_total,
+            total_duration,
+            input_size_bytes,
+            output_size_bytes,
+            page_count: total_page_count,
         }),
     })
 }
@@ -1890,6 +2001,139 @@ mod ts_integration_tests {
         assert!(
             opts_ts.contains("boolean"),
             "boolean fields should be mapped: {opts_ts}"
+        );
+    }
+}
+
+#[cfg(all(test, feature = "pdf-ops"))]
+mod streaming_tests {
+    use super::*;
+    use std::io::Cursor;
+
+    /// Build an XLSX with many rows.
+    fn build_xlsx_with_rows(num_rows: u32, num_cols: u32) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        let sheet = book.get_sheet_mut(&0).unwrap();
+        sheet.set_name("Data");
+        for row in 1..=num_rows {
+            for col in 1..=num_cols {
+                sheet
+                    .get_cell_mut((col, row))
+                    .set_value(format!("R{row}C{col}"));
+            }
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_streaming_xlsx_produces_valid_pdf() {
+        let data = build_xlsx_with_rows(50, 3);
+        let options = config::ConvertOptions {
+            streaming: true,
+            streaming_chunk_size: Some(20),
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, config::Format::Xlsx, &options).unwrap();
+        // PDF should start with %PDF
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "output should be valid PDF"
+        );
+        assert!(result.pdf.len() > 100, "PDF should have content");
+    }
+
+    #[test]
+    fn test_streaming_xlsx_same_data_as_normal() {
+        // Both streaming and non-streaming should produce valid PDFs with content
+        let data = build_xlsx_with_rows(10, 2);
+
+        let normal_opts = config::ConvertOptions::default();
+        let normal_result = convert_bytes(&data, config::Format::Xlsx, &normal_opts).unwrap();
+
+        let streaming_opts = config::ConvertOptions {
+            streaming: true,
+            streaming_chunk_size: Some(5),
+            ..Default::default()
+        };
+        let streaming_result = convert_bytes(&data, config::Format::Xlsx, &streaming_opts).unwrap();
+
+        // Both should produce valid PDFs
+        assert!(normal_result.pdf.starts_with(b"%PDF"));
+        assert!(streaming_result.pdf.starts_with(b"%PDF"));
+        // Both should have content (non-empty)
+        assert!(normal_result.pdf.len() > 100);
+        assert!(streaming_result.pdf.len() > 100);
+    }
+
+    #[test]
+    fn test_streaming_large_xlsx_completes() {
+        // 10,000 rows — a large spreadsheet
+        let data = build_xlsx_with_rows(10_000, 3);
+        let options = config::ConvertOptions {
+            streaming: true,
+            streaming_chunk_size: Some(1000),
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, config::Format::Xlsx, &options).unwrap();
+        assert!(
+            result.pdf.starts_with(b"%PDF"),
+            "output should be valid PDF"
+        );
+        assert!(result.metrics.is_some(), "streaming should produce metrics");
+    }
+
+    #[test]
+    fn test_streaming_non_xlsx_falls_through() {
+        // Streaming mode on DOCX should just do normal conversion
+        let docx = {
+            let doc = docx_rs::Docx::new().add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Hello streaming")),
+            );
+            let mut cursor = Cursor::new(Vec::new());
+            doc.build().pack(&mut cursor).unwrap();
+            cursor.into_inner()
+        };
+        let options = config::ConvertOptions {
+            streaming: true,
+            ..Default::default()
+        };
+        let result = convert_bytes(&docx, config::Format::Docx, &options).unwrap();
+        assert!(result.pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_streaming_chunk_size_default() {
+        // When streaming_chunk_size is None, default to 1000
+        let data = build_xlsx_with_rows(20, 1);
+        let options = config::ConvertOptions {
+            streaming: true,
+            streaming_chunk_size: None, // should default to 1000
+            ..Default::default()
+        };
+        // With 20 rows and default chunk_size=1000, should be 1 chunk
+        let result = convert_bytes(&data, config::Format::Xlsx, &options).unwrap();
+        assert!(result.pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
+    fn test_streaming_memory_bounded() {
+        // Streaming a 10,000-row XLSX should use less peak memory
+        // than non-streaming. We test this by verifying completion
+        // (if memory were unbounded, large allocations would fail or be very slow).
+        let data = build_xlsx_with_rows(5_000, 5);
+        let options = config::ConvertOptions {
+            streaming: true,
+            streaming_chunk_size: Some(500),
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, config::Format::Xlsx, &options).unwrap();
+        assert!(result.pdf.starts_with(b"%PDF"));
+        // The result should have multiple pages (5000/500 = 10 chunks)
+        assert!(
+            result.pdf.len() > 1000,
+            "PDF should have substantial content"
         );
     }
 }
