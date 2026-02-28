@@ -181,3 +181,33 @@ Started: 2026년  2월 28일 토요일 15시 39분 36초 KST
   - `to_ascii_lowercase()` is sufficient for case-insensitive matching of font names (ASCII-only)
   - clippy enforces inner doc comments (`//!`) for module-level docs, not `///` followed by blank line
 ---
+
+## 2026-02-28 - US-089
+- Verified PDF output size optimization: typst-pdf (via krilla) applies all key optimizations by default
+- Confirmed FLATE content stream compression is active (FlateDecode in PDF output)
+- Confirmed font subsetting is active (fewer glyphs → smaller PDF)
+- Confirmed images are passed through without unnecessary re-encoding
+- Added 6 PDF optimization unit tests in `render/pdf.rs`:
+  - `test_pdf_uses_flate_compression` — verifies FlateDecode filter presence
+  - `test_font_subsetting_reduces_size` — fewer glyphs produce smaller PDF
+  - `test_multipage_text_pdf_size_reasonable` — 10-page text < 500KB
+  - `test_pdf_with_image_size_proportional` — image PDF proportional to input
+  - `test_empty_page_pdf_baseline_size` — baseline overhead under 100KB
+  - `test_compression_effective_for_repetitive_content` — 100x content < 10x PDF size
+- Added 2 end-to-end IR pipeline size tests in `lib.rs`:
+  - `test_render_multipage_document_size` — 10-page FlowPage IR < 500KB
+  - `test_render_pptx_style_document_size` — 5-slide FixedPage IR < 500KB
+- Documented compression behavior in `compile_to_pdf()` doc comments
+- Files changed:
+  - `crates/office2pdf/src/render/pdf.rs` — 6 new tests + compression documentation
+  - `crates/office2pdf/src/lib.rs` — 2 new end-to-end size tests
+  - `scripts/ralph/prd.json` — marked US-089 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - typst-pdf delegates to krilla for PDF generation; krilla defaults: `compress_content_streams: true`
+  - Font subsetting via `subsetter` crate is automatic — no configuration needed
+  - Images embedded as-is (pass-through); no re-encoding overhead
+  - Typical PDF sizes: empty page ~10-30KB, 10-page text ~30-60KB
+  - `PdfOptions` in typst-pdf 0.14 exposes: ident, timestamp, page_ranges, standards, tagged
+  - No user-facing compression toggle needed since all optimizations are always active
+---
