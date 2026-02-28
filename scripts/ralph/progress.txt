@@ -77,6 +77,7 @@
 - **PPTX embedded charts**: Charts in PPTX use `<p:graphicFrame>` with `<a:graphicData uri="...chart">` containing `<c:chart r:id="rIdN"/>`. Detection via `chart::scan_pptx_chart_refs(slide_xml)` → `Vec<PptxChartRef>` (position in EMU + chart_rid). Chart data resolved by `load_chart_data(slide_path, archive)` which reads slide .rels for targets containing "chart", then reads chart XML from ZIP and parses via `chart::parse_chart_xml()`. Returns `ChartMap` (HashMap<String, Chart>). Chart XML is the same format as DOCX charts — `parse_chart_xml()` is fully reusable. IR: `FixedElementKind::Chart(Chart)`. Codegen delegates to existing `generate_chart()`. Integration in `parse_single_slide()` after SmartArt block. Test helpers: `build_test_pptx_with_chart(cx, cy, slide_xml, chart_rid, chart_xml)`, `make_chart_graphic_frame(x, y, cx, cy, chart_rid)`, `make_chart_xml(title, chart_type, categories, series_name, values)`.
 - **DOCX floating images**: `WrapContext` scans raw document.xml for `wp:anchor` elements in document order (similar pattern to `NoteContext`). `AnchorWrapInfo` stores wrap_mode (WrapMode) and behind_doc (bool). `scan_anchor_wrap_types()` parses wp:wrapSquare→Square, wp:wrapTight/wrapThrough→Tight, wp:wrapTopAndBottom→TopAndBottom, wp:wrapNone→depends on behindDoc. `extract_drawing_image()` checks `pic.position_type == Anchor` → consumes next wrap info → `Block::FloatingImage(FloatingImage)`. Position from `DrawingPosition::Offset(emu)` → `emu / 12700.0` points. Codegen: Square/Tight → `#place(float: true)`, TopAndBottom → `#block` with `#v()` spacer, Behind/InFront/None → `#place()` absolute. Test helpers: `patch_docx_wrap_type(data, old_wrap, new_wrap)` replaces wrap elements in ZIP, `patch_docx_behind_doc(data)` sets `behindDoc="1"`. Create floating test Pic: `Pic::new(&bmp).floating().offset_x(emu).offset_y(emu)` (default: wrapSquare if !allow_overlap), `.overlapping()` → wrapNone.
 - **OOXML metadata extraction**: Shared `parser::metadata` module. `extract_metadata_from_zip(archive)` reads `docProps/core.xml`. `parse_core_xml(xml)` extracts Dublin Core fields: `dc:title`, `dc:creator`, `dc:subject`, `dc:description`, `dcterms:created`, `dcterms:modified`. DOCX: opens data as ZIP before docx-rs parsing. PPTX: uses already-open ZipArchive. XLSX: uses `umya_spreadsheet::Properties` API (`get_title()`, `get_creator()`, `get_subject()`, `get_description()`, `get_created()`, `get_modified()`). Codegen: `generate_document_metadata()` emits `#set document(title: "...", author: "...")` before page content. `escape_typst_string()` handles backslashes and quotes. Test helpers: `build_docx_with_metadata(core_xml)`, `build_test_pptx_with_metadata(core_xml)`.
+- **Font substitution**: `render::font_subst` module. `substitutes(name)` → `Option<&'static [&'static str]>` with case-insensitive match (to_ascii_lowercase). 11 Microsoft fonts mapped: Calibri→Carlito/Liberation Sans, Cambria→Caladea/Liberation Serif, Arial→Liberation Sans/Arimo, Times New Roman→Liberation Serif/Tinos, Courier New→Liberation Mono/Cousine, Comic Sans MS→Comic Neue, Verdana→DejaVu Sans, Georgia→DejaVu Serif, Consolas→Inconsolata, Trebuchet MS→Ubuntu, Impact→Oswald. `font_with_fallbacks(name)` → Typst font list string: known fonts → `("Calibri", "Carlito", "Liberation Sans")`, unknown fonts → `"Helvetica"`. Integrated in `write_text_params()` via `super::font_subst::font_with_fallbacks(family)`. Typst natively supports font fallback lists, so no runtime probing needed.
 - **XLSX chart anchor positioning**: `extract_charts_with_anchors(data)` → `HashMap<String, Vec<(u32, Chart)>>` mapping sheet name → (anchor_row, chart). Resolution chain: `xl/workbook.xml` (sheet name→rId) → `xl/_rels/workbook.xml.rels` (rId→sheet path) → `xl/worksheets/_rels/sheetN.xml.rels` (drawing rel) → `xl/drawings/drawingN.xml` (`<xdr:twoCellAnchor>/<xdr:from>/<xdr:row>` + `<c:chart r:id>`) → `xl/drawings/_rels/drawingN.xml.rels` (chart rId→chart path) → `xl/charts/chartN.xml`. `TablePage.charts: Vec<(u32, Chart)>` stores positioned charts. Codegen: `generate_table_with_charts()` splits table rows into segments at chart anchor rows, emitting charts between segments. Charts with `u32::MAX` sentinel render after all rows. Test helper: `build_xlsx_with_anchored_chart(cells, chart_xml, anchor_row)` creates XLSX with sheet rels, drawing XML, drawing rels, and chart XML.
 ---
 
@@ -156,4 +157,27 @@ Started: 2026년  2월 28일 토요일 15시 39분 36초 KST
   - `oneCellAnchor` also used for chart positioning (same `<xdr:from>/<xdr:row>` pattern)
   - Table splitting at chart positions uses row cloning — acceptable performance for this use case
   - Orphan charts (in ZIP but not referenced by drawings) handled via path deduplication
+---
+
+## 2026-02-28 - US-088
+- Built metric-compatible font substitution table for 11 common Microsoft fonts
+- Created `render/font_subst.rs` module with two public functions:
+  - `substitutes(name)` — static case-insensitive lookup returning substitute font names
+  - `font_with_fallbacks(name)` — builds Typst font fallback list string
+- Integrated into Typst codegen: `write_text_params()` now emits font fallback lists
+  - Known MS fonts: `font: ("Calibri", "Carlito", "Liberation Sans")`
+  - Unknown fonts: `font: "Helvetica"` (no change)
+- Leverages Typst's native font fallback list feature — no runtime probing or font book queries needed
+- 18 unit tests for font_subst module + 4 codegen integration tests
+- Files changed:
+  - `crates/office2pdf/src/render/font_subst.rs` — NEW: substitution table module (18 tests)
+  - `crates/office2pdf/src/render/mod.rs` — added font_subst module registration
+  - `crates/office2pdf/src/render/typst_gen.rs` — integrated font_with_fallbacks in write_text_params + 4 new tests
+  - `scripts/ralph/prd.json` — marked US-088 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - Typst supports font fallback lists natively: `font: ("Primary", "Fallback1", "Fallback2")`
+  - This is the cleanest approach — no need to probe FontBook at codegen time
+  - `to_ascii_lowercase()` is sufficient for case-insensitive matching of font names (ASCII-only)
+  - clippy enforces inner doc comments (`//!`) for module-level docs, not `///` followed by blank line
 ---
