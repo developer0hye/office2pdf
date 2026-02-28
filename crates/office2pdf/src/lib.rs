@@ -41,6 +41,8 @@ pub mod config;
 pub mod error;
 pub mod ir;
 pub mod parser;
+#[cfg(feature = "pdf-ops")]
+pub mod pdf_ops;
 pub mod render;
 #[cfg(feature = "wasm")]
 pub mod wasm;
