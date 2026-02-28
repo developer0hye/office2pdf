@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- **Server feature flag pattern**: CLI crate has `server = ["tiny_http"]` feature. Module `server.rs` imported with `#[cfg(feature = "server")] mod server;`. CLI struct uses `#[cfg_attr(feature = "server", command(subcommand_negates_reqs = true, args_conflicts_with_subcommands = true))]` + `#[cfg(feature = "server")] command: Option<Commands>` for backwards-compatible optional subcommands. Tests run with `cargo test -p office2pdf-cli --features server`.
 - **WASM conditional compilation**: Filesystem-dependent functions (`convert`, `convert_with_options`) use `#[cfg(not(target_arch = "wasm32"))]`. In-memory functions (`convert_bytes`, `render_document`) have no guards. `pdf.rs` has dual `compile_to_pdf` — native uses `MinimalWorld::new(fonts+system)`, wasm32 uses `MinimalWorld::new_embedded_only(embedded fonts only)`. Shared logic in `compile_to_pdf_inner()`. Use `#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]` for functions used only on WASM but tested on native.
 - **WASM wasm-bindgen module**: `src/wasm.rs` behind `#[cfg(feature = "wasm")]`. Feature: `wasm = ["wasm-bindgen"]` (not default). Exported functions: `convertToPdf(data, format)`, `convertDocxToPdf(data)`, `convertPptxToPdf(data)`, `convertXlsxToPdf(data)`. Core logic in `convert_to_pdf_inner()` / `convert_format_inner()` returning `Result<Vec<u8>, String>` — testable on native. `#[wasm_bindgen]` functions are thin wrappers converting `String` → `JsValue`. `JsValue::from_str()` panics on non-wasm32, so never test wasm_bindgen functions directly on native.
 - **WASM dependency fixes**: `zip` must use `default-features = false, features = ["deflate"]` (default pulls in bzip2-sys/zstd-sys C libs). `getrandom` v0.2 needs `js` feature, v0.3 needs `wasm_js` feature — both in `[target.'cfg(target_arch = "wasm32")'.dependencies]`. Use `getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }` for the v0.2 rename trick. All three parsers (DOCX/PPTX/XLSX) and their deps compile on WASM without exclusions.
@@ -178,4 +179,26 @@ Started: 2026년  2월 28일 토요일 17시 23분 18초 KST
   - Medium-tier DOCX with tables is slower than large-tier DOCX without proportionally more tables — table rendering in Typst is expensive
   - `std::sync::Once` is ideal for test-binary-scoped initialization (lighter than `OnceLock` when you don't need to store a value)
   - `#[ignore]` is the right pattern for tests that pass locally but may timeout on CI runners
+---
+
+## 2026-02-28 - US-094
+- What was implemented: HTTP server mode with REST API behind `server` feature flag
+- Endpoints: POST /convert (multipart/form-data file upload → PDF), GET /health (version info), GET /formats (supported formats list)
+- Server uses `tiny_http` (pure Rust, no tokio dependency) with manual multipart parser
+- CLI `serve` subcommand with `--host` (default 127.0.0.1) and `--port` (default 3000) flags
+- Backwards-compatible: uses `subcommand_negates_reqs` and `args_conflicts_with_subcommands` so existing `office2pdf file.docx` usage is preserved
+- Optional query parameters on /convert: `format` (override auto-detection), `paper` (paper size), `landscape` (boolean)
+- Error responses are JSON with status codes (400 for client errors, 404 for not found)
+- Files changed:
+  - `crates/office2pdf-cli/Cargo.toml` — Added `server` feature flag and `tiny_http` optional dependency
+  - `crates/office2pdf-cli/src/server.rs` — New module with server implementation + 12 tests (6 unit + 6 integration)
+  - `crates/office2pdf-cli/src/main.rs` — Added `serve` subcommand with conditional compilation
+- Dependencies added: `tiny_http = "0.12"` (optional, behind `server` feature)
+- **Learnings for future iterations:**
+  - `tiny_http::Server::http("127.0.0.1:0")` binds to an ephemeral port — great for integration tests
+  - For multipart parsing, working with raw bytes (not String) is essential since file data is binary
+  - `find_bytes()` using `windows().position()` is a clean byte-level subsequence search
+  - `dyn Read` trait objects don't need the `Read` trait in scope — methods dispatch inherently
+  - `#[cfg_attr(feature = "server", command(...))]` works with clap derive macros for conditional attributes
+  - `subcommand_negates_reqs = true` in clap allows optional subcommands alongside required positional args
 ---
