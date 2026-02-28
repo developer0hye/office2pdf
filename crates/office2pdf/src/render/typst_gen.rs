@@ -306,7 +306,7 @@ fn write_shadow_shape(out: &mut String, shape: &Shape, width: f64, height: f64, 
     out.push_str(shape_cmd);
     let _ = write!(
         out,
-        "width: {}pt, height: {}pt, fill: rgba({}, {}, {}, {})",
+        "width: {}pt, height: {}pt, fill: rgb({}, {}, {}, {})",
         format_f64(width),
         format_f64(height),
         shadow.color.r,
@@ -317,13 +317,13 @@ fn write_shadow_shape(out: &mut String, shape: &Shape, width: f64, height: f64, 
     out.push_str(")]\n");
 }
 
-/// Write fill color, using rgba when opacity is set, rgb otherwise.
+/// Write fill color, using rgb with 4 args when opacity is set, rgb with 3 args otherwise.
 fn write_fill_color(out: &mut String, fill: &Color, opacity: Option<f64>) {
     if let Some(op) = opacity {
         let alpha = (op * 255.0).round() as u8;
         let _ = write!(
             out,
-            ", fill: rgba({}, {}, {}, {})",
+            ", fill: rgb({}, {}, {}, {})",
             fill.r, fill.g, fill.b, alpha
         );
     } else {
@@ -2516,8 +2516,8 @@ mod tests {
         let output = generate_typst(&doc).unwrap();
         // With 50% opacity, the fill color should include alpha
         assert!(
-            output.source.contains("rgba(0, 255, 0, 128)"),
-            "Expected rgba fill with alpha in: {}",
+            output.source.contains("rgb(0, 255, 0, 128)"),
+            "Expected rgb fill with alpha in: {}",
             output.source
         );
     }
@@ -2555,8 +2555,8 @@ mod tests {
             output.source
         );
         assert!(
-            output.source.contains("rgba(0, 0, 255, 191)"),
-            "Expected rgba fill in: {}",
+            output.source.contains("rgb(0, 0, 255, 191)"),
+            "Expected rgb fill with alpha in: {}",
             output.source
         );
     }
@@ -4317,14 +4317,14 @@ mod tests {
         };
         let doc = make_doc(vec![make_fixed_page(720.0, 540.0, vec![elem])]);
         let output = generate_typst(&doc).unwrap();
-        // Shadow should render as an offset duplicate with rgba fill
+        // Shadow should render as an offset duplicate with rgb fill (4 args for alpha)
         assert!(
-            output.source.contains("rgba(0, 0, 0, 128)"),
-            "Shadow should use rgba with alpha. Got: {}",
+            output.source.contains("rgb(0, 0, 0, 128)"),
+            "Shadow should use rgb with alpha. Got: {}",
             output.source,
         );
         // The shadow shape should be placed before the main shape
-        let shadow_pos = output.source.find("rgba(0, 0, 0, 128)");
+        let shadow_pos = output.source.find("rgb(0, 0, 0, 128)");
         let main_pos = output.source.find("rgb(255, 0, 0)");
         assert!(
             shadow_pos < main_pos,
@@ -4351,10 +4351,10 @@ mod tests {
         };
         let doc = make_doc(vec![make_fixed_page(720.0, 540.0, vec![elem])]);
         let output = generate_typst(&doc).unwrap();
-        // No shadow → no rgba for shadow color
+        // No shadow → no rgb(0, 0, 0, ...) for shadow color
         assert!(
-            !output.source.contains("rgba(0, 0, 0,"),
-            "No shadow should produce no rgba shadow. Got: {}",
+            !output.source.contains("rgb(0, 0, 0,"),
+            "No shadow should produce no rgb shadow. Got: {}",
             output.source,
         );
     }
