@@ -12,9 +12,11 @@ categories = ["text-processing"]
 
 [features]
 wasm = ["wasm-bindgen"]
+pdf-ops = ["lopdf"]
 
 [dependencies]
 thiserror = "2"
+lopdf = { version = "0.39", optional = true }
 typst = "0.14"
 typst-pdf = "0.14"
 typst-kit = { version = "0.14", default-features = false, features = ["fonts", "embed-fonts"] }

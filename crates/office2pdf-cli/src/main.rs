@@ -4,13 +4,34 @@ use std::process;
 use anyhow::{Context, Result};
 use clap::Parser;
 use office2pdf::config::{ConvertOptions, PaperSize, PdfStandard, SlideRange};
+use office2pdf::pdf_ops;
 
 #[cfg(feature = "server")]
 mod server;
 
-#[cfg(feature = "server")]
 #[derive(clap::Subcommand)]
 enum Commands {
+    /// Merge multiple PDF files into one
+    Merge {
+        /// Input PDF files to merge
+        #[arg(required = true)]
+        files: Vec<PathBuf>,
+        /// Output file path
+        #[arg(short, long, default_value = "merged.pdf")]
+        output: PathBuf,
+    },
+    /// Split a PDF into parts by page ranges
+    Split {
+        /// Input PDF file
+        input: PathBuf,
+        /// Page ranges (e.g. "1-5,10-15")
+        #[arg(long, required = true, value_delimiter = ',')]
+        pages: Vec<String>,
+        /// Output directory for split files
+        #[arg(long, default_value = ".")]
+        outdir: PathBuf,
+    },
+    #[cfg(feature = "server")]
     /// Start an HTTP server for document conversion
     Serve {
         /// Host address to bind to
@@ -26,14 +47,11 @@ enum Commands {
 #[command(
     name = "office2pdf",
     version,
-    about = "Convert DOCX, XLSX, PPTX to PDF"
-)]
-#[cfg_attr(
-    feature = "server",
-    command(subcommand_negates_reqs = true, args_conflicts_with_subcommands = true)
+    about = "Convert DOCX, XLSX, PPTX to PDF",
+    subcommand_negates_reqs = true,
+    args_conflicts_with_subcommands = true
 )]
 struct Cli {
-    #[cfg(feature = "server")]
     #[command(subcommand)]
     command: Option<Commands>,
 
@@ -140,6 +158,66 @@ fn convert_single(
     Ok(())
 }
 
+/// Handle a CLI subcommand.
+fn handle_command(cmd: Commands) -> Result<()> {
+    match cmd {
+        Commands::Merge { files, output } => {
+            let inputs: Vec<Vec<u8>> = files
+                .iter()
+                .map(|f| std::fs::read(f).with_context(|| format!("reading {:?}", f)))
+                .collect::<Result<_>>()?;
+
+            let refs: Vec<&[u8]> = inputs.iter().map(|v| v.as_slice()).collect();
+            let merged = pdf_ops::merge(&refs).map_err(|e| anyhow::anyhow!("{e}"))?;
+
+            std::fs::write(&output, merged)
+                .with_context(|| format!("writing output to {:?}", output))?;
+
+            println!("Merged {} files -> {:?}", files.len(), output);
+            Ok(())
+        }
+        Commands::Split {
+            input,
+            pages,
+            outdir,
+        } => {
+            let data = std::fs::read(&input).with_context(|| format!("reading {:?}", input))?;
+
+            let ranges: Vec<pdf_ops::PageRange> = pages
+                .iter()
+                .map(|s| {
+                    pdf_ops::PageRange::parse(s)
+                        .map_err(|e| anyhow::anyhow!("invalid page range '{s}': {e}"))
+                })
+                .collect::<Result<_>>()?;
+
+            let parts = pdf_ops::split(&data, &ranges).map_err(|e| anyhow::anyhow!("{e}"))?;
+
+            std::fs::create_dir_all(&outdir)
+                .with_context(|| format!("creating output directory {:?}", outdir))?;
+
+            let stem = input.file_stem().unwrap_or_default().to_string_lossy();
+
+            for (i, (part, range)) in parts.iter().zip(ranges.iter()).enumerate() {
+                let filename = format!("{}_pages_{}-{}.pdf", stem, range.start, range.end);
+                let out_path = outdir.join(&filename);
+                std::fs::write(&out_path, part)
+                    .with_context(|| format!("writing {:?}", out_path))?;
+                println!(
+                    "Split part {} (pages {}-{}) -> {:?}",
+                    i + 1,
+                    range.start,
+                    range.end,
+                    out_path
+                );
+            }
+            Ok(())
+        }
+        #[cfg(feature = "server")]
+        Commands::Serve { host, port } => server::start_server(&host, port),
+    }
+}
+
 /// Convert multiple files independently, collecting results.
 ///
 /// When `jobs > 1` and there are multiple inputs, files are converted in
@@ -202,9 +280,8 @@ fn run() -> Result<()> {
     let cli = Cli::parse();
 
     // Handle subcommands
-    #[cfg(feature = "server")]
-    if let Some(Commands::Serve { host, port }) = cli.command {
-        return server::start_server(&host, port);
+    if let Some(cmd) = cli.command {
+        return handle_command(cmd);
     }
 
     // --output is only valid with a single input file
@@ -565,6 +642,105 @@ mod tests {
         // Should succeed with metrics=true (metrics printed to stderr)
         convert_single(&input, &output, &options, true).unwrap();
         assert!(output.exists());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // --- PDF merge/split CLI tests ---
+
+    fn make_test_pdf(num_pages: u32) -> Vec<u8> {
+        use lopdf::{Document, Object, Stream, dictionary};
+
+        let mut doc = Document::with_version("1.7");
+        let pages_id = doc.new_object_id();
+        let mut page_ids = Vec::new();
+
+        for i in 0..num_pages {
+            let content = format!("BT /F1 12 Tf 100 700 Td (Page {}) Tj ET", i + 1);
+            let content_id = doc.add_object(Stream::new(dictionary! {}, content.into_bytes()));
+            let page_id = doc.add_object(dictionary! {
+                "Type" => "Page",
+                "Parent" => pages_id,
+                "MediaBox" => vec![0.into(), 0.into(), 595.into(), 842.into()],
+                "Contents" => content_id,
+            });
+            page_ids.push(page_id);
+        }
+
+        let page_refs: Vec<Object> = page_ids.iter().map(|id| Object::Reference(*id)).collect();
+
+        doc.objects.insert(
+            pages_id,
+            Object::Dictionary(dictionary! {
+                "Type" => "Pages",
+                "Count" => num_pages as i64,
+                "Kids" => page_refs,
+            }),
+        );
+
+        let catalog_id = doc.add_object(dictionary! {
+            "Type" => "Catalog",
+            "Pages" => pages_id,
+        });
+        doc.trailer.set("Root", Object::Reference(catalog_id));
+
+        let mut output = Vec::new();
+        doc.save_to(&mut output).unwrap();
+        output
+    }
+
+    #[test]
+    fn test_cli_merge_command() {
+        let dir = std::env::temp_dir().join("office2pdf_cli_merge_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let pdf1 = make_test_pdf(1);
+        let pdf2 = make_test_pdf(2);
+        let file1 = dir.join("a.pdf");
+        let file2 = dir.join("b.pdf");
+        let output = dir.join("merged.pdf");
+        std::fs::write(&file1, &pdf1).unwrap();
+        std::fs::write(&file2, &pdf2).unwrap();
+
+        let cmd = Commands::Merge {
+            files: vec![file1, file2],
+            output: output.clone(),
+        };
+        handle_command(cmd).unwrap();
+
+        assert!(output.exists());
+        let merged_data = std::fs::read(&output).unwrap();
+        assert_eq!(pdf_ops::page_count(&merged_data).unwrap(), 3);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_cli_split_command() {
+        let dir = std::env::temp_dir().join("office2pdf_cli_split_test");
+        let outdir = dir.join("splits");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let pdf = make_test_pdf(4);
+        let input = dir.join("doc.pdf");
+        std::fs::write(&input, &pdf).unwrap();
+
+        let cmd = Commands::Split {
+            input: input.clone(),
+            pages: vec!["1-2".to_string(), "3-4".to_string()],
+            outdir: outdir.clone(),
+        };
+        handle_command(cmd).unwrap();
+
+        assert!(outdir.join("doc_pages_1-2.pdf").exists());
+        assert!(outdir.join("doc_pages_3-4.pdf").exists());
+
+        let part1 = std::fs::read(outdir.join("doc_pages_1-2.pdf")).unwrap();
+        let part2 = std::fs::read(outdir.join("doc_pages_3-4.pdf")).unwrap();
+        assert_eq!(pdf_ops::page_count(&part1).unwrap(), 2);
+        assert_eq!(pdf_ops::page_count(&part2).unwrap(), 2);
 
         let _ = std::fs::remove_dir_all(&dir);
     }

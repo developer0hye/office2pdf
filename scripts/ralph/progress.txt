@@ -1,5 +1,7 @@
 ## Codebase Patterns
-- **Server feature flag pattern**: CLI crate has `server = ["tiny_http"]` feature. Module `server.rs` imported with `#[cfg(feature = "server")] mod server;`. CLI struct uses `#[cfg_attr(feature = "server", command(subcommand_negates_reqs = true, args_conflicts_with_subcommands = true))]` + `#[cfg(feature = "server")] command: Option<Commands>` for backwards-compatible optional subcommands. Tests run with `cargo test -p office2pdf-cli --features server`.
+- **Server feature flag pattern**: CLI crate has `server = ["tiny_http"]` feature. Module `server.rs` imported with `#[cfg(feature = "server")] mod server;`. Serve variant in Commands enum uses `#[cfg(feature = "server")]`. Tests run with `cargo test -p office2pdf-cli --features server`.
+- **PDF ops feature flag pattern**: Library crate has `pdf-ops = ["lopdf"]` feature. Module `pdf_ops.rs` imported with `#[cfg(feature = "pdf-ops")] pub mod pdf_ops;`. CLI always enables pdf-ops via `office2pdf = { features = ["pdf-ops"] }`. CLI subcommands `merge` and `split` are always available. `PageRange` for parsing page range strings like "1-5". Tests create minimal PDFs with `lopdf::Document::with_version("1.7")` + manual page/catalog construction.
+- **CLI subcommand pattern**: `Commands` enum always exists with `Merge` and `Split` variants. `Serve` variant behind `#[cfg(feature = "server")]`. `Cli` struct uses `subcommand_negates_reqs = true, args_conflicts_with_subcommands = true` for backward-compatible subcommands (conversion args remain top-level). `handle_command(cmd)` dispatches all subcommands.
 - **WASM conditional compilation**: Filesystem-dependent functions (`convert`, `convert_with_options`) use `#[cfg(not(target_arch = "wasm32"))]`. In-memory functions (`convert_bytes`, `render_document`) have no guards. `pdf.rs` has dual `compile_to_pdf` — native uses `MinimalWorld::new(fonts+system)`, wasm32 uses `MinimalWorld::new_embedded_only(embedded fonts only)`. Shared logic in `compile_to_pdf_inner()`. Use `#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]` for functions used only on WASM but tested on native.
 - **WASM wasm-bindgen module**: `src/wasm.rs` behind `#[cfg(feature = "wasm")]`. Feature: `wasm = ["wasm-bindgen"]` (not default). Exported functions: `convertToPdf(data, format)`, `convertDocxToPdf(data)`, `convertPptxToPdf(data)`, `convertXlsxToPdf(data)`. Core logic in `convert_to_pdf_inner()` / `convert_format_inner()` returning `Result<Vec<u8>, String>` — testable on native. `#[wasm_bindgen]` functions are thin wrappers converting `String` → `JsValue`. `JsValue::from_str()` panics on non-wasm32, so never test wasm_bindgen functions directly on native.
 - **WASM dependency fixes**: `zip` must use `default-features = false, features = ["deflate"]` (default pulls in bzip2-sys/zstd-sys C libs). `getrandom` v0.2 needs `js` feature, v0.3 needs `wasm_js` feature — both in `[target.'cfg(target_arch = "wasm32")'.dependencies]`. Use `getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }` for the v0.2 rename trick. All three parsers (DOCX/PPTX/XLSX) and their deps compile on WASM without exclusions.
@@ -84,121 +86,25 @@
 - **XLSX chart anchor positioning**: `extract_charts_with_anchors(data)` → `HashMap<String, Vec<(u32, Chart)>>` mapping sheet name → (anchor_row, chart). Resolution chain: `xl/workbook.xml` (sheet name→rId) → `xl/_rels/workbook.xml.rels` (rId→sheet path) → `xl/worksheets/_rels/sheetN.xml.rels` (drawing rel) → `xl/drawings/drawingN.xml` (`<xdr:twoCellAnchor>/<xdr:from>/<xdr:row>` + `<c:chart r:id>`) → `xl/drawings/_rels/drawingN.xml.rels` (chart rId→chart path) → `xl/charts/chartN.xml`. `TablePage.charts: Vec<(u32, Chart)>` stores positioned charts. Codegen: `generate_table_with_charts()` splits table rows into segments at chart anchor rows, emitting charts between segments. Charts with `u32::MAX` sentinel render after all rows. Test helper: `build_xlsx_with_anchored_chart(cells, chart_xml, anchor_row)` creates XLSX with sheet rels, drawing XML, drawing rels, and chart XML.
 ---
 
-# Ralph Progress Log - Phase 10: Performance & Infrastructure - Instrumentation, Optimization, REST API
-Started: 2026년  2월 28일 토요일 17시 23분 18초 KST
+# Ralph Progress Log - Phase 11: Ecosystem Expansion - PDF Merge/Split, Accessibility, Streaming, Metrics
+Started: 2026년  2월 28일 토요일 19시 00분 28초 KST
 ---
 
-## 2026-02-28 - US-090
-- What was implemented: Per-stage timing and memory instrumentation for the conversion pipeline
-  - `ConvertMetrics` struct in `error.rs` with parse_duration, codegen_duration, compile_duration, total_duration, input_size_bytes, output_size_bytes, page_count
-  - `metrics: Option<ConvertMetrics>` field added to `ConvertResult`
-  - `convert_bytes()` in `lib.rs` instrumented with `std::time::Instant` around each stage (parse, codegen, compile)
-  - `--metrics` CLI flag prints timing breakdown to stderr
+## 2026-02-28 - US-095
+- Implemented PDF merge, split, and page_count operations in `pdf_ops` module
+- Added `lopdf` 0.39 as optional dependency behind `pdf-ops` feature flag
+- Added CLI subcommands: `merge` (combines multiple PDFs) and `split` (extracts page ranges)
 - Files changed:
-  - `crates/office2pdf/src/error.rs` — Added `ConvertMetrics` struct, updated `ConvertResult`, added unit tests
-  - `crates/office2pdf/src/lib.rs` — Instrumented `convert_bytes()` pipeline with Instant timing, added integration tests
-  - `crates/office2pdf-cli/src/main.rs` — Added `--metrics` flag, `show_metrics` parameter threading through `convert_single`/`convert_batch`
-  - `scripts/ralph/prd.json` — Marked US-090 as passes: true
-- Dependencies added: None (uses std::time::Instant)
+  - `crates/office2pdf/Cargo.toml` — added lopdf optional dep + pdf-ops feature
+  - `crates/office2pdf/src/lib.rs` — conditional module import
+  - `crates/office2pdf/src/pdf_ops.rs` — new module with merge/split/page_count + 22 tests
+  - `crates/office2pdf-cli/Cargo.toml` — enable pdf-ops, add lopdf dev-dep
+  - `crates/office2pdf-cli/src/main.rs` — restructured Commands enum, added merge/split subcommands + 2 CLI tests
+- Dependencies added: `lopdf = "0.39"` (optional, behind pdf-ops feature flag)
 - **Learnings for future iterations:**
-  - Page count is derived from IR `doc.pages.len()` — approximate for DOCX FlowPages but exact for PPTX/XLSX
-  - `ConvertMetrics` is Clone so callers can easily store/compare metrics
-  - The `let_chains` feature (if-let chaining) is stable in Rust edition 2024 and clippy prefers it
----
-
-## 2026-02-28 - US-091
-- What was implemented: Three targeted performance optimizations
-  1. **Font search caching (OnceLock)**: System font discovery (~1.5s per call) cached globally using `OnceLock<CachedFontData>` in `render/pdf.rs`. `MinimalWorld` restructured to use `FontSource` enum (Cached static ref vs Owned for custom paths). Second+ conversions see ~99% compile-stage speedup.
-  2. **DOCX consolidated ZIP pass**: Consolidated 5 separate ZIP opens + 3 redundant `word/document.xml` reads into a single archive open + single doc read. New `_from_xml` variants of context builders accept pre-read data.
-  3. **PPTX .rels deduplication**: `parse_single_slide()` now passes pre-resolved layout/master paths to background resolver, eliminating duplicate `resolve_layout_master_paths()` call per slide.
-- Before/after performance (warm cache, 10-page documents):
-  - DOCX: 1.54s → 17ms (98.9% faster)
-  - PPTX: 1.46s → 16ms (98.9% faster)
-  - XLSX: 1.77s → 250ms (85.9% faster)
-- Primary bottleneck identified: **Compile stage (>95% of total time)** — driven by `FontSearcher::search()` filesystem scanning. Parse stage was already fast (~2-28ms), codegen negligible (<1ms).
-- Files changed:
-  - `crates/office2pdf/src/render/pdf.rs` — Font caching with OnceLock, CachedFontData struct, FontSource enum, MinimalWorld restructure
-  - `crates/office2pdf/src/parser/docx.rs` — Consolidated ZIP opens, `_from_xml` context builders
-  - `crates/office2pdf/src/parser/pptx.rs` — `resolve_inherited_background_with_paths()` to reuse pre-resolved paths
-  - `crates/office2pdf/tests/perf_validation.rs` — New benchmark tests for font cache validation and cross-format cached conversion
-  - `scripts/ralph/prd.json` — Marked US-091 as passes: true
-- Dependencies added: None (uses std::sync::OnceLock from stdlib)
-- **Learnings for future iterations:**
-  - Font scanning is BY FAR the biggest bottleneck (>95% of total conversion time). Always cache font data when possible.
-  - `OnceLock` is the perfect tool for process-lifetime caching of expensive one-time computations. No external crate needed.
-  - The `FontSource` enum pattern (Cached static ref vs Owned) is clean for mixing cached and custom data.
-  - XLSX compile time is higher than DOCX/PPTX even with warm cache (~220ms vs ~12ms) likely due to more complex Typst output (many tables).
-  - Consolidating ZIP opens is a structural improvement but has minimal absolute impact when parse stage is already fast (<30ms).
----
-
-## 2026-02-28 - US-092
-- What was implemented: Multi-threaded batch conversion via rayon
-  - Added `rayon = "1"` as direct dependency in `office2pdf-cli` (already transitive via typst)
-  - `--jobs N` (`-j N`) CLI flag to control parallelism (default: 0 = all CPU cores)
-  - `convert_batch()` now accepts a `jobs` parameter; when `jobs > 1` and multiple inputs, creates a local rayon `ThreadPool` with `num_threads(jobs)` and uses `par_iter()` for parallel file conversion
-  - Single-file or `jobs=1` falls back to sequential iteration (no rayon overhead)
-  - Each conversion is fully independent (no shared mutable state), so `par_iter()` is straightforward
-- Files changed:
-  - `crates/office2pdf-cli/Cargo.toml` — Added `rayon = "1"` dependency
-  - `crates/office2pdf-cli/src/main.rs` — Added `--jobs` CLI flag, modified `convert_batch()` signature and implementation with rayon parallel support, added 5 new tests (parallel jobs=2, parallel partial failure, parallel outdir, single file with jobs, sequential jobs=1), updated existing tests to pass `jobs` parameter
-  - `scripts/ralph/prd.json` — Marked US-092 as passes: true
-- Dependencies added: `rayon = "1"` (already in dependency tree via typst, justified for parallel batch conversion)
-- **Learnings for future iterations:**
-  - Local `rayon::ThreadPool` via `ThreadPoolBuilder::new().num_threads(n).build()` is preferred over `build_global()` — allows tests to create independent pools without global state conflicts
-  - `pool.install(|| inputs.par_iter().map(...).collect())` is the clean pattern for scoped parallel work
-  - `std::thread::available_parallelism()` is the stdlib equivalent of `num_cpus` — no extra crate needed for defaults
-  - `ConvertOptions` is automatically `Send + Sync` since all fields are owned value types — no special handling needed for parallel use
-  - When `jobs=0`, resolve to available_parallelism at runtime; rayon's `num_threads(0)` also uses this default
----
-
-## 2026-02-28 - US-093
-- What was implemented: Tiered performance targets with reference benchmarks
-  - Three tiers defined: Small (<10 pages), Medium (10-50 pages), Large (50-100 pages)
-  - P95 budgets: Small=2s, Medium=3s, Large=8s (with CI variance margin)
-  - Synthetic document generators for all 9 tier×format combinations:
-    - Small: 15-para DOCX (~5 pages), 5-slide PPTX, 3-sheet/3×10 XLSX
-    - Medium: 60-para DOCX with tables (~20 pages), 20-slide PPTX with shapes, 10-sheet/8×50 XLSX
-    - Large: 150-para DOCX with tables (~50 pages), 50-slide PPTX with shapes, 20-sheet/10×100 XLSX
-  - Large-tier tests are `#[ignore]`d to avoid CI timeouts
-  - Font cache warm-up via `std::sync::Once` for fair measurements
-  - `timed_convert()` helper prints per-stage metrics to stderr
-  - `col_row_to_coord()` helper for multi-letter Excel column references
-  - Builder validation test verifies all synthetic documents produce valid PDFs
-- Baseline performance numbers (warm cache, local hardware):
-  - **Small**: DOCX ~6ms, PPTX ~20ms, XLSX ~15ms
-  - **Medium**: DOCX ~2.1s, PPTX ~1.7s, XLSX ~2.3s
-  - **Large**: DOCX ~775ms, PPTX ~87ms, XLSX ~4.8s
-  - Note: Medium DOCX and XLSX are slower than Large DOCX/PPTX due to table/cell complexity in Typst output
-- Files changed:
-  - `crates/office2pdf/tests/perf_validation.rs` — Complete rewrite with tiered system
-  - `scripts/ralph/prd.json` — Marked US-093 as passes: true
-- Dependencies added: None
-- **Learnings for future iterations:**
-  - XLSX is the slowest format by a wide margin — each cell becomes a Typst table cell, and 20 sheets × 10 cols × 100 rows = 20,000 cells creates heavy Typst compile load
-  - PPTX is the fastest format because each slide is a single fixed-layout page with minimal Typst complexity
-  - Medium-tier DOCX with tables is slower than large-tier DOCX without proportionally more tables — table rendering in Typst is expensive
-  - `std::sync::Once` is ideal for test-binary-scoped initialization (lighter than `OnceLock` when you don't need to store a value)
-  - `#[ignore]` is the right pattern for tests that pass locally but may timeout on CI runners
----
-
-## 2026-02-28 - US-094
-- What was implemented: HTTP server mode with REST API behind `server` feature flag
-- Endpoints: POST /convert (multipart/form-data file upload → PDF), GET /health (version info), GET /formats (supported formats list)
-- Server uses `tiny_http` (pure Rust, no tokio dependency) with manual multipart parser
-- CLI `serve` subcommand with `--host` (default 127.0.0.1) and `--port` (default 3000) flags
-- Backwards-compatible: uses `subcommand_negates_reqs` and `args_conflicts_with_subcommands` so existing `office2pdf file.docx` usage is preserved
-- Optional query parameters on /convert: `format` (override auto-detection), `paper` (paper size), `landscape` (boolean)
-- Error responses are JSON with status codes (400 for client errors, 404 for not found)
-- Files changed:
-  - `crates/office2pdf-cli/Cargo.toml` — Added `server` feature flag and `tiny_http` optional dependency
-  - `crates/office2pdf-cli/src/server.rs` — New module with server implementation + 12 tests (6 unit + 6 integration)
-  - `crates/office2pdf-cli/src/main.rs` — Added `serve` subcommand with conditional compilation
-- Dependencies added: `tiny_http = "0.12"` (optional, behind `server` feature)
-- **Learnings for future iterations:**
-  - `tiny_http::Server::http("127.0.0.1:0")` binds to an ephemeral port — great for integration tests
-  - For multipart parsing, working with raw bytes (not String) is essential since file data is binary
-  - `find_bytes()` using `windows().position()` is a clean byte-level subsequence search
-  - `dyn Read` trait objects don't need the `Read` trait in scope — methods dispatch inherently
-  - `#[cfg_attr(feature = "server", command(...))]` works with clap derive macros for conditional attributes
-  - `subcommand_negates_reqs = true` in clap allows optional subcommands alongside required positional args
+  - lopdf's `dict.get(b"Type")` returns `Result`, not `Option` — chain with `.ok().and_then()`
+  - lopdf's `dictionary!` macro must be imported via `use lopdf::dictionary;`, not `lopdf::dictionary!{}`
+  - Clippy requires collapsing nested `if let Ok(...) { if condition { ... } }` into `if let Ok(...) && condition { ... }`
+  - When merging PDFs, must remove orphaned intermediate Pages nodes from source documents
+  - CLI subcommand refactoring: moved from cfg-conditional Commands enum to always-present enum with cfg-conditional Serve variant
 ---
