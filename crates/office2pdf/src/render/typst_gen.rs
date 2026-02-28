@@ -77,11 +77,12 @@ fn resolve_page_size(original: &PageSize, options: &ConvertOptions) -> PageSize 
     }
 }
 
-/// Emit `#set document(title: ..., author: ...)` if metadata is present.
+/// Emit `#set document(title: ..., author: ..., date: ...)` if metadata is present.
 fn generate_document_metadata(out: &mut String, metadata: &Metadata) {
     let has_title = metadata.title.is_some();
     let has_author = metadata.author.is_some();
-    if !has_title && !has_author {
+    let parsed_date = metadata.created.as_deref().and_then(parse_iso8601_date);
+    if !has_title && !has_author && parsed_date.is_none() {
         return;
     }
 
@@ -96,8 +97,52 @@ fn generate_document_metadata(out: &mut String, metadata: &Metadata) {
             out.push_str(", ");
         }
         let _ = write!(out, "author: \"{}\"", escape_typst_string(author));
+        first = false;
+    }
+    if let Some((year, month, day, hour, minute, second)) = parsed_date {
+        if !first {
+            out.push_str(", ");
+        }
+        let _ = write!(
+            out,
+            "date: datetime(year: {year}, month: {month}, day: {day}, \
+             hour: {hour}, minute: {minute}, second: {second})"
+        );
     }
     out.push_str(")\n");
+}
+
+/// Parse an ISO 8601 date string (e.g. `2024-06-15T10:30:00Z`) into components.
+///
+/// Returns `(year, month, day, hour, minute, second)` or `None` if unparseable.
+fn parse_iso8601_date(s: &str) -> Option<(i32, u8, u8, u8, u8, u8)> {
+    let s = s.trim();
+    if s.len() < 10 {
+        return None;
+    }
+    let year: i32 = s.get(0..4)?.parse().ok()?;
+    if s.as_bytes().get(4)? != &b'-' {
+        return None;
+    }
+    let month: u8 = s.get(5..7)?.parse().ok()?;
+    if s.as_bytes().get(7)? != &b'-' {
+        return None;
+    }
+    let day: u8 = s.get(8..10)?.parse().ok()?;
+
+    // Validate ranges
+    if !(1..=12).contains(&month) || !(1..=31).contains(&day) {
+        return None;
+    }
+
+    if s.len() >= 19 && s.as_bytes().get(10) == Some(&b'T') {
+        let hour: u8 = s.get(11..13)?.parse().ok()?;
+        let minute: u8 = s.get(14..16)?.parse().ok()?;
+        let second: u8 = s.get(17..19)?.parse().ok()?;
+        Some((year, month, day, hour, minute, second))
+    } else {
+        Some((year, month, day, 0, 0, 0))
+    }
 }
 
 /// Escape a string for use inside Typst double quotes.
@@ -4892,5 +4937,107 @@ mod tests {
             !result.contains("#set document("),
             "Should not emit #set document when no metadata, got: {result}"
         );
+    }
+
+    #[test]
+    fn test_generate_typst_with_metadata_created_date() {
+        let doc = Document {
+            metadata: Metadata {
+                title: Some("Dated Doc".to_string()),
+                created: Some("2024-06-15T10:30:00Z".to_string()),
+                ..Default::default()
+            },
+            pages: vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+                runs: vec![Run {
+                    text: "Hello".to_string(),
+                    style: TextStyle::default(),
+                    footnote: None,
+                    href: None,
+                }],
+                style: ParagraphStyle::default(),
+            })])],
+            styles: StyleSheet::default(),
+        };
+        let result = generate_typst(&doc).unwrap().source;
+        // When metadata has a created date, it should be emitted in Typst
+        assert!(
+            result.contains("date: datetime(year: 2024, month: 6, day: 15"),
+            "Expected document date from metadata created field, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_typst_with_metadata_date_only() {
+        // When only the created date is set (no title/author), date should still appear
+        let doc = Document {
+            metadata: Metadata {
+                created: Some("2023-12-25T08:00:00Z".to_string()),
+                ..Default::default()
+            },
+            pages: vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+                runs: vec![Run {
+                    text: "Hello".to_string(),
+                    style: TextStyle::default(),
+                    footnote: None,
+                    href: None,
+                }],
+                style: ParagraphStyle::default(),
+            })])],
+            styles: StyleSheet::default(),
+        };
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("date: datetime(year: 2023, month: 12, day: 25"),
+            "Expected document date even without title/author, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_typst_with_invalid_created_date() {
+        // Invalid date string should be silently ignored
+        let doc = Document {
+            metadata: Metadata {
+                title: Some("Bad Date Doc".to_string()),
+                created: Some("not-a-date".to_string()),
+                ..Default::default()
+            },
+            pages: vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+                runs: vec![Run {
+                    text: "Hello".to_string(),
+                    style: TextStyle::default(),
+                    footnote: None,
+                    href: None,
+                }],
+                style: ParagraphStyle::default(),
+            })])],
+            styles: StyleSheet::default(),
+        };
+        let result = generate_typst(&doc).unwrap().source;
+        // Invalid date should not crash or produce a date field
+        assert!(
+            !result.contains("date: datetime("),
+            "Invalid date should not produce document date, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_parse_iso8601_date_full() {
+        let result = parse_iso8601_date("2024-06-15T10:30:45Z");
+        assert_eq!(result, Some((2024, 6, 15, 10, 30, 45)));
+    }
+
+    #[test]
+    fn test_parse_iso8601_date_date_only() {
+        let result = parse_iso8601_date("2023-12-25");
+        assert_eq!(result, Some((2023, 12, 25, 0, 0, 0)));
+    }
+
+    #[test]
+    fn test_parse_iso8601_date_invalid() {
+        assert_eq!(parse_iso8601_date("not-a-date"), None);
+        assert_eq!(parse_iso8601_date(""), None);
+        assert_eq!(parse_iso8601_date("2024"), None);
+        assert_eq!(parse_iso8601_date("2024-13-01T00:00:00Z"), None); // month > 12
+        assert_eq!(parse_iso8601_date("2024-00-01T00:00:00Z"), None); // month 0
     }
 }

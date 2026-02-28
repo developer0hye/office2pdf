@@ -98,3 +98,17 @@ Started: 2026년  2월 28일 토요일 13시 48분 17초 KST
   - `zip::write::FileOptions` in zip 0.6 does NOT take generic parameters (unlike zip 2.x)
   - Empty property strings from umya-spreadsheet need to be converted to None
 ---
+
+## 2026-02-28 - US-081
+- Replaced hardcoded PDF/A timestamp (2024-01-01) with actual conversion time
+- Added ISO 8601 date parsing for metadata created dates → emitted as `#set document(date: datetime(...))`
+- Files changed:
+  - `crates/office2pdf/src/render/pdf.rs` — Added `current_utc_datetime()` using `std::time::SystemTime` + Hinnant's algorithm; replaced hardcoded `Datetime::from_ymd_hms(2024, 1, 1, ...)` with `current_utc_datetime()`
+  - `crates/office2pdf/src/render/typst_gen.rs` — Added `parse_iso8601_date()` parser; updated `generate_document_metadata()` to emit `date: datetime(...)` when metadata has a created date
+- Dependencies added: None (used `std::time::SystemTime` and `std::time::UNIX_EPOCH`)
+- **Learnings for future iterations:**
+  - `typst_pdf::PdfOptions.timestamp` is a single `Option<Timestamp>` used for both CreationDate and ModDate — can't set them independently
+  - `typst_pdf` uses the `timestamp` only when `#set document(date: ..)` is not explicitly set (Smart::Auto)
+  - Howard Hinnant's civil date algorithm is the standard way to convert Unix timestamps to Y/M/D without chrono
+  - Metadata dates from OOXML are ISO 8601 format (e.g., `2024-06-15T10:30:00Z`) — simple substring parsing works reliably
+---
