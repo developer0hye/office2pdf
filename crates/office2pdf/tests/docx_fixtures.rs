@@ -401,6 +401,108 @@ fn structure_word_tables() {
 }
 
 // ===========================================================================
+// PDF text content verification
+// ===========================================================================
+
+/// Helper: convert a DOCX fixture to PDF and extract text.
+fn pdf_text(name: &str) -> String {
+    let path = fixture_path(name);
+    let result = office2pdf::convert(&path).expect("conversion should succeed");
+    common::extract_pdf_text(&result.pdf)
+}
+
+// ---------------------------------------------------------------------------
+// heading123.docx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_heading123() {
+    let text = pdf_text("heading123.docx");
+    assert!(
+        text.contains("First paragraph"),
+        "PDF should contain heading text 'First paragraph'"
+    );
+    assert!(
+        text.contains("Second paragraph"),
+        "PDF should contain heading text 'Second paragraph'"
+    );
+    assert!(
+        text.contains("Third paragraph"),
+        "PDF should contain heading text 'Third paragraph'"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// table.docx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_table() {
+    let text = pdf_text("table.docx");
+    assert!(
+        text.contains("Datum"),
+        "PDF should contain table header 'Datum'"
+    );
+    assert!(
+        text.contains("Beschreibung"),
+        "PDF should contain table header 'Beschreibung'"
+    );
+    assert!(
+        text.contains("Preis"),
+        "PDF should contain table header 'Preis'"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// styles_en.docx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_styles_en() {
+    let text = pdf_text("styles_en.docx");
+    assert!(text.contains("Heading 1"), "PDF should contain 'Heading 1'");
+    assert!(text.contains("Heading 2"), "PDF should contain 'Heading 2'");
+    assert!(
+        text.contains("Normal"),
+        "PDF should contain 'Normal' style text"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// test_python_docx.docx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_test_python_docx() {
+    let text = pdf_text("test_python_docx.docx");
+    assert!(
+        text.contains("python-docx was here"),
+        "PDF should contain 'python-docx was here'"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// unit_test_formatting.docx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_unit_test_formatting() {
+    let text = pdf_text("unit_test_formatting.docx");
+    assert!(
+        text.contains("bold"),
+        "PDF should contain 'bold' formatting label"
+    );
+    assert!(
+        text.contains("italic"),
+        "PDF should contain 'italic' formatting label"
+    );
+    assert!(
+        text.contains("underline"),
+        "PDF should contain 'underline' formatting label"
+    );
+}
+
+// ===========================================================================
 // Third-party fixtures — smoke tests (must not panic)
 // ===========================================================================
 

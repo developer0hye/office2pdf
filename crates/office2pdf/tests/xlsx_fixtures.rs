@@ -241,6 +241,65 @@ fn structure_temperature() {
 }
 
 // ===========================================================================
+// PDF text content verification
+// ===========================================================================
+
+/// Helper: convert an XLSX fixture to PDF and extract text.
+fn pdf_text(name: &str) -> String {
+    let path = fixture_path(name);
+    let result = office2pdf::convert(&path).expect("conversion should succeed");
+    common::extract_pdf_text(&result.pdf)
+}
+
+// ---------------------------------------------------------------------------
+// temperature.xlsx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_temperature() {
+    let text = pdf_text("temperature.xlsx");
+    assert!(
+        text.contains("celsius"),
+        "PDF should contain 'celsius' label"
+    );
+    assert!(
+        text.contains("fahrenheit"),
+        "PDF should contain 'fahrenheit' label"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// SH001-Table.xlsx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_sh001_table() {
+    let text = pdf_text("SH001-Table.xlsx");
+    // This is a simple table with single-character headers and numeric data
+    assert!(!text.is_empty(), "PDF should contain extracted text");
+    // Check for numeric data that should be present
+    assert!(
+        text.contains('1') && text.contains('2') && text.contains('3'),
+        "PDF should contain numeric data from the table"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// SH002-TwoTablesTwoSheets.xlsx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_sh002_two_tables_two_sheets() {
+    let text = pdf_text("SH002-TwoTablesTwoSheets.xlsx");
+    assert!(!text.is_empty(), "PDF should contain extracted text");
+    // Both sheets have different content; verify we have data from at least one
+    assert!(
+        text.contains('1') || text.contains('a') || text.contains('q'),
+        "PDF should contain data from the sheets"
+    );
+}
+
+// ===========================================================================
 // Third-party fixtures — smoke tests (must not panic)
 // ===========================================================================
 

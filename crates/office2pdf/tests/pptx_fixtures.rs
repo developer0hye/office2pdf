@@ -207,6 +207,56 @@ fn structure_test() {
 }
 
 // ===========================================================================
+// PDF text content verification
+// ===========================================================================
+
+/// Helper: convert a PPTX fixture to PDF and extract text.
+fn pdf_text(name: &str) -> String {
+    let path = fixture_path(name);
+    let result = office2pdf::convert(&path).expect("conversion should succeed");
+    common::extract_pdf_text(&result.pdf)
+}
+
+// ---------------------------------------------------------------------------
+// powerpoint_sample.pptx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_powerpoint_sample() {
+    let text = pdf_text("powerpoint_sample.pptx");
+    assert!(
+        text.contains("slide title") || text.contains("Slide Title") || text.contains("Test"),
+        "PDF should contain slide title text"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// test.pptx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_test() {
+    let text = pdf_text("test.pptx");
+    assert!(
+        text.contains("Presentation Title") || text.contains("Title"),
+        "PDF should contain presentation title"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// test_slides.pptx — text content
+// ---------------------------------------------------------------------------
+
+#[test]
+fn text_content_test_slides() {
+    let text = pdf_text("test_slides.pptx");
+    assert!(
+        text.contains("Test text") || text.contains("Box"),
+        "PDF should contain slide text content"
+    );
+}
+
+// ===========================================================================
 // Third-party fixtures — smoke tests (must not panic)
 // ===========================================================================
 
