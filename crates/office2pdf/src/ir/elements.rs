@@ -312,7 +312,18 @@ pub struct Shape {
 pub enum ShapeKind {
     Rectangle,
     Ellipse,
-    Line { x2: f64, y2: f64 },
+    Line {
+        x2: f64,
+        y2: f64,
+    },
+    /// Rectangle with rounded corners. `radius_fraction` is relative to `min(width, height)`.
+    RoundedRectangle {
+        radius_fraction: f64,
+    },
+    /// Arbitrary polygon defined by vertices normalized to 0.0–1.0 relative to the bounding box.
+    Polygon {
+        vertices: Vec<(f64, f64)>,
+    },
 }
 
 #[cfg(test)]

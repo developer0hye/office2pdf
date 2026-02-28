@@ -2170,9 +2170,105 @@ fn prst_to_shape_kind(prst: &str, width: f64, height: f64) -> ShapeKind {
             x2: width,
             y2: height,
         },
-        // All rectangular-ish shapes → Rectangle
+        "roundRect" => ShapeKind::RoundedRectangle {
+            radius_fraction: 0.1,
+        },
+        "triangle" => ShapeKind::Polygon {
+            vertices: vec![(0.5, 0.0), (1.0, 1.0), (0.0, 1.0)],
+        },
+        "rtTriangle" => ShapeKind::Polygon {
+            vertices: vec![(0.0, 0.0), (1.0, 1.0), (0.0, 1.0)],
+        },
+        "diamond" => ShapeKind::Polygon {
+            vertices: vec![(0.5, 0.0), (1.0, 0.5), (0.5, 1.0), (0.0, 0.5)],
+        },
+        "pentagon" => ShapeKind::Polygon {
+            vertices: regular_polygon_vertices(5),
+        },
+        "hexagon" => ShapeKind::Polygon {
+            vertices: regular_polygon_vertices(6),
+        },
+        "octagon" => ShapeKind::Polygon {
+            vertices: regular_polygon_vertices(8),
+        },
+        "rightArrow" | "arrow" => ShapeKind::Polygon {
+            vertices: arrow_vertices(ArrowDir::Right),
+        },
+        "leftArrow" => ShapeKind::Polygon {
+            vertices: arrow_vertices(ArrowDir::Left),
+        },
+        "upArrow" => ShapeKind::Polygon {
+            vertices: arrow_vertices(ArrowDir::Up),
+        },
+        "downArrow" => ShapeKind::Polygon {
+            vertices: arrow_vertices(ArrowDir::Down),
+        },
+        "star4" => ShapeKind::Polygon {
+            vertices: star_vertices(4),
+        },
+        "star5" => ShapeKind::Polygon {
+            vertices: star_vertices(5),
+        },
+        "star6" => ShapeKind::Polygon {
+            vertices: star_vertices(6),
+        },
+        // Rectangular fallback for unsupported presets
         _ => ShapeKind::Rectangle,
     }
+}
+
+enum ArrowDir {
+    Right,
+    Left,
+    Up,
+    Down,
+}
+
+/// Generate vertices for a regular polygon inscribed in the unit square (0–1).
+fn regular_polygon_vertices(n: usize) -> Vec<(f64, f64)> {
+    let mut vertices = Vec::with_capacity(n);
+    for i in 0..n {
+        // Start from top (−π/2) and go clockwise
+        let angle = -std::f64::consts::FRAC_PI_2 + 2.0 * std::f64::consts::PI * i as f64 / n as f64;
+        let x = 0.5 + 0.5 * angle.cos();
+        let y = 0.5 + 0.5 * angle.sin();
+        vertices.push((x, y));
+    }
+    vertices
+}
+
+/// Generate arrow polygon vertices (7-point arrow) in normalized coordinates.
+fn arrow_vertices(dir: ArrowDir) -> Vec<(f64, f64)> {
+    // Right-pointing arrow template
+    let right: Vec<(f64, f64)> = vec![
+        (0.0, 0.25),
+        (0.6, 0.25),
+        (0.6, 0.0),
+        (1.0, 0.5),
+        (0.6, 1.0),
+        (0.6, 0.75),
+        (0.0, 0.75),
+    ];
+    match dir {
+        ArrowDir::Right => right,
+        ArrowDir::Left => right.into_iter().map(|(x, y)| (1.0 - x, y)).collect(),
+        ArrowDir::Up => right.into_iter().map(|(x, y)| (y, 1.0 - x)).collect(),
+        ArrowDir::Down => right.into_iter().map(|(x, y)| (1.0 - y, x)).collect(),
+    }
+}
+
+/// Generate star polygon vertices with `n` points inscribed in the unit square.
+fn star_vertices(n: usize) -> Vec<(f64, f64)> {
+    let mut vertices = Vec::with_capacity(n * 2);
+    let inner_radius = 0.4; // ratio of inner to outer radius
+    for i in 0..(n * 2) {
+        let angle = -std::f64::consts::FRAC_PI_2 + std::f64::consts::PI * i as f64 / n as f64;
+        let r = if i % 2 == 0 { 0.5 } else { 0.5 * inner_radius };
+        let x = 0.5 + r * angle.cos();
+        let y = 0.5 + r * angle.sin();
+        vertices.push((x, y));
+    }
+    vertices
 }
 
 /// Extract paragraph alignment from `<a:pPr>` attributes.
@@ -5620,5 +5716,369 @@ mod tests {
         // Should not crash; fields are None or default
         assert!(doc.metadata.title.is_none());
         assert!(doc.metadata.author.is_none());
+    }
+
+    // ── Extended geometry tests (US-085) ──────────────────────────────────
+
+    #[test]
+    fn test_shape_triangle() {
+        let shape = make_shape(
+            0,
+            0,
+            2_000_000,
+            2_000_000,
+            "triangle",
+            Some("FF0000"),
+            None,
+            None,
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 3, "Triangle should have 3 vertices");
+                // Top-center, bottom-right, bottom-left
+                assert!((vertices[0].0 - 0.5).abs() < 0.01);
+                assert!((vertices[0].1).abs() < 0.01);
+            }
+            other => panic!("Expected Polygon for triangle, got {other:?}"),
+        }
+        assert_eq!(s.fill, Some(Color::new(255, 0, 0)));
+    }
+
+    #[test]
+    fn test_shape_right_triangle() {
+        let shape = make_shape(
+            0,
+            0,
+            2_000_000,
+            2_000_000,
+            "rtTriangle",
+            Some("00FF00"),
+            None,
+            None,
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 3, "Right triangle should have 3 vertices");
+                // Top-left, bottom-right, bottom-left
+                assert!((vertices[0].0).abs() < 0.01);
+                assert!((vertices[0].1).abs() < 0.01);
+            }
+            other => panic!("Expected Polygon for rtTriangle, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_shape_round_rect() {
+        let shape = make_shape(
+            0,
+            0,
+            2_000_000,
+            1_000_000,
+            "roundRect",
+            Some("0000FF"),
+            None,
+            None,
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::RoundedRectangle { radius_fraction } => {
+                assert!(*radius_fraction > 0.0, "Radius fraction should be positive");
+            }
+            other => panic!("Expected RoundedRectangle for roundRect, got {other:?}"),
+        }
+        assert_eq!(s.fill, Some(Color::new(0, 0, 255)));
+    }
+
+    #[test]
+    fn test_shape_diamond() {
+        let shape = make_shape(
+            0,
+            0,
+            2_000_000,
+            2_000_000,
+            "diamond",
+            Some("FFFF00"),
+            None,
+            None,
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 4, "Diamond should have 4 vertices");
+            }
+            other => panic!("Expected Polygon for diamond, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_shape_pentagon() {
+        let shape = make_shape(0, 0, 2_000_000, 2_000_000, "pentagon", None, None, None);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 5, "Pentagon should have 5 vertices");
+            }
+            other => panic!("Expected Polygon for pentagon, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_shape_hexagon() {
+        let shape = make_shape(0, 0, 2_000_000, 2_000_000, "hexagon", None, None, None);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 6, "Hexagon should have 6 vertices");
+            }
+            other => panic!("Expected Polygon for hexagon, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_shape_octagon() {
+        let shape = make_shape(0, 0, 2_000_000, 2_000_000, "octagon", None, None, None);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 8, "Octagon should have 8 vertices");
+            }
+            other => panic!("Expected Polygon for octagon, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_shape_right_arrow() {
+        let shape = make_shape(
+            0,
+            0,
+            3_000_000,
+            1_500_000,
+            "rightArrow",
+            Some("FF8800"),
+            None,
+            None,
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 7, "Arrow should have 7 vertices");
+                // Rightmost point should be at x=1.0
+                let rightmost = vertices
+                    .iter()
+                    .map(|v| v.0)
+                    .fold(f64::NEG_INFINITY, f64::max);
+                assert!((rightmost - 1.0).abs() < 0.01);
+            }
+            other => panic!("Expected Polygon for rightArrow, got {other:?}"),
+        }
+        assert_eq!(s.fill, Some(Color::new(255, 136, 0)));
+    }
+
+    #[test]
+    fn test_shape_left_arrow() {
+        let shape = make_shape(0, 0, 3_000_000, 1_500_000, "leftArrow", None, None, None);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 7, "Left arrow should have 7 vertices");
+                // Leftmost point should be at x=0.0
+                let leftmost = vertices.iter().map(|v| v.0).fold(f64::INFINITY, f64::min);
+                assert!(leftmost.abs() < 0.01);
+            }
+            other => panic!("Expected Polygon for leftArrow, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_shape_up_arrow() {
+        let shape = make_shape(0, 0, 1_500_000, 3_000_000, "upArrow", None, None, None);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 7, "Up arrow should have 7 vertices");
+            }
+            other => panic!("Expected Polygon for upArrow, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_shape_down_arrow() {
+        let shape = make_shape(0, 0, 1_500_000, 3_000_000, "downArrow", None, None, None);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(vertices.len(), 7, "Down arrow should have 7 vertices");
+            }
+            other => panic!("Expected Polygon for downArrow, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_shape_star5() {
+        let shape = make_shape(
+            0,
+            0,
+            2_000_000,
+            2_000_000,
+            "star5",
+            Some("FFD700"),
+            None,
+            None,
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(
+                    vertices.len(),
+                    10,
+                    "Star5 should have 10 vertices (5 outer + 5 inner)"
+                );
+            }
+            other => panic!("Expected Polygon for star5, got {other:?}"),
+        }
+        assert_eq!(s.fill, Some(Color::new(255, 215, 0)));
+    }
+
+    #[test]
+    fn test_shape_star4() {
+        let shape = make_shape(0, 0, 2_000_000, 2_000_000, "star4", None, None, None);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(
+                    vertices.len(),
+                    8,
+                    "Star4 should have 8 vertices (4 outer + 4 inner)"
+                );
+            }
+            other => panic!("Expected Polygon for star4, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_shape_star6() {
+        let shape = make_shape(0, 0, 2_000_000, 2_000_000, "star6", None, None, None);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        match &s.kind {
+            ShapeKind::Polygon { vertices } => {
+                assert_eq!(
+                    vertices.len(),
+                    12,
+                    "Star6 should have 12 vertices (6 outer + 6 inner)"
+                );
+            }
+            other => panic!("Expected Polygon for star6, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_unsupported_preset_falls_back_to_rectangle() {
+        let shape = make_shape(
+            0,
+            0,
+            2_000_000,
+            2_000_000,
+            "cloudCallout",
+            Some("AABBCC"),
+            None,
+            None,
+        );
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let s = get_shape(&page.elements[0]);
+        assert!(
+            matches!(s.kind, ShapeKind::Rectangle),
+            "Unknown preset should fall back to Rectangle"
+        );
     }
 }
