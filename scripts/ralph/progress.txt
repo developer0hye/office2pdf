@@ -81,133 +81,24 @@
 - **XLSX chart anchor positioning**: `extract_charts_with_anchors(data)` → `HashMap<String, Vec<(u32, Chart)>>` mapping sheet name → (anchor_row, chart). Resolution chain: `xl/workbook.xml` (sheet name→rId) → `xl/_rels/workbook.xml.rels` (rId→sheet path) → `xl/worksheets/_rels/sheetN.xml.rels` (drawing rel) → `xl/drawings/drawingN.xml` (`<xdr:twoCellAnchor>/<xdr:from>/<xdr:row>` + `<c:chart r:id>`) → `xl/drawings/_rels/drawingN.xml.rels` (chart rId→chart path) → `xl/charts/chartN.xml`. `TablePage.charts: Vec<(u32, Chart)>` stores positioned charts. Codegen: `generate_table_with_charts()` splits table rows into segments at chart anchor rows, emitting charts between segments. Charts with `u32::MAX` sentinel render after all rows. Test helper: `build_xlsx_with_anchored_chart(cells, chart_xml, anchor_row)` creates XLSX with sheet rels, drawing XML, drawing rels, and chart XML.
 ---
 
-# Ralph Progress Log - Phase 9: Quality & Fidelity - Geometry, SmartArt/Chart, Font Substitution, Compression
-Started: 2026년  2월 28일 토요일 15시 39분 36초 KST
+# Ralph Progress Log - Phase 10: Performance & Infrastructure - Instrumentation, Optimization, REST API
+Started: 2026년  2월 28일 토요일 17시 23분 18초 KST
 ---
 
-## 2026-02-28 - US-085
-- Extended PPTX shape geometry mapping from 3 presets (rect/ellipse/line) to 16+ presets
-- Added `ShapeKind::RoundedRectangle` and `ShapeKind::Polygon` IR variants
-- Implemented `regular_polygon_vertices(n)`, `arrow_vertices(dir)`, `star_vertices(n)` geometry helpers
-- Added Typst codegen: `#polygon()` for arbitrary polygons, `#rect(radius:)` for rounded rectangles
-- Shadow support for all new shape types
+## 2026-02-28 - US-090
+- What was implemented: Per-stage timing and memory instrumentation for the conversion pipeline
+  - `ConvertMetrics` struct in `error.rs` with parse_duration, codegen_duration, compile_duration, total_duration, input_size_bytes, output_size_bytes, page_count
+  - `metrics: Option<ConvertMetrics>` field added to `ConvertResult`
+  - `convert_bytes()` in `lib.rs` instrumented with `std::time::Instant` around each stage (parse, codegen, compile)
+  - `--metrics` CLI flag prints timing breakdown to stderr
 - Files changed:
-  - `crates/office2pdf/src/ir/elements.rs` — extended ShapeKind enum
-  - `crates/office2pdf/src/parser/pptx.rs` — extended prst_to_shape_kind() + geometry helpers + 17 new tests
-  - `crates/office2pdf/src/render/typst_gen.rs` — polygon/rounded-rect codegen + shadow handling + 4 new tests
-  - `scripts/ralph/prd.json` — marked US-085 passes: true
-- Dependencies added: none
+  - `crates/office2pdf/src/error.rs` — Added `ConvertMetrics` struct, updated `ConvertResult`, added unit tests
+  - `crates/office2pdf/src/lib.rs` — Instrumented `convert_bytes()` pipeline with Instant timing, added integration tests
+  - `crates/office2pdf-cli/src/main.rs` — Added `--metrics` flag, `show_metrics` parameter threading through `convert_single`/`convert_batch`
+  - `scripts/ralph/prd.json` — Marked US-090 as passes: true
+- Dependencies added: None (uses std::time::Instant)
 - **Learnings for future iterations:**
-  - Normalized vertex coordinates (0.0-1.0) scaled at codegen time is a clean pattern for resolution-independent shapes
-  - Arrow shapes need 7 vertices; transforming right-arrow template via coordinate mirroring/rotation handles all 4 directions
-  - Star shapes use alternating outer/inner radius vertices (2n total for n-pointed star)
-  - clippy enforces `writeln!` over `write!(...\n)` — always use writeln! for trailing newlines
----
-
-## 2026-02-28 - US-086
-- Improved Chart fallback rendering with type-specific visual representations:
-  - Bar/Column: proportional visual bars using `#box(width: N%)` with color palette
-  - Pie: percentage legend table with colored slice indicators
-  - Line: data table with trend indicators (↑↓→) comparing consecutive values
-  - All charts wrapped in bordered box with prominent title header
-- Improved SmartArt rendering with hierarchy awareness:
-  - Extended `SmartArt` IR: `items: Vec<String>` → `items: Vec<SmartArtNode>` with `depth: usize`
-  - Parser now extracts `<dgm:cxnLst>` parent-child connections and computes BFS depth
-  - Flat items (all depth 0) → numbered steps with arrows between them
-  - Hierarchical items (varying depths) → indented tree with `#pad(left:)` and tree connectors
-  - Visually distinct bordered box with steel-blue theme
-- Files changed:
-  - `crates/office2pdf/src/ir/elements.rs` — added SmartArtNode struct, changed SmartArt.items type
-  - `crates/office2pdf/src/parser/smartart.rs` — parse connections for hierarchy depth, 2 new tests
-  - `crates/office2pdf/src/parser/pptx.rs` — updated SmartArtMap type, test assertions
-  - `crates/office2pdf/src/render/typst_gen.rs` — rewritten generate_chart (5 functions), rewritten generate_smartart (3 functions), 4 updated + 2 new tests
-- Dependencies added: none
-- **Learnings for future iterations:**
-  - SmartArt `<dgm:cxnLst>` with `type="parOf"` connections provide parent→child hierarchy; BFS from doc root assigns depth
-  - Chart visual bars: compute max across all series, scale each bar as `(val/max*100)%` width
-  - Pie percentages: sum all values in first series, divide each by total
-  - Line trend indicators compare consecutive values per series
-  - `SmartArtNode { text, depth }` with `PartialEq` derive enables clean test assertions
----
-
-## 2026-02-28 - US-087
-- Preserved XLSX chart position within sheet layout instead of appending as separate pages
-- Charts with drawing anchors are now embedded in their TablePage at the anchor row
-- Charts without anchors fall back to end-of-sheet (u32::MAX sentinel row)
-- Codegen splits table into segments at chart positions, rendering charts between segments
-- IR change: added `charts: Vec<(u32, Chart)>` to `TablePage`
-- New parser infrastructure for XLSX drawing XML parsing:
-  - `extract_charts_with_anchors()` — full chart-to-sheet mapping via workbook → sheet rels → drawing → chart chain
-  - `parse_workbook_sheet_rids()` — extract sheet name → rId from workbook.xml
-  - `parse_rels_targets()` / `parse_rels_by_type()` — .rels file parsing helpers
-  - `parse_drawing_chart_anchors()` — extract (anchor_row, chart_rId) from drawing XML
-  - `resolve_relative_xl_path()` — resolve `../` relative paths in OOXML
-- Codegen: `generate_table_with_charts()` splits table rows into segments at chart anchor positions
-- Updated 3 existing chart tests to reflect new embedding behavior
-- Added 4 new tests (2 parser + 2 codegen)
-- Files changed:
-  - `crates/office2pdf/src/ir/document.rs` — added `charts` field to TablePage
-  - `crates/office2pdf/src/parser/xlsx.rs` — replaced extract_charts_from_zip with extract_charts_with_anchors, new XML parsing helpers, updated tests
-  - `crates/office2pdf/src/render/typst_gen.rs` — generate_table_with_charts function, new codegen tests, updated TablePage constructions
-  - `scripts/ralph/prd.json` — marked US-087 passes: true
-- Dependencies added: none
-- **Learnings for future iterations:**
-  - XLSX charts are positioned via drawing XML: workbook.xml → workbook.rels → sheet.rels → drawing.xml → drawing.rels → chart.xml
-  - Drawing anchors use `<xdr:twoCellAnchor>/<xdr:from>/<xdr:row>` for row position (0-indexed in OOXML)
-  - `oneCellAnchor` also used for chart positioning (same `<xdr:from>/<xdr:row>` pattern)
-  - Table splitting at chart positions uses row cloning — acceptable performance for this use case
-  - Orphan charts (in ZIP but not referenced by drawings) handled via path deduplication
----
-
-## 2026-02-28 - US-088
-- Built metric-compatible font substitution table for 11 common Microsoft fonts
-- Created `render/font_subst.rs` module with two public functions:
-  - `substitutes(name)` — static case-insensitive lookup returning substitute font names
-  - `font_with_fallbacks(name)` — builds Typst font fallback list string
-- Integrated into Typst codegen: `write_text_params()` now emits font fallback lists
-  - Known MS fonts: `font: ("Calibri", "Carlito", "Liberation Sans")`
-  - Unknown fonts: `font: "Helvetica"` (no change)
-- Leverages Typst's native font fallback list feature — no runtime probing or font book queries needed
-- 18 unit tests for font_subst module + 4 codegen integration tests
-- Files changed:
-  - `crates/office2pdf/src/render/font_subst.rs` — NEW: substitution table module (18 tests)
-  - `crates/office2pdf/src/render/mod.rs` — added font_subst module registration
-  - `crates/office2pdf/src/render/typst_gen.rs` — integrated font_with_fallbacks in write_text_params + 4 new tests
-  - `scripts/ralph/prd.json` — marked US-088 passes: true
-- Dependencies added: none
-- **Learnings for future iterations:**
-  - Typst supports font fallback lists natively: `font: ("Primary", "Fallback1", "Fallback2")`
-  - This is the cleanest approach — no need to probe FontBook at codegen time
-  - `to_ascii_lowercase()` is sufficient for case-insensitive matching of font names (ASCII-only)
-  - clippy enforces inner doc comments (`//!`) for module-level docs, not `///` followed by blank line
----
-
-## 2026-02-28 - US-089
-- Verified PDF output size optimization: typst-pdf (via krilla) applies all key optimizations by default
-- Confirmed FLATE content stream compression is active (FlateDecode in PDF output)
-- Confirmed font subsetting is active (fewer glyphs → smaller PDF)
-- Confirmed images are passed through without unnecessary re-encoding
-- Added 6 PDF optimization unit tests in `render/pdf.rs`:
-  - `test_pdf_uses_flate_compression` — verifies FlateDecode filter presence
-  - `test_font_subsetting_reduces_size` — fewer glyphs produce smaller PDF
-  - `test_multipage_text_pdf_size_reasonable` — 10-page text < 500KB
-  - `test_pdf_with_image_size_proportional` — image PDF proportional to input
-  - `test_empty_page_pdf_baseline_size` — baseline overhead under 100KB
-  - `test_compression_effective_for_repetitive_content` — 100x content < 10x PDF size
-- Added 2 end-to-end IR pipeline size tests in `lib.rs`:
-  - `test_render_multipage_document_size` — 10-page FlowPage IR < 500KB
-  - `test_render_pptx_style_document_size` — 5-slide FixedPage IR < 500KB
-- Documented compression behavior in `compile_to_pdf()` doc comments
-- Files changed:
-  - `crates/office2pdf/src/render/pdf.rs` — 6 new tests + compression documentation
-  - `crates/office2pdf/src/lib.rs` — 2 new end-to-end size tests
-  - `scripts/ralph/prd.json` — marked US-089 passes: true
-- Dependencies added: none
-- **Learnings for future iterations:**
-  - typst-pdf delegates to krilla for PDF generation; krilla defaults: `compress_content_streams: true`
-  - Font subsetting via `subsetter` crate is automatic — no configuration needed
-  - Images embedded as-is (pass-through); no re-encoding overhead
-  - Typical PDF sizes: empty page ~10-30KB, 10-page text ~30-60KB
-  - `PdfOptions` in typst-pdf 0.14 exposes: ident, timestamp, page_ranges, standards, tagged
-  - No user-facing compression toggle needed since all optimizations are always active
+  - Page count is derived from IR `doc.pages.len()` — approximate for DOCX FlowPages but exact for PPTX/XLSX
+  - `ConvertMetrics` is Clone so callers can easily store/compare metrics
+  - The `let_chains` feature (if-let chaining) is stable in Rust edition 2024 and clippy prefers it
 ---

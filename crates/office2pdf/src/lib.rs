@@ -45,8 +45,10 @@ pub mod render;
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
+use std::time::Instant;
+
 use config::{ConvertOptions, Format};
-use error::{ConvertError, ConvertResult};
+use error::{ConvertError, ConvertMetrics, ConvertResult};
 use parser::Parser;
 
 /// Convert a file at the given path to PDF bytes with warnings.
@@ -107,21 +109,52 @@ pub fn convert_bytes(
     format: Format,
     options: &ConvertOptions,
 ) -> Result<ConvertResult, ConvertError> {
+    let total_start = Instant::now();
+    let input_size_bytes = data.len() as u64;
+
     let parser: Box<dyn Parser> = match format {
         Format::Docx => Box::new(parser::docx::DocxParser),
         Format::Pptx => Box::new(parser::pptx::PptxParser),
         Format::Xlsx => Box::new(parser::xlsx::XlsxParser),
     };
 
+    // Stage 1: Parse (OOXML → IR)
+    let parse_start = Instant::now();
     let (doc, warnings) = parser.parse(data, options)?;
+    let parse_duration = parse_start.elapsed();
+    let page_count = doc.pages.len() as u32;
+
+    // Stage 2: Codegen (IR → Typst)
+    let codegen_start = Instant::now();
     let output = render::typst_gen::generate_typst_with_options(&doc, options)?;
+    let codegen_duration = codegen_start.elapsed();
+
+    // Stage 3: Compile (Typst → PDF)
+    let compile_start = Instant::now();
     let pdf = render::pdf::compile_to_pdf(
         &output.source,
         &output.images,
         options.pdf_standard,
         &options.font_paths,
     )?;
-    Ok(ConvertResult { pdf, warnings })
+    let compile_duration = compile_start.elapsed();
+
+    let total_duration = total_start.elapsed();
+    let output_size_bytes = pdf.len() as u64;
+
+    Ok(ConvertResult {
+        pdf,
+        warnings,
+        metrics: Some(ConvertMetrics {
+            parse_duration,
+            codegen_duration,
+            compile_duration,
+            total_duration,
+            input_size_bytes,
+            output_size_bytes,
+            page_count,
+        }),
+    })
 }
 
 /// Render an IR Document to PDF bytes.
@@ -1576,6 +1609,70 @@ mod tests {
             "5-slide FixedPage PDF should be under 500KB, actual: {} bytes ({:.1} KB)",
             pdf.len(),
             pdf.len() as f64 / 1024.0
+        );
+    }
+
+    // --- ConvertMetrics instrumentation tests ---
+
+    /// Helper: create a minimal DOCX as bytes for metrics tests.
+    fn make_test_docx_bytes() -> Vec<u8> {
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Hello metrics")),
+        );
+        let mut buf = std::io::Cursor::new(Vec::new());
+        docx.build().pack(&mut buf).unwrap();
+        buf.into_inner()
+    }
+
+    #[test]
+    fn test_convert_bytes_returns_populated_metrics() {
+        let data = make_test_docx_bytes();
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        let metrics = result.metrics.expect("convert_bytes should return metrics");
+        assert!(
+            metrics.parse_duration.as_nanos() > 0,
+            "parse_duration should be non-zero"
+        );
+        assert!(
+            metrics.codegen_duration.as_nanos() > 0,
+            "codegen_duration should be non-zero"
+        );
+        assert!(
+            metrics.compile_duration.as_nanos() > 0,
+            "compile_duration should be non-zero"
+        );
+        assert!(
+            metrics.total_duration.as_nanos() > 0,
+            "total_duration should be non-zero"
+        );
+        assert_eq!(metrics.input_size_bytes, data.len() as u64);
+        assert_eq!(metrics.output_size_bytes, result.pdf.len() as u64);
+        assert!(metrics.page_count >= 1, "should have at least 1 page");
+    }
+
+    #[test]
+    fn test_metrics_total_ge_sum_of_stages() {
+        let data = make_test_docx_bytes();
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        let m = result.metrics.expect("should have metrics");
+        let sum = m.parse_duration + m.codegen_duration + m.compile_duration;
+        assert!(
+            m.total_duration >= sum,
+            "total ({:?}) should be >= sum of stages ({:?})",
+            m.total_duration,
+            sum
+        );
+    }
+
+    #[test]
+    fn test_metrics_output_size_matches_pdf() {
+        let data = make_test_docx_bytes();
+        let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+        let m = result.metrics.expect("should have metrics");
+        assert_eq!(
+            m.output_size_bytes,
+            result.pdf.len() as u64,
+            "output_size_bytes should match actual PDF size"
         );
     }
 }
