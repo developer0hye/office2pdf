@@ -92,7 +92,6 @@ limitations under the License.
 - `docx/checkboxes.docx`
 - `docx/comment.docx`
 - `docx/ComplexNumberedLists.docx`
-- `docx/deep-table-cell.docx`
 - `docx/delins.docx`
 - `docx/DiffFirstPageHeadFoot.docx`
 - `docx/drawing.docx`
