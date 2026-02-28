@@ -98,7 +98,8 @@ fn collect_runs_from_block<'a>(block: &'a Block, out: &mut Vec<&'a Run>) {
         | Block::FloatingImage(_)
         | Block::MathEquation(_)
         | Block::Chart(_)
-        | Block::PageBreak => {}
+        | Block::PageBreak
+        | Block::ColumnBreak => {}
     }
 }
 

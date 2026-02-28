@@ -35,6 +35,7 @@ pub enum Block {
     MathEquation(MathEquation),
     Chart(Chart),
     PageBreak,
+    ColumnBreak,
 }
 
 /// A chart extracted from an embedded chart object.

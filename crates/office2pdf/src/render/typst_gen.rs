@@ -5,11 +5,11 @@ use unicode_normalization::UnicodeNormalization;
 use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, ChartType, Color, Document,
-    FixedElement, FixedElementKind, FixedPage, FloatingImage, FlowPage, GradientFill, HFInline,
-    HeaderFooter, ImageData, ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation,
-    Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt,
-    Table, TableCell, TablePage, TextStyle, WrapMode,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, ChartType, Color,
+    ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage, FlowPage,
+    GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List, ListKind,
+    Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape,
+    ShapeKind, SmartArt, Table, TableCell, TablePage, TextStyle, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -197,13 +197,86 @@ fn generate_flow_page(
     write_flow_page_setup(out, page, &size);
     out.push('\n');
 
-    for (i, block) in page.content.iter().enumerate() {
-        if i > 0 {
-            out.push('\n');
+    if let Some(ref cols) = page.columns {
+        generate_flow_page_columns(out, &page.content, cols, ctx)?;
+    } else {
+        for (i, block) in page.content.iter().enumerate() {
+            if i > 0 {
+                out.push('\n');
+            }
+            generate_block(out, block, ctx)?;
         }
-        generate_block(out, block, ctx)?;
     }
     Ok(())
+}
+
+/// Generate Typst markup for multi-column content.
+///
+/// Equal columns use `#columns(n, gutter: Xpt)[content]`.
+/// Unequal columns use `#grid(columns: (W1pt, W2pt, ...), gutter: Xpt)` with
+/// content split by `ColumnBreak` blocks into separate grid cells.
+fn generate_flow_page_columns(
+    out: &mut String,
+    content: &[Block],
+    cols: &ColumnLayout,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    if let Some(ref widths) = cols.column_widths {
+        // Unequal columns: use grid with explicit column widths.
+        // Split content at ColumnBreak boundaries.
+        let _ = write!(out, "#grid(columns: (");
+        for (i, w) in widths.iter().enumerate() {
+            if i > 0 {
+                out.push_str(", ");
+            }
+            let _ = write!(out, "{}pt", format_f64(*w));
+        }
+        let _ = write!(out, "), gutter: {}pt", format_f64(cols.spacing));
+        out.push_str(")\n");
+
+        // Split content by ColumnBreak into grid cells
+        let segments = split_at_column_breaks(content);
+        for segment in &segments {
+            out.push('[');
+            for (i, block) in segment.iter().enumerate() {
+                if i > 0 {
+                    out.push('\n');
+                }
+                generate_block(out, block, ctx)?;
+            }
+            out.push(']');
+        }
+        out.push('\n');
+    } else {
+        // Equal columns: use Typst columns()
+        let _ = writeln!(
+            out,
+            "#columns({}, gutter: {}pt)[",
+            cols.num_columns,
+            format_f64(cols.spacing)
+        );
+        for (i, block) in content.iter().enumerate() {
+            if i > 0 {
+                out.push('\n');
+            }
+            generate_block(out, block, ctx)?;
+        }
+        out.push_str("\n]\n");
+    }
+    Ok(())
+}
+
+/// Split content blocks at ColumnBreak boundaries into segments.
+fn split_at_column_breaks(content: &[Block]) -> Vec<Vec<&Block>> {
+    let mut segments: Vec<Vec<&Block>> = vec![vec![]];
+    for block in content {
+        if matches!(block, Block::ColumnBreak) {
+            segments.push(vec![]);
+        } else {
+            segments.last_mut().unwrap().push(block);
+        }
+    }
+    segments
 }
 
 fn generate_fixed_page(
@@ -786,6 +859,10 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
         }
         Block::Chart(chart) => {
             generate_chart(out, chart);
+            Ok(())
+        }
+        Block::ColumnBreak => {
+            out.push_str("#colbreak()\n");
             Ok(())
         }
     }
@@ -1399,7 +1476,7 @@ fn generate_cell_content(
             Block::List(list) => generate_list(out, list)?,
             Block::MathEquation(math) => generate_math_equation(out, math),
             Block::Chart(chart) => generate_chart(out, chart),
-            Block::PageBreak => {}
+            Block::PageBreak | Block::ColumnBreak => {}
         }
     }
     Ok(())
@@ -1722,7 +1799,8 @@ fn escape_typst(text: &str) -> String {
 mod tests {
     use super::*;
     use crate::ir::{
-        ChartSeries, GradientStop, HeaderFooterParagraph, Metadata, SmartArtNode, StyleSheet,
+        ChartSeries, ColumnLayout, GradientStop, HeaderFooterParagraph, Metadata, SmartArtNode,
+        StyleSheet,
     };
 
     /// Helper to create a minimal Document with one FlowPage.
@@ -1742,6 +1820,7 @@ mod tests {
             content,
             header: None,
             footer: None,
+            columns: None,
         })
     }
 
@@ -1781,6 +1860,7 @@ mod tests {
             content: vec![make_paragraph("test")],
             header: None,
             footer: None,
+            columns: None,
         })]);
         let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("612pt"));
@@ -3779,6 +3859,7 @@ mod tests {
             content: vec![Block::List(list)],
             header: None,
             footer: None,
+            columns: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         assert!(
@@ -3828,6 +3909,7 @@ mod tests {
             content: vec![Block::List(list)],
             header: None,
             footer: None,
+            columns: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         assert!(
@@ -3889,6 +3971,7 @@ mod tests {
             content: vec![Block::List(list)],
             header: None,
             footer: None,
+            columns: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         assert!(output.source.contains("Parent"));
@@ -3944,6 +4027,7 @@ mod tests {
             content: vec![Block::List(list)],
             header: None,
             footer: None,
+            columns: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         // Must NOT have "][#list" — that would be two content blocks
@@ -3981,6 +4065,7 @@ mod tests {
                 }],
             }),
             footer: None,
+            columns: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         assert!(
@@ -4017,6 +4102,7 @@ mod tests {
                     ],
                 }],
             }),
+            columns: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         assert!(
@@ -4060,6 +4146,7 @@ mod tests {
                     elements: vec![HFInline::PageNumber],
                 }],
             }),
+            columns: None,
         })]);
         let output = generate_typst(&doc).unwrap();
         assert!(
@@ -4693,6 +4780,7 @@ mod tests {
                 })],
                 header: None,
                 footer: None,
+                columns: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -4736,6 +4824,7 @@ mod tests {
                 })],
                 header: None,
                 footer: None,
+                columns: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -4774,6 +4863,7 @@ mod tests {
                 })],
                 header: None,
                 footer: None,
+                columns: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -6224,5 +6314,115 @@ mod tests {
         let nfc_text = "Hello 한글 café";
         let result = escape_typst(nfc_text);
         assert_eq!(result, nfc_text, "Already-NFC text should be unchanged");
+    }
+
+    // --- US-103: Multi-column section layout codegen tests ---
+
+    #[test]
+    fn test_generate_flow_page_with_equal_columns() {
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Column text")],
+            header: None,
+            footer: None,
+            columns: Some(ColumnLayout {
+                num_columns: 2,
+                spacing: 36.0,
+                column_widths: None,
+            }),
+        })]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#columns(2, gutter: 36pt)"),
+            "Should contain columns() call. Got: {result}"
+        );
+        assert!(
+            result.contains("Column text"),
+            "Should contain the text content. Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_flow_page_with_three_columns() {
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Three col text")],
+            header: None,
+            footer: None,
+            columns: Some(ColumnLayout {
+                num_columns: 3,
+                spacing: 18.0,
+                column_widths: None,
+            }),
+        })]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#columns(3, gutter: 18pt)"),
+            "Should contain columns(3, ...). Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_flow_page_with_unequal_columns() {
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Unequal col text")],
+            header: None,
+            footer: None,
+            columns: Some(ColumnLayout {
+                num_columns: 2,
+                spacing: 36.0,
+                column_widths: Some(vec![300.0, 150.0]),
+            }),
+        })]);
+        let result = generate_typst(&doc).unwrap().source;
+        // Unequal columns should use grid() with explicit widths
+        assert!(
+            result.contains("#grid(columns: (300pt, 150pt)"),
+            "Unequal columns should use grid(). Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_column_break() {
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![
+                make_paragraph("Before break"),
+                Block::ColumnBreak,
+                make_paragraph("After break"),
+            ],
+            header: None,
+            footer: None,
+            columns: Some(ColumnLayout {
+                num_columns: 2,
+                spacing: 36.0,
+                column_widths: None,
+            }),
+        })]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#colbreak()"),
+            "Should contain colbreak(). Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_no_columns_no_wrapper() {
+        // Without column layout, content should not be wrapped in columns()
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Normal text")])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            !result.contains("#columns("),
+            "Should not contain columns(). Got: {result}"
+        );
+        assert!(
+            !result.contains("#grid(columns:"),
+            "Should not contain grid(columns:). Got: {result}"
+        );
     }
 }

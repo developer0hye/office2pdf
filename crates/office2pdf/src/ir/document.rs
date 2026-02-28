@@ -71,6 +71,17 @@ impl Default for Margins {
     }
 }
 
+/// Column layout configuration for multi-column sections.
+#[derive(Debug, Clone)]
+pub struct ColumnLayout {
+    /// Number of columns (must be >= 2 for multi-column layout).
+    pub num_columns: u32,
+    /// Spacing between columns in points (gutter width).
+    pub spacing: f64,
+    /// Optional per-column widths in points. When `None`, columns are equal width.
+    pub column_widths: Option<Vec<f64>>,
+}
+
 /// A flowing-content page (DOCX).
 #[derive(Debug, Clone)]
 pub struct FlowPage {
@@ -79,6 +90,8 @@ pub struct FlowPage {
     pub content: Vec<Block>,
     pub header: Option<super::elements::HeaderFooter>,
     pub footer: Option<super::elements::HeaderFooter>,
+    /// Optional multi-column layout for the page.
+    pub columns: Option<ColumnLayout>,
 }
 
 /// A fixed-layout page (PPTX slides).
