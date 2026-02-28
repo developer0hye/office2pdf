@@ -3,9 +3,12 @@
 //! Provides a REST API for document conversion via `office2pdf serve`.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use anyhow::Result;
 use office2pdf::config::{ConvertOptions, Format, PaperSize};
+
+use crate::metrics::{self, MetricsStore};
 
 /// Start the HTTP server on the given host and port.
 pub fn start_server(host: &str, port: u16) -> Result<()> {
@@ -13,14 +16,17 @@ pub fn start_server(host: &str, port: u16) -> Result<()> {
     let server = tiny_http::Server::http(&addr)
         .map_err(|e| anyhow::anyhow!("failed to bind to {addr}: {e}"))?;
 
+    let metrics = Arc::new(MetricsStore::new());
+
     eprintln!("office2pdf server listening on http://{addr}");
     eprintln!("Endpoints:");
     eprintln!("  POST /convert  - Convert a document to PDF");
     eprintln!("  GET  /health   - Health check");
     eprintln!("  GET  /formats  - List supported formats");
+    eprintln!("  GET  /metrics  - Prometheus metrics");
 
     for mut request in server.incoming_requests() {
-        let response = dispatch(&mut request);
+        let response = dispatch(&mut request, &metrics);
         let _ = request.respond(response);
     }
 
@@ -37,13 +43,18 @@ fn pdf_header() -> tiny_http::Header {
     tiny_http::Header::from_bytes("Content-Type", "application/pdf").unwrap()
 }
 
+fn text_plain_header() -> tiny_http::Header {
+    tiny_http::Header::from_bytes("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+        .unwrap()
+}
+
 fn json_response(status: i32, body: &str) -> Response {
     tiny_http::Response::from_string(body)
         .with_header(json_header())
         .with_status_code(status)
 }
 
-fn dispatch(request: &mut tiny_http::Request) -> Response {
+fn dispatch(request: &mut tiny_http::Request, metrics: &MetricsStore) -> Response {
     let url = request.url().to_string();
     let path = url.split('?').next().unwrap_or(&url).to_string();
     let is_get = *request.method() == tiny_http::Method::Get;
@@ -53,8 +64,10 @@ fn dispatch(request: &mut tiny_http::Request) -> Response {
         handle_health()
     } else if is_get && path == "/formats" {
         handle_formats()
+    } else if is_get && path == "/metrics" {
+        handle_metrics(metrics)
     } else if is_post && path == "/convert" {
-        handle_convert(request, &url)
+        handle_convert(request, &url, metrics)
     } else {
         json_response(404, r#"{"error":"not found"}"#)
     }
@@ -69,22 +82,70 @@ fn handle_formats() -> Response {
     json_response(200, r#"{"formats":["docx","pptx","xlsx"]}"#)
 }
 
-fn handle_convert(request: &mut tiny_http::Request, url: &str) -> Response {
-    match handle_convert_inner(request, url) {
-        Ok(pdf_bytes) => tiny_http::Response::from_data(pdf_bytes)
-            .with_header(pdf_header())
-            .with_status_code(200),
-        Err(e) => {
-            let msg = e.to_string().replace('"', "\\\"");
+fn handle_metrics(metrics: &MetricsStore) -> Response {
+    let body = metrics.render();
+    tiny_http::Response::from_string(body)
+        .with_header(text_plain_header())
+        .with_status_code(200)
+}
+
+fn handle_convert(request: &mut tiny_http::Request, url: &str, metrics: &MetricsStore) -> Response {
+    metrics.start_conversion();
+    let result = handle_convert_inner(request, url);
+    metrics.end_conversion();
+
+    match result {
+        Ok(outcome) => {
+            let format_label = metrics::format_to_label(outcome.format);
+            if let Some(ref m) = outcome.metrics {
+                metrics.record_success(
+                    format_label,
+                    m.total_duration.as_secs_f64(),
+                    m.input_size_bytes,
+                    m.output_size_bytes,
+                    m.page_count,
+                );
+            } else {
+                metrics.record_success(format_label, 0.0, 0, 0, 0);
+            }
+            tiny_http::Response::from_data(outcome.pdf)
+                .with_header(pdf_header())
+                .with_status_code(200)
+        }
+        Err(failure) => {
+            metrics.record_failure(&failure.format_label, &failure.error_type);
+            let msg = failure.message.replace('"', "\\\"");
             json_response(400, &format!(r#"{{"error":"{msg}"}}"#))
         }
     }
 }
 
-fn handle_convert_inner(request: &mut tiny_http::Request, url: &str) -> Result<Vec<u8>> {
+struct ConvertOutcome {
+    pdf: Vec<u8>,
+    format: Format,
+    metrics: Option<office2pdf::error::ConvertMetrics>,
+}
+
+struct ConvertFailure {
+    message: String,
+    format_label: String,
+    error_type: String,
+}
+
+fn handle_convert_inner(
+    request: &mut tiny_http::Request,
+    url: &str,
+) -> std::result::Result<ConvertOutcome, ConvertFailure> {
     // Read body
     let mut body = Vec::new();
-    request.as_reader().read_to_end(&mut body)?;
+    request
+        .as_reader()
+        .read_to_end(&mut body)
+        .map_err(|e| ConvertFailure {
+            message: e.to_string(),
+            format_label: "unknown".to_string(),
+            error_type: "invalid_request".to_string(),
+        })?;
 
     // Get content type header
     let content_type = request
@@ -95,27 +156,45 @@ fn handle_convert_inner(request: &mut tiny_http::Request, url: &str) -> Result<V
         .unwrap_or_default();
 
     // Parse multipart
-    let boundary = extract_boundary(&content_type)
-        .ok_or_else(|| anyhow::anyhow!("missing or invalid Content-Type boundary"))?;
-    let file = extract_file_from_multipart(&body, &boundary)
-        .ok_or_else(|| anyhow::anyhow!("no file found in multipart body"))?;
+    let boundary = extract_boundary(&content_type).ok_or_else(|| ConvertFailure {
+        message: "missing or invalid Content-Type boundary".to_string(),
+        format_label: "unknown".to_string(),
+        error_type: "invalid_request".to_string(),
+    })?;
+    let file = extract_file_from_multipart(&body, &boundary).ok_or_else(|| ConvertFailure {
+        message: "no file found in multipart body".to_string(),
+        format_label: "unknown".to_string(),
+        error_type: "invalid_request".to_string(),
+    })?;
 
     // Parse query parameters
     let query = parse_query_string(url);
 
     // Detect format
     let format = if let Some(fmt) = query.get("format") {
-        Format::from_extension(fmt).ok_or_else(|| anyhow::anyhow!("unsupported format: {fmt}"))?
+        Format::from_extension(fmt).ok_or_else(|| ConvertFailure {
+            message: format!("unsupported format: {fmt}"),
+            format_label: "unknown".to_string(),
+            error_type: "unsupported_format".to_string(),
+        })?
     } else {
-        detect_format_from_filename(&file.filename).ok_or_else(|| {
-            anyhow::anyhow!("cannot detect format from filename: {}", file.filename)
+        detect_format_from_filename(&file.filename).ok_or_else(|| ConvertFailure {
+            message: format!("cannot detect format from filename: {}", file.filename),
+            format_label: "unknown".to_string(),
+            error_type: "unsupported_format".to_string(),
         })?
     };
+
+    let format_label = metrics::format_to_label(format).to_string();
 
     // Build options
     let mut options = ConvertOptions::default();
     if let Some(paper) = query.get("paper") {
-        options.paper_size = Some(PaperSize::parse(paper).map_err(|e| anyhow::anyhow!("{e}"))?);
+        options.paper_size = Some(PaperSize::parse(paper).map_err(|e| ConvertFailure {
+            message: e.to_string(),
+            format_label: format_label.clone(),
+            error_type: "invalid_request".to_string(),
+        })?);
     }
     if let Some(landscape) = query.get("landscape")
         && (landscape == "true" || landscape == "1")
@@ -124,10 +203,18 @@ fn handle_convert_inner(request: &mut tiny_http::Request, url: &str) -> Result<V
     }
 
     // Convert
-    let result = office2pdf::convert_bytes(&file.data, format, &options)
-        .map_err(|e| anyhow::anyhow!("conversion failed: {e}"))?;
+    let result =
+        office2pdf::convert_bytes(&file.data, format, &options).map_err(|e| ConvertFailure {
+            message: format!("conversion failed: {e}"),
+            format_label,
+            error_type: "conversion".to_string(),
+        })?;
 
-    Ok(result.pdf)
+    Ok(ConvertOutcome {
+        pdf: result.pdf,
+        format,
+        metrics: result.metrics,
+    })
 }
 
 // --- Multipart parsing helpers ---
@@ -325,23 +412,26 @@ mod tests {
     }
 
     /// Start a server on an ephemeral port, handle `n` requests, then return.
-    fn start_test_server(n: usize) -> (std::thread::JoinHandle<()>, u16) {
+    fn start_test_server(n: usize) -> (std::thread::JoinHandle<()>, u16, Arc<MetricsStore>) {
         let server = tiny_http::Server::http("127.0.0.1:0").unwrap();
         let port = match server.server_addr() {
             tiny_http::ListenAddr::IP(addr) => addr.port(),
             _ => panic!("expected IP address"),
         };
 
+        let metrics = Arc::new(MetricsStore::new());
+        let metrics_clone = Arc::clone(&metrics);
+
         let handle = std::thread::spawn(move || {
             for _ in 0..n {
                 if let Ok(mut request) = server.recv() {
-                    let response = dispatch(&mut request);
+                    let response = dispatch(&mut request, &metrics_clone);
                     let _ = request.respond(response);
                 }
             }
         });
 
-        (handle, port)
+        (handle, port, metrics)
     }
 
     struct HttpResponse {
@@ -442,7 +532,7 @@ mod tests {
 
     #[test]
     fn test_health_endpoint() {
-        let (handle, port) = start_test_server(1);
+        let (handle, port, _metrics) = start_test_server(1);
         let addr = format!("127.0.0.1:{port}");
 
         let resp = send_request(&addr, "GET", "/health", &[], &[]);
@@ -458,7 +548,7 @@ mod tests {
 
     #[test]
     fn test_formats_endpoint() {
-        let (handle, port) = start_test_server(1);
+        let (handle, port, _metrics) = start_test_server(1);
         let addr = format!("127.0.0.1:{port}");
 
         let resp = send_request(&addr, "GET", "/formats", &[], &[]);
@@ -474,7 +564,7 @@ mod tests {
 
     #[test]
     fn test_not_found_endpoint() {
-        let (handle, port) = start_test_server(1);
+        let (handle, port, _metrics) = start_test_server(1);
         let addr = format!("127.0.0.1:{port}");
 
         let resp = send_request(&addr, "GET", "/nonexistent", &[], &[]);
@@ -488,7 +578,7 @@ mod tests {
 
     #[test]
     fn test_convert_docx_to_pdf() {
-        let (handle, port) = start_test_server(1);
+        let (handle, port, _metrics) = start_test_server(1);
         let addr = format!("127.0.0.1:{port}");
 
         let docx_data = make_test_docx();
@@ -516,7 +606,7 @@ mod tests {
 
     #[test]
     fn test_convert_invalid_format_error() {
-        let (handle, port) = start_test_server(1);
+        let (handle, port, _metrics) = start_test_server(1);
         let addr = format!("127.0.0.1:{port}");
 
         let boundary = "TestBoundary67890";
@@ -540,7 +630,7 @@ mod tests {
 
     #[test]
     fn test_convert_with_format_override() {
-        let (handle, port) = start_test_server(1);
+        let (handle, port, _metrics) = start_test_server(1);
         let addr = format!("127.0.0.1:{port}");
 
         let docx_data = make_test_docx();
@@ -560,6 +650,158 @@ mod tests {
         assert!(
             resp.body.starts_with(b"%PDF"),
             "response should be a valid PDF"
+        );
+
+        handle.join().unwrap();
+    }
+
+    // --- Metrics endpoint tests ---
+
+    #[test]
+    fn test_metrics_endpoint_returns_200() {
+        let (handle, port, _metrics) = start_test_server(1);
+        let addr = format!("127.0.0.1:{port}");
+
+        let resp = send_request(&addr, "GET", "/metrics", &[], &[]);
+
+        assert_eq!(resp.status_code, 200);
+        assert!(
+            resp.content_type().unwrap().contains("text/plain"),
+            "metrics endpoint should return text/plain"
+        );
+        let body = resp.body_str();
+        assert!(body.contains("# HELP office2pdf_conversions_total"));
+        assert!(body.contains("# TYPE office2pdf_active_conversions gauge"));
+        assert!(body.contains("office2pdf_active_conversions 0"));
+
+        handle.join().unwrap();
+    }
+
+    #[test]
+    fn test_metrics_after_successful_conversion() {
+        // 2 requests: convert + metrics check
+        let (handle, port, _metrics) = start_test_server(2);
+        let addr = format!("127.0.0.1:{port}");
+
+        // Step 1: Convert a DOCX file
+        let docx_data = make_test_docx();
+        let boundary = "MetricsTestBoundary";
+        let multipart_body = build_multipart_body(&docx_data, "test.docx", boundary);
+        let content_type = format!("multipart/form-data; boundary={boundary}");
+
+        let convert_resp = send_request(
+            &addr,
+            "POST",
+            "/convert",
+            &[("Content-Type", &content_type)],
+            &multipart_body,
+        );
+        assert_eq!(convert_resp.status_code, 200);
+
+        // Step 2: Check metrics
+        let metrics_resp = send_request(&addr, "GET", "/metrics", &[], &[]);
+        assert_eq!(metrics_resp.status_code, 200);
+        let body = metrics_resp.body_str();
+
+        // Should show 1 successful docx conversion
+        assert!(
+            body.contains("office2pdf_conversions_total{format=\"docx\",status=\"success\"} 1"),
+            "should track successful conversion: {body}"
+        );
+        // Should have duration histogram data
+        assert!(
+            body.contains("office2pdf_conversion_duration_seconds_count{format=\"docx\"} 1"),
+            "should track duration histogram: {body}"
+        );
+        // Active conversions should be 0 (conversion finished)
+        assert!(
+            body.contains("office2pdf_active_conversions 0"),
+            "active conversions should be 0 after conversion: {body}"
+        );
+
+        handle.join().unwrap();
+    }
+
+    #[test]
+    fn test_metrics_after_failed_conversion() {
+        // 2 requests: failed convert + metrics check
+        let (handle, port, _metrics) = start_test_server(2);
+        let addr = format!("127.0.0.1:{port}");
+
+        // Step 1: Try to convert an invalid file
+        let boundary = "FailTestBoundary";
+        let multipart_body = build_multipart_body(b"not valid", "test.txt", boundary);
+        let content_type = format!("multipart/form-data; boundary={boundary}");
+
+        let convert_resp = send_request(
+            &addr,
+            "POST",
+            "/convert",
+            &[("Content-Type", &content_type)],
+            &multipart_body,
+        );
+        assert_eq!(convert_resp.status_code, 400);
+
+        // Step 2: Check metrics
+        let metrics_resp = send_request(&addr, "GET", "/metrics", &[], &[]);
+        let body = metrics_resp.body_str();
+
+        // Should show a failure with unknown format
+        assert!(
+            body.contains("office2pdf_conversions_total{format=\"unknown\",status=\"failure\"} 1"),
+            "should track failed conversion: {body}"
+        );
+        assert!(
+            body.contains(
+                "office2pdf_errors_total{format=\"unknown\",error_type=\"unsupported_format\"} 1"
+            ),
+            "should track error type: {body}"
+        );
+
+        handle.join().unwrap();
+    }
+
+    #[test]
+    fn test_metrics_multiple_conversions() {
+        // 3 requests: 2 converts + metrics check
+        let (handle, port, _metrics) = start_test_server(3);
+        let addr = format!("127.0.0.1:{port}");
+
+        let docx_data = make_test_docx();
+        let boundary = "MultiMetrics";
+        let multipart_body = build_multipart_body(&docx_data, "test.docx", boundary);
+        let content_type = format!("multipart/form-data; boundary={boundary}");
+
+        // Two successful conversions
+        let resp1 = send_request(
+            &addr,
+            "POST",
+            "/convert",
+            &[("Content-Type", &content_type)],
+            &multipart_body,
+        );
+        assert_eq!(resp1.status_code, 200);
+
+        let resp2 = send_request(
+            &addr,
+            "POST",
+            "/convert",
+            &[("Content-Type", &content_type)],
+            &multipart_body,
+        );
+        assert_eq!(resp2.status_code, 200);
+
+        // Check metrics
+        let metrics_resp = send_request(&addr, "GET", "/metrics", &[], &[]);
+        let body = metrics_resp.body_str();
+
+        assert!(
+            body.contains("office2pdf_conversions_total{format=\"docx\",status=\"success\"} 2"),
+            "should show 2 successful conversions: {body}"
+        );
+        assert!(
+            body.contains("office2pdf_conversion_duration_seconds_count{format=\"docx\"} 2"),
+            "duration histogram should have count 2: {body}"
         );
 
         handle.join().unwrap();

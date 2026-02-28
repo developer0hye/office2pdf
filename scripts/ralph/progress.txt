@@ -3,6 +3,7 @@
 - **Streaming XLSX conversion**: `ConvertOptions.streaming: bool` and `ConvertOptions.streaming_chunk_size: Option<usize>` (default 1000). When streaming=true + XLSX + pdf-ops feature, `convert_bytes` delegates to `convert_bytes_streaming_xlsx()`. XlsxParser has `parse_streaming(data, options, chunk_size)` → `Vec<Document>` (each with one TablePage of ≤chunk_size rows). Helper functions: `prepare_sheet_context(sheet)` → `Option<(SheetContext, row_start, row_end)>`, `build_rows_for_range(sheet, ctx, row_start, row_end)` → `Vec<TableRow>`. Each chunk is compiled independently (codegen + Typst compile) then merged via `pdf_ops::merge()`. Streaming tests behind `#[cfg(all(test, feature = "pdf-ops"))]`. CLI: `--streaming` and `--streaming-chunk-size` flags.
 - **Tagged PDF / PDF/UA**: `ConvertOptions.tagged: bool` and `ConvertOptions.pdf_ua: bool` (both default `false`). `compile_to_pdf()` accepts `tagged` and `pdf_ua` params, sets `PdfOptions { tagged: tagged || pdf_ua, ... }`. PDF/UA adds `PdfStandard::Ua_1` and requires a document title. Heading paragraphs: `ParagraphStyle.heading_level: Option<u8>` (1-6), set from DOCX `outline_lvl + 1` in `merge_paragraph_style()`. Codegen: `#heading(level: N)[content]` for heading paragraphs, normal `#block`/text for others. CLI: `--tagged`, `--pdf-ua` flags.
 - **Server feature flag pattern**: CLI crate has `server = ["tiny_http"]` feature. Module `server.rs` imported with `#[cfg(feature = "server")] mod server;`. Serve variant in Commands enum uses `#[cfg(feature = "server")]`. Tests run with `cargo test -p office2pdf-cli --features server`.
+- **Prometheus metrics**: `metrics.rs` module behind `#[cfg(feature = "server")]` in CLI crate. `MetricsStore` with `Mutex<BTreeMap>` for counters/histograms + `AtomicI64` for gauge. Histograms use pre-defined buckets with cumulative counts. `record_success(format, duration_secs, input_bytes, output_bytes, page_count)` and `record_failure(format, error_type)`. `render()` returns Prometheus exposition text format. Server creates `Arc<MetricsStore>`, passes to `dispatch()`. `handle_convert` wraps conversion in `start_conversion()`/`end_conversion()` gauge calls. `ConvertOutcome`/`ConvertFailure` structs carry format label + metrics data from `handle_convert_inner()` back to metrics recording. `format_to_label(Format) -> &'static str` for label strings. GET `/metrics` returns `text/plain; version=0.0.4; charset=utf-8`. Test server: `start_test_server(n)` returns `(handle, port, Arc<MetricsStore>)`.
 - **PDF ops feature flag pattern**: Library crate has `pdf-ops = ["lopdf"]` feature. Module `pdf_ops.rs` imported with `#[cfg(feature = "pdf-ops")] pub mod pdf_ops;`. CLI always enables pdf-ops via `office2pdf = { features = ["pdf-ops"] }`. CLI subcommands `merge` and `split` are always available. `PageRange` for parsing page range strings like "1-5". Tests create minimal PDFs with `lopdf::Document::with_version("1.7")` + manual page/catalog construction.
 - **CLI subcommand pattern**: `Commands` enum always exists with `Merge` and `Split` variants. `Serve` variant behind `#[cfg(feature = "server")]`. `Cli` struct uses `subcommand_negates_reqs = true, args_conflicts_with_subcommands = true` for backward-compatible subcommands (conversion args remain top-level). `handle_command(cmd)` dispatches all subcommands.
 - **WASM conditional compilation**: Filesystem-dependent functions (`convert`, `convert_with_options`) use `#[cfg(not(target_arch = "wasm32"))]`. In-memory functions (`convert_bytes`, `render_document`) have no guards. `pdf.rs` has dual `compile_to_pdf` — native uses `MinimalWorld::new(fonts+system)`, wasm32 uses `MinimalWorld::new_embedded_only(embedded fonts only)`. Shared logic in `compile_to_pdf_inner()`. Use `#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]` for functions used only on WASM but tested on native.
@@ -187,4 +188,29 @@ Started: 2026년  2월 28일 토요일 19시 00분 28초 KST
   - Refactoring monolithic parse methods into helper functions makes streaming trivial to implement
   - The `SheetContext` struct pattern is useful for passing around pre-computed sheet metadata
   - For "functionally identical" output: streaming produces more pages (one per chunk) but same data content
+---
+
+## 2026-02-28 - US-099
+- Implemented Prometheus-compatible metrics endpoint for the HTTP server
+- Created `crates/office2pdf-cli/src/metrics.rs` — in-memory metrics store with:
+  - Counters: conversions_total (by format+status), errors_total (by format+error_type)
+  - Histograms: duration_seconds, input_bytes, output_bytes, pages (all by format)
+  - Gauge: active_conversions
+  - Pre-defined histogram buckets (duration: 0.01-60s, bytes: 1KB-1GB, pages: 1-1000)
+  - Prometheus exposition text format rendering via `render()`
+- Modified `crates/office2pdf-cli/src/server.rs`:
+  - Added `GET /metrics` endpoint returning `text/plain; version=0.0.4; charset=utf-8`
+  - Refactored `handle_convert` to use `ConvertOutcome`/`ConvertFailure` structs for metrics data flow
+  - `dispatch()` now takes `&MetricsStore` parameter, shared via `Arc<MetricsStore>`
+  - Conversion gauge tracked via `start_conversion()`/`end_conversion()` calls
+- Updated `crates/office2pdf-cli/src/main.rs` — added `#[cfg(feature = "server")] mod metrics;`
+- No new dependencies added — pure Rust implementation using `std::sync` primitives
+- Files changed: metrics.rs (new), server.rs, main.rs
+- 21 new tests (16 unit tests for MetricsStore + 5 integration tests for /metrics endpoint)
+- **Learnings for future iterations:**
+  - BTreeMap instead of HashMap gives deterministic ordering in Prometheus output (sorted labels)
+  - Prometheus histograms must have cumulative bucket counts — iterating all buckets >= value is correct
+  - Refactoring `handle_convert_inner` to return structured types (ConvertOutcome/ConvertFailure) is cleaner than trying to record metrics inside the inner function
+  - The `format_to_label()` function bridges between the library's `Format` enum and metrics label strings
+  - `text/plain; version=0.0.4; charset=utf-8` is the standard Prometheus content type
 ---

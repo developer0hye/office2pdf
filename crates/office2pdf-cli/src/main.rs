@@ -7,6 +7,8 @@ use office2pdf::config::{ConvertOptions, PaperSize, PdfStandard, SlideRange};
 use office2pdf::pdf_ops;
 
 #[cfg(feature = "server")]
+mod metrics;
+#[cfg(feature = "server")]
 mod server;
 
 #[derive(clap::Subcommand)]
