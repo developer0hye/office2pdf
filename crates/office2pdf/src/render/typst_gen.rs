@@ -1,5 +1,7 @@
 use std::fmt::Write;
 
+use unicode_normalization::UnicodeNormalization;
+
 use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
@@ -1671,9 +1673,11 @@ fn format_f64(v: f64) -> String {
 }
 
 /// Escape special Typst characters in text content.
+/// Also normalizes text to Unicode NFC form to prevent decomposed characters
+/// (e.g., Korean NFD jamo, combining diacritics) from causing issues in PDFs.
 fn escape_typst(text: &str) -> String {
     let mut result = String::with_capacity(text.len());
-    for ch in text.chars() {
+    for ch in text.nfc() {
         match ch {
             '#' | '*' | '_' | '`' | '<' | '>' | '@' | '\\' | '~' | '/' => {
                 result.push('\\');
@@ -5937,5 +5941,83 @@ mod tests {
             !result.contains("#heading"),
             "Regular paragraph should not emit #heading: {result}"
         );
+    }
+
+    // ── Unicode NFC normalization tests ──────────────────────────────
+
+    #[test]
+    fn test_escape_typst_normalizes_korean_nfd_to_nfc() {
+        // Korean "한글" in NFD (decomposed jamo): ㅎ + ㅏ + ㄴ + ㄱ + ㅡ + ㄹ
+        let nfd_korean = "\u{1112}\u{1161}\u{11AB}\u{1100}\u{1173}\u{11AF}";
+        let nfc_korean = "한글";
+        let result = escape_typst(nfd_korean);
+        assert_eq!(
+            result, nfc_korean,
+            "NFD Korean jamo should be normalized to composed hangul"
+        );
+    }
+
+    #[test]
+    fn test_escape_typst_normalizes_combining_diacritics() {
+        // "café" with combining acute accent (NFD): 'e' + combining acute
+        let nfd_cafe = "cafe\u{0301}";
+        let nfc_cafe = "caf\u{00E9}"; // é as precomposed
+        let result = escape_typst(nfd_cafe);
+        assert_eq!(
+            result, nfc_cafe,
+            "Combining diacritics should be normalized to NFC"
+        );
+    }
+
+    #[test]
+    fn test_escape_typst_nfc_with_special_chars() {
+        // NFD text with Typst special chars: "café $5" with combining accent
+        let nfd_input = "cafe\u{0301} \\$5";
+        let result = escape_typst(nfd_input);
+        // NFC normalization + Typst escaping
+        assert!(
+            result.contains("caf\u{00E9}"),
+            "Should contain NFC-normalized é: {result}"
+        );
+        assert!(
+            result.contains("\\$"),
+            "Should still escape $ sign: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_typst_nfc_korean_in_paragraph() {
+        // NFD Korean in a full paragraph through the pipeline
+        let nfd_korean = "\u{1112}\u{1161}\u{11AB}\u{1100}\u{1173}\u{11AF}";
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph(nfd_korean)])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("한글"),
+            "Generated Typst should contain NFC-composed Korean: {result}"
+        );
+        assert!(
+            !result.contains('\u{1112}'),
+            "Generated Typst should not contain decomposed jamo: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_typst_nfc_diacritics_in_paragraph() {
+        // NFD "résumé" through the full pipeline
+        let nfd_resume = "re\u{0301}sume\u{0301}";
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph(nfd_resume)])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("r\u{00E9}sum\u{00E9}"),
+            "Generated Typst should contain NFC-composed résumé: {result}"
+        );
+    }
+
+    #[test]
+    fn test_escape_typst_already_nfc_unchanged() {
+        // Already NFC text should pass through unchanged (minus Typst escaping)
+        let nfc_text = "Hello 한글 café";
+        let result = escape_typst(nfc_text);
+        assert_eq!(result, nfc_text, "Already-NFC text should be unchanged");
     }
 }
