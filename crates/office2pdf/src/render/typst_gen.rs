@@ -350,6 +350,16 @@ fn generate_shape(out: &mut String, shape: &Shape, width: f64, height: f64) {
             }
             out.push_str(")\n");
         }
+        ShapeKind::RoundedRectangle { radius_fraction } => {
+            let radius = radius_fraction * width.min(height);
+            out.push_str("#rect(");
+            write_shape_params(out, shape, width, height);
+            let _ = write!(out, ", radius: {}pt", format_f64(radius));
+            out.push_str(")\n");
+        }
+        ShapeKind::Polygon { vertices } => {
+            write_polygon(out, shape, width, height, vertices);
+        }
     }
 
     if has_rotation {
@@ -371,14 +381,44 @@ fn write_shadow_shape(out: &mut String, shape: &Shape, width: f64, height: f64, 
         format_f64(dy),
     );
 
-    let shape_cmd = match &shape.kind {
-        ShapeKind::Rectangle => "#rect(",
-        ShapeKind::Ellipse => "#ellipse(",
+    match &shape.kind {
         ShapeKind::Line { .. } => {
             // Lines don't have meaningful shadows; skip
             out.push_str("]\n");
             return;
         }
+        ShapeKind::Polygon { vertices } => {
+            // Shadow for polygon: duplicate polygon with shadow color
+            out.push_str("#polygon(");
+            write_polygon_vertices(out, width, height, vertices);
+            let _ = write!(
+                out,
+                ", fill: rgb({}, {}, {}, {})",
+                shadow.color.r, shadow.color.g, shadow.color.b, alpha,
+            );
+            out.push_str(")]\n");
+            return;
+        }
+        _ => {}
+    }
+    let shape_cmd = match &shape.kind {
+        ShapeKind::Rectangle => "#rect(",
+        ShapeKind::Ellipse => "#ellipse(",
+        ShapeKind::RoundedRectangle { radius_fraction } => {
+            let _ = writeln!(
+                out,
+                "#rect(width: {}pt, height: {}pt, radius: {}pt, fill: rgb({}, {}, {}, {}))]",
+                format_f64(width),
+                format_f64(height),
+                format_f64(radius_fraction * width.min(height)),
+                shadow.color.r,
+                shadow.color.g,
+                shadow.color.b,
+                alpha,
+            );
+            return;
+        }
+        _ => unreachable!(),
     };
     out.push_str(shape_cmd);
     let _ = write!(
@@ -431,6 +471,50 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
             stroke.color.b,
         );
     }
+}
+
+/// Write polygon vertex coordinates scaled to actual dimensions.
+fn write_polygon_vertices(out: &mut String, width: f64, height: f64, vertices: &[(f64, f64)]) {
+    for (i, (vx, vy)) in vertices.iter().enumerate() {
+        if i > 0 {
+            out.push_str(", ");
+        }
+        let _ = write!(
+            out,
+            "({}pt, {}pt)",
+            format_f64(vx * width),
+            format_f64(vy * height),
+        );
+    }
+}
+
+/// Generate a Typst `#polygon(...)` for an arbitrary polygon shape.
+fn write_polygon(
+    out: &mut String,
+    shape: &Shape,
+    width: f64,
+    height: f64,
+    vertices: &[(f64, f64)],
+) {
+    out.push_str("#polygon(");
+    write_polygon_vertices(out, width, height, vertices);
+    if let Some(gradient) = &shape.gradient_fill {
+        out.push_str(", fill: ");
+        write_gradient_fill(out, gradient);
+    } else if let Some(fill) = &shape.fill {
+        write_fill_color(out, fill, shape.opacity);
+    }
+    if let Some(stroke) = &shape.stroke {
+        let _ = write!(
+            out,
+            ", stroke: {}pt + rgb({}, {}, {})",
+            format_f64(stroke.width),
+            stroke.color.r,
+            stroke.color.g,
+            stroke.color.b,
+        );
+    }
+    out.push_str(")\n");
 }
 
 /// Write a Typst `gradient.linear(...)` expression.
@@ -5039,5 +5123,151 @@ mod tests {
         assert_eq!(parse_iso8601_date("2024"), None);
         assert_eq!(parse_iso8601_date("2024-13-01T00:00:00Z"), None); // month > 12
         assert_eq!(parse_iso8601_date("2024-00-01T00:00:00Z"), None); // month 0
+    }
+
+    // ── Extended geometry codegen tests (US-085) ──────────────────────────
+
+    #[test]
+    fn test_triangle_polygon_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                10.0,
+                20.0,
+                200.0,
+                150.0,
+                ShapeKind::Polygon {
+                    vertices: vec![(0.5, 0.0), (1.0, 1.0), (0.0, 1.0)],
+                },
+                Some(Color::new(255, 0, 0)),
+                None,
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#polygon("),
+            "Expected #polygon in: {}",
+            output.source
+        );
+        // Check vertex at top-center: 0.5 * 200 = 100pt
+        assert!(
+            output.source.contains("100pt"),
+            "Expected 100pt vertex x in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("fill: rgb(255, 0, 0)"),
+            "Expected fill in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_rounded_rectangle_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                10.0,
+                20.0,
+                200.0,
+                100.0,
+                ShapeKind::RoundedRectangle {
+                    radius_fraction: 0.1,
+                },
+                Some(Color::new(0, 0, 255)),
+                None,
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#rect("),
+            "Expected #rect in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("radius:"),
+            "Expected radius parameter in: {}",
+            output.source
+        );
+        // Radius: 0.1 * min(200, 100) = 10pt
+        assert!(
+            output.source.contains("radius: 10pt"),
+            "Expected radius: 10pt in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_arrow_polygon_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                0.0,
+                0.0,
+                300.0,
+                150.0,
+                ShapeKind::Polygon {
+                    vertices: vec![
+                        (0.0, 0.25),
+                        (0.6, 0.25),
+                        (0.6, 0.0),
+                        (1.0, 0.5),
+                        (0.6, 1.0),
+                        (0.6, 0.75),
+                        (0.0, 0.75),
+                    ],
+                },
+                Some(Color::new(255, 136, 0)),
+                None,
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#polygon("),
+            "Expected #polygon for arrow in: {}",
+            output.source
+        );
+        // Arrow tip at x=1.0*300=300pt, y=0.5*150=75pt
+        assert!(
+            output.source.contains("300pt"),
+            "Expected 300pt (arrow tip) in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_polygon_with_stroke_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                0.0,
+                0.0,
+                100.0,
+                100.0,
+                ShapeKind::Polygon {
+                    vertices: vec![(0.5, 0.0), (1.0, 0.5), (0.5, 1.0), (0.0, 0.5)],
+                },
+                None,
+                Some(BorderSide {
+                    width: 2.0,
+                    color: Color::new(0, 0, 0),
+                }),
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#polygon("),
+            "Expected #polygon in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("stroke: 2pt + rgb(0, 0, 0)"),
+            "Expected stroke in: {}",
+            output.source
+        );
     }
 }

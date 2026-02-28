@@ -20,7 +20,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Start by reading the existing shape handling in pptx.rs and typst_gen.rs. Typst supports #polygon() for arbitrary polygons and #rect(radius: ...) for rounded rectangles. For arrow shapes, a polygon with 7 vertices works well. Calculate vertex positions relative to the bounding box. Don't try to support ALL OOXML presets — focus on the most visually impactful ones."
     },
     {

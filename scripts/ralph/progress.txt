@@ -47,7 +47,8 @@
 - **PPTX slide XML structure**: Shapes at `<p:spTree>/<p:sp>`. Position/size: `<a:xfrm><a:off x y/><a:ext cx cy/></a:xfrm>` (EMU ÷ 12700 = points). Text: `<p:txBody>/<a:p>/<a:r>/<a:t>`. Run props: `<a:rPr b="1" i="1" u="sng" strike="sngStrike" sz="1800">` (sz in hundredths of pt). Font color: `<a:solidFill><a:srgbClr val="RRGGBB"/></a:solidFill>`. Font family: `<a:latin typeface="..."/>`. Para alignment: `<a:pPr algn="ctr|l|r|just"/>`.
 - **Test PPTX creation**: Build ZIP in-memory with `zip::ZipWriter::new(Cursor::new(Vec::new()))`. Need `[Content_Types].xml`, `_rels/.rels`, `ppt/presentation.xml`, `ppt/_rels/presentation.xml.rels`, and `ppt/slides/slideN.xml`. Standard 4:3 size: 9144000 × 6858000 EMU = 720pt × 540pt.
 - **quick-xml 0.38 API**: Use `Reader::from_str(xml)`, `reader.read_event()` → `Event::Start/Empty/End/Text/Eof`. `BytesText::xml_content()` (NOT `unescape()`!) for text decoding. `BytesStart::local_name().as_ref()` for element name. Attributes: iterate `e.attributes().flatten()`, match `attr.key.as_ref()` (full name like `r:id`) or `attr.key.local_name().as_ref()` (local). `attr.unescape_value()` for string values.
-- **PPTX shapes**: `<p:sp>` without text body → Shape IR element. Geometry from `<a:prstGeom prst="rect|ellipse|line">`. Fill color: `<p:spPr><a:solidFill><a:srgbClr val="RRGGBB"/></a:solidFill>`. Border: `<a:ln w="12700"><a:solidFill>...</a:solidFill></a:ln>` (w in EMU, ÷12700 → pt). Use `SolidFillCtx` enum to distinguish shape fill vs line fill vs run fill contexts.
+- **PPTX shapes**: `<p:sp>` without text body → Shape IR element. Geometry from `<a:prstGeom prst="rect|ellipse|line|roundRect|triangle|...">`. Fill color: `<p:spPr><a:solidFill><a:srgbClr val="RRGGBB"/></a:solidFill>`. Border: `<a:ln w="12700"><a:solidFill>...</a:solidFill></a:ln>` (w in EMU, ÷12700 → pt). Use `SolidFillCtx` enum to distinguish shape fill vs line fill vs run fill contexts.
+- **Extended PPTX geometry**: `ShapeKind` enum: Rectangle, Ellipse, Line, RoundedRectangle { radius_fraction }, Polygon { vertices: Vec<(f64,f64)> }. `prst_to_shape_kind()` maps 16+ OOXML presets: roundRect→RoundedRectangle(0.1), triangle/rtTriangle/diamond→Polygon(3-4 vertices), pentagon/hexagon/octagon→regular_polygon_vertices(n), rightArrow/leftArrow/upArrow/downArrow→arrow_vertices(dir) (7 vertices), star4/star5/star6→star_vertices(n) (2n vertices). Vertices normalized 0.0-1.0, scaled by width/height at codegen. Codegen: RoundedRectangle→`#rect(..., radius: Xpt)`, Polygon→`#polygon((x1pt, y1pt), ...)`. Shadow support for both. Unsupported presets fall back to Rectangle.
 - **PPTX images**: `<p:pic>` element. Position/size from `<p:spPr><a:xfrm>`. Image ref: `<a:blip r:embed="rId3"/>`. Resolve rId via slide .rels file (`ppt/slides/_rels/slideN.xml.rels`), then read image bytes from ZIP. Image format detected from file extension.
 - **PPTX slide .rels**: Path pattern: `ppt/slides/_rels/slideN.xml.rels`. Image targets are relative paths like `../media/image1.png`. Use `resolve_relative_path()` to compute full ZIP path from slide directory.
 - **docx-rs image handling**: Images in document tree: `RunChild::Drawing(Box<Drawing>)` → `Drawing.data = Some(DrawingData::Pic(pic))`. Image binary data: stored in `Docx.images` as `Vec<(id, path, Image, Png)>` — match `pic.id` to look up data. `pic.image` is empty when reading (only used during writing). Dimensions: `pic.size = (w_emu, h_emu)` in EMU. Convert: EMU ÷ 12700 = points. All images converted to PNG by docx-rs.
@@ -78,4 +79,23 @@
 
 # Ralph Progress Log - Phase 9: Quality & Fidelity - Geometry, SmartArt/Chart, Font Substitution, Compression
 Started: 2026년  2월 28일 토요일 15시 39분 36초 KST
+---
+
+## 2026-02-28 - US-085
+- Extended PPTX shape geometry mapping from 3 presets (rect/ellipse/line) to 16+ presets
+- Added `ShapeKind::RoundedRectangle` and `ShapeKind::Polygon` IR variants
+- Implemented `regular_polygon_vertices(n)`, `arrow_vertices(dir)`, `star_vertices(n)` geometry helpers
+- Added Typst codegen: `#polygon()` for arbitrary polygons, `#rect(radius:)` for rounded rectangles
+- Shadow support for all new shape types
+- Files changed:
+  - `crates/office2pdf/src/ir/elements.rs` — extended ShapeKind enum
+  - `crates/office2pdf/src/parser/pptx.rs` — extended prst_to_shape_kind() + geometry helpers + 17 new tests
+  - `crates/office2pdf/src/render/typst_gen.rs` — polygon/rounded-rect codegen + shadow handling + 4 new tests
+  - `scripts/ralph/prd.json` — marked US-085 passes: true
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - Normalized vertex coordinates (0.0-1.0) scaled at codegen time is a clean pattern for resolution-independent shapes
+  - Arrow shapes need 7 vertices; transforming right-arrow template via coordinate mirroring/rotation handles all 4 directions
+  - Star shapes use alternating outer/inner radius vertices (2n total for n-pointed star)
+  - clippy enforces `writeln!` over `write!(...\n)` — always use writeln! for trailing newlines
 ---
