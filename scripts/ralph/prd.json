@@ -18,7 +18,7 @@
         "Verify: cargo run -p office2pdf-cli -- tests/fixtures/pptx/10-slides.pptx -o /tmp/test.pdf succeeds"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "This is purely a string replacement: rgba -> rgb in format strings and test assertions. Typst's rgb() accepts 3 args (r,g,b) OR 4 args (r,g,b,a). There are ~6 test assertions that reference 'rgba' that need updating."
     },
     {

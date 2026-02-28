@@ -78,3 +78,15 @@
 # Ralph Progress Log - Phase 7: Fix 14 Fixture Conversion Failures (5 Root Causes)
 Started: 2026년  2월 28일 토요일 09시 05분 04초 KST
 ---
+
+## 2026-02-28 - US-070
+- Replaced `rgba()` with `rgb()` in Typst codegen (Typst uses `rgb(r, g, b, a)` for alpha colors)
+- Fixed `write_shadow_shape()` (line 309) and `write_fill_color()` (line 326) format strings
+- Updated doc comment on `write_fill_color` to say "rgb" instead of "rgba"
+- Updated 6 test assertions from `rgba(...)` to `rgb(...)` with 4 args
+- Files changed: `crates/office2pdf/src/render/typst_gen.rs`
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - Typst's `rgb()` function accepts both 3 args (r,g,b) and 4 args (r,g,b,a) — there is no separate `rgba()` function
+  - Simple string replacements like this can be done confidently across format strings and test assertions
+---
