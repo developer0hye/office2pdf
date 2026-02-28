@@ -5,10 +5,10 @@ use std::io::Read;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, Document,
-    FloatingImage, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph, ImageData, ImageFormat,
-    LineSpacing, List, ListItem, ListKind, Margins, MathEquation, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, ColumnLayout,
+    Document, FloatingImage, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph, ImageData,
+    ImageFormat, LineSpacing, List, ListItem, ListKind, Margins, MathEquation, Page, PageSize,
+    Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -488,6 +488,104 @@ fn scan_anchor_wrap_types(xml: &str) -> Vec<AnchorWrapInfo> {
     results
 }
 
+/// Scan document.xml for `<w:cols>` within `<w:sectPr>` to extract column layout.
+/// docx-rs does not parse the `w:cols` element from section properties.
+/// Returns `None` for single-column (default) layout.
+fn scan_column_layout(xml: &str) -> Option<ColumnLayout> {
+    let mut reader = quick_xml::Reader::from_str(xml);
+
+    let mut in_sect_pr = false;
+    let mut in_cols = false;
+    let mut num_columns: u32 = 1;
+    let mut spacing_twips: f64 = 720.0; // default 720 twips = 36pt
+    let mut equal_width = true;
+    let mut col_widths: Vec<f64> = Vec::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e))
+            | Ok(quick_xml::events::Event::Empty(ref e)) => {
+                let local = e.local_name();
+                let name = local.as_ref();
+                match name {
+                    b"sectPr" => {
+                        in_sect_pr = true;
+                        // Reset for each sectPr (last one wins — document's final sectPr)
+                        num_columns = 1;
+                        spacing_twips = 720.0;
+                        equal_width = true;
+                        col_widths.clear();
+                    }
+                    b"cols" if in_sect_pr => {
+                        in_cols = true;
+                        for attr in e.attributes().flatten() {
+                            let key = attr.key.local_name();
+                            if let Ok(val) = attr.unescape_value() {
+                                match key.as_ref() {
+                                    b"num" => {
+                                        if let Ok(n) = val.parse::<u32>() {
+                                            num_columns = n;
+                                        }
+                                    }
+                                    b"space" => {
+                                        if let Ok(s) = val.parse::<f64>() {
+                                            spacing_twips = s;
+                                        }
+                                    }
+                                    b"equalWidth" => {
+                                        equal_width = val != "0";
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                    b"col" if in_cols => {
+                        // Per-column width specification
+                        for attr in e.attributes().flatten() {
+                            let key = attr.key.local_name();
+                            if key.as_ref() == b"w"
+                                && let Ok(val) = attr.unescape_value()
+                                && let Ok(w) = val.parse::<f64>()
+                            {
+                                col_widths.push(w / 20.0); // twips → points
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::End(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"sectPr" => in_sect_pr = false,
+                    b"cols" => in_cols = false,
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    if num_columns < 2 {
+        return None;
+    }
+
+    let column_widths = if !equal_width && !col_widths.is_empty() {
+        Some(col_widths)
+    } else {
+        None
+    };
+
+    Some(ColumnLayout {
+        num_columns,
+        spacing: spacing_twips / 20.0, // twips → points
+        column_widths,
+    })
+}
+
 /// Context for OMML math equations extracted from raw document XML.
 /// docx-rs does not parse `m:oMath` / `m:oMathPara` elements — they are
 /// completely absent from the `ParagraphChild` enum — so we scan the raw ZIP.
@@ -747,7 +845,7 @@ impl Parser for DocxParser {
         // Open ZIP once and build all pre-parse contexts from a single pass.
         // This consolidates what was previously 5 separate ZIP opens + multiple
         // reads of word/document.xml into a single archive + single doc read.
-        let (metadata, mut notes, wraps, mut math, mut chart_ctx) = {
+        let (metadata, mut notes, wraps, mut math, mut chart_ctx, column_layout) = {
             let cursor = std::io::Cursor::new(data);
             match zip::ZipArchive::new(cursor) {
                 Ok(mut archive) => {
@@ -757,7 +855,8 @@ impl Parser for DocxParser {
                     let wraps = build_wrap_context_from_xml(doc_xml.as_deref());
                     let math = build_math_context_from_xml(doc_xml.as_deref());
                     let chart_ctx = build_chart_context_from_xml(doc_xml.as_deref(), &mut archive);
-                    (metadata, notes, wraps, math, chart_ctx)
+                    let column_layout = doc_xml.as_deref().and_then(scan_column_layout);
+                    (metadata, notes, wraps, math, chart_ctx, column_layout)
                 }
                 Err(_) => {
                     // ZIP open failed — return empty contexts; docx-rs will
@@ -786,6 +885,7 @@ impl Parser for DocxParser {
                         ChartContext {
                             charts: HashMap::new(),
                         },
+                        None,
                     )
                 }
             }
@@ -883,6 +983,7 @@ impl Parser for DocxParser {
                     content,
                     header,
                     footer,
+                    columns: column_layout,
                 })],
                 styles: StyleSheet::default(),
             },
@@ -1193,25 +1294,56 @@ fn convert_paragraph_blocks(
                     continue;
                 }
 
-                // Check for images in this run (inline or floating)
+                // Check for column breaks and images in this run
+                let mut has_column_break = false;
                 for run_child in &run.children {
                     if let docx_rs::RunChild::Drawing(drawing) = run_child
                         && let Some(img_block) = extract_drawing_image(drawing, images, wraps)
                     {
                         inline_images.push(img_block);
                     }
+                    if let docx_rs::RunChild::Break(br) = run_child
+                        && is_column_break(br)
+                    {
+                        has_column_break = true;
+                    }
                 }
 
-                // Extract text from the run
-                let text = extract_run_text(run);
-                if !text.is_empty() {
-                    let explicit_style = extract_run_style(&run.run_property);
-                    runs.push(Run {
-                        text,
-                        style: merge_text_style(&explicit_style, resolved_style),
-                        href: None,
-                        footnote: None,
-                    });
+                if has_column_break {
+                    // Flush current runs as a paragraph before the column break
+                    if !runs.is_empty() {
+                        out.append(&mut inline_images);
+                        let explicit_para_style = extract_paragraph_style(&para.property);
+                        out.push(Block::Paragraph(Paragraph {
+                            style: merge_paragraph_style(&explicit_para_style, resolved_style),
+                            runs: std::mem::take(&mut runs),
+                        }));
+                    }
+                    out.push(Block::ColumnBreak);
+
+                    // Still extract any text from this run (after the break)
+                    let text = extract_run_text_skip_column_breaks(run);
+                    if !text.is_empty() {
+                        let explicit_style = extract_run_style(&run.run_property);
+                        runs.push(Run {
+                            text,
+                            style: merge_text_style(&explicit_style, resolved_style),
+                            href: None,
+                            footnote: None,
+                        });
+                    }
+                } else {
+                    // Extract text from the run
+                    let text = extract_run_text(run);
+                    if !text.is_empty() {
+                        let explicit_style = extract_run_style(&run.run_property);
+                        runs.push(Run {
+                            text,
+                            style: merge_text_style(&explicit_style, resolved_style),
+                            href: None,
+                            footnote: None,
+                        });
+                    }
                 }
             }
             docx_rs::ParagraphChild::Hyperlink(hyperlink) => {
@@ -1759,6 +1891,37 @@ fn resolve_hyperlink_url(
         }
         docx_rs::HyperlinkData::Anchor { .. } => None, // internal bookmark, skip
     }
+}
+
+/// Check if a docx-rs Break is a column break.
+/// Break.break_type is private, so we use serde to extract the value.
+fn is_column_break(br: &docx_rs::Break) -> bool {
+    serde_json::to_value(br)
+        .ok()
+        .and_then(|v| {
+            v.get("breakType")
+                .and_then(|bt| bt.as_str().map(|s| s == "column"))
+        })
+        .unwrap_or(false)
+}
+
+/// Extract text content from a docx-rs Run, skipping column breaks.
+/// Column breaks are handled separately as Block::ColumnBreak.
+fn extract_run_text_skip_column_breaks(run: &docx_rs::Run) -> String {
+    let mut text = String::new();
+    for child in &run.children {
+        match child {
+            docx_rs::RunChild::Text(t) => text.push_str(&t.text),
+            docx_rs::RunChild::Tab(_) => text.push('\t'),
+            docx_rs::RunChild::Break(br) => {
+                if !is_column_break(br) {
+                    text.push('\n');
+                }
+            }
+            _ => {}
+        }
+    }
+    text
 }
 
 /// Extract text content from a docx-rs Run.
@@ -5386,6 +5549,179 @@ mod tests {
         assert_eq!(
             para.style.heading_level, None,
             "Normal paragraph should not have heading_level"
+        );
+    }
+
+    // --- US-103: Multi-column section layout tests ---
+
+    /// Helper: build a DOCX from raw document.xml (reuses build_docx_with_math pattern)
+    fn build_docx_with_columns(document_xml: &str) -> Vec<u8> {
+        build_docx_with_math(document_xml)
+    }
+
+    #[test]
+    fn test_parse_docx_two_column_equal() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>Column content</w:t></w:r></w:p>
+        <w:sectPr>
+            <w:cols w:num="2" w:space="720"/>
+        </w:sectPr>
+    </w:body>
+</w:document>"#;
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        let cols = flow.columns.as_ref().expect("Should have column layout");
+        assert_eq!(cols.num_columns, 2);
+        // 720 twips = 36pt
+        assert!(
+            (cols.spacing - 36.0).abs() < 0.1,
+            "spacing: {}",
+            cols.spacing
+        );
+        assert!(
+            cols.column_widths.is_none(),
+            "Equal columns should not have per-column widths"
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_three_column_equal() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>Content</w:t></w:r></w:p>
+        <w:sectPr>
+            <w:cols w:num="3" w:space="360"/>
+        </w:sectPr>
+    </w:body>
+</w:document>"#;
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        let cols = flow.columns.as_ref().expect("Should have column layout");
+        assert_eq!(cols.num_columns, 3);
+        // 360 twips = 18pt
+        assert!((cols.spacing - 18.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_parse_docx_unequal_columns() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>Content</w:t></w:r></w:p>
+        <w:sectPr>
+            <w:cols w:num="2" w:space="720" w:equalWidth="0">
+                <w:col w:w="6000" w:space="720"/>
+                <w:col w:w="3000"/>
+            </w:cols>
+        </w:sectPr>
+    </w:body>
+</w:document>"#;
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        let cols = flow.columns.as_ref().expect("Should have column layout");
+        assert_eq!(cols.num_columns, 2);
+        let widths = cols
+            .column_widths
+            .as_ref()
+            .expect("Should have per-column widths");
+        assert_eq!(widths.len(), 2);
+        // 6000 twips = 300pt, 3000 twips = 150pt
+        assert!((widths[0] - 300.0).abs() < 0.1, "width[0]: {}", widths[0]);
+        assert!((widths[1] - 150.0).abs() < 0.1, "width[1]: {}", widths[1]);
+    }
+
+    #[test]
+    fn test_parse_docx_no_columns() {
+        // Default document without w:cols should have no column layout
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Normal")),
+        ]);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        assert!(
+            flow.columns.is_none(),
+            "Normal doc should not have column layout"
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_column_break() {
+        // Test that w:br with type="column" produces Block::ColumnBreak
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Before"))
+                .add_run(docx_rs::Run::new().add_break(docx_rs::BreakType::Column))
+                .add_run(docx_rs::Run::new().add_text("After")),
+        ]);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        // Should have a ColumnBreak block
+        let has_col_break = flow.content.iter().any(|b| matches!(b, Block::ColumnBreak));
+        assert!(
+            has_col_break,
+            "Should have a ColumnBreak block. Blocks: {:?}",
+            flow.content
+                .iter()
+                .map(std::mem::discriminant)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_single_column_no_layout() {
+        // w:cols with num="1" should not produce column layout
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>Content</w:t></w:r></w:p>
+        <w:sectPr>
+            <w:cols w:num="1" w:space="720"/>
+        </w:sectPr>
+    </w:body>
+</w:document>"#;
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        assert!(
+            flow.columns.is_none(),
+            "Single column should not produce column layout"
         );
     }
 }
