@@ -41,6 +41,7 @@ wasm-bindgen-test = "0.3"
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 paste = "1"
+pdf-extract = "0.10"
 
 [[bench]]
 name = "conversion"

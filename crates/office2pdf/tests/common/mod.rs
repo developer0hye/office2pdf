@@ -1,5 +1,15 @@
 //! Shared test utilities for integration tests.
 
+/// Extract all visible text content from PDF bytes.
+///
+/// Returns the concatenated text from all pages. Useful for verifying
+/// that key content markers from source documents appear in the final PDF.
+///
+/// Panics if the PDF cannot be parsed.
+pub fn extract_pdf_text(pdf_bytes: &[u8]) -> String {
+    pdf_extract::extract_text_from_mem(pdf_bytes).expect("should extract text from PDF")
+}
+
 /// Validate PDF bytes using `qpdf --check`.
 ///
 /// Returns `true` if validation was performed and passed, `false` if skipped.
