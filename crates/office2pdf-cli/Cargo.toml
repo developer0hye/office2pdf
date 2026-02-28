@@ -14,11 +14,15 @@ categories = ["command-line-utilities"]
 name = "office2pdf"
 path = "src/main.rs"
 
+[features]
+server = ["tiny_http"]
+
 [dependencies]
 office2pdf = { version = "0.3.0", path = "../office2pdf" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 rayon = "1"
+tiny_http = { version = "0.12", optional = true }
 
 [dev-dependencies]
 docx-rs = "0.4"

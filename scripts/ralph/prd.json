@@ -99,7 +99,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Consider tiny_http for minimal dependency footprint (pure Rust, no tokio needed). The multipart parsing can use the `multipart` crate or a simple manual parser. The server feature should be optional: `[features] server = ['tiny_http']` in Cargo.toml. Keep the implementation in a separate module (e.g., `crates/office2pdf-cli/src/server.rs`). This is a thin HTTP wrapper around the existing convert_bytes() API."
     }
   ]
