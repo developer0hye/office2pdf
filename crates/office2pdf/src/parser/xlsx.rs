@@ -810,8 +810,7 @@ fn parse_drawing_chart_anchors(xml: &str) -> Vec<(u32, String)> {
                 let local = e.local_name();
                 if in_graphic_data && local.as_ref() == b"chart" {
                     for attr in e.attributes().flatten() {
-                        if (attr.key.as_ref() == b"r:id"
-                            || attr.key.local_name().as_ref() == b"id")
+                        if (attr.key.as_ref() == b"r:id" || attr.key.local_name().as_ref() == b"id")
                             && let Ok(val) = attr.unescape_value()
                         {
                             chart_rid = Some(val.to_string());
