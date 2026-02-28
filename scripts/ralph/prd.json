@@ -41,7 +41,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Check if typst-pdf handles timestamps internally. The fix may be in how we construct the PdfOptions or PdfStandard configuration passed to typst_pdf::pdf(). Look at how typst-pdf's API accepts metadata — it may have a creation_date field. Prefer std::time::SystemTime over adding chrono as a dependency."
     },
     {

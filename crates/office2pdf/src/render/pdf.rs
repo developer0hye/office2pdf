@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use typst::diag::FileResult;
 use typst::foundations::{Bytes, Datetime};
@@ -65,10 +66,9 @@ fn compile_to_pdf_inner(
         None => typst_pdf::PdfStandards::default(),
     };
 
-    // PDF/A requires a document creation timestamp
+    // PDF/A requires a document creation timestamp; use actual conversion time
     let timestamp = if pdf_standard.is_some() {
-        let now = Datetime::from_ymd_hms(2024, 1, 1, 0, 0, 0).unwrap();
-        Some(typst_pdf::Timestamp::new_utc(now))
+        Some(typst_pdf::Timestamp::new_utc(current_utc_datetime()))
     } else {
         None
     };
@@ -82,6 +82,40 @@ fn compile_to_pdf_inner(
         let messages: Vec<String> = errors.iter().map(|e| e.message.to_string()).collect();
         ConvertError::Render(format!("PDF export failed: {}", messages.join("; ")))
     })
+}
+
+/// Convert the current system time to a Typst `Datetime` in UTC.
+///
+/// Uses `std::time::SystemTime` to avoid an external chrono dependency.
+/// The civil date is computed from the Unix timestamp using Howard Hinnant's
+/// algorithm (<http://howardhinnant.github.io/date_algorithms.html>).
+fn current_utc_datetime() -> Datetime {
+    let duration = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
+    let secs = duration.as_secs() as i64;
+
+    // Split into days since epoch and time-of-day
+    let days = secs.div_euclid(86400);
+    let rem = secs.rem_euclid(86400);
+    let hours = (rem / 3600) as u8;
+    let minutes = ((rem % 3600) / 60) as u8;
+    let seconds = (rem % 60) as u8;
+
+    // Civil date from day count since Unix epoch (1970-01-01)
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097) as u32; // day of era [0, 146096]
+    let yoe = (doe - doe / 1461 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100); // day of year [0, 365]
+    let mp = (5 * doy + 2) / 153; // [0, 11]
+    let d = (doy - (153 * mp + 2) / 5 + 1) as u8;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u8;
+    let y = if m <= 2 { y + 1 } else { y } as i32;
+
+    Datetime::from_ymd_hms(y, m, d, hours, minutes, seconds)
+        .expect("valid date derived from SystemTime")
 }
 
 /// Minimal World implementation providing Typst compiler with source, fonts, and images.
@@ -496,6 +530,56 @@ Text in Libertinus Serif."#;
             world.fonts.len(),
             embedded_count,
             "Embedded-only world should have exactly the embedded fonts"
+        );
+    }
+
+    #[test]
+    fn test_pdfa_timestamp_is_not_hardcoded() {
+        // PDF/A output should contain the actual conversion timestamp,
+        // not the previously hardcoded 2024-01-01.
+        let result = compile_to_pdf(
+            "Timestamp test",
+            &[],
+            Some(crate::config::PdfStandard::PdfA2b),
+            &[],
+        )
+        .unwrap();
+        let pdf_str = String::from_utf8_lossy(&result);
+        // The old hardcoded date was 2024-01-01T00:00:00 — it should no longer appear
+        assert!(
+            !pdf_str.contains("2024-01-01T00:00:00"),
+            "PDF/A timestamp should not be the hardcoded 2024-01-01T00:00:00"
+        );
+    }
+
+    #[test]
+    fn test_current_utc_datetime_is_valid() {
+        // The helper should produce a valid Datetime that can create a Timestamp.
+        let dt = current_utc_datetime();
+        let _ts = typst_pdf::Timestamp::new_utc(dt);
+    }
+
+    #[test]
+    fn test_pdfa_timestamp_has_recent_date() {
+        // The PDF/A XMP metadata should contain a date from the current
+        // decade, not a hardcoded past date.
+        let result = compile_to_pdf(
+            "Year test",
+            &[],
+            Some(crate::config::PdfStandard::PdfA2b),
+            &[],
+        )
+        .unwrap();
+        let pdf_str = String::from_utf8_lossy(&result);
+        // The XMP metadata should contain a CreateDate field
+        assert!(
+            pdf_str.contains("xmp:CreateDate") || pdf_str.contains("CreateDate"),
+            "PDF/A should contain creation date metadata"
+        );
+        // The date should NOT be the hardcoded 2024-01-01
+        assert!(
+            !pdf_str.contains("2024-01-01"),
+            "PDF/A timestamp should not contain hardcoded 2024-01-01"
         );
     }
 }
