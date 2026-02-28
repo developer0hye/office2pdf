@@ -94,9 +94,7 @@ fn convert_single(
         eprintln!("Warning: {warning}");
     }
 
-    if show_metrics
-        && let Some(ref m) = result.metrics
-    {
+    if show_metrics && let Some(ref m) = result.metrics {
         eprintln!("--- Metrics: {:?} ---", input);
         eprintln!("  Parse:   {:?}", m.parse_duration);
         eprintln!("  Codegen: {:?}", m.codegen_duration);
