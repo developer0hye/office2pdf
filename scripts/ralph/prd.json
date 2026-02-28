@@ -92,7 +92,7 @@
         "Verify: cargo run -p office2pdf-cli -- tests/fixtures/docx/equations.docx -o /tmp/test.pdf succeeds"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "The mapping function should handle multi-byte Unicode characters properly. Process the input string character by character using .chars(). When a character maps to a named identifier, output the name. When transitioning between identifiers (e.g., 'pi' followed by 'r'), insert a space. Numbers and operators (+, -, =, etc.) should pass through as-is. The function should be robust — unknown Unicode chars can pass through unchanged."
     },
     {
