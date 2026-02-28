@@ -165,3 +165,21 @@ Started: 2026년  2월 28일 토요일 22시 20분 56초 KST
   - Column layout scanning uses "last sectPr wins" strategy since document's final sectPr defines the main section
   - Column spacing in OOXML is in twips (1 twip = 1/20 pt)
 ---
+## US-104: BiDi (right-to-left) text support
+- **Date**: 2026-02-28
+- **Status**: COMPLETE
+- **Changes**:
+  - Added `TextDirection` enum (Ltr, Rtl) to IR style.rs
+  - Added `direction: Option<TextDirection>` field to `ParagraphStyle`
+  - Added `BidiContext` struct for raw XML scanning of `<w:bidi/>` in `<w:pPr>` (docx-rs reader does NOT parse bidi)
+  - DOCX parser: `scan_bidi_paragraphs()` builds index of RTL paragraphs, applied via `BidiContext.next_is_bidi()` counter
+  - PPTX parser: reads `rtl="1"` attribute from `<a:pPr>` element
+  - Typst codegen: RTL paragraphs trigger `needs_block_wrapper()` and emit `#set text(dir: rtl)` in `write_par_settings()`
+  - 8 new tests: 3 DOCX parser (bidi, no-bidi, mixed), 3 Typst codegen (RTL, LTR, mixed), 2 integration (RTL direction verification, mixed LTR/RTL PDF)
+- **Notes**:
+  - docx-rs v0.4.19 writes `<w:bidi/>` but does NOT read it back — must use raw XML scanning (BidiContext pattern, similar to NoteContext/WrapContext)
+  - docx-rs `Paragraph.property` is a public field (not a method) — set directly for tests
+  - BidiContext uses Cell<usize> cursor pattern for paragraph-ordered consumption
+  - Typst's `dir: rtl` works at the paragraph level via `#set text(dir: rtl)` inside a `#block()` wrapper
+  - Typst handles Unicode BiDi algorithm internally — we just pass direction hints
+---

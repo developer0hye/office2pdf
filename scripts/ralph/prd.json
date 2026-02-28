@@ -97,7 +97,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Typst's text direction: `#set text(dir: rtl)` or inline `#text(dir: rtl)[content]`. Typst handles the Unicode BiDi algorithm internally — we just need to signal the base direction. For mixed content, Typst auto-detects script direction within a paragraph if the base direction is set. Focus on paragraph-level direction first (w:bidi), then run-level (w:rtl) for overrides. Font substitution for Arabic/Hebrew may require adding Noto Sans Arabic to the embedded fonts or ensuring system font discovery includes RTL fonts."
     }
   ]

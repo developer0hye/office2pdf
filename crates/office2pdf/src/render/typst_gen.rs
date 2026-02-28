@@ -9,7 +9,7 @@ use crate::ir::{
     ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage, FlowPage,
     GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List, ListKind,
     Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape,
-    ShapeKind, SmartArt, Table, TableCell, TablePage, TextStyle, WrapMode,
+    ShapeKind, SmartArt, Table, TableCell, TablePage, TextDirection, TextStyle, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -1636,12 +1636,13 @@ fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertE
     Ok(())
 }
 
-/// Check if paragraph style needs a block wrapper (for spacing/leading/justify).
+/// Check if paragraph style needs a block wrapper (for spacing/leading/justify/direction).
 fn needs_block_wrapper(style: &ParagraphStyle) -> bool {
     style.space_before.is_some()
         || style.space_after.is_some()
         || style.line_spacing.is_some()
         || matches!(style.alignment, Some(Alignment::Justify))
+        || matches!(style.direction, Some(TextDirection::Rtl))
 }
 
 fn write_block_params(out: &mut String, style: &ParagraphStyle) {
@@ -1669,6 +1670,9 @@ fn write_par_settings(out: &mut String, style: &ParagraphStyle) {
     }
     if matches!(style.alignment, Some(Alignment::Justify)) {
         out.push_str("  #set par(justify: true)\n");
+    }
+    if matches!(style.direction, Some(TextDirection::Rtl)) {
+        out.push_str("  #set text(dir: rtl)\n");
     }
 }
 
@@ -6423,6 +6427,71 @@ mod tests {
         assert!(
             !result.contains("#grid(columns:"),
             "Should not contain grid(columns:). Got: {result}"
+        );
+    }
+
+    // ── BiDi / RTL codegen tests ──────────────────────────────────────
+
+    #[test]
+    fn test_generate_rtl_paragraph() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                direction: Some(TextDirection::Rtl),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: "مرحبا بالعالم".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#set text(dir: rtl)"),
+            "RTL paragraph should emit #set text(dir: rtl). Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_ltr_paragraph_no_direction() {
+        // Normal LTR paragraph should NOT emit any text direction
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Hello World")])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            !result.contains("dir: rtl"),
+            "LTR paragraph should not emit dir: rtl. Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_mixed_rtl_ltr_paragraphs() {
+        let doc = make_doc(vec![make_flow_page(vec![
+            Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    direction: Some(TextDirection::Rtl),
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![Run {
+                    text: "مرحبا 123".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            }),
+            make_paragraph("English text"),
+        ])]);
+        let result = generate_typst(&doc).unwrap().source;
+        // Should contain RTL setting for the Arabic paragraph
+        assert!(
+            result.contains("#set text(dir: rtl)"),
+            "Should contain RTL direction for Arabic paragraph. Got: {result}"
+        );
+        // The Arabic text and English text should both appear
+        assert!(result.contains("مرحبا 123"), "Arabic text should appear");
+        assert!(
+            result.contains("English text"),
+            "English text should appear"
         );
     }
 }

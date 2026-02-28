@@ -11,7 +11,7 @@ use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, Document,
     FixedElement, FixedElementKind, FixedPage, GradientFill, GradientStop, ImageData, ImageFormat,
     Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt,
-    SmartArtNode, StyleSheet, Table, TableCell, TableRow, TextStyle,
+    SmartArtNode, StyleSheet, Table, TableCell, TableRow, TextDirection, TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::chart as chart_parser;
@@ -2326,7 +2326,7 @@ fn star_vertices(n: usize) -> Vec<(f64, f64)> {
     vertices
 }
 
-/// Extract paragraph alignment from `<a:pPr>` attributes.
+/// Extract paragraph alignment and direction from `<a:pPr>` attributes.
 fn extract_paragraph_props(e: &quick_xml::events::BytesStart, style: &mut ParagraphStyle) {
     if let Some(algn) = get_attr_str(e, b"algn") {
         style.alignment = match algn.as_str() {
@@ -2336,6 +2336,11 @@ fn extract_paragraph_props(e: &quick_xml::events::BytesStart, style: &mut Paragr
             "just" => Some(Alignment::Justify),
             _ => None,
         };
+    }
+    if let Some(val) = get_attr_str(e, b"rtl")
+        && (val == "1" || val == "true")
+    {
+        style.direction = Some(TextDirection::Rtl);
     }
 }
 
