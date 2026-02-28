@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn test_all_variants_carry_format() {
-        let variants = vec![
+        let variants = [
             ConvertWarning::UnsupportedElement {
                 format: "DOCX".to_string(),
                 element: "x".to_string(),
