@@ -444,7 +444,6 @@ docx_fixture_tests!(chartex, "chartex.docx");
 docx_fixture_tests!(checkboxes, "checkboxes.docx");
 docx_fixture_tests!(comment, "comment.docx");
 docx_fixture_tests!(complex_numbered_lists, "ComplexNumberedLists.docx");
-docx_fixture_tests!(deep_table_cell, "deep-table-cell.docx");
 docx_fixture_tests!(delins, "delins.docx");
 docx_fixture_tests!(diff_first_page_head_foot, "DiffFirstPageHeadFoot.docx");
 docx_fixture_tests!(drawing, "drawing.docx");

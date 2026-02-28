@@ -108,7 +108,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Simple cleanup task. Delete the file and remove 2 lines from 2 files. Use git rm for the fixture file so git tracks the deletion."
     }
   ]
