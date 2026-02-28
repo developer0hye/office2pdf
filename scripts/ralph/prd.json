@@ -52,7 +52,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Common PPTX panic sources: XML attribute parsing (.attribute().unwrap()), missing slide relationships, theme color resolution, shape geometry parsing, SmartArt/chart XML navigation. The PPTX parser uses quick-xml directly so look for unchecked .unwrap() calls on attribute reads and element iteration."
     },
     {
