@@ -73,96 +73,28 @@
 - **PPTX SmartArt diagrams**: SmartArt uses `<p:graphicFrame>` with `<a:graphicData uri="...diagram">` containing `<dgm:relIds r:dm="rIdN" .../>`. Detection via `smartart::scan_smartart_refs(slide_xml)` → `Vec<SmartArtRef>` (position + data_rid). Data resolved by `load_smartart_data(slide_path, archive)` which reads slide .rels for targets containing "diagrams/data", then parses each data XML via `smartart::parse_smartart_data_xml()`. Data model XML (`ppt/diagrams/dataN.xml`): `<dgm:ptLst>` contains `<dgm:pt modelId type>` elements. Only `type="node"` (or absent type, which defaults to "node") have user content; skip `type="doc"`, `type="parTrans"`, `type="sibTrans"`. Text in `<dgm:t>/<a:p>/<a:r>/<a:t>`. IR: `SmartArt { items: Vec<String> }`, `FixedElementKind::SmartArt`. Codegen: bordered `#block` with "SmartArt Diagram" header and `- item` list. Integration point: `parse_single_slide()` (not `parse_slide_xml()`) since SmartArt requires ZIP archive access. Test helper: `build_test_pptx_with_smartart(cx, cy, slide_xml, data_rid, data_xml)`, `make_smartart_graphic_frame(x, y, cx, cy, dm_rid)`, `make_smartart_data_xml(&["Item 1", "Item 2"])`.
 - **PPTX embedded charts**: Charts in PPTX use `<p:graphicFrame>` with `<a:graphicData uri="...chart">` containing `<c:chart r:id="rIdN"/>`. Detection via `chart::scan_pptx_chart_refs(slide_xml)` → `Vec<PptxChartRef>` (position in EMU + chart_rid). Chart data resolved by `load_chart_data(slide_path, archive)` which reads slide .rels for targets containing "chart", then reads chart XML from ZIP and parses via `chart::parse_chart_xml()`. Returns `ChartMap` (HashMap<String, Chart>). Chart XML is the same format as DOCX charts — `parse_chart_xml()` is fully reusable. IR: `FixedElementKind::Chart(Chart)`. Codegen delegates to existing `generate_chart()`. Integration in `parse_single_slide()` after SmartArt block. Test helpers: `build_test_pptx_with_chart(cx, cy, slide_xml, chart_rid, chart_xml)`, `make_chart_graphic_frame(x, y, cx, cy, chart_rid)`, `make_chart_xml(title, chart_type, categories, series_name, values)`.
 - **DOCX floating images**: `WrapContext` scans raw document.xml for `wp:anchor` elements in document order (similar pattern to `NoteContext`). `AnchorWrapInfo` stores wrap_mode (WrapMode) and behind_doc (bool). `scan_anchor_wrap_types()` parses wp:wrapSquare→Square, wp:wrapTight/wrapThrough→Tight, wp:wrapTopAndBottom→TopAndBottom, wp:wrapNone→depends on behindDoc. `extract_drawing_image()` checks `pic.position_type == Anchor` → consumes next wrap info → `Block::FloatingImage(FloatingImage)`. Position from `DrawingPosition::Offset(emu)` → `emu / 12700.0` points. Codegen: Square/Tight → `#place(float: true)`, TopAndBottom → `#block` with `#v()` spacer, Behind/InFront/None → `#place()` absolute. Test helpers: `patch_docx_wrap_type(data, old_wrap, new_wrap)` replaces wrap elements in ZIP, `patch_docx_behind_doc(data)` sets `behindDoc="1"`. Create floating test Pic: `Pic::new(&bmp).floating().offset_x(emu).offset_y(emu)` (default: wrapSquare if !allow_overlap), `.overlapping()` → wrapNone.
+- **OOXML metadata extraction**: Shared `parser::metadata` module. `extract_metadata_from_zip(archive)` reads `docProps/core.xml`. `parse_core_xml(xml)` extracts Dublin Core fields: `dc:title`, `dc:creator`, `dc:subject`, `dc:description`, `dcterms:created`, `dcterms:modified`. DOCX: opens data as ZIP before docx-rs parsing. PPTX: uses already-open ZipArchive. XLSX: uses `umya_spreadsheet::Properties` API (`get_title()`, `get_creator()`, `get_subject()`, `get_description()`, `get_created()`, `get_modified()`). Codegen: `generate_document_metadata()` emits `#set document(title: "...", author: "...")` before page content. `escape_typst_string()` handles backslashes and quotes. Test helpers: `build_docx_with_metadata(core_xml)`, `build_test_pptx_with_metadata(core_xml)`.
 ---
 
-# Ralph Progress Log - Phase 7: Fix 14 Fixture Conversion Failures (5 Root Causes)
-Started: 2026년  2월 28일 토요일 09시 05분 04초 KST
+# Ralph Progress Log - Phase 8: Foundation Fixes - Metadata, PDF/A Timestamp, Warnings, PDF Validation
+Started: 2026년  2월 28일 토요일 13시 48분 17초 KST
 ---
 
-## 2026-02-28 - US-070
-- Replaced `rgba()` with `rgb()` in Typst codegen (Typst uses `rgb(r, g, b, a)` for alpha colors)
-- Fixed `write_shadow_shape()` (line 309) and `write_fill_color()` (line 326) format strings
-- Updated doc comment on `write_fill_color` to say "rgb" instead of "rgba"
-- Updated 6 test assertions from `rgba(...)` to `rgb(...)` with 4 args
-- Files changed: `crates/office2pdf/src/render/typst_gen.rs`
-- Dependencies added: none
+## 2026-02-28 - US-080
+- Implemented document metadata extraction from OOXML core/app properties
+- Files changed:
+  - `crates/office2pdf/src/ir/document.rs` — Added subject, description, created, modified fields to Metadata struct
+  - `crates/office2pdf/src/parser/metadata.rs` — New shared metadata parsing module
+  - `crates/office2pdf/src/parser/mod.rs` — Registered metadata module
+  - `crates/office2pdf/src/parser/docx.rs` — Extract metadata from ZIP before docx-rs parsing
+  - `crates/office2pdf/src/parser/pptx.rs` — Extract metadata from already-open ZIP archive
+  - `crates/office2pdf/src/parser/xlsx.rs` — Extract metadata from umya-spreadsheet Properties API
+  - `crates/office2pdf/src/render/typst_gen.rs` — Emit `#set document(title, author)` in Typst output
+- Dependencies added: None (reused existing quick-xml and zip)
 - **Learnings for future iterations:**
-  - Typst's `rgb()` function accepts both 3 args (r,g,b) and 4 args (r,g,b,a) — there is no separate `rgba()` function
-  - Simple string replacements like this can be done confidently across format strings and test assertions
----
-
-## 2026-02-28 - US-071
-- Fixed nested list double-content-block bug in `generate_list_items()`
-- Previous code emitted `list.item[text][#list(...)]` (two body arguments) which Typst rejected
-- Fix: keep content block open when nested items exist, emit `list.item[text #list(...)]` (single body)
-- Added test `test_nested_list_single_content_block` to assert no `][#list` pattern in output
-- Files changed: `crates/office2pdf/src/render/typst_gen.rs`
-- Dependencies added: none
-- Verified all 4 affected fixtures: `ComplexNumberedLists.docx`, `numberings.docx`, `unit_test_formatting.docx`, `unit_test_lists.docx`
-- **Learnings for future iterations:**
-  - Typst's `list.item`/`enum.item` accept exactly ONE positional body argument — two `[...]` blocks means two args which is an error
-  - The fix was moving the closing `]` bracket after the nested list emission, not before
----
-
-## 2026-02-28 - US-072
-- Clamped table cell colspan to prevent exceeding available columns in Typst codegen
-- Three-part fix in `generate_table()`:
-  1. Determine `num_cols` from `column_widths.len()` or infer from max cells per row
-  2. Track column positions per row with rowspan occupancy grid, clamp colspan to remaining columns
-  3. Skip merge continuation cells (col_span=0 for hMerge, row_span=0 for vMerge)
-  4. Pad short rows with empty cells so Typst row boundaries align with IR rows
-  5. Emit `columns: N` for tables without explicit column widths (Typst defaults to 1 column otherwise)
-- Modified `generate_table_cell()` and `write_cell_params()` to accept clamped colspan parameter
-- Added 3 unit tests: `test_table_colspan_clamped_to_available_columns`, `test_table_colspan_clamped_mid_row`, `test_table_colspan_no_column_widths_inferred`
-- Files changed: `crates/office2pdf/src/render/typst_gen.rs`
-- Dependencies added: none
-- Verified all 4 affected fixtures: `drawing.docx`, `powerpoint_sample.pptx`, `shapes.pptx`, `table_test2.pptx`
-- **Learnings for future iterations:**
-  - Typst tables have NO explicit row breaks — cells fill left-to-right, wrapping when a row is full. If an IR row doesn't fill all columns, the next IR row's cells continue in the same Typst row.
-  - PPTX tables use col_span=0 (hMerge) and row_span=0 (vMerge) as merge continuation markers that must NOT be emitted as Typst cells.
-  - When `column_widths` is empty, Typst defaults to 1 column. Must emit `columns: N` to specify the correct count.
-  - Rowspan tracking requires careful timing: set `rowspan_remaining = rowspan` (full value), decrement at START of each row.
----
-
-## 2026-02-28 - US-073
-- Sorted gradient stops by position before rendering in `write_gradient_fill()`
-- Also clamped first stop to 0% and last stop to 100% (Typst requires boundary constraints)
-- Added test `test_gradient_unsorted_stops_rendered_in_sorted_order` verifying reverse-ordered stops render correctly
-- Files changed: `crates/office2pdf/src/render/typst_gen.rs`
-- Dependencies added: none
-- Verified fixture: `backgrounds.pptx` converts successfully
-- **Learnings for future iterations:**
-  - Typst gradient requirements are strict: stops must be in monotonic order AND first stop must be at 0%, last at 100%
-  - Sorting alone isn't enough — boundary clamping is also needed as a safety net
-  - The `GradientStop` struct derives `Clone`, so cloning and sorting is straightforward
----
-
-## 2026-02-28 - US-074
-- Mapped Unicode math symbols to Typst identifiers in OMML parser
-- Added `map_math_text()` function that converts Greek letters (π→pi, α→alpha, etc.) and math symbols (±→plus.minus, ∞→infinity, etc.) to Typst equivalents
-- Added `flush_math_word()` and `is_known_math_name()` helpers: multi-letter ASCII sequences split into individual variables (e.g., `ka`→`k a`) unless they're known function names (sin, cos, log, etc.)
-- Added `unicode_to_typst()` mapping 48 Greek letters + 17 math symbols
-- Modified `parse_math_run()` to buffer text and apply mapping with leading/trailing space checks
-- Added `ensure_math_separator()` to prevent cross-element identifier concatenation between adjacent math runs, superscripts, subscripts, fractions, radicals, and other OMML constructs
-- Added 21 new unit tests for `map_math_text`, `unicode_to_typst`, `flush_math_word`, and OMML integration
-- Updated 4 existing test assertions to match new spacing behavior (`E=mc^2`→`E=m c^2`, quadratic formula with `plus.minus`)
-- Files changed: `crates/office2pdf/src/parser/omml.rs`, `crates/office2pdf/src/parser/docx.rs`
-- Dependencies added: none
-- Verified fixture: `equations.docx` converts successfully
-- **Learnings for future iterations:**
-  - Typst math mode treats multi-letter sequences as single identifiers — `mc` is NOT `m × c` but a single unknown variable
-  - Adjacent OMML elements (runs, superscripts, functions) can produce outputs that concatenate into invalid identifiers at element boundaries
-  - Known function names like sin/cos/log must be preserved intact, not split into individual characters
-  - The `ensure_math_separator()` pattern works well: check if the output ends with an alphanumeric char and add a space before the next element
----
-
-## 2026-02-28 - US-075
-- Removed corrupt `deep-table-cell.docx` fixture that always failed with "Failed to read from zip"
-- Deleted `tests/fixtures/docx/deep-table-cell.docx`
-- Removed `docx_fixture_tests!(deep_table_cell, "deep-table-cell.docx")` from `crates/office2pdf/tests/docx_fixtures.rs`
-- Removed `- \`docx/deep-table-cell.docx\`` from `tests/fixtures/THIRD-PARTY-LICENSES.md`
-- Files changed: `crates/office2pdf/tests/docx_fixtures.rs`, `tests/fixtures/THIRD-PARTY-LICENSES.md`
-- Dependencies added: none
-- **Learnings for future iterations:**
-  - Corrupt fixture files that can't be parsed are not code bugs — remove them rather than trying to handle them
+  - DOCX and PPTX both need `docProps/core.xml` parsed from ZIP; shared module avoids duplication
+  - XLSX can use umya-spreadsheet's Properties API directly — more reliable than parsing ZIP
+  - Typst handles document metadata via `#set document(...)` which flows to PDF info dictionary
+  - `zip::write::FileOptions` in zip 0.6 does NOT take generic parameters (unlike zip 2.x)
+  - Empty property strings from umya-spreadsheet need to be converted to None
 ---

@@ -7,8 +7,8 @@ use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, FloatingImage, FlowPage,
     HFInline, HeaderFooter, HeaderFooterParagraph, ImageData, ImageFormat, LineSpacing, List,
-    ListItem, ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle,
-    Run, StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
+    ListItem, ListKind, Margins, MathEquation, Page, PageSize, Paragraph, ParagraphStyle, Run,
+    StyleSheet, Table, TableCell, TableRow, TextStyle, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -745,6 +745,14 @@ impl Parser for DocxParser {
         data: &[u8],
         _options: &ConvertOptions,
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
+        // Extract metadata from docProps/core.xml in the ZIP
+        let metadata = {
+            let cursor = std::io::Cursor::new(data);
+            zip::ZipArchive::new(cursor)
+                .map(|mut archive| crate::parser::metadata::extract_metadata_from_zip(&mut archive))
+                .unwrap_or_default()
+        };
+
         // Build note context from raw ZIP before docx-rs parsing
         let notes = build_note_context(data);
         // Build wrap context for anchor image wrap types from raw ZIP
@@ -822,7 +830,7 @@ impl Parser for DocxParser {
 
         Ok((
             Document {
-                metadata: Metadata::default(),
+                metadata,
                 pages: vec![Page::Flow(FlowPage {
                     size,
                     margins,
@@ -5035,5 +5043,119 @@ mod tests {
         assert!(chart_blocks[0].title.is_none());
         assert_eq!(chart_blocks[0].categories, vec!["A", "B", "C"]);
         assert_eq!(chart_blocks[0].series[0].values, vec![30.0, 50.0, 20.0]);
+    }
+
+    // ── Metadata extraction tests ──────────────────────────────────────
+
+    /// Build a minimal DOCX with docProps/core.xml containing metadata.
+    fn build_docx_with_metadata(core_xml: &str) -> Vec<u8> {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::FileOptions::default();
+
+        zip.start_file("[Content_Types].xml", options).unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#,
+        )
+        .unwrap();
+
+        zip.start_file("_rels/.rels", options).unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#,
+        )
+        .unwrap();
+
+        zip.start_file("word/_rels/document.xml.rels", options)
+            .unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+</Relationships>"#,
+        )
+        .unwrap();
+
+        zip.start_file("word/document.xml", options).unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>Hello</w:t></w:r></w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#,
+        )
+        .unwrap();
+
+        zip.start_file("docProps/core.xml", options).unwrap();
+        std::io::Write::write_all(&mut zip, core_xml.as_bytes()).unwrap();
+
+        zip.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn test_parse_docx_extracts_metadata() {
+        let core_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dc:title>My DOCX Title</dc:title>
+  <dc:creator>DOCX Author</dc:creator>
+  <dc:subject>DOCX Subject</dc:subject>
+  <dc:description>DOCX description text</dc:description>
+  <dcterms:created xsi:type="dcterms:W3CDTF">2024-03-15T08:00:00Z</dcterms:created>
+  <dcterms:modified xsi:type="dcterms:W3CDTF">2024-04-20T12:30:00Z</dcterms:modified>
+</cp:coreProperties>"#;
+
+        let data = build_docx_with_metadata(core_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        assert_eq!(doc.metadata.title.as_deref(), Some("My DOCX Title"));
+        assert_eq!(doc.metadata.author.as_deref(), Some("DOCX Author"));
+        assert_eq!(doc.metadata.subject.as_deref(), Some("DOCX Subject"));
+        assert_eq!(
+            doc.metadata.description.as_deref(),
+            Some("DOCX description text")
+        );
+        assert_eq!(
+            doc.metadata.created.as_deref(),
+            Some("2024-03-15T08:00:00Z")
+        );
+        assert_eq!(
+            doc.metadata.modified.as_deref(),
+            Some("2024-04-20T12:30:00Z")
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_without_metadata_no_crash() {
+        // A minimal DOCX without docProps/core.xml → defaults
+        let data = build_docx_with_math(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>No metadata</w:t></w:r></w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#,
+        );
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // Should not crash; fields are None
+        assert!(doc.metadata.title.is_none());
+        assert!(doc.metadata.author.is_none());
     }
 }

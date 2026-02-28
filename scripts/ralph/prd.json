@@ -1,115 +1,103 @@
 {
   "project": "office2pdf",
-  "branchName": "ralph/phase7-fixture-fixes",
-  "description": "Phase 7: Fix 14 fixture conversion failures across 5 root causes",
+  "branchName": "ralph/phase8-foundation-fixes",
+  "description": "Phase 8: Foundation Fixes - Metadata extraction, PDF/A timestamp, ignored fixtures, warning taxonomy, PDF validation",
   "userStories": [
     {
-      "id": "US-070",
-      "title": "Replace rgba() with rgb() in Typst codegen",
-      "description": "Typst has no `rgba()` function. It uses `rgb(r, g, b, a)` with 4 arguments for colors with alpha. Currently `write_shadow_shape()` (line 309) and `write_fill_color()` (line 326) in `crates/office2pdf/src/render/typst_gen.rs` emit `rgba(...)` which causes 'unknown variable: rgba' errors.\n\nFix:\n- Line 309 (`write_shadow_shape`): change format string from `rgba({}, {}, {}, {})` to `rgb({}, {}, {}, {})`\n- Line 326 (`write_fill_color`): change format string from `rgba({}, {}, {}, {})` to `rgb({}, {}, {}, {})`\n- Update doc comment on line 320 from 'rgba' to 'rgb'\n- Update ALL existing unit tests that assert `rgba(` to assert `rgb(` with 4 args instead. Search for 'rgba' in the test module.\n\nAffected fixture files: `10-slides.pptx`, `45545_Comment.pptx`, `customGeo.pptx`",
+      "id": "US-080",
+      "title": "Extract document metadata from OOXML core/app properties",
+      "description": "All three parsers currently return `Metadata::default()` instead of extracting actual document metadata. This breaks PDF/A compliance and produces PDFs without title/author/dates.\n\nDOCX (`crates/office2pdf/src/parser/docx.rs:825`): Use `docx-rs` API or parse `docProps/core.xml` from the ZIP archive to extract dc:title, dc:creator, dc:subject, dc:description, dcterms:created, dcterms:modified.\n\nPPTX (`crates/office2pdf/src/parser/pptx.rs:110`): The PPTX is already opened as a ZIP archive. Read `docProps/core.xml` and parse it with quick-xml to extract the same Dublin Core fields.\n\nXLSX (`crates/office2pdf/src/parser/xlsx.rs:681`): Use `umya-spreadsheet`'s properties API (if available) or parse `docProps/core.xml` from the ZIP to extract metadata.\n\nThe `Metadata` struct in `crates/office2pdf/src/ir/document.rs` should be populated with: title, author (creator), subject, description, created date, modified date.\n\nCheck the current Metadata struct fields — if fields are missing, add them. The PDF renderer (`crates/office2pdf/src/render/pdf.rs`) should pass these through to the PDF document info dictionary.",
       "acceptanceCriteria": [
-        "write_shadow_shape() emits rgb() not rgba() for shadow colors",
-        "write_fill_color() emits rgb() not rgba() for colors with opacity",
-        "Doc comment on write_fill_color updated to say rgb not rgba",
-        "All existing tests that checked for rgba(...) are updated to check for rgb(...) with 4 args",
-        "cargo test --workspace passes",
-        "cargo fmt --all -- --check passes",
-        "cargo clippy --workspace -- -D warnings passes",
-        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/pptx/10-slides.pptx -o /tmp/test.pdf succeeds"
-      ],
-      "priority": 1,
-      "passes": true,
-      "notes": "This is purely a string replacement: rgba -> rgb in format strings and test assertions. Typst's rgb() accepts 3 args (r,g,b) OR 4 args (r,g,b,a). There are ~6 test assertions that reference 'rgba' that need updating."
-    },
-    {
-      "id": "US-071",
-      "title": "Fix nested list double-content-block in Typst codegen",
-      "description": "In `generate_list_items()` in `crates/office2pdf/src/render/typst_gen.rs` (lines 668-701), when a list item has nested children, the code emits TWO content blocks on `list.item`/`enum.item`:\n\nCurrent (WRONG): `list.item[text][#list(...)]` — two `[...]` blocks = two body arguments\nCorrect: `list.item[text #list(...)]` — single content block with nested list inside\n\nThe bug: Line 676 closes `]` for the item text, then line 687 opens another `[` for the nested list. Typst's `list.item`/`enum.item` only accepts ONE body argument.\n\nFix in `generate_list_items()`:\n- When nested items exist (lines 685-696), do NOT close the first `]` before emitting the nested list. Instead, emit the nested `#list(...)` or `#enum(...)` INSIDE the same content block.\n- Change flow: open `[`, write text content, if nested: write ` #func(nested...)`, then close `]`.\n- Specifically: remove the `out.push(']')` at line 676 and move it after the nested block emission. The line 687 `[` and line 695 `]` around the nested list should be removed.\n\nAffected fixture files: `ComplexNumberedLists.docx`, `numberings.docx`, `unit_test_formatting.docx`, `unit_test_lists.docx`",
-      "acceptanceCriteria": [
-        "generate_list_items() emits single content block per list item (no double [...])",
-        "Nested sub-lists are embedded inside the parent item's content block",
-        "Output for nested list: list.item[text #list(...)] not list.item[text][#list(...)]",
-        "Add unit test: nested list generates single content block",
-        "cargo test --workspace passes",
-        "cargo fmt --all -- --check passes",
-        "cargo clippy --workspace -- -D warnings passes",
-        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/docx/numberings.docx -o /tmp/test.pdf succeeds"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "The key insight: `list.item[body]` takes exactly one positional (body) argument. Two `[...]` blocks means two positional args which Typst rejects as 'unexpected argument'. The fix is to keep the content block open while emitting nested lists."
-    },
-    {
-      "id": "US-072",
-      "title": "Clamp colspan to prevent exceeding table columns",
-      "description": "In `generate_table()` in `crates/office2pdf/src/render/typst_gen.rs` (line 718+), table cells with `col_span` values that exceed the available columns cause Typst error: 'cell's colspan would cause it to exceed the available column(s)'.\n\nThe parsers (DOCX and PPTX) set `col_span` from XML `gridSpan` without validating against the actual column count. The codegen passes it through unchecked.\n\nFix in `generate_table()` (around line 718):\n1. Calculate `num_cols` from `table.column_widths.len()`. If `column_widths` is empty, infer from the maximum number of cells in any row.\n2. Before rendering rows, iterate through rows and cells, tracking column position. For each cell, clamp its effective `col_span` to `min(cell.col_span, num_cols - current_col_pos)`. Ensure it's at least 1.\n3. Pass the clamped colspan to `generate_table_cell()` or modify the cell rendering to use the clamped value.\n\nAlternatively, modify `write_cell_params()` to accept a clamped colspan parameter, or clamp inside `generate_table()` before calling `generate_table_cell()`.\n\nAffected fixture files: `drawing.docx`, `powerpoint_sample.pptx`, `shapes.pptx`, `table_test2.pptx`",
-      "acceptanceCriteria": [
-        "Table cells with colspan exceeding column count are clamped to remaining columns",
-        "Column position is tracked per row to correctly calculate remaining columns",
-        "num_cols is derived from column_widths.len() or inferred from row cell counts",
-        "Clamped colspan is at least 1",
-        "Add unit test: table with colspan exceeding columns is clamped correctly",
-        "cargo test --workspace passes",
-        "cargo fmt --all -- --check passes",
-        "cargo clippy --workspace -- -D warnings passes",
-        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/docx/drawing.docx -o /tmp/test.pdf succeeds"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": "The clamping should happen in codegen (typst_gen.rs) as a safety net, not in the parser. This way even if parsers emit bad data, the codegen won't crash. Look at generate_table() and generate_table_cell() — you may need to pass the clamped col_span as a parameter or create a wrapper."
-    },
-    {
-      "id": "US-073",
-      "title": "Sort gradient stops by position before rendering",
-      "description": "In `write_gradient_fill()` in `crates/office2pdf/src/render/typst_gen.rs` (line 360), gradient stops are iterated in parser order without sorting. Typst requires gradient stop offsets to be in monotonic (non-decreasing) order, otherwise it errors: 'offsets must be in monotonic order'.\n\nFix in `write_gradient_fill()` (line 360):\n- Before iterating `gradient.stops`, clone and sort the stops by their `position` field.\n- Use `let mut sorted_stops = gradient.stops.clone(); sorted_stops.sort_by(|a, b| a.position.partial_cmp(&b.position).unwrap_or(std::cmp::Ordering::Equal));`\n- Then iterate `sorted_stops` instead of `gradient.stops`.\n\nPrefer sorting in codegen rather than parser as a safety net.\n\nAffected fixture file: `backgrounds.pptx`",
-      "acceptanceCriteria": [
-        "write_gradient_fill() sorts stops by position before rendering",
-        "Unsorted gradient stops from parser are handled correctly",
-        "Add unit test: gradient with unsorted stops renders in sorted order",
-        "cargo test --workspace passes",
-        "cargo fmt --all -- --check passes",
-        "cargo clippy --workspace -- -D warnings passes",
-        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/pptx/backgrounds.pptx -o /tmp/test.pdf succeeds"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": "The GradientStop struct has a `position: f64` field. Sort by this before generating the Typst gradient.linear() call. The GradientFill and GradientStop types are in ir/ module — check if they derive Clone. If not, you'll need to collect into a new Vec of references and sort that."
-    },
-    {
-      "id": "US-074",
-      "title": "Map Unicode math symbols to Typst identifiers in OMML parser",
-      "description": "In `parse_math_run()` in `crates/office2pdf/src/parser/omml.rs` (line 286-310), raw Unicode text is appended directly to the output. Greek letters like `π` are not recognized by Typst as math identifiers, causing 'unknown variable: πr' errors.\n\nFix in `parse_math_run()`:\n- After reading text content (line 297-299), add a post-processing step that:\n  1. Maps Unicode Greek letters to Typst math identifiers: π→pi, α→alpha, β→beta, γ→gamma, δ→delta, ε→epsilon, ζ→zeta, η→eta, θ→theta, ι→iota, κ→kappa, λ→lambda, μ→mu, ν→nu, ξ→xi, ο→omicron, ρ→rho, σ→sigma, τ→tau, υ→upsilon, φ→phi, χ→chi, ψ→psi, ω→omega (and uppercase variants: Α→Alpha, Β→Beta, Γ→Gamma, Δ→Delta, etc.)\n  2. Also map common math symbols: ∞→infinity, ∂→partial, ∇→nabla, ±→plus.minus, ×→times, ÷→div, ≤→lt.eq, ≥→gt.eq, ≠→eq.not, ≈→approx, ∈→in, ∉→in.not, ⊂→subset, ⊃→supset, ∪→union, ∩→sect, ∅→emptyset\n  3. Insert space between adjacent identifiers to enable implicit multiplication (e.g., `πr` → `pi r`)\n\nCreate a helper function `map_math_text(input: &str) -> String` that processes the text character by character.\n\nAffected fixture file: `equations.docx`",
-      "acceptanceCriteria": [
-        "Unicode Greek letters in math runs are mapped to Typst identifiers (π→pi, α→alpha, etc.)",
-        "Common Unicode math symbols are mapped to Typst equivalents",
-        "Adjacent identifiers have spaces inserted for implicit multiplication",
-        "Plain ASCII letters and digits pass through unchanged",
-        "Add unit test: parse_math_run maps π to pi, πr² to pi r 2 (or similar)",
-        "Add unit test for map_math_text helper function with various Greek letters and symbols",
-        "cargo test --workspace passes",
-        "cargo fmt --all -- --check passes",
-        "cargo clippy --workspace -- -D warnings passes",
-        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/docx/equations.docx -o /tmp/test.pdf succeeds"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": "The mapping function should handle multi-byte Unicode characters properly. Process the input string character by character using .chars(). When a character maps to a named identifier, output the name. When transitioning between identifiers (e.g., 'pi' followed by 'r'), insert a space. Numbers and operators (+, -, =, etc.) should pass through as-is. The function should be robust — unknown Unicode chars can pass through unchanged."
-    },
-    {
-      "id": "US-075",
-      "title": "Remove corrupt deep-table-cell.docx fixture",
-      "description": "The file `tests/fixtures/docx/deep-table-cell.docx` is a corrupt ZIP file that always fails with 'Failed to read from zip'. This is not a bug in our code — the file itself is damaged. Remove it and all references.\n\nChanges needed:\n1. Delete `tests/fixtures/docx/deep-table-cell.docx`\n2. Remove the test line `docx_fixture_tests!(deep_table_cell, \"deep-table-cell.docx\");` from `crates/office2pdf/tests/docx_fixtures.rs`\n3. Remove `- \\`docx/deep-table-cell.docx\\`` from `tests/fixtures/THIRD-PARTY-LICENSES.md`",
-      "acceptanceCriteria": [
-        "tests/fixtures/docx/deep-table-cell.docx is deleted",
-        "docx_fixtures.rs no longer references deep-table-cell.docx",
-        "THIRD-PARTY-LICENSES.md no longer references deep-table-cell.docx",
+        "DOCX parser extracts title, creator, subject, created, modified from core.xml",
+        "PPTX parser extracts title, creator, subject, created, modified from core.xml",
+        "XLSX parser extracts title, creator, subject, created, modified from core.xml",
+        "Metadata struct has fields for title, author, subject, description, created, modified",
+        "PDF output contains document info dictionary with extracted metadata",
+        "Unit test: DOCX with metadata fields → Metadata struct populated correctly",
+        "Unit test: PPTX with metadata fields → Metadata struct populated correctly",
+        "Unit test: XLSX with metadata fields → Metadata struct populated correctly",
+        "Unit test: document without metadata → Metadata fields are None/empty (no crash)",
         "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
-      "priority": 6,
+      "priority": 1,
       "passes": true,
-      "notes": "Simple cleanup task. Delete the file and remove 2 lines from 2 files. Use git rm for the fixture file so git tracks the deletion."
+      "notes": "Dublin Core metadata in OOXML is at `docProps/core.xml`. Fields: <dc:title>, <dc:creator>, <dc:subject>, <dc:description>, <dcterms:created>, <dcterms:modified>. For DOCX, docx-rs may expose properties — check the API first. For PPTX, the ZIP is already open in the parser so adding another file read is straightforward. For XLSX, umya-spreadsheet may have a properties accessor. The Metadata struct may need new Optional<String> fields added."
+    },
+    {
+      "id": "US-081",
+      "title": "Replace hardcoded PDF/A timestamp with actual conversion time",
+      "description": "In `crates/office2pdf/src/render/pdf.rs:70`, the PDF/A timestamp is hardcoded to `2024-01-01` instead of using the actual conversion time or source document metadata.\n\nFix:\n1. Use `chrono::Utc::now()` (or equivalent) to get the current timestamp at conversion time\n2. If the source document has a `created` or `modified` date in its Metadata, prefer the source metadata for `CreationDate` and use `now()` for `ModDate`\n3. If no source metadata, use `now()` for both\n4. Ensure the timestamp format matches PDF spec requirements (D:YYYYMMDDHHmmSSOHH'mm')\n5. Check if `chrono` is already a dependency — if not, consider using `std::time::SystemTime` with manual formatting to avoid adding a new dependency (per project rules of preferring Rust native implementations)\n\nAlso check if the timestamp is used elsewhere in the PDF output (XMP metadata for PDF/A).",
+      "acceptanceCriteria": [
+        "PDF/A output contains actual conversion timestamp, not 2024-01-01",
+        "If source document has created/modified dates, they are used for CreationDate",
+        "ModDate uses actual conversion time",
+        "Timestamp format matches PDF specification",
+        "No new external dependencies added (use std::time if possible)",
+        "Unit test: PDF/A output has non-hardcoded timestamp",
+        "cargo test --workspace passes",
+        "cargo fmt --all -- --check passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Check if typst-pdf handles timestamps internally. The fix may be in how we construct the PdfOptions or PdfStandard configuration passed to typst_pdf::pdf(). Look at how typst-pdf's API accepts metadata — it may have a creation_date field. Prefer std::time::SystemTime over adding chrono as a dependency."
+    },
+    {
+      "id": "US-082",
+      "title": "Close ignored DOCX fixture tests (footnotes and headers)",
+      "description": "Two structural tests in `crates/office2pdf/tests/docx_fixtures.rs` are marked as `#[ignore]`:\n\n1. Footnote test at line 173 — the DOCX with footnotes is not converting correctly\n2. Headers test at line 361 — the DOCX with headers/footers is not converting correctly\n\nFor each:\n1. Remove the `#[ignore]` attribute\n2. Run the test to see the actual failure\n3. Fix the underlying issue in the parser or codegen\n4. Ensure the test passes\n\nThese may involve issues in:\n- `parser/docx.rs` — footnote/endnote parsing or header/footer parsing\n- `render/typst_gen.rs` — footnote/header rendering in Typst markup\n\nCheck the existing footnote and header parsing code to understand what's partially implemented vs missing.",
+      "acceptanceCriteria": [
+        "Footnote fixture test at docx_fixtures.rs:173 passes without #[ignore]",
+        "Headers fixture test at docx_fixtures.rs:361 passes without #[ignore]",
+        "No other tests regress",
+        "cargo test --workspace passes",
+        "cargo fmt --all -- --check passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "First read the test code to understand what fixture file is being used and what the test expects. Then run the test without #[ignore] to see the actual error. The fix might be as simple as a parsing edge case or a Typst codegen issue. Check the progress.txt Codebase Patterns section for any existing notes about footnotes/headers."
+    },
+    {
+      "id": "US-083",
+      "title": "Add structured warning taxonomy across all parsers",
+      "description": "Currently, warnings are emitted inconsistently across DOCX, PPTX, and XLSX parsers. Some use ConvertWarning variants, others use plain strings or are silently ignored.\n\nCreate a structured warning system:\n1. Review `crates/office2pdf/src/error.rs` — check existing ConvertWarning enum variants\n2. Define a consistent set of warning categories:\n   - `UnsupportedElement(format, element_name)` — element type not supported\n   - `PartialElement(format, element_name, detail)` — element partially rendered\n   - `FallbackUsed(format, from, to)` — fallback rendering applied\n   - `ParseSkipped(format, reason)` — element skipped during parsing\n3. Audit all three parsers for places where elements are silently skipped or fallback-rendered\n4. Replace ad-hoc warning strings with structured ConvertWarning variants\n5. Ensure ConvertResult warnings are collected and returned to the caller\n\nThe goal is that users can programmatically inspect what was degraded in the conversion.",
+      "acceptanceCriteria": [
+        "ConvertWarning enum has consistent, structured variants",
+        "Each warning variant includes the format (DOCX/PPTX/XLSX) and element context",
+        "DOCX parser uses structured warnings for unsupported/fallback elements",
+        "PPTX parser uses structured warnings for unsupported/fallback elements",
+        "XLSX parser uses structured warnings for unsupported/fallback elements",
+        "ConvertResult.warnings contains structured warnings after conversion",
+        "Unit test: converting a document with unsupported elements produces appropriate warnings",
+        "cargo test --workspace passes",
+        "cargo fmt --all -- --check passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Start by reading the existing ConvertWarning and ConvertResult types. Then grep across all parsers for places where warnings are generated, elements are skipped (continue statements), or fallbacks are used. The SmartArt and Chart fallbacks in typst_gen.rs are good examples of places that should emit structured warnings. Don't change behavior — just make existing degradation more visible and structured."
+    },
+    {
+      "id": "US-084",
+      "title": "Add PDF validation with QPDF in CI test suite",
+      "description": "Inspired by fpdf2's practice of validating output with multiple independent PDF checkers, add PDF validation to the test suite.\n\nApproach:\n1. Add a test helper function that validates PDF bytes using QPDF (widely available CLI tool)\n2. In integration tests, after converting a fixture to PDF, validate the output\n3. QPDF validation: `qpdf --check <file>` returns exit code 0 for valid PDFs\n4. If QPDF is not installed, skip validation with a warning (don't fail CI)\n5. Add a CI step to install QPDF and run tests with validation enabled\n\nThe validation should catch:\n- Malformed PDF structure\n- Invalid cross-reference tables\n- Corrupted streams\n- PDF spec violations\n\nImplementation:\n- Create a test utility function in `crates/office2pdf/tests/` or a shared test helper module\n- Use `std::process::Command` to invoke qpdf\n- Feature-gate or environment-variable-gate the validation so it only runs when qpdf is available\n- Add `OFFICE2PDF_VALIDATE_PDF=1` env var to enable validation in CI",
+      "acceptanceCriteria": [
+        "Test helper function validates PDF bytes via qpdf --check",
+        "At least 3 fixture conversion tests include PDF validation",
+        "Validation is skipped gracefully if qpdf is not installed",
+        "OFFICE2PDF_VALIDATE_PDF env var controls whether validation runs",
+        "CI workflow installs qpdf and enables validation",
+        "All validated PDFs pass qpdf --check",
+        "cargo test --workspace passes (with or without qpdf installed)",
+        "cargo fmt --all -- --check passes",
+        "cargo clippy --workspace -- -D warnings passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Check if qpdf is available on GitHub Actions runners (Ubuntu). It's usually installable via `apt-get install qpdf`. For CI, add a step in `.github/workflows/` to install qpdf before running tests. The test helper should write PDF bytes to a temp file, run qpdf --check, parse exit code. VeraPDF (for PDF/A validation) can be added in a later phase as it requires Java."
     }
   ]
 }

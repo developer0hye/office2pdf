@@ -9,11 +9,15 @@ pub struct Document {
     pub styles: StyleSheet,
 }
 
-/// Document metadata.
+/// Document metadata extracted from OOXML `docProps/core.xml` (Dublin Core).
 #[derive(Debug, Clone, Default)]
 pub struct Metadata {
     pub title: Option<String>,
     pub author: Option<String>,
+    pub subject: Option<String>,
+    pub description: Option<String>,
+    pub created: Option<String>,
+    pub modified: Option<String>,
 }
 
 /// A page in the document — variant depends on source format.
