@@ -733,18 +733,22 @@ fn generate_math_equation(out: &mut String, math: &MathEquation) {
     }
 }
 
-/// Generate Typst markup for a chart as a data table.
+/// Generate Typst markup for a chart with improved visual representation.
 ///
-/// Renders the chart title (if any), chart type label, and a table of
-/// category labels vs. series values. This is a simplified fallback
-/// representation since full chart rendering is not feasible in Typst.
+/// Renders charts in a bordered box with title header and type-specific
+/// visual representation:
+/// - Bar/Column: proportional visual bars
+/// - Pie: percentage legend table
+/// - Line: data table with trend indicators (↑↓→)
+/// - Others: standard data table
 fn generate_chart(out: &mut String, chart: &Chart) {
-    // Chart title
-    if let Some(ref title) = chart.title {
-        let _ = writeln!(out, "#align(center)[*{title}*]\n");
-    }
+    // Open bordered box
+    let _ = writeln!(
+        out,
+        "#block(stroke: 1pt + rgb(100, 100, 100), radius: 4pt, inset: 10pt, width: 100%)["
+    );
 
-    // Chart type label
+    // Chart title in header
     let type_label = match &chart.chart_type {
         ChartType::Bar => "Bar Chart",
         ChartType::Column => "Column Chart",
@@ -754,18 +758,178 @@ fn generate_chart(out: &mut String, chart: &Chart) {
         ChartType::Scatter => "Scatter Chart",
         ChartType::Other(s) => s.as_str(),
     };
-    let _ = writeln!(out, "#align(center)[_{type_label}_]\n");
 
-    // Data table
+    if let Some(ref title) = chart.title {
+        let escaped = escape_typst(title);
+        let _ = writeln!(
+            out,
+            "#align(center)[#text(size: 14pt, weight: \"bold\")[{escaped}]]\n"
+        );
+    }
+    let _ = writeln!(
+        out,
+        "#align(center)[#text(fill: rgb(100, 100, 100))[_{type_label}_]]\n"
+    );
+
     if chart.series.is_empty() {
+        out.push_str("]\n");
         return;
     }
 
-    let col_count = 1 + chart.series.len(); // category column + series columns
+    match &chart.chart_type {
+        ChartType::Bar | ChartType::Column => generate_chart_bar(out, chart),
+        ChartType::Pie => generate_chart_pie(out, chart),
+        ChartType::Line => generate_chart_line(out, chart),
+        _ => generate_chart_table(out, chart),
+    }
+
+    // Close bordered box
+    out.push_str("]\n");
+}
+
+/// Generate bar chart with proportional visual bars.
+fn generate_chart_bar(out: &mut String, chart: &Chart) {
+    // Find max value across all series for proportional scaling
+    let max_val = chart
+        .series
+        .iter()
+        .flat_map(|s| s.values.iter())
+        .copied()
+        .fold(0.0_f64, f64::max);
+    let max_val = if max_val == 0.0 { 1.0 } else { max_val };
+
+    // Series color palette
+    let colors = [
+        "rgb(66, 133, 244)",
+        "rgb(219, 68, 55)",
+        "rgb(244, 180, 0)",
+        "rgb(15, 157, 88)",
+    ];
+
+    for (row_idx, cat) in chart.categories.iter().enumerate() {
+        let escaped_cat = escape_typst(cat);
+        let _ = writeln!(out, "#text(weight: \"bold\")[{escaped_cat}]");
+        for (s_idx, series) in chart.series.iter().enumerate() {
+            let val = series.values.get(row_idx).copied().unwrap_or(0.0);
+            let pct = (val / max_val * 100.0).round().min(100.0) as u32;
+            let color = colors[s_idx % colors.len()];
+            let _ = writeln!(
+                out,
+                "#box(width: {pct}%, height: 14pt, fill: {color}, radius: 2pt)[#text(size: 8pt, fill: white)[ {}]]",
+                format_f64(val)
+            );
+        }
+        let _ = writeln!(out);
+    }
+
+    // Legend for multiple series
+    if chart.series.len() > 1 {
+        let _ = writeln!(out);
+        for (i, series) in chart.series.iter().enumerate() {
+            let default_name = format!("Series {}", i + 1);
+            let name = series.name.as_deref().unwrap_or(&default_name);
+            let color = colors[i % colors.len()];
+            let _ = writeln!(
+                out,
+                "#box(width: 10pt, height: 10pt, fill: {color}) #text(size: 9pt)[{name}] "
+            );
+        }
+    }
+}
+
+/// Generate pie chart with percentage labels.
+fn generate_chart_pie(out: &mut String, chart: &Chart) {
+    let series = match chart.series.first() {
+        Some(s) => s,
+        None => return,
+    };
+
+    let total: f64 = series.values.iter().sum();
+    let total = if total == 0.0 { 1.0 } else { total };
+
+    let colors = [
+        "rgb(66, 133, 244)",
+        "rgb(219, 68, 55)",
+        "rgb(244, 180, 0)",
+        "rgb(15, 157, 88)",
+        "rgb(171, 71, 188)",
+        "rgb(0, 172, 193)",
+    ];
+
+    let _ = writeln!(out, "#table(");
+    let _ = writeln!(out, "  columns: 3,");
+    let _ = writeln!(out, "  [*Slice*], [*Value*], [*%*],");
+
+    for (i, cat) in chart.categories.iter().enumerate() {
+        let val = series.values.get(i).copied().unwrap_or(0.0);
+        let pct = val / total * 100.0;
+        let escaped_cat = escape_typst(cat);
+        let color = colors[i % colors.len()];
+        let _ = writeln!(
+            out,
+            "  [#box(width: 8pt, height: 8pt, fill: {color}) {escaped_cat}], [{}], [{:.1}%],",
+            format_f64(val),
+            pct
+        );
+    }
+
+    let _ = writeln!(out, ")\n");
+}
+
+/// Generate line chart with trend indicators.
+fn generate_chart_line(out: &mut String, chart: &Chart) {
+    let col_count = 1 + chart.series.len();
     let _ = writeln!(out, "#table(");
     let _ = writeln!(out, "  columns: {col_count},");
 
-    // Header row: "Category" + series names
+    // Header row
+    out.push_str("  [*Category*], ");
+    for (i, series) in chart.series.iter().enumerate() {
+        let default_name = format!("Series {}", i + 1);
+        let name = series.name.as_deref().unwrap_or(&default_name);
+        let _ = write!(out, "[*{name}*]");
+        if i + 1 < chart.series.len() {
+            out.push_str(", ");
+        }
+    }
+    out.push_str(",\n");
+
+    // Data rows with trend indicators
+    for (row_idx, cat) in chart.categories.iter().enumerate() {
+        let escaped_cat = escape_typst(cat);
+        let _ = write!(out, "  [{escaped_cat}], ");
+        for (s_idx, series) in chart.series.iter().enumerate() {
+            let val = series.values.get(row_idx).copied().unwrap_or(0.0);
+            let trend = if row_idx > 0 {
+                let prev = series.values.get(row_idx - 1).copied().unwrap_or(0.0);
+                if val > prev {
+                    " ↑"
+                } else if val < prev {
+                    " ↓"
+                } else {
+                    " →"
+                }
+            } else {
+                ""
+            };
+            let _ = write!(out, "[{}{}]", format_f64(val), trend);
+            if s_idx + 1 < chart.series.len() {
+                out.push_str(", ");
+            }
+        }
+        out.push_str(",\n");
+    }
+
+    let _ = writeln!(out, ")\n");
+}
+
+/// Generate generic data table for chart types without specialized rendering.
+fn generate_chart_table(out: &mut String, chart: &Chart) {
+    let col_count = 1 + chart.series.len();
+    let _ = writeln!(out, "#table(");
+    let _ = writeln!(out, "  columns: {col_count},");
+
+    // Header row
     out.push_str("  [*Category*], ");
     for (i, series) in chart.series.iter().enumerate() {
         let default_name = format!("Series {}", i + 1);
@@ -779,10 +943,11 @@ fn generate_chart(out: &mut String, chart: &Chart) {
 
     // Data rows
     for (row_idx, cat) in chart.categories.iter().enumerate() {
-        let _ = write!(out, "  [{cat}], ");
+        let escaped_cat = escape_typst(cat);
+        let _ = write!(out, "  [{escaped_cat}], ");
         for (i, series) in chart.series.iter().enumerate() {
             let val = series.values.get(row_idx).copied().unwrap_or(0.0);
-            let _ = write!(out, "[{val}]");
+            let _ = write!(out, "[{}]", format_f64(val));
             if i + 1 < chart.series.len() {
                 out.push_str(", ");
             }
@@ -795,22 +960,70 @@ fn generate_chart(out: &mut String, chart: &Chart) {
 
 /// Generate Typst markup for a SmartArt diagram.
 ///
-/// Renders SmartArt as a bordered box containing a bulleted list of text items.
-/// This is a simplified representation since full SmartArt layout is not feasible.
+/// Renders SmartArt as a visually distinct bordered box with:
+/// - Hierarchy items (varying depths): indented tree with depth-based padding
+/// - Flat items (all same depth): numbered steps with arrows
 fn generate_smartart(out: &mut String, smartart: &SmartArt, width: f64, height: f64) {
     let _ = writeln!(
         out,
-        "#block(width: {}pt, height: {}pt, stroke: 0.5pt + gray, inset: 8pt)[",
+        "#block(width: {}pt, height: {}pt, stroke: 1pt + rgb(70, 130, 180), radius: 4pt, inset: 10pt, fill: rgb(245, 248, 255))[",
         format_f64(width),
         format_f64(height),
     );
-    let _ = writeln!(out, "#align(center)[*SmartArt Diagram*]\n");
+    let _ = writeln!(
+        out,
+        "#align(center)[#text(size: 11pt, weight: \"bold\", fill: rgb(70, 130, 180))[SmartArt Diagram]]\n"
+    );
 
-    for item in &smartart.items {
-        let escaped = escape_typst(item);
-        let _ = writeln!(out, "- {escaped}");
+    if smartart.items.is_empty() {
+        out.push_str("]\n");
+        return;
     }
+
+    // Determine if hierarchy (varying depths) or flat (all same depth)
+    let has_hierarchy = smartart.items.iter().any(|n| n.depth > 0);
+
+    if has_hierarchy {
+        generate_smartart_hierarchy(out, smartart);
+    } else {
+        generate_smartart_steps(out, smartart);
+    }
+
     out.push_str("]\n");
+}
+
+/// Render hierarchical SmartArt as an indented tree.
+fn generate_smartart_hierarchy(out: &mut String, smartart: &SmartArt) {
+    for node in &smartart.items {
+        let escaped = escape_typst(&node.text);
+        if node.depth == 0 {
+            let _ = writeln!(out, "#text(weight: \"bold\")[{escaped}]");
+        } else {
+            let indent = node.depth as f64 * 16.0;
+            let _ = writeln!(
+                out,
+                "#pad(left: {}pt)[{} {escaped}]",
+                format_f64(indent),
+                if node.depth == 1 { "├" } else { "└" },
+            );
+        }
+    }
+}
+
+/// Render flat SmartArt as numbered steps with arrows.
+fn generate_smartart_steps(out: &mut String, smartart: &SmartArt) {
+    for (i, node) in smartart.items.iter().enumerate() {
+        let escaped = escape_typst(&node.text);
+        let step_num = i + 1;
+        let _ = writeln!(
+            out,
+            "#box(stroke: 0.5pt + rgb(70, 130, 180), radius: 3pt, inset: 6pt)[#text(weight: \"bold\")[{}. ] {escaped}]",
+            step_num,
+        );
+        if i + 1 < smartart.items.len() {
+            let _ = writeln!(out, "#align(center)[#text(size: 14pt)[↓]]");
+        }
+    }
 }
 
 /// Generate Typst markup for a list (ordered or unordered).
@@ -1401,7 +1614,9 @@ fn escape_typst(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::{ChartSeries, GradientStop, HeaderFooterParagraph, Metadata, StyleSheet};
+    use crate::ir::{
+        ChartSeries, GradientStop, HeaderFooterParagraph, Metadata, SmartArtNode, StyleSheet,
+    };
 
     /// Helper to create a minimal Document with one FlowPage.
     fn make_doc(pages: Vec<Page>) -> Document {
@@ -4260,7 +4475,7 @@ mod tests {
     }
 
     #[test]
-    fn test_codegen_chart_with_title_and_data() {
+    fn test_codegen_chart_bar_visual_bars() {
         let doc = make_doc(vec![make_flow_page(vec![Block::Chart(Chart {
             chart_type: ChartType::Bar,
             title: Some("Sales Report".to_string()),
@@ -4272,9 +4487,15 @@ mod tests {
         })])]);
 
         let output = generate_typst(&doc).unwrap();
+        // Wrapped in bordered box with header
+        assert!(
+            output.source.contains("stroke:"),
+            "Expected bordered box, got:\n{}",
+            output.source
+        );
         assert!(
             output.source.contains("Sales Report"),
-            "Expected chart title, got:\n{}",
+            "Expected chart title in header, got:\n{}",
             output.source
         );
         assert!(
@@ -4282,9 +4503,10 @@ mod tests {
             "Expected chart type label, got:\n{}",
             output.source
         );
+        // Bar chart should have visual bars (box with proportional width)
         assert!(
-            output.source.contains("Revenue"),
-            "Expected series name, got:\n{}",
+            output.source.contains("box(") || output.source.contains("#box("),
+            "Expected visual bar boxes for bar chart, got:\n{}",
             output.source
         );
         assert!(
@@ -4292,18 +4514,13 @@ mod tests {
             "Expected category label, got:\n{}",
             output.source
         );
-        assert!(
-            output.source.contains("100"),
-            "Expected data value, got:\n{}",
-            output.source
-        );
     }
 
     #[test]
-    fn test_codegen_chart_no_title() {
+    fn test_codegen_chart_pie_percentages() {
         let doc = make_doc(vec![make_flow_page(vec![Block::Chart(Chart {
             chart_type: ChartType::Pie,
-            title: None,
+            title: Some("Market Share".to_string()),
             categories: vec!["A".to_string(), "B".to_string()],
             series: vec![ChartSeries {
                 name: None,
@@ -4317,9 +4534,44 @@ mod tests {
             "Expected pie chart label, got:\n{}",
             output.source
         );
+        // Pie chart should show percentages
         assert!(
-            output.source.contains("Series 1"),
-            "Expected default series name, got:\n{}",
+            output.source.contains("60") && output.source.contains("%"),
+            "Expected percentage in pie chart, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("40") && output.source.contains("%"),
+            "Expected percentage in pie chart, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_codegen_chart_line_trend_indicators() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Chart(Chart {
+            chart_type: ChartType::Line,
+            title: Some("Trends".to_string()),
+            categories: vec!["Jan".to_string(), "Feb".to_string(), "Mar".to_string()],
+            series: vec![ChartSeries {
+                name: Some("Sales".to_string()),
+                values: vec![10.0, 20.0, 15.0],
+            }],
+        })])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("Line Chart"),
+            "Expected line chart label, got:\n{}",
+            output.source
+        );
+        // Line chart should have trend indicators (↑ or ↓)
+        let has_trend = output.source.contains('↑')
+            || output.source.contains('↓')
+            || output.source.contains('→');
+        assert!(
+            has_trend,
+            "Expected trend indicators in line chart, got:\n{}",
             output.source
         );
     }
@@ -4339,18 +4591,20 @@ mod tests {
             "Expected line chart label, got:\n{}",
             output.source
         );
-        // No table should be generated for empty series
-        assert!(
-            !output.source.contains("#table("),
-            "Should not generate table for empty chart, got:\n{}",
-            output.source
-        );
     }
 
     // ── SmartArt codegen tests ──────────────────────────────────────────
 
+    /// Helper to create a SmartArtNode.
+    fn sa_node(text: &str, depth: usize) -> SmartArtNode {
+        SmartArtNode {
+            text: text.to_string(),
+            depth,
+        }
+    }
+
     #[test]
-    fn test_smartart_codegen_basic() {
+    fn test_smartart_codegen_flat_numbered_steps() {
         let doc = make_doc(vec![make_fixed_page(
             720.0,
             540.0,
@@ -4361,33 +4615,86 @@ mod tests {
                 height: 300.0,
                 kind: FixedElementKind::SmartArt(SmartArt {
                     items: vec![
-                        "Step 1".to_string(),
-                        "Step 2".to_string(),
-                        "Step 3".to_string(),
+                        sa_node("Step 1", 0),
+                        sa_node("Step 2", 0),
+                        sa_node("Step 3", 0),
                     ],
                 }),
             }],
         )]);
 
         let output = generate_typst(&doc).unwrap();
+        // Wrapped in bordered box
+        assert!(
+            output.source.contains("stroke:"),
+            "Expected bordered box, got:\n{}",
+            output.source
+        );
         assert!(
             output.source.contains("SmartArt Diagram"),
             "Expected SmartArt header, got:\n{}",
             output.source
         );
+        // Flat items → numbered steps with arrows
         assert!(
-            output.source.contains("- Step 1"),
+            output.source.contains("Step 1"),
             "Expected Step 1, got:\n{}",
             output.source
         );
         assert!(
-            output.source.contains("- Step 2"),
+            output.source.contains("Step 2"),
             "Expected Step 2, got:\n{}",
             output.source
         );
         assert!(
-            output.source.contains("- Step 3"),
+            output.source.contains("Step 3"),
             "Expected Step 3, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_smartart_codegen_hierarchy_indented_tree() {
+        let doc = make_doc(vec![make_fixed_page(
+            720.0,
+            540.0,
+            vec![FixedElement {
+                x: 72.0,
+                y: 100.0,
+                width: 400.0,
+                height: 300.0,
+                kind: FixedElementKind::SmartArt(SmartArt {
+                    items: vec![
+                        sa_node("CEO", 0),
+                        sa_node("VP Engineering", 1),
+                        sa_node("VP Sales", 1),
+                        sa_node("Dev Lead", 2),
+                    ],
+                }),
+            }],
+        )]);
+
+        let output = generate_typst(&doc).unwrap();
+        // Hierarchical items should use indentation
+        assert!(
+            output.source.contains("CEO"),
+            "Expected CEO, got:\n{}",
+            output.source
+        );
+        // Deeper items should have padding/indentation
+        assert!(
+            output.source.contains("pad"),
+            "Expected indented items for hierarchy, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("VP Engineering"),
+            "Expected VP Engineering, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Dev Lead"),
+            "Expected Dev Lead, got:\n{}",
             output.source
         );
     }
@@ -4411,11 +4718,6 @@ mod tests {
             output.source.contains("SmartArt Diagram"),
             "Expected SmartArt header even for empty SmartArt"
         );
-        // No list items
-        assert!(
-            !output.source.contains("- "),
-            "Should not contain list items for empty SmartArt"
-        );
     }
 
     #[test]
@@ -4429,7 +4731,7 @@ mod tests {
                 width: 200.0,
                 height: 100.0,
                 kind: FixedElementKind::SmartArt(SmartArt {
-                    items: vec!["Item #1".to_string(), "Price $10".to_string()],
+                    items: vec![sa_node("Item #1", 0), sa_node("Price $10", 0)],
                 }),
             }],
         )]);

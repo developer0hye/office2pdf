@@ -10,8 +10,8 @@ use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, FixedElement,
     FixedElementKind, FixedPage, GradientFill, GradientStop, ImageData, ImageFormat, Page,
-    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, StyleSheet,
-    Table, TableCell, TableRow, TextStyle,
+    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, SmartArtNode,
+    StyleSheet, Table, TableCell, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::chart as chart_parser;
@@ -395,8 +395,8 @@ fn load_slide_images<R: Read + std::io::Seek>(
     images
 }
 
-/// Map from relationship ID → list of extracted text items from SmartArt data.
-type SmartArtMap = HashMap<String, Vec<String>>;
+/// Map from relationship ID → list of SmartArt nodes with hierarchy depth.
+type SmartArtMap = HashMap<String, Vec<SmartArtNode>>;
 
 /// Pre-load SmartArt diagram data for a slide by scanning its .rels file
 /// for diagram/data relationships and parsing the data XML files.
@@ -4959,7 +4959,7 @@ mod tests {
 
     // ── SmartArt test helpers ───────────────────────────────────────────
 
-    /// Create SmartArt data model XML with the given text items.
+    /// Create SmartArt data model XML with the given text items (flat, all depth 0).
     fn make_smartart_data_xml(items: &[&str]) -> String {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8"?><dgm:dataModel xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><dgm:ptLst>"#,
@@ -4974,7 +4974,18 @@ mod tests {
                 i + 1
             ));
         }
-        xml.push_str("</dgm:ptLst></dgm:dataModel>");
+        xml.push_str("</dgm:ptLst>");
+        // Connection list: doc→all nodes (flat)
+        xml.push_str("<dgm:cxnLst>");
+        for (i, _) in items.iter().enumerate() {
+            xml.push_str(&format!(
+                r#"<dgm:cxn modelId="{}" type="parOf" srcId="0" destId="{}"/>"#,
+                100 + i,
+                i + 1,
+            ));
+        }
+        xml.push_str("</dgm:cxnLst>");
+        xml.push_str("</dgm:dataModel>");
         xml
     }
 
@@ -5081,7 +5092,10 @@ mod tests {
         assert_eq!(sa_elems.len(), 1, "Expected 1 SmartArt element");
 
         let sa = get_smartart(sa_elems[0]);
-        assert_eq!(sa.items, vec!["Step 1", "Step 2", "Step 3"]);
+        let texts: Vec<&str> = sa.items.iter().map(|n| n.text.as_str()).collect();
+        assert_eq!(texts, vec!["Step 1", "Step 2", "Step 3"]);
+        // All should be depth 0 (flat)
+        assert!(sa.items.iter().all(|n| n.depth == 0));
 
         // Check position
         assert!((sa_elems[0].x - 72.0).abs() < 0.1);
@@ -5122,7 +5136,8 @@ mod tests {
             .find(|e| matches!(e.kind, FixedElementKind::SmartArt(_)))
             .unwrap();
         let sa = get_smartart(sa_elem);
-        assert_eq!(sa.items, vec!["Item A", "Item B"]);
+        let texts: Vec<&str> = sa.items.iter().map(|n| n.text.as_str()).collect();
+        assert_eq!(texts, vec!["Item A", "Item B"]);
     }
 
     #[test]

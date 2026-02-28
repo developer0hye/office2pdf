@@ -247,15 +247,25 @@ impl ImageFormat {
     }
 }
 
+/// A node in a SmartArt diagram with hierarchy depth.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SmartArtNode {
+    /// The text content of this node.
+    pub text: String,
+    /// Depth in the hierarchy (0 = top-level node).
+    pub depth: usize,
+}
+
 /// SmartArt diagram content extracted from a presentation.
 ///
-/// Contains text items extracted from the SmartArt data model.
-/// Rendered as a simplified list or boxed layout since full SmartArt
+/// Contains nodes extracted from the SmartArt data model with hierarchy
+/// information derived from the connection list.
+/// Rendered as an indented tree or numbered steps since full SmartArt
 /// layout engines are not feasible in a pure-Rust converter.
 #[derive(Debug, Clone)]
 pub struct SmartArt {
-    /// Text items extracted from SmartArt data points (type="node").
-    pub items: Vec<String>,
+    /// Nodes extracted from SmartArt data points with hierarchy depth.
+    pub items: Vec<SmartArtNode>,
 }
 
 /// A single stop in a gradient fill.
