@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
+use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use typst::diag::FileResult;
@@ -9,12 +10,56 @@ use typst::syntax::{FileId, Source, VirtualPath};
 use typst::text::Font;
 use typst::utils::LazyHash;
 use typst::{Library, LibraryExt, World};
-use typst_kit::fonts::{FontSearcher, Fonts};
+use typst_kit::fonts::FontSearcher;
 
 use crate::config::PdfStandard;
 use crate::error::ConvertError;
 
 use super::typst_gen::ImageAsset;
+
+/// Cached font data (book + font slots). Font discovery is expensive because
+/// it scans the filesystem; the result doesn't change during the process
+/// lifetime, so we cache it in a global `OnceLock`.
+struct CachedFontData {
+    book: LazyHash<typst::text::FontBook>,
+    fonts: Vec<typst_kit::fonts::FontSlot>,
+}
+
+/// Cached system fonts (with system font search). Used when no custom
+/// font paths are provided, which is the common case.
+#[cfg(not(target_arch = "wasm32"))]
+static SYSTEM_FONTS: OnceLock<CachedFontData> = OnceLock::new();
+
+/// Cached embedded-only fonts (no system font search). Used on WASM
+/// or when system fonts are not needed.
+static EMBEDDED_FONTS: OnceLock<CachedFontData> = OnceLock::new();
+
+/// Get or initialize cached system fonts (with system font discovery).
+#[cfg(not(target_arch = "wasm32"))]
+fn get_system_fonts() -> &'static CachedFontData {
+    SYSTEM_FONTS.get_or_init(|| {
+        let mut searcher = FontSearcher::new();
+        searcher.include_system_fonts(true);
+        let font_data = searcher.search();
+        CachedFontData {
+            book: LazyHash::new(font_data.book),
+            fonts: font_data.fonts,
+        }
+    })
+}
+
+/// Get or initialize cached embedded-only fonts.
+fn get_embedded_fonts() -> &'static CachedFontData {
+    EMBEDDED_FONTS.get_or_init(|| {
+        let mut searcher = FontSearcher::new();
+        searcher.include_system_fonts(false);
+        let font_data = searcher.search();
+        CachedFontData {
+            book: LazyHash::new(font_data.book),
+            fonts: font_data.fonts,
+        }
+    })
+}
 
 /// Compile Typst markup to PDF bytes.
 ///
@@ -134,11 +179,35 @@ fn current_utc_datetime() -> Datetime {
         .expect("valid date derived from SystemTime")
 }
 
+/// Font data source: either a static reference to cached fonts or owned
+/// data for custom font path searches.
+enum FontSource {
+    /// Reference to globally cached font data (common case).
+    Cached(&'static CachedFontData),
+    /// Owned font data for custom font path searches.
+    Owned(Box<CachedFontData>),
+}
+
+impl FontSource {
+    fn book(&self) -> &LazyHash<typst::text::FontBook> {
+        match self {
+            Self::Cached(d) => &d.book,
+            Self::Owned(d) => &d.book,
+        }
+    }
+
+    fn fonts(&self) -> &[typst_kit::fonts::FontSlot] {
+        match self {
+            Self::Cached(d) => &d.fonts,
+            Self::Owned(d) => &d.fonts,
+        }
+    }
+}
+
 /// Minimal World implementation providing Typst compiler with source, fonts, and images.
 struct MinimalWorld {
     library: LazyHash<Library>,
-    book: LazyHash<typst::text::FontBook>,
-    fonts: Vec<typst_kit::fonts::FontSlot>,
+    font_source: FontSource,
     source: Source,
     images: HashMap<String, Bytes>,
 }
@@ -146,17 +215,21 @@ struct MinimalWorld {
 impl MinimalWorld {
     /// Create a new `MinimalWorld` with system fonts and optional custom font paths.
     ///
-    /// This is the native constructor — it discovers system fonts and optionally
-    /// searches additional directories. Not available on `wasm32` targets because
-    /// system font discovery requires OS APIs.
+    /// When `font_paths` is empty (the common case), system fonts are loaded from
+    /// a process-wide cache, avoiding expensive filesystem scanning on repeated calls.
+    /// When custom font paths are provided, a fresh font search is performed.
     #[cfg(not(target_arch = "wasm32"))]
     fn new(source_text: &str, images: &[ImageAsset], font_paths: &[PathBuf]) -> Self {
-        let mut searcher = FontSearcher::new();
-        searcher.include_system_fonts(true);
-        let font_data: Fonts = if font_paths.is_empty() {
-            searcher.search()
+        let font_source = if font_paths.is_empty() {
+            FontSource::Cached(get_system_fonts())
         } else {
-            searcher.search_with(font_paths.iter().map(|p| p.as_path()))
+            let mut searcher = FontSearcher::new();
+            searcher.include_system_fonts(true);
+            let font_data = searcher.search_with(font_paths.iter().map(|p| p.as_path()));
+            FontSource::Owned(Box::new(CachedFontData {
+                book: LazyHash::new(font_data.book),
+                fonts: font_data.fonts,
+            }))
         };
 
         let main_id = FileId::new(None, VirtualPath::new("main.typ"));
@@ -169,8 +242,7 @@ impl MinimalWorld {
 
         Self {
             library: LazyHash::new(Library::default()),
-            book: LazyHash::new(font_data.book),
-            fonts: font_data.fonts,
+            font_source,
             source,
             images: image_map,
         }
@@ -178,15 +250,10 @@ impl MinimalWorld {
 
     /// Create a new `MinimalWorld` with embedded fonts only (no system font search).
     ///
-    /// This is the constructor used on WASM targets where system font discovery
-    /// is not available. It uses only the fonts embedded in the `typst-kit` crate
-    /// (Libertinus Serif, New Computer Modern, DejaVu Sans Mono).
+    /// Uses a process-wide cache for embedded font data. This is the constructor
+    /// used on WASM targets where system font discovery is not available.
     #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
     fn new_embedded_only(source_text: &str, images: &[ImageAsset]) -> Self {
-        let mut searcher = FontSearcher::new();
-        searcher.include_system_fonts(false);
-        let font_data: Fonts = searcher.search();
-
         let main_id = FileId::new(None, VirtualPath::new("main.typ"));
         let source = Source::new(main_id, source_text.to_string());
 
@@ -197,8 +264,7 @@ impl MinimalWorld {
 
         Self {
             library: LazyHash::new(Library::default()),
-            book: LazyHash::new(font_data.book),
-            fonts: font_data.fonts,
+            font_source: FontSource::Cached(get_embedded_fonts()),
             source,
             images: image_map,
         }
@@ -211,7 +277,7 @@ impl World for MinimalWorld {
     }
 
     fn book(&self) -> &LazyHash<typst::text::FontBook> {
-        &self.book
+        self.font_source.book()
     }
 
     fn main(&self) -> FileId {
@@ -245,7 +311,10 @@ impl World for MinimalWorld {
     }
 
     fn font(&self, index: usize) -> Option<Font> {
-        self.fonts.get(index).and_then(|slot| slot.get())
+        self.font_source
+            .fonts()
+            .get(index)
+            .and_then(|slot| slot.get())
     }
 
     fn today(&self, _offset: Option<i64>) -> Option<Datetime> {
@@ -395,7 +464,7 @@ Hello from a US Letter page."#;
         // (Libertinus Serif, New Computer Modern, DejaVu Sans Mono)
         let world = MinimalWorld::new("", &[], &[]);
         assert!(
-            !world.fonts.is_empty(),
+            !world.font_source.fonts().is_empty(),
             "MinimalWorld should have at least the embedded fallback fonts"
         );
     }
@@ -413,9 +482,9 @@ Hello from a US Letter page."#;
         };
         // At minimum, we should have the embedded fonts
         assert!(
-            world.fonts.len() >= embedded_only_count,
+            world.font_source.fonts().len() >= embedded_only_count,
             "System font discovery should not reduce available fonts: total {} vs embedded-only {}",
-            world.fonts.len(),
+            world.font_source.fonts().len(),
             embedded_only_count
         );
     }
@@ -521,7 +590,7 @@ Text in Libertinus Serif."#;
         // This verifies that the embedded-only MinimalWorld can produce valid PDFs.
         let world = MinimalWorld::new_embedded_only("Hello from embedded-only world!", &[]);
         assert!(
-            !world.fonts.is_empty(),
+            !world.font_source.fonts().is_empty(),
             "Embedded-only world should have fonts"
         );
 
@@ -543,7 +612,7 @@ Text in Libertinus Serif."#;
             s.search().fonts.len()
         };
         assert_eq!(
-            world.fonts.len(),
+            world.font_source.fonts().len(),
             embedded_count,
             "Embedded-only world should have exactly the embedded fonts"
         );

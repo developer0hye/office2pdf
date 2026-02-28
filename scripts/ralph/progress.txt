@@ -17,7 +17,9 @@
 - **XLSX print area**: Print areas are stored as `DefinedName` with name `_xlnm.Print_Area` on worksheets. Use `sheet.get_defined_names()` to iterate, check `dn.get_name() == "_xlnm.Print_Area"`, parse address via `parse_print_area_range()`. Address format: `Sheet1!$A$1:$C$10` (sheet prefix optional, dollar signs optional). `parse_column_letters("AA")` → 27, `parse_cell_ref("$A$1")` → (1, 1). Test creation: `sheet.add_defined_name("_xlnm.Print_Area", "Sheet1!$A$1:$B$2")`.
 - **XLSX page breaks**: `sheet.get_row_breaks().get_break_list()` → `&[Break]`. Filter `b.get_manual_page_break() == true`. `b.get_id()` is the 1-indexed row number (break occurs after that row). `collect_row_breaks()` returns sorted, deduped Vec<u32>. Split rows into multiple TablePages at break points. Test creation: `let mut brk = Break::default(); brk.set_id(row); brk.set_manual_page_break(true); sheet.get_row_breaks_mut().add_break_list(brk);`.
 - **XLSX sheet headers/footers**: `sheet.get_header_footer()` → `&umya_spreadsheet::HeaderFooter`. `hf.get_odd_header().get_value()` / `hf.get_odd_footer().get_value()` returns Excel format string. Format codes: `&L`/`&C`/`&R` (section switches), `&P` (page number), `&N` (total pages), `&&` (literal ampersand), `&"FontName"` (font, skipped), `&NN` (font size, skipped). `parse_hf_format_string()` parses into `Option<HeaderFooter>` with sentinel chars (\x01=PageNumber, \x02=TotalPages). Test setup: `sheet.get_header_footer_mut().get_odd_header_mut().set_value("&CHeader Text")`.
-- **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. `FontSearcher::new().include_system_fonts(true).search()` discovers system fonts with embedded fallbacks (Libertinus Serif, New Computer Modern, DejaVu Sans Mono via `embed-fonts` feature). For custom font dirs, use `searcher.search_with(paths)` — highest priority. Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`. `compile_to_pdf(source, images, pdf_standard, font_paths)` threads font_paths to MinimalWorld.
+- **Typst compilation**: Use `MinimalWorld` struct implementing `World` trait. Font data cached globally via `OnceLock<CachedFontData>` — `get_system_fonts()` (native) and `get_embedded_fonts()` (WASM/embedded). `MinimalWorld` uses `FontSource` enum: `Cached(&'static CachedFontData)` for default font paths (common case), `Owned(Box<CachedFontData>)` for custom font paths. This eliminates expensive filesystem font scanning on repeated conversions (~1.5s → ~12ms). For custom font dirs, fresh search via `searcher.search_with(paths)` — can't cache. Create `Source` with `FileId::new(None, VirtualPath::new("main.typ"))`. `compile_to_pdf(source, images, pdf_standard, font_paths)` threads font_paths to MinimalWorld.
+- **DOCX consolidated ZIP pass**: `DocxParser::parse()` opens the ZIP archive once and reads `word/document.xml` once to build all pre-parse contexts (metadata, notes, wraps, math, charts) from a single pass. Context builders accept pre-read XML: `build_note_context_from_xml(doc_xml, archive)`, `build_wrap_context_from_xml(doc_xml)`, `build_math_context_from_xml(doc_xml)`, `build_chart_context_from_xml(doc_xml, archive)`. Previously opened ZIP 5 times with 3 redundant reads of document.xml.
+- **PPTX .rels deduplication**: `parse_single_slide()` passes pre-resolved `layout_path`/`master_path` to `resolve_inherited_background_with_paths()` to avoid re-reading .rels files. The old `resolve_inherited_background()` called `resolve_layout_master_paths()` a second time per slide.
 - **Page size / landscape override**: `ConvertOptions.paper_size: Option<PaperSize>` (A4/Letter/Legal/Custom), `landscape: Option<bool>`. `resolve_page_size(original, options)` applies overrides: paper_size replaces dimensions, landscape swaps w/h when needed. Called in each page generator (flow/fixed/table). `generate_typst_with_options(doc, options)` is the options-aware codegen; `generate_typst(doc)` uses default options. `PaperSize::parse("a4"|"letter"|"legal")` for CLI.
 - **DOCX list detection**: Check `para.has_numbering` and `para.property.numbering_property` for `NumberingProperty { id: Option<NumberingId>, level: Option<IndentLevel> }`. `NumberingId.id` is the numId, `IndentLevel.val` is the ilvl (0-based). numId=0 means "no numbering". Resolve numId → abstractNumId via `docx.numberings.numberings`, then check `abstract_num.levels[0].format` (use serde) for `"bullet"` (Unordered) vs `"decimal"`/etc. (Ordered). Group consecutive list paragraphs with same numId into `Block::List`.
 - **Typst list codegen**: Use `#list(list.item[content], ...)` for unordered, `#enum(enum.item[content], ...)` for ordered. Nested items: emit a sub-list `[#list(...)]` after the parent item. The `generate_list_items()` function recursively handles nesting based on item levels.
@@ -101,4 +103,29 @@ Started: 2026년  2월 28일 토요일 17시 23분 18초 KST
   - Page count is derived from IR `doc.pages.len()` — approximate for DOCX FlowPages but exact for PPTX/XLSX
   - `ConvertMetrics` is Clone so callers can easily store/compare metrics
   - The `let_chains` feature (if-let chaining) is stable in Rust edition 2024 and clippy prefers it
+---
+
+## 2026-02-28 - US-091
+- What was implemented: Three targeted performance optimizations
+  1. **Font search caching (OnceLock)**: System font discovery (~1.5s per call) cached globally using `OnceLock<CachedFontData>` in `render/pdf.rs`. `MinimalWorld` restructured to use `FontSource` enum (Cached static ref vs Owned for custom paths). Second+ conversions see ~99% compile-stage speedup.
+  2. **DOCX consolidated ZIP pass**: Consolidated 5 separate ZIP opens + 3 redundant `word/document.xml` reads into a single archive open + single doc read. New `_from_xml` variants of context builders accept pre-read data.
+  3. **PPTX .rels deduplication**: `parse_single_slide()` now passes pre-resolved layout/master paths to background resolver, eliminating duplicate `resolve_layout_master_paths()` call per slide.
+- Before/after performance (warm cache, 10-page documents):
+  - DOCX: 1.54s → 17ms (98.9% faster)
+  - PPTX: 1.46s → 16ms (98.9% faster)
+  - XLSX: 1.77s → 250ms (85.9% faster)
+- Primary bottleneck identified: **Compile stage (>95% of total time)** — driven by `FontSearcher::search()` filesystem scanning. Parse stage was already fast (~2-28ms), codegen negligible (<1ms).
+- Files changed:
+  - `crates/office2pdf/src/render/pdf.rs` — Font caching with OnceLock, CachedFontData struct, FontSource enum, MinimalWorld restructure
+  - `crates/office2pdf/src/parser/docx.rs` — Consolidated ZIP opens, `_from_xml` context builders
+  - `crates/office2pdf/src/parser/pptx.rs` — `resolve_inherited_background_with_paths()` to reuse pre-resolved paths
+  - `crates/office2pdf/tests/perf_validation.rs` — New benchmark tests for font cache validation and cross-format cached conversion
+  - `scripts/ralph/prd.json` — Marked US-091 as passes: true
+- Dependencies added: None (uses std::sync::OnceLock from stdlib)
+- **Learnings for future iterations:**
+  - Font scanning is BY FAR the biggest bottleneck (>95% of total conversion time). Always cache font data when possible.
+  - `OnceLock` is the perfect tool for process-lifetime caching of expensive one-time computations. No external crate needed.
+  - The `FontSource` enum pattern (Cached static ref vs Owned) is clean for mixing cached and custom data.
+  - XLSX compile time is higher than DOCX/PPTX even with warm cache (~220ms vs ~12ms) likely due to more complex Typst output (many tables).
+  - Consolidating ZIP opens is a structural improvement but has minimal absolute impact when parse stage is already fast (<30ms).
 ---

@@ -233,7 +233,8 @@ fn parse_single_slide<R: Read + std::io::Seek>(
         }
     }
 
-    // Resolve background: try gradient first, then solid color
+    // Resolve background: try gradient first, then solid color.
+    // Reuse already-resolved layout/master paths to avoid re-reading .rels files.
     let background_gradient = parse_background_gradient(&slide_xml, theme);
     let background_color = if background_gradient.is_some() {
         // When gradient is present, also extract first stop as fallback color
@@ -241,8 +242,14 @@ fn parse_single_slide<R: Read + std::io::Seek>(
             .as_ref()
             .and_then(|g| g.stops.first().map(|s| s.color))
     } else {
-        parse_background_color(&slide_xml, theme)
-            .or_else(|| resolve_inherited_background(slide_path, theme, archive))
+        parse_background_color(&slide_xml, theme).or_else(|| {
+            resolve_inherited_background_with_paths(
+                layout_path.as_deref(),
+                master_path.as_deref(),
+                theme,
+                archive,
+            )
+        })
     };
 
     Ok(Page::Fixed(FixedPage {
@@ -307,15 +314,16 @@ fn resolve_layout_master_paths<R: Read + std::io::Seek>(
 ///
 /// Reads the slide's .rels to find the layout, then the layout's .rels to find the master.
 /// Returns the first background color found in the inheritance chain.
-fn resolve_inherited_background<R: Read + std::io::Seek>(
-    slide_path: &str,
+/// Resolve inherited background color from pre-resolved layout/master paths.
+/// This avoids re-reading .rels files that were already parsed in `parse_single_slide`.
+fn resolve_inherited_background_with_paths<R: Read + std::io::Seek>(
+    layout_path: Option<&str>,
+    master_path: Option<&str>,
     theme: &ThemeData,
     archive: &mut ZipArchive<R>,
 ) -> Option<Color> {
-    let (layout_path, master_path) = resolve_layout_master_paths(slide_path, archive);
-
     // Try layout background
-    if let Some(ref path) = layout_path
+    if let Some(path) = layout_path
         && let Ok(xml) = read_zip_entry(archive, path)
         && let Some(color) = parse_background_color(&xml, theme)
     {
@@ -323,7 +331,7 @@ fn resolve_inherited_background<R: Read + std::io::Seek>(
     }
 
     // Try master background
-    if let Some(ref path) = master_path
+    if let Some(path) = master_path
         && let Ok(xml) = read_zip_entry(archive, path)
     {
         return parse_background_color(&xml, theme);

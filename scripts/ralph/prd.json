@@ -40,7 +40,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Start with the US-090 instrumentation to identify which stage is slowest. Common wins: (1) Cache .rels files in PPTX parser — they're parsed every time a relationship is resolved. (2) Pre-parse theme colors/fonts once instead of per-slide. (3) In DOCX, the serde_json roundtrip through docx-rs is expensive — check if there's a way to access fields directly. (4) Avoid String::clone() in hot paths — use references or Cow<str>. Profile with `cargo test` timing or simple Instant benchmarks."
     },
     {
