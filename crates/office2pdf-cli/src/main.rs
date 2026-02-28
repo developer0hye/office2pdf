@@ -5,13 +5,38 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use office2pdf::config::{ConvertOptions, PaperSize, PdfStandard, SlideRange};
 
+#[cfg(feature = "server")]
+mod server;
+
+#[cfg(feature = "server")]
+#[derive(clap::Subcommand)]
+enum Commands {
+    /// Start an HTTP server for document conversion
+    Serve {
+        /// Host address to bind to
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
+        /// Port to listen on
+        #[arg(long, default_value_t = 3000)]
+        port: u16,
+    },
+}
+
 #[derive(Parser)]
 #[command(
     name = "office2pdf",
     version,
     about = "Convert DOCX, XLSX, PPTX to PDF"
 )]
+#[cfg_attr(
+    feature = "server",
+    command(subcommand_negates_reqs = true, args_conflicts_with_subcommands = true)
+)]
 struct Cli {
+    #[cfg(feature = "server")]
+    #[command(subcommand)]
+    command: Option<Commands>,
+
     /// Input file paths (.docx, .xlsx, .pptx)
     #[arg(required = true)]
     inputs: Vec<PathBuf>,
@@ -175,6 +200,12 @@ fn convert_batch(
 
 fn run() -> Result<()> {
     let cli = Cli::parse();
+
+    // Handle subcommands
+    #[cfg(feature = "server")]
+    if let Some(Commands::Serve { host, port }) = cli.command {
+        return server::start_server(&host, port);
+    }
 
     // --output is only valid with a single input file
     if cli.inputs.len() > 1 && cli.output.is_some() {
