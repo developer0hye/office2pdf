@@ -60,7 +60,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "XLSX drawings are in `xl/drawings/drawingN.xml` with anchor elements like <xdr:twoCellAnchor> containing <xdr:from><xdr:row> and <xdr:to><xdr:row>. The umya-spreadsheet library may expose chart anchoring info. If not, parse the drawing XML directly from the ZIP. The key insight is to convert the anchor row number to an insertion point in the parsed table rows."
     },
     {

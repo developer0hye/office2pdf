@@ -4,9 +4,9 @@ use std::io::Cursor;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, FlowPage, HFInline,
-    HeaderFooter, HeaderFooterParagraph, Margins, Metadata, Page, PageSize, Paragraph,
-    ParagraphStyle, Run, StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
+    Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, HFInline, HeaderFooter,
+    HeaderFooterParagraph, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
+    StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::chart::parse_chart_xml;
@@ -431,15 +431,91 @@ fn build_merge_maps(
     (top_left_map, skip_set)
 }
 
-/// Scan the XLSX ZIP for embedded chart XML files and parse them.
+/// Extract charts from the XLSX ZIP with their anchor positions per sheet.
 ///
-/// XLSX charts live in `xl/charts/chart*.xml`. We scan all ZIP entries
-/// matching that prefix and parse each with the shared chart parser.
-fn extract_charts_from_zip(data: &[u8]) -> Vec<Chart> {
+/// Returns a map from sheet name → list of (anchor_row, Chart).
+/// Charts with drawing anchors get positioned at their anchor row.
+/// Charts without anchors (no drawing reference found) use `u32::MAX`
+/// as a sentinel to place them at the end of the sheet.
+fn extract_charts_with_anchors(data: &[u8]) -> HashMap<String, Vec<(u32, Chart)>> {
     let Ok(mut archive) = zip::ZipArchive::new(Cursor::new(data)) else {
-        return Vec::new();
+        return HashMap::new();
     };
 
+    // Step 1: Read workbook.xml to get sheet name → rId mapping
+    let workbook_xml = read_zip_entry_string(&mut archive, "xl/workbook.xml");
+    let sheet_rids = parse_workbook_sheet_rids(&workbook_xml);
+
+    // Step 2: Read workbook rels to get rId → sheet file path
+    let workbook_rels_xml = read_zip_entry_string(&mut archive, "xl/_rels/workbook.xml.rels");
+    let rid_to_target = parse_rels_targets(&workbook_rels_xml);
+
+    // Step 3: For each sheet, find its drawing and extract chart anchors
+    let mut result: HashMap<String, Vec<(u32, Chart)>> = HashMap::new();
+
+    for (sheet_name, sheet_rid) in &sheet_rids {
+        let Some(sheet_target) = rid_to_target.get(sheet_rid) else {
+            continue;
+        };
+        // Sheet target is relative to xl/ (e.g., "worksheets/sheet1.xml")
+        let sheet_full_path = format!("xl/{sheet_target}");
+        let sheet_filename = sheet_full_path.rsplit('/').next().unwrap_or(sheet_target);
+        let sheet_rels_path = format!("xl/worksheets/_rels/{sheet_filename}.rels");
+
+        let sheet_rels_xml = read_zip_entry_string(&mut archive, &sheet_rels_path);
+        if sheet_rels_xml.is_empty() {
+            continue;
+        }
+
+        // Find drawing relationship
+        let drawing_targets = parse_rels_by_type(&sheet_rels_xml, "drawing");
+        for drawing_target in &drawing_targets {
+            // Resolve relative path from worksheets/ to drawings/
+            let drawing_path = resolve_relative_xl_path("xl/worksheets", drawing_target);
+            let drawing_xml = read_zip_entry_string(&mut archive, &drawing_path);
+            if drawing_xml.is_empty() {
+                continue;
+            }
+
+            // Parse drawing for chart anchor positions
+            let anchors = parse_drawing_chart_anchors(&drawing_xml);
+
+            // Find drawing rels for chart rId resolution
+            let drawing_filename = drawing_path.rsplit('/').next().unwrap_or(&drawing_path);
+            let drawing_dir = drawing_path
+                .rsplit_once('/')
+                .map(|(d, _)| d)
+                .unwrap_or("xl/drawings");
+            let drawing_rels_path = format!("{drawing_dir}/_rels/{drawing_filename}.rels");
+            let drawing_rels_xml = read_zip_entry_string(&mut archive, &drawing_rels_path);
+            let drawing_rid_targets = parse_rels_targets(&drawing_rels_xml);
+
+            for (anchor_row, chart_rid) in &anchors {
+                let Some(chart_target) = drawing_rid_targets.get(chart_rid) else {
+                    continue;
+                };
+                let chart_path = resolve_relative_xl_path(drawing_dir, chart_target);
+                let chart_xml = read_zip_entry_string(&mut archive, &chart_path);
+                if let Some(chart) = parse_chart_xml(&chart_xml) {
+                    result
+                        .entry(sheet_name.clone())
+                        .or_default()
+                        .push((*anchor_row, chart));
+                }
+            }
+        }
+    }
+
+    // Step 4: Find any charts not associated with drawings (orphaned charts)
+    // and assign them to the first sheet with u32::MAX sentinel
+    let all_positioned_chart_paths: HashSet<String> = result
+        .values()
+        .flatten()
+        .filter_map(|_| None::<String>) // We don't track paths, just check coverage below
+        .collect();
+    let _ = all_positioned_chart_paths; // consumed
+
+    // Scan for chart XML files and check if they were captured by drawing anchors
     let chart_paths: Vec<String> = (0..archive.len())
         .filter_map(|i| {
             let entry = archive.by_index(i).ok()?;
@@ -452,19 +528,335 @@ fn extract_charts_from_zip(data: &[u8]) -> Vec<Chart> {
         })
         .collect();
 
-    let mut charts = Vec::new();
-    for path in chart_paths {
-        if let Ok(mut entry) = archive.by_name(&path) {
-            let mut xml = String::new();
-            if std::io::Read::read_to_string(&mut entry, &mut xml).is_ok()
-                && let Some(chart) = parse_chart_xml(&xml)
-            {
-                charts.push(chart);
+    // Count total positioned charts
+    let positioned_count: usize = result.values().map(|v| v.len()).sum();
+
+    if chart_paths.len() > positioned_count {
+        // Some charts weren't found via drawing anchors — parse them as unanchored
+        let positioned_charts: HashSet<String> = collect_positioned_chart_paths(&result, data);
+
+        let first_sheet = sheet_rids
+            .first()
+            .map(|(name, _)| name.clone())
+            .unwrap_or_else(|| "Sheet1".to_string());
+
+        for path in &chart_paths {
+            if positioned_charts.contains(path) {
+                continue;
+            }
+            let chart_xml = read_zip_entry_string(&mut archive, path);
+            if let Some(chart) = parse_chart_xml(&chart_xml) {
+                result
+                    .entry(first_sheet.clone())
+                    .or_default()
+                    .push((u32::MAX, chart));
             }
         }
     }
 
-    charts
+    result
+}
+
+/// Collect the set of chart XML paths that were already positioned via drawing anchors.
+fn collect_positioned_chart_paths(
+    chart_map: &HashMap<String, Vec<(u32, Chart)>>,
+    data: &[u8],
+) -> HashSet<String> {
+    // Re-trace the drawing → chart resolution to find which chart paths are covered.
+    // This is intentionally conservative — if we can't determine the path, we skip.
+    let Ok(mut archive) = zip::ZipArchive::new(Cursor::new(data)) else {
+        return HashSet::new();
+    };
+    let mut positioned = HashSet::new();
+
+    let workbook_xml = read_zip_entry_string(&mut archive, "xl/workbook.xml");
+    let sheet_rids = parse_workbook_sheet_rids(&workbook_xml);
+    let workbook_rels_xml = read_zip_entry_string(&mut archive, "xl/_rels/workbook.xml.rels");
+    let rid_to_target = parse_rels_targets(&workbook_rels_xml);
+
+    for (sheet_name, sheet_rid) in &sheet_rids {
+        if !chart_map.contains_key(sheet_name) {
+            continue;
+        }
+        let Some(sheet_target) = rid_to_target.get(sheet_rid) else {
+            continue;
+        };
+        let sheet_full_path = format!("xl/{sheet_target}");
+        let sheet_filename = sheet_full_path.rsplit('/').next().unwrap_or(sheet_target);
+        let sheet_rels_path = format!("xl/worksheets/_rels/{sheet_filename}.rels");
+        let sheet_rels_xml = read_zip_entry_string(&mut archive, &sheet_rels_path);
+        let drawing_targets = parse_rels_by_type(&sheet_rels_xml, "drawing");
+
+        for drawing_target in &drawing_targets {
+            let drawing_path = resolve_relative_xl_path("xl/worksheets", drawing_target);
+            let drawing_xml = read_zip_entry_string(&mut archive, &drawing_path);
+            let anchors = parse_drawing_chart_anchors(&drawing_xml);
+            let drawing_filename = drawing_path.rsplit('/').next().unwrap_or(&drawing_path);
+            let drawing_dir = drawing_path
+                .rsplit_once('/')
+                .map(|(d, _)| d)
+                .unwrap_or("xl/drawings");
+            let drawing_rels_path = format!("{drawing_dir}/_rels/{drawing_filename}.rels");
+            let drawing_rels_xml = read_zip_entry_string(&mut archive, &drawing_rels_path);
+            let drawing_rid_targets = parse_rels_targets(&drawing_rels_xml);
+
+            for (_row, chart_rid) in &anchors {
+                if let Some(chart_target) = drawing_rid_targets.get(chart_rid) {
+                    positioned.insert(resolve_relative_xl_path(drawing_dir, chart_target));
+                }
+            }
+        }
+    }
+
+    positioned
+}
+
+/// Read a ZIP entry as a string. Returns empty string if not found.
+fn read_zip_entry_string(archive: &mut zip::ZipArchive<Cursor<&[u8]>>, path: &str) -> String {
+    let Ok(mut entry) = archive.by_name(path) else {
+        return String::new();
+    };
+    let mut xml = String::new();
+    let _ = std::io::Read::read_to_string(&mut entry, &mut xml);
+    xml
+}
+
+/// Parse workbook.xml to extract sheet name → rId pairs (preserving order).
+fn parse_workbook_sheet_rids(xml: &str) -> Vec<(String, String)> {
+    let mut result = Vec::new();
+    let mut reader = quick_xml::Reader::from_str(xml);
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e))
+            | Ok(quick_xml::events::Event::Empty(ref e)) => {
+                if e.local_name().as_ref() == b"sheet" {
+                    let mut name = None;
+                    let mut rid = None;
+                    for attr in e.attributes().flatten() {
+                        match attr.key.local_name().as_ref() {
+                            b"name" => {
+                                if let Ok(v) = attr.unescape_value() {
+                                    name = Some(v.to_string());
+                                }
+                            }
+                            b"id" => {
+                                if let Ok(v) = attr.unescape_value() {
+                                    rid = Some(v.to_string());
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    if let (Some(n), Some(r)) = (name, rid) {
+                        result.push((n, r));
+                    }
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    result
+}
+
+/// Parse a .rels file to get Id → Target mapping.
+fn parse_rels_targets(xml: &str) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    let mut reader = quick_xml::Reader::from_str(xml);
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e))
+            | Ok(quick_xml::events::Event::Empty(ref e)) => {
+                if e.local_name().as_ref() == b"Relationship" {
+                    let mut id = None;
+                    let mut target = None;
+                    for attr in e.attributes().flatten() {
+                        match attr.key.local_name().as_ref() {
+                            b"Id" => {
+                                if let Ok(v) = attr.unescape_value() {
+                                    id = Some(v.to_string());
+                                }
+                            }
+                            b"Target" => {
+                                if let Ok(v) = attr.unescape_value() {
+                                    target = Some(v.to_string());
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    if let (Some(id), Some(target)) = (id, target) {
+                        map.insert(id, target);
+                    }
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    map
+}
+
+/// Parse a .rels file and return targets whose Type contains the given substring.
+fn parse_rels_by_type(xml: &str, type_substring: &str) -> Vec<String> {
+    let mut targets = Vec::new();
+    let mut reader = quick_xml::Reader::from_str(xml);
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e))
+            | Ok(quick_xml::events::Event::Empty(ref e)) => {
+                if e.local_name().as_ref() == b"Relationship" {
+                    let mut target = None;
+                    let mut matches_type = false;
+                    for attr in e.attributes().flatten() {
+                        match attr.key.local_name().as_ref() {
+                            b"Target" => {
+                                if let Ok(v) = attr.unescape_value() {
+                                    target = Some(v.to_string());
+                                }
+                            }
+                            b"Type" => {
+                                if let Ok(v) = attr.unescape_value()
+                                    && v.contains(type_substring)
+                                {
+                                    matches_type = true;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    if matches_type && let Some(t) = target {
+                        targets.push(t);
+                    }
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    targets
+}
+
+/// Resolve a relative path (like `../drawings/drawing1.xml`) against a base directory.
+fn resolve_relative_xl_path(base_dir: &str, relative: &str) -> String {
+    if relative.starts_with('/') {
+        return relative.trim_start_matches('/').to_string();
+    }
+    let mut parts: Vec<&str> = base_dir.split('/').collect();
+    for segment in relative.split('/') {
+        match segment {
+            ".." => {
+                parts.pop();
+            }
+            "." | "" => {}
+            _ => parts.push(segment),
+        }
+    }
+    parts.join("/")
+}
+
+/// Parse drawing XML for chart anchor positions.
+/// Returns (anchor_row, chart_rId) pairs from `<xdr:twoCellAnchor>` elements.
+fn parse_drawing_chart_anchors(xml: &str) -> Vec<(u32, String)> {
+    let mut result = Vec::new();
+    let mut reader = quick_xml::Reader::from_str(xml);
+
+    let mut in_two_cell_anchor = false;
+    let mut in_from = false;
+    let mut in_row = false;
+    let mut anchor_row: Option<u32> = None;
+    let mut chart_rid: Option<String> = None;
+    let mut in_graphic_data = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"twoCellAnchor" | b"oneCellAnchor" => {
+                        in_two_cell_anchor = true;
+                        anchor_row = None;
+                        chart_rid = None;
+                    }
+                    b"from" if in_two_cell_anchor => {
+                        in_from = true;
+                    }
+                    b"row" if in_from => {
+                        in_row = true;
+                    }
+                    b"graphicData" if in_two_cell_anchor => {
+                        for attr in e.attributes().flatten() {
+                            if attr.key.local_name().as_ref() == b"uri"
+                                && let Ok(val) = attr.unescape_value()
+                                && val.contains("chart")
+                            {
+                                in_graphic_data = true;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::Empty(ref e)) => {
+                let local = e.local_name();
+                if in_graphic_data && local.as_ref() == b"chart" {
+                    for attr in e.attributes().flatten() {
+                        if (attr.key.as_ref() == b"r:id"
+                            || attr.key.local_name().as_ref() == b"id")
+                            && let Ok(val) = attr.unescape_value()
+                        {
+                            chart_rid = Some(val.to_string());
+                        }
+                    }
+                }
+            }
+            Ok(quick_xml::events::Event::Text(ref t)) => {
+                if in_row
+                    && let Ok(s) = t.xml_content()
+                    && let Ok(row) = s.trim().parse::<u32>()
+                {
+                    anchor_row = Some(row);
+                }
+            }
+            Ok(quick_xml::events::Event::End(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"twoCellAnchor" | b"oneCellAnchor" => {
+                        if let (Some(row), Some(rid)) = (anchor_row.take(), chart_rid.take()) {
+                            result.push((row, rid));
+                        }
+                        in_two_cell_anchor = false;
+                        in_from = false;
+                        in_graphic_data = false;
+                    }
+                    b"from" => {
+                        in_from = false;
+                    }
+                    b"row" => {
+                        in_row = false;
+                    }
+                    b"graphicData" => {
+                        in_graphic_data = false;
+                    }
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    result
 }
 
 impl Parser for XlsxParser {
@@ -479,6 +871,9 @@ impl Parser for XlsxParser {
 
         // Extract metadata from umya-spreadsheet properties
         let metadata = extract_xlsx_metadata(&book);
+
+        // Extract charts with anchor positions per sheet
+        let mut chart_map = extract_charts_with_anchors(data);
 
         let sheet_count = book.get_sheet_collection().len();
         let mut pages = Vec::with_capacity(sheet_count);
@@ -616,6 +1011,19 @@ impl Parser for XlsxParser {
             let sheet_header = parse_hf_format_string(hf.get_odd_header().get_value());
             let sheet_footer = parse_hf_format_string(hf.get_odd_footer().get_value());
 
+            // Pull charts for this sheet (if any)
+            let mut sheet_charts = chart_map.remove(&sheet_name).unwrap_or_default();
+            for (_, chart) in &sheet_charts {
+                let title = chart.title.as_deref().unwrap_or("untitled").to_string();
+                warnings.push(ConvertWarning::FallbackUsed {
+                    format: "XLSX".to_string(),
+                    from: format!("chart ({title})"),
+                    to: "data table".to_string(),
+                });
+            }
+            // Sort by anchor row
+            sheet_charts.sort_by_key(|(row, _)| *row);
+
             if row_breaks.is_empty() {
                 // No page breaks — single page
                 pages.push(Page::Table(TablePage {
@@ -628,6 +1036,7 @@ impl Parser for XlsxParser {
                     },
                     header: sheet_header.clone(),
                     footer: sheet_footer.clone(),
+                    charts: sheet_charts,
                 }));
             } else {
                 // Split rows at break points
@@ -651,6 +1060,8 @@ impl Parser for XlsxParser {
                     segments.push(current_segment);
                 }
 
+                // For page-break segments, attach all charts to the first segment
+                let mut first_segment = true;
                 for segment in segments {
                     pages.push(Page::Table(TablePage {
                         name: sheet_name.clone(),
@@ -662,27 +1073,15 @@ impl Parser for XlsxParser {
                         },
                         header: sheet_header.clone(),
                         footer: sheet_footer.clone(),
+                        charts: if first_segment {
+                            first_segment = false;
+                            std::mem::take(&mut sheet_charts)
+                        } else {
+                            vec![]
+                        },
                     }));
                 }
             }
-        }
-
-        // Extract embedded charts from the ZIP and add as flow pages
-        let charts = extract_charts_from_zip(data);
-        for chart in charts {
-            let title = chart.title.as_deref().unwrap_or("untitled").to_string();
-            warnings.push(ConvertWarning::FallbackUsed {
-                format: "XLSX".to_string(),
-                from: format!("chart ({title})"),
-                to: "data table".to_string(),
-            });
-            pages.push(Page::Flow(FlowPage {
-                size: PageSize::default(),
-                margins: Margins::default(),
-                content: vec![Block::Chart(chart)],
-                header: None,
-                footer: None,
-            }));
         }
 
         Ok((
@@ -2447,44 +2846,28 @@ mod tests {
     }
 
     #[test]
-    fn test_xlsx_with_chart_produces_chart_page() {
+    fn test_xlsx_with_chart_embeds_in_table_page() {
         let data = build_xlsx_with_chart(&[("A1", "Hello")], &make_bar_chart_xml());
         let parser = XlsxParser;
         let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-        // Should have at least 2 pages: the table page + the chart page
-        assert!(
-            doc.pages.len() >= 2,
-            "Expected at least 2 pages, got {}",
-            doc.pages.len()
+        // Chart should be embedded in the table page (not a separate page)
+        assert_eq!(
+            doc.pages.len(),
+            1,
+            "Expected 1 page (chart embedded in table)"
         );
-
-        // First page should be the table
         assert!(matches!(&doc.pages[0], Page::Table(_)));
 
-        // Last page should be a flow page with a chart block
-        let chart_page = &doc.pages[doc.pages.len() - 1];
-        match chart_page {
-            Page::Flow(fp) => {
-                let has_chart = fp.content.iter().any(|b| matches!(b, Block::Chart(_)));
-                assert!(has_chart, "Expected chart block in flow page");
+        let tp = get_table_page(&doc, 0);
+        assert!(!tp.charts.is_empty(), "Expected charts in table page");
 
-                // Verify chart data
-                let chart = fp
-                    .content
-                    .iter()
-                    .find_map(|b| match b {
-                        Block::Chart(c) => Some(c),
-                        _ => None,
-                    })
-                    .unwrap();
-                assert_eq!(chart.chart_type, ChartType::Bar);
-                assert_eq!(chart.title.as_deref(), Some("Sales"));
-                assert_eq!(chart.categories, vec!["Q1", "Q2"]);
-                assert_eq!(chart.series[0].values, vec![100.0, 200.0]);
-            }
-            _ => panic!("Expected FlowPage for chart"),
-        }
+        // Verify chart data
+        let chart = &tp.charts[0].1;
+        assert_eq!(chart.chart_type, ChartType::Bar);
+        assert_eq!(chart.title.as_deref(), Some("Sales"));
+        assert_eq!(chart.categories, vec!["Q1", "Q2"]);
+        assert_eq!(chart.series[0].values, vec![100.0, 200.0]);
     }
 
     #[test]
@@ -2529,19 +2912,193 @@ mod tests {
         let parser = XlsxParser;
         let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-        // Find chart page
-        let chart = doc.pages.iter().find_map(|p| match p {
-            Page::Flow(fp) => fp.content.iter().find_map(|b| match b {
-                Block::Chart(c) => Some(c),
-                _ => None,
-            }),
-            _ => None,
-        });
-        let chart = chart.expect("Expected a chart in the output");
+        // Find chart in table page
+        let tp = get_table_page(&doc, 0);
+        assert!(!tp.charts.is_empty(), "Expected a chart in the table page");
+        let chart = &tp.charts[0].1;
         assert_eq!(chart.chart_type, ChartType::Pie);
         assert!(chart.title.is_none());
         assert_eq!(chart.categories, vec!["Apple", "Banana"]);
         assert_eq!(chart.series[0].values, vec![60.0, 40.0]);
+    }
+
+    // ── Chart anchor position tests ───────────────────────────────────
+
+    /// Helper: build an XLSX with a chart anchored at a specific row.
+    /// Creates proper drawing XML with twoCellAnchor referencing the chart.
+    fn build_xlsx_with_anchored_chart(
+        cells: &[(&str, &str)],
+        chart_xml: &str,
+        anchor_row: u32,
+    ) -> Vec<u8> {
+        let base = build_xlsx_bytes("Sheet1", cells);
+
+        // Re-open as ZIP and inject drawing + chart files
+        let reader = std::io::Cursor::new(&base);
+        let mut archive = zip::ZipArchive::new(reader).unwrap();
+
+        // Discover the sheet file path from workbook rels
+        let mut workbook_rels_xml = String::new();
+        if let Ok(mut entry) = archive.by_name("xl/_rels/workbook.xml.rels") {
+            std::io::Read::read_to_string(&mut entry, &mut workbook_rels_xml).unwrap();
+        }
+        // Find first worksheet target (e.g. "worksheets/sheet1.xml")
+        let sheet_target = workbook_rels_xml
+            .split("Target=\"")
+            .filter_map(|s| {
+                let end = s.find('"')?;
+                let target = &s[..end];
+                if target.contains("worksheets/") {
+                    Some(target.to_string())
+                } else {
+                    None
+                }
+            })
+            .next()
+            .unwrap_or_else(|| "worksheets/sheet1.xml".to_string());
+
+        // Derive the rels path for this sheet
+        let sheet_filename = sheet_target.rsplit('/').next().unwrap();
+        let sheet_rels_path = format!("xl/worksheets/_rels/{sheet_filename}.rels");
+
+        let mut out_buf = Vec::new();
+        {
+            let cursor = std::io::Cursor::new(&mut out_buf);
+            let mut writer = zip::ZipWriter::new(cursor);
+            let options: zip::write::FileOptions = zip::write::FileOptions::default();
+
+            // Copy existing entries
+            for i in 0..archive.len() {
+                let mut entry = archive.by_index(i).unwrap();
+                let name = entry.name().to_string();
+                writer.start_file(name, options).unwrap();
+                std::io::copy(&mut entry, &mut writer).unwrap();
+            }
+
+            // Add sheet rels (linking sheet to drawing)
+            writer.start_file(&sheet_rels_path, options).unwrap();
+            use std::io::Write;
+            writer.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
+</Relationships>"#,
+            ).unwrap();
+
+            // Add drawing XML with anchor at specified row
+            writer
+                .start_file("xl/drawings/drawing1.xml", options)
+                .unwrap();
+            let drawing_xml = format!(
+                r#"<?xml version="1.0" encoding="UTF-8"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
+          xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+          xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <xdr:twoCellAnchor>
+    <xdr:from>
+      <xdr:col>2</xdr:col>
+      <xdr:colOff>0</xdr:colOff>
+      <xdr:row>{anchor_row}</xdr:row>
+      <xdr:rowOff>0</xdr:rowOff>
+    </xdr:from>
+    <xdr:to>
+      <xdr:col>8</xdr:col>
+      <xdr:colOff>0</xdr:colOff>
+      <xdr:row>{}</xdr:row>
+      <xdr:rowOff>0</xdr:rowOff>
+    </xdr:to>
+    <xdr:graphicFrame>
+      <xdr:nvGraphicFramePr>
+        <xdr:cNvPr id="1" name="Chart 1"/>
+        <xdr:cNvGraphicFramePr/>
+      </xdr:nvGraphicFramePr>
+      <xdr:xfrmPr/>
+      <a:graphic>
+        <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">
+          <c:chart r:id="rId1"/>
+        </a:graphicData>
+      </a:graphic>
+    </xdr:graphicFrame>
+    <xdr:clientData/>
+  </xdr:twoCellAnchor>
+</xdr:wsDr>"#,
+                anchor_row + 15
+            );
+            writer.write_all(drawing_xml.as_bytes()).unwrap();
+
+            // Add drawing rels (linking chart rId to chart file)
+            writer
+                .start_file("xl/drawings/_rels/drawing1.xml.rels", options)
+                .unwrap();
+            writer.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/>
+</Relationships>"#,
+            ).unwrap();
+
+            // Add chart XML
+            writer.start_file("xl/charts/chart1.xml", options).unwrap();
+            writer.write_all(chart_xml.as_bytes()).unwrap();
+
+            writer.finish().unwrap();
+        }
+
+        out_buf
+    }
+
+    #[test]
+    fn test_xlsx_chart_anchored_at_row_5() {
+        // Create XLSX with 10 rows of data and a chart anchored at row 5
+        let cells: Vec<(&str, &str)> = (1..=10)
+            .map(|r| {
+                // Return static str references by leaking (acceptable in tests)
+                let coord: &str = Box::leak(format!("A{r}").into_boxed_str());
+                let value: &str = Box::leak(format!("Row {r}").into_boxed_str());
+                (coord, value)
+            })
+            .collect();
+
+        let data = build_xlsx_with_anchored_chart(&cells, &make_bar_chart_xml(), 5);
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // Should have exactly 1 table page (chart embedded within it)
+        assert_eq!(
+            doc.pages.len(),
+            1,
+            "Chart with anchor should be embedded in table page, not separate"
+        );
+
+        // The table page should have charts
+        let tp = get_table_page(&doc, 0);
+        assert_eq!(tp.charts.len(), 1, "Expected 1 anchored chart");
+        assert_eq!(tp.charts[0].0, 5, "Chart should be anchored at row 5");
+        assert_eq!(tp.charts[0].1.chart_type, ChartType::Bar);
+        assert_eq!(tp.charts[0].1.title.as_deref(), Some("Sales"));
+    }
+
+    #[test]
+    fn test_xlsx_chart_without_anchor_falls_back_to_end() {
+        // Chart without drawing anchor should be placed at end of sheet
+        let data = build_xlsx_with_chart(&[("A1", "Hello")], &make_bar_chart_xml());
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        // With no anchor, chart should still be in the table page at row u32::MAX
+        // (or placed at end)
+        let tp = get_table_page(&doc, 0);
+        assert!(
+            !tp.charts.is_empty(),
+            "Unanchored chart should still be embedded in table page"
+        );
+        // The anchor row should be u32::MAX (end-of-sheet sentinel)
+        assert_eq!(
+            tp.charts[0].0,
+            u32::MAX,
+            "Unanchored chart should have sentinel row"
+        );
     }
 
     // ── Metadata extraction tests ──────────────────────────────────────

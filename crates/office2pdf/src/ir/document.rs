@@ -127,6 +127,9 @@ pub struct TablePage {
     pub table: super::elements::Table,
     pub header: Option<super::elements::HeaderFooter>,
     pub footer: Option<super::elements::HeaderFooter>,
+    /// Charts anchored within this sheet, stored as (anchor_row, chart) where
+    /// `anchor_row` is the 1-indexed row number after which the chart is rendered.
+    pub charts: Vec<(u32, super::elements::Chart)>,
 }
 
 #[cfg(test)]

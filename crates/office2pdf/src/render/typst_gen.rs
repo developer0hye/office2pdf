@@ -256,7 +256,73 @@ fn generate_table_page(
     let size = resolve_page_size(&page.size, options);
     write_table_page_setup(out, page, &size);
     out.push('\n');
-    generate_table(out, &page.table, ctx)?;
+
+    if page.charts.is_empty() {
+        generate_table(out, &page.table, ctx)?;
+    } else {
+        generate_table_with_charts(out, &page.table, &page.charts, ctx)?;
+    }
+    Ok(())
+}
+
+/// Render a table interleaved with charts at their anchor positions.
+/// Splits the table into segments at chart anchor rows and emits charts between segments.
+fn generate_table_with_charts(
+    out: &mut String,
+    table: &Table,
+    charts: &[(u32, Chart)],
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    use crate::ir::Table;
+
+    // Sort charts by anchor row (should already be sorted, but ensure)
+    let mut sorted_charts: Vec<&(u32, Chart)> = charts.iter().collect();
+    sorted_charts.sort_by_key(|(row, _)| *row);
+
+    let total_rows = table.rows.len();
+    let mut row_start = 0usize;
+    let mut chart_idx = 0;
+
+    // Walk through rows and emit table segments + charts
+    for row_end in 0..total_rows {
+        let row_num = (row_end + 1) as u32; // 1-indexed row number
+
+        // Emit all charts anchored at or before this row
+        while chart_idx < sorted_charts.len() && sorted_charts[chart_idx].0 <= row_num {
+            // Emit table segment up to and including this row
+            if row_start <= row_end {
+                let segment = Table {
+                    rows: table.rows[row_start..=row_end].to_vec(),
+                    column_widths: table.column_widths.clone(),
+                };
+                generate_table(out, &segment, ctx)?;
+                out.push('\n');
+                row_start = row_end + 1;
+            }
+            // Emit the chart
+            generate_chart(out, &sorted_charts[chart_idx].1);
+            out.push('\n');
+            chart_idx += 1;
+        }
+    }
+
+    // Emit remaining rows after last chart
+    if row_start < total_rows {
+        let segment = Table {
+            rows: table.rows[row_start..].to_vec(),
+            column_widths: table.column_widths.clone(),
+        };
+        generate_table(out, &segment, ctx)?;
+        out.push('\n');
+    }
+
+    // Emit any remaining charts (anchored beyond last row, e.g., u32::MAX)
+    while chart_idx < sorted_charts.len() {
+        generate_chart(out, &sorted_charts[chart_idx].1);
+        out.push('\n');
+        chart_idx += 1;
+    }
+
     Ok(())
 }
 
@@ -3113,6 +3179,7 @@ mod tests {
             table,
             header: None,
             footer: None,
+            charts: vec![],
         })
     }
 
@@ -4104,6 +4171,7 @@ mod tests {
                 }],
             }),
             footer: None,
+            charts: vec![],
         });
         let doc = make_doc(vec![page]);
         let output = generate_typst(&doc).unwrap();
@@ -4151,6 +4219,7 @@ mod tests {
                     ],
                 }],
             }),
+            charts: vec![],
         });
         let doc = make_doc(vec![page]);
         let output = generate_typst(&doc).unwrap();
@@ -4181,6 +4250,7 @@ mod tests {
             table: make_simple_table(vec![vec!["A"]]),
             header: None,
             footer: None,
+            charts: vec![],
         });
         let doc = make_doc(vec![page]);
         let output = generate_typst(&doc).unwrap();
@@ -4195,6 +4265,87 @@ mod tests {
             "Expected no footer, got: {}",
             output.source
         );
+    }
+
+    // --- Table page with interleaved charts ---
+
+    #[test]
+    fn test_table_page_with_chart_at_row() {
+        use crate::ir::{Chart, ChartSeries, ChartType};
+
+        let chart = Chart {
+            chart_type: ChartType::Bar,
+            title: Some("Sales".to_string()),
+            categories: vec!["Q1".to_string(), "Q2".to_string()],
+            series: vec![ChartSeries {
+                name: Some("Revenue".to_string()),
+                values: vec![100.0, 200.0],
+            }],
+        };
+
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table: make_simple_table(vec![
+                vec!["Row 1"],
+                vec!["Row 2"],
+                vec!["Row 3"],
+                vec!["Row 4"],
+                vec!["Row 5"],
+            ]),
+            header: None,
+            footer: None,
+            charts: vec![(2, chart)], // Chart after row 2
+        });
+
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        let src = &output.source;
+
+        // Should contain two separate #table blocks (split at chart position)
+        let table_count = src.matches("#table(").count();
+        assert_eq!(
+            table_count, 2,
+            "Expected 2 table segments (split at chart row), got {table_count}"
+        );
+
+        // Should contain chart rendering between table segments
+        assert!(src.contains("Sales"), "Expected chart title in output");
+    }
+
+    #[test]
+    fn test_table_page_with_chart_at_end() {
+        use crate::ir::{Chart, ChartSeries, ChartType};
+
+        let chart = Chart {
+            chart_type: ChartType::Pie,
+            title: Some("Pie".to_string()),
+            categories: vec!["A".to_string()],
+            series: vec![ChartSeries {
+                name: None,
+                values: vec![100.0],
+            }],
+        };
+
+        let page = Page::Table(TablePage {
+            name: "Sheet1".to_string(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table: make_simple_table(vec![vec!["Data"]]),
+            header: None,
+            footer: None,
+            charts: vec![(u32::MAX, chart)], // Chart at end
+        });
+
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        let src = &output.source;
+
+        // Table should appear before chart
+        let table_pos = src.find("#table(").unwrap();
+        let chart_pos = src.find("Pie").unwrap();
+        assert!(table_pos < chart_pos, "Table should appear before chart");
     }
 
     // --- Paper size and landscape override tests ---
@@ -5077,6 +5228,7 @@ mod tests {
             table,
             header: None,
             footer: None,
+            charts: vec![],
         });
         let doc = make_doc(vec![page]);
         let output = generate_typst(&doc).unwrap();
@@ -5121,6 +5273,7 @@ mod tests {
             table,
             header: None,
             footer: None,
+            charts: vec![],
         });
         let doc = make_doc(vec![page]);
         let output = generate_typst(&doc).unwrap();
