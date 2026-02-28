@@ -69,7 +69,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Common XLSX panic sources: umya-spreadsheet API calls returning unexpected None, cell type mismatches, shared string index out of bounds, date/number format parsing, conditional formatting evaluation. The XLSX parser wraps umya-spreadsheet so most panics will be in the boundary code between umya and our IR."
     },
     {
