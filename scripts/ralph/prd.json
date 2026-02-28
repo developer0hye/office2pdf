@@ -101,7 +101,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Prometheus exposition format is simple text: `metric_name{label='value'} 42.0\\n`. Implement a simple in-memory metrics store using AtomicU64 for counters and a Vec<f64> for histograms. No external crate needed for basic Prometheus format. The metrics feature should depend on the server feature flag. Use the ConvertMetrics from US-090 to feed duration/size/page data into the histograms."
     }
   ]
