@@ -77,7 +77,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Start by reading the existing ConvertWarning and ConvertResult types. Then grep across all parsers for places where warnings are generated, elements are skipped (continue statements), or fallbacks are used. The SmartArt and Chart fallbacks in typst_gen.rs are good examples of places that should emit structured warnings. Don't change behavior — just make existing degradation more visible and structured."
     },
     {
