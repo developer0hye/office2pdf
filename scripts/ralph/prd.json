@@ -1,94 +1,115 @@
 {
   "project": "office2pdf",
-  "branchName": "ralph/phase6-wasm-support",
-  "description": "Phase 6: WASM Support - Make all features compilable and usable from WebAssembly",
+  "branchName": "ralph/phase7-fixture-fixes",
+  "description": "Phase 7: Fix 14 fixture conversion failures across 5 root causes",
   "userStories": [
     {
-      "id": "US-060",
-      "title": "Conditional compilation guards for WASM target",
-      "description": "As a library user, I want the office2pdf library crate to compile on the wasm32-unknown-unknown target so I can use it in browser and Node.js WASM environments.\n\nThe library currently has filesystem-dependent code (convert(), convert_with_options() use std::fs::read; ConvertOptions has font_paths: Vec<PathBuf>; pdf.rs uses typst-kit FontSearcher with system font discovery). These must be conditionally compiled.\n\nKey changes:\n- Guard convert() and convert_with_options() behind #[cfg(not(target_arch = \"wasm32\"))]\n- convert_bytes() and render_document() must remain available on ALL targets (they are the WASM-friendly API)\n- In pdf.rs MinimalWorld::new(): on wasm32 skip FontSearcher::include_system_fonts(true) and use embedded fonts only\n- ConvertOptions::font_paths should compile on WASM but be documented as ignored (or conditionally compiled)\n- The Parser trait and all three parsers (docx, pptx, xlsx) must compile on wasm32 since they operate on in-memory bytes\n- All existing native tests must continue to pass unchanged",
+      "id": "US-070",
+      "title": "Replace rgba() with rgb() in Typst codegen",
+      "description": "Typst has no `rgba()` function. It uses `rgb(r, g, b, a)` with 4 arguments for colors with alpha. Currently `write_shadow_shape()` (line 309) and `write_fill_color()` (line 326) in `crates/office2pdf/src/render/typst_gen.rs` emit `rgba(...)` which causes 'unknown variable: rgba' errors.\n\nFix:\n- Line 309 (`write_shadow_shape`): change format string from `rgba({}, {}, {}, {})` to `rgb({}, {}, {}, {})`\n- Line 326 (`write_fill_color`): change format string from `rgba({}, {}, {}, {})` to `rgb({}, {}, {}, {})`\n- Update doc comment on line 320 from 'rgba' to 'rgb'\n- Update ALL existing unit tests that assert `rgba(` to assert `rgb(` with 4 args instead. Search for 'rgba' in the test module.\n\nAffected fixture files: `10-slides.pptx`, `45545_Comment.pptx`, `customGeo.pptx`",
       "acceptanceCriteria": [
-        "convert() and convert_with_options() are behind #[cfg(not(target_arch = \"wasm32\"))]",
-        "convert_bytes() and render_document() remain available on wasm32",
-        "pdf.rs MinimalWorld uses embedded-only fonts on wasm32 (no system font search)",
-        "All existing tests pass on native target (cargo test --workspace)",
+        "write_shadow_shape() emits rgb() not rgba() for shadow colors",
+        "write_fill_color() emits rgb() not rgba() for colors with opacity",
+        "Doc comment on write_fill_color updated to say rgb not rgba",
+        "All existing tests that checked for rgba(...) are updated to check for rgb(...) with 4 args",
+        "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
-        "cargo clippy --workspace -- -D warnings passes"
+        "cargo clippy --workspace -- -D warnings passes",
+        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/pptx/10-slides.pptx -o /tmp/test.pdf succeeds"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "This is the foundation story. Focus on #[cfg(target_arch = \"wasm32\")] and #[cfg(not(target_arch = \"wasm32\"))] guards. Do NOT add wasm-bindgen yet. The typst-kit FontSearcher::include_system_fonts() and search_with() use system APIs not available on WASM. On WASM, create a FontSearcher with include_system_fonts(false) and call search() to get embedded fonts only."
+      "notes": "This is purely a string replacement: rgba -> rgb in format strings and test assertions. Typst's rgb() accepts 3 args (r,g,b) OR 4 args (r,g,b,a). There are ~6 test assertions that reference 'rgba' that need updating."
     },
     {
-      "id": "US-061",
-      "title": "Resolve third-party dependency WASM compilation issues",
-      "description": "As a developer, I want `cargo check --target wasm32-unknown-unknown -p office2pdf` to succeed so the library is verified to compile for WASM.\n\nAfter US-060 adds cfg guards, the next step is to resolve any remaining compilation failures from third-party dependencies when targeting wasm32-unknown-unknown.\n\nCommon WASM compilation issues to anticipate:\n- `getrandom` crate (used by many deps) needs the `js` feature for WASM browser targets\n- `typst-kit` may pull in system-specific code; ensure the feature set is minimal\n- `umya-spreadsheet` may have filesystem or threading deps that fail on WASM — if so, feature-gate the xlsx parser behind #[cfg(not(target_arch = \"wasm32\"))] as a fallback\n- `docx-rs` depends on `zip` which uses std::io — this should work on wasm32 since std::io::Read/Write are available, but verify\n- Some crates may need explicit WASM-compatible feature flags\n\nApproach: Install wasm32-unknown-unknown target (rustup target add wasm32-unknown-unknown), run cargo check, fix errors iteratively. If a parser's dependencies absolutely cannot compile on WASM, guard that parser behind cfg and document the limitation.",
+      "id": "US-071",
+      "title": "Fix nested list double-content-block in Typst codegen",
+      "description": "In `generate_list_items()` in `crates/office2pdf/src/render/typst_gen.rs` (lines 668-701), when a list item has nested children, the code emits TWO content blocks on `list.item`/`enum.item`:\n\nCurrent (WRONG): `list.item[text][#list(...)]` — two `[...]` blocks = two body arguments\nCorrect: `list.item[text #list(...)]` — single content block with nested list inside\n\nThe bug: Line 676 closes `]` for the item text, then line 687 opens another `[` for the nested list. Typst's `list.item`/`enum.item` only accepts ONE body argument.\n\nFix in `generate_list_items()`:\n- When nested items exist (lines 685-696), do NOT close the first `]` before emitting the nested list. Instead, emit the nested `#list(...)` or `#enum(...)` INSIDE the same content block.\n- Change flow: open `[`, write text content, if nested: write ` #func(nested...)`, then close `]`.\n- Specifically: remove the `out.push(']')` at line 676 and move it after the nested block emission. The line 687 `[` and line 695 `]` around the nested list should be removed.\n\nAffected fixture files: `ComplexNumberedLists.docx`, `numberings.docx`, `unit_test_formatting.docx`, `unit_test_lists.docx`",
       "acceptanceCriteria": [
-        "cargo check --target wasm32-unknown-unknown -p office2pdf succeeds",
-        "If any parser had to be excluded on WASM, it is clearly documented with cfg guards",
-        "getrandom/js or equivalent fixes are added to Cargo.toml if needed",
-        "All existing native tests still pass (cargo test --workspace)",
+        "generate_list_items() emits single content block per list item (no double [...])",
+        "Nested sub-lists are embedded inside the parent item's content block",
+        "Output for nested list: list.item[text #list(...)] not list.item[text][#list(...)]",
+        "Add unit test: nested list generates single content block",
+        "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
-        "cargo clippy --workspace -- -D warnings passes"
+        "cargo clippy --workspace -- -D warnings passes",
+        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/docx/numberings.docx -o /tmp/test.pdf succeeds"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Install the WASM target first: rustup target add wasm32-unknown-unknown. Then iterate on cargo check --target wasm32-unknown-unknown -p office2pdf. Common fix: add `getrandom = { version = \"0.2\", features = [\"js\"] }` to [target.'cfg(target_arch = \"wasm32\")'.dependencies]. If umya-spreadsheet doesn't compile on WASM, wrap the xlsx module: #[cfg(not(target_arch = \"wasm32\"))] pub mod xlsx; and guard Format::Xlsx match arm similarly. Prefer making all formats available on WASM, but accept partial support if dependencies are truly incompatible."
+      "passes": false,
+      "notes": "The key insight: `list.item[body]` takes exactly one positional (body) argument. Two `[...]` blocks means two positional args which Typst rejects as 'unexpected argument'. The fix is to keep the content block open while emitting nested lists."
     },
     {
-      "id": "US-062",
-      "title": "wasm-bindgen JavaScript API module",
-      "description": "As a JavaScript/TypeScript developer, I want a wasm-bindgen API to convert Office documents to PDF in the browser or Node.js.\n\nAdd a `wasm` feature flag to the office2pdf library crate that enables wasm-bindgen bindings. Create a `src/wasm.rs` module (conditionally compiled with #[cfg(feature = \"wasm\")]) that exports JavaScript-callable functions.\n\nExported functions:\n- convert_to_pdf(data: &[u8], format: &str) -> Result<Vec<u8>, JsValue> — generic conversion\n- convert_docx_to_pdf(data: &[u8]) -> Result<Vec<u8>, JsValue> — DOCX shortcut\n- convert_pptx_to_pdf(data: &[u8]) -> Result<Vec<u8>, JsValue> — PPTX shortcut\n- convert_xlsx_to_pdf(data: &[u8]) -> Result<Vec<u8>, JsValue> — XLSX shortcut (if xlsx is available on WASM)\n\nError handling: convert ConvertError to a JS string error via JsValue::from_str().\nOptions: For now, use ConvertOptions::default(). A follow-up story can add options support.\n\nThe `wasm` feature must NOT be enabled by default (it should not affect native builds).",
+      "id": "US-072",
+      "title": "Clamp colspan to prevent exceeding table columns",
+      "description": "In `generate_table()` in `crates/office2pdf/src/render/typst_gen.rs` (line 718+), table cells with `col_span` values that exceed the available columns cause Typst error: 'cell's colspan would cause it to exceed the available column(s)'.\n\nThe parsers (DOCX and PPTX) set `col_span` from XML `gridSpan` without validating against the actual column count. The codegen passes it through unchecked.\n\nFix in `generate_table()` (around line 718):\n1. Calculate `num_cols` from `table.column_widths.len()`. If `column_widths` is empty, infer from the maximum number of cells in any row.\n2. Before rendering rows, iterate through rows and cells, tracking column position. For each cell, clamp its effective `col_span` to `min(cell.col_span, num_cols - current_col_pos)`. Ensure it's at least 1.\n3. Pass the clamped colspan to `generate_table_cell()` or modify the cell rendering to use the clamped value.\n\nAlternatively, modify `write_cell_params()` to accept a clamped colspan parameter, or clamp inside `generate_table()` before calling `generate_table_cell()`.\n\nAffected fixture files: `drawing.docx`, `powerpoint_sample.pptx`, `shapes.pptx`, `table_test2.pptx`",
       "acceptanceCriteria": [
-        "Cargo.toml has a `wasm` feature that enables wasm-bindgen dependency",
-        "wasm-bindgen is listed as optional dependency in [dependencies]",
-        "src/wasm.rs module exists with #[wasm_bindgen] exported functions",
-        "convert_to_pdf, convert_docx_to_pdf, convert_pptx_to_pdf are exported (convert_xlsx_to_pdf if XLSX available on WASM)",
-        "Each function takes &[u8] and returns Result with JsValue error",
-        "The wasm feature is NOT enabled by default",
-        "cargo check --target wasm32-unknown-unknown -p office2pdf --features wasm succeeds",
-        "Native build without wasm feature is unaffected (cargo test --workspace)",
+        "Table cells with colspan exceeding column count are clamped to remaining columns",
+        "Column position is tracked per row to correctly calculate remaining columns",
+        "num_cols is derived from column_widths.len() or inferred from row cell counts",
+        "Clamped colspan is at least 1",
+        "Add unit test: table with colspan exceeding columns is clamped correctly",
+        "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
-        "cargo clippy --workspace -- -D warnings passes"
+        "cargo clippy --workspace -- -D warnings passes",
+        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/docx/drawing.docx -o /tmp/test.pdf succeeds"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Add to Cargo.toml: [features] wasm = [\"wasm-bindgen\"] and [dependencies] wasm-bindgen = { version = \"0.2\", optional = true }. In lib.rs: #[cfg(feature = \"wasm\")] pub mod wasm; The wasm module should use convert_bytes internally. Use #[wasm_bindgen] attribute on exported functions. For &[u8] parameters, wasm-bindgen uses js_sys::Uint8Array — use #[wasm_bindgen(js_name = convertToPdf)] for JS-friendly naming."
+      "passes": false,
+      "notes": "The clamping should happen in codegen (typst_gen.rs) as a safety net, not in the parser. This way even if parsers emit bad data, the codegen won't crash. Look at generate_table() and generate_table_cell() — you may need to pass the clamped col_span as a parameter or create a wrapper."
     },
     {
-      "id": "US-063",
-      "title": "WASM compilation check in CI pipeline",
-      "description": "As a maintainer, I want CI to verify that the library compiles for the wasm32-unknown-unknown target so WASM support doesn't regress.\n\nAdd a new CI job (or extend existing) that:\n1. Installs wasm32-unknown-unknown target\n2. Runs cargo check --target wasm32-unknown-unknown -p office2pdf\n3. Runs cargo check --target wasm32-unknown-unknown -p office2pdf --features wasm\n\nThis ensures every PR is verified for WASM compatibility.",
+      "id": "US-073",
+      "title": "Sort gradient stops by position before rendering",
+      "description": "In `write_gradient_fill()` in `crates/office2pdf/src/render/typst_gen.rs` (line 360), gradient stops are iterated in parser order without sorting. Typst requires gradient stop offsets to be in monotonic (non-decreasing) order, otherwise it errors: 'offsets must be in monotonic order'.\n\nFix in `write_gradient_fill()` (line 360):\n- Before iterating `gradient.stops`, clone and sort the stops by their `position` field.\n- Use `let mut sorted_stops = gradient.stops.clone(); sorted_stops.sort_by(|a, b| a.position.partial_cmp(&b.position).unwrap_or(std::cmp::Ordering::Equal));`\n- Then iterate `sorted_stops` instead of `gradient.stops`.\n\nPrefer sorting in codegen rather than parser as a safety net.\n\nAffected fixture file: `backgrounds.pptx`",
       "acceptanceCriteria": [
-        ".github/workflows/ci.yml has a WASM check job",
-        "Job installs wasm32-unknown-unknown target",
-        "Job runs cargo check for wasm32 target (both with and without wasm feature)",
-        "Job uses stable Rust toolchain",
-        "Existing CI jobs are not broken",
+        "write_gradient_fill() sorts stops by position before rendering",
+        "Unsorted gradient stops from parser are handled correctly",
+        "Add unit test: gradient with unsorted stops renders in sorted order",
+        "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
-        "cargo clippy --workspace -- -D warnings passes"
+        "cargo clippy --workspace -- -D warnings passes",
+        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/pptx/backgrounds.pptx -o /tmp/test.pdf succeeds"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Add a new job to .github/workflows/ci.yml: wasm-check with steps: checkout, install rust toolchain with target wasm32-unknown-unknown, run cargo check commands. Use dtolnay/rust-toolchain@stable with targets: wasm32-unknown-unknown."
+      "passes": false,
+      "notes": "The GradientStop struct has a `position: f64` field. Sort by this before generating the Typst gradient.linear() call. The GradientFill and GradientStop types are in ir/ module — check if they derive Clone. If not, you'll need to collect into a new Vec of references and sort that."
     },
     {
-      "id": "US-064",
-      "title": "WASM integration test with wasm-pack",
-      "description": "As a developer, I want a basic wasm-pack test to verify that the WASM build actually works end-to-end (not just compiles).\n\nCreate a minimal wasm-pack test that:\n1. Builds the library with wasm-pack for the wasm32-unknown-unknown target\n2. Loads the resulting WASM module\n3. Calls convert_docx_to_pdf (or convert_to_pdf) with a minimal DOCX byte array\n4. Verifies the output starts with %PDF magic bytes\n\nThis can be a #[wasm_bindgen_test] in the library crate or a separate test.\n\nNote: wasm-pack tests require wasm-pack to be installed. If wasm-pack is not available in CI, this test should be documented as a manual verification step.",
+      "id": "US-074",
+      "title": "Map Unicode math symbols to Typst identifiers in OMML parser",
+      "description": "In `parse_math_run()` in `crates/office2pdf/src/parser/omml.rs` (line 286-310), raw Unicode text is appended directly to the output. Greek letters like `π` are not recognized by Typst as math identifiers, causing 'unknown variable: πr' errors.\n\nFix in `parse_math_run()`:\n- After reading text content (line 297-299), add a post-processing step that:\n  1. Maps Unicode Greek letters to Typst math identifiers: π→pi, α→alpha, β→beta, γ→gamma, δ→delta, ε→epsilon, ζ→zeta, η→eta, θ→theta, ι→iota, κ→kappa, λ→lambda, μ→mu, ν→nu, ξ→xi, ο→omicron, ρ→rho, σ→sigma, τ→tau, υ→upsilon, φ→phi, χ→chi, ψ→psi, ω→omega (and uppercase variants: Α→Alpha, Β→Beta, Γ→Gamma, Δ→Delta, etc.)\n  2. Also map common math symbols: ∞→infinity, ∂→partial, ∇→nabla, ±→plus.minus, ×→times, ÷→div, ≤→lt.eq, ≥→gt.eq, ≠→eq.not, ≈→approx, ∈→in, ∉→in.not, ⊂→subset, ⊃→supset, ∪→union, ∩→sect, ∅→emptyset\n  3. Insert space between adjacent identifiers to enable implicit multiplication (e.g., `πr` → `pi r`)\n\nCreate a helper function `map_math_text(input: &str) -> String` that processes the text character by character.\n\nAffected fixture file: `equations.docx`",
       "acceptanceCriteria": [
-        "A wasm_bindgen_test exists that verifies WASM conversion works",
-        "Test creates or uses a minimal DOCX byte fixture",
-        "Test calls the wasm-bindgen exported function and verifies PDF output",
-        "Test is behind #[cfg(target_arch = \"wasm32\")] so it only runs in WASM test context",
-        "Documentation in README or code comments explains how to run WASM tests",
-        "Native tests are not affected (cargo test --workspace still passes)",
+        "Unicode Greek letters in math runs are mapped to Typst identifiers (π→pi, α→alpha, etc.)",
+        "Common Unicode math symbols are mapped to Typst equivalents",
+        "Adjacent identifiers have spaces inserted for implicit multiplication",
+        "Plain ASCII letters and digits pass through unchanged",
+        "Add unit test: parse_math_run maps π to pi, πr² to pi r 2 (or similar)",
+        "Add unit test for map_math_text helper function with various Greek letters and symbols",
+        "cargo test --workspace passes",
+        "cargo fmt --all -- --check passes",
+        "cargo clippy --workspace -- -D warnings passes",
+        "Verify: cargo run -p office2pdf-cli -- tests/fixtures/docx/equations.docx -o /tmp/test.pdf succeeds"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "The mapping function should handle multi-byte Unicode characters properly. Process the input string character by character using .chars(). When a character maps to a named identifier, output the name. When transitioning between identifiers (e.g., 'pi' followed by 'r'), insert a space. Numbers and operators (+, -, =, etc.) should pass through as-is. The function should be robust — unknown Unicode chars can pass through unchanged."
+    },
+    {
+      "id": "US-075",
+      "title": "Remove corrupt deep-table-cell.docx fixture",
+      "description": "The file `tests/fixtures/docx/deep-table-cell.docx` is a corrupt ZIP file that always fails with 'Failed to read from zip'. This is not a bug in our code — the file itself is damaged. Remove it and all references.\n\nChanges needed:\n1. Delete `tests/fixtures/docx/deep-table-cell.docx`\n2. Remove the test line `docx_fixture_tests!(deep_table_cell, \"deep-table-cell.docx\");` from `crates/office2pdf/tests/docx_fixtures.rs`\n3. Remove `- \\`docx/deep-table-cell.docx\\`` from `tests/fixtures/THIRD-PARTY-LICENSES.md`",
+      "acceptanceCriteria": [
+        "tests/fixtures/docx/deep-table-cell.docx is deleted",
+        "docx_fixtures.rs no longer references deep-table-cell.docx",
+        "THIRD-PARTY-LICENSES.md no longer references deep-table-cell.docx",
+        "cargo test --workspace passes",
         "cargo fmt --all -- --check passes",
         "cargo clippy --workspace -- -D warnings passes"
       ],
-      "priority": 5,
-      "passes": true,
-      "notes": "Add dev-dependencies: wasm-bindgen-test = \"0.3\" (behind cfg). Create tests in src/wasm.rs or a separate test file. The test fixture can be a minimal valid DOCX (ZIP file with [Content_Types].xml and a minimal document.xml). If creating a real DOCX programmatically is too complex, use the smallest fixture from tests/fixtures/docx/. wasm-bindgen-test requires: cargo install wasm-pack, then wasm-pack test --node. If wasm-pack is unavailable in the CI environment, add the test as a separate optional CI step or document it."
+      "priority": 6,
+      "passes": false,
+      "notes": "Simple cleanup task. Delete the file and remove 2 lines from 2 files. Use git rm for the fixture file so git tracks the deletion."
     }
   ]
 }
