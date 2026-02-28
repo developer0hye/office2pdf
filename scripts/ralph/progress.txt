@@ -94,3 +94,21 @@
 # Ralph Progress Log - Phase 13: Bulk Fixture Robustness - Smoke test 2800+ fixtures, eliminate panics, 70%+ success rate
 Started: 2026년  3월  1일 일요일 01시 22분 39초 KST
 ---
+
+## 2026-03-01 - US-200
+- Implemented bulk conversion smoke test infrastructure in `crates/office2pdf/tests/bulk_conversion.rs`
+- 4 test functions: `test_bulk_docx`, `test_bulk_pptx`, `test_bulk_xlsx`, `test_bulk_all_formats`
+- All tests marked `#[ignore]` so they don't run in normal CI
+- Recursive file discovery for fixtures (handles subdirectories)
+- Uses `std::panic::catch_unwind(AssertUnwindSafe(|| ...))` to catch panics without aborting
+- Categorizes results as SUCCESS/ERROR/PANIC with summary table
+- Writes results to `tests/bulk_conversion_results.txt`
+- Tests assert 0 panics (ConvertError is acceptable)
+- Files changed: `crates/office2pdf/tests/bulk_conversion.rs` (new), `scripts/ralph/prd.json`
+- Dependencies added: none
+- **Learnings for future iterations:**
+  - Rust format strings cannot contain raw `{` — use `"=".repeat(60)` for separator lines
+  - `std::fmt::Write` is needed for `writeln!` to `String`, `std::io::Write` for `flush()`
+  - Fixture counts: 45 DOCX, 45 PPTX, 56 XLSX = 146 total files
+  - No subdirectories (libreoffice/poi/) exist yet — just flat `tests/fixtures/{format}/`
+---

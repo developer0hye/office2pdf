@@ -18,7 +18,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Use #[test] functions, not a custom binary. The test should be runnable via `cargo test -p office2pdf --test bulk_conversion -- --nocapture`. Use std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| { ... })) to catch panics. For file discovery, use std::fs::read_dir recursively or the glob crate (already in dev-dependencies). Mark the test with #[ignore] so it doesn't run in normal CI — only when explicitly requested. Print results to stdout AND write to a file."
     },
     {
