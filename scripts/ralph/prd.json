@@ -21,7 +21,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Use lopdf (pure Rust PDF library) for manipulation. It can read, modify, and write PDFs. For merge: read each PDF, copy pages to a new document. For split: read the PDF, extract page objects for each range, write to new documents. Add lopdf as an optional dependency behind a 'pdf-ops' feature flag. The conversion pipeline doesn't change — these are new standalone operations."
     },
     {

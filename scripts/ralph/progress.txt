@@ -1,5 +1,7 @@
 ## Codebase Patterns
-- **Server feature flag pattern**: CLI crate has `server = ["tiny_http"]` feature. Module `server.rs` imported with `#[cfg(feature = "server")] mod server;`. CLI struct uses `#[cfg_attr(feature = "server", command(subcommand_negates_reqs = true, args_conflicts_with_subcommands = true))]` + `#[cfg(feature = "server")] command: Option<Commands>` for backwards-compatible optional subcommands. Tests run with `cargo test -p office2pdf-cli --features server`.
+- **Server feature flag pattern**: CLI crate has `server = ["tiny_http"]` feature. Module `server.rs` imported with `#[cfg(feature = "server")] mod server;`. Serve variant in Commands enum uses `#[cfg(feature = "server")]`. Tests run with `cargo test -p office2pdf-cli --features server`.
+- **PDF ops feature flag pattern**: Library crate has `pdf-ops = ["lopdf"]` feature. Module `pdf_ops.rs` imported with `#[cfg(feature = "pdf-ops")] pub mod pdf_ops;`. CLI always enables pdf-ops via `office2pdf = { features = ["pdf-ops"] }`. CLI subcommands `merge` and `split` are always available. `PageRange` for parsing page range strings like "1-5". Tests create minimal PDFs with `lopdf::Document::with_version("1.7")` + manual page/catalog construction.
+- **CLI subcommand pattern**: `Commands` enum always exists with `Merge` and `Split` variants. `Serve` variant behind `#[cfg(feature = "server")]`. `Cli` struct uses `subcommand_negates_reqs = true, args_conflicts_with_subcommands = true` for backward-compatible subcommands (conversion args remain top-level). `handle_command(cmd)` dispatches all subcommands.
 - **WASM conditional compilation**: Filesystem-dependent functions (`convert`, `convert_with_options`) use `#[cfg(not(target_arch = "wasm32"))]`. In-memory functions (`convert_bytes`, `render_document`) have no guards. `pdf.rs` has dual `compile_to_pdf` — native uses `MinimalWorld::new(fonts+system)`, wasm32 uses `MinimalWorld::new_embedded_only(embedded fonts only)`. Shared logic in `compile_to_pdf_inner()`. Use `#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]` for functions used only on WASM but tested on native.
 - **WASM wasm-bindgen module**: `src/wasm.rs` behind `#[cfg(feature = "wasm")]`. Feature: `wasm = ["wasm-bindgen"]` (not default). Exported functions: `convertToPdf(data, format)`, `convertDocxToPdf(data)`, `convertPptxToPdf(data)`, `convertXlsxToPdf(data)`. Core logic in `convert_to_pdf_inner()` / `convert_format_inner()` returning `Result<Vec<u8>, String>` — testable on native. `#[wasm_bindgen]` functions are thin wrappers converting `String` → `JsValue`. `JsValue::from_str()` panics on non-wasm32, so never test wasm_bindgen functions directly on native.
 - **WASM dependency fixes**: `zip` must use `default-features = false, features = ["deflate"]` (default pulls in bzip2-sys/zstd-sys C libs). `getrandom` v0.2 needs `js` feature, v0.3 needs `wasm_js` feature — both in `[target.'cfg(target_arch = "wasm32")'.dependencies]`. Use `getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }` for the v0.2 rename trick. All three parsers (DOCX/PPTX/XLSX) and their deps compile on WASM without exclusions.
@@ -86,4 +88,23 @@
 
 # Ralph Progress Log - Phase 11: Ecosystem Expansion - PDF Merge/Split, Accessibility, Streaming, Metrics
 Started: 2026년  2월 28일 토요일 19시 00분 28초 KST
+---
+
+## 2026-02-28 - US-095
+- Implemented PDF merge, split, and page_count operations in `pdf_ops` module
+- Added `lopdf` 0.39 as optional dependency behind `pdf-ops` feature flag
+- Added CLI subcommands: `merge` (combines multiple PDFs) and `split` (extracts page ranges)
+- Files changed:
+  - `crates/office2pdf/Cargo.toml` — added lopdf optional dep + pdf-ops feature
+  - `crates/office2pdf/src/lib.rs` — conditional module import
+  - `crates/office2pdf/src/pdf_ops.rs` — new module with merge/split/page_count + 22 tests
+  - `crates/office2pdf-cli/Cargo.toml` — enable pdf-ops, add lopdf dev-dep
+  - `crates/office2pdf-cli/src/main.rs` — restructured Commands enum, added merge/split subcommands + 2 CLI tests
+- Dependencies added: `lopdf = "0.39"` (optional, behind pdf-ops feature flag)
+- **Learnings for future iterations:**
+  - lopdf's `dict.get(b"Type")` returns `Result`, not `Option` — chain with `.ok().and_then()`
+  - lopdf's `dictionary!` macro must be imported via `use lopdf::dictionary;`, not `lopdf::dictionary!{}`
+  - Clippy requires collapsing nested `if let Ok(...) { if condition { ... } }` into `if let Ok(...) && condition { ... }`
+  - When merging PDFs, must remove orphaned intermediate Pages nodes from source documents
+  - CLI subcommand refactoring: moved from cfg-conditional Commands enum to always-present enum with cfg-conditional Serve variant
 ---
