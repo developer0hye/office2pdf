@@ -18,6 +18,7 @@ path = "src/main.rs"
 office2pdf = { version = "0.3.0", path = "../office2pdf" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
+rayon = "1"
 
 [dev-dependencies]
 docx-rs = "0.4"
