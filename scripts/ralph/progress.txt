@@ -129,3 +129,23 @@ Started: 2026년  2월 28일 토요일 17시 23분 18초 KST
   - XLSX compile time is higher than DOCX/PPTX even with warm cache (~220ms vs ~12ms) likely due to more complex Typst output (many tables).
   - Consolidating ZIP opens is a structural improvement but has minimal absolute impact when parse stage is already fast (<30ms).
 ---
+
+## 2026-02-28 - US-092
+- What was implemented: Multi-threaded batch conversion via rayon
+  - Added `rayon = "1"` as direct dependency in `office2pdf-cli` (already transitive via typst)
+  - `--jobs N` (`-j N`) CLI flag to control parallelism (default: 0 = all CPU cores)
+  - `convert_batch()` now accepts a `jobs` parameter; when `jobs > 1` and multiple inputs, creates a local rayon `ThreadPool` with `num_threads(jobs)` and uses `par_iter()` for parallel file conversion
+  - Single-file or `jobs=1` falls back to sequential iteration (no rayon overhead)
+  - Each conversion is fully independent (no shared mutable state), so `par_iter()` is straightforward
+- Files changed:
+  - `crates/office2pdf-cli/Cargo.toml` — Added `rayon = "1"` dependency
+  - `crates/office2pdf-cli/src/main.rs` — Added `--jobs` CLI flag, modified `convert_batch()` signature and implementation with rayon parallel support, added 5 new tests (parallel jobs=2, parallel partial failure, parallel outdir, single file with jobs, sequential jobs=1), updated existing tests to pass `jobs` parameter
+  - `scripts/ralph/prd.json` — Marked US-092 as passes: true
+- Dependencies added: `rayon = "1"` (already in dependency tree via typst, justified for parallel batch conversion)
+- **Learnings for future iterations:**
+  - Local `rayon::ThreadPool` via `ThreadPoolBuilder::new().num_threads(n).build()` is preferred over `build_global()` — allows tests to create independent pools without global state conflicts
+  - `pool.install(|| inputs.par_iter().map(...).collect())` is the clean pattern for scoped parallel work
+  - `std::thread::available_parallelism()` is the stdlib equivalent of `num_cpus` — no extra crate needed for defaults
+  - `ConvertOptions` is automatically `Send + Sync` since all fields are owned value types — no special handling needed for parallel use
+  - When `jobs=0`, resolve to available_parallelism at runtime; rayon's `num_threads(0)` also uses this default
+---

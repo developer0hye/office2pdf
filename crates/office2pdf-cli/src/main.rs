@@ -51,6 +51,10 @@ struct Cli {
     /// Print per-stage timing metrics to stderr
     #[arg(long)]
     metrics: bool,
+
+    /// Number of parallel conversion jobs (default: number of CPU cores)
+    #[arg(short = 'j', long, default_value_t = 0)]
+    jobs: usize,
 }
 
 /// Result of a batch conversion.
@@ -112,32 +116,61 @@ fn convert_single(
 }
 
 /// Convert multiple files independently, collecting results.
+///
+/// When `jobs > 1` and there are multiple inputs, files are converted in
+/// parallel using a rayon thread pool. `jobs == 0` means "use all available
+/// CPU cores" (rayon's default).
 fn convert_batch(
     inputs: &[PathBuf],
     outdir: Option<&Path>,
     options: &ConvertOptions,
     show_metrics: bool,
+    jobs: usize,
 ) -> BatchResult {
-    let mut result = BatchResult {
-        succeeded: Vec::new(),
-        failed: Vec::new(),
-    };
-
-    for input in inputs {
+    let convert_one = |input: &PathBuf| -> Result<(PathBuf, PathBuf), (PathBuf, String)> {
         let output_path = determine_output_path(input, None, outdir);
         match convert_single(input, &output_path, options, show_metrics) {
             Ok(()) => {
                 println!("Converted: {:?} -> {:?}", input, output_path);
-                result.succeeded.push((input.clone(), output_path));
+                Ok((input.clone(), output_path))
             }
             Err(err) => {
                 eprintln!("Failed: {:?}: {err:#}", input);
-                result.failed.push((input.clone(), format!("{err:#}")));
+                Err((input.clone(), format!("{err:#}")))
             }
         }
-    }
+    };
 
-    result
+    let effective_jobs = if jobs == 0 {
+        std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(1)
+    } else {
+        jobs
+    };
+
+    let results: Vec<_> = if effective_jobs > 1 && inputs.len() > 1 {
+        use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(effective_jobs)
+            .build()
+            .expect("failed to create rayon thread pool");
+        pool.install(|| inputs.par_iter().map(convert_one).collect())
+    } else {
+        inputs.iter().map(convert_one).collect()
+    };
+
+    let mut batch = BatchResult {
+        succeeded: Vec::new(),
+        failed: Vec::new(),
+    };
+    for r in results {
+        match r {
+            Ok(pair) => batch.succeeded.push(pair),
+            Err(pair) => batch.failed.push(pair),
+        }
+    }
+    batch
 }
 
 fn run() -> Result<()> {
@@ -194,7 +227,13 @@ fn run() -> Result<()> {
     }
 
     // Batch conversion (works for 1 or many files)
-    let result = convert_batch(&cli.inputs, cli.outdir.as_deref(), &options, show_metrics);
+    let result = convert_batch(
+        &cli.inputs,
+        cli.outdir.as_deref(),
+        &options,
+        show_metrics,
+        cli.jobs,
+    );
 
     // Print summary when there are multiple files
     let total = result.succeeded.len() + result.failed.len();
@@ -283,7 +322,7 @@ mod tests {
 
         let inputs = vec![file1, file2];
         let options = ConvertOptions::default();
-        let result = convert_batch(&inputs, None, &options, false);
+        let result = convert_batch(&inputs, None, &options, false, 1);
 
         assert_eq!(result.succeeded.len(), 2);
         assert_eq!(result.failed.len(), 0);
@@ -307,7 +346,7 @@ mod tests {
 
         let inputs = vec![file1, file2.clone()];
         let options = ConvertOptions::default();
-        let result = convert_batch(&inputs, None, &options, false);
+        let result = convert_batch(&inputs, None, &options, false, 1);
 
         assert_eq!(result.succeeded.len(), 1);
         assert_eq!(result.failed.len(), 1);
@@ -333,7 +372,7 @@ mod tests {
 
         let inputs = vec![file1, file2];
         let options = ConvertOptions::default();
-        let result = convert_batch(&inputs, Some(&outdir), &options, false);
+        let result = convert_batch(&inputs, Some(&outdir), &options, false, 1);
 
         assert_eq!(result.succeeded.len(), 2);
         assert_eq!(result.failed.len(), 0);
@@ -342,6 +381,140 @@ mod tests {
         // Original directory should NOT have PDFs
         assert!(!dir.join("report.pdf").exists());
         assert!(!dir.join("memo.pdf").exists());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // --- Parallel batch conversion tests ---
+
+    #[test]
+    fn test_batch_convert_parallel_jobs_2() {
+        let dir = std::env::temp_dir().join("office2pdf_parallel_test_j2");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let docx_data = make_test_docx();
+        let inputs: Vec<PathBuf> = (0..4)
+            .map(|i| {
+                let path = dir.join(format!("doc{i}.docx"));
+                std::fs::write(&path, &docx_data).unwrap();
+                path
+            })
+            .collect();
+
+        let options = ConvertOptions::default();
+        let result = convert_batch(&inputs, None, &options, false, 2);
+
+        assert_eq!(result.succeeded.len(), 4);
+        assert_eq!(result.failed.len(), 0);
+        for i in 0..4 {
+            let pdf_path = dir.join(format!("doc{i}.pdf"));
+            assert!(pdf_path.exists(), "doc{i}.pdf should exist");
+            let pdf_bytes = std::fs::read(&pdf_path).unwrap();
+            assert!(pdf_bytes.len() > 100, "PDF should have real content");
+        }
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_batch_convert_parallel_partial_failure() {
+        let dir = std::env::temp_dir().join("office2pdf_parallel_fail_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let docx_data = make_test_docx();
+        let good = dir.join("good.docx");
+        let bad = dir.join("bad.txt");
+        std::fs::write(&good, &docx_data).unwrap();
+        std::fs::write(&bad, b"not a valid document").unwrap();
+
+        let inputs = vec![good, bad.clone()];
+        let options = ConvertOptions::default();
+        let result = convert_batch(&inputs, None, &options, false, 2);
+
+        assert_eq!(result.succeeded.len(), 1);
+        assert_eq!(result.failed.len(), 1);
+        assert!(dir.join("good.pdf").exists());
+        assert_eq!(result.failed[0].0, bad);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_batch_convert_parallel_with_outdir() {
+        let dir = std::env::temp_dir().join("office2pdf_parallel_outdir_test");
+        let outdir = dir.join("output");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::create_dir_all(&outdir).unwrap();
+
+        let docx_data = make_test_docx();
+        let inputs: Vec<PathBuf> = (0..3)
+            .map(|i| {
+                let path = dir.join(format!("file{i}.docx"));
+                std::fs::write(&path, &docx_data).unwrap();
+                path
+            })
+            .collect();
+
+        let options = ConvertOptions::default();
+        let result = convert_batch(&inputs, Some(&outdir), &options, false, 2);
+
+        assert_eq!(result.succeeded.len(), 3);
+        assert_eq!(result.failed.len(), 0);
+        for i in 0..3 {
+            assert!(outdir.join(format!("file{i}.pdf")).exists());
+            // Original directory should NOT have PDFs
+            assert!(!dir.join(format!("file{i}.pdf")).exists());
+        }
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_batch_convert_single_file_with_jobs() {
+        // Single file should work fine even with jobs > 1
+        let dir = std::env::temp_dir().join("office2pdf_parallel_single_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let docx_data = make_test_docx();
+        let input = dir.join("single.docx");
+        std::fs::write(&input, &docx_data).unwrap();
+
+        let inputs = vec![input];
+        let options = ConvertOptions::default();
+        let result = convert_batch(&inputs, None, &options, false, 4);
+
+        assert_eq!(result.succeeded.len(), 1);
+        assert_eq!(result.failed.len(), 0);
+        assert!(dir.join("single.pdf").exists());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_batch_convert_sequential_jobs_1() {
+        // jobs=1 should use sequential path
+        let dir = std::env::temp_dir().join("office2pdf_sequential_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let docx_data = make_test_docx();
+        let inputs: Vec<PathBuf> = (0..3)
+            .map(|i| {
+                let path = dir.join(format!("seq{i}.docx"));
+                std::fs::write(&path, &docx_data).unwrap();
+                path
+            })
+            .collect();
+
+        let options = ConvertOptions::default();
+        let result = convert_batch(&inputs, None, &options, false, 1);
+
+        assert_eq!(result.succeeded.len(), 3);
+        assert_eq!(result.failed.len(), 0);
 
         let _ = std::fs::remove_dir_all(&dir);
     }

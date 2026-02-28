@@ -59,7 +59,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Rayon is a well-known Rust parallelism crate and is justified as a dependency for this use case. Check if rayon is already in the dependency tree (typst may depend on it). The key insight is that each file conversion is fully independent — no shared state — so par_iter() is straightforward. Be careful with error handling in parallel context — use rayon's error collection patterns."
     },
     {
