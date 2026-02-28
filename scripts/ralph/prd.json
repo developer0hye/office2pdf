@@ -57,7 +57,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "First read the test code to understand what fixture file is being used and what the test expects. Then run the test without #[ignore] to see the actual error. The fix might be as simple as a parsing edge case or a Typst codegen issue. Check the progress.txt Codebase Patterns section for any existing notes about footnotes/headers."
     },
     {
