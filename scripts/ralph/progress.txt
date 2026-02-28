@@ -103,3 +103,23 @@ Started: 2026년  2월 28일 토요일 09시 05분 04초 KST
   - Typst's `list.item`/`enum.item` accept exactly ONE positional body argument — two `[...]` blocks means two args which is an error
   - The fix was moving the closing `]` bracket after the nested list emission, not before
 ---
+
+## 2026-02-28 - US-072
+- Clamped table cell colspan to prevent exceeding available columns in Typst codegen
+- Three-part fix in `generate_table()`:
+  1. Determine `num_cols` from `column_widths.len()` or infer from max cells per row
+  2. Track column positions per row with rowspan occupancy grid, clamp colspan to remaining columns
+  3. Skip merge continuation cells (col_span=0 for hMerge, row_span=0 for vMerge)
+  4. Pad short rows with empty cells so Typst row boundaries align with IR rows
+  5. Emit `columns: N` for tables without explicit column widths (Typst defaults to 1 column otherwise)
+- Modified `generate_table_cell()` and `write_cell_params()` to accept clamped colspan parameter
+- Added 3 unit tests: `test_table_colspan_clamped_to_available_columns`, `test_table_colspan_clamped_mid_row`, `test_table_colspan_no_column_widths_inferred`
+- Files changed: `crates/office2pdf/src/render/typst_gen.rs`
+- Dependencies added: none
+- Verified all 4 affected fixtures: `drawing.docx`, `powerpoint_sample.pptx`, `shapes.pptx`, `table_test2.pptx`
+- **Learnings for future iterations:**
+  - Typst tables have NO explicit row breaks — cells fill left-to-right, wrapping when a row is full. If an IR row doesn't fill all columns, the next IR row's cells continue in the same Typst row.
+  - PPTX tables use col_span=0 (hMerge) and row_span=0 (vMerge) as merge continuation markers that must NOT be emitted as Typst cells.
+  - When `column_widths` is empty, Typst defaults to 1 column. Must emit `columns: N` to specify the correct count.
+  - Rowspan tracking requires careful timing: set `rowspan_remaining = rowspan` (full value), decrement at START of each row.
+---

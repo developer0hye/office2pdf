@@ -55,7 +55,7 @@
         "Verify: cargo run -p office2pdf-cli -- tests/fixtures/docx/drawing.docx -o /tmp/test.pdf succeeds"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "The clamping should happen in codegen (typst_gen.rs) as a safety net, not in the parser. This way even if parsers emit bad data, the codegen won't crash. Look at generate_table() and generate_table_cell() — you may need to pass the clamped col_span as a parameter or create a wrapper."
     },
     {

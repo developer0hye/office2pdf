@@ -717,6 +717,14 @@ fn generate_list_items(
 fn generate_table(out: &mut String, table: &Table, ctx: &mut GenCtx) -> Result<(), ConvertError> {
     out.push_str("#table(\n");
 
+    // Determine number of columns
+    let num_cols = if !table.column_widths.is_empty() {
+        table.column_widths.len()
+    } else {
+        // Infer from the maximum number of cells in any row
+        table.rows.iter().map(|r| r.cells.len()).max().unwrap_or(0)
+    };
+
     // Column widths
     if !table.column_widths.is_empty() {
         out.push_str("  columns: (");
@@ -727,12 +735,63 @@ fn generate_table(out: &mut String, table: &Table, ctx: &mut GenCtx) -> Result<(
             let _ = write!(out, "{}pt", format_f64(*w));
         }
         out.push_str("),\n");
+    } else if num_cols > 1 {
+        // No explicit widths but multiple columns inferred — tell Typst the column count
+        let _ = writeln!(out, "  columns: {num_cols},");
     }
 
-    // Rows and cells
+    // Rows and cells — clamp colspan to prevent exceeding available columns.
+    // Also handle merge continuation cells: col_span=0 (hMerge) and row_span=0
+    // (vMerge) are continuation markers that must not be emitted as Typst cells.
+    // Track column occupancy from rowspans so we clamp colspans correctly.
+    // rowspan_remaining[c] = N means column c is occupied for N more rows.
+    let mut rowspan_remaining = vec![0usize; num_cols];
     for row in &table.rows {
+        // Decrement rowspan counters at the start of each row
+        for rs in &mut rowspan_remaining {
+            if *rs > 0 {
+                *rs -= 1;
+            }
+        }
+        let mut col_pos: usize = 0;
         for cell in &row.cells {
-            generate_table_cell(out, cell, ctx)?;
+            // Skip hMerge continuation cells (col_span=0)
+            if cell.col_span == 0 {
+                continue;
+            }
+            // Skip vMerge continuation cells (row_span=0)
+            if cell.row_span == 0 {
+                continue;
+            }
+            // Skip columns occupied by rowspans from previous rows
+            while col_pos < num_cols && rowspan_remaining[col_pos] > 0 {
+                col_pos += 1;
+            }
+            if col_pos >= num_cols {
+                break;
+            }
+            let remaining = num_cols - col_pos;
+            let clamped_colspan = (cell.col_span as usize).min(remaining).max(1) as u32;
+            generate_table_cell(out, cell, clamped_colspan, ctx)?;
+            // Register rowspan occupancy for subsequent rows (use full rowspan;
+            // the start-of-row decrement will reduce it each row)
+            if cell.row_span > 1 {
+                for rs in rowspan_remaining
+                    .iter_mut()
+                    .skip(col_pos)
+                    .take(clamped_colspan as usize)
+                {
+                    *rs = cell.row_span as usize;
+                }
+            }
+            col_pos += clamped_colspan as usize;
+        }
+        // Pad remaining columns with empty cells so Typst starts next row correctly
+        while col_pos < num_cols {
+            if rowspan_remaining[col_pos] == 0 {
+                out.push_str("  [],\n");
+            }
+            col_pos += 1;
         }
     }
 
@@ -743,16 +802,17 @@ fn generate_table(out: &mut String, table: &Table, ctx: &mut GenCtx) -> Result<(
 fn generate_table_cell(
     out: &mut String,
     cell: &TableCell,
+    clamped_colspan: u32,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
-    let needs_cell_fn = cell.col_span > 1
+    let needs_cell_fn = clamped_colspan > 1
         || cell.row_span > 1
         || cell.border.is_some()
         || cell.background.is_some();
 
     if needs_cell_fn {
         out.push_str("  table.cell(");
-        write_cell_params(out, cell);
+        write_cell_params(out, cell, clamped_colspan);
         out.push_str(")[");
     } else {
         out.push_str("  [");
@@ -783,11 +843,11 @@ fn generate_table_cell(
     Ok(())
 }
 
-fn write_cell_params(out: &mut String, cell: &TableCell) {
+fn write_cell_params(out: &mut String, cell: &TableCell, clamped_colspan: u32) {
     let mut first = true;
 
-    if cell.col_span > 1 {
-        write_param(out, &mut first, &format!("colspan: {}", cell.col_span));
+    if clamped_colspan > 1 {
+        write_param(out, &mut first, &format!("colspan: {clamped_colspan}"));
     }
     if cell.row_span > 1 {
         write_param(out, &mut first, &format!("rowspan: {}", cell.row_span));
@@ -4541,6 +4601,129 @@ mod tests {
             output.source.contains("↑"),
             "Icon text should appear in output. Got: {}",
             output.source,
+        );
+    }
+
+    #[test]
+    fn test_table_colspan_clamped_to_available_columns() {
+        // Table with 2 columns, but cell has col_span: 3 (exceeds available).
+        // The codegen should clamp it to 2.
+        let wide_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Wide".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            col_span: 3,
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![wide_cell],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![make_text_cell("A2"), make_text_cell("B2")],
+                    height: None,
+                },
+            ],
+            column_widths: vec![100.0, 200.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+        // colspan should be clamped to 2 (number of columns), not 3
+        assert!(
+            result.contains("colspan: 2"),
+            "Expected colspan clamped to 2, got: {result}"
+        );
+        assert!(
+            !result.contains("colspan: 3"),
+            "colspan: 3 should have been clamped, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_colspan_clamped_mid_row() {
+        // Table with 3 columns, row has cell at col 1 + cell with col_span: 3 at col 2.
+        // col_span should be clamped to 2 (3 - 1 = 2 remaining columns).
+        let normal_cell = make_text_cell("A1");
+        let wide_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Wide".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            col_span: 3,
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![normal_cell, wide_cell],
+                height: None,
+            }],
+            column_widths: vec![100.0, 100.0, 100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+        // At col position 1, col_span 3 exceeds 3 columns → clamped to 2
+        assert!(
+            result.contains("colspan: 2"),
+            "Expected colspan clamped to 2, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_colspan_no_column_widths_inferred() {
+        // Table without explicit column_widths — num_cols inferred from max cells in a row.
+        let wide_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Wide".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            col_span: 5,
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![wide_cell],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![
+                        make_text_cell("A"),
+                        make_text_cell("B"),
+                        make_text_cell("C"),
+                    ],
+                    height: None,
+                },
+            ],
+            column_widths: vec![],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+        // Inferred num_cols = 3 (max cells in any row), col_span 5 clamped to 3
+        assert!(
+            result.contains("colspan: 3"),
+            "Expected colspan clamped to 3 (inferred columns), got: {result}"
+        );
+        assert!(
+            !result.contains("colspan: 5"),
+            "colspan: 5 should have been clamped, got: {result}"
         );
     }
 }
