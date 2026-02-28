@@ -4,9 +4,9 @@ use std::io::Cursor;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Chart, Color, Document, HFInline, HeaderFooter,
-    HeaderFooterParagraph, Margins, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
-    StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, Document, HFInline,
+    HeaderFooter, HeaderFooterParagraph, Margins, Metadata, Page, PageSize, Paragraph,
+    ParagraphStyle, Run, StyleSheet, Table, TableCell, TablePage, TableRow, TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::chart::parse_chart_xml;
@@ -110,11 +110,29 @@ fn extract_cell_background(cell: &umya_spreadsheet::Cell) -> Option<Color> {
     parse_argb_color(bg.get_argb())
 }
 
+/// Map Excel border style name to `BorderLineStyle`.
+fn border_style_to_line_style(style: &str) -> BorderLineStyle {
+    match style {
+        "dashed" | "mediumDashed" => BorderLineStyle::Dashed,
+        "dotted" => BorderLineStyle::Dotted,
+        "dashDot" | "mediumDashDot" | "slantDashDot" => BorderLineStyle::DashDot,
+        "dashDotDot" | "mediumDashDotDot" => BorderLineStyle::DashDotDot,
+        "double" => BorderLineStyle::Double,
+        _ => BorderLineStyle::Solid,
+    }
+}
+
 /// Extract a single border side from an umya Border object.
 fn extract_border_side(border: &umya_spreadsheet::Border) -> Option<BorderSide> {
-    let width = border_style_to_width(border.get_border_style())?;
+    let border_style_str = border.get_border_style();
+    let width = border_style_to_width(border_style_str)?;
     let color = parse_argb_color(border.get_color().get_argb()).unwrap_or(Color::black());
-    Some(BorderSide { width, color })
+    let style = border_style_to_line_style(border_style_str);
+    Some(BorderSide {
+        width,
+        color,
+        style,
+    })
 }
 
 /// Extract cell border properties.
@@ -1811,6 +1829,91 @@ mod tests {
         let top = border.top.as_ref().expect("Expected top border");
         assert!((top.width - 0.5).abs() < 0.01);
         assert_eq!(top.color, Color::new(255, 0, 0));
+    }
+
+    #[test]
+    fn test_cell_border_styles() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value("Styled borders");
+            let borders = cell.get_style_mut().get_borders_mut();
+            // Dashed top
+            borders
+                .get_top_mut()
+                .set_border_style(umya_spreadsheet::Border::BORDER_DASHED);
+            borders.get_top_mut().get_color_mut().set_argb("FF000000");
+            // Dotted bottom
+            borders
+                .get_bottom_mut()
+                .set_border_style(umya_spreadsheet::Border::BORDER_DOTTED);
+            borders
+                .get_bottom_mut()
+                .get_color_mut()
+                .set_argb("FF000000");
+            // DashDot left
+            borders
+                .get_left_mut()
+                .set_border_style(umya_spreadsheet::Border::BORDER_DASHDOT);
+            borders.get_left_mut().get_color_mut().set_argb("FF000000");
+            // Double right
+            borders
+                .get_right_mut()
+                .set_border_style(umya_spreadsheet::Border::BORDER_DOUBLE);
+            borders.get_right_mut().get_color_mut().set_argb("FF000000");
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let cell = &tp.table.rows[0].cells[0];
+        let border = cell.border.as_ref().expect("Expected border");
+
+        let top = border.top.as_ref().expect("Expected top border");
+        assert_eq!(top.style, BorderLineStyle::Dashed, "Top should be dashed");
+
+        let bottom = border.bottom.as_ref().expect("Expected bottom border");
+        assert_eq!(
+            bottom.style,
+            BorderLineStyle::Dotted,
+            "Bottom should be dotted"
+        );
+
+        let left = border.left.as_ref().expect("Expected left border");
+        assert_eq!(
+            left.style,
+            BorderLineStyle::DashDot,
+            "Left should be dashDot"
+        );
+
+        let right = border.right.as_ref().expect("Expected right border");
+        assert_eq!(
+            right.style,
+            BorderLineStyle::Double,
+            "Right should be double"
+        );
+    }
+
+    #[test]
+    fn test_cell_border_medium_dashed() {
+        let data = build_xlsx_formatted(|sheet| {
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value("MedDash");
+            let borders = cell.get_style_mut().get_borders_mut();
+            borders
+                .get_top_mut()
+                .set_border_style(umya_spreadsheet::Border::BORDER_MEDIUMDASHED);
+            borders.get_top_mut().get_color_mut().set_argb("FF000000");
+        });
+        let parser = XlsxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let tp = get_table_page(&doc, 0);
+        let cell = &tp.table.rows[0].cells[0];
+        let border = cell.border.as_ref().expect("Expected border");
+        let top = border.top.as_ref().expect("Expected top border");
+        // mediumDashed maps to Dashed style with medium width (1.0pt)
+        assert_eq!(top.style, BorderLineStyle::Dashed);
+        assert!((top.width - 1.0).abs() < 0.01);
     }
 
     #[test]

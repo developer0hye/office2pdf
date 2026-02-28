@@ -208,11 +208,25 @@ pub struct CellBorder {
     pub right: Option<BorderSide>,
 }
 
+/// Border line style (dash pattern).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum BorderLineStyle {
+    #[default]
+    Solid,
+    Dashed,
+    Dotted,
+    DashDot,
+    DashDotDot,
+    Double,
+    None,
+}
+
 /// A single border side.
 #[derive(Debug, Clone)]
 pub struct BorderSide {
     pub width: f64,
     pub color: Color,
+    pub style: BorderLineStyle,
 }
 
 /// Image data.

@@ -5,11 +5,11 @@ use unicode_normalization::UnicodeNormalization;
 use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, BorderSide, CellBorder, Chart, ChartType, Color, Document, FixedElement,
-    FixedElementKind, FixedPage, FloatingImage, FlowPage, GradientFill, HFInline, HeaderFooter,
-    ImageData, ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation, Metadata, Page,
-    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, Table, TableCell,
-    TablePage, TextStyle, WrapMode,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, ChartType, Color, Document,
+    FixedElement, FixedElementKind, FixedPage, FloatingImage, FlowPage, GradientFill, HFInline,
+    HeaderFooter, ImageData, ImageFormat, LineSpacing, List, ListKind, Margins, MathEquation,
+    Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt,
+    Table, TableCell, TablePage, TextStyle, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -406,16 +406,7 @@ fn generate_shape(out: &mut String, shape: &Shape, width: f64, height: f64) {
                 format_f64(*x2),
                 format_f64(*y2),
             );
-            if let Some(stroke) = &shape.stroke {
-                let _ = write!(
-                    out,
-                    ", stroke: {}pt + rgb({}, {}, {})",
-                    format_f64(stroke.width),
-                    stroke.color.r,
-                    stroke.color.g,
-                    stroke.color.b,
-                );
-            }
+            write_shape_stroke(out, &shape.stroke);
             out.push_str(")\n");
         }
         ShapeKind::RoundedRectangle { radius_fraction } => {
@@ -529,15 +520,35 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
     } else if let Some(fill) = &shape.fill {
         write_fill_color(out, fill, shape.opacity);
     }
-    if let Some(stroke) = &shape.stroke {
-        let _ = write!(
-            out,
-            ", stroke: {}pt + rgb({}, {}, {})",
-            format_f64(stroke.width),
-            stroke.color.r,
-            stroke.color.g,
-            stroke.color.b,
-        );
+    write_shape_stroke(out, &shape.stroke);
+}
+
+/// Write stroke parameter for shapes, handling dash patterns.
+fn write_shape_stroke(out: &mut String, stroke: &Option<BorderSide>) {
+    if let Some(stroke) = stroke {
+        match stroke.style {
+            BorderLineStyle::Solid | BorderLineStyle::None => {
+                let _ = write!(
+                    out,
+                    ", stroke: {}pt + rgb({}, {}, {})",
+                    format_f64(stroke.width),
+                    stroke.color.r,
+                    stroke.color.g,
+                    stroke.color.b,
+                );
+            }
+            _ => {
+                let _ = write!(
+                    out,
+                    ", stroke: (paint: rgb({}, {}, {}), thickness: {}pt, dash: \"{}\")",
+                    stroke.color.r,
+                    stroke.color.g,
+                    stroke.color.b,
+                    format_f64(stroke.width),
+                    border_line_style_to_typst(stroke.style),
+                );
+            }
+        }
     }
 }
 
@@ -572,16 +583,7 @@ fn write_polygon(
     } else if let Some(fill) = &shape.fill {
         write_fill_color(out, fill, shape.opacity);
     }
-    if let Some(stroke) = &shape.stroke {
-        let _ = write!(
-            out,
-            ", stroke: {}pt + rgb({}, {}, {})",
-            format_f64(stroke.width),
-            stroke.color.r,
-            stroke.color.g,
-            stroke.color.b,
-        );
-    }
+    write_shape_stroke(out, &shape.stroke);
     out.push_str(")\n");
 }
 
@@ -1346,13 +1348,36 @@ fn format_cell_stroke(border: &CellBorder) -> String {
 }
 
 fn format_border_side(side: &BorderSide) -> String {
-    format!(
+    let base = format!(
         "{}pt + rgb({}, {}, {})",
         format_f64(side.width),
         side.color.r,
         side.color.g,
         side.color.b
-    )
+    );
+    match side.style {
+        BorderLineStyle::Solid | BorderLineStyle::None => base,
+        _ => format!(
+            "(paint: rgb({}, {}, {}), thickness: {}pt, dash: \"{}\")",
+            side.color.r,
+            side.color.g,
+            side.color.b,
+            format_f64(side.width),
+            border_line_style_to_typst(side.style),
+        ),
+    }
+}
+
+fn border_line_style_to_typst(style: BorderLineStyle) -> &'static str {
+    match style {
+        BorderLineStyle::Solid => "solid",
+        BorderLineStyle::Dashed => "dashed",
+        BorderLineStyle::Dotted => "dotted",
+        BorderLineStyle::DashDot => "dash-dotted",
+        BorderLineStyle::DashDotDot => "dash-dotted",
+        BorderLineStyle::Double => "dashed",
+        BorderLineStyle::None => "solid",
+    }
 }
 
 /// Generate content inside a table cell (list of blocks rendered inline).
@@ -2288,10 +2313,12 @@ mod tests {
                 top: Some(BorderSide {
                     width: 1.0,
                     color: Color::black(),
+                    style: BorderLineStyle::Solid,
                 }),
                 bottom: Some(BorderSide {
                     width: 2.0,
                     color: Color::new(255, 0, 0),
+                    style: BorderLineStyle::Solid,
                 }),
                 left: None,
                 right: None,
@@ -2403,18 +2430,22 @@ mod tests {
                 top: Some(BorderSide {
                     width: 1.0,
                     color: Color::black(),
+                    style: BorderLineStyle::Solid,
                 }),
                 bottom: Some(BorderSide {
                     width: 1.0,
                     color: Color::black(),
+                    style: BorderLineStyle::Solid,
                 }),
                 left: Some(BorderSide {
                     width: 1.0,
                     color: Color::black(),
+                    style: BorderLineStyle::Solid,
                 }),
                 right: Some(BorderSide {
                     width: 1.0,
                     color: Color::black(),
+                    style: BorderLineStyle::Solid,
                 }),
             }),
             ..TableCell::default()
@@ -2440,6 +2471,177 @@ mod tests {
         assert!(
             result.contains("right:"),
             "Expected right border in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_dashed_border_codegen() {
+        let cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Dashed".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            border: Some(CellBorder {
+                top: Some(BorderSide {
+                    width: 1.0,
+                    color: Color::black(),
+                    style: BorderLineStyle::Dashed,
+                }),
+                bottom: Some(BorderSide {
+                    width: 1.0,
+                    color: Color::new(255, 0, 0),
+                    style: BorderLineStyle::Dotted,
+                }),
+                left: None,
+                right: None,
+            }),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![cell],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("dash: \"dashed\""),
+            "Expected dashed dash pattern in: {result}"
+        );
+        assert!(
+            result.contains("dash: \"dotted\""),
+            "Expected dotted dash pattern in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_shape_dashed_stroke_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                10.0,
+                10.0,
+                100.0,
+                100.0,
+                ShapeKind::Rectangle,
+                Some(Color::new(0, 128, 255)),
+                Some(BorderSide {
+                    width: 2.0,
+                    color: Color::black(),
+                    style: BorderLineStyle::Dashed,
+                }),
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("dash: \"dashed\""),
+            "Expected dashed stroke in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_shape_dash_dot_stroke_codegen() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_shape_element(
+                10.0,
+                10.0,
+                100.0,
+                100.0,
+                ShapeKind::Ellipse,
+                None,
+                Some(BorderSide {
+                    width: 1.0,
+                    color: Color::new(0, 0, 255),
+                    style: BorderLineStyle::DashDot,
+                }),
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("dash: \"dash-dotted\""),
+            "Expected dash-dotted stroke in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_border_line_style_to_typst_mapping() {
+        assert_eq!(border_line_style_to_typst(BorderLineStyle::Solid), "solid");
+        assert_eq!(
+            border_line_style_to_typst(BorderLineStyle::Dashed),
+            "dashed"
+        );
+        assert_eq!(
+            border_line_style_to_typst(BorderLineStyle::Dotted),
+            "dotted"
+        );
+        assert_eq!(
+            border_line_style_to_typst(BorderLineStyle::DashDot),
+            "dash-dotted"
+        );
+        assert_eq!(
+            border_line_style_to_typst(BorderLineStyle::DashDotDot),
+            "dash-dotted"
+        );
+        assert_eq!(
+            border_line_style_to_typst(BorderLineStyle::Double),
+            "dashed"
+        );
+        assert_eq!(border_line_style_to_typst(BorderLineStyle::None), "solid");
+    }
+
+    #[test]
+    fn test_solid_border_no_dash_param() {
+        let cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Solid".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            border: Some(CellBorder {
+                top: Some(BorderSide {
+                    width: 1.0,
+                    color: Color::black(),
+                    style: BorderLineStyle::Solid,
+                }),
+                bottom: None,
+                left: None,
+                right: None,
+            }),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![cell],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+        // Solid borders should use the simple format (no "dash:" parameter)
+        assert!(
+            !result.contains("dash:"),
+            "Solid border should not have dash parameter in: {result}"
+        );
+        assert!(
+            result.contains("1pt + rgb(0, 0, 0)"),
+            "Expected simple solid format in: {result}"
         );
     }
 
@@ -2950,6 +3152,7 @@ mod tests {
                 Some(BorderSide {
                     width: 2.0,
                     color: Color::black(),
+                    style: BorderLineStyle::Solid,
                 }),
             )],
         )]);
@@ -2976,6 +3179,7 @@ mod tests {
                 Some(BorderSide {
                     width: 1.5,
                     color: Color::new(0, 0, 255),
+                    style: BorderLineStyle::Solid,
                 }),
             )],
         )]);
@@ -5726,6 +5930,7 @@ mod tests {
                 Some(BorderSide {
                     width: 2.0,
                     color: Color::new(0, 0, 0),
+                    style: BorderLineStyle::Solid,
                 }),
             )],
         )]);
