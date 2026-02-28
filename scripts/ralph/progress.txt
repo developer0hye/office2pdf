@@ -84,3 +84,21 @@
 # Ralph Progress Log - Phase 10: Performance & Infrastructure - Instrumentation, Optimization, REST API
 Started: 2026년  2월 28일 토요일 17시 23분 18초 KST
 ---
+
+## 2026-02-28 - US-090
+- What was implemented: Per-stage timing and memory instrumentation for the conversion pipeline
+  - `ConvertMetrics` struct in `error.rs` with parse_duration, codegen_duration, compile_duration, total_duration, input_size_bytes, output_size_bytes, page_count
+  - `metrics: Option<ConvertMetrics>` field added to `ConvertResult`
+  - `convert_bytes()` in `lib.rs` instrumented with `std::time::Instant` around each stage (parse, codegen, compile)
+  - `--metrics` CLI flag prints timing breakdown to stderr
+- Files changed:
+  - `crates/office2pdf/src/error.rs` — Added `ConvertMetrics` struct, updated `ConvertResult`, added unit tests
+  - `crates/office2pdf/src/lib.rs` — Instrumented `convert_bytes()` pipeline with Instant timing, added integration tests
+  - `crates/office2pdf-cli/src/main.rs` — Added `--metrics` flag, `show_metrics` parameter threading through `convert_single`/`convert_batch`
+  - `scripts/ralph/prd.json` — Marked US-090 as passes: true
+- Dependencies added: None (uses std::time::Instant)
+- **Learnings for future iterations:**
+  - Page count is derived from IR `doc.pages.len()` — approximate for DOCX FlowPages but exact for PPTX/XLSX
+  - `ConvertMetrics` is Clone so callers can easily store/compare metrics
+  - The `let_chains` feature (if-let chaining) is stable in Rust edition 2024 and clippy prefers it
+---

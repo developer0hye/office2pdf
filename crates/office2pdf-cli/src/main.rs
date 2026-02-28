@@ -47,6 +47,10 @@ struct Cli {
     /// Force landscape orientation
     #[arg(long)]
     landscape: bool,
+
+    /// Print per-stage timing metrics to stderr
+    #[arg(long)]
+    metrics: bool,
 }
 
 /// Result of a batch conversion.
@@ -77,12 +81,30 @@ fn determine_output_path(input: &Path, output: Option<&Path>, outdir: Option<&Pa
 }
 
 /// Convert a single file and write the PDF output.
-fn convert_single(input: &Path, output: &Path, options: &ConvertOptions) -> Result<()> {
+fn convert_single(
+    input: &Path,
+    output: &Path,
+    options: &ConvertOptions,
+    show_metrics: bool,
+) -> Result<()> {
     let result = office2pdf::convert_with_options(input, options)
         .with_context(|| format!("converting {:?}", input))?;
 
     for warning in &result.warnings {
         eprintln!("Warning: {warning}");
+    }
+
+    if show_metrics
+        && let Some(ref m) = result.metrics
+    {
+        eprintln!("--- Metrics: {:?} ---", input);
+        eprintln!("  Parse:   {:?}", m.parse_duration);
+        eprintln!("  Codegen: {:?}", m.codegen_duration);
+        eprintln!("  Compile: {:?}", m.compile_duration);
+        eprintln!("  Total:   {:?}", m.total_duration);
+        eprintln!("  Input:   {} bytes", m.input_size_bytes);
+        eprintln!("  Output:  {} bytes", m.output_size_bytes);
+        eprintln!("  Pages:   {}", m.page_count);
     }
 
     std::fs::write(output, result.pdf)
@@ -96,6 +118,7 @@ fn convert_batch(
     inputs: &[PathBuf],
     outdir: Option<&Path>,
     options: &ConvertOptions,
+    show_metrics: bool,
 ) -> BatchResult {
     let mut result = BatchResult {
         succeeded: Vec::new(),
@@ -104,7 +127,7 @@ fn convert_batch(
 
     for input in inputs {
         let output_path = determine_output_path(input, None, outdir);
-        match convert_single(input, &output_path, options) {
+        match convert_single(input, &output_path, options, show_metrics) {
             Ok(()) => {
                 println!("Converted: {:?} -> {:?}", input, output_path);
                 result.succeeded.push((input.clone(), output_path));
@@ -162,16 +185,18 @@ fn run() -> Result<()> {
             .with_context(|| format!("creating output directory {:?}", outdir))?;
     }
 
+    let show_metrics = cli.metrics;
+
     // Single file with explicit --output
     if let Some(output) = cli.output {
         let input = &cli.inputs[0];
-        convert_single(input, &output, &options)?;
+        convert_single(input, &output, &options, show_metrics)?;
         println!("Converted: {:?} -> {:?}", input, output);
         return Ok(());
     }
 
     // Batch conversion (works for 1 or many files)
-    let result = convert_batch(&cli.inputs, cli.outdir.as_deref(), &options);
+    let result = convert_batch(&cli.inputs, cli.outdir.as_deref(), &options, show_metrics);
 
     // Print summary when there are multiple files
     let total = result.succeeded.len() + result.failed.len();
@@ -260,7 +285,7 @@ mod tests {
 
         let inputs = vec![file1, file2];
         let options = ConvertOptions::default();
-        let result = convert_batch(&inputs, None, &options);
+        let result = convert_batch(&inputs, None, &options, false);
 
         assert_eq!(result.succeeded.len(), 2);
         assert_eq!(result.failed.len(), 0);
@@ -284,7 +309,7 @@ mod tests {
 
         let inputs = vec![file1, file2.clone()];
         let options = ConvertOptions::default();
-        let result = convert_batch(&inputs, None, &options);
+        let result = convert_batch(&inputs, None, &options, false);
 
         assert_eq!(result.succeeded.len(), 1);
         assert_eq!(result.failed.len(), 1);
@@ -310,7 +335,7 @@ mod tests {
 
         let inputs = vec![file1, file2];
         let options = ConvertOptions::default();
-        let result = convert_batch(&inputs, Some(&outdir), &options);
+        let result = convert_batch(&inputs, Some(&outdir), &options, false);
 
         assert_eq!(result.succeeded.len(), 2);
         assert_eq!(result.failed.len(), 0);
@@ -319,6 +344,25 @@ mod tests {
         // Original directory should NOT have PDFs
         assert!(!dir.join("report.pdf").exists());
         assert!(!dir.join("memo.pdf").exists());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_convert_single_with_metrics() {
+        let dir = std::env::temp_dir().join("office2pdf_metrics_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let docx_data = make_test_docx();
+        let input = dir.join("report.docx");
+        let output = dir.join("report.pdf");
+        std::fs::write(&input, &docx_data).unwrap();
+
+        let options = ConvertOptions::default();
+        // Should succeed with metrics=true (metrics printed to stderr)
+        convert_single(&input, &output, &options, true).unwrap();
+        assert!(output.exists());
 
         let _ = std::fs::remove_dir_all(&dir);
     }

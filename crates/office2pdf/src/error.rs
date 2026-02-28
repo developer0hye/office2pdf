@@ -91,6 +91,25 @@ impl std::fmt::Display for ConvertWarning {
     }
 }
 
+/// Per-stage timing and size metrics from a conversion.
+#[derive(Debug, Clone)]
+pub struct ConvertMetrics {
+    /// Time spent parsing the input document (DOCX/PPTX/XLSX → IR).
+    pub parse_duration: std::time::Duration,
+    /// Time spent generating Typst source code (IR → Typst).
+    pub codegen_duration: std::time::Duration,
+    /// Time spent compiling Typst to PDF (Typst → PDF).
+    pub compile_duration: std::time::Duration,
+    /// Total end-to-end conversion time.
+    pub total_duration: std::time::Duration,
+    /// Size of the input file in bytes.
+    pub input_size_bytes: u64,
+    /// Size of the output PDF in bytes.
+    pub output_size_bytes: u64,
+    /// Number of pages in the output PDF.
+    pub page_count: u32,
+}
+
 /// Result of a successful conversion, containing PDF bytes and any warnings.
 #[derive(Debug)]
 pub struct ConvertResult {
@@ -98,6 +117,8 @@ pub struct ConvertResult {
     pub pdf: Vec<u8>,
     /// Warnings collected during conversion (non-fatal issues).
     pub warnings: Vec<ConvertWarning>,
+    /// Per-stage timing metrics, populated when instrumentation is enabled.
+    pub metrics: Option<ConvertMetrics>,
 }
 
 #[cfg(test)]
@@ -179,6 +200,7 @@ mod tests {
                 format: "DOCX".to_string(),
                 element: "Image".to_string(),
             }],
+            metrics: None,
         };
         assert_eq!(result.pdf, vec![0x25, 0x50, 0x44, 0x46]);
         assert_eq!(result.warnings.len(), 1);
@@ -190,8 +212,68 @@ mod tests {
         let result = ConvertResult {
             pdf: vec![1, 2, 3],
             warnings: vec![],
+            metrics: None,
         };
         assert!(result.warnings.is_empty());
+    }
+
+    #[test]
+    fn test_convert_metrics_fields() {
+        use std::time::Duration;
+        let metrics = ConvertMetrics {
+            parse_duration: Duration::from_millis(100),
+            codegen_duration: Duration::from_millis(50),
+            compile_duration: Duration::from_millis(200),
+            total_duration: Duration::from_millis(360),
+            input_size_bytes: 1024,
+            output_size_bytes: 2048,
+            page_count: 5,
+        };
+        assert_eq!(metrics.parse_duration, Duration::from_millis(100));
+        assert_eq!(metrics.codegen_duration, Duration::from_millis(50));
+        assert_eq!(metrics.compile_duration, Duration::from_millis(200));
+        assert_eq!(metrics.total_duration, Duration::from_millis(360));
+        assert_eq!(metrics.input_size_bytes, 1024);
+        assert_eq!(metrics.output_size_bytes, 2048);
+        assert_eq!(metrics.page_count, 5);
+    }
+
+    #[test]
+    fn test_convert_metrics_clone() {
+        use std::time::Duration;
+        let metrics = ConvertMetrics {
+            parse_duration: Duration::from_millis(10),
+            codegen_duration: Duration::from_millis(20),
+            compile_duration: Duration::from_millis(30),
+            total_duration: Duration::from_millis(65),
+            input_size_bytes: 512,
+            output_size_bytes: 1024,
+            page_count: 1,
+        };
+        let cloned = metrics.clone();
+        assert_eq!(cloned.parse_duration, metrics.parse_duration);
+        assert_eq!(cloned.total_duration, metrics.total_duration);
+    }
+
+    #[test]
+    fn test_convert_result_with_metrics() {
+        use std::time::Duration;
+        let result = ConvertResult {
+            pdf: vec![0x25, 0x50, 0x44, 0x46],
+            warnings: vec![],
+            metrics: Some(ConvertMetrics {
+                parse_duration: Duration::from_millis(10),
+                codegen_duration: Duration::from_millis(20),
+                compile_duration: Duration::from_millis(30),
+                total_duration: Duration::from_millis(65),
+                input_size_bytes: 100,
+                output_size_bytes: 200,
+                page_count: 1,
+            }),
+        };
+        assert!(result.metrics.is_some());
+        let m = result.metrics.unwrap();
+        assert_eq!(m.page_count, 1);
     }
 
     #[test]

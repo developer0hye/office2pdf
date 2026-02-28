@@ -20,7 +20,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Read the conversion pipeline in lib.rs (convert(), convert_with_options(), convert_bytes()) to understand where to insert timing points. Each stage is already separate — wrap them with Instant::now() / elapsed(). Add ConvertMetrics to ir/document.rs or a new metrics module. Keep it simple — Duration fields, no allocations. The --metrics flag for CLI should use eprintln! to print to stderr so it doesn't interfere with PDF output."
     },
     {
