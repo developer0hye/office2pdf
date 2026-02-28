@@ -80,7 +80,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Check how MinimalWorld resolves fonts — look at the World trait implementation, particularly the `font()` method. The substitution should happen at the font resolution layer, not in the parser or codegen. Use a match statement or phf (if already a dependency) for the lookup. The metric-compatible fonts listed above are the standard mappings used by LibreOffice and Google Docs. Only map fonts — don't bundle the substitute fonts themselves (they need to be installed on the system)."
     },
     {
