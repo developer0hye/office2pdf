@@ -673,7 +673,6 @@ fn generate_list_items(
                     generate_run(out, run);
                 }
             }
-            out.push(']');
 
             // Check if next items are nested (deeper level) — they become a sub-list
             let nested_start = i + 1;
@@ -683,8 +682,8 @@ fn generate_list_items(
             }
 
             if nested_end > nested_start {
-                // Emit nested sub-list
-                let _ = writeln!(out, "[#{func}(");
+                // Emit nested sub-list inside the same content block
+                let _ = writeln!(out, " #{func}(");
                 generate_list_items(
                     out,
                     &items[nested_start..nested_end],
@@ -692,13 +691,13 @@ fn generate_list_items(
                     func,
                     item_func,
                 )?;
-                out.push_str(")]");
+                out.push(')');
                 i = nested_end;
             } else {
                 i += 1;
             }
 
-            out.push_str(",\n");
+            out.push_str("],\n");
         } else {
             // Item at a deeper level without a parent at base_level;
             // treat it as if it were at base_level
@@ -3159,6 +3158,64 @@ mod tests {
         assert!(
             output.source.contains("#list("),
             "Expected nested #list( in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_nested_list_single_content_block() {
+        use crate::ir::{List, ListItem, ListKind};
+        // A parent item with a nested child must produce a single content block:
+        //   list.item[Parent #list(...)]
+        // NOT two blocks:
+        //   list.item[Parent][#list(...)]
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Parent".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 0,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Child".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 1,
+                },
+            ],
+        };
+        let doc = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![Block::List(list)],
+            header: None,
+            footer: None,
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        // Must NOT have "][#list" — that would be two content blocks
+        assert!(
+            !output.source.contains("][#list"),
+            "Nested list must be in a single content block, not double [...].\nGot: {}",
+            output.source
+        );
+        // Must have the nested list inside the parent item's single block
+        assert!(
+            output.source.contains(" #list("),
+            "Nested list should be inside the parent item's content block.\nGot: {}",
             output.source
         );
     }

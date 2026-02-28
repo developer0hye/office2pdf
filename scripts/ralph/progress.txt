@@ -90,3 +90,16 @@ Started: 2026년  2월 28일 토요일 09시 05분 04초 KST
   - Typst's `rgb()` function accepts both 3 args (r,g,b) and 4 args (r,g,b,a) — there is no separate `rgba()` function
   - Simple string replacements like this can be done confidently across format strings and test assertions
 ---
+
+## 2026-02-28 - US-071
+- Fixed nested list double-content-block bug in `generate_list_items()`
+- Previous code emitted `list.item[text][#list(...)]` (two body arguments) which Typst rejected
+- Fix: keep content block open when nested items exist, emit `list.item[text #list(...)]` (single body)
+- Added test `test_nested_list_single_content_block` to assert no `][#list` pattern in output
+- Files changed: `crates/office2pdf/src/render/typst_gen.rs`
+- Dependencies added: none
+- Verified all 4 affected fixtures: `ComplexNumberedLists.docx`, `numberings.docx`, `unit_test_formatting.docx`, `unit_test_lists.docx`
+- **Learnings for future iterations:**
+  - Typst's `list.item`/`enum.item` accept exactly ONE positional body argument — two `[...]` blocks means two args which is an error
+  - The fix was moving the closing `]` bracket after the nested list emission, not before
+---

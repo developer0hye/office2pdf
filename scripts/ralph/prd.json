@@ -36,7 +36,7 @@
         "Verify: cargo run -p office2pdf-cli -- tests/fixtures/docx/numberings.docx -o /tmp/test.pdf succeeds"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "The key insight: `list.item[body]` takes exactly one positional (body) argument. Two `[...]` blocks means two positional args which Typst rejects as 'unexpected argument'. The fix is to keep the content block open while emitting nested lists."
     },
     {
