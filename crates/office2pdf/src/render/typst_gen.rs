@@ -1621,7 +1621,8 @@ fn write_text_params(out: &mut String, style: &TextStyle) {
     let mut first = true;
 
     if let Some(ref family) = style.font_family {
-        write_param(out, &mut first, &format!("font: \"{family}\""));
+        let font_value = super::font_subst::font_with_fallbacks(family);
+        write_param(out, &mut first, &format!("font: {font_value}"));
     }
     if let Some(size) = style.font_size {
         write_param(out, &mut first, &format!("size: {}pt", format_f64(size)));
@@ -5723,6 +5724,95 @@ mod tests {
             output.source.contains("stroke: 2pt + rgb(0, 0, 0)"),
             "Expected stroke in: {}",
             output.source
+        );
+    }
+
+    #[test]
+    fn test_font_substitution_calibri_produces_fallback_list() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Calibri text".to_string(),
+                style: TextStyle {
+                    font_family: Some("Calibri".to_string()),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains(r#"font: ("Calibri", "Carlito", "Liberation Sans")"#),
+            "Expected font fallback list for Calibri in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_font_substitution_arial_produces_fallback_list() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Arial text".to_string(),
+                style: TextStyle {
+                    font_family: Some("Arial".to_string()),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains(r#"font: ("Arial", "Liberation Sans", "Arimo")"#),
+            "Expected font fallback list for Arial in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_font_substitution_unknown_font_no_fallback() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Custom text".to_string(),
+                style: TextStyle {
+                    font_family: Some("Helvetica".to_string()),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains(r#"font: "Helvetica""#),
+            "Unknown font should use simple quoted string in: {result}"
+        );
+        // Should NOT contain parenthesized array
+        assert!(
+            !result.contains("font: (\"Helvetica\""),
+            "Unknown font should not use array syntax in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_font_substitution_times_new_roman() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "TNR text".to_string(),
+                style: TextStyle {
+                    font_family: Some("Times New Roman".to_string()),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains(r#"font: ("Times New Roman", "Liberation Serif", "Tinos")"#),
+            "Expected font fallback list for Times New Roman in: {result}"
         );
     }
 }
