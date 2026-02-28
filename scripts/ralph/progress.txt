@@ -93,3 +93,19 @@
 # Ralph Progress Log - Phase 12: Text Fidelity & Visual Polish - PDF Text Verification, Unicode NFC, Border Styles, Multi-Column, BiDi
 Started: 2026년  2월 28일 토요일 22시 20분 56초 KST
 ---
+
+## 2026-02-28 - US-100
+- Implemented PDF text content verification test infrastructure
+- Added `pdf-extract = "0.10"` as dev-dependency to library crate for PDF text extraction
+- Created `extract_pdf_text(pdf_bytes: &[u8]) -> String` utility in `tests/common/mod.rs`
+- Added 5 DOCX text content assertion tests: heading123, table, styles_en, test_python_docx, unit_test_formatting
+- Added 3 PPTX text content assertion tests: powerpoint_sample, test, test_slides
+- Added 3 XLSX text content assertion tests: temperature, SH001-Table, SH002-TwoTablesTwoSheets
+- Files changed: `crates/office2pdf/Cargo.toml`, `tests/common/mod.rs`, `tests/docx_fixtures.rs`, `tests/pptx_fixtures.rs`, `tests/xlsx_fixtures.rs`
+- Dependencies added: `pdf-extract = "0.10"` (dev-dependency only)
+- **Learnings for future iterations:**
+  - `pdf-extract 0.10` uses `lopdf ^0.38` while project uses `lopdf 0.39` — Cargo compiles both versions independently, no conflict for dev-dependency usage
+  - `pdf_extract::extract_text_from_mem(&[u8]) -> Result<String>` is the key API for extracting text from in-memory PDF bytes
+  - Text content assertions should check for presence of key markers (not exact layout) to avoid false positives from font encoding or layout differences
+  - Use `||` in assertions for PPTX/XLSX where extracted text might vary slightly due to master slide placeholders or font rendering
+---

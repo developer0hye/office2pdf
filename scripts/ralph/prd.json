@@ -19,7 +19,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Use lopdf (already a dependency behind pdf-ops feature) or pdf-extract as a dev-dependency. The key is spot-checking: assert that known strings from the source document appear in the extracted PDF text. This is not a full round-trip test — just content markers. Place the helper in tests/common/mod.rs or a similar shared test utility. If lopdf's text extraction is limited, consider pdf-extract crate which provides better text extraction."
     },
     {
