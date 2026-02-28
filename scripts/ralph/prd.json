@@ -37,7 +37,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Check if unicode-normalization is already a transitive dependency via typst or typst-kit. If so, just add it as a direct dependency without version conflict. The simplest approach is to normalize in escape_typst() as a single chokepoint — all text passes through there. Alternatively normalize in each parser when constructing Run structs. Prefer the chokepoint approach for maintainability."
     },
     {

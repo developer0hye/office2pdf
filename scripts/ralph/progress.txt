@@ -109,3 +109,18 @@ Started: 2026년  2월 28일 토요일 22시 20분 56초 KST
   - Text content assertions should check for presence of key markers (not exact layout) to avoid false positives from font encoding or layout differences
   - Use `||` in assertions for PPTX/XLSX where extracted text might vary slightly due to master slide placeholders or font rendering
 ---
+
+## 2026-02-28 - US-101
+- Implemented Unicode NFC normalization in the text pipeline
+- Added `unicode-normalization = "0.1"` as a direct dependency (already transitive via typst)
+- Modified `escape_typst()` in `typst_gen.rs` to iterate via `.nfc()` instead of `.chars()` — single chokepoint ensures all text is NFC-normalized before Typst codegen
+- Added 6 tests: Korean NFD→NFC, combining diacritics→NFC, NFD+special chars, pipeline Korean, pipeline diacritics, already-NFC passthrough
+- Files changed: `crates/office2pdf/Cargo.toml`, `crates/office2pdf/src/render/typst_gen.rs`
+- Dependencies added: `unicode-normalization = "0.1"` (already transitive, now explicit)
+- **Learnings for future iterations:**
+  - `unicode-normalization` v0.1.25 is already a transitive dep via typst — adding as direct dep causes no version conflict
+  - The `.nfc()` iterator on `&str` (from `UnicodeNormalization` trait) is a drop-in replacement for `.chars()` — minimal code change
+  - `escape_typst()` is the single chokepoint for all text in codegen — normalizing here covers all parsers (DOCX, PPTX, XLSX) without per-parser changes
+  - Korean NFD uses Hangul Jamo (U+1100–U+11FF), NFC composes them to Hangul Syllables (U+AC00–U+D7AF)
+  - Combining diacritics (e.g., U+0301 COMBINING ACUTE ACCENT) compose with preceding base chars to form precomposed NFC characters
+---
