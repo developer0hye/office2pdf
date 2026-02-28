@@ -72,7 +72,7 @@
         "Verify: cargo run -p office2pdf-cli -- tests/fixtures/pptx/backgrounds.pptx -o /tmp/test.pdf succeeds"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "The GradientStop struct has a `position: f64` field. Sort by this before generating the Typst gradient.linear() call. The GradientFill and GradientStop types are in ir/ module — check if they derive Clone. If not, you'll need to collect into a new Vec of references and sort that."
     },
     {

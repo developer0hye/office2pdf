@@ -123,3 +123,16 @@ Started: 2026년  2월 28일 토요일 09시 05분 04초 KST
   - When `column_widths` is empty, Typst defaults to 1 column. Must emit `columns: N` to specify the correct count.
   - Rowspan tracking requires careful timing: set `rowspan_remaining = rowspan` (full value), decrement at START of each row.
 ---
+
+## 2026-02-28 - US-073
+- Sorted gradient stops by position before rendering in `write_gradient_fill()`
+- Also clamped first stop to 0% and last stop to 100% (Typst requires boundary constraints)
+- Added test `test_gradient_unsorted_stops_rendered_in_sorted_order` verifying reverse-ordered stops render correctly
+- Files changed: `crates/office2pdf/src/render/typst_gen.rs`
+- Dependencies added: none
+- Verified fixture: `backgrounds.pptx` converts successfully
+- **Learnings for future iterations:**
+  - Typst gradient requirements are strict: stops must be in monotonic order AND first stop must be at 0%, last at 100%
+  - Sorting alone isn't enough — boundary clamping is also needed as a safety net
+  - The `GradientStop` struct derives `Clone`, so cloning and sorting is straightforward
+---

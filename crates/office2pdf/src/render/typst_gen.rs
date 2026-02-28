@@ -357,9 +357,26 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
 }
 
 /// Write a Typst `gradient.linear(...)` expression.
+///
+/// Stops are sorted by position before rendering because Typst requires
+/// gradient stop offsets to be in monotonic (non-decreasing) order.
+/// The first stop is clamped to 0% and the last to 100% as Typst requires.
 fn write_gradient_fill(out: &mut String, gradient: &GradientFill) {
+    let mut sorted_stops = gradient.stops.clone();
+    sorted_stops.sort_by(|a, b| {
+        a.position
+            .partial_cmp(&b.position)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    // Typst requires first stop at 0% and last stop at 100%.
+    if let Some(first) = sorted_stops.first_mut() {
+        first.position = 0.0;
+    }
+    if let Some(last) = sorted_stops.last_mut() {
+        last.position = 1.0;
+    }
     out.push_str("gradient.linear(");
-    for (i, stop) in gradient.stops.iter().enumerate() {
+    for (i, stop) in sorted_stops.iter().enumerate() {
         if i > 0 {
             out.push_str(", ");
         }
@@ -4512,6 +4529,53 @@ mod tests {
             !output.source.contains("fill: rgb(128, 128, 128)"),
             "Solid fallback should not appear. Got: {}",
             output.source,
+        );
+    }
+
+    #[test]
+    fn test_gradient_unsorted_stops_rendered_in_sorted_order() {
+        // Gradient stops provided in reverse order should be sorted by position
+        // before rendering — Typst requires monotonic offsets.
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: None,
+            background_gradient: Some(GradientFill {
+                stops: vec![
+                    GradientStop {
+                        position: 1.0,
+                        color: Color::new(0, 0, 255),
+                    },
+                    GradientStop {
+                        position: 0.5,
+                        color: Color::new(0, 255, 0),
+                    },
+                    GradientStop {
+                        position: 0.0,
+                        color: Color::new(255, 0, 0),
+                    },
+                ],
+                angle: 90.0,
+            }),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        // Stops should appear in order: 0% (red), 50% (green), 100% (blue)
+        let src = &output.source;
+        let pos_red = src.find("(rgb(255, 0, 0), 0%)").expect("red stop missing");
+        let pos_green = src
+            .find("(rgb(0, 255, 0), 50%)")
+            .expect("green stop missing");
+        let pos_blue = src
+            .find("(rgb(0, 0, 255), 100%)")
+            .expect("blue stop missing");
+        assert!(
+            pos_red < pos_green && pos_green < pos_blue,
+            "Stops should be in sorted order (0% < 50% < 100%). Got: {}",
+            src,
         );
     }
 
