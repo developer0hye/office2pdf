@@ -104,7 +104,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Common error patterns that block many files: missing image relationships (broken refs), unsupported XML namespaces, Typst compilation failures from invalid markup, password-protected files. For password-protected or intentionally broken files, classify them as 'expected failures' and exclude from the success rate calculation. The 70% target is deliberately achievable — it means fixing the most impactful issues without getting stuck on obscure edge cases."
     }
   ]
