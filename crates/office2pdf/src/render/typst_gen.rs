@@ -1478,6 +1478,17 @@ fn generate_floating_image(out: &mut String, fi: &FloatingImage, ctx: &mut GenCt
 
 fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
     let style = &para.style;
+
+    // Heading paragraphs: emit #heading(level: N)[content] for proper PDF structure tagging
+    if let Some(level) = style.heading_level {
+        let _ = write!(out, "#heading(level: {level})[");
+        for run in &para.runs {
+            generate_run(out, run);
+        }
+        out.push_str("]\n");
+        return Ok(());
+    }
+
     let has_para_style = needs_block_wrapper(style);
 
     if has_para_style {
@@ -5813,6 +5824,118 @@ mod tests {
         assert!(
             result.contains(r#"font: ("Times New Roman", "Liberation Serif", "Tinos")"#),
             "Expected font fallback list for Times New Roman in: {result}"
+        );
+    }
+
+    // --- Heading level codegen tests (US-096) ---
+
+    #[test]
+    fn test_generate_heading_level_1() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                heading_level: Some(1),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: "Main Title".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#heading(level: 1)[Main Title]"),
+            "H1 paragraph should emit #heading(level: 1): {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_heading_level_2() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                heading_level: Some(2),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: "Sub Section".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#heading(level: 2)[Sub Section]"),
+            "H2 paragraph should emit #heading(level: 2): {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_heading_levels_3_to_6() {
+        for level in 3..=6u8 {
+            let text = format!("Heading {level}");
+            let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    heading_level: Some(level),
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![Run {
+                    text: text.clone(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })])]);
+            let result = generate_typst(&doc).unwrap().source;
+            let expected = format!("#heading(level: {level})[{text}]");
+            assert!(
+                result.contains(&expected),
+                "H{level} should emit {expected}: {result}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_generate_heading_with_styled_run() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                heading_level: Some(1),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: "Styled Heading".to_string(),
+                style: TextStyle {
+                    bold: Some(true),
+                    font_size: Some(24.0),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#heading(level: 1)"),
+            "Heading with styling should still emit #heading: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_regular_paragraph_no_heading() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Normal text".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            !result.contains("#heading"),
+            "Regular paragraph should not emit #heading: {result}"
         );
     }
 }

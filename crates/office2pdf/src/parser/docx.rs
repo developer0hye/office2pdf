@@ -223,6 +223,10 @@ fn merge_paragraph_style(
         line_spacing: explicit.line_spacing.or(style_para.line_spacing),
         space_before: explicit.space_before.or(style_para.space_before),
         space_after: explicit.space_after.or(style_para.space_after),
+        // Heading level from the style definition (outline_lvl 0→H1, 1→H2, ...)
+        heading_level: style
+            .and_then(|s| s.heading_level)
+            .map(|lvl| (lvl + 1) as u8),
     }
 }
 
@@ -1331,6 +1335,7 @@ fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> ParagraphStyle 
         line_spacing,
         space_before,
         space_after,
+        heading_level: None,
     }
 }
 
@@ -5199,5 +5204,72 @@ mod tests {
         // Should not crash; fields are None
         assert!(doc.metadata.title.is_none());
         assert!(doc.metadata.author.is_none());
+    }
+
+    // --- Heading level IR tests (US-096) ---
+
+    #[test]
+    fn test_heading1_sets_heading_level_in_ir() {
+        let h1_style = docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph)
+            .name("Heading 1")
+            .outline_lvl(0);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Title"))
+                    .style("Heading1"),
+            ],
+            vec![h1_style],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let para = first_paragraph(&doc);
+        assert_eq!(
+            para.style.heading_level,
+            Some(1),
+            "Heading 1 (outline_lvl 0) should set heading_level = 1"
+        );
+    }
+
+    #[test]
+    fn test_heading2_sets_heading_level_in_ir() {
+        let h2_style = docx_rs::Style::new("Heading2", docx_rs::StyleType::Paragraph)
+            .name("Heading 2")
+            .outline_lvl(1);
+
+        let data = build_docx_bytes_with_styles(
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Subtitle"))
+                    .style("Heading2"),
+            ],
+            vec![h2_style],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let para = first_paragraph(&doc);
+        assert_eq!(
+            para.style.heading_level,
+            Some(2),
+            "Heading 2 (outline_lvl 1) should set heading_level = 2"
+        );
+    }
+
+    #[test]
+    fn test_normal_paragraph_no_heading_level() {
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Normal text")),
+        ]);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let para = first_paragraph(&doc);
+        assert_eq!(
+            para.style.heading_level, None,
+            "Normal paragraph should not have heading_level"
+        );
     }
 }

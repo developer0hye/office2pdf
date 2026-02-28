@@ -23,6 +23,9 @@ pub struct ParagraphStyle {
     pub line_spacing: Option<LineSpacing>,
     pub space_before: Option<f64>,
     pub space_after: Option<f64>,
+    /// Heading level (1 = H1, 2 = H2, ..., 6 = H6). When set, the paragraph
+    /// is emitted as a Typst `#heading` element for proper PDF structure tagging.
+    pub heading_level: Option<u8>,
 }
 
 /// Text alignment.
