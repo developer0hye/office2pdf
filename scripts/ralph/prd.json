@@ -87,7 +87,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "This is the final sweep. By this point, parser panics should be fixed. Remaining panics are likely in typst_gen.rs (unhandled match arms, string building) or pdf.rs (Typst world trait implementation, font loading). The goal is ZERO panics on any input — malformed files should return errors, never crash."
     },
     {
