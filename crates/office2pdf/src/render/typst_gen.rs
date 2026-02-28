@@ -272,8 +272,8 @@ fn split_at_column_breaks(content: &[Block]) -> Vec<Vec<&Block>> {
     for block in content {
         if matches!(block, Block::ColumnBreak) {
             segments.push(vec![]);
-        } else {
-            segments.last_mut().unwrap().push(block);
+        } else if let Some(last) = segments.last_mut() {
+            last.push(block);
         }
     }
     segments
@@ -550,7 +550,12 @@ fn write_shadow_shape(out: &mut String, shape: &Shape, width: f64, height: f64, 
             );
             return;
         }
-        _ => unreachable!(),
+        // Line and Polygon are handled by early returns above; any future
+        // variants gracefully skip the shadow rather than panicking.
+        _ => {
+            out.push_str("]\n");
+            return;
+        }
     };
     out.push_str(shape_cmd);
     let _ = write!(
@@ -1610,11 +1615,12 @@ fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertE
     );
 
     if use_align {
-        let align_str = match alignment.unwrap() {
-            Alignment::Left => "left",
-            Alignment::Center => "center",
-            Alignment::Right => "right",
-            Alignment::Justify => unreachable!(),
+        let align_str = match alignment {
+            Some(Alignment::Left) => "left",
+            Some(Alignment::Center) => "center",
+            Some(Alignment::Right) => "right",
+            // Justify and None are excluded by use_align, but handle gracefully
+            _ => "left",
         };
         let _ = write!(out, "#align({align_str})[");
     }
@@ -6493,5 +6499,159 @@ mod tests {
             result.contains("English text"),
             "English text should appear"
         );
+    }
+
+    // --- US-204: Codegen/render robustness tests ---
+
+    #[test]
+    fn test_codegen_robustness_zero_pages() {
+        // An empty document with zero pages should produce valid Typst output
+        let doc = make_doc(vec![]);
+        let output = generate_typst(&doc).unwrap();
+        // Should produce an empty (or near-empty) source without panicking
+        assert!(output.images.is_empty());
+    }
+
+    #[test]
+    fn test_codegen_robustness_flow_page_empty_content() {
+        // A flow page with no content blocks should not panic
+        let doc = make_doc(vec![make_flow_page(vec![])]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(!output.source.is_empty());
+    }
+
+    #[test]
+    fn test_generate_fixed_page_empty_elements() {
+        // A fixed page with no elements should not panic
+        let doc = make_doc(vec![Page::Fixed(FixedPage {
+            size: PageSize::default(),
+            elements: vec![],
+            background_color: None,
+            background_gradient: None,
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(!output.source.is_empty());
+    }
+
+    #[test]
+    fn test_generate_table_page_empty_rows() {
+        // A table page with zero rows should not panic
+        let doc = make_doc(vec![Page::Table(TablePage {
+            name: String::new(),
+            size: PageSize::default(),
+            margins: Margins::default(),
+            table: Table {
+                rows: vec![],
+                column_widths: vec![],
+            },
+            header: None,
+            footer: None,
+            charts: vec![],
+        })]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(!output.source.is_empty());
+    }
+
+    #[test]
+    fn test_generate_paragraph_all_alignment_variants() {
+        // All alignment variants (Left, Center, Right, Justify, None) should
+        // produce valid Typst output without panicking.
+        for alignment in [
+            Some(Alignment::Left),
+            Some(Alignment::Center),
+            Some(Alignment::Right),
+            Some(Alignment::Justify),
+            None,
+        ] {
+            let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    alignment,
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![Run {
+                    text: format!("Alignment: {alignment:?}"),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })])]);
+            let output = generate_typst(&doc);
+            assert!(
+                output.is_ok(),
+                "Codegen should not fail for alignment {alignment:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_generate_shape_shadow_all_kinds() {
+        // Shadow generation should handle all ShapeKind variants without panicking.
+        let shadow = Shadow {
+            blur_radius: 4.0,
+            color: Color { r: 0, g: 0, b: 0 },
+            opacity: 0.5,
+            direction: 45.0,
+            distance: 3.0,
+        };
+
+        let shape_kinds = vec![
+            ShapeKind::Rectangle,
+            ShapeKind::Ellipse,
+            ShapeKind::Line { x2: 100.0, y2: 0.0 },
+            ShapeKind::RoundedRectangle {
+                radius_fraction: 0.1,
+            },
+            ShapeKind::Polygon {
+                vertices: vec![(0.0, 0.0), (1.0, 0.0), (0.5, 1.0)],
+            },
+        ];
+
+        for kind in shape_kinds {
+            let doc = make_doc(vec![Page::Fixed(FixedPage {
+                size: PageSize {
+                    width: 960.0,
+                    height: 540.0,
+                },
+                elements: vec![FixedElement {
+                    x: 100.0,
+                    y: 100.0,
+                    width: 200.0,
+                    height: 100.0,
+                    kind: FixedElementKind::Shape(Shape {
+                        kind: kind.clone(),
+                        fill: Some(Color { r: 255, g: 0, b: 0 }),
+                        gradient_fill: None,
+                        stroke: None,
+                        opacity: None,
+                        shadow: Some(shadow.clone()),
+                        rotation_deg: None,
+                    }),
+                }],
+                background_color: None,
+                background_gradient: None,
+            })]);
+            let output = generate_typst(&doc);
+            assert!(
+                output.is_ok(),
+                "Codegen should not panic for shape kind {kind:?} with shadow"
+            );
+        }
+    }
+
+    #[test]
+    fn test_column_break_with_empty_content() {
+        // Column breaks on empty content should not panic
+        let segments = split_at_column_breaks(&[]);
+        assert_eq!(segments.len(), 1);
+        assert!(segments[0].is_empty());
+    }
+
+    #[test]
+    fn test_column_break_only_breaks() {
+        // Content consisting only of column breaks should not panic
+        let blocks = vec![Block::ColumnBreak, Block::ColumnBreak];
+        let segments = split_at_column_breaks(&blocks);
+        assert_eq!(segments.len(), 3);
+        assert!(segments.iter().all(|s| s.is_empty()));
     }
 }
