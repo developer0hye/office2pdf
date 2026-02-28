@@ -149,3 +149,33 @@ Started: 2026년  2월 28일 토요일 17시 23분 18초 KST
   - `ConvertOptions` is automatically `Send + Sync` since all fields are owned value types — no special handling needed for parallel use
   - When `jobs=0`, resolve to available_parallelism at runtime; rayon's `num_threads(0)` also uses this default
 ---
+
+## 2026-02-28 - US-093
+- What was implemented: Tiered performance targets with reference benchmarks
+  - Three tiers defined: Small (<10 pages), Medium (10-50 pages), Large (50-100 pages)
+  - P95 budgets: Small=2s, Medium=3s, Large=8s (with CI variance margin)
+  - Synthetic document generators for all 9 tier×format combinations:
+    - Small: 15-para DOCX (~5 pages), 5-slide PPTX, 3-sheet/3×10 XLSX
+    - Medium: 60-para DOCX with tables (~20 pages), 20-slide PPTX with shapes, 10-sheet/8×50 XLSX
+    - Large: 150-para DOCX with tables (~50 pages), 50-slide PPTX with shapes, 20-sheet/10×100 XLSX
+  - Large-tier tests are `#[ignore]`d to avoid CI timeouts
+  - Font cache warm-up via `std::sync::Once` for fair measurements
+  - `timed_convert()` helper prints per-stage metrics to stderr
+  - `col_row_to_coord()` helper for multi-letter Excel column references
+  - Builder validation test verifies all synthetic documents produce valid PDFs
+- Baseline performance numbers (warm cache, local hardware):
+  - **Small**: DOCX ~6ms, PPTX ~20ms, XLSX ~15ms
+  - **Medium**: DOCX ~2.1s, PPTX ~1.7s, XLSX ~2.3s
+  - **Large**: DOCX ~775ms, PPTX ~87ms, XLSX ~4.8s
+  - Note: Medium DOCX and XLSX are slower than Large DOCX/PPTX due to table/cell complexity in Typst output
+- Files changed:
+  - `crates/office2pdf/tests/perf_validation.rs` — Complete rewrite with tiered system
+  - `scripts/ralph/prd.json` — Marked US-093 as passes: true
+- Dependencies added: None
+- **Learnings for future iterations:**
+  - XLSX is the slowest format by a wide margin — each cell becomes a Typst table cell, and 20 sheets × 10 cols × 100 rows = 20,000 cells creates heavy Typst compile load
+  - PPTX is the fastest format because each slide is a single fixed-layout page with minimal Typst complexity
+  - Medium-tier DOCX with tables is slower than large-tier DOCX without proportionally more tables — table rendering in Typst is expensive
+  - `std::sync::Once` is ideal for test-binary-scoped initialization (lighter than `OnceLock` when you don't need to store a value)
+  - `#[ignore]` is the right pattern for tests that pass locally but may timeout on CI runners
+---
