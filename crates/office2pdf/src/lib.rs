@@ -138,6 +138,8 @@ pub fn convert_bytes(
         &output.images,
         options.pdf_standard,
         &options.font_paths,
+        options.tagged,
+        options.pdf_ua,
     )?;
     let compile_duration = compile_start.elapsed();
 
@@ -171,7 +173,7 @@ pub fn convert_bytes(
 /// Returns [`ConvertError::Render`] if Typst compilation or PDF export fails.
 pub fn render_document(doc: &ir::Document) -> Result<Vec<u8>, ConvertError> {
     let output = render::typst_gen::generate_typst(doc)?;
-    render::pdf::compile_to_pdf(&output.source, &output.images, None, &[])
+    render::pdf::compile_to_pdf(&output.source, &output.images, None, &[], false, false)
 }
 
 #[cfg(test)]
@@ -200,6 +202,62 @@ mod tests {
             })],
             styles: StyleSheet::default(),
         }
+    }
+
+    /// Build a DOCX file with a title in docProps/core.xml for PDF/UA tests.
+    fn build_docx_with_title(title: &str) -> Vec<u8> {
+        use std::io::{Cursor, Write};
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::FileOptions::default();
+
+        zip.start_file("[Content_Types].xml", options).unwrap();
+        Write::write_all(&mut zip, br#"<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#).unwrap();
+
+        zip.start_file("_rels/.rels", options).unwrap();
+        Write::write_all(&mut zip, br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#).unwrap();
+
+        zip.start_file("word/_rels/document.xml.rels", options)
+            .unwrap();
+        Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+</Relationships>"#,
+        )
+        .unwrap();
+
+        zip.start_file("word/document.xml", options).unwrap();
+        Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>Hello</w:t></w:r></w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#,
+        )
+        .unwrap();
+
+        zip.start_file("docProps/core.xml", options).unwrap();
+        let core_xml = format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+    xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:title>{title}</dc:title>
+</cp:coreProperties>"#
+        );
+        Write::write_all(&mut zip, core_xml.as_bytes()).unwrap();
+
+        zip.finish().unwrap().into_inner()
     }
 
     // --- Format detection tests ---
@@ -1675,6 +1733,86 @@ mod tests {
             m.output_size_bytes,
             result.pdf.len() as u64,
             "output_size_bytes should match actual PDF size"
+        );
+    }
+
+    // --- Tagged PDF and PDF/UA integration tests (US-096) ---
+
+    #[test]
+    fn test_convert_bytes_with_tagged_option() {
+        use std::io::Cursor;
+        let docx = docx_rs::Docx::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Tagged test")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let options = ConvertOptions {
+            tagged: true,
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, Format::Docx, &options).unwrap();
+        assert!(result.pdf.starts_with(b"%PDF"));
+        let pdf_str = String::from_utf8_lossy(&result.pdf);
+        assert!(
+            pdf_str.contains("StructTreeRoot") || pdf_str.contains("MarkInfo"),
+            "Tagged conversion should include structure tree"
+        );
+    }
+
+    #[test]
+    fn test_convert_bytes_with_pdf_ua_option() {
+        // PDF/UA requires a document title. Build a DOCX with core properties.
+        let data = build_docx_with_title("PDF/UA Test Document");
+
+        let options = ConvertOptions {
+            pdf_ua: true,
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, Format::Docx, &options).unwrap();
+        assert!(result.pdf.starts_with(b"%PDF"));
+        let pdf_str = String::from_utf8_lossy(&result.pdf);
+        assert!(
+            pdf_str.contains("pdfuaid"),
+            "PDF/UA conversion should include pdfuaid metadata"
+        );
+    }
+
+    #[test]
+    fn test_convert_bytes_tagged_pdf_with_heading() {
+        use std::io::Cursor;
+
+        // Create a DOCX with a Heading 1 style
+        let h1_style = docx_rs::Style::new("Heading1", docx_rs::StyleType::Paragraph)
+            .name("Heading 1")
+            .outline_lvl(0);
+
+        let docx = docx_rs::Docx::new()
+            .add_style(h1_style)
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("My Title"))
+                    .style("Heading1"),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body text")),
+            );
+
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let options = ConvertOptions {
+            tagged: true,
+            ..Default::default()
+        };
+        let result = convert_bytes(&data, Format::Docx, &options).unwrap();
+        assert!(result.pdf.starts_with(b"%PDF"));
+        let pdf_str = String::from_utf8_lossy(&result.pdf);
+        assert!(
+            pdf_str.contains("StructTreeRoot") || pdf_str.contains("MarkInfo"),
+            "Tagged PDF with headings should contain structure tags"
         );
     }
 }

@@ -92,9 +92,11 @@ pub fn compile_to_pdf(
     images: &[ImageAsset],
     pdf_standard: Option<PdfStandard>,
     font_paths: &[PathBuf],
+    tagged: bool,
+    pdf_ua: bool,
 ) -> Result<Vec<u8>, ConvertError> {
     let world = MinimalWorld::new(typst_source, images, font_paths);
-    compile_to_pdf_inner(&world, pdf_standard)
+    compile_to_pdf_inner(&world, pdf_standard, tagged, pdf_ua)
 }
 
 /// Compile Typst markup to PDF bytes (WASM target).
@@ -106,14 +108,18 @@ pub fn compile_to_pdf(
     images: &[ImageAsset],
     pdf_standard: Option<PdfStandard>,
     _font_paths: &[std::path::PathBuf],
+    tagged: bool,
+    pdf_ua: bool,
 ) -> Result<Vec<u8>, ConvertError> {
     let world = MinimalWorld::new_embedded_only(typst_source, images);
-    compile_to_pdf_inner(&world, pdf_standard)
+    compile_to_pdf_inner(&world, pdf_standard, tagged, pdf_ua)
 }
 
 fn compile_to_pdf_inner(
     world: &MinimalWorld,
     pdf_standard: Option<PdfStandard>,
+    tagged: bool,
+    pdf_ua: bool,
 ) -> Result<Vec<u8>, ConvertError> {
     let warned = typst::compile::<typst::layout::PagedDocument>(world);
     let document = warned.output.map_err(|errors| {
@@ -121,22 +127,36 @@ fn compile_to_pdf_inner(
         ConvertError::Render(format!("Typst compilation failed: {}", messages.join("; ")))
     })?;
 
-    let standards = match pdf_standard {
-        Some(PdfStandard::PdfA2b) => typst_pdf::PdfStandards::new(&[typst_pdf::PdfStandard::A_2b])
-            .map_err(|e| ConvertError::Render(format!("PDF standard configuration error: {e}")))?,
-        None => typst_pdf::PdfStandards::default(),
+    // Build PDF standards list
+    let mut pdf_standards = Vec::new();
+    if let Some(PdfStandard::PdfA2b) = pdf_standard {
+        pdf_standards.push(typst_pdf::PdfStandard::A_2b);
+    }
+    if pdf_ua {
+        pdf_standards.push(typst_pdf::PdfStandard::Ua_1);
+    }
+    let standards = if pdf_standards.is_empty() {
+        typst_pdf::PdfStandards::default()
+    } else {
+        typst_pdf::PdfStandards::new(&pdf_standards)
+            .map_err(|e| ConvertError::Render(format!("PDF standard configuration error: {e}")))?
     };
 
-    // PDF/A requires a document creation timestamp; use actual conversion time
-    let timestamp = if pdf_standard.is_some() {
+    // PDF/A and PDF/UA require a document creation timestamp
+    let needs_timestamp = pdf_standard.is_some() || pdf_ua;
+    let timestamp = if needs_timestamp {
         Some(typst_pdf::Timestamp::new_utc(current_utc_datetime()))
     } else {
         None
     };
 
+    // Enable tagging when explicitly requested or when PDF/UA requires it
+    let enable_tagged = tagged || pdf_ua;
+
     let options = typst_pdf::PdfOptions {
         standards,
         timestamp,
+        tagged: enable_tagged,
         ..Default::default()
     };
     typst_pdf::pdf(&document, &options).map_err(|errors| {
@@ -328,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_compile_simple_text() {
-        let result = compile_to_pdf("Hello, World!", &[], None, &[]).unwrap();
+        let result = compile_to_pdf("Hello, World!", &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty(), "PDF bytes should not be empty");
         assert!(
             result.starts_with(b"%PDF"),
@@ -340,7 +360,7 @@ mod tests {
     fn test_compile_with_page_setup() {
         let source = r#"#set page(width: 612pt, height: 792pt)
 Hello from a US Letter page."#;
-        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -352,7 +372,7 @@ Hello from a US Letter page."#;
 #text(style: "italic")[Italic body text]
 
 #underline[Underlined text]"#;
-        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -361,7 +381,7 @@ Hello from a US Letter page."#;
     fn test_compile_colored_text() {
         let source = r#"#text(fill: rgb(255, 0, 0))[Red text]
 #text(fill: rgb(0, 128, 255))[Blue text]"#;
-        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -371,7 +391,7 @@ Hello from a US Letter page."#;
         let source = r#"#align(center)[Centered text]
 
 #align(right)[Right-aligned text]"#;
-        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -379,14 +399,21 @@ Hello from a US Letter page."#;
     #[test]
     fn test_compile_invalid_source_returns_error() {
         // Invalid Typst source should produce a compilation error
-        let result = compile_to_pdf("#invalid-func-that-does-not-exist()", &[], None, &[]);
+        let result = compile_to_pdf(
+            "#invalid-func-that-does-not-exist()",
+            &[],
+            None,
+            &[],
+            false,
+            false,
+        );
         assert!(result.is_err(), "Invalid source should produce an error");
     }
 
     #[test]
     fn test_compile_empty_source() {
         // Empty source should still produce valid PDF (empty page)
-        let result = compile_to_pdf("", &[], None, &[]).unwrap();
+        let result = compile_to_pdf("", &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -394,7 +421,7 @@ Hello from a US Letter page."#;
     #[test]
     fn test_compile_multiple_paragraphs() {
         let source = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.";
-        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -497,7 +524,7 @@ Hello from a US Letter page."#;
         // named font will be used if present on the system.
         let source = r#"#set text(font: "Arial")
 Hello with a system font."#;
-        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -508,7 +535,7 @@ Hello with a system font."#;
         // system font discovery enabled.
         let source = r#"#set text(font: "Libertinus Serif")
 Text in Libertinus Serif."#;
-        let result = compile_to_pdf(source, &[], None, &[]).unwrap();
+        let result = compile_to_pdf(source, &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -520,6 +547,8 @@ Text in Libertinus Serif."#;
             &[],
             Some(crate::config::PdfStandard::PdfA2b),
             &[],
+            false,
+            false,
         )
         .unwrap();
         assert!(!result.is_empty());
@@ -533,6 +562,8 @@ Text in Libertinus Serif."#;
             &[],
             Some(crate::config::PdfStandard::PdfA2b),
             &[],
+            false,
+            false,
         )
         .unwrap();
         // PDF/A-2b requires XMP metadata with pdfaid namespace
@@ -545,7 +576,7 @@ Text in Libertinus Serif."#;
 
     #[test]
     fn test_compile_default_no_pdfa_metadata() {
-        let result = compile_to_pdf("Regular PDF", &[], None, &[]).unwrap();
+        let result = compile_to_pdf("Regular PDF", &[], None, &[], false, false).unwrap();
         let pdf_str = String::from_utf8_lossy(&result);
         // A regular PDF should not have pdfaid conformance metadata
         assert!(
@@ -557,7 +588,7 @@ Text in Libertinus Serif."#;
     #[test]
     fn test_compile_with_font_paths_empty() {
         // Empty font paths should work the same as without
-        let result = compile_to_pdf("Hello!", &[], None, &[]).unwrap();
+        let result = compile_to_pdf("Hello!", &[], None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -566,7 +597,7 @@ Text in Libertinus Serif."#;
     fn test_compile_with_nonexistent_font_path() {
         // Non-existent font path should not crash — FontSearcher skips invalid dirs
         let paths = vec![PathBuf::from("/nonexistent/font/path")];
-        let result = compile_to_pdf("Hello!", &[], None, &paths).unwrap();
+        let result = compile_to_pdf("Hello!", &[], None, &paths, false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -579,7 +610,7 @@ Text in Libertinus Serif."#;
             data: png_data,
         }];
         let source = r#"#image("img-0.png", width: 100pt)"#;
-        let result = compile_to_pdf(source, &images, None, &[]).unwrap();
+        let result = compile_to_pdf(source, &images, None, &[], false, false).unwrap();
         assert!(!result.is_empty());
         assert!(result.starts_with(b"%PDF"));
     }
@@ -627,6 +658,8 @@ Text in Libertinus Serif."#;
             &[],
             Some(crate::config::PdfStandard::PdfA2b),
             &[],
+            false,
+            false,
         )
         .unwrap();
         let pdf_str = String::from_utf8_lossy(&result);
@@ -653,6 +686,8 @@ Text in Libertinus Serif."#;
             &[],
             Some(crate::config::PdfStandard::PdfA2b),
             &[],
+            false,
+            false,
         )
         .unwrap();
         let pdf_str = String::from_utf8_lossy(&result);
@@ -675,7 +710,7 @@ Text in Libertinus Serif."#;
         // typst-pdf (via krilla) compresses content streams with FLATE by default.
         // Verify that the output PDF contains FlateDecode filter references.
         let source = "Hello, compressed world! ".repeat(100);
-        let result = compile_to_pdf(&source, &[], None, &[]).unwrap();
+        let result = compile_to_pdf(&source, &[], None, &[], false, false).unwrap();
         let pdf_str = String::from_utf8_lossy(&result);
         assert!(
             pdf_str.contains("FlateDecode"),
@@ -688,7 +723,7 @@ Text in Libertinus Serif."#;
         // A PDF using only a few glyphs should be significantly smaller than
         // one using many distinct glyphs, demonstrating font subsetting is active.
         // "Few glyphs" document: only ASCII letters a-z
-        let few_glyphs = compile_to_pdf("abcdefghij", &[], None, &[]).unwrap();
+        let few_glyphs = compile_to_pdf("abcdefghij", &[], None, &[], false, false).unwrap();
 
         // "Many glyphs" document: diverse characters force more glyph data.
         // Avoid Typst special characters (#, $, *, _, etc.) to keep it valid markup.
@@ -698,7 +733,7 @@ Text in Libertinus Serif."#;
             SPHINX OF BLACK QUARTZ, JUDGE MY VOW. \
             Pack my box with five dozen liquor jugs. \
             How vexingly quick daft zebras jump.";
-        let many_glyphs = compile_to_pdf(many_glyphs_source, &[], None, &[]).unwrap();
+        let many_glyphs = compile_to_pdf(many_glyphs_source, &[], None, &[], false, false).unwrap();
 
         // With font subsetting, the "few glyphs" PDF should be noticeably smaller.
         // Without subsetting, both would embed the full font and be similar in size.
@@ -736,7 +771,7 @@ Text in Libertinus Serif."#;
                  ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n"
             ));
         }
-        let result = compile_to_pdf(&source, &[], None, &[]).unwrap();
+        let result = compile_to_pdf(&source, &[], None, &[], false, false).unwrap();
 
         // 500KB = 512_000 bytes — generous upper bound for 10 pages of text
         assert!(
@@ -759,7 +794,7 @@ Text in Libertinus Serif."#;
             data: png_data,
         }];
         let source = r#"#image("img-0.png", width: 100pt)"#;
-        let result = compile_to_pdf(source, &images, None, &[]).unwrap();
+        let result = compile_to_pdf(source, &images, None, &[], false, false).unwrap();
 
         // The PDF has overhead (fonts, structure, metadata) beyond the image.
         // But the total should not be unreasonably large for a tiny 1x1 image.
@@ -780,7 +815,7 @@ Text in Libertinus Serif."#;
         // An empty page PDF establishes the baseline overhead (fonts, structure).
         // This helps verify that additional content adds proportional size, not
         // excessive bloat from uncompressed data.
-        let result = compile_to_pdf("", &[], None, &[]).unwrap();
+        let result = compile_to_pdf("", &[], None, &[], false, false).unwrap();
 
         // Empty page PDF should be compact — mostly font data and PDF structure.
         // Typically 10-30KB depending on embedded font data.
@@ -798,11 +833,11 @@ Text in Libertinus Serif."#;
         // A document with highly repetitive text should compress well,
         // producing a PDF not much larger than a document with less text.
         let short_source = "Hello world.\n\n";
-        let short_pdf = compile_to_pdf(short_source, &[], None, &[]).unwrap();
+        let short_pdf = compile_to_pdf(short_source, &[], None, &[], false, false).unwrap();
 
         // 100x the text content, but should compress to much less than 100x the size
         let long_source = "Hello world.\n\n".repeat(100);
-        let long_pdf = compile_to_pdf(&long_source, &[], None, &[]).unwrap();
+        let long_pdf = compile_to_pdf(&long_source, &[], None, &[], false, false).unwrap();
 
         // With compression, 100x content should produce far less than 10x the PDF size.
         // The ratio demonstrates that content streams are being compressed.
@@ -814,6 +849,93 @@ Text in Libertinus Serif."#;
             short_pdf.len(),
             long_pdf.len(),
             size_ratio
+        );
+    }
+
+    // --- Tagged PDF and PDF/UA tests (US-096) ---
+
+    #[test]
+    fn test_tagged_pdf_contains_structure_tags() {
+        // A tagged PDF with headings should contain StructTreeRoot and heading tags
+        let source = "= My Heading\n\nSome paragraph text.\n\n== Sub Heading\n\nMore text.";
+        let result = compile_to_pdf(source, &[], None, &[], true, false).unwrap();
+        assert!(result.starts_with(b"%PDF"));
+        let pdf_str = String::from_utf8_lossy(&result);
+        // Tagged PDFs must contain a StructTreeRoot
+        assert!(
+            pdf_str.contains("StructTreeRoot") || pdf_str.contains("MarkInfo"),
+            "Tagged PDF should contain structure tree or mark info"
+        );
+    }
+
+    #[test]
+    fn test_untagged_pdf_no_structure_tree() {
+        // Without tagging, there should be no StructTreeRoot
+        let source = "= My Heading\n\nSome text.";
+        let result = compile_to_pdf(source, &[], None, &[], false, false).unwrap();
+        assert!(result.starts_with(b"%PDF"));
+        let pdf_str = String::from_utf8_lossy(&result);
+        assert!(
+            !pdf_str.contains("StructTreeRoot"),
+            "Untagged PDF should not contain StructTreeRoot"
+        );
+    }
+
+    #[test]
+    fn test_pdf_ua_produces_valid_pdf() {
+        // PDF/UA mode should produce a valid PDF with tagging enabled.
+        // PDF/UA-1 requires a document title.
+        let source = "#set document(title: \"Accessible Document\")\n= Accessible Document\n\nThis document is PDF/UA compliant.";
+        let result = compile_to_pdf(source, &[], None, &[], false, true).unwrap();
+        assert!(result.starts_with(b"%PDF"));
+        let pdf_str = String::from_utf8_lossy(&result);
+        // PDF/UA output should contain pdfuaid metadata
+        assert!(
+            pdf_str.contains("pdfuaid"),
+            "PDF/UA output should contain pdfuaid metadata"
+        );
+    }
+
+    #[test]
+    fn test_pdf_ua_implies_tagged() {
+        // PDF/UA should produce a tagged PDF even if tagged=false.
+        // PDF/UA-1 requires a document title.
+        let source = "#set document(title: \"Test\")\n= Heading\n\nParagraph.";
+        let result = compile_to_pdf(source, &[], None, &[], false, true).unwrap();
+        let pdf_str = String::from_utf8_lossy(&result);
+        assert!(
+            pdf_str.contains("StructTreeRoot") || pdf_str.contains("MarkInfo"),
+            "PDF/UA should produce tagged PDF"
+        );
+    }
+
+    #[test]
+    fn test_tagged_pdf_with_table() {
+        let source = "#table(columns: 2, [A], [B], [C], [D])";
+        let result = compile_to_pdf(source, &[], None, &[], true, false).unwrap();
+        assert!(result.starts_with(b"%PDF"));
+        // Should be a valid PDF (compilation doesn't fail with tagging)
+    }
+
+    #[test]
+    fn test_tagged_pdf_with_pdfa_combined() {
+        // Tagged + PDF/A should work together
+        let source = "= Archival Accessible\n\nBoth standards combined.";
+        let result = compile_to_pdf(
+            source,
+            &[],
+            Some(crate::config::PdfStandard::PdfA2b),
+            &[],
+            true,
+            false,
+        )
+        .unwrap();
+        assert!(result.starts_with(b"%PDF"));
+        let pdf_str = String::from_utf8_lossy(&result);
+        assert!(pdf_str.contains("pdfaid"), "Should contain PDF/A metadata");
+        assert!(
+            pdf_str.contains("StructTreeRoot") || pdf_str.contains("MarkInfo"),
+            "Should contain structure tags"
         );
     }
 }

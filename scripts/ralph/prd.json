@@ -42,7 +42,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "This is a complex story. Start by investigating typst-pdf's tagging capabilities — check the typst-pdf crate docs and source. If Typst 0.14+ supports tagged PDF via krilla, it may be as simple as enabling a flag. If not, consider post-processing with lopdf to add a basic tag tree. For the first iteration, focus on the most impactful tags: headings, paragraphs, and tables. Image alt text can come from the OOXML description attribute."
     },
     {

@@ -91,6 +91,14 @@ struct Cli {
     #[arg(long)]
     landscape: bool,
 
+    /// Produce tagged PDF with document structure tags for accessibility
+    #[arg(long)]
+    tagged: bool,
+
+    /// Produce PDF/UA-1 compliant output for universal accessibility (implies --tagged)
+    #[arg(long = "pdf-ua")]
+    pdf_ua: bool,
+
     /// Print per-stage timing metrics to stderr
     #[arg(long)]
     metrics: bool,
@@ -316,6 +324,8 @@ fn run() -> Result<()> {
         paper_size,
         font_paths: cli.font_path,
         landscape,
+        tagged: cli.tagged,
+        pdf_ua: cli.pdf_ua,
     };
 
     // Create outdir if specified and doesn't exist

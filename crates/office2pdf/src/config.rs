@@ -130,6 +130,13 @@ pub struct ConvertOptions {
     /// Force landscape orientation. If `Some(true)`, swaps width/height so width > height.
     /// If `Some(false)`, forces portrait. If `None`, uses source document orientation.
     pub landscape: Option<bool>,
+    /// Enable tagged PDF output with document structure tags (H1-H6, P, Table, Figure).
+    /// When `true`, the output PDF includes accessibility tags that map document
+    /// structure for screen readers and assistive technologies.
+    pub tagged: bool,
+    /// Enable PDF/UA (Universal Accessibility) compliance. Implies `tagged: true`.
+    /// Combines tagged PDF with the PDF/UA-1 standard for full accessibility compliance.
+    pub pdf_ua: bool,
 }
 
 #[cfg(test)]
@@ -311,5 +318,35 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(opts.landscape, Some(true));
+    }
+
+    #[test]
+    fn test_convert_options_tagged_default_false() {
+        let opts = ConvertOptions::default();
+        assert!(!opts.tagged);
+    }
+
+    #[test]
+    fn test_convert_options_pdf_ua_default_false() {
+        let opts = ConvertOptions::default();
+        assert!(!opts.pdf_ua);
+    }
+
+    #[test]
+    fn test_convert_options_with_tagged() {
+        let opts = ConvertOptions {
+            tagged: true,
+            ..Default::default()
+        };
+        assert!(opts.tagged);
+    }
+
+    #[test]
+    fn test_convert_options_with_pdf_ua() {
+        let opts = ConvertOptions {
+            pdf_ua: true,
+            ..Default::default()
+        };
+        assert!(opts.pdf_ua);
     }
 }

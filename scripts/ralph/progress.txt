@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- **Tagged PDF / PDF/UA**: `ConvertOptions.tagged: bool` and `ConvertOptions.pdf_ua: bool` (both default `false`). `compile_to_pdf()` accepts `tagged` and `pdf_ua` params, sets `PdfOptions { tagged: tagged || pdf_ua, ... }`. PDF/UA adds `PdfStandard::Ua_1` and requires a document title. Heading paragraphs: `ParagraphStyle.heading_level: Option<u8>` (1-6), set from DOCX `outline_lvl + 1` in `merge_paragraph_style()`. Codegen: `#heading(level: N)[content]` for heading paragraphs, normal `#block`/text for others. CLI: `--tagged`, `--pdf-ua` flags.
 - **Server feature flag pattern**: CLI crate has `server = ["tiny_http"]` feature. Module `server.rs` imported with `#[cfg(feature = "server")] mod server;`. Serve variant in Commands enum uses `#[cfg(feature = "server")]`. Tests run with `cargo test -p office2pdf-cli --features server`.
 - **PDF ops feature flag pattern**: Library crate has `pdf-ops = ["lopdf"]` feature. Module `pdf_ops.rs` imported with `#[cfg(feature = "pdf-ops")] pub mod pdf_ops;`. CLI always enables pdf-ops via `office2pdf = { features = ["pdf-ops"] }`. CLI subcommands `merge` and `split` are always available. `PageRange` for parsing page range strings like "1-5". Tests create minimal PDFs with `lopdf::Document::with_version("1.7")` + manual page/catalog construction.
 - **CLI subcommand pattern**: `Commands` enum always exists with `Merge` and `Split` variants. `Serve` variant behind `#[cfg(feature = "server")]`. `Cli` struct uses `subcommand_negates_reqs = true, args_conflicts_with_subcommands = true` for backward-compatible subcommands (conversion args remain top-level). `handle_command(cmd)` dispatches all subcommands.
@@ -107,4 +108,32 @@ Started: 2026년  2월 28일 토요일 19시 00분 28초 KST
   - Clippy requires collapsing nested `if let Ok(...) { if condition { ... } }` into `if let Ok(...) && condition { ... }`
   - When merging PDFs, must remove orphaned intermediate Pages nodes from source documents
   - CLI subcommand refactoring: moved from cfg-conditional Commands enum to always-present enum with cfg-conditional Serve variant
+---
+
+## 2026-02-28 - US-096
+- Implemented tagged PDF and PDF/UA accessibility support
+- typst-pdf 0.14.2 has built-in `tagged: bool` field in `PdfOptions` and `PdfStandard::Ua_1`
+- Added `heading_level: Option<u8>` to IR `ParagraphStyle` for proper H1-H6 tagging
+- DOCX parser now propagates heading level from style `outline_lvl` (0→H1, 1→H2, ..., 5→H6)
+- Typst codegen emits `#heading(level: N)[content]` for heading paragraphs (maps to PDF H1-H6 tags)
+- Tables (`#table`) and images (`#image`) already produce proper Table/Figure tags via Typst
+- Added `ConvertOptions.tagged: bool` and `ConvertOptions.pdf_ua: bool`
+- `pdf_ua: true` implies `tagged: true` and adds `PdfStandard::Ua_1`
+- PDF/UA-1 requires a document title (`#set document(title: ...)` from metadata)
+- Added CLI flags: `--tagged` and `--pdf-ua`
+- Files changed:
+  - `crates/office2pdf/src/ir/style.rs` — added `heading_level` field to ParagraphStyle
+  - `crates/office2pdf/src/config.rs` — added `tagged` and `pdf_ua` fields to ConvertOptions
+  - `crates/office2pdf/src/parser/docx.rs` — propagate heading_level from style outline_lvl
+  - `crates/office2pdf/src/render/typst_gen.rs` — emit `#heading(level: N)` for heading paragraphs
+  - `crates/office2pdf/src/render/pdf.rs` — thread tagged/pdf_ua to PdfOptions
+  - `crates/office2pdf/src/lib.rs` — pass tagged/pdf_ua from ConvertOptions to compile_to_pdf
+  - `crates/office2pdf-cli/src/main.rs` — added --tagged and --pdf-ua CLI flags
+- Dependencies added: none (all capabilities from existing typst-pdf 0.14.2)
+- **Learnings for future iterations:**
+  - typst-pdf 0.14.2 `PdfStandard::Ua_1` (not UA_1) — follows Rust naming convention
+  - PDF/UA-1 requires a document title — without `#set document(title: ...)`, export fails
+  - Typst automatically tags semantic elements: `#heading` → H1-H6, `#table` → Table/TR/TD, paragraphs → P
+  - `PdfOptions.tagged` defaults to `true` in typst-pdf, so current output was already tagged
+  - `heading_level` must be set in `merge_paragraph_style()` (not `extract_paragraph_style()`) to access resolved style info
 ---
