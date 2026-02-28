@@ -1,4 +1,7 @@
 //! Shared test utilities for integration tests.
+//!
+//! Not all test binaries use every function — suppress dead code warnings.
+#![allow(dead_code)]
 
 /// Extract all visible text content from PDF bytes.
 ///
