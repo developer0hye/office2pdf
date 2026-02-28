@@ -170,7 +170,6 @@ fn smoke_footnote() {
 }
 
 #[test]
-#[ignore = "parser does not yet extract footnotes from this real-world fixture"]
 fn structure_footnote() {
     let pages = flow_pages("footnote.docx");
     let blocks = all_blocks(&pages);
@@ -358,7 +357,6 @@ fn smoke_unit_test_headers() {
 }
 
 #[test]
-#[ignore = "parser does not yet extract headers from this real-world fixture"]
 fn structure_unit_test_headers() {
     let pages = flow_pages("unit_test_headers.docx");
     assert!(

@@ -1,5 +1,5 @@
 use std::cell::Cell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Read;
 
 use crate::config::ConvertOptions;
@@ -324,6 +324,9 @@ struct NoteContext {
     note_refs: Vec<(NoteKind, usize)>,
     /// Current position in `note_refs`.
     cursor: Cell<usize>,
+    /// Style IDs that indicate footnote/endnote reference runs.
+    /// Includes English defaults plus any locale-specific IDs found in styles.
+    note_style_ids: HashSet<String>,
 }
 
 impl NoteContext {
@@ -338,6 +341,22 @@ impl NoteContext {
         match kind {
             NoteKind::Footnote => self.footnote_content.get(&id).cloned(),
             NoteKind::Endnote => self.endnote_content.get(&id).cloned(),
+        }
+    }
+
+    /// Populate note style IDs from docx styles.
+    /// Scans character styles whose canonical name (w:name) is "footnote reference"
+    /// or "endnote reference", handling localized style IDs (e.g., German "Funotenzeichen").
+    fn populate_style_ids(&mut self, styles: &docx_rs::Styles) {
+        for style in &styles.styles {
+            if let Ok(name_val) = serde_json::to_value(&style.name)
+                && let Some(name_str) = name_val.as_str()
+            {
+                let lower = name_str.to_lowercase();
+                if lower == "footnote reference" || lower == "endnote reference" {
+                    self.note_style_ids.insert(style.style_id.clone());
+                }
+            }
         }
     }
 }
@@ -572,6 +591,10 @@ fn build_note_context(data: &[u8]) -> NoteContext {
     let mut footnote_content = HashMap::new();
     let mut endnote_content = HashMap::new();
     let mut note_refs = Vec::new();
+    let default_style_ids: HashSet<String> = ["FootnoteReference", "EndnoteReference"]
+        .iter()
+        .map(|s| (*s).to_string())
+        .collect();
 
     let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
         return NoteContext {
@@ -579,6 +602,7 @@ fn build_note_context(data: &[u8]) -> NoteContext {
             endnote_content,
             note_refs,
             cursor: Cell::new(0),
+            note_style_ids: default_style_ids,
         };
     };
 
@@ -602,6 +626,7 @@ fn build_note_context(data: &[u8]) -> NoteContext {
         endnote_content,
         note_refs,
         cursor: Cell::new(0),
+        note_style_ids: default_style_ids,
     }
 }
 
@@ -726,15 +751,15 @@ fn scan_note_refs(xml: &str) -> Vec<(NoteKind, usize)> {
 }
 
 /// Check if a docx-rs Run represents a footnote or endnote reference.
-/// These runs have `rStyle` set to "FootnoteReference" or "EndnoteReference"
+/// These runs have `rStyle` set to a footnote/endnote reference style
+/// (e.g., "FootnoteReference" in English, "Funotenzeichen" in German)
 /// and contain no text.
-fn is_note_reference_run(run: &docx_rs::Run) -> bool {
-    if let Some(ref style) = run.run_property.style {
-        let val = &style.val;
-        if val == "FootnoteReference" || val == "EndnoteReference" {
-            // Verify the run has no text content (only footnoteReference element)
-            return extract_run_text(run).is_empty();
-        }
+fn is_note_reference_run(run: &docx_rs::Run, notes: &NoteContext) -> bool {
+    if let Some(ref style) = run.run_property.style
+        && notes.note_style_ids.contains(&style.val)
+    {
+        // Verify the run has no text content (only footnoteReference element)
+        return extract_run_text(run).is_empty();
     }
     false
 }
@@ -754,7 +779,7 @@ impl Parser for DocxParser {
         };
 
         // Build note context from raw ZIP before docx-rs parsing
-        let notes = build_note_context(data);
+        let mut notes = build_note_context(data);
         // Build wrap context for anchor image wrap types from raw ZIP
         let wraps = build_wrap_context(data);
         // Build math context for OMML equations from raw ZIP
@@ -764,6 +789,9 @@ impl Parser for DocxParser {
 
         let docx = docx_rs::read_docx(data)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;
+
+        // Populate locale-specific footnote/endnote style IDs from docx styles
+        notes.populate_style_ids(&docx.styles);
 
         let (size, margins) = extract_page_setup(&docx.document.section_property);
         let images = build_image_map(&docx);
@@ -1135,7 +1163,7 @@ fn convert_paragraph_blocks(
         match child {
             docx_rs::ParagraphChild::Run(run) => {
                 // Check for footnote/endnote reference runs
-                if is_note_reference_run(run) {
+                if is_note_reference_run(run, notes) {
                     if let Some(content) = notes.consume_next() {
                         runs.push(Run {
                             text: String::new(),
