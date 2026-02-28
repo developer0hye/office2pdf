@@ -4,6 +4,8 @@
 //! - **smoke**: `convert()` → valid PDF (or graceful error — no panic)
 //! - **structure**: parse → assert expected IR content
 
+mod common;
+
 use std::path::PathBuf;
 
 use office2pdf::config::ConvertOptions;
@@ -36,6 +38,7 @@ fn assert_produces_valid_pdf(name: &str) {
                 result.pdf.starts_with(b"%PDF"),
                 "output should start with PDF magic bytes"
             );
+            common::validate_pdf_with_qpdf(&result.pdf);
         }
         Err(e) => {
             // Conversion error is acceptable (unimplemented features, etc.)
