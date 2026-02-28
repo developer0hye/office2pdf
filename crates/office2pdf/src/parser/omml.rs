@@ -39,21 +39,63 @@ fn parse_omml_children(reader: &mut Reader<&[u8]>, out: &mut String, end_tag: &[
                 let local = e.local_name();
                 let name = local.as_ref();
                 match name {
-                    b"f" => parse_fraction(reader, out),
-                    b"sSup" => parse_superscript(reader, out),
-                    b"sSub" => parse_subscript(reader, out),
-                    b"sSubSup" => parse_sub_superscript(reader, out),
-                    b"rad" => parse_radical(reader, out),
+                    // Elements that produce multi-char identifiers at the start
+                    // need a separator to prevent concatenation (e.g., n+cos → "ncos")
+                    b"f" => {
+                        ensure_math_separator(out);
+                        parse_fraction(reader, out);
+                    }
+                    b"rad" => {
+                        ensure_math_separator(out);
+                        parse_radical(reader, out);
+                    }
+                    b"nary" => {
+                        ensure_math_separator(out);
+                        parse_nary(reader, out);
+                    }
+                    b"func" => {
+                        ensure_math_separator(out);
+                        parse_function(reader, out);
+                    }
+                    b"acc" => {
+                        ensure_math_separator(out);
+                        parse_accent(reader, out);
+                    }
+                    b"bar" => {
+                        ensure_math_separator(out);
+                        parse_bar(reader, out);
+                    }
+                    b"m" => {
+                        ensure_math_separator(out);
+                        parse_matrix(reader, out);
+                    }
+                    b"eqArr" => {
+                        ensure_math_separator(out);
+                        parse_eq_array(reader, out);
+                    }
+                    b"limLow" => {
+                        ensure_math_separator(out);
+                        parse_lim_low(reader, out);
+                    }
+                    b"limUpp" => {
+                        ensure_math_separator(out);
+                        parse_lim_upp(reader, out);
+                    }
+                    // Script elements can concatenate base chars with preceding output
+                    b"sSup" => {
+                        ensure_math_separator(out);
+                        parse_superscript(reader, out);
+                    }
+                    b"sSub" => {
+                        ensure_math_separator(out);
+                        parse_subscript(reader, out);
+                    }
+                    b"sSubSup" => {
+                        ensure_math_separator(out);
+                        parse_sub_superscript(reader, out);
+                    }
                     b"d" => parse_delimiter(reader, out),
                     b"r" => parse_math_run(reader, out),
-                    b"nary" => parse_nary(reader, out),
-                    b"func" => parse_function(reader, out),
-                    b"limLow" => parse_lim_low(reader, out),
-                    b"limUpp" => parse_lim_upp(reader, out),
-                    b"acc" => parse_accent(reader, out),
-                    b"bar" => parse_bar(reader, out),
-                    b"m" => parse_matrix(reader, out),
-                    b"eqArr" => parse_eq_array(reader, out),
                     b"oMath" => parse_omml_children(reader, out, b"oMath"),
                     b"oMathPara" => parse_omml_children(reader, out, b"oMathPara"),
                     _ => skip_element(reader, name),
@@ -68,6 +110,14 @@ fn parse_omml_children(reader: &mut Reader<&[u8]>, out: &mut String, end_tag: &[
             Err(_) => return,
             _ => {}
         }
+    }
+}
+
+/// Add a space separator if `out` ends with an alphanumeric character,
+/// preventing identifier concatenation across OMML elements.
+fn ensure_math_separator(out: &mut String) {
+    if out.chars().last().is_some_and(|c| c.is_alphanumeric()) {
+        out.push(' ');
     }
 }
 
@@ -285,6 +335,7 @@ fn parse_delimiter_props(reader: &mut Reader<&[u8]>, beg: &mut String, end: &mut
 
 fn parse_math_run(reader: &mut Reader<&[u8]>, out: &mut String) {
     let mut in_text = false;
+    let mut text_buf = String::new();
 
     loop {
         match reader.read_event() {
@@ -295,7 +346,7 @@ fn parse_math_run(reader: &mut Reader<&[u8]>, out: &mut String) {
             },
             Ok(Event::Text(ref t)) if in_text => {
                 if let Ok(s) = t.xml_content() {
-                    out.push_str(s.as_ref());
+                    text_buf.push_str(s.as_ref());
                 }
             }
             Ok(Event::End(ref e)) => match e.local_name().as_ref() {
@@ -306,6 +357,222 @@ fn parse_math_run(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Eof) | Err(_) => break,
             _ => {}
         }
+    }
+
+    if !text_buf.is_empty() {
+        let mapped = map_math_text(&text_buf);
+        // Prevent concatenation with preceding content
+        if !mapped.is_empty()
+            && out.chars().last().is_some_and(|c| c.is_alphanumeric())
+            && mapped.chars().next().is_some_and(|c| c.is_alphanumeric())
+        {
+            out.push(' ');
+        }
+        out.push_str(&mapped);
+        // Add trailing space after multi-char identifiers to prevent
+        // cross-element concatenation (e.g., "plus.minus" + "sqrt" → "plus.minussqrt").
+        // Single letters don't need this since they're separate tokens in Typst math.
+        let chars: Vec<char> = mapped.chars().collect();
+        let len = chars.len();
+        if len >= 2 && chars[len - 1].is_alphabetic() && chars[len - 2].is_alphabetic() {
+            out.push(' ');
+        }
+    }
+}
+
+/// Map Unicode characters in math text to Typst math identifiers.
+///
+/// Converts Greek letters and common math symbols to their Typst equivalents.
+/// Splits consecutive ASCII letters into individual variables (Typst treats
+/// multi-letter sequences as single identifiers), but preserves known math
+/// function names like `cos`, `sin`, `log`.
+fn map_math_text(input: &str) -> String {
+    let mut result = String::new();
+    let mut word_buf = String::new();
+    let mut last_was_name = false;
+
+    for ch in input.chars() {
+        if ch.is_ascii_alphabetic() {
+            word_buf.push(ch);
+            continue;
+        }
+
+        // Flush accumulated word before processing this character
+        if !word_buf.is_empty() {
+            flush_math_word(&mut result, &word_buf, &mut last_was_name);
+            word_buf.clear();
+        }
+
+        if let Some(name) = unicode_to_typst(ch) {
+            if !result.is_empty()
+                && (last_was_name || result.chars().last().is_some_and(|c| c.is_alphanumeric()))
+            {
+                result.push(' ');
+            }
+            result.push_str(name);
+            last_was_name = true;
+        } else if ch.is_ascii_digit() {
+            if last_was_name {
+                result.push(' ');
+            }
+            result.push(ch);
+            last_was_name = false;
+        } else {
+            result.push(ch);
+            last_was_name = false;
+        }
+    }
+
+    // Flush remaining word
+    if !word_buf.is_empty() {
+        flush_math_word(&mut result, &word_buf, &mut last_was_name);
+    }
+
+    result
+}
+
+/// Flush an accumulated word of ASCII letters to the result.
+///
+/// Known math function names (cos, sin, etc.) are kept intact.
+/// Unknown multi-letter sequences are split into individual characters
+/// with spaces to prevent Typst from treating them as single identifiers.
+fn flush_math_word(result: &mut String, word: &str, last_was_name: &mut bool) {
+    if is_known_math_name(word) {
+        // Known math name — emit as a single identifier
+        if !result.is_empty()
+            && (*last_was_name || result.chars().last().is_some_and(|c| c.is_alphanumeric()))
+        {
+            result.push(' ');
+        }
+        result.push_str(word);
+        *last_was_name = true;
+    } else if word.len() == 1 {
+        // Single letter — emit as-is
+        if *last_was_name {
+            result.push(' ');
+        }
+        result.push_str(word);
+        *last_was_name = false;
+    } else {
+        // Multiple unknown letters — split into individual characters
+        for (i, c) in word.chars().enumerate() {
+            if i > 0 || *last_was_name {
+                result.push(' ');
+            }
+            result.push(c);
+        }
+        *last_was_name = false;
+    }
+}
+
+/// Check if a word is a known math function name that should not be split.
+fn is_known_math_name(text: &str) -> bool {
+    matches!(
+        text,
+        "sin"
+            | "cos"
+            | "tan"
+            | "cot"
+            | "sec"
+            | "csc"
+            | "arcsin"
+            | "arccos"
+            | "arctan"
+            | "sinh"
+            | "cosh"
+            | "tanh"
+            | "coth"
+            | "ln"
+            | "log"
+            | "lg"
+            | "exp"
+            | "det"
+            | "dim"
+            | "gcd"
+            | "lcm"
+            | "max"
+            | "min"
+            | "sup"
+            | "inf"
+            | "lim"
+            | "arg"
+            | "deg"
+            | "mod"
+    )
+}
+
+/// Map a single Unicode character to its Typst math identifier, if applicable.
+fn unicode_to_typst(ch: char) -> Option<&'static str> {
+    match ch {
+        // Greek lowercase
+        'α' => Some("alpha"),
+        'β' => Some("beta"),
+        'γ' => Some("gamma"),
+        'δ' => Some("delta"),
+        'ε' => Some("epsilon"),
+        'ζ' => Some("zeta"),
+        'η' => Some("eta"),
+        'θ' => Some("theta"),
+        'ι' => Some("iota"),
+        'κ' => Some("kappa"),
+        'λ' => Some("lambda"),
+        'μ' => Some("mu"),
+        'ν' => Some("nu"),
+        'ξ' => Some("xi"),
+        'ο' => Some("omicron"),
+        'π' => Some("pi"),
+        'ρ' => Some("rho"),
+        'σ' | 'ς' => Some("sigma"),
+        'τ' => Some("tau"),
+        'υ' => Some("upsilon"),
+        'φ' => Some("phi"),
+        'χ' => Some("chi"),
+        'ψ' => Some("psi"),
+        'ω' => Some("omega"),
+        // Greek uppercase
+        'Α' => Some("Alpha"),
+        'Β' => Some("Beta"),
+        'Γ' => Some("Gamma"),
+        'Δ' => Some("Delta"),
+        'Ε' => Some("Epsilon"),
+        'Ζ' => Some("Zeta"),
+        'Η' => Some("Eta"),
+        'Θ' => Some("Theta"),
+        'Ι' => Some("Iota"),
+        'Κ' => Some("Kappa"),
+        'Λ' => Some("Lambda"),
+        'Μ' => Some("Mu"),
+        'Ν' => Some("Nu"),
+        'Ξ' => Some("Xi"),
+        'Ο' => Some("Omicron"),
+        'Π' => Some("Pi"),
+        'Ρ' => Some("Rho"),
+        'Σ' => Some("Sigma"),
+        'Τ' => Some("Tau"),
+        'Υ' => Some("Upsilon"),
+        'Φ' => Some("Phi"),
+        'Χ' => Some("Chi"),
+        'Ψ' => Some("Psi"),
+        'Ω' => Some("Omega"),
+        // Math symbols
+        '∞' => Some("infinity"),
+        '∂' => Some("partial"),
+        '∇' => Some("nabla"),
+        '∅' => Some("emptyset"),
+        '±' => Some("plus.minus"),
+        '×' => Some("times"),
+        '÷' => Some("div"),
+        '≤' => Some("lt.eq"),
+        '≥' => Some("gt.eq"),
+        '≠' => Some("eq.not"),
+        '≈' => Some("approx"),
+        '∈' => Some("in"),
+        '∉' => Some("in.not"),
+        '⊂' => Some("subset"),
+        '⊃' => Some("supset"),
+        '∪' => Some("union"),
+        '∩' => Some("sect"),
+        _ => None,
     }
 }
 
@@ -836,13 +1103,18 @@ mod tests {
     #[test]
     fn test_emc2() {
         let xml = "<m:r><m:t>E</m:t></m:r><m:r><m:t>=</m:t></m:r><m:r><m:t>m</m:t></m:r><m:sSup><m:e><m:r><m:t>c</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup>";
-        assert_eq!(omml_to_typst(xml), "E=mc^2");
+        // Space before sSup separates run "m" from base "c" (both valid in Typst math)
+        assert_eq!(omml_to_typst(xml), "E=m c^2");
     }
 
     #[test]
     fn test_quadratic_formula() {
         let xml = r#"<m:r><m:t>x</m:t></m:r><m:r><m:t>=</m:t></m:r><m:f><m:num><m:r><m:t>-b±</m:t></m:r><m:rad><m:radPr><m:degHide m:val="1"/></m:radPr><m:deg/><m:e><m:sSup><m:e><m:r><m:t>b</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup><m:r><m:t>-4ac</m:t></m:r></m:e></m:rad></m:num><m:den><m:r><m:t>2a</m:t></m:r></m:den></m:f>"#;
-        assert_eq!(omml_to_typst(xml), "x=frac(-b±sqrt(b^2-4ac), 2a)");
+        // ± → plus.minus; -4ac → -4a c (letters split for implicit multiplication)
+        assert_eq!(
+            omml_to_typst(xml),
+            "x=frac(-b plus.minus sqrt(b^2-4a c), 2a)"
+        );
     }
 
     #[test]
@@ -862,7 +1134,7 @@ mod tests {
         let results = scan_math_equations(xml);
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].0, 0);
-        assert_eq!(results[0].1, "E=mc^2");
+        assert_eq!(results[0].1, "E=m c^2");
         assert!(results[0].2);
     }
 
@@ -906,5 +1178,142 @@ mod tests {
         assert_eq!(results[1].0, 2);
         assert_eq!(results[1].1, "b=2");
         assert!(!results[1].2);
+    }
+
+    // --- map_math_text tests ---
+
+    #[test]
+    fn test_map_math_text_pi() {
+        assert_eq!(map_math_text("π"), "pi");
+    }
+
+    #[test]
+    fn test_map_math_text_pi_r() {
+        // π followed by r should insert space for implicit multiplication
+        assert_eq!(map_math_text("πr"), "pi r");
+    }
+
+    #[test]
+    fn test_map_math_text_multiple_greek() {
+        assert_eq!(map_math_text("αβ"), "alpha beta");
+    }
+
+    #[test]
+    fn test_map_math_text_greek_with_operator() {
+        // Operators separate naturally, no extra spaces needed
+        assert_eq!(map_math_text("α+β"), "alpha+beta");
+    }
+
+    #[test]
+    fn test_map_math_text_digit_before_greek() {
+        assert_eq!(map_math_text("2π"), "2 pi");
+    }
+
+    #[test]
+    fn test_map_math_text_letter_before_greek() {
+        assert_eq!(map_math_text("rπ"), "r pi");
+    }
+
+    #[test]
+    fn test_map_math_text_ascii_passthrough() {
+        // Plain ASCII letters and digits pass through unchanged
+        assert_eq!(map_math_text("x+y=5"), "x+y=5");
+    }
+
+    #[test]
+    fn test_map_math_text_uppercase_greek() {
+        assert_eq!(map_math_text("Ω"), "Omega");
+        assert_eq!(map_math_text("Δ"), "Delta");
+        assert_eq!(map_math_text("Σ"), "Sigma");
+    }
+
+    #[test]
+    fn test_map_math_text_math_symbols() {
+        assert_eq!(map_math_text("∞"), "infinity");
+        assert_eq!(map_math_text("∂"), "partial");
+        assert_eq!(map_math_text("∇"), "nabla");
+        assert_eq!(map_math_text("∅"), "emptyset");
+    }
+
+    #[test]
+    fn test_map_math_text_operator_symbols() {
+        assert_eq!(map_math_text("±"), "plus.minus");
+        assert_eq!(map_math_text("×"), "times");
+        assert_eq!(map_math_text("÷"), "div");
+        assert_eq!(map_math_text("≤"), "lt.eq");
+        assert_eq!(map_math_text("≥"), "gt.eq");
+        assert_eq!(map_math_text("≠"), "eq.not");
+        assert_eq!(map_math_text("≈"), "approx");
+    }
+
+    #[test]
+    fn test_map_math_text_set_symbols() {
+        assert_eq!(map_math_text("∈"), "in");
+        assert_eq!(map_math_text("∉"), "in.not");
+        assert_eq!(map_math_text("⊂"), "subset");
+        assert_eq!(map_math_text("⊃"), "supset");
+        assert_eq!(map_math_text("∪"), "union");
+        assert_eq!(map_math_text("∩"), "sect");
+    }
+
+    #[test]
+    fn test_map_math_text_empty() {
+        assert_eq!(map_math_text(""), "");
+    }
+
+    #[test]
+    fn test_map_math_text_unknown_unicode_passthrough() {
+        // Unknown Unicode characters pass through unchanged
+        assert_eq!(map_math_text("★"), "★");
+    }
+
+    #[test]
+    fn test_map_math_text_complex_expression() {
+        // Mixed Greek and ASCII with operators
+        assert_eq!(map_math_text("θ=2πr"), "theta=2 pi r");
+    }
+
+    #[test]
+    fn test_map_math_text_splits_unknown_multi_letter() {
+        // Unknown multi-letter sequences split into individual variables
+        assert_eq!(map_math_text("ka"), "k a");
+        assert_eq!(map_math_text("abc"), "a b c");
+    }
+
+    #[test]
+    fn test_map_math_text_preserves_known_function_names() {
+        // Known math function names are preserved intact
+        assert_eq!(map_math_text("cos"), "cos");
+        assert_eq!(map_math_text("sin"), "sin");
+        assert_eq!(map_math_text("log"), "log");
+        assert_eq!(map_math_text("lim"), "lim");
+    }
+
+    #[test]
+    fn test_map_math_text_split_with_digits() {
+        // Letters after digits are split
+        assert_eq!(map_math_text("-4ac"), "-4a c");
+        // Single letter after digit is fine
+        assert_eq!(map_math_text("2a"), "2a");
+    }
+
+    // --- parse_math_run with Greek letters via omml_to_typst ---
+
+    #[test]
+    fn test_omml_pi_mapped() {
+        let xml = "<m:r><m:t>π</m:t></m:r>";
+        assert_eq!(omml_to_typst(xml), "pi");
+    }
+
+    #[test]
+    fn test_omml_pi_r_spaced() {
+        let xml = "<m:r><m:t>πr</m:t></m:r>";
+        assert_eq!(omml_to_typst(xml), "pi r");
+    }
+
+    #[test]
+    fn test_omml_alpha_plus_beta() {
+        let xml = "<m:r><m:t>α+β</m:t></m:r>";
+        assert_eq!(omml_to_typst(xml), "alpha+beta");
     }
 }

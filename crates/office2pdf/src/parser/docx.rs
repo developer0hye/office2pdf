@@ -4830,7 +4830,9 @@ mod tests {
             .collect();
 
         assert!(!math_blocks.is_empty());
-        assert_eq!(math_blocks[0].content, "E=mc^2");
+        // Space before sSup separates run "m" from base "c" to prevent identifier
+        // concatenation (both are semantically equivalent in Typst math: m × c²)
+        assert_eq!(math_blocks[0].content, "E=m c^2");
         assert!(math_blocks[0].display);
     }
 
