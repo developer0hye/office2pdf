@@ -22,7 +22,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Dublin Core metadata in OOXML is at `docProps/core.xml`. Fields: <dc:title>, <dc:creator>, <dc:subject>, <dc:description>, <dcterms:created>, <dcterms:modified>. For DOCX, docx-rs may expose properties — check the API first. For PPTX, the ZIP is already open in the parser so adding another file read is straightforward. For XLSX, umya-spreadsheet may have a properties accessor. The Metadata struct may need new Optional<String> fields added."
     },
     {

@@ -73,8 +73,28 @@
 - **PPTX SmartArt diagrams**: SmartArt uses `<p:graphicFrame>` with `<a:graphicData uri="...diagram">` containing `<dgm:relIds r:dm="rIdN" .../>`. Detection via `smartart::scan_smartart_refs(slide_xml)` → `Vec<SmartArtRef>` (position + data_rid). Data resolved by `load_smartart_data(slide_path, archive)` which reads slide .rels for targets containing "diagrams/data", then parses each data XML via `smartart::parse_smartart_data_xml()`. Data model XML (`ppt/diagrams/dataN.xml`): `<dgm:ptLst>` contains `<dgm:pt modelId type>` elements. Only `type="node"` (or absent type, which defaults to "node") have user content; skip `type="doc"`, `type="parTrans"`, `type="sibTrans"`. Text in `<dgm:t>/<a:p>/<a:r>/<a:t>`. IR: `SmartArt { items: Vec<String> }`, `FixedElementKind::SmartArt`. Codegen: bordered `#block` with "SmartArt Diagram" header and `- item` list. Integration point: `parse_single_slide()` (not `parse_slide_xml()`) since SmartArt requires ZIP archive access. Test helper: `build_test_pptx_with_smartart(cx, cy, slide_xml, data_rid, data_xml)`, `make_smartart_graphic_frame(x, y, cx, cy, dm_rid)`, `make_smartart_data_xml(&["Item 1", "Item 2"])`.
 - **PPTX embedded charts**: Charts in PPTX use `<p:graphicFrame>` with `<a:graphicData uri="...chart">` containing `<c:chart r:id="rIdN"/>`. Detection via `chart::scan_pptx_chart_refs(slide_xml)` → `Vec<PptxChartRef>` (position in EMU + chart_rid). Chart data resolved by `load_chart_data(slide_path, archive)` which reads slide .rels for targets containing "chart", then reads chart XML from ZIP and parses via `chart::parse_chart_xml()`. Returns `ChartMap` (HashMap<String, Chart>). Chart XML is the same format as DOCX charts — `parse_chart_xml()` is fully reusable. IR: `FixedElementKind::Chart(Chart)`. Codegen delegates to existing `generate_chart()`. Integration in `parse_single_slide()` after SmartArt block. Test helpers: `build_test_pptx_with_chart(cx, cy, slide_xml, chart_rid, chart_xml)`, `make_chart_graphic_frame(x, y, cx, cy, chart_rid)`, `make_chart_xml(title, chart_type, categories, series_name, values)`.
 - **DOCX floating images**: `WrapContext` scans raw document.xml for `wp:anchor` elements in document order (similar pattern to `NoteContext`). `AnchorWrapInfo` stores wrap_mode (WrapMode) and behind_doc (bool). `scan_anchor_wrap_types()` parses wp:wrapSquare→Square, wp:wrapTight/wrapThrough→Tight, wp:wrapTopAndBottom→TopAndBottom, wp:wrapNone→depends on behindDoc. `extract_drawing_image()` checks `pic.position_type == Anchor` → consumes next wrap info → `Block::FloatingImage(FloatingImage)`. Position from `DrawingPosition::Offset(emu)` → `emu / 12700.0` points. Codegen: Square/Tight → `#place(float: true)`, TopAndBottom → `#block` with `#v()` spacer, Behind/InFront/None → `#place()` absolute. Test helpers: `patch_docx_wrap_type(data, old_wrap, new_wrap)` replaces wrap elements in ZIP, `patch_docx_behind_doc(data)` sets `behindDoc="1"`. Create floating test Pic: `Pic::new(&bmp).floating().offset_x(emu).offset_y(emu)` (default: wrapSquare if !allow_overlap), `.overlapping()` → wrapNone.
+- **OOXML metadata extraction**: Shared `parser::metadata` module. `extract_metadata_from_zip(archive)` reads `docProps/core.xml`. `parse_core_xml(xml)` extracts Dublin Core fields: `dc:title`, `dc:creator`, `dc:subject`, `dc:description`, `dcterms:created`, `dcterms:modified`. DOCX: opens data as ZIP before docx-rs parsing. PPTX: uses already-open ZipArchive. XLSX: uses `umya_spreadsheet::Properties` API (`get_title()`, `get_creator()`, `get_subject()`, `get_description()`, `get_created()`, `get_modified()`). Codegen: `generate_document_metadata()` emits `#set document(title: "...", author: "...")` before page content. `escape_typst_string()` handles backslashes and quotes. Test helpers: `build_docx_with_metadata(core_xml)`, `build_test_pptx_with_metadata(core_xml)`.
 ---
 
 # Ralph Progress Log - Phase 8: Foundation Fixes - Metadata, PDF/A Timestamp, Warnings, PDF Validation
 Started: 2026년  2월 28일 토요일 13시 48분 17초 KST
+---
+
+## 2026-02-28 - US-080
+- Implemented document metadata extraction from OOXML core/app properties
+- Files changed:
+  - `crates/office2pdf/src/ir/document.rs` — Added subject, description, created, modified fields to Metadata struct
+  - `crates/office2pdf/src/parser/metadata.rs` — New shared metadata parsing module
+  - `crates/office2pdf/src/parser/mod.rs` — Registered metadata module
+  - `crates/office2pdf/src/parser/docx.rs` — Extract metadata from ZIP before docx-rs parsing
+  - `crates/office2pdf/src/parser/pptx.rs` — Extract metadata from already-open ZIP archive
+  - `crates/office2pdf/src/parser/xlsx.rs` — Extract metadata from umya-spreadsheet Properties API
+  - `crates/office2pdf/src/render/typst_gen.rs` — Emit `#set document(title, author)` in Typst output
+- Dependencies added: None (reused existing quick-xml and zip)
+- **Learnings for future iterations:**
+  - DOCX and PPTX both need `docProps/core.xml` parsed from ZIP; shared module avoids duplication
+  - XLSX can use umya-spreadsheet's Properties API directly — more reliable than parsing ZIP
+  - Typst handles document metadata via `#set document(...)` which flows to PDF info dictionary
+  - `zip::write::FileOptions` in zip 0.6 does NOT take generic parameters (unlike zip 2.x)
+  - Empty property strings from umya-spreadsheet need to be converted to None
 ---
