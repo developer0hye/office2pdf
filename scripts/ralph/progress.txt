@@ -136,3 +136,22 @@ Started: 2026년  2월 28일 토요일 09시 05분 04초 KST
   - Sorting alone isn't enough — boundary clamping is also needed as a safety net
   - The `GradientStop` struct derives `Clone`, so cloning and sorting is straightforward
 ---
+
+## 2026-02-28 - US-074
+- Mapped Unicode math symbols to Typst identifiers in OMML parser
+- Added `map_math_text()` function that converts Greek letters (π→pi, α→alpha, etc.) and math symbols (±→plus.minus, ∞→infinity, etc.) to Typst equivalents
+- Added `flush_math_word()` and `is_known_math_name()` helpers: multi-letter ASCII sequences split into individual variables (e.g., `ka`→`k a`) unless they're known function names (sin, cos, log, etc.)
+- Added `unicode_to_typst()` mapping 48 Greek letters + 17 math symbols
+- Modified `parse_math_run()` to buffer text and apply mapping with leading/trailing space checks
+- Added `ensure_math_separator()` to prevent cross-element identifier concatenation between adjacent math runs, superscripts, subscripts, fractions, radicals, and other OMML constructs
+- Added 21 new unit tests for `map_math_text`, `unicode_to_typst`, `flush_math_word`, and OMML integration
+- Updated 4 existing test assertions to match new spacing behavior (`E=mc^2`→`E=m c^2`, quadratic formula with `plus.minus`)
+- Files changed: `crates/office2pdf/src/parser/omml.rs`, `crates/office2pdf/src/parser/docx.rs`
+- Dependencies added: none
+- Verified fixture: `equations.docx` converts successfully
+- **Learnings for future iterations:**
+  - Typst math mode treats multi-letter sequences as single identifiers — `mc` is NOT `m × c` but a single unknown variable
+  - Adjacent OMML elements (runs, superscripts, functions) can produce outputs that concatenate into invalid identifiers at element boundaries
+  - Known function names like sin/cos/log must be preserved intact, not split into individual characters
+  - The `ensure_math_separator()` pattern works well: check if the output ends with an alphanumeric char and add a space before the next element
+---
