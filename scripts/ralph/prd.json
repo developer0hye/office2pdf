@@ -81,7 +81,7 @@
         "cargo clippy --workspace -- -D warnings passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "This is a high-effort story. The current pipeline loads the entire document into IR, then generates all Typst markup at once. Streaming requires rethinking this to process in chunks. For XLSX, the natural chunk boundary is rows — process N rows, generate a page, compile, flush, repeat. umya-spreadsheet may not support streaming reads — if not, at least chunk the IR-to-Typst-to-PDF stage even if the parse stage loads everything. Start with XLSX only and document the approach for future DOCX/PPTX."
     },
     {

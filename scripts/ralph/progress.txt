@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - **TypeScript type generation**: `typescript = ["ts-rs"]` feature flag in library crate. Types derive `#[cfg_attr(feature = "typescript", derive(ts_rs::TS))]`. ts-rs 12.0 API: `T::decl(&cfg)`, `T::export_all(&cfg)`, `T::export_to_string(&cfg)` — all take `&ts_rs::Config`. Config: `ts_rs::Config::new().with_out_dir(path)`. Generated files go to `crates/office2pdf/bindings/`. Types: Format, PaperSize, PdfStandard, SlideRange, ConvertOptions, ConvertWarning, ConvertMetrics. For `PathBuf` fields: `#[cfg_attr(feature = "typescript", ts(type = "Array<string>"))]`. For `Duration` fields: `#[cfg_attr(feature = "typescript", ts(type = "number"))]`. u64 maps to `bigint` by default. Tests behind `#[cfg(all(test, feature = "typescript"))]`.
+- **Streaming XLSX conversion**: `ConvertOptions.streaming: bool` and `ConvertOptions.streaming_chunk_size: Option<usize>` (default 1000). When streaming=true + XLSX + pdf-ops feature, `convert_bytes` delegates to `convert_bytes_streaming_xlsx()`. XlsxParser has `parse_streaming(data, options, chunk_size)` → `Vec<Document>` (each with one TablePage of ≤chunk_size rows). Helper functions: `prepare_sheet_context(sheet)` → `Option<(SheetContext, row_start, row_end)>`, `build_rows_for_range(sheet, ctx, row_start, row_end)` → `Vec<TableRow>`. Each chunk is compiled independently (codegen + Typst compile) then merged via `pdf_ops::merge()`. Streaming tests behind `#[cfg(all(test, feature = "pdf-ops"))]`. CLI: `--streaming` and `--streaming-chunk-size` flags.
 - **Tagged PDF / PDF/UA**: `ConvertOptions.tagged: bool` and `ConvertOptions.pdf_ua: bool` (both default `false`). `compile_to_pdf()` accepts `tagged` and `pdf_ua` params, sets `PdfOptions { tagged: tagged || pdf_ua, ... }`. PDF/UA adds `PdfStandard::Ua_1` and requires a document title. Heading paragraphs: `ParagraphStyle.heading_level: Option<u8>` (1-6), set from DOCX `outline_lvl + 1` in `merge_paragraph_style()`. Codegen: `#heading(level: N)[content]` for heading paragraphs, normal `#block`/text for others. CLI: `--tagged`, `--pdf-ua` flags.
 - **Server feature flag pattern**: CLI crate has `server = ["tiny_http"]` feature. Module `server.rs` imported with `#[cfg(feature = "server")] mod server;`. Serve variant in Commands enum uses `#[cfg(feature = "server")]`. Tests run with `cargo test -p office2pdf-cli --features server`.
 - **PDF ops feature flag pattern**: Library crate has `pdf-ops = ["lopdf"]` feature. Module `pdf_ops.rs` imported with `#[cfg(feature = "pdf-ops")] pub mod pdf_ops;`. CLI always enables pdf-ops via `office2pdf = { features = ["pdf-ops"] }`. CLI subcommands `merge` and `split` are always available. `PageRange` for parsing page range strings like "1-5". Tests create minimal PDFs with `lopdf::Document::with_version("1.7")` + manual page/catalog construction.
@@ -160,4 +161,30 @@ Started: 2026년  2월 28일 토요일 19시 00분 28초 KST
   - `PathBuf` could be handled by ts-rs but safer to use `#[ts(type = "Array<string>")]`
   - `export_all()` exports the type AND all its dependencies (useful for ConvertOptions → SlideRange, etc.)
   - ts-rs MSRV is 1.88.0; project MSRV is 1.89 — compatible
+---
+
+## 2026-02-28 - US-098
+- Implemented streaming API for large XLSX file processing with bounded memory
+- Architecture: parse XLSX → split rows into chunks → compile each chunk independently → merge PDFs
+- Refactored XLSX parser: extracted `build_rows_for_range()` and `prepare_sheet_context()` helpers from the monolithic `parse()` method
+- Added `XlsxParser::parse_streaming(data, options, chunk_size)` returning `Vec<Document>` (one per chunk)
+- Added `convert_bytes_streaming_xlsx()` in lib.rs (behind `pdf-ops` feature) that processes chunks one at a time and merges with `pdf_ops::merge()`
+- `ConvertOptions` new fields: `streaming: bool`, `streaming_chunk_size: Option<usize>` (default 1000)
+- CLI flags: `--streaming`, `--streaming-chunk-size`
+- For non-XLSX formats (DOCX, PPTX), streaming flag is silently ignored (normal conversion)
+- 16 new streaming tests: 6 parser tests + 7 integration tests + 3 config tests
+- All existing 669+ tests still pass (no regressions)
+- Files changed:
+  - `crates/office2pdf/src/config.rs` — added `streaming` and `streaming_chunk_size` fields
+  - `crates/office2pdf/src/parser/xlsx.rs` — refactored with `SheetContext`, `build_rows_for_range()`, `prepare_sheet_context()`, added `parse_streaming()`
+  - `crates/office2pdf/src/lib.rs` — added `convert_bytes_streaming_xlsx()` behind `pdf-ops` feature, streaming dispatch in `convert_bytes()`
+  - `crates/office2pdf-cli/src/main.rs` — added `--streaming` and `--streaming-chunk-size` CLI flags
+- Dependencies added: none (uses existing lopdf via pdf-ops feature for PDF merging)
+- **Learnings for future iterations:**
+  - umya-spreadsheet loads entire XLSX into memory — can't stream the parse phase, but CAN stream the IR-to-Typst-to-PDF phase
+  - Key memory savings: each chunk is compiled independently, so only one chunk's Typst source + compilation state is in memory at a time
+  - `pdf_ops::merge()` handles combining chunk PDFs — no new dependencies needed
+  - Refactoring monolithic parse methods into helper functions makes streaming trivial to implement
+  - The `SheetContext` struct pattern is useful for passing around pre-computed sheet metadata
+  - For "functionally identical" output: streaming produces more pages (one per chunk) but same data content
 ---

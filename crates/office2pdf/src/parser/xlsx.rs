@@ -858,6 +858,250 @@ fn parse_drawing_chart_anchors(xml: &str) -> Vec<(u32, String)> {
     result
 }
 
+/// Shared context for processing a single XLSX sheet.
+struct SheetContext {
+    col_start: u32,
+    col_end: u32,
+    num_cols: usize,
+    column_widths: Vec<f64>,
+    merge_tops: HashMap<(u32, u32), MergeInfo>,
+    merge_skips: HashSet<(u32, u32)>,
+    cond_fmt_overrides: HashMap<(u32, u32), crate::parser::cond_fmt::CondFmtOverride>,
+}
+
+/// Build TableRows for a range of rows in a sheet.
+fn build_rows_for_range(
+    sheet: &umya_spreadsheet::Worksheet,
+    ctx: &SheetContext,
+    row_start: u32,
+    row_end: u32,
+) -> Vec<TableRow> {
+    let num_rows = (row_end - row_start + 1) as usize;
+    let mut rows = Vec::with_capacity(num_rows);
+    for row_idx in row_start..=row_end {
+        let mut cells = Vec::with_capacity(ctx.num_cols);
+        for col_idx in ctx.col_start..=ctx.col_end {
+            // Skip cells that are part of a merge but not the top-left
+            if ctx.merge_skips.contains(&(col_idx, row_idx)) {
+                continue;
+            }
+
+            // umya-spreadsheet tuple is (column, row), both 1-indexed
+            let umya_cell = sheet.get_cell((col_idx, row_idx));
+            let value = umya_cell
+                .map(|cell| cell.get_formatted_value())
+                .unwrap_or_default();
+
+            // Extract formatting from the cell
+            let mut text_style = umya_cell.map(extract_cell_text_style).unwrap_or_default();
+            let mut background = umya_cell.and_then(extract_cell_background);
+            let border = umya_cell.and_then(extract_cell_borders);
+
+            // Apply conditional formatting overrides
+            let mut data_bar = None;
+            let mut icon_text = None;
+            if let Some(ovr) = ctx.cond_fmt_overrides.get(&(col_idx, row_idx)) {
+                if ovr.background.is_some() {
+                    background = ovr.background;
+                }
+                if ovr.font_color.is_some() {
+                    text_style.color = ovr.font_color;
+                }
+                if let Some(bold) = ovr.bold {
+                    text_style.bold = Some(bold);
+                }
+                data_bar = ovr.data_bar.clone();
+                icon_text = ovr.icon_text.clone();
+            }
+
+            let content = if value.is_empty() {
+                Vec::new()
+            } else {
+                vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: value,
+                        style: text_style,
+                        href: None,
+                        footnote: None,
+                    }],
+                })]
+            };
+
+            let (col_span, row_span) = if let Some(info) = ctx.merge_tops.get(&(col_idx, row_idx)) {
+                (info.col_span, info.row_span)
+            } else {
+                (1, 1)
+            };
+
+            cells.push(TableCell {
+                content,
+                col_span,
+                row_span,
+                border,
+                background,
+                data_bar,
+                icon_text,
+            });
+        }
+
+        // Extract row height if custom
+        let height = sheet
+            .get_row_dimension(&row_idx)
+            .filter(|r| *r.get_custom_height())
+            .map(|r| *r.get_height());
+
+        rows.push(TableRow { cells, height });
+    }
+    rows
+}
+
+/// Prepare the shared context for processing a sheet (dimensions, merges, styles, etc.).
+/// Returns (SheetContext, col_start, col_end, row_start, row_end) or None if the sheet is empty.
+fn prepare_sheet_context(sheet: &umya_spreadsheet::Worksheet) -> Option<(SheetContext, u32, u32)> {
+    let (mut max_col, mut max_row) = sheet.get_highest_column_and_row();
+    if max_col == 0 || max_row == 0 {
+        return None;
+    }
+
+    // Expand grid to include the extent of all merged ranges
+    for range in sheet.get_merge_cells() {
+        if let Some(c) = range.get_coordinate_end_col() {
+            max_col = max_col.max(*c.get_num());
+        }
+        if let Some(r) = range.get_coordinate_end_row() {
+            max_row = max_row.max(*r.get_num());
+        }
+    }
+
+    // Check for print area — limit to that range if defined
+    let print_area = find_print_area(sheet);
+    let (col_start, col_end, row_start, row_end) = if let Some(pa) = print_area {
+        (pa.start_col, pa.end_col, pa.start_row, pa.end_row)
+    } else {
+        (1, max_col, 1, max_row)
+    };
+
+    let column_widths: Vec<f64> = (col_start..=col_end)
+        .map(|col| {
+            sheet
+                .get_column_dimension_by_number(&col)
+                .map(|c| column_width_to_pt(*c.get_width()))
+                .unwrap_or_else(|| column_width_to_pt(DEFAULT_COLUMN_WIDTH))
+        })
+        .collect();
+
+    let (merge_tops, merge_skips) = build_merge_maps(sheet);
+    let cond_fmt_overrides = build_cond_fmt_overrides(sheet);
+    let num_cols = (col_end - col_start + 1) as usize;
+
+    Some((
+        SheetContext {
+            col_start,
+            col_end,
+            num_cols,
+            column_widths,
+            merge_tops,
+            merge_skips,
+            cond_fmt_overrides,
+        },
+        row_start,
+        row_end,
+    ))
+}
+
+impl XlsxParser {
+    /// Parse XLSX in streaming mode, returning one `Document` per chunk of rows.
+    ///
+    /// Each chunk contains a single `TablePage` with at most `chunk_size` rows.
+    /// This allows the caller to compile each chunk independently, bounding peak
+    /// memory during Typst compilation.
+    pub fn parse_streaming(
+        &self,
+        data: &[u8],
+        options: &ConvertOptions,
+        chunk_size: usize,
+    ) -> Result<(Vec<Document>, Vec<ConvertWarning>), ConvertError> {
+        let cursor = Cursor::new(data);
+        let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true)
+            .map_err(|e| ConvertError::Parse(format!("Failed to parse XLSX: {e}")))?;
+
+        let metadata = extract_xlsx_metadata(&book);
+        let mut chart_map = extract_charts_with_anchors(data);
+
+        let mut chunks = Vec::new();
+        let mut warnings = Vec::new();
+
+        for sheet in book.get_sheet_collection() {
+            // Filter by sheet name if specified
+            if let Some(ref names) = options.sheet_names
+                && !names.iter().any(|n| n == sheet.get_name())
+            {
+                continue;
+            }
+
+            let Some((ctx, row_start, row_end)) = prepare_sheet_context(sheet) else {
+                continue;
+            };
+
+            let sheet_name = sheet.get_name().to_string();
+
+            // Extract sheet header/footer
+            let hf = sheet.get_header_footer();
+            let sheet_header = parse_hf_format_string(hf.get_odd_header().get_value());
+            let sheet_footer = parse_hf_format_string(hf.get_odd_footer().get_value());
+
+            // Pull charts for this sheet
+            let mut sheet_charts = chart_map.remove(&sheet_name).unwrap_or_default();
+            for (_, chart) in &sheet_charts {
+                let title = chart.title.as_deref().unwrap_or("untitled").to_string();
+                warnings.push(ConvertWarning::FallbackUsed {
+                    format: "XLSX".to_string(),
+                    from: format!("chart ({title})"),
+                    to: "data table".to_string(),
+                });
+            }
+            sheet_charts.sort_by_key(|(row, _)| *row);
+
+            // Process rows in chunks
+            let mut chunk_start = row_start;
+            let mut first_chunk = true;
+            while chunk_start <= row_end {
+                let chunk_end = (chunk_start + chunk_size as u32 - 1).min(row_end);
+
+                let rows = build_rows_for_range(sheet, &ctx, chunk_start, chunk_end);
+
+                let doc = Document {
+                    metadata: metadata.clone(),
+                    pages: vec![Page::Table(TablePage {
+                        name: sheet_name.clone(),
+                        size: PageSize::default(),
+                        margins: Margins::default(),
+                        table: Table {
+                            rows,
+                            column_widths: ctx.column_widths.clone(),
+                        },
+                        header: sheet_header.clone(),
+                        footer: sheet_footer.clone(),
+                        charts: if first_chunk {
+                            first_chunk = false;
+                            std::mem::take(&mut sheet_charts)
+                        } else {
+                            vec![]
+                        },
+                    })],
+                    styles: StyleSheet::default(),
+                };
+
+                chunks.push(doc);
+                chunk_start = chunk_end + 1;
+            }
+        }
+
+        Ok((chunks, warnings))
+    }
+}
+
 impl Parser for XlsxParser {
     fn parse(
         &self,
@@ -886,120 +1130,11 @@ impl Parser for XlsxParser {
                 continue;
             }
 
-            let (mut max_col, mut max_row) = sheet.get_highest_column_and_row();
-            if max_col == 0 || max_row == 0 {
-                continue; // skip empty sheets
-            }
-
-            // Expand grid to include the extent of all merged ranges
-            for range in sheet.get_merge_cells() {
-                if let Some(c) = range.get_coordinate_end_col() {
-                    max_col = max_col.max(*c.get_num());
-                }
-                if let Some(r) = range.get_coordinate_end_row() {
-                    max_row = max_row.max(*r.get_num());
-                }
-            }
-
-            // Check for print area — limit to that range if defined
-            let print_area = find_print_area(sheet);
-            let (col_start, col_end, row_start, row_end) = if let Some(pa) = print_area {
-                (pa.start_col, pa.end_col, pa.start_row, pa.end_row)
-            } else {
-                (1, max_col, 1, max_row)
+            let Some((ctx, row_start, row_end)) = prepare_sheet_context(sheet) else {
+                continue;
             };
 
-            let column_widths: Vec<f64> = (col_start..=col_end)
-                .map(|col| {
-                    sheet
-                        .get_column_dimension_by_number(&col)
-                        .map(|c| column_width_to_pt(*c.get_width()))
-                        .unwrap_or_else(|| column_width_to_pt(DEFAULT_COLUMN_WIDTH))
-                })
-                .collect();
-
-            let (merge_tops, merge_skips) = build_merge_maps(sheet);
-            let cond_fmt_overrides = build_cond_fmt_overrides(sheet);
-
-            let num_rows = (row_end - row_start + 1) as usize;
-            let num_cols = (col_end - col_start + 1) as usize;
-            let mut rows = Vec::with_capacity(num_rows);
-            for row_idx in row_start..=row_end {
-                let mut cells = Vec::with_capacity(num_cols);
-                for col_idx in col_start..=col_end {
-                    // Skip cells that are part of a merge but not the top-left
-                    if merge_skips.contains(&(col_idx, row_idx)) {
-                        continue;
-                    }
-
-                    // umya-spreadsheet tuple is (column, row), both 1-indexed
-                    let umya_cell = sheet.get_cell((col_idx, row_idx));
-                    let value = umya_cell
-                        .map(|cell| cell.get_formatted_value())
-                        .unwrap_or_default();
-
-                    // Extract formatting from the cell
-                    let mut text_style = umya_cell.map(extract_cell_text_style).unwrap_or_default();
-                    let mut background = umya_cell.and_then(extract_cell_background);
-                    let border = umya_cell.and_then(extract_cell_borders);
-
-                    // Apply conditional formatting overrides
-                    let mut data_bar = None;
-                    let mut icon_text = None;
-                    if let Some(ovr) = cond_fmt_overrides.get(&(col_idx, row_idx)) {
-                        if ovr.background.is_some() {
-                            background = ovr.background;
-                        }
-                        if ovr.font_color.is_some() {
-                            text_style.color = ovr.font_color;
-                        }
-                        if let Some(bold) = ovr.bold {
-                            text_style.bold = Some(bold);
-                        }
-                        data_bar = ovr.data_bar.clone();
-                        icon_text = ovr.icon_text.clone();
-                    }
-
-                    let content = if value.is_empty() {
-                        Vec::new()
-                    } else {
-                        vec![Block::Paragraph(Paragraph {
-                            style: ParagraphStyle::default(),
-                            runs: vec![Run {
-                                text: value,
-                                style: text_style,
-                                href: None,
-                                footnote: None,
-                            }],
-                        })]
-                    };
-
-                    let (col_span, row_span) =
-                        if let Some(info) = merge_tops.get(&(col_idx, row_idx)) {
-                            (info.col_span, info.row_span)
-                        } else {
-                            (1, 1)
-                        };
-
-                    cells.push(TableCell {
-                        content,
-                        col_span,
-                        row_span,
-                        border,
-                        background,
-                        data_bar,
-                        icon_text,
-                    });
-                }
-
-                // Extract row height if custom
-                let height = sheet
-                    .get_row_dimension(&row_idx)
-                    .filter(|r| *r.get_custom_height())
-                    .map(|r| *r.get_height());
-
-                rows.push(TableRow { cells, height });
-            }
+            let rows = build_rows_for_range(sheet, &ctx, row_start, row_end);
 
             // Collect row page breaks and split rows into page segments
             let row_breaks = collect_row_breaks(sheet);
@@ -1031,7 +1166,7 @@ impl Parser for XlsxParser {
                     margins: Margins::default(),
                     table: Table {
                         rows,
-                        column_widths,
+                        column_widths: ctx.column_widths,
                     },
                     header: sheet_header.clone(),
                     footer: sheet_footer.clone(),
@@ -1068,7 +1203,7 @@ impl Parser for XlsxParser {
                         margins: Margins::default(),
                         table: Table {
                             rows: segment,
-                            column_widths: column_widths.clone(),
+                            column_widths: ctx.column_widths.clone(),
                         },
                         header: sheet_header.clone(),
                         footer: sheet_footer.clone(),
@@ -3153,5 +3288,133 @@ mod tests {
         // Should not crash; default metadata has no values
         // (umya-spreadsheet defaults may have empty strings)
         let _ = doc.metadata;
+    }
+
+    // ----- Streaming parse tests -----
+
+    /// Build an XLSX with many rows for streaming tests.
+    fn build_xlsx_with_rows(sheet_name: &str, num_rows: u32, num_cols: u32) -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        let sheet = book.get_sheet_mut(&0).unwrap();
+        sheet.set_name(sheet_name);
+        for row in 1..=num_rows {
+            for col in 1..=num_cols {
+                sheet
+                    .get_cell_mut((col, row))
+                    .set_value(format!("R{row}C{col}"));
+            }
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_parse_streaming_creates_chunks() {
+        // 5 rows, chunk_size=2 should create 3 chunks (2+2+1)
+        let data = build_xlsx_with_rows("Sheet1", 5, 2);
+        let parser = XlsxParser;
+        let (chunks, _warnings) = parser
+            .parse_streaming(&data, &ConvertOptions::default(), 2)
+            .unwrap();
+
+        assert_eq!(
+            chunks.len(),
+            3,
+            "5 rows with chunk_size=2 should yield 3 chunks"
+        );
+
+        // First chunk: 2 rows
+        let tp0 = get_table_page(&chunks[0], 0);
+        assert_eq!(tp0.table.rows.len(), 2);
+        assert_eq!(cell_text(&tp0.table.rows[0].cells[0]), "R1C1");
+        assert_eq!(cell_text(&tp0.table.rows[1].cells[0]), "R2C1");
+
+        // Second chunk: 2 rows
+        let tp1 = get_table_page(&chunks[1], 0);
+        assert_eq!(tp1.table.rows.len(), 2);
+        assert_eq!(cell_text(&tp1.table.rows[0].cells[0]), "R3C1");
+
+        // Third chunk: 1 row
+        let tp2 = get_table_page(&chunks[2], 0);
+        assert_eq!(tp2.table.rows.len(), 1);
+        assert_eq!(cell_text(&tp2.table.rows[0].cells[0]), "R5C1");
+    }
+
+    #[test]
+    fn test_parse_streaming_single_chunk_for_small_sheet() {
+        // 3 rows, chunk_size=10 should create 1 chunk
+        let data = build_xlsx_with_rows("Data", 3, 1);
+        let parser = XlsxParser;
+        let (chunks, _warnings) = parser
+            .parse_streaming(&data, &ConvertOptions::default(), 10)
+            .unwrap();
+
+        assert_eq!(
+            chunks.len(),
+            1,
+            "3 rows with chunk_size=10 should yield 1 chunk"
+        );
+        let tp = get_table_page(&chunks[0], 0);
+        assert_eq!(tp.table.rows.len(), 3);
+    }
+
+    #[test]
+    fn test_parse_streaming_preserves_column_widths() {
+        let data = build_xlsx_with_rows("Sheet1", 4, 3);
+        let parser = XlsxParser;
+        let (chunks, _warnings) = parser
+            .parse_streaming(&data, &ConvertOptions::default(), 2)
+            .unwrap();
+
+        // All chunks should have the same column_widths
+        let tp0 = get_table_page(&chunks[0], 0);
+        let tp1 = get_table_page(&chunks[1], 0);
+        assert_eq!(tp0.table.column_widths.len(), tp1.table.column_widths.len());
+        assert_eq!(tp0.table.column_widths, tp1.table.column_widths);
+    }
+
+    #[test]
+    fn test_parse_streaming_respects_sheet_filter() {
+        let data = build_xlsx_multi_sheet(&[
+            ("Sheet1", &[("A1", "s1")]),
+            ("Sheet2", &[("A1", "s2"), ("A2", "s2b")]),
+        ]);
+        let parser = XlsxParser;
+        let opts = ConvertOptions {
+            sheet_names: Some(vec!["Sheet2".to_string()]),
+            ..Default::default()
+        };
+        let (chunks, _warnings) = parser.parse_streaming(&data, &opts, 10).unwrap();
+
+        assert_eq!(chunks.len(), 1, "Only Sheet2 should be included");
+        let tp = get_table_page(&chunks[0], 0);
+        assert_eq!(tp.name, "Sheet2");
+    }
+
+    #[test]
+    fn test_parse_streaming_multi_sheet() {
+        let data = build_xlsx_multi_sheet(&[
+            ("Sheet1", &[("A1", "a"), ("A2", "b"), ("A3", "c")]),
+            ("Sheet2", &[("A1", "x"), ("A2", "y")]),
+        ]);
+        let parser = XlsxParser;
+        // chunk_size=2: Sheet1 (3 rows) → 2 chunks; Sheet2 (2 rows) → 1 chunk
+        let (chunks, _warnings) = parser
+            .parse_streaming(&data, &ConvertOptions::default(), 2)
+            .unwrap();
+
+        assert_eq!(chunks.len(), 3, "Sheet1→2 chunks + Sheet2→1 chunk");
+    }
+
+    #[test]
+    fn test_parse_streaming_empty_sheet_skipped() {
+        let data = build_xlsx_bytes("Empty", &[]);
+        let parser = XlsxParser;
+        let (chunks, _warnings) = parser
+            .parse_streaming(&data, &ConvertOptions::default(), 10)
+            .unwrap();
+
+        assert_eq!(chunks.len(), 0, "Empty sheet should be skipped");
     }
 }

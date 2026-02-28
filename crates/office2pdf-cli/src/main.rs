@@ -99,6 +99,14 @@ struct Cli {
     #[arg(long = "pdf-ua")]
     pdf_ua: bool,
 
+    /// Enable streaming mode for large XLSX files (processes rows in chunks)
+    #[arg(long)]
+    streaming: bool,
+
+    /// Chunk size (rows) for streaming mode (default: 1000)
+    #[arg(long, default_value = None)]
+    streaming_chunk_size: Option<usize>,
+
     /// Print per-stage timing metrics to stderr
     #[arg(long)]
     metrics: bool,
@@ -326,6 +334,8 @@ fn run() -> Result<()> {
         landscape,
         tagged: cli.tagged,
         pdf_ua: cli.pdf_ua,
+        streaming: cli.streaming,
+        streaming_chunk_size: cli.streaming_chunk_size,
     };
 
     // Create outdir if specified and doesn't exist
