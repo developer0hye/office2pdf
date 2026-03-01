@@ -35,6 +35,8 @@ const DENYLIST: &[&str] = &[
     "poc-shared-strings.xlsx",
     // Extreme dimensions stress test (OOM)
     "too-many-cols-rows.xlsx",
+    // Upstream OOM: umya-spreadsheet hangs on complex workbook (bug62181)
+    "bug62181.xlsx",
 ];
 
 /// Returns `true` if the file should be skipped due to being on the denylist.
