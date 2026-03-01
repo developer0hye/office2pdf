@@ -1,0 +1,2 @@
+tests/fixtures/*/libreoffice/** filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/*/poi/** filter=lfs diff=lfs merge=lfs -text
