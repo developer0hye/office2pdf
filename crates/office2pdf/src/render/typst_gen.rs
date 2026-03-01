@@ -30,10 +30,14 @@ pub struct TypstOutput {
     pub images: Vec<ImageAsset>,
 }
 
+/// Maximum nesting depth for tables-within-tables, matching the parser limit.
+const MAX_TABLE_DEPTH: usize = 64;
+
 /// Internal context for tracking image assets during code generation.
 struct GenCtx {
     images: Vec<ImageAsset>,
     next_image_id: usize,
+    table_depth: usize,
 }
 
 impl GenCtx {
@@ -41,6 +45,7 @@ impl GenCtx {
         Self {
             images: Vec::new(),
             next_image_id: 0,
+            table_depth: 0,
         }
     }
 
@@ -1270,6 +1275,17 @@ fn generate_list_items(
 }
 
 fn generate_table(out: &mut String, table: &Table, ctx: &mut GenCtx) -> Result<(), ConvertError> {
+    ctx.table_depth += 1;
+    let result = generate_table_inner(out, table, ctx);
+    ctx.table_depth -= 1;
+    result
+}
+
+fn generate_table_inner(
+    out: &mut String,
+    table: &Table,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
     out.push_str("#table(\n");
 
     // Determine number of columns
@@ -1487,7 +1503,12 @@ fn generate_cell_content(
         }
         match block {
             Block::Paragraph(para) => generate_cell_paragraph(out, para),
-            Block::Table(table) => generate_table(out, table, ctx)?,
+            Block::Table(table) => {
+                if ctx.table_depth < MAX_TABLE_DEPTH {
+                    generate_table(out, table, ctx)?;
+                }
+                // Silently skip nested tables beyond MAX_TABLE_DEPTH
+            }
             Block::Image(img) => generate_image(out, img, ctx),
             Block::FloatingImage(fi) => generate_floating_image(out, fi, ctx),
             Block::List(list) => generate_list(out, list)?,
