@@ -423,3 +423,26 @@ xlsx_fixture_tests!(column_row_ranges, "column_row_ranges.xlsx");
 xlsx_fixture_tests!(table_multiple, "table-multiple.xlsx");
 xlsx_fixture_tests!(formula_issue, "formula.issue.xlsx");
 xlsx_fixture_tests!(header_row, "header-row.xlsx");
+
+// --- Encrypted / password-protected fixtures --------------------------------
+
+/// Returns `true` if the file is a Git LFS pointer (not the actual content).
+fn is_lfs_pointer(path: &std::path::Path) -> bool {
+    std::fs::read(path)
+        .map(|data| data.starts_with(b"version https://git-lfs"))
+        .unwrap_or(false)
+}
+
+#[test]
+fn encrypted_xlsx_returns_unsupported_encryption() {
+    let path = fixture_path("poi/protected_passtika.xlsx");
+    if is_lfs_pointer(&path) {
+        eprintln!("Skipping protected_passtika.xlsx: Git LFS pointer (not fetched)");
+        return;
+    }
+    let err = office2pdf::convert(&path).unwrap_err();
+    assert!(
+        matches!(err, office2pdf::error::ConvertError::UnsupportedEncryption),
+        "Expected UnsupportedEncryption for protected_passtika.xlsx, got: {err:?}"
+    );
+}

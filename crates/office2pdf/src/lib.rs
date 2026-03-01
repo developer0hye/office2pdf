@@ -64,6 +64,19 @@ fn extract_panic_message(payload: &Box<dyn std::any::Any + Send>) -> String {
     }
 }
 
+/// OLE2 Compound Binary File magic bytes.
+///
+/// Encrypted OOXML files are wrapped in an OLE2 container instead of being
+/// ZIP archives.  Detecting this signature lets us return a clear
+/// [`ConvertError::UnsupportedEncryption`] before the ZIP reader sees
+/// invalid data.
+const OLE2_MAGIC: [u8; 8] = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+
+/// Returns `true` if `data` starts with the OLE2 compound-file magic bytes.
+fn is_ole2(data: &[u8]) -> bool {
+    data.len() >= OLE2_MAGIC.len() && data[..OLE2_MAGIC.len()] == OLE2_MAGIC
+}
+
 /// Convert a file at the given path to PDF bytes with warnings.
 ///
 /// Detects the format from the file extension (`.docx`, `.pptx`, `.xlsx`).
@@ -126,6 +139,11 @@ pub fn convert_bytes(
     format: Format,
     options: &ConvertOptions,
 ) -> Result<ConvertResult, ConvertError> {
+    // Encrypted OOXML files are wrapped in OLE2 containers — reject early.
+    if is_ole2(data) {
+        return Err(ConvertError::UnsupportedEncryption);
+    }
+
     // Use streaming path for XLSX when requested and pdf-ops is available
     #[cfg(feature = "pdf-ops")]
     if options.streaming && format == Format::Xlsx {
@@ -2033,6 +2051,70 @@ mod tests {
         assert!(
             pdf_str.contains("StructTreeRoot") || pdf_str.contains("MarkInfo"),
             "Tagged PDF with headings should contain structure tags"
+        );
+    }
+
+    #[test]
+    fn test_is_ole2_with_magic_bytes() {
+        let ole2_magic: [u8; 8] = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+        let mut data = ole2_magic.to_vec();
+        data.extend_from_slice(&[0x00; 100]);
+        assert!(is_ole2(&data));
+    }
+
+    #[test]
+    fn test_is_ole2_with_zip_bytes() {
+        let zip_data = [0x50, 0x4B, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00];
+        assert!(!is_ole2(&zip_data));
+    }
+
+    #[test]
+    fn test_is_ole2_with_short_data() {
+        let short = [0xD0, 0xCF, 0x11];
+        assert!(!is_ole2(&short));
+    }
+
+    #[test]
+    fn test_is_ole2_with_empty_data() {
+        assert!(!is_ole2(&[]));
+    }
+
+    #[test]
+    fn test_ole2_bytes_return_unsupported_encryption() {
+        let ole2_magic: [u8; 8] = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+        let mut data = ole2_magic.to_vec();
+        data.extend_from_slice(&[0x00; 100]);
+
+        let err = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap_err();
+        assert!(
+            matches!(err, ConvertError::UnsupportedEncryption),
+            "Expected UnsupportedEncryption, got: {err:?}"
+        );
+    }
+
+    #[test]
+    fn test_ole2_bytes_return_unsupported_encryption_xlsx() {
+        let ole2_magic: [u8; 8] = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+        let mut data = ole2_magic.to_vec();
+        data.extend_from_slice(&[0x00; 100]);
+
+        let err = convert_bytes(&data, Format::Xlsx, &ConvertOptions::default()).unwrap_err();
+        assert!(
+            matches!(err, ConvertError::UnsupportedEncryption),
+            "Expected UnsupportedEncryption, got: {err:?}"
+        );
+    }
+
+    #[test]
+    fn test_ole2_bytes_return_unsupported_encryption_pptx() {
+        let ole2_magic: [u8; 8] = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+        let mut data = ole2_magic.to_vec();
+        data.extend_from_slice(&[0x00; 100]);
+
+        let err = convert_bytes(&data, Format::Pptx, &ConvertOptions::default()).unwrap_err();
+        assert!(
+            matches!(err, ConvertError::UnsupportedEncryption),
+            "Expected UnsupportedEncryption, got: {err:?}"
         );
     }
 }

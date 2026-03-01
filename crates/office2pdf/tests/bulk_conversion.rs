@@ -87,11 +87,37 @@ const DENYLIST: &[&str] = &[
     "bug62181.xlsx",
 ];
 
+// ---------------------------------------------------------------------------
+// Expected errors — files that produce errors by design (e.g. encrypted).
+// These exercise a valid code path (OLE2 detection → clear error) and must
+// not count against the conversion success rate.
+// See: https://github.com/developer0hye/office2pdf/issues/82
+// ---------------------------------------------------------------------------
+
+const EXPECTED_ERRORS: &[&str] = &[
+    // Encrypted DOCX (OLE2 containers, password-protected)
+    "Encrypted_LO_Standard_abc.docx",
+    "Encrypted_MSO2007_abc.docx",
+    "Encrypted_MSO2010_abc.docx",
+    "Encrypted_MSO2013_abc.docx",
+    "bug53475-password-is-pass.docx",
+    "bug53475-password-is-solrcell.docx",
+    // Encrypted XLSX (OLE2 container, password-protected)
+    "protected_passtika.xlsx",
+];
+
 /// Returns `true` if the file should be skipped due to being on the denylist.
 fn is_denylisted(path: &Path) -> bool {
     path.file_name()
         .and_then(|f| f.to_str())
         .is_some_and(|name| DENYLIST.contains(&name))
+}
+
+/// Returns `true` if the file is expected to produce a conversion error.
+fn is_expected_error(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|f| f.to_str())
+        .is_some_and(|name| EXPECTED_ERRORS.contains(&name))
 }
 
 // ---------------------------------------------------------------------------
@@ -102,6 +128,8 @@ fn is_denylisted(path: &Path) -> bool {
 enum Outcome {
     Success,
     Error,
+    /// Error that was expected (e.g. encrypted file → UnsupportedEncryption).
+    ExpectedError,
     Panic,
 }
 
@@ -117,7 +145,24 @@ struct Summary {
     skipped: usize,
     success: usize,
     error: usize,
+    expected_error: usize,
     panic: usize,
+}
+
+impl Summary {
+    /// Effective total excludes expected errors from the success rate denominator.
+    fn effective_total(&self) -> usize {
+        self.total - self.expected_error
+    }
+
+    fn success_rate(&self) -> f64 {
+        let eff = self.effective_total();
+        if eff > 0 {
+            (self.success as f64 / eff as f64) * 100.0
+        } else {
+            0.0
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -156,6 +201,8 @@ fn collect_files_recursive(dir: &Path, extension: &str, out: &mut Vec<PathBuf>) 
 
 /// Attempt to convert a single file, catching panics.
 fn convert_file(path: &Path, format: Format) -> FileResult {
+    let expected = is_expected_error(path);
+
     let data = match std::fs::read(path) {
         Ok(d) => d,
         Err(e) => {
@@ -182,7 +229,11 @@ fn convert_file(path: &Path, format: Format) -> FileResult {
         }
         Ok(Err(e)) => FileResult {
             path: path.to_path_buf(),
-            outcome: Outcome::Error,
+            outcome: if expected {
+                Outcome::ExpectedError
+            } else {
+                Outcome::Error
+            },
             detail: format!("{e}"),
         },
         Err(panic_info) => {
@@ -246,6 +297,7 @@ fn run_bulk_test(
         match result.outcome {
             Outcome::Success => println!("OK"),
             Outcome::Error => println!("ERROR: {}", result.detail),
+            Outcome::ExpectedError => println!("EXPECTED ERROR: {}", result.detail),
             Outcome::Panic => println!("PANIC: {}", result.detail),
         }
         results.push(result);
@@ -259,6 +311,10 @@ fn run_bulk_test(
         .iter()
         .filter(|r| r.outcome == Outcome::Error)
         .count();
+    let expected_error = results
+        .iter()
+        .filter(|r| r.outcome == Outcome::ExpectedError)
+        .count();
     let panic = results
         .iter()
         .filter(|r| r.outcome == Outcome::Panic)
@@ -270,6 +326,7 @@ fn run_bulk_test(
         skipped,
         success,
         error,
+        expected_error,
         panic,
     };
 
@@ -283,16 +340,16 @@ fn format_report(results: &[FileResult], summary: &Summary) -> String {
     writeln!(report, "# Bulk Conversion Report: {}", summary.format).unwrap();
     writeln!(
         report,
-        "Total: {} | Skipped: {} | Success: {} | Error: {} | Panic: {}",
-        summary.total, summary.skipped, summary.success, summary.error, summary.panic
+        "Total: {} | Skipped: {} | Success: {} | Error: {} | Expected Error: {} | Panic: {}",
+        summary.total,
+        summary.skipped,
+        summary.success,
+        summary.error,
+        summary.expected_error,
+        summary.panic
     )
     .unwrap();
-    let rate = if summary.total > 0 {
-        (summary.success as f64 / summary.total as f64) * 100.0
-    } else {
-        0.0
-    };
-    writeln!(report, "Success rate: {rate:.1}%").unwrap();
+    writeln!(report, "Success rate: {:.1}%", summary.success_rate()).unwrap();
     writeln!(report).unwrap();
 
     // List panics first (most critical)
@@ -321,6 +378,24 @@ fn format_report(results: &[FileResult], summary: &Summary) -> String {
         writeln!(report).unwrap();
     }
 
+    // List expected errors
+    let expected: Vec<_> = results
+        .iter()
+        .filter(|r| r.outcome == Outcome::ExpectedError)
+        .collect();
+    if !expected.is_empty() {
+        writeln!(
+            report,
+            "## EXPECTED ERRORS ({} files, excluded from success rate)",
+            expected.len()
+        )
+        .unwrap();
+        for r in &expected {
+            writeln!(report, "  - {} :: {}", r.path.display(), r.detail).unwrap();
+        }
+        writeln!(report).unwrap();
+    }
+
     // List successes
     let successes: Vec<_> = results
         .iter()
@@ -339,47 +414,52 @@ fn format_report(results: &[FileResult], summary: &Summary) -> String {
 
 /// Print summary table to stdout.
 fn print_summary_table(summaries: &[&Summary]) {
-    println!("\n{}", "=".repeat(60));
+    println!("\n{}", "=".repeat(72));
     println!("  BULK CONVERSION SUMMARY");
-    println!("{}", "=".repeat(60));
+    println!("{}", "=".repeat(72));
     println!(
-        "{:<8} {:>6} {:>8} {:>8} {:>6} {:>6} {:>8}",
-        "Format", "Total", "Skipped", "Success", "Error", "Panic", "Rate"
+        "{:<8} {:>6} {:>8} {:>8} {:>6} {:>9} {:>6} {:>8}",
+        "Format", "Total", "Skipped", "Success", "Error", "Expected", "Panic", "Rate"
     );
-    println!("{:-<58}", "");
+    println!("{:-<72}", "");
 
     let mut total_all = 0;
     let mut skipped_all = 0;
     let mut success_all = 0;
     let mut error_all = 0;
+    let mut expected_all = 0;
     let mut panic_all = 0;
 
     for s in summaries {
-        let rate = if s.total > 0 {
-            (s.success as f64 / s.total as f64) * 100.0
-        } else {
-            0.0
-        };
         println!(
-            "{:<8} {:>6} {:>8} {:>8} {:>6} {:>6} {:>7.1}%",
-            s.format, s.total, s.skipped, s.success, s.error, s.panic, rate
+            "{:<8} {:>6} {:>8} {:>8} {:>6} {:>9} {:>6} {:>7.1}%",
+            s.format,
+            s.total,
+            s.skipped,
+            s.success,
+            s.error,
+            s.expected_error,
+            s.panic,
+            s.success_rate()
         );
         total_all += s.total;
         skipped_all += s.skipped;
         success_all += s.success;
         error_all += s.error;
+        expected_all += s.expected_error;
         panic_all += s.panic;
     }
 
-    let rate_all = if total_all > 0 {
-        (success_all as f64 / total_all as f64) * 100.0
+    let eff_total = total_all - expected_all;
+    let rate_all = if eff_total > 0 {
+        (success_all as f64 / eff_total as f64) * 100.0
     } else {
         0.0
     };
-    println!("{:-<58}", "");
+    println!("{:-<72}", "");
     println!(
-        "{:<8} {:>6} {:>8} {:>8} {:>6} {:>6} {:>7.1}%",
-        "TOTAL", total_all, skipped_all, success_all, error_all, panic_all, rate_all
+        "{:<8} {:>6} {:>8} {:>8} {:>6} {:>9} {:>6} {:>7.1}%",
+        "TOTAL", total_all, skipped_all, success_all, error_all, expected_all, panic_all, rate_all
     );
     println!();
 }
@@ -534,11 +614,48 @@ fn test_denylist_filtering() {
     );
 }
 
+/// Verifies that `is_expected_error` correctly identifies encrypted fixture files.
+#[test]
+fn test_expected_error_filtering() {
+    // Every entry in EXPECTED_ERRORS should be recognized
+    for name in EXPECTED_ERRORS {
+        let path = PathBuf::from(format!("tests/fixtures/docx/poi/{name}"));
+        assert!(
+            is_expected_error(&path),
+            "Expected {name} to be in expected-error list, but it was not"
+        );
+    }
+
+    // Normal files must not be expected-error
+    let normal = PathBuf::from("tests/fixtures/docx/poi/sample.docx");
+    assert!(
+        !is_expected_error(&normal),
+        "Normal file should not be in expected-error list"
+    );
+}
+
+/// Verifies that expected errors do not count against the success rate.
+#[test]
+fn test_summary_success_rate_excludes_expected_errors() {
+    let summary = Summary {
+        format: "TEST",
+        total: 10,
+        skipped: 0,
+        success: 7,
+        error: 1,
+        expected_error: 2,
+        panic: 0,
+    };
+    // effective_total = 10 - 2 = 8, success_rate = 7/8 = 87.5%
+    assert_eq!(summary.effective_total(), 8);
+    assert!((summary.success_rate() - 87.5).abs() < 0.01);
+}
+
 /// Asserts that the overall conversion success rate meets the 70% target (US-205).
 ///
 /// This test runs all formats and verifies the combined success rate is at or
-/// above 70%. Password-protected or intentionally broken files that return
-/// `ConvertError` are acceptable — only the success rate matters.
+/// above 70%. Expected errors (encrypted files) are excluded from the
+/// denominator.
 #[test]
 #[ignore]
 fn test_bulk_success_rate_target() {
@@ -553,26 +670,29 @@ fn test_bulk_success_rate_target() {
 
     let total: usize = summaries.iter().map(|s| s.total).sum();
     let success: usize = summaries.iter().map(|s| s.success).sum();
-    let rate = if total > 0 {
-        (success as f64 / total as f64) * 100.0
+    let expected: usize = summaries.iter().map(|s| s.expected_error).sum();
+    let eff_total = total - expected;
+    let rate = if eff_total > 0 {
+        (success as f64 / eff_total as f64) * 100.0
     } else {
         0.0
     };
 
     // Per-format rates
     for s in &summaries {
-        let fmt_rate = if s.total > 0 {
-            (s.success as f64 / s.total as f64) * 100.0
-        } else {
-            0.0
-        };
-        println!("{}: {}/{} ({:.1}%)", s.format, s.success, s.total, fmt_rate);
+        println!(
+            "{}: {}/{} ({:.1}%)",
+            s.format,
+            s.success,
+            s.effective_total(),
+            s.success_rate()
+        );
     }
-    println!("Overall: {success}/{total} ({rate:.1}%)");
+    println!("Overall: {success}/{eff_total} ({rate:.1}%)");
 
     assert!(
         rate >= TARGET_RATE,
         "Overall success rate {rate:.1}% is below the {TARGET_RATE}% target. \
-         {success}/{total} files converted successfully."
+         {success}/{eff_total} files converted successfully."
     );
 }
