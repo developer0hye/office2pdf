@@ -382,18 +382,32 @@ xlsx_fixture_tests!(
     "SH108-SimpleFormattedCell.xlsx"
 );
 
-// --- Upstream panic safety ---------------------------------------------------
+// --- Upstream panic safety (patched umya-spreadsheet) ------------------------
+// Related: #83
 
-/// Verifies that files which previously triggered upstream panics
-/// (umya-spreadsheet unwrap()) now convert successfully thanks to the patched
-/// fork (developer0hye/umya-spreadsheet fix/panic-safety-v2).
+/// Files that previously panicked in umya-spreadsheet now convert successfully
+/// after the fork fix (developer0hye/umya-spreadsheet fix/panic-safety-v2).
+///
+/// 12 of 15 previously-panicking files now produce valid PDFs.
 #[test]
 fn previously_panicking_files_now_convert() {
     let cases: &[&str] = &[
-        // Previously panicked with: unwrap() on missing zip entry (FileNotFound)
+        // FileNotFound panics (7 files — all now succeed)
         "libreoffice/chart_hyperlink.xlsx",
-        // Previously panicked with: ParseFloatError on boolean cell
+        "libreoffice/hyperlink.xlsx",
+        "libreoffice/tdf130959.xlsx",
+        "libreoffice/test_115192.xlsx",
+        "poi/47504.xlsx",
+        "poi/bug63189.xlsx",
+        "poi/ConditionalFormattingSamples.xlsx",
+        // ParseFloatError / boolean cell (1 file — now succeeds)
         "libreoffice/check-boolean.xlsx",
+        // unwrap() on None (2 of 3 now succeed)
+        "libreoffice/tdf100709.xlsx",
+        "poi/sample-beta.xlsx",
+        // dataBar end element (2 files — both now succeed)
+        "libreoffice/tdf162948.xlsx",
+        "poi/NewStyleConditionalFormattings.xlsx",
     ];
     for name in cases {
         let path = fixture_path(name);
@@ -402,6 +416,37 @@ fn previously_panicking_files_now_convert() {
             continue;
         }
         assert_produces_valid_pdf(name);
+    }
+}
+
+/// 3 previously-panicking files still fail but now return clean errors
+/// (no process crash). These have deeper arithmetic overflow / missing data
+/// issues in umya-spreadsheet that our patch does not address.
+#[test]
+fn remaining_panic_files_return_clean_errors() {
+    let cases: &[&str] = &[
+        // ParseIntError PosOverflow → arithmetic overflow in formula parsing
+        "libreoffice/functions-excel-2010.xlsx",
+        "poi/FormulaEvalTestData_Copy.xlsx",
+        // unwrap() on None in a different code path
+        "poi/64450.xlsx",
+    ];
+    for name in cases {
+        let path = fixture_path(name);
+        if !path.exists() {
+            eprintln!("Skipping {name}: fixture not available");
+            continue;
+        }
+        let data = std::fs::read(&path).unwrap();
+        let result = office2pdf::convert_bytes(
+            &data,
+            office2pdf::config::Format::Xlsx,
+            &ConvertOptions::default(),
+        );
+        assert!(
+            result.is_err(),
+            "{name} should return Err (still has upstream issues)"
+        );
     }
 }
 
