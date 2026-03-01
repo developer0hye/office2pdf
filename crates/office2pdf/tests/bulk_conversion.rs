@@ -20,11 +20,59 @@ use office2pdf::config::{ConvertOptions, Format};
 // ---------------------------------------------------------------------------
 
 const DENYLIST: &[&str] = &[
-    // Fuzzer-generated corrupted file (invalid checksum)
+    // ── DOCX — fuzzer-generated / corrupted zip structures ───────────
+    "clusterfuzz-testcase-minimized-POIFuzzer-6709287337197568.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-4791943399604224.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-4959857092198400.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-4961551840247808.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-5166796835258368.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-5313273089884160.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-5564805011079168.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-5569740188549120.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-6061520554164224.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-6120975439364096.docx",
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-6442791109263360.docx",
     "clusterfuzz-testcase-minimized-POIXWPFFuzzer-6733884933668864.docx",
-    // Fuzzer-generated corrupted files
+    // Crash reporter — corrupted zip
+    "crash-517626e815e0afa9decd0ebb6d1dee63fb9907dd.docx",
+    // Deeply nested table cells — stack overflow risk
+    "deep-table-cell.docx",
+    // Truncated archive — incomplete zip
+    "truncated62886.docx",
+    // ── PPTX — fuzzer-generated / corrupted zip structures ───────────
+    "clusterfuzz-testcase-minimized-POIFuzzer-5205835528404992.pptx",
+    "clusterfuzz-testcase-minimized-POIXSLFFuzzer-4838644450394112.pptx",
+    "clusterfuzz-testcase-minimized-POIXSLFFuzzer-4986044400861184.pptx",
+    "clusterfuzz-testcase-minimized-POIXSLFFuzzer-5463285576892416.pptx",
+    "clusterfuzz-testcase-minimized-POIXSLFFuzzer-5471515212382208.pptx",
+    "clusterfuzz-testcase-minimized-POIXSLFFuzzer-5611274456596480.pptx",
+    "clusterfuzz-testcase-minimized-POIXSLFFuzzer-6071540680032256.pptx",
+    "clusterfuzz-testcase-minimized-POIXSLFFuzzer-6254434927378432.pptx",
+    "clusterfuzz-testcase-minimized-POIXSLFFuzzer-6372932378820608.pptx",
+    "clusterfuzz-testcase-minimized-POIXSLFFuzzer-6435650376957952.pptx",
+    // Corrupted archive (OOM / hang)
+    "Divino_Revelado.pptx",
+    // ── XLSX — fuzzer-generated / corrupted zip structures ───────────
+    "clusterfuzz-testcase-minimized-POIFuzzer-5040805309710336.xlsx",
+    "clusterfuzz-testcase-minimized-POIXSSFFuzzer-4828727001088000.xlsx",
+    "clusterfuzz-testcase-minimized-POIXSSFFuzzer-5089447305609216.xlsx",
+    "clusterfuzz-testcase-minimized-POIXSSFFuzzer-5185049589579776.xlsx",
     "clusterfuzz-testcase-minimized-POIXSSFFuzzer-5265527465181184.xlsx",
     "clusterfuzz-testcase-minimized-POIXSSFFuzzer-5937385319563264.xlsx",
+    "clusterfuzz-testcase-minimized-POIXSSFFuzzer-6123461607817216.xlsx",
+    "clusterfuzz-testcase-minimized-POIXSSFFuzzer-6419366255919104.xlsx",
+    "clusterfuzz-testcase-minimized-POIXSSFFuzzer-6448258963341312.xlsx",
+    "clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-5025401116950528.xlsx",
+    "clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-5542865479270400.xlsx",
+    "clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-5636439151607808.xlsx",
+    "clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-6504225896792064.xlsx",
+    "clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-6594557414080512.xlsx",
+    // Crash reporters — corrupted zip
+    "crash-274d6342e4842d61be0fb48eaadad6208ae767ae.xlsx",
+    "crash-9bf3cd4bd6f50a8a9339d363c2c7af14b536865c.xlsx",
+    // Corrupted / truncated archive
+    "58616.xlsx",
+    // ── XLSX — adversarial / OOM-inducing ────────────────────────────
     // XML billion-laughs attack PoCs
     "poc-xmlbomb.xlsx",
     "poc-xmlbomb-empty.xlsx",
@@ -443,14 +491,31 @@ fn test_bulk_all_formats() {
 /// and does not reject normal files.
 #[test]
 fn test_denylist_filtering() {
-    // Every entry in DENYLIST should be recognized
+    // Every entry in DENYLIST should be recognized regardless of parent directory
     for name in DENYLIST {
-        let path = PathBuf::from(format!("tests/fixtures/xlsx/poi/{name}"));
+        let path = PathBuf::from(format!("tests/fixtures/any/dir/{name}"));
         assert!(
             is_denylisted(&path),
             "Expected {name} to be denylisted, but it was not"
         );
     }
+
+    // Denylist should cover all three formats
+    let docx_count = DENYLIST.iter().filter(|n| n.ends_with(".docx")).count();
+    let pptx_count = DENYLIST.iter().filter(|n| n.ends_with(".pptx")).count();
+    let xlsx_count = DENYLIST.iter().filter(|n| n.ends_with(".xlsx")).count();
+    assert!(
+        docx_count >= 14,
+        "Expected ≥14 DOCX entries, got {docx_count}"
+    );
+    assert!(
+        pptx_count >= 10,
+        "Expected ≥10 PPTX entries, got {pptx_count}"
+    );
+    assert!(
+        xlsx_count >= 15,
+        "Expected ≥15 XLSX entries, got {xlsx_count}"
+    );
 
     // Normal files must not be denylisted
     let normal = PathBuf::from("tests/fixtures/xlsx/poi/sample.xlsx");
