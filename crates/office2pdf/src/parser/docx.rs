@@ -967,7 +967,7 @@ impl Parser for DocxParser {
         };
 
         let docx = docx_rs::read_docx(data)
-            .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX: {e}")))?;
+            .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX (docx-rs): {e}")))?;
 
         // Populate locale-specific footnote/endnote style IDs from docx styles
         notes.populate_style_ids(&docx.styles);
@@ -1029,11 +1029,18 @@ impl Parser for DocxParser {
 
             match result {
                 Ok(elems) => elements.extend(elems),
-                Err(_) => {
+                Err(panic_info) => {
+                    let detail = if let Some(s) = panic_info.downcast_ref::<String>() {
+                        s.clone()
+                    } else if let Some(s) = panic_info.downcast_ref::<&str>() {
+                        (*s).to_string()
+                    } else {
+                        "unknown panic".to_string()
+                    };
                     warnings.push(ConvertWarning::ParseSkipped {
                         format: "DOCX".to_string(),
                         reason: format!(
-                            "document element at index {idx} processing panicked; skipped"
+                            "upstream panic caught (docx-rs): element at index {idx}: {detail}"
                         ),
                     });
                 }
@@ -2299,6 +2306,18 @@ mod tests {
             ConvertError::Parse(_) => {}
             other => panic!("Expected Parse error, got: {other:?}"),
         }
+    }
+
+    #[test]
+    fn test_parse_error_includes_library_name() {
+        let parser = DocxParser;
+        let result = parser.parse(b"not a valid docx file", &ConvertOptions::default());
+        let err = result.unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("docx-rs"),
+            "Parse error should include upstream library name 'docx-rs', got: {msg}"
+        );
     }
 
     // ----- Text style defaults -----
