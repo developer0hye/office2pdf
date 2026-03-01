@@ -645,3 +645,13 @@ docx_fixture_tests!(
     sdt_after_section_break,
     "libreoffice/sdt_after_section_break.docx"
 );
+
+// ODT files with .docx extension — clean parse error (not panic)
+docx_fixture_tests!(tdf171025_page_after, "libreoffice/tdf171025_pageAfter.docx");
+docx_fixture_tests!(tdf171038_page_after, "libreoffice/tdf171038_pageAfter.docx");
+
+// Intentionally malformed XML — clean parse error (not panic)
+docx_fixture_tests!(math_malformed_xml, "libreoffice/math-malformed_xml.docx");
+
+// Deeply nested tables (5000+ levels) — clean error after depth-limit fix (not stack overflow)
+docx_fixture_tests!(deep_table_cell, "poi/deep-table-cell.docx");
