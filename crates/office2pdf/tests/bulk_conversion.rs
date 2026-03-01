@@ -35,8 +35,6 @@ const DENYLIST: &[&str] = &[
     "clusterfuzz-testcase-minimized-POIXWPFFuzzer-6733884933668864.docx",
     // Crash reporter — corrupted zip
     "crash-517626e815e0afa9decd0ebb6d1dee63fb9907dd.docx",
-    // Deeply nested table cells — stack overflow risk
-    "deep-table-cell.docx",
     // Truncated archive — incomplete zip
     "truncated62886.docx",
     // ── PPTX — fuzzer-generated / corrupted zip structures ───────────
