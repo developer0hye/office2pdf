@@ -23,6 +23,24 @@ struct CellRange {
     end_row: u32,
 }
 
+/// Maximum total cells across all ranges in a single conditional formatting rule.
+/// Prevents OOM when spreadsheets declare full-sheet ranges (e.g., A1:AMJ1048576 = ~1 billion cells).
+const MAX_COND_FMT_CELLS: u64 = 1_000_000;
+
+/// Returns `true` if the total cell count across `ranges` exceeds [`MAX_COND_FMT_CELLS`].
+fn ranges_exceed_limit(ranges: &[CellRange]) -> bool {
+    let mut total: u64 = 0;
+    for r in ranges {
+        let cols = u64::from(r.end_col.saturating_sub(r.start_col)) + 1;
+        let rows = u64::from(r.end_row.saturating_sub(r.start_row)) + 1;
+        total = total.saturating_add(cols.saturating_mul(rows));
+        if total > MAX_COND_FMT_CELLS {
+            return true;
+        }
+    }
+    false
+}
+
 /// Parse an Excel column letter string (e.g., "A", "B", "AA") into a 1-indexed column number.
 fn parse_column_letters(s: &str) -> Option<u32> {
     if s.is_empty() {
@@ -177,6 +195,9 @@ fn collect_numeric_values_in_ranges(
     sheet: &umya_spreadsheet::Worksheet,
     ranges: &[CellRange],
 ) -> Vec<f64> {
+    if ranges_exceed_limit(ranges) {
+        return Vec::new();
+    }
     let mut values = Vec::new();
     for range in ranges {
         for row in range.start_row..=range.end_row {
@@ -201,7 +222,7 @@ pub(crate) fn build_cond_fmt_overrides(
     for cf in sheet.get_conditional_formatting_collection() {
         let sqref = cf.get_sequence_of_references().get_sqref();
         let ranges = parse_sqref(&sqref);
-        if ranges.is_empty() {
+        if ranges.is_empty() || ranges_exceed_limit(&ranges) {
             continue;
         }
 
@@ -502,5 +523,32 @@ mod tests {
         assert_eq!(mid.r, 255);
         assert_eq!(mid.g, 128);
         assert_eq!(mid.b, 128);
+    }
+
+    #[test]
+    fn test_ranges_exceed_limit_small() {
+        let ranges = vec![CellRange {
+            start_col: 1,
+            start_row: 1,
+            end_col: 10,
+            end_row: 10,
+        }];
+        assert!(!ranges_exceed_limit(&ranges)); // 100 cells
+    }
+
+    #[test]
+    fn test_ranges_exceed_limit_extreme() {
+        let ranges = vec![CellRange {
+            start_col: 1,
+            start_row: 1,
+            end_col: 1024,
+            end_row: 1_048_576,
+        }];
+        assert!(ranges_exceed_limit(&ranges)); // ~1 billion cells
+    }
+
+    #[test]
+    fn test_ranges_exceed_limit_empty() {
+        assert!(!ranges_exceed_limit(&[]));
     }
 }

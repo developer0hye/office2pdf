@@ -131,8 +131,27 @@ pub fn convert_bytes(
     };
 
     // Stage 1: Parse (OOXML → IR)
+    // Wrap with catch_unwind to convert upstream panics (e.g. unwrap() in
+    // umya-spreadsheet / docx-rs) into ConvertError::Parse.
     let parse_start = Instant::now();
-    let (doc, warnings) = parser.parse(data, options)?;
+    let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        parser.parse(data, options)
+    }));
+    let (doc, warnings) = match parse_result {
+        Ok(result) => result?,
+        Err(panic_info) => {
+            let msg = if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else if let Some(s) = panic_info.downcast_ref::<&str>() {
+                (*s).to_string()
+            } else {
+                "unknown panic".to_string()
+            };
+            return Err(ConvertError::Parse(format!(
+                "upstream parser panicked: {msg}"
+            )));
+        }
+    };
     let parse_duration = parse_start.elapsed();
     let page_count = doc.pages.len() as u32;
 
@@ -189,7 +208,24 @@ fn convert_bytes_streaming_xlsx(
 
     // Stage 1: Parse into chunks
     let parse_start = Instant::now();
-    let (chunk_docs, warnings) = xlsx_parser.parse_streaming(data, options, chunk_size)?;
+    let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        xlsx_parser.parse_streaming(data, options, chunk_size)
+    }));
+    let (chunk_docs, warnings) = match parse_result {
+        Ok(result) => result?,
+        Err(panic_info) => {
+            let msg = if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else if let Some(s) = panic_info.downcast_ref::<&str>() {
+                (*s).to_string()
+            } else {
+                "unknown panic".to_string()
+            };
+            return Err(ConvertError::Parse(format!(
+                "upstream parser panicked: {msg}"
+            )));
+        }
+    };
     let parse_duration = parse_start.elapsed();
 
     if chunk_docs.is_empty() {

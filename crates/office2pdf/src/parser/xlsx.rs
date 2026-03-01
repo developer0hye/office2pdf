@@ -982,6 +982,14 @@ fn prepare_sheet_context(sheet: &umya_spreadsheet::Worksheet) -> Option<(SheetCo
         return None;
     }
 
+    // Cap dimensions to prevent OOM when sheets declare extreme ranges
+    // (e.g. A1:AMJ1048576). 10,000 rows × 1,000 cols = 10M cells is generous
+    // for any real-world spreadsheet while preventing billion-cell iteration.
+    const MAX_RENDER_ROWS: u32 = 10_000;
+    const MAX_RENDER_COLS: u32 = 1_000;
+    max_row = max_row.min(MAX_RENDER_ROWS);
+    max_col = max_col.min(MAX_RENDER_COLS);
+
     // Expand grid to include the extent of all merged ranges
     for range in sheet.get_merge_cells() {
         if let Some(c) = range.get_coordinate_end_col() {
