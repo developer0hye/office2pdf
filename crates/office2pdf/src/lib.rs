@@ -53,6 +53,17 @@ use config::{ConvertOptions, Format};
 use error::{ConvertError, ConvertMetrics, ConvertResult};
 use parser::Parser;
 
+/// Extract a human-readable message from a caught panic payload.
+fn extract_panic_message(payload: &Box<dyn std::any::Any + Send>) -> String {
+    if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else if let Some(s) = payload.downcast_ref::<&str>() {
+        (*s).to_string()
+    } else {
+        "unknown panic".to_string()
+    }
+}
+
 /// Convert a file at the given path to PDF bytes with warnings.
 ///
 /// Detects the format from the file extension (`.docx`, `.pptx`, `.xlsx`).
@@ -131,8 +142,20 @@ pub fn convert_bytes(
     };
 
     // Stage 1: Parse (OOXML → IR)
+    // Wrap with catch_unwind to convert upstream panics (e.g. unwrap() in
+    // umya-spreadsheet / docx-rs) into ConvertError::Parse.
     let parse_start = Instant::now();
-    let (doc, warnings) = parser.parse(data, options)?;
+    let parse_result =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| parser.parse(data, options)));
+    let (doc, warnings) = match parse_result {
+        Ok(result) => result?,
+        Err(panic_info) => {
+            return Err(ConvertError::Parse(format!(
+                "upstream parser panicked: {}",
+                extract_panic_message(&panic_info)
+            )));
+        }
+    };
     let parse_duration = parse_start.elapsed();
     let page_count = doc.pages.len() as u32;
 
@@ -188,8 +211,20 @@ fn convert_bytes_streaming_xlsx(
     let xlsx_parser = parser::xlsx::XlsxParser;
 
     // Stage 1: Parse into chunks
+    // Wrap with catch_unwind (same rationale as convert_bytes).
     let parse_start = Instant::now();
-    let (chunk_docs, warnings) = xlsx_parser.parse_streaming(data, options, chunk_size)?;
+    let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        xlsx_parser.parse_streaming(data, options, chunk_size)
+    }));
+    let (chunk_docs, warnings) = match parse_result {
+        Ok(result) => result?,
+        Err(panic_info) => {
+            return Err(ConvertError::Parse(format!(
+                "upstream parser panicked: {}",
+                extract_panic_message(&panic_info)
+            )));
+        }
+    };
     let parse_duration = parse_start.elapsed();
 
     if chunk_docs.is_empty() {
