@@ -409,6 +409,21 @@ fn upstream_panics_return_error() {
     }
 }
 
+// --- Zip pre-flight ---------------------------------------------------------
+
+/// Verifies that invalid zip data (not a valid OOXML archive) returns a
+/// parse error instead of panicking.
+#[test]
+fn invalid_zip_returns_error() {
+    let data = b"this is not a zip file";
+    let result = office2pdf::convert_bytes(
+        data,
+        office2pdf::config::Format::Xlsx,
+        &ConvertOptions::default(),
+    );
+    assert!(result.is_err());
+}
+
 // --- MIT: calamine (Rust) --------------------------------------------------
 
 xlsx_fixture_tests!(date_1904, "date_1904.xlsx");

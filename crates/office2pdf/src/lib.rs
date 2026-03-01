@@ -47,11 +47,41 @@ pub mod render;
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
+use std::io::Cursor;
 use std::time::Instant;
 
 use config::{ConvertOptions, Format};
 use error::{ConvertError, ConvertMetrics, ConvertResult};
 use parser::Parser;
+
+/// Maximum uncompressed size for any single zip entry (512 MB).
+/// Blocks shared-string bombs and similar attacks where a small compressed file
+/// expands to gigabytes of XML.
+const MAX_ZIP_ENTRY_SIZE: u64 = 512 * 1024 * 1024;
+
+/// Verify that no zip entry in `data` exceeds [`MAX_ZIP_ENTRY_SIZE`] when uncompressed.
+/// Returns `Ok(())` if the archive passes, or `Err(ConvertError::Parse)` if any entry
+/// is too large or the data is not a valid zip.
+fn preflight_zip_check(data: &[u8]) -> Result<(), ConvertError> {
+    let reader = Cursor::new(data);
+    let mut archive = zip::ZipArchive::new(reader)
+        .map_err(|e| ConvertError::Parse(format!("invalid zip archive: {e}")))?;
+    for i in 0..archive.len() {
+        // Use `name_raw` via index to avoid decompression
+        let entry = archive.by_index_raw(i).map_err(|e| {
+            ConvertError::Parse(format!("failed to read zip entry {i}: {e}"))
+        })?;
+        if entry.size() > MAX_ZIP_ENTRY_SIZE {
+            return Err(ConvertError::Parse(format!(
+                "zip entry '{}' uncompressed size ({} bytes) exceeds {} byte limit",
+                entry.name(),
+                entry.size(),
+                MAX_ZIP_ENTRY_SIZE,
+            )));
+        }
+    }
+    Ok(())
+}
 
 /// Convert a file at the given path to PDF bytes with warnings.
 ///
@@ -120,6 +150,9 @@ pub fn convert_bytes(
     if options.streaming && format == Format::Xlsx {
         return convert_bytes_streaming_xlsx(data, options);
     }
+
+    // Pre-flight: reject zip bombs before handing data to upstream parsers
+    preflight_zip_check(data)?;
 
     let total_start = Instant::now();
     let input_size_bytes = data.len() as u64;
@@ -200,6 +233,7 @@ fn convert_bytes_streaming_xlsx(
     data: &[u8],
     options: &ConvertOptions,
 ) -> Result<ConvertResult, ConvertError> {
+    preflight_zip_check(data)?;
     let total_start = Instant::now();
     let input_size_bytes = data.len() as u64;
     let chunk_size = options.streaming_chunk_size.unwrap_or(1000);

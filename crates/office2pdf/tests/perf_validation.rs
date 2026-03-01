@@ -518,6 +518,7 @@ fn timed_convert(data: &[u8], format: Format, label: &str) -> Duration {
 
 #[test]
 fn perf_small_docx() {
+    ensure_font_cache_warm();
     let data = build_small_docx();
     let elapsed = timed_convert(&data, Format::Docx, "Small DOCX (~5 pages)");
     assert!(
@@ -528,6 +529,7 @@ fn perf_small_docx() {
 
 #[test]
 fn perf_small_pptx() {
+    ensure_font_cache_warm();
     let data = build_small_pptx();
     let elapsed = timed_convert(&data, Format::Pptx, "Small PPTX (5 slides)");
     assert!(
@@ -538,6 +540,7 @@ fn perf_small_pptx() {
 
 #[test]
 fn perf_small_xlsx() {
+    ensure_font_cache_warm();
     let data = build_small_xlsx();
     let elapsed = timed_convert(&data, Format::Xlsx, "Small XLSX (3 sheets)");
     assert!(
