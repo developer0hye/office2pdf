@@ -1041,8 +1041,9 @@ impl XlsxParser {
         chunk_size: usize,
     ) -> Result<(Vec<Document>, Vec<ConvertWarning>), ConvertError> {
         let cursor = Cursor::new(data);
-        let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true)
-            .map_err(|e| ConvertError::Parse(format!("Failed to parse XLSX: {e}")))?;
+        let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true).map_err(|e| {
+            ConvertError::Parse(format!("Failed to parse XLSX (umya-spreadsheet): {e}"))
+        })?;
 
         let metadata = extract_xlsx_metadata(&book);
         let mut chart_map = extract_charts_with_anchors(data);
@@ -1127,8 +1128,9 @@ impl Parser for XlsxParser {
         options: &ConvertOptions,
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let cursor = Cursor::new(data);
-        let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true)
-            .map_err(|e| ConvertError::Parse(format!("Failed to parse XLSX: {e}")))?;
+        let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true).map_err(|e| {
+            ConvertError::Parse(format!("Failed to parse XLSX (umya-spreadsheet): {e}"))
+        })?;
 
         // Extract metadata from umya-spreadsheet properties
         let metadata = extract_xlsx_metadata(&book);
@@ -1508,6 +1510,18 @@ mod tests {
         assert!(
             matches!(err, ConvertError::Parse(_)),
             "Expected Parse error, got {err:?}"
+        );
+    }
+
+    #[test]
+    fn test_parse_error_includes_library_name() {
+        let parser = XlsxParser;
+        let result = parser.parse(b"not an xlsx file", &ConvertOptions::default());
+        let err = result.unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("umya-spreadsheet"),
+            "Parse error should include upstream library name 'umya-spreadsheet', got: {msg}"
         );
     }
 
