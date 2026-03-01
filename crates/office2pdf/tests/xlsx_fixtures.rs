@@ -423,3 +423,15 @@ xlsx_fixture_tests!(column_row_ranges, "column_row_ranges.xlsx");
 xlsx_fixture_tests!(table_multiple, "table-multiple.xlsx");
 xlsx_fixture_tests!(formula_issue, "formula.issue.xlsx");
 xlsx_fixture_tests!(header_row, "header-row.xlsx");
+
+// --- Encrypted / password-protected fixtures --------------------------------
+
+#[test]
+fn encrypted_xlsx_returns_unsupported_encryption() {
+    let path = fixture_path("poi/protected_passtika.xlsx");
+    let err = office2pdf::convert(&path).unwrap_err();
+    assert!(
+        matches!(err, office2pdf::error::ConvertError::UnsupportedEncryption),
+        "Expected UnsupportedEncryption for protected_passtika.xlsx, got: {err:?}"
+    );
+}

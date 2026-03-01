@@ -572,3 +572,39 @@ docx_fixture_tests!(oxp_content_control, "oxp_content_control.docx");
 docx_fixture_tests!(oxp_lots_of_stuff, "oxp_lots_of_stuff.docx");
 docx_fixture_tests!(oxp_complex_table, "oxp_complex_table.docx");
 docx_fixture_tests!(oxp_footnote_ref, "oxp_footnote_ref.docx");
+
+// --- Encrypted / password-protected fixtures --------------------------------
+// These files are OLE2 containers (not ZIP); conversion must return
+// ConvertError::UnsupportedEncryption instead of a misleading parse error.
+
+macro_rules! encrypted_docx_tests {
+    ($name:ident, $fixture:expr) => {
+        mod $name {
+            use super::*;
+
+            #[test]
+            fn returns_unsupported_encryption() {
+                let path = fixture_path($fixture);
+                let err = office2pdf::convert(&path).unwrap_err();
+                assert!(
+                    matches!(err, office2pdf::error::ConvertError::UnsupportedEncryption),
+                    "Expected UnsupportedEncryption for {}, got: {err:?}",
+                    $fixture
+                );
+            }
+        }
+    };
+}
+
+encrypted_docx_tests!(
+    encrypted_lo_standard,
+    "libreoffice/Encrypted_LO_Standard_abc.docx"
+);
+encrypted_docx_tests!(encrypted_mso2007, "libreoffice/Encrypted_MSO2007_abc.docx");
+encrypted_docx_tests!(encrypted_mso2010, "libreoffice/Encrypted_MSO2010_abc.docx");
+encrypted_docx_tests!(encrypted_mso2013, "libreoffice/Encrypted_MSO2013_abc.docx");
+encrypted_docx_tests!(password_is_pass, "poi/bug53475-password-is-pass.docx");
+encrypted_docx_tests!(
+    password_is_solrcell,
+    "poi/bug53475-password-is-solrcell.docx"
+);
