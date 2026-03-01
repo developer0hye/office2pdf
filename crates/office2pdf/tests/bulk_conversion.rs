@@ -14,6 +14,37 @@ use std::path::{Path, PathBuf};
 use office2pdf::config::{ConvertOptions, Format};
 
 // ---------------------------------------------------------------------------
+// Denylist — adversarial, XML-bomb, or OOM-inducing fixtures.
+// Excluded from bulk testing so they do not skew quality metrics.
+// See: https://github.com/developer0hye/office2pdf/issues/77
+// ---------------------------------------------------------------------------
+
+const DENYLIST: &[&str] = &[
+    // Fuzzer-generated corrupted file (invalid checksum)
+    "clusterfuzz-testcase-minimized-POIXWPFFuzzer-6733884933668864.docx",
+    // Fuzzer-generated corrupted files
+    "clusterfuzz-testcase-minimized-POIXSSFFuzzer-5265527465181184.xlsx",
+    "clusterfuzz-testcase-minimized-POIXSSFFuzzer-5937385319563264.xlsx",
+    // XML billion-laughs attack PoCs
+    "poc-xmlbomb.xlsx",
+    "poc-xmlbomb-empty.xlsx",
+    // XML bomb variants (lol9 entity expansion)
+    "54764.xlsx",
+    "54764-2.xlsx",
+    // Shared string table bomb (OOM)
+    "poc-shared-strings.xlsx",
+    // Extreme dimensions stress test (OOM)
+    "too-many-cols-rows.xlsx",
+];
+
+/// Returns `true` if the file should be skipped due to being on the denylist.
+fn is_denylisted(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|f| f.to_str())
+        .is_some_and(|name| DENYLIST.contains(&name))
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -33,6 +64,7 @@ struct FileResult {
 struct Summary {
     format: &'static str,
     total: usize,
+    skipped: usize,
     success: usize,
     error: usize,
     panic: usize,
@@ -127,11 +159,28 @@ fn run_bulk_test(
     format: Format,
 ) -> (Vec<FileResult>, Summary) {
     let dir = fixtures_dir().join(extension);
-    let files = discover_files(&dir, extension);
+    let all_files = discover_files(&dir, extension);
+    let (denied, files): (Vec<_>, Vec<_>) = all_files.into_iter().partition(|p| is_denylisted(p));
+    let skipped = denied.len();
 
     println!("\n{}", "=".repeat(60));
-    println!("  Bulk {format_name} conversion: {} files", files.len());
+    println!(
+        "  Bulk {format_name} conversion: {} files ({skipped} denylisted, skipped)",
+        files.len() + skipped
+    );
     println!("{}\n", "=".repeat(60));
+
+    if skipped > 0 {
+        for p in &denied {
+            println!(
+                "  SKIP: {}",
+                p.file_name()
+                    .map(|f| f.to_string_lossy().to_string())
+                    .unwrap_or_default()
+            );
+        }
+        println!();
+    }
 
     let mut results = Vec::with_capacity(files.len());
 
@@ -168,6 +217,7 @@ fn run_bulk_test(
     let summary = Summary {
         format: format_name,
         total: files.len(),
+        skipped,
         success,
         error,
         panic,
@@ -183,8 +233,8 @@ fn format_report(results: &[FileResult], summary: &Summary) -> String {
     writeln!(report, "# Bulk Conversion Report: {}", summary.format).unwrap();
     writeln!(
         report,
-        "Total: {} | Success: {} | Error: {} | Panic: {}",
-        summary.total, summary.success, summary.error, summary.panic
+        "Total: {} | Skipped: {} | Success: {} | Error: {} | Panic: {}",
+        summary.total, summary.skipped, summary.success, summary.error, summary.panic
     )
     .unwrap();
     let rate = if summary.total > 0 {
@@ -243,12 +293,13 @@ fn print_summary_table(summaries: &[&Summary]) {
     println!("  BULK CONVERSION SUMMARY");
     println!("{}", "=".repeat(60));
     println!(
-        "{:<8} {:>6} {:>8} {:>6} {:>6} {:>8}",
-        "Format", "Total", "Success", "Error", "Panic", "Rate"
+        "{:<8} {:>6} {:>8} {:>8} {:>6} {:>6} {:>8}",
+        "Format", "Total", "Skipped", "Success", "Error", "Panic", "Rate"
     );
-    println!("{:-<50}", "");
+    println!("{:-<58}", "");
 
     let mut total_all = 0;
+    let mut skipped_all = 0;
     let mut success_all = 0;
     let mut error_all = 0;
     let mut panic_all = 0;
@@ -260,10 +311,11 @@ fn print_summary_table(summaries: &[&Summary]) {
             0.0
         };
         println!(
-            "{:<8} {:>6} {:>8} {:>6} {:>6} {:>7.1}%",
-            s.format, s.total, s.success, s.error, s.panic, rate
+            "{:<8} {:>6} {:>8} {:>8} {:>6} {:>6} {:>7.1}%",
+            s.format, s.total, s.skipped, s.success, s.error, s.panic, rate
         );
         total_all += s.total;
+        skipped_all += s.skipped;
         success_all += s.success;
         error_all += s.error;
         panic_all += s.panic;
@@ -274,10 +326,10 @@ fn print_summary_table(summaries: &[&Summary]) {
     } else {
         0.0
     };
-    println!("{:-<50}", "");
+    println!("{:-<58}", "");
     println!(
-        "{:<8} {:>6} {:>8} {:>6} {:>6} {:>7.1}%",
-        "TOTAL", total_all, success_all, error_all, panic_all, rate_all
+        "{:<8} {:>6} {:>8} {:>8} {:>6} {:>6} {:>7.1}%",
+        "TOTAL", total_all, skipped_all, success_all, error_all, panic_all, rate_all
     );
     println!();
 }
@@ -384,6 +436,34 @@ fn test_bulk_all_formats() {
     assert_eq!(
         total_panics, 0,
         "{total_panics} file(s) caused panics across all formats! See output above for details."
+    );
+}
+
+/// Verifies that `is_denylisted` correctly identifies files on the denylist
+/// and does not reject normal files.
+#[test]
+fn test_denylist_filtering() {
+    // Every entry in DENYLIST should be recognized
+    for name in DENYLIST {
+        let path = PathBuf::from(format!("tests/fixtures/xlsx/poi/{name}"));
+        assert!(
+            is_denylisted(&path),
+            "Expected {name} to be denylisted, but it was not"
+        );
+    }
+
+    // Normal files must not be denylisted
+    let normal = PathBuf::from("tests/fixtures/xlsx/poi/sample.xlsx");
+    assert!(
+        !is_denylisted(&normal),
+        "Normal file should not be denylisted"
+    );
+
+    // A file whose name contains a denylisted name as substring must not match
+    let substring = PathBuf::from("tests/fixtures/xlsx/poi/not-poc-xmlbomb.xlsx.bak");
+    assert!(
+        !is_denylisted(&substring),
+        "Substring match should not trigger denylist"
     );
 }
 
