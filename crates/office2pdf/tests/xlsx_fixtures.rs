@@ -388,11 +388,12 @@ xlsx_fixture_tests!(
 /// Files that previously panicked in umya-spreadsheet now convert successfully
 /// after the fork fix (developer0hye/umya-spreadsheet fix/panic-safety-v2).
 ///
-/// 12 of 15 previously-panicking files now produce valid PDFs.
+/// All 21 previously-panicking files now produce valid PDFs.
 #[test]
 fn previously_panicking_files_now_convert() {
     let cases: &[&str] = &[
-        // FileNotFound panics (7 files — all now succeed)
+        // --- Phase 1 fixes (PR #90) ---
+        // FileNotFound panics (7 files)
         "libreoffice/chart_hyperlink.xlsx",
         "libreoffice/hyperlink.xlsx",
         "libreoffice/tdf130959.xlsx",
@@ -400,35 +401,27 @@ fn previously_panicking_files_now_convert() {
         "poi/47504.xlsx",
         "poi/bug63189.xlsx",
         "poi/ConditionalFormattingSamples.xlsx",
-        // ParseFloatError / boolean cell (1 file — now succeeds)
+        // ParseFloatError / boolean cell (1 file)
         "libreoffice/check-boolean.xlsx",
-        // unwrap() on None (2 of 3 now succeed)
+        // unwrap() on None (2 files)
         "libreoffice/tdf100709.xlsx",
         "poi/sample-beta.xlsx",
-        // dataBar end element (2 files — both now succeed)
+        // dataBar end element (2 files)
         "libreoffice/tdf162948.xlsx",
         "poi/NewStyleConditionalFormattings.xlsx",
-    ];
-    for name in cases {
-        let path = fixture_path(name);
-        if !path.exists() {
-            eprintln!("Skipping {name}: fixture not available");
-            continue;
-        }
-        assert_produces_valid_pdf(name);
-    }
-}
-
-/// 3 previously-panicking files still fail but now return clean errors
-/// (no process crash). These have deeper arithmetic overflow / missing data
-/// issues in umya-spreadsheet that our patch does not address.
-#[test]
-fn remaining_panic_files_return_clean_errors() {
-    let cases: &[&str] = &[
-        // ParseIntError PosOverflow → arithmetic overflow in formula parsing
+        // --- Phase 2 fixes ---
+        // Backslash zip paths from Windows tools (3 files)
+        "libreoffice/tdf131575.xlsx",
+        "libreoffice/tdf76115.xlsx",
+        "poi/49609.xlsx",
+        // Missing optional styles.xml (3 files)
+        "poi/56278.xlsx",
+        "libreoffice/tdf121887.xlsx",
+        "poi/59021.xlsx",
+        // Arithmetic overflow in formula parsing (2 files)
         "libreoffice/functions-excel-2010.xlsx",
         "poi/FormulaEvalTestData_Copy.xlsx",
-        // unwrap() on None in a different code path
+        // Missing XML attributes (1 file)
         "poi/64450.xlsx",
     ];
     for name in cases {
@@ -437,16 +430,7 @@ fn remaining_panic_files_return_clean_errors() {
             eprintln!("Skipping {name}: fixture not available");
             continue;
         }
-        let data = std::fs::read(&path).unwrap();
-        let result = office2pdf::convert_bytes(
-            &data,
-            office2pdf::config::Format::Xlsx,
-            &ConvertOptions::default(),
-        );
-        assert!(
-            result.is_err(),
-            "{name} should return Err (still has upstream issues)"
-        );
+        assert_produces_valid_pdf(name);
     }
 }
 
