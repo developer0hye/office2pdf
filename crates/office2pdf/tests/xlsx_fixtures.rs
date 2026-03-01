@@ -382,6 +382,36 @@ xlsx_fixture_tests!(
     "SH108-SimpleFormattedCell.xlsx"
 );
 
+// --- Upstream panic safety ---------------------------------------------------
+
+/// Verifies that files which trigger upstream panics (umya-spreadsheet unwrap())
+/// return `Err` instead of panicking, thanks to catch_unwind in convert_bytes().
+#[test]
+fn upstream_panics_return_error() {
+    let cases: &[(&str, office2pdf::config::Format)] = &[
+        // umya-spreadsheet: unwrap() on missing zip entry (FileNotFound)
+        (
+            "libreoffice/chart_hyperlink.xlsx",
+            office2pdf::config::Format::Xlsx,
+        ),
+        // umya-spreadsheet: ParseFloatError on boolean cell
+        (
+            "libreoffice/check-boolean.xlsx",
+            office2pdf::config::Format::Xlsx,
+        ),
+    ];
+    for (name, format) in cases {
+        let path = fixture_path(name);
+        if !path.exists() {
+            eprintln!("Skipping {name}: fixture not available");
+            continue;
+        }
+        let data = std::fs::read(&path).unwrap();
+        let result = office2pdf::convert_bytes(&data, *format, &ConvertOptions::default());
+        assert!(result.is_err(), "{name} should return Err (not panic)");
+    }
+}
+
 // --- MIT: calamine (Rust) --------------------------------------------------
 
 xlsx_fixture_tests!(date_1904, "date_1904.xlsx");
