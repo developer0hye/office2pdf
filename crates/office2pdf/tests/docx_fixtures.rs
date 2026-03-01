@@ -653,5 +653,8 @@ docx_fixture_tests!(tdf171038_page_after, "libreoffice/tdf171038_pageAfter.docx"
 // Intentionally malformed XML — clean parse error (not panic)
 docx_fixture_tests!(math_malformed_xml, "libreoffice/math-malformed_xml.docx");
 
+// XML external entity references — docx-rs correctly rejects for security
+docx_fixture_tests!(external_entity_in_text, "poi/ExternalEntityInText.docx");
+
 // Deeply nested tables (5000+ levels) — clean error after depth-limit fix (not stack overflow)
 docx_fixture_tests!(deep_table_cell, "poi/deep-table-cell.docx");

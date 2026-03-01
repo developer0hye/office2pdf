@@ -382,6 +382,47 @@ xlsx_fixture_tests!(
     "SH108-SimpleFormattedCell.xlsx"
 );
 
+// --- Upstream parse failures (umya-spreadsheet) ------------------------------
+// Related: #97
+// These files fail with parse errors in umya-spreadsheet. All are handled
+// gracefully — no panics, no crashes. Documented as known upstream limitations.
+
+// ZipError: specified file not found in archive
+xlsx_fixture_tests!(tdf121887, "libreoffice/tdf121887.xlsx");
+xlsx_fixture_tests!(tdf131575, "libreoffice/tdf131575.xlsx");
+xlsx_fixture_tests!(tdf76115, "libreoffice/tdf76115.xlsx");
+xlsx_fixture_tests!(poi_49609, "poi/49609.xlsx");
+xlsx_fixture_tests!(poi_56278, "poi/56278.xlsx");
+xlsx_fixture_tests!(poi_59021, "poi/59021.xlsx");
+
+// IoError: Invalid checksum
+xlsx_fixture_tests!(forcepoint107, "libreoffice/forcepoint107.xlsx");
+
+// ZipError: invalid Zip archive (Could not find EOCD)
+xlsx_fixture_tests!(deep_data, "poi/deep-data.xlsx");
+
+// --- Upstream panics caught by catch_unwind (umya-spreadsheet) ----------------
+// Related: #97
+// These files trigger panics inside umya-spreadsheet (arithmetic overflow,
+// unwrap on None). catch_unwind prevents process crashes. Documented as
+// known upstream limitations.
+
+// attempt to subtract with overflow
+xlsx_fixture_tests!(
+    functions_excel_2010,
+    "libreoffice/functions-excel-2010.xlsx"
+);
+xlsx_fixture_tests!(poi_51710, "poi/51710.xlsx");
+
+// called Option::unwrap() on a None value
+xlsx_fixture_tests!(poi_64450, "poi/64450.xlsx");
+
+// attempt to multiply with overflow
+xlsx_fixture_tests!(
+    formula_eval_test_data_copy,
+    "poi/FormulaEvalTestData_Copy.xlsx"
+);
+
 // --- Upstream panic safety (patched umya-spreadsheet) ------------------------
 // Related: #83
 
