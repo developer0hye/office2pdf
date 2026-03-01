@@ -619,3 +619,29 @@ encrypted_docx_tests!(
     password_is_solrcell,
     "poi/bug53475-password-is-solrcell.docx"
 );
+
+// --- LibreOffice DOCX fixtures (previously failing due to docx-rs limitations) ---
+// Fixed by patched docx-rs fork (developer0hye/docx-rs, branch fix/parse-tolerance).
+// See: https://github.com/developer0hye/office2pdf/issues/84
+
+// Previously panicked — Strict OOXML dxa unit suffix in width values
+docx_fixture_tests!(tdf79272_strict_dxa, "libreoffice/tdf79272_strictDxa.docx");
+
+// Previously "Failed to read from zip" — minimal DOCX without document rels
+docx_fixture_tests!(tdf108350, "libreoffice/tdf108350.docx");
+docx_fixture_tests!(tdf108408, "libreoffice/tdf108408.docx");
+docx_fixture_tests!(tdf108714, "libreoffice/tdf108714.docx");
+docx_fixture_tests!(tdf108806, "libreoffice/tdf108806.docx");
+docx_fixture_tests!(tdf108849, "libreoffice/tdf108849.docx");
+docx_fixture_tests!(tdf109306, "libreoffice/tdf109306.docx");
+docx_fixture_tests!(tdf109524, "libreoffice/tdf109524.docx");
+docx_fixture_tests!(tdf111550, "libreoffice/tdf111550.docx");
+docx_fixture_tests!(tdf111964, "libreoffice/tdf111964.docx");
+docx_fixture_tests!(tdf124670, "libreoffice/tdf124670.docx");
+docx_fixture_tests!(tdf129659, "libreoffice/tdf129659.docx");
+docx_fixture_tests!(cloud, "libreoffice/cloud.docx");
+docx_fixture_tests!(xml_space, "libreoffice/xml_space.docx");
+docx_fixture_tests!(
+    sdt_after_section_break,
+    "libreoffice/sdt_after_section_break.docx"
+);
