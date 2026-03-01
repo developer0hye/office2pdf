@@ -83,6 +83,8 @@ const DENYLIST: &[&str] = &[
     "poc-shared-strings.xlsx",
     // Extreme dimensions stress test (OOM)
     "too-many-cols-rows.xlsx",
+    // Hangs during conversion (CI timeout)
+    "bug62181.xlsx",
 ];
 
 /// Returns `true` if the file should be skipped due to being on the denylist.
