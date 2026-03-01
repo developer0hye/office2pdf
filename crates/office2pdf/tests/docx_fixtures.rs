@@ -577,6 +577,13 @@ docx_fixture_tests!(oxp_footnote_ref, "oxp_footnote_ref.docx");
 // These files are OLE2 containers (not ZIP); conversion must return
 // ConvertError::UnsupportedEncryption instead of a misleading parse error.
 
+/// Returns `true` if the file is a Git LFS pointer (not the actual content).
+fn is_lfs_pointer(path: &std::path::Path) -> bool {
+    std::fs::read(path)
+        .map(|data| data.starts_with(b"version https://git-lfs"))
+        .unwrap_or(false)
+}
+
 macro_rules! encrypted_docx_tests {
     ($name:ident, $fixture:expr) => {
         mod $name {
@@ -585,6 +592,10 @@ macro_rules! encrypted_docx_tests {
             #[test]
             fn returns_unsupported_encryption() {
                 let path = fixture_path($fixture);
+                if is_lfs_pointer(&path) {
+                    eprintln!("Skipping {}: Git LFS pointer (not fetched)", $fixture);
+                    return;
+                }
                 let err = office2pdf::convert(&path).unwrap_err();
                 assert!(
                     matches!(err, office2pdf::error::ConvertError::UnsupportedEncryption),
