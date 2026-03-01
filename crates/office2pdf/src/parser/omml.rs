@@ -94,6 +94,10 @@ fn parse_omml_children(reader: &mut Reader<&[u8]>, out: &mut String, end_tag: &[
                         ensure_math_separator(out);
                         parse_sub_superscript(reader, out);
                     }
+                    b"groupChr" => {
+                        ensure_math_separator(out);
+                        parse_group_chr(reader, out);
+                    }
                     b"d" => parse_delimiter(reader, out),
                     b"r" => parse_math_run(reader, out),
                     b"oMath" => parse_omml_children(reader, out, b"oMath"),
@@ -238,10 +242,12 @@ fn parse_radical(reader: &mut Reader<&[u8]>, out: &mut String) {
         }
     }
 
+    // Use placeholder for empty radicand to avoid Typst "missing argument" error
+    let radicand = if content.is_empty() { "\"\"" } else { &content };
     if deg_hide || deg.is_empty() {
-        let _ = std::fmt::Write::write_fmt(out, format_args!("sqrt({content})"));
+        let _ = std::fmt::Write::write_fmt(out, format_args!("sqrt({radicand})"));
     } else {
-        let _ = std::fmt::Write::write_fmt(out, format_args!("root({deg}, {content})"));
+        let _ = std::fmt::Write::write_fmt(out, format_args!("root({deg}, {radicand})"));
     }
 }
 
@@ -289,7 +295,15 @@ fn parse_delimiter(reader: &mut Reader<&[u8]>, out: &mut String) {
     let beg = map_delimiter(&beg_chr);
     let end = map_delimiter(&end_chr);
     let content = elements.join(", ");
-    let _ = std::fmt::Write::write_fmt(out, format_args!("{beg}{content}{end}"));
+    // If either delimiter is empty, omit both to avoid unbalanced delimiters in Typst
+    if beg.is_empty() && end.is_empty() {
+        out.push_str(&content);
+    } else if beg.is_empty() || end.is_empty() {
+        // One-sided invisible delimiter: emit content without delimiters
+        out.push_str(&content);
+    } else {
+        let _ = std::fmt::Write::write_fmt(out, format_args!("{beg}{content}{end}"));
+    }
 }
 
 fn map_delimiter(chr: &str) -> &str {
@@ -391,19 +405,35 @@ fn map_math_text(input: &str) -> String {
     let mut word_buf = String::new();
     let mut last_was_name = false;
 
+    let mut non_ascii_buf = String::new();
+
     for ch in input.chars() {
         if ch.is_ascii_alphabetic() {
+            // Flush non-ASCII buffer first
+            if !non_ascii_buf.is_empty() {
+                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
+                non_ascii_buf.clear();
+            }
             word_buf.push(ch);
             continue;
         }
 
         // Flush accumulated word before processing this character
         if !word_buf.is_empty() {
+            // Flush non-ASCII buffer first
+            if !non_ascii_buf.is_empty() {
+                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
+                non_ascii_buf.clear();
+            }
             flush_math_word(&mut result, &word_buf, &mut last_was_name);
             word_buf.clear();
         }
 
         if let Some(name) = unicode_to_typst(ch) {
+            if !non_ascii_buf.is_empty() {
+                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
+                non_ascii_buf.clear();
+            }
             if !result.is_empty()
                 && (last_was_name || result.chars().last().is_some_and(|c| c.is_alphanumeric()))
             {
@@ -412,23 +442,50 @@ fn map_math_text(input: &str) -> String {
             result.push_str(name);
             last_was_name = true;
         } else if ch.is_ascii_digit() {
+            if !non_ascii_buf.is_empty() {
+                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
+                non_ascii_buf.clear();
+            }
             if last_was_name {
                 result.push(' ');
             }
             result.push(ch);
             last_was_name = false;
+        } else if !ch.is_ascii() && ch.is_alphabetic() {
+            // Non-ASCII alphabetic (Cyrillic, CJK, etc.) — accumulate for upright() wrapping
+            non_ascii_buf.push(ch);
         } else {
+            if !non_ascii_buf.is_empty() {
+                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
+                non_ascii_buf.clear();
+            }
             result.push(ch);
             last_was_name = false;
         }
     }
 
-    // Flush remaining word
+    // Flush remaining buffers
     if !word_buf.is_empty() {
         flush_math_word(&mut result, &word_buf, &mut last_was_name);
     }
+    if !non_ascii_buf.is_empty() {
+        flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
+    }
 
     result
+}
+
+/// Flush accumulated non-ASCII alphabetic text as `upright("text")` for Typst math mode.
+fn flush_non_ascii_text(result: &mut String, text: &str, last_was_name: &mut bool) {
+    if !result.is_empty()
+        && (*last_was_name || result.chars().last().is_some_and(|c| c.is_alphanumeric()))
+    {
+        result.push(' ');
+    }
+    result.push_str("upright(\"");
+    result.push_str(text);
+    result.push_str("\")");
+    *last_was_name = true;
 }
 
 /// Flush an accumulated word of ASCII letters to the result.
@@ -805,6 +862,52 @@ fn parse_bar_props(reader: &mut Reader<&[u8]>, pos: &mut String) {
                 }
             }
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"barPr" => break,
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+}
+
+fn parse_group_chr(reader: &mut Reader<&[u8]>, out: &mut String) {
+    let mut chr = "\u{23DF}".to_string(); // default: underbrace ⏟
+    let mut content = String::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
+                b"groupChrPr" => parse_group_chr_props(reader, &mut chr),
+                b"e" => content = parse_sub_element(reader, b"e"),
+                other => skip_element(reader, other),
+            },
+            Ok(Event::End(ref e)) if e.local_name().as_ref() == b"groupChr" => break,
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+
+    let func = match chr.as_str() {
+        "\u{23DE}" => "overbrace",  // ⏞
+        "\u{23DF}" => "underbrace", // ⏟
+        _ => "underbrace",
+    };
+    let _ = std::fmt::Write::write_fmt(out, format_args!("{func}({content})"));
+}
+
+fn parse_group_chr_props(reader: &mut Reader<&[u8]>, chr: &mut String) {
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
+                if e.local_name().as_ref() == b"chr" {
+                    for attr in e.attributes().flatten() {
+                        if attr.key.local_name().as_ref() == b"val"
+                            && let Ok(v) = attr.unescape_value()
+                        {
+                            *chr = v.to_string();
+                        }
+                    }
+                }
+            }
+            Ok(Event::End(ref e)) if e.local_name().as_ref() == b"groupChrPr" => break,
             Ok(Event::Eof) | Err(_) => break,
             _ => {}
         }
@@ -1315,5 +1418,121 @@ mod tests {
     fn test_omml_alpha_plus_beta() {
         let xml = "<m:r><m:t>α+β</m:t></m:r>";
         assert_eq!(omml_to_typst(xml), "alpha+beta");
+    }
+
+    // --- US-310: groupChr (overbrace/underbrace) tests ---
+
+    #[test]
+    fn test_group_chr_overbrace() {
+        let xml = r#"<m:groupChr><m:groupChrPr><m:chr m:val="⏞"/><m:pos m:val="top"/></m:groupChrPr><m:e><m:r><m:t>a+b</m:t></m:r></m:e></m:groupChr>"#;
+        assert_eq!(omml_to_typst(xml), "overbrace(a+b)");
+    }
+
+    #[test]
+    fn test_group_chr_underbrace() {
+        let xml = r#"<m:groupChr><m:groupChrPr><m:chr m:val="⏟"/><m:pos m:val="bot"/></m:groupChrPr><m:e><m:r><m:t>x+y</m:t></m:r></m:e></m:groupChr>"#;
+        assert_eq!(omml_to_typst(xml), "underbrace(x+y)");
+    }
+
+    #[test]
+    fn test_group_chr_default_underbrace() {
+        // Default groupChr without explicit chr attr should use underbrace
+        let xml = r#"<m:groupChr><m:groupChrPr><m:pos m:val="bot"/></m:groupChrPr><m:e><m:r><m:t>z</m:t></m:r></m:e></m:groupChr>"#;
+        assert_eq!(omml_to_typst(xml), "underbrace(z)");
+    }
+
+    // --- US-311: subscript/superscript parentheses tests ---
+
+    #[test]
+    fn test_superscript_multi_token_parens() {
+        let xml = "<m:sSup><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sup><m:r><m:t>n+1</m:t></m:r></m:sup></m:sSup>";
+        assert_eq!(omml_to_typst(xml), "x^(n+1)");
+    }
+
+    #[test]
+    fn test_subscript_multi_token_parens() {
+        let xml = "<m:sSub><m:e><m:r><m:t>a</m:t></m:r></m:e><m:sub><m:r><m:t>i+1</m:t></m:r></m:sub></m:sSub>";
+        assert_eq!(omml_to_typst(xml), "a_(i+1)");
+    }
+
+    // --- US-312: empty radicand tests ---
+
+    #[test]
+    fn test_radical_empty_radicand() {
+        let xml = r#"<m:rad><m:radPr><m:degHide m:val="1"/></m:radPr><m:deg/><m:e></m:e></m:rad>"#;
+        let result = omml_to_typst(xml);
+        assert!(
+            result.contains("sqrt(") && result.ends_with(')'),
+            "Empty radicand should produce valid sqrt(): got '{result}'"
+        );
+        // Should not be "sqrt()" — needs a placeholder
+        assert_ne!(result, "sqrt()", "Empty radicand should have a placeholder");
+    }
+
+    #[test]
+    fn test_root_empty_radicand_with_degree() {
+        let xml = r#"<m:rad><m:radPr><m:degHide m:val="0"/></m:radPr><m:deg><m:r><m:t>3</m:t></m:r></m:deg><m:e></m:e></m:rad>"#;
+        let result = omml_to_typst(xml);
+        assert!(
+            result.starts_with("root(3,") && result.ends_with(')'),
+            "Empty radicand with degree should produce valid root(): got '{result}'"
+        );
+    }
+
+    // --- US-313: delimiter balancing tests ---
+
+    #[test]
+    fn test_delimiter_empty_begin_chr() {
+        // When begChr is empty, should not produce unbalanced `)` alone
+        let xml = r#"<m:d><m:dPr><m:begChr m:val=""/><m:endChr m:val=")"/></m:dPr><m:e><m:r><m:t>x</m:t></m:r></m:e></m:d>"#;
+        let result = omml_to_typst(xml);
+        // Must not end with bare `)` without matching `(`
+        assert!(
+            !result.ends_with(')') || result.contains('('),
+            "Empty begChr should not produce unmatched ')': got '{result}'"
+        );
+    }
+
+    #[test]
+    fn test_delimiter_empty_end_chr() {
+        // When endChr is empty, should not produce unbalanced `(`
+        let xml = r#"<m:d><m:dPr><m:begChr m:val="("/><m:endChr m:val=""/></m:dPr><m:e><m:r><m:t>x</m:t></m:r></m:e></m:d>"#;
+        let result = omml_to_typst(xml);
+        // Must not have bare `(` without matching `)`
+        assert!(
+            !result.starts_with('(') || result.contains(')'),
+            "Empty endChr should not produce unmatched '(': got '{result}'"
+        );
+    }
+
+    #[test]
+    fn test_delimiter_both_empty() {
+        // When both begChr and endChr are empty, should just emit content
+        let xml = r#"<m:d><m:dPr><m:begChr m:val=""/><m:endChr m:val=""/></m:dPr><m:e><m:r><m:t>x</m:t></m:r></m:e></m:d>"#;
+        let result = omml_to_typst(xml);
+        assert_eq!(
+            result, "x",
+            "Both empty delimiters should emit bare content: got '{result}'"
+        );
+    }
+
+    // --- US-314: non-ASCII text in math context ---
+
+    #[test]
+    fn test_non_ascii_cyrillic_in_math() {
+        let xml = r#"<m:r><m:t>если</m:t></m:r>"#;
+        let result = omml_to_typst(xml);
+        // Cyrillic text in math should be wrapped in upright() to avoid "unknown variable"
+        assert!(
+            result.contains("upright("),
+            "Cyrillic text in math should be wrapped in upright(): got '{result}'"
+        );
+    }
+
+    #[test]
+    fn test_non_ascii_single_char_passthrough() {
+        // Single non-ASCII char that maps to a Typst symbol should pass through
+        let xml = r#"<m:r><m:t>α</m:t></m:r>"#;
+        assert_eq!(omml_to_typst(xml), "alpha");
     }
 }

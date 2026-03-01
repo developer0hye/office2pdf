@@ -671,6 +671,18 @@ fn write_polygon(
 /// gradient stop offsets to be in monotonic (non-decreasing) order.
 /// The first stop is clamped to 0% and the last to 100% as Typst requires.
 fn write_gradient_fill(out: &mut String, gradient: &GradientFill) {
+    // Typst requires at least 2 stops for gradient.linear().
+    // Fall back to solid fill if fewer than 2 stops.
+    if gradient.stops.len() < 2 {
+        if let Some(stop) = gradient.stops.first() {
+            let _ = write!(
+                out,
+                "rgb({}, {}, {})",
+                stop.color.r, stop.color.g, stop.color.b,
+            );
+        }
+        return;
+    }
     let mut sorted_stops = gradient.stops.clone();
     sorted_stops.sort_by(|a, b| {
         a.position
@@ -1791,13 +1803,10 @@ fn escape_typst(text: &str) -> String {
     let mut result = String::with_capacity(text.len());
     for ch in text.nfc() {
         match ch {
-            '#' | '*' | '_' | '`' | '<' | '>' | '@' | '\\' | '~' | '/' => {
+            '#' | '*' | '_' | '`' | '<' | '>' | '@' | '\\' | '~' | '/' | '$' | '[' | ']' | '{'
+            | '}' => {
                 result.push('\\');
                 result.push(ch);
-            }
-            '$' => {
-                result.push('\\');
-                result.push('$');
             }
             _ => result.push(ch),
         }
@@ -6653,5 +6662,123 @@ mod tests {
         let segments = split_at_column_breaks(&blocks);
         assert_eq!(segments.len(), 3);
         assert!(segments.iter().all(|s| s.is_empty()));
+    }
+
+    // --- US-315: text escaping for Typst-significant characters ---
+
+    #[test]
+    fn test_escape_typst_backslash() {
+        assert_eq!(escape_typst("path\\to\\file"), "path\\\\to\\\\file");
+    }
+
+    #[test]
+    fn test_escape_typst_hash() {
+        assert_eq!(escape_typst("#hashtag"), "\\#hashtag");
+    }
+
+    #[test]
+    fn test_escape_typst_dollar() {
+        assert_eq!(escape_typst("$100"), "\\$100");
+    }
+
+    #[test]
+    fn test_escape_typst_brackets() {
+        assert_eq!(escape_typst("[content]"), "\\[content\\]");
+    }
+
+    #[test]
+    fn test_escape_typst_braces() {
+        assert_eq!(escape_typst("{code}"), "\\{code\\}");
+    }
+
+    #[test]
+    fn test_escape_typst_all_special_chars() {
+        let input = r"#*_`<>@\~/$[]{}";
+        let result = escape_typst(input);
+        // Every character should be escaped
+        assert_eq!(result, "\\#\\*\\_\\`\\<\\>\\@\\\\\\~\\/\\$\\[\\]\\{\\}");
+    }
+
+    #[test]
+    fn test_escape_typst_in_paragraph_output() {
+        let doc = make_doc(vec![make_flow_page(vec![make_paragraph(
+            "Price: $100 path\\to",
+        )])]);
+        let output = generate_typst(&doc).unwrap().source;
+        assert!(
+            output.contains("\\$100"),
+            "Dollar sign should be escaped in output: {output}"
+        );
+        assert!(
+            output.contains("path\\\\to"),
+            "Backslash should be escaped in output: {output}"
+        );
+    }
+
+    // --- US-316: single-stop gradient fallback ---
+
+    #[test]
+    fn test_gradient_single_stop_fallback_to_solid() {
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: None,
+            background_gradient: Some(GradientFill {
+                stops: vec![GradientStop {
+                    position: 0.5,
+                    color: Color::new(255, 128, 0),
+                }],
+                angle: 0.0,
+            }),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        // Should NOT contain gradient.linear (needs >= 2 stops)
+        assert!(
+            !output.source.contains("gradient.linear"),
+            "Single-stop gradient should fall back to solid fill: {}",
+            output.source,
+        );
+        // Should contain the solid fill color instead
+        assert!(
+            output.source.contains("rgb(255, 128, 0)"),
+            "Single-stop gradient should use the stop color as solid fill: {}",
+            output.source,
+        );
+    }
+
+    #[test]
+    fn test_gradient_two_stops_still_works() {
+        let page = Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 720.0,
+                height: 540.0,
+            },
+            elements: vec![],
+            background_color: None,
+            background_gradient: Some(GradientFill {
+                stops: vec![
+                    GradientStop {
+                        position: 0.0,
+                        color: Color::new(255, 0, 0),
+                    },
+                    GradientStop {
+                        position: 1.0,
+                        color: Color::new(0, 0, 255),
+                    },
+                ],
+                angle: 90.0,
+            }),
+        });
+        let doc = make_doc(vec![page]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("gradient.linear"),
+            "Two-stop gradient should still produce gradient.linear: {}",
+            output.source,
+        );
     }
 }
