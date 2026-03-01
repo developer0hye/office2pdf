@@ -4,6 +4,10 @@ use std::io::Read;
 
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
+
+/// Maximum nesting depth for tables-within-tables.  Deeper nesting is silently
+/// truncated to prevent stack overflow on pathological documents.
+const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, ColumnLayout,
     Document, FloatingImage, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph, ImageData,
@@ -1013,6 +1017,7 @@ impl Parser for DocxParser {
                         &notes,
                         &wraps,
                         &bidi,
+                        0,
                     ))])]
                 }
                 docx_rs::DocumentChild::StructuredDataTag(sdt) => convert_sdt_children(
@@ -1268,7 +1273,7 @@ fn convert_sdt_children(
             }
             docx_rs::StructuredDataTagChild::Table(table) => {
                 result.push(TaggedElement::Plain(vec![Block::Table(convert_table(
-                    table, images, hyperlinks, style_map, notes, wraps, bidi,
+                    table, images, hyperlinks, style_map, notes, wraps, bidi, 0,
                 ))]));
             }
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
@@ -1631,6 +1636,7 @@ fn extract_line_spacing(
     (line_spacing, space_before, space_after)
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Convert a docx-rs Table to an IR Table.
 ///
 /// Handles:
@@ -1648,11 +1654,14 @@ fn convert_table(
     notes: &NoteContext,
     wraps: &WrapContext,
     bidi: &BidiContext,
+    depth: usize,
 ) -> Table {
     let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
-    let raw_rows = extract_raw_rows(table, images, hyperlinks, style_map, notes, wraps, bidi);
+    let raw_rows = extract_raw_rows(
+        table, images, hyperlinks, style_map, notes, wraps, bidi, depth,
+    );
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
@@ -1673,6 +1682,7 @@ struct RawCell {
     background: Option<Color>,
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Extract raw rows from a docx-rs Table, tracking column indices and vmerge state.
 fn extract_raw_rows(
     table: &docx_rs::Table,
@@ -1682,6 +1692,7 @@ fn extract_raw_rows(
     notes: &NoteContext,
     wraps: &WrapContext,
     bidi: &BidiContext,
+    depth: usize,
 ) -> Vec<Vec<RawCell>> {
     let mut raw_rows = Vec::new();
 
@@ -1706,8 +1717,9 @@ fn extract_raw_rows(
                 .and_then(|v| v.as_str())
                 .map(String::from);
 
-            let content =
-                extract_cell_content(cell, images, hyperlinks, style_map, notes, wraps, bidi);
+            let content = extract_cell_content(
+                cell, images, hyperlinks, style_map, notes, wraps, bidi, depth,
+            );
             let border = prop_json
                 .as_ref()
                 .and_then(|j| j.get("borders"))
@@ -1802,6 +1814,7 @@ fn count_vmerge_span(raw_rows: &[Vec<RawCell>], start_row: usize, col_index: usi
     span
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Extract cell content (paragraphs) from a docx-rs TableCell.
 fn extract_cell_content(
     cell: &docx_rs::TableCell,
@@ -1811,6 +1824,7 @@ fn extract_cell_content(
     notes: &NoteContext,
     wraps: &WrapContext,
     bidi: &BidiContext,
+    depth: usize,
 ) -> Vec<Block> {
     let mut blocks = Vec::new();
     for content in &cell.children {
@@ -1828,15 +1842,19 @@ fn extract_cell_content(
                 );
             }
             docx_rs::TableCellContent::Table(nested_table) => {
-                blocks.push(Block::Table(convert_table(
-                    nested_table,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    notes,
-                    wraps,
-                    bidi,
-                )));
+                if depth < MAX_TABLE_DEPTH {
+                    blocks.push(Block::Table(convert_table(
+                        nested_table,
+                        images,
+                        hyperlinks,
+                        style_map,
+                        notes,
+                        wraps,
+                        bidi,
+                        depth + 1,
+                    )));
+                }
+                // Silently skip nested tables beyond MAX_TABLE_DEPTH
             }
             _ => {}
         }
