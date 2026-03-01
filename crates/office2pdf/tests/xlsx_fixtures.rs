@@ -384,31 +384,24 @@ xlsx_fixture_tests!(
 
 // --- Upstream panic safety ---------------------------------------------------
 
-/// Verifies that files which trigger upstream panics (umya-spreadsheet unwrap())
-/// return `Err` instead of panicking, thanks to catch_unwind in convert_bytes().
+/// Verifies that files which previously triggered upstream panics
+/// (umya-spreadsheet unwrap()) now convert successfully thanks to the patched
+/// fork (developer0hye/umya-spreadsheet fix/panic-safety-v2).
 #[test]
-fn upstream_panics_return_error() {
-    let cases: &[(&str, office2pdf::config::Format)] = &[
-        // umya-spreadsheet: unwrap() on missing zip entry (FileNotFound)
-        (
-            "libreoffice/chart_hyperlink.xlsx",
-            office2pdf::config::Format::Xlsx,
-        ),
-        // umya-spreadsheet: ParseFloatError on boolean cell
-        (
-            "libreoffice/check-boolean.xlsx",
-            office2pdf::config::Format::Xlsx,
-        ),
+fn previously_panicking_files_now_convert() {
+    let cases: &[&str] = &[
+        // Previously panicked with: unwrap() on missing zip entry (FileNotFound)
+        "libreoffice/chart_hyperlink.xlsx",
+        // Previously panicked with: ParseFloatError on boolean cell
+        "libreoffice/check-boolean.xlsx",
     ];
-    for (name, format) in cases {
+    for name in cases {
         let path = fixture_path(name);
         if !path.exists() {
             eprintln!("Skipping {name}: fixture not available");
             continue;
         }
-        let data = std::fs::read(&path).unwrap();
-        let result = office2pdf::convert_bytes(&data, *format, &ConvertOptions::default());
-        assert!(result.is_err(), "{name} should return Err (not panic)");
+        assert_produces_valid_pdf(name);
     }
 }
 

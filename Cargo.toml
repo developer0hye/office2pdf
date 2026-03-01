@@ -7,3 +7,6 @@ edition = "2024"
 rust-version = "1.89"
 license = "Apache-2.0"
 repository = "https://github.com/developer0hye/office2pdf"
+
+[patch.crates-io]
+umya-spreadsheet = { git = "https://github.com/developer0hye/umya-spreadsheet.git", branch = "fix/panic-safety-v2" }
