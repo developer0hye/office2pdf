@@ -14,6 +14,9 @@ pub enum ConvertError {
 
     #[error("render error: {0}")]
     Render(String),
+
+    #[error("file is encrypted/password-protected and cannot be converted")]
+    UnsupportedEncryption,
 }
 
 /// A non-fatal warning emitted when an element cannot be fully processed.
@@ -287,6 +290,26 @@ mod tests {
         let e = ConvertError::UnsupportedFormat("txt".to_string());
         let dbg = format!("{e:?}");
         assert!(dbg.contains("UnsupportedFormat"));
+    }
+
+    #[test]
+    fn test_unsupported_encryption_display() {
+        let e = ConvertError::UnsupportedEncryption;
+        let msg = e.to_string();
+        assert!(
+            msg.contains("encrypted") || msg.contains("password"),
+            "UnsupportedEncryption display should mention encryption or password: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_unsupported_encryption_debug() {
+        let e = ConvertError::UnsupportedEncryption;
+        let dbg = format!("{e:?}");
+        assert!(
+            dbg.contains("UnsupportedEncryption"),
+            "Debug format should contain variant name: {dbg}"
+        );
     }
 
     #[test]
