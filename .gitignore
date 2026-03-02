@@ -11,6 +11,11 @@ Cargo.lock
 # Claude local settings (machine-specific, not shared)
 .claude/settings.local.json
 
-# Ralph runtime files
-scripts/ralph/.last-branch
-scripts/ralph/archive/
+# Classified fixtures (confidential, never upload)
+tests/classified_fixtures/
+
+# Docs (local-only analysis/notes, never push to remote)
+docs/
+
+# Ralph (local-only automation, never push to remote)
+scripts/ralph/

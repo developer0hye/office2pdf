@@ -8,6 +8,11 @@
 - When editing `CLAUDE.md`, use the minimum words and sentences needed to convey 100% of the meaning.
 - After completing each planned task, run tests and commit before moving to the next task.
 
+## Confidentiality
+
+- **NEVER mention `tests/classified_fixtures/` content** (file names, paths, company names, personal names, document titles) in commit messages, PR titles/descriptions, issue comments, or any public-facing text.
+- Use generic references instead: "classified fixture", "internal test document", "ground truth PDF", etc.
+
 ## Git Configuration
 
 - All commits must use the local git config `user.name` and `user.email`. Verify with `git config user.name` and `git config user.email` before committing.
@@ -51,6 +56,20 @@ This project follows a **6-month rolling MSRV policy** (aligned with [tokio](htt
 1. Verify no language features or APIs exclusive to versions above the target are used
 2. Confirm all dependencies compile on the target version (`cargo check` with the target toolchain, or review dependency MSRV metadata)
 3. Update CI matrix to include the new MSRV version
+
+## Visual Comparison Workflow
+
+When comparing PDF output against ground truth (classified fixtures):
+
+1. Run `cargo test -p office2pdf --test artifact_generator -- --ignored --nocapture` to generate artifacts.
+2. Read `tests/classified_fixtures/_work/report.json` — contains per-file page counts, text lengths, and PNG paths.
+3. Identify worst files: page count mismatches, large text length differences, conversion errors.
+4. For worst files, use the **Read tool to view PNG images** in `tests/classified_fixtures/_work/<work_dir>/`:
+   - `output-*.png` — rendered pages from office2pdf output
+   - `gt-*.png` — rendered pages from ground truth PDF
+   - `output.txt` / `gt.txt` — extracted text
+5. Compare output and GT PNGs **visually** to identify specific rendering differences (layout, font, table, image, margin, page break, etc.).
+6. Fix root causes in parser/codegen via TDD. Prioritize high-leverage fixes that improve multiple files.
 
 ## Release Procedure
 
