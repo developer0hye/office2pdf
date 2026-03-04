@@ -653,6 +653,21 @@ fn unicode_to_typst(ch: char) -> Option<&'static str> {
         '⊃' => Some("supset"),
         '∪' => Some("union"),
         '∩' => Some("sect"),
+        // Additional operators
+        '∠' => Some("angle"),
+        '∧' => Some("and"),
+        '∨' => Some("or"),
+        '∘' => Some("compose"),
+        '⋅' => Some("dot.op"),
+        '∓' => Some("minus.plus"),
+        '¬' => Some("not"),
+        '⊕' => Some("plus.circle"),
+        '⊗' => Some("times.circle"),
+        '⊙' => Some("dot.circle"),
+        '⊢' => Some("tack.r"),
+        '⊣' => Some("tack.l"),
+        '⊤' => Some("top"),
+        '⊥' => Some("perp"),
         // Arrows
         '←' => Some("arrow.l"),
         '↑' => Some("arrow.t"),
@@ -1719,5 +1734,32 @@ mod tests {
     fn test_arrow_in_math_text() {
         assert_eq!(map_math_text("x→y"), "x arrow.r y");
         assert_eq!(map_math_text("A⇒B"), "A arrow.r.double B");
+    }
+
+    // --- Additional operator mappings ---
+
+    #[test]
+    fn test_additional_operators() {
+        assert_eq!(unicode_to_typst('∠'), Some("angle"));
+        assert_eq!(unicode_to_typst('∧'), Some("and"));
+        assert_eq!(unicode_to_typst('∨'), Some("or"));
+        assert_eq!(unicode_to_typst('∘'), Some("compose"));
+        assert_eq!(unicode_to_typst('⋅'), Some("dot.op"));
+        assert_eq!(unicode_to_typst('∓'), Some("minus.plus"));
+        assert_eq!(unicode_to_typst('¬'), Some("not"));
+        assert_eq!(unicode_to_typst('⊕'), Some("plus.circle"));
+        assert_eq!(unicode_to_typst('⊗'), Some("times.circle"));
+        assert_eq!(unicode_to_typst('⊙'), Some("dot.circle"));
+        assert_eq!(unicode_to_typst('⊢'), Some("tack.r"));
+        assert_eq!(unicode_to_typst('⊣'), Some("tack.l"));
+        assert_eq!(unicode_to_typst('⊤'), Some("top"));
+        assert_eq!(unicode_to_typst('⊥'), Some("perp"));
+    }
+
+    #[test]
+    fn test_operators_in_math_text() {
+        assert_eq!(map_math_text("a∧b"), "a and b");
+        assert_eq!(map_math_text("¬p"), "not p");
+        assert_eq!(map_math_text("f∘g"), "f compose g");
     }
 }
