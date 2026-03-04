@@ -101,6 +101,9 @@ fn extract_cell_text_style(cell: &umya_spreadsheet::Cell) -> TextStyle {
         underline,
         strikethrough,
         color,
+        vertical_align: None,
+        all_caps: None,
+        small_caps: None,
     }
 }
 

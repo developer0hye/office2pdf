@@ -13,7 +13,7 @@ use crate::ir::{
     Document, FloatingImage, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph, ImageData,
     ImageFormat, LineSpacing, List, ListItem, ListKind, Margins, MathEquation, Page, PageSize,
     Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell, TableRow, TextDirection,
-    TextStyle, WrapMode,
+    TextStyle, VerticalTextAlign, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -171,6 +171,9 @@ fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyle>) -> Text
         font_size: style_text.font_size,
         color: style_text.color,
         font_family: style_text.font_family.clone(),
+        vertical_align: style_text.vertical_align,
+        all_caps: style_text.all_caps,
+        small_caps: style_text.small_caps,
     };
 
     // Apply heading defaults for missing fields
@@ -204,6 +207,15 @@ fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyle>) -> Text
     }
     if explicit.font_family.is_some() {
         merged.font_family = explicit.font_family.clone();
+    }
+    if explicit.vertical_align.is_some() {
+        merged.vertical_align = explicit.vertical_align;
+    }
+    if explicit.all_caps.is_some() {
+        merged.all_caps = explicit.all_caps;
+    }
+    if explicit.small_caps.is_some() {
+        merged.small_caps = explicit.small_caps;
     }
 
     merged
@@ -552,6 +564,91 @@ impl BidiContext {
                             in_ppr = false;
                         }
                         b"pPr" => in_ppr = false,
+                        _ => {}
+                    }
+                }
+                Ok(quick_xml::events::Event::Eof) => break,
+                Err(_) => break,
+                _ => {}
+            }
+            buf.clear();
+        }
+        result
+    }
+}
+
+/// Pre-scanned context for `<w:smallCaps>` in run properties.
+/// docx-rs does not expose the `smallCaps` element, so we scan the raw XML.
+/// Tracks per-run smallCaps flags ordered by document body appearance.
+struct SmallCapsContext {
+    /// Flat list of booleans, one per `<w:r>` encountered in document body order.
+    flags: Vec<bool>,
+    /// Cursor for consuming flags in order during conversion.
+    cursor: Cell<usize>,
+}
+
+impl SmallCapsContext {
+    fn from_xml(xml: Option<&str>) -> Self {
+        let flags: Vec<bool> = xml.map(Self::scan).unwrap_or_default();
+        Self {
+            flags,
+            cursor: Cell::new(0),
+        }
+    }
+
+    /// Advance the cursor and return whether the current run has smallCaps.
+    fn next_is_small_caps(&self) -> bool {
+        let idx: usize = self.cursor.get();
+        self.cursor.set(idx + 1);
+        self.flags.get(idx).copied().unwrap_or(false)
+    }
+
+    fn scan(xml: &str) -> Vec<bool> {
+        let mut reader = quick_xml::Reader::from_str(xml);
+        let mut buf: Vec<u8> = Vec::new();
+        let mut result: Vec<bool> = Vec::new();
+        let mut in_body: bool = false;
+        let mut in_run: bool = false;
+        let mut in_rpr: bool = false;
+        let mut current_has_small_caps: bool = false;
+
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Ok(
+                    quick_xml::events::Event::Start(ref e) | quick_xml::events::Event::Empty(ref e),
+                ) => {
+                    let local = e.local_name();
+                    match local.as_ref() {
+                        b"body" => in_body = true,
+                        b"r" if in_body => {
+                            in_run = true;
+                            current_has_small_caps = false;
+                        }
+                        b"rPr" if in_run => in_rpr = true,
+                        b"smallCaps" if in_rpr => {
+                            // Check for w:val="false" / w:val="0" to handle explicit disable
+                            let is_disabled: bool = e.attributes().flatten().any(|a| {
+                                a.key.local_name().as_ref() == b"val"
+                                    && matches!(a.value.as_ref(), b"false" | b"0")
+                            });
+                            if !is_disabled {
+                                current_has_small_caps = true;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                Ok(quick_xml::events::Event::End(ref e)) => {
+                    let local = e.local_name();
+                    match local.as_ref() {
+                        b"body" => in_body = false,
+                        b"r" if in_body => {
+                            result.push(current_has_small_caps);
+                            in_run = false;
+                            in_rpr = false;
+                            current_has_small_caps = false;
+                        }
+                        b"rPr" => in_rpr = false,
                         _ => {}
                     }
                 }
@@ -922,7 +1019,7 @@ impl Parser for DocxParser {
         // Open ZIP once and build all pre-parse contexts from a single pass.
         // This consolidates what was previously 5 separate ZIP opens + multiple
         // reads of word/document.xml into a single archive + single doc read.
-        let (metadata, mut notes, wraps, mut math, mut chart_ctx, column_layout, bidi) = {
+        let (metadata, mut notes, wraps, mut math, mut chart_ctx, column_layout, bidi, small_caps) = {
             let cursor = std::io::Cursor::new(data);
             match zip::ZipArchive::new(cursor) {
                 Ok(mut archive) => {
@@ -934,7 +1031,8 @@ impl Parser for DocxParser {
                     let chart_ctx = build_chart_context_from_xml(doc_xml.as_deref(), &mut archive);
                     let column_layout = doc_xml.as_deref().and_then(scan_column_layout);
                     let bidi = BidiContext::from_xml(doc_xml.as_deref());
-                    (metadata, notes, wraps, math, chart_ctx, column_layout, bidi)
+                    let small_caps = SmallCapsContext::from_xml(doc_xml.as_deref());
+                    (metadata, notes, wraps, math, chart_ctx, column_layout, bidi, small_caps)
                 }
                 Err(_) => {
                     // ZIP open failed — return empty contexts; docx-rs will
@@ -965,6 +1063,7 @@ impl Parser for DocxParser {
                         },
                         None,
                         BidiContext::from_xml(None),
+                        SmallCapsContext::from_xml(None),
                     )
                 }
             }
@@ -995,6 +1094,7 @@ impl Parser for DocxParser {
                         &notes,
                         &wraps,
                         &bidi,
+                        &small_caps,
                     )];
                     // Inject math equations for this body child
                     let eqs = math.take(idx);
@@ -1017,6 +1117,7 @@ impl Parser for DocxParser {
                         &notes,
                         &wraps,
                         &bidi,
+                        &small_caps,
                         0,
                     ))])]
                 }
@@ -1028,6 +1129,7 @@ impl Parser for DocxParser {
                     &notes,
                     &wraps,
                     &bidi,
+                    &small_caps,
                 ),
                 _ => vec![TaggedElement::Plain(vec![])],
             }));
@@ -1262,23 +1364,24 @@ fn convert_sdt_children(
     notes: &NoteContext,
     wraps: &WrapContext,
     bidi: &BidiContext,
+    small_caps: &SmallCapsContext,
 ) -> Vec<TaggedElement> {
     let mut result = Vec::new();
     for child in &sdt.children {
         match child {
             docx_rs::StructuredDataTagChild::Paragraph(para) => {
                 result.push(convert_paragraph_element(
-                    para, images, hyperlinks, style_map, notes, wraps, bidi,
+                    para, images, hyperlinks, style_map, notes, wraps, bidi, small_caps,
                 ));
             }
             docx_rs::StructuredDataTagChild::Table(table) => {
                 result.push(TaggedElement::Plain(vec![Block::Table(convert_table(
-                    table, images, hyperlinks, style_map, notes, wraps, bidi, 0,
+                    table, images, hyperlinks, style_map, notes, wraps, bidi, small_caps, 0,
                 ))]));
             }
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
                 result.extend(convert_sdt_children(
-                    nested, images, hyperlinks, style_map, notes, wraps, bidi,
+                    nested, images, hyperlinks, style_map, notes, wraps, bidi, small_caps,
                 ));
             }
             _ => {}
@@ -1297,6 +1400,7 @@ fn convert_paragraph_element(
     notes: &NoteContext,
     wraps: &WrapContext,
     bidi: &BidiContext,
+    small_caps: &SmallCapsContext,
 ) -> TaggedElement {
     let num_info = extract_num_info(para);
 
@@ -1311,6 +1415,7 @@ fn convert_paragraph_element(
         notes,
         wraps,
         bidi,
+        small_caps,
     );
 
     match num_info {
@@ -1365,6 +1470,7 @@ fn convert_paragraph_blocks(
     notes: &NoteContext,
     wraps: &WrapContext,
     bidi: &BidiContext,
+    small_caps: &SmallCapsContext,
 ) {
     // Check bidi direction for this paragraph (must be called once per XML <w:p>)
     let is_rtl = bidi.next_is_bidi();
@@ -1384,6 +1490,9 @@ fn convert_paragraph_blocks(
     for child in &para.children {
         match child {
             docx_rs::ParagraphChild::Run(run) => {
+                // Advance smallCaps cursor for every <w:r> in body
+                let is_small_caps: bool = small_caps.next_is_small_caps();
+
                 // Check for footnote/endnote reference runs
                 if is_note_reference_run(run, notes) {
                     if let Some(content) = notes.consume_next() {
@@ -1431,7 +1540,10 @@ fn convert_paragraph_blocks(
                     // Still extract any text from this run (after the break)
                     let text = extract_run_text_skip_column_breaks(run);
                     if !text.is_empty() {
-                        let explicit_style = extract_run_style(&run.run_property);
+                        let mut explicit_style: TextStyle = extract_run_style(&run.run_property);
+                        if is_small_caps {
+                            explicit_style.small_caps = Some(true);
+                        }
                         runs.push(Run {
                             text,
                             style: merge_text_style(&explicit_style, resolved_style),
@@ -1443,7 +1555,10 @@ fn convert_paragraph_blocks(
                     // Extract text from the run
                     let text = extract_run_text(run);
                     if !text.is_empty() {
-                        let explicit_style = extract_run_style(&run.run_property);
+                        let mut explicit_style: TextStyle = extract_run_style(&run.run_property);
+                        if is_small_caps {
+                            explicit_style.small_caps = Some(true);
+                        }
                         runs.push(Run {
                             text,
                             style: merge_text_style(&explicit_style, resolved_style),
@@ -1460,9 +1575,13 @@ fn convert_paragraph_blocks(
                 // Extract runs from inside the hyperlink element
                 for hchild in &hyperlink.children {
                     if let docx_rs::ParagraphChild::Run(run) = hchild {
+                        let hl_small_caps: bool = small_caps.next_is_small_caps();
                         let text = extract_run_text(run);
                         if !text.is_empty() {
-                            let explicit_style = extract_run_style(&run.run_property);
+                            let mut explicit_style: TextStyle = extract_run_style(&run.run_property);
+                            if hl_small_caps {
+                                explicit_style.small_caps = Some(true);
+                            }
                             runs.push(Run {
                                 text,
                                 style: merge_text_style(&explicit_style, resolved_style),
@@ -1654,13 +1773,14 @@ fn convert_table(
     notes: &NoteContext,
     wraps: &WrapContext,
     bidi: &BidiContext,
+    small_caps: &SmallCapsContext,
     depth: usize,
 ) -> Table {
     let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
     let raw_rows = extract_raw_rows(
-        table, images, hyperlinks, style_map, notes, wraps, bidi, depth,
+        table, images, hyperlinks, style_map, notes, wraps, bidi, small_caps, depth,
     );
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
@@ -1692,6 +1812,7 @@ fn extract_raw_rows(
     notes: &NoteContext,
     wraps: &WrapContext,
     bidi: &BidiContext,
+    small_caps: &SmallCapsContext,
     depth: usize,
 ) -> Vec<Vec<RawCell>> {
     let mut raw_rows = Vec::new();
@@ -1718,7 +1839,7 @@ fn extract_raw_rows(
                 .map(String::from);
 
             let content = extract_cell_content(
-                cell, images, hyperlinks, style_map, notes, wraps, bidi, depth,
+                cell, images, hyperlinks, style_map, notes, wraps, bidi, small_caps, depth,
             );
             let border = prop_json
                 .as_ref()
@@ -1824,6 +1945,7 @@ fn extract_cell_content(
     notes: &NoteContext,
     wraps: &WrapContext,
     bidi: &BidiContext,
+    small_caps: &SmallCapsContext,
     depth: usize,
 ) -> Vec<Block> {
     let mut blocks = Vec::new();
@@ -1839,6 +1961,7 @@ fn extract_cell_content(
                     notes,
                     wraps,
                     bidi,
+                    small_caps,
                 );
             }
             docx_rs::TableCellContent::Table(nested_table) => {
@@ -1851,6 +1974,7 @@ fn extract_cell_content(
                         notes,
                         wraps,
                         bidi,
+                        small_caps,
                         depth + 1,
                     )));
                 }
@@ -1948,6 +2072,17 @@ fn extract_cell_shading(shading_json: &serde_json::Value) -> Option<Color> {
 /// (e.g. Bold → `true`, Sz → `24`, Color → `"FF0000"`), not as `{"val": ...}`.
 /// Strike has a public `val` field and can be accessed directly.
 fn extract_run_style(rp: &docx_rs::RunProperty) -> TextStyle {
+    let vertical_align: Option<VerticalTextAlign> = rp.vert_align.as_ref().and_then(|va| {
+        let json = serde_json::to_value(va).ok()?;
+        match json.as_str()? {
+            "superscript" => Some(VerticalTextAlign::Superscript),
+            "subscript" => Some(VerticalTextAlign::Subscript),
+            _ => None,
+        }
+    });
+
+    let all_caps: Option<bool> = extract_bool_prop(&rp.caps);
+
     TextStyle {
         bold: extract_bool_prop(&rp.bold),
         italic: extract_bool_prop(&rp.italic),
@@ -1977,6 +2112,10 @@ fn extract_run_style(rp: &docx_rs::RunProperty) -> TextStyle {
                 .and_then(|v| v.as_str())
                 .map(String::from)
         }),
+        vertical_align,
+        all_caps,
+        // smallCaps is not exposed by docx-rs; set via SmallCapsContext XML scan
+        small_caps: None,
     }
 }
 

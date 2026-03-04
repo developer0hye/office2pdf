@@ -57,6 +57,13 @@ pub enum LineSpacing {
     Exact(f64),
 }
 
+/// Vertical alignment for superscript/subscript text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VerticalTextAlign {
+    Superscript,
+    Subscript,
+}
+
 /// Character-level formatting.
 #[derive(Debug, Clone, Default)]
 pub struct TextStyle {
@@ -67,6 +74,12 @@ pub struct TextStyle {
     pub underline: Option<bool>,
     pub strikethrough: Option<bool>,
     pub color: Option<Color>,
+    /// Superscript or subscript vertical alignment.
+    pub vertical_align: Option<VerticalTextAlign>,
+    /// All caps: render text in uppercase.
+    pub all_caps: Option<bool>,
+    /// Small caps: render lowercase letters as smaller uppercase.
+    pub small_caps: Option<bool>,
 }
 
 /// RGB color.
@@ -121,5 +134,42 @@ mod tests {
     fn test_stylesheet_default_is_empty() {
         let ss = StyleSheet::default();
         assert!(ss.styles.is_empty());
+    }
+
+    #[test]
+    fn test_text_style_default_has_none_text_effects() {
+        let ts = TextStyle::default();
+        assert!(ts.vertical_align.is_none());
+        assert!(ts.all_caps.is_none());
+        assert!(ts.small_caps.is_none());
+    }
+
+    #[test]
+    fn test_text_style_superscript() {
+        let ts = TextStyle {
+            vertical_align: Some(VerticalTextAlign::Superscript),
+            ..TextStyle::default()
+        };
+        assert_eq!(ts.vertical_align, Some(VerticalTextAlign::Superscript));
+    }
+
+    #[test]
+    fn test_text_style_subscript() {
+        let ts = TextStyle {
+            vertical_align: Some(VerticalTextAlign::Subscript),
+            ..TextStyle::default()
+        };
+        assert_eq!(ts.vertical_align, Some(VerticalTextAlign::Subscript));
+    }
+
+    #[test]
+    fn test_text_style_caps() {
+        let ts = TextStyle {
+            all_caps: Some(true),
+            small_caps: Some(true),
+            ..TextStyle::default()
+        };
+        assert_eq!(ts.all_caps, Some(true));
+        assert_eq!(ts.small_caps, Some(true));
     }
 }

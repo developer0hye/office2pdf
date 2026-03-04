@@ -9,7 +9,8 @@ use crate::ir::{
     ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage, FlowPage,
     GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List, ListKind,
     Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape,
-    ShapeKind, SmartArt, Table, TableCell, TablePage, TextDirection, TextStyle, WrapMode,
+    ShapeKind, SmartArt, Table, TableCell, TablePage, TextDirection, TextStyle, VerticalTextAlign,
+    WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -1730,6 +1731,17 @@ fn generate_run(out: &mut String, run: &Run) {
     let needs_underline = matches!(style.underline, Some(true));
     let needs_strike = matches!(style.strikethrough, Some(true));
     let has_link = run.href.is_some();
+    let needs_super = matches!(style.vertical_align, Some(VerticalTextAlign::Superscript));
+    let needs_sub = matches!(style.vertical_align, Some(VerticalTextAlign::Subscript));
+    let needs_small_caps = matches!(style.small_caps, Some(true));
+    let needs_all_caps = matches!(style.all_caps, Some(true));
+
+    // Apply all-caps text transformation before escaping
+    let escaped: String = if needs_all_caps {
+        escape_typst(&run.text.to_uppercase())
+    } else {
+        escaped
+    };
 
     // Wrap with link (outermost)
     if let Some(ref href) = run.href {
@@ -1742,6 +1754,19 @@ fn generate_run(out: &mut String, run: &Run) {
     }
     if needs_underline {
         out.push_str("#underline[");
+    }
+
+    // Wrap with vertical alignment
+    if needs_super {
+        out.push_str("#super[");
+    }
+    if needs_sub {
+        out.push_str("#sub[");
+    }
+
+    // Wrap with small caps
+    if needs_small_caps {
+        out.push_str("#smallcaps[");
     }
 
     if has_text_props {
@@ -1768,6 +1793,15 @@ fn generate_run(out: &mut String, run: &Run) {
         }
     }
 
+    if needs_small_caps {
+        out.push(']');
+    }
+    if needs_sub {
+        out.push(']');
+    }
+    if needs_super {
+        out.push(']');
+    }
     if needs_underline {
         out.push(']');
     }
@@ -6854,6 +6888,112 @@ mod tests {
         assert!(
             result.contains("#[") || result.contains("\\("),
             "Unstyled text should be wrapped in #[...] to prevent syntax issues. Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_run_superscript() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "2".to_string(),
+                style: TextStyle {
+                    vertical_align: Some(VerticalTextAlign::Superscript),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#super[2]"),
+            "Superscript should use #super[...]. Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_run_subscript() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "2".to_string(),
+                style: TextStyle {
+                    vertical_align: Some(VerticalTextAlign::Subscript),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#sub[2]"),
+            "Subscript should use #sub[...]. Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_run_small_caps() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Hello".to_string(),
+                style: TextStyle {
+                    small_caps: Some(true),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#smallcaps[Hello]"),
+            "Small caps should use #smallcaps[...]. Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_run_all_caps() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Hello World".to_string(),
+                style: TextStyle {
+                    all_caps: Some(true),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("HELLO WORLD"),
+            "All caps should uppercase the text. Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_run_superscript_with_bold() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "n".to_string(),
+                style: TextStyle {
+                    vertical_align: Some(VerticalTextAlign::Superscript),
+                    bold: Some(true),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#super[") && result.contains("weight: \"bold\""),
+            "Superscript with bold should combine both. Got: {result}"
         );
     }
 }
