@@ -175,6 +175,7 @@ fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyle>) -> Text
         vertical_align: style_text.vertical_align,
         all_caps: style_text.all_caps,
         small_caps: style_text.small_caps,
+        letter_spacing: style_text.letter_spacing,
     };
 
     // Apply heading defaults for missing fields
@@ -220,6 +221,9 @@ fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyle>) -> Text
     }
     if explicit.small_caps.is_some() {
         merged.small_caps = explicit.small_caps;
+    }
+    if explicit.letter_spacing.is_some() {
+        merged.letter_spacing = explicit.letter_spacing;
     }
 
     merged
@@ -2165,6 +2169,12 @@ fn extract_run_style(rp: &docx_rs::RunProperty) -> TextStyle {
         all_caps,
         // smallCaps is not exposed by docx-rs; set via SmallCapsContext XML scan
         small_caps: None,
+        // character_spacing is in twips (1/20 pt); convert to points
+        letter_spacing: rp.character_spacing.as_ref().and_then(|cs| {
+            let json = serde_json::to_value(cs).ok()?;
+            let twips = json.as_i64()?;
+            Some(twips as f64 / 20.0)
+        }),
     }
 }
 

@@ -1855,6 +1855,7 @@ fn has_text_properties(style: &TextStyle) -> bool {
         || style.font_size.is_some()
         || style.color.is_some()
         || style.font_family.is_some()
+        || style.letter_spacing.is_some()
 }
 
 fn write_text_params(out: &mut String, style: &TextStyle) {
@@ -1875,6 +1876,13 @@ fn write_text_params(out: &mut String, style: &TextStyle) {
     }
     if let Some(ref color) = style.color {
         write_param(out, &mut first, &format_color(color));
+    }
+    if let Some(spacing) = style.letter_spacing {
+        write_param(
+            out,
+            &mut first,
+            &format!("tracking: {}pt", format_f64(spacing)),
+        );
     }
 }
 
@@ -2226,6 +2234,48 @@ mod tests {
         assert!(
             result.contains("leading: 18pt"),
             "Expected exact leading in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_letter_spacing() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Spaced text".to_string(),
+                style: TextStyle {
+                    letter_spacing: Some(2.0),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("tracking: 2pt"),
+            "Expected tracking param in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_letter_spacing_negative() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Condensed".to_string(),
+                style: TextStyle {
+                    letter_spacing: Some(-0.5),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("tracking: -0.5pt"),
+            "Expected negative tracking in: {result}"
         );
     }
 
