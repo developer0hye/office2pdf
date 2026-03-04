@@ -653,6 +653,17 @@ fn unicode_to_typst(ch: char) -> Option<&'static str> {
         '⊃' => Some("supset"),
         '∪' => Some("union"),
         '∩' => Some("sect"),
+        // Extended relations
+        '≡' => Some("equiv"),
+        '∼' => Some("tilde.op"),
+        '≅' => Some("tilde.eq"),
+        '≪' => Some("lt.double"),
+        '≫' => Some("gt.double"),
+        '⊆' => Some("subset.eq"),
+        '⊇' => Some("supset.eq"),
+        '∝' => Some("prop"),
+        '∴' => Some("therefore"),
+        '∵' => Some("because"),
         // Blackboard bold (double-struck) letters
         'ℂ' => Some("CC"),
         'ℍ' => Some("HH"),
@@ -1649,5 +1660,27 @@ mod tests {
     fn test_blackboard_bold_via_omml() {
         let xml = r#"<m:r><m:t>ℝ</m:t></m:r>"#;
         assert_eq!(omml_to_typst(xml), "RR");
+    }
+
+    // --- Extended relation symbol mappings ---
+
+    #[test]
+    fn test_extended_relations() {
+        assert_eq!(unicode_to_typst('≡'), Some("equiv"));
+        assert_eq!(unicode_to_typst('∼'), Some("tilde.op"));
+        assert_eq!(unicode_to_typst('≅'), Some("tilde.eq"));
+        assert_eq!(unicode_to_typst('≪'), Some("lt.double"));
+        assert_eq!(unicode_to_typst('≫'), Some("gt.double"));
+        assert_eq!(unicode_to_typst('⊆'), Some("subset.eq"));
+        assert_eq!(unicode_to_typst('⊇'), Some("supset.eq"));
+        assert_eq!(unicode_to_typst('∝'), Some("prop"));
+        assert_eq!(unicode_to_typst('∴'), Some("therefore"));
+        assert_eq!(unicode_to_typst('∵'), Some("because"));
+    }
+
+    #[test]
+    fn test_extended_relations_in_math_text() {
+        assert_eq!(map_math_text("a≡b"), "a equiv b");
+        assert_eq!(map_math_text("A⊆B"), "A subset.eq B");
     }
 }
