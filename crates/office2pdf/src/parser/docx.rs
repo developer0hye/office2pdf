@@ -1032,7 +1032,16 @@ impl Parser for DocxParser {
                     let column_layout = doc_xml.as_deref().and_then(scan_column_layout);
                     let bidi = BidiContext::from_xml(doc_xml.as_deref());
                     let small_caps = SmallCapsContext::from_xml(doc_xml.as_deref());
-                    (metadata, notes, wraps, math, chart_ctx, column_layout, bidi, small_caps)
+                    (
+                        metadata,
+                        notes,
+                        wraps,
+                        math,
+                        chart_ctx,
+                        column_layout,
+                        bidi,
+                        small_caps,
+                    )
                 }
                 Err(_) => {
                     // ZIP open failed — return empty contexts; docx-rs will
@@ -1356,6 +1365,7 @@ fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
 /// Extract content from a StructuredDataTag (SDT), processing its paragraph
 /// and table children through the standard conversion pipeline.
 /// SDTs are used for various structured content in DOCX, including Table of Contents.
+#[allow(clippy::too_many_arguments)]
 fn convert_sdt_children(
     sdt: &docx_rs::StructuredDataTag,
     images: &ImageMap,
@@ -1392,6 +1402,7 @@ fn convert_sdt_children(
 
 /// Convert a docx-rs Paragraph into a TaggedElement.
 /// If the paragraph has numbering, returns a `ListParagraph`; otherwise `Plain`.
+#[allow(clippy::too_many_arguments)]
 fn convert_paragraph_element(
     para: &docx_rs::Paragraph,
     images: &ImageMap,
@@ -1578,7 +1589,8 @@ fn convert_paragraph_blocks(
                         let hl_small_caps: bool = small_caps.next_is_small_caps();
                         let text = extract_run_text(run);
                         if !text.is_empty() {
-                            let mut explicit_style: TextStyle = extract_run_style(&run.run_property);
+                            let mut explicit_style: TextStyle =
+                                extract_run_style(&run.run_property);
                             if hl_small_caps {
                                 explicit_style.small_caps = Some(true);
                             }
