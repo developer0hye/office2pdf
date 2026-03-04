@@ -770,6 +770,9 @@ fn map_nary_operator(chr: &str) -> &str {
         "\u{222E}" => "integral.cont",
         "\u{22C3}" => "union.big",
         "\u{22C2}" => "sect.big",
+        "\u{2210}" => "product.co",
+        "\u{22C0}" => "and.big",
+        "\u{22C1}" => "or.big",
         _ => "sum",
     }
 }
@@ -1811,5 +1814,26 @@ mod tests {
     fn test_grave_accent_via_omml() {
         let xml = r#"<m:acc><m:accPr><m:chr m:val="̀"/></m:accPr><m:e><m:r><m:t>a</m:t></m:r></m:e></m:acc>"#;
         assert_eq!(omml_to_typst(xml), "grave(a)");
+    }
+
+    // --- Additional n-ary operator mappings ---
+
+    #[test]
+    fn test_additional_nary_operators() {
+        assert_eq!(map_nary_operator("\u{2210}"), "product.co");
+        assert_eq!(map_nary_operator("\u{22C0}"), "and.big");
+        assert_eq!(map_nary_operator("\u{22C1}"), "or.big");
+    }
+
+    #[test]
+    fn test_coproduct_via_omml() {
+        let xml = r#"<m:nary><m:naryPr><m:chr m:val="∐"/></m:naryPr><m:sub><m:r><m:t>i</m:t></m:r></m:sub><m:sup/><m:e><m:r><m:t>A</m:t></m:r></m:e></m:nary>"#;
+        assert_eq!(omml_to_typst(xml), "product.co_i A");
+    }
+
+    #[test]
+    fn test_big_and_via_omml() {
+        let xml = r#"<m:nary><m:naryPr><m:chr m:val="⋀"/></m:naryPr><m:sub><m:r><m:t>i</m:t></m:r></m:sub><m:sup/><m:e><m:r><m:t>p</m:t></m:r></m:e></m:nary>"#;
+        assert_eq!(omml_to_typst(xml), "and.big_i p");
     }
 }
