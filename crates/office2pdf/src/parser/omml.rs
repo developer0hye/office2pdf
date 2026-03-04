@@ -327,6 +327,8 @@ fn map_delimiter(chr: &str) -> &str {
         "\u{2016}" | "||" => "\u{2016}",
         "\u{27E8}" | "<" => "\u{27E8}",
         "\u{27E9}" | ">" => "\u{27E9}",
+        // Floor/ceiling delimiters — explicit arms for regression safety
+        "\u{2308}" | "\u{2309}" | "\u{230A}" | "\u{230B}" => chr,
         _ => chr,
     }
 }
@@ -1761,5 +1763,27 @@ mod tests {
         assert_eq!(map_math_text("a∧b"), "a and b");
         assert_eq!(map_math_text("¬p"), "not p");
         assert_eq!(map_math_text("f∘g"), "f compose g");
+    }
+
+    // --- Floor/ceiling delimiter tests ---
+
+    #[test]
+    fn test_floor_ceiling_delimiters() {
+        assert_eq!(map_delimiter("⌈"), "⌈");
+        assert_eq!(map_delimiter("⌉"), "⌉");
+        assert_eq!(map_delimiter("⌊"), "⌊");
+        assert_eq!(map_delimiter("⌋"), "⌋");
+    }
+
+    #[test]
+    fn test_floor_delimiter_via_omml() {
+        let xml = r#"<m:d><m:dPr><m:begChr m:val="⌊"/><m:endChr m:val="⌋"/></m:dPr><m:e><m:r><m:t>x</m:t></m:r></m:e></m:d>"#;
+        assert_eq!(omml_to_typst(xml), "⌊x⌋");
+    }
+
+    #[test]
+    fn test_ceiling_delimiter_via_omml() {
+        let xml = r#"<m:d><m:dPr><m:begChr m:val="⌈"/><m:endChr m:val="⌉"/></m:dPr><m:e><m:r><m:t>x</m:t></m:r></m:e></m:d>"#;
+        assert_eq!(omml_to_typst(xml), "⌈x⌉");
     }
 }
