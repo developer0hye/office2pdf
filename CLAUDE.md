@@ -3,10 +3,59 @@
 - Always communicate and work in English.
 - Before starting development, check if `PRD.md` exists in the project root. If it does, read and follow the requirements defined in it throughout the development process.
 - **IMPORTANT: Always prefer Rust native implementations.** Avoid unnecessary external dependencies and leverage the Rust standard library as much as possible. Only use third-party crates when there is a clear, justified need.
-- **IMPORTANT: Follow Test-Driven Development (TDD).** Always write tests first before implementing functionality. Follow the Red-Green-Refactor cycle: (1) Write a failing test, (2) Write the minimal code to make it pass, (3) Refactor while keeping tests green. Every new feature or bug fix must have corresponding tests.
+- **IMPORTANT: Follow Test-Driven Development (TDD).** See the **Testing (TDD)** section below for detailed rules.
 - **IMPORTANT: Read and follow `METHODOLOGY.md`** before starting any task.
 - When editing `CLAUDE.md`, use the minimum words and sentences needed to convey 100% of the meaning.
-- After completing each planned task, run tests and commit before moving to the next task.
+- After completing each planned task, run tests and commit before moving to the next task. **Skip tests if the change has no impact on runtime behavior** (e.g., docs, comments, CI config). Changes to runtime config files (YAML, JSON, etc. read by code) must still trigger tests.
+- **After any code change (feature addition, bug fix, refactoring, PR merge), check if `README.md` needs updating.** If project description, usage, setup, architecture, or API changed, update `README.md` with clear, concise language. Keep it minimal — only document what users need to know.
+
+## Testing (TDD)
+
+- Write tests first. Follow Red-Green-Refactor: (1) failing test, (2) minimal code to pass, (3) refactor.
+- Use real-world scenarios and realistic data in tests. Prefer actual use cases over trivial/contrived examples.
+- **Never overfit to tests.** Implementation must solve the general problem, not just the specific test cases. No hardcoded returns, no input-matching conditionals, no logic that only handles test values. Use triangulation — when a fake/hardcoded implementation passes, add tests with different inputs to force generalization.
+- Test behavior, not implementation. Assert on observable outcomes, not internal details — tests must survive refactoring.
+- Every new feature or bug fix must have corresponding tests.
+- **Optimize test execution speed.** Run independent tests in parallel. Use `cargo test` default parallelism. Keep each test isolated — no shared mutable state — so parallel execution is safe.
+- For I/O-bound tests (network, file), prefer async or use mocks to avoid blocking. For CPU-bound tests, use multi-thread parallelism.
+- If full test suite exceeds 30 seconds, investigate: split slow integration tests from fast unit tests, run unit tests first for quick feedback.
+- **Skip tests when no runtime impact.** In CI/CD, use path filters to trigger tests only when source code, test files, or runtime config files are modified. Non-runtime changes (docs, README, `.md`, CI pipeline config) should not trigger test runs.
+
+## Logging
+
+- Add structured logs at key decision points, state transitions, and external calls — not every line. Logs alone should reveal the execution flow and root cause.
+- Include context: request/correlation IDs, input parameters, elapsed time, and outcome (success/failure with reason).
+- Use appropriate log levels: `error!` for failures requiring action, `warn!` for recoverable issues, `info!` for business events, `debug!`/`trace!` for development diagnostics.
+- Use the `tracing` crate for structured, async-safe logging. Prefer `tracing::instrument` for automatic span creation.
+- Never log sensitive data (credentials, tokens, PII). Mask or omit them.
+- Avoid excessive logging in hot paths — logging must not degrade performance or increase latency noticeably.
+
+## Naming
+
+- Names must be self-descriptive — understandable without reading surrounding code. Avoid cryptic abbreviations (`proc`, `mgr`, `tmp`).
+- Prefer clarity over brevity, but don't over-pad. `user_email` > `e`, `calculate_shipping_cost` > `calc`.
+- Booleans should read as yes/no questions: `is_valid`, `has_permission`, `should_retry`.
+- Functions/methods should describe the action and target: `parse_config`, `send_notification`, `validate_input`.
+
+## Types
+
+- Prefer explicit type annotations over type inference. Annotate function signatures (parameters and return types) always.
+- Annotate variables when the type isn't obvious from the assigned value.
+- Use newtypes to enforce domain semantics (e.g., `struct Emu(f64)` instead of bare `f64`).
+
+## Comments
+
+- Explain **why**, not what. Code already shows what it does — comments should capture intent, constraints, and non-obvious decisions.
+- Comment business rules, workarounds, and "why this approach over the obvious one" — context that can't be inferred from code alone.
+- Mark known limitations with `TODO(reason)` or `FIXME(reason)` — always include why, not just what.
+- Delete comments when the code changes — outdated comments are worse than no comments.
+
+## Reference Projects
+
+- When facing design decisions or implementation challenges, first check if `references/INDEX.md` exists and find relevant reference projects.
+- If no relevant project exists in `references/`, search the web for well-maintained open-source projects that solve similar problems. Search across all languages — architectural patterns transfer regardless of language.
+- When a new useful project is discovered and `references/` exists, add it to `references/INDEX.md` and create a corresponding detail file. Keep detail files under 50 lines.
+- Cite which reference project informed your approach when applying patterns from it.
 
 ## Confidentiality
 
