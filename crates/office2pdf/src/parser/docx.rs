@@ -2683,11 +2683,13 @@ mod tests {
     #[test]
     fn test_letter_spacing_extracted() {
         // docx-rs character spacing is in twips: 40 twips = 2pt
-        let data = build_docx_bytes(vec![docx_rs::Paragraph::new().add_run(
-            docx_rs::Run::new()
-                .add_text("Tracked text")
-                .character_spacing(40),
-        )]);
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(
+                docx_rs::Run::new()
+                    .add_text("Tracked text")
+                    .character_spacing(40),
+            ),
+        ]);
         let parser = DocxParser;
         let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let run = first_run(&doc);
