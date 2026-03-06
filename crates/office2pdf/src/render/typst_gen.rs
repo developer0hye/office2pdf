@@ -5,12 +5,12 @@ use unicode_normalization::UnicodeNormalization;
 use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, ChartType, Color,
-    ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage, FlowPage,
-    GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List, ListKind,
-    Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow,
-    Shape, ShapeKind, SmartArt, TabAlignment, TabStop, Table, TableCell, TablePage,
-    TextDirection, TextStyle, VerticalTextAlign, WrapMode, CellVerticalAlign,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart, ChartType,
+    Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
+    FlowPage, GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List,
+    ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
+    Shadow, Shape, ShapeKind, SmartArt, TabAlignment, TabStop, Table, TableCell, TablePage,
+    TextDirection, TextStyle, VerticalTextAlign, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
