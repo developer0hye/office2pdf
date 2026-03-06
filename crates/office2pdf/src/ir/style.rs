@@ -82,6 +82,8 @@ pub struct TextStyle {
     pub all_caps: Option<bool>,
     /// Small caps: render lowercase letters as smaller uppercase.
     pub small_caps: Option<bool>,
+    /// Character spacing (letter spacing / tracking) in points.
+    pub letter_spacing: Option<f64>,
 }
 
 /// RGB color.
