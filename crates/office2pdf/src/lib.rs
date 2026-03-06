@@ -496,6 +496,41 @@ mod tests {
     }
 
     #[test]
+    fn test_render_document_with_tab_leader() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                size: PageSize::default(),
+                margins: Margins::default(),
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        tab_stops: Some(vec![TabStop {
+                            position: 144.0,
+                            alignment: TabAlignment::Left,
+                            leader: TabLeader::Dot,
+                        }]),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "Heading\t12".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                header: None,
+                footer: None,
+                columns: None,
+            })],
+            styles: StyleSheet::default(),
+        };
+
+        let pdf = render_document(&doc).unwrap();
+        assert!(!pdf.is_empty());
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[test]
     fn test_render_document_styled_text() {
         let doc = Document {
             metadata: Metadata::default(),

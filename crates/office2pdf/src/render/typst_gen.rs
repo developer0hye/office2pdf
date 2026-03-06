@@ -9,8 +9,8 @@ use crate::ir::{
     Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
     FlowPage, GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List,
     ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
-    Shadow, Shape, ShapeKind, SmartArt, TabAlignment, TabStop, Table, TableCell, TablePage,
-    TextDirection, TextStyle, VerticalTextAlign, WrapMode,
+    Shadow, Shape, ShapeKind, SmartArt, TabAlignment, TabLeader, TabStop, Table, TableCell,
+    TablePage, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -1788,7 +1788,12 @@ fn generate_runs_with_tabs(out: &mut String, runs: &[Run], tab_stops: Option<&[T
         );
         let _ = writeln!(
             out,
-            "  let tab_prefix_{index} = [#tab_prefix_{}#h(tab_advance_{index})#tab_segment_{index}]",
+            "  let tab_fill_{index} = {}",
+            build_tab_fill_expr(index, tab_stops)
+        );
+        let _ = writeln!(
+            out,
+            "  let tab_prefix_{index} = [#tab_prefix_{}#tab_fill_{index}#tab_segment_{index}]",
             index - 1
         );
     }
@@ -1844,7 +1849,15 @@ fn split_runs_on_tabs(runs: &[Run]) -> Vec<Vec<Run>> {
 }
 
 fn extract_decimal_anchor_runs(runs: &[Run]) -> Option<Vec<Run>> {
+    let visible_text: String = runs
+        .iter()
+        .filter(|run| run.footnote.is_none())
+        .map(|run| run.text.as_str())
+        .collect();
+    let separator_offset = find_decimal_separator_offset(&visible_text)?;
+
     let mut anchor_runs: Vec<Run> = Vec::new();
+    let mut visible_offset: usize = 0;
 
     for run in runs {
         if let Some(content) = &run.footnote {
@@ -1857,17 +1870,16 @@ fn extract_decimal_anchor_runs(runs: &[Run]) -> Option<Vec<Run>> {
             continue;
         }
 
-        let Some((offset, _)) = run
-            .text
-            .char_indices()
-            .find(|(_, ch)| matches!(ch, '.' | ','))
-        else {
+        let run_end = visible_offset + run.text.len();
+        if run_end <= separator_offset {
             if !run.text.is_empty() {
                 anchor_runs.push(run.clone());
             }
+            visible_offset = run_end;
             continue;
-        };
+        }
 
+        let offset = separator_offset.saturating_sub(visible_offset);
         if offset > 0 {
             anchor_runs.push(Run {
                 text: run.text[..offset].to_string(),
@@ -1881,6 +1893,50 @@ fn extract_decimal_anchor_runs(runs: &[Run]) -> Option<Vec<Run>> {
     }
 
     None
+}
+
+fn find_decimal_separator_offset(text: &str) -> Option<usize> {
+    let separator = text.char_indices().rev().find(|(offset, ch)| {
+        matches!(ch, '.' | ',')
+            && has_ascii_digit_before(text, *offset)
+            && has_ascii_digit_after(text, *offset + ch.len_utf8())
+    })?;
+
+    if is_grouped_integer(
+        &text
+            .chars()
+            .filter(|ch| ch.is_ascii_digit() || matches!(ch, '.' | ','))
+            .collect::<String>(),
+        separator.1,
+    ) {
+        return None;
+    }
+
+    Some(separator.0)
+}
+
+fn has_ascii_digit_before(text: &str, offset: usize) -> bool {
+    text[..offset].chars().rev().any(|ch| ch.is_ascii_digit())
+}
+
+fn has_ascii_digit_after(text: &str, offset: usize) -> bool {
+    text[offset..].chars().any(|ch| ch.is_ascii_digit())
+}
+
+fn is_grouped_integer(text: &str, separator: char) -> bool {
+    if text
+        .chars()
+        .any(|ch| matches!(ch, '.' | ',') && ch != separator)
+    {
+        return false;
+    }
+
+    let parts: Vec<&str> = text.split(separator).collect();
+    parts.len() > 1
+        && parts
+            .iter()
+            .all(|part| !part.is_empty() && part.chars().all(|ch| ch.is_ascii_digit()))
+        && parts[1..].iter().all(|part| part.len() == 3)
 }
 
 fn build_tab_advance_expr(index: usize, segment: &[Run], tab_stops: Option<&[TabStop]>) -> String {
@@ -1923,6 +1979,50 @@ fn build_tab_advance_expr(index: usize, segment: &[Run], tab_stops: Option<&[Tab
 
     let _ = write!(expr, " else {{ {default_expr} }}");
     expr
+}
+
+fn build_tab_fill_expr(index: usize, tab_stops: Option<&[TabStop]>) -> String {
+    let Some(tab_stops) = tab_stops else {
+        return format!("h(tab_advance_{index})");
+    };
+
+    if tab_stops.is_empty() {
+        return format!("h(tab_advance_{index})");
+    }
+
+    let prefix_width_var = format!("tab_prefix_width_{index}");
+    let mut expr = String::new();
+    for (stop_index, stop) in tab_stops.iter().enumerate() {
+        let branch = tab_fill_content_expr(index, stop.leader);
+
+        if stop_index == 0 {
+            let _ = write!(
+                expr,
+                "if {prefix_width_var} < {}pt {{ {branch} }}",
+                format_f64(stop.position)
+            );
+        } else {
+            let _ = write!(
+                expr,
+                " else if {prefix_width_var} < {}pt {{ {branch} }}",
+                format_f64(stop.position)
+            );
+        }
+    }
+
+    let _ = write!(expr, " else {{ h(tab_advance_{index}) }}");
+    expr
+}
+
+fn tab_fill_content_expr(index: usize, leader: TabLeader) -> String {
+    let leader_markup = match leader {
+        TabLeader::None => return format!("h(tab_advance_{index})"),
+        TabLeader::Dot => ".",
+        TabLeader::Hyphen => "-",
+        TabLeader::Underscore => "\\_",
+    };
+
+    format!("box(width: tab_advance_{index}, repeat[{leader_markup}])")
 }
 
 fn build_default_tab_advance_expr(index: usize) -> String {
@@ -2584,6 +2684,87 @@ mod tests {
         assert!(
             result.contains("calc.rem-euclid(tab_prefix_width_2.abs.pt(), 36)"),
             "Expected tabs beyond explicit stops to use the next default stop in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_tab_leader_uses_repeat_fill() {
+        use crate::ir::{TabAlignment, TabLeader, TabStop};
+
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                tab_stops: Some(vec![TabStop {
+                    position: 144.0,
+                    alignment: TabAlignment::Left,
+                    leader: TabLeader::Dot,
+                }]),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: "Heading\t12".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("box(width: tab_advance_1, repeat[.])"),
+            "Expected dot tab leaders to render with Typst repeat fill in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_decimal_tab_uses_decimal_separator_not_thousands_separator() {
+        use crate::ir::{TabAlignment, TabLeader, TabStop};
+
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                tab_stops: Some(vec![TabStop {
+                    position: 180.0,
+                    alignment: TabAlignment::Decimal,
+                    leader: TabLeader::None,
+                }]),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: "Total\t1,234.56".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("let tab_decimal_anchor_1 = [1,234]"),
+            "Expected decimal alignment to anchor after the thousands group in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_decimal_tab_handles_comma_decimal_locale() {
+        use crate::ir::{TabAlignment, TabLeader, TabStop};
+
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                tab_stops: Some(vec![TabStop {
+                    position: 180.0,
+                    alignment: TabAlignment::Decimal,
+                    leader: TabLeader::None,
+                }]),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: "Total\t1.234,56".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("let tab_decimal_anchor_1 = [1.234]"),
+            "Expected decimal alignment to anchor on the locale decimal separator in: {result}"
         );
     }
 
