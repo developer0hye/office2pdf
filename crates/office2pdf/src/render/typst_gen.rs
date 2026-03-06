@@ -5,14 +5,12 @@ use unicode_normalization::UnicodeNormalization;
 use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart, ChartType,
-    Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
-    FlowPage, GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List,
-    ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
-    ShapeKind, SmartArt, TabStop, Table, TableCell, TablePage, TextDirection, TextStyle,
-    Shadow, Shape, ShapeKind, SmartArt, TabStop, Table, TableCell, TablePage, TextDirection,
-    TextStyle,
-    VerticalTextAlign, WrapMode,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, ChartType, Color,
+    ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage, FlowPage,
+    GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List, ListKind,
+    Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow,
+    Shape, ShapeKind, SmartArt, TabAlignment, TabStop, Table, TableCell, TablePage,
+    TextDirection, TextStyle, VerticalTextAlign, WrapMode, CellVerticalAlign,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -1550,9 +1548,7 @@ fn generate_cell_content(
 
 /// Generate paragraph content for inside a table cell (runs only, no block wrapper).
 fn generate_cell_paragraph(out: &mut String, para: &Paragraph) {
-    for run in &para.runs {
-        generate_run(out, run);
-    }
+    generate_runs_with_tabs(out, &para.runs, para.style.tab_stops.as_deref());
 }
 
 fn generate_image(out: &mut String, img: &ImageData, ctx: &mut GenCtx) {
@@ -1652,9 +1648,7 @@ fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertE
     // Heading paragraphs: emit #heading(level: N)[content] for proper PDF structure tagging
     if let Some(level) = style.heading_level {
         let _ = write!(out, "#heading(level: {level})[");
-        for run in &para.runs {
-            generate_run(out, run);
-        }
+        generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
         out.push_str("]\n");
         return Ok(());
     }
@@ -1686,18 +1680,7 @@ fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertE
         let _ = write!(out, "#align({align_str})[");
     }
 
-    // Generate runs, replacing tab characters with #h() spacing
-    let mut tab_index: usize = 0;
-    let mut tab_cursor_pt: f64 = 0.0;
-    for run in &para.runs {
-        generate_run_with_tabs(
-            out,
-            run,
-            style.tab_stops.as_deref(),
-            &mut tab_index,
-            &mut tab_cursor_pt,
-        );
-    }
+    generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
 
     if use_align {
         out.push(']');
@@ -1754,62 +1737,213 @@ fn write_par_settings(out: &mut String, style: &ParagraphStyle) {
 /// Word's default tab stop interval (0.5 inch = 36pt).
 const DEFAULT_TAB_WIDTH_PT: f64 = 36.0;
 
-/// Generate a run, replacing tab characters with `#h()` spacing based on tab stops.
-fn generate_run_with_tabs(
-    out: &mut String,
-    run: &Run,
-    tab_stops: Option<&[TabStop]>,
-    tab_index: &mut usize,
-    tab_cursor_pt: &mut f64,
-) {
-    if !run.text.contains('\t') {
-        generate_run(out, run);
+fn generate_runs_with_tabs(out: &mut String, runs: &[Run], tab_stops: Option<&[TabStop]>) {
+    if !paragraph_contains_tabs(runs) {
+        generate_runs(out, runs);
         return;
     }
 
-    // Split text at tab boundaries and emit #h() for each tab
-    let parts: Vec<&str> = run.text.split('\t').collect();
-    for (i, part) in parts.iter().enumerate() {
-        if i > 0 {
-            // Emit tab spacing
-            let width: f64 = resolve_tab_advance(tab_stops, tab_index, tab_cursor_pt);
-            let _ = write!(out, "#h({}pt)", format_f64(width));
+    let segments: Vec<Vec<Run>> = split_runs_on_tabs(runs);
+    out.push_str("#context {\n");
+
+    for (index, segment) in segments.iter().enumerate() {
+        let _ = write!(out, "  let tab_segment_{index} = [");
+        generate_runs(out, segment);
+        out.push_str("]\n");
+
+        if index == 0 {
+            out.push_str("  let tab_prefix_0 = tab_segment_0\n");
+            continue;
         }
-        if !part.is_empty() {
-            let sub_run = Run {
-                text: part.to_string(),
-                style: run.style.clone(),
-                href: run.href.clone(),
-                footnote: None,
-            };
-            generate_run(out, &sub_run);
+
+        let _ = writeln!(
+            out,
+            "  let tab_prefix_width_{index} = measure(tab_prefix_{}).width",
+            index - 1
+        );
+        let _ = writeln!(
+            out,
+            "  let tab_segment_width_{index} = measure(tab_segment_{index}).width"
+        );
+
+        if let Some(anchor_runs) = extract_decimal_anchor_runs(segment) {
+            let _ = write!(out, "  let tab_decimal_anchor_{index} = [");
+            generate_runs(out, &anchor_runs);
+            out.push_str("]\n");
+            let _ = writeln!(
+                out,
+                "  let tab_decimal_width_{index} = measure(tab_decimal_anchor_{index}).width"
+            );
         }
+
+        let _ = writeln!(
+            out,
+            "  let tab_default_remainder_{index} = calc.rem-euclid(tab_prefix_width_{index}.abs.pt(), {})",
+            format_f64(DEFAULT_TAB_WIDTH_PT)
+        );
+        let _ = writeln!(
+            out,
+            "  let tab_advance_{index} = {}",
+            build_tab_advance_expr(index, segment, tab_stops)
+        );
+        let _ = writeln!(
+            out,
+            "  let tab_prefix_{index} = [#tab_prefix_{}#h(tab_advance_{index})#tab_segment_{index}]",
+            index - 1
+        );
+    }
+
+    let _ = writeln!(out, "  tab_prefix_{}", segments.len() - 1);
+    out.push('}');
+}
+
+fn paragraph_contains_tabs(runs: &[Run]) -> bool {
+    runs.iter().any(|run| run.text.contains('\t'))
+}
+
+fn generate_runs(out: &mut String, runs: &[Run]) {
+    for run in runs {
+        generate_run(out, run);
     }
 }
 
-/// Resolve tab width as a relative advance from the current tab cursor.
-fn resolve_tab_advance(
-    tab_stops: Option<&[TabStop]>,
-    tab_index: &mut usize,
-    tab_cursor_pt: &mut f64,
-) -> f64 {
-    let width: f64 = tab_stops
-        .and_then(|stops| {
-            if *tab_index >= stops.len() {
-                return None;
-            }
-            let stop_position = stops[*tab_index].position;
-            *tab_index += 1;
-            if stop_position > *tab_cursor_pt {
-                Some(stop_position - *tab_cursor_pt)
-            } else {
-                None
-            }
-        })
-        .unwrap_or(DEFAULT_TAB_WIDTH_PT);
+fn split_runs_on_tabs(runs: &[Run]) -> Vec<Vec<Run>> {
+    let mut segments: Vec<Vec<Run>> = vec![Vec::new()];
 
-    *tab_cursor_pt += width;
-    width
+    for run in runs {
+        if run.footnote.is_some() || !run.text.contains('\t') {
+            if run.footnote.is_some() || !run.text.is_empty() {
+                segments
+                    .last_mut()
+                    .expect("split_runs_on_tabs should always have a segment")
+                    .push(run.clone());
+            }
+            continue;
+        }
+
+        for (index, part) in run.text.split('\t').enumerate() {
+            if index > 0 {
+                segments.push(Vec::new());
+            }
+
+            if !part.is_empty() {
+                segments
+                    .last_mut()
+                    .expect("split_runs_on_tabs should always have a segment")
+                    .push(Run {
+                        text: part.to_string(),
+                        style: run.style.clone(),
+                        href: run.href.clone(),
+                        footnote: None,
+                    });
+            }
+        }
+    }
+
+    segments
+}
+
+fn extract_decimal_anchor_runs(runs: &[Run]) -> Option<Vec<Run>> {
+    let mut anchor_runs: Vec<Run> = Vec::new();
+
+    for run in runs {
+        if let Some(content) = &run.footnote {
+            anchor_runs.push(Run {
+                text: String::new(),
+                style: run.style.clone(),
+                href: run.href.clone(),
+                footnote: Some(content.clone()),
+            });
+            continue;
+        }
+
+        let Some((offset, _)) = run
+            .text
+            .char_indices()
+            .find(|(_, ch)| matches!(ch, '.' | ','))
+        else {
+            if !run.text.is_empty() {
+                anchor_runs.push(run.clone());
+            }
+            continue;
+        };
+
+        if offset > 0 {
+            anchor_runs.push(Run {
+                text: run.text[..offset].to_string(),
+                style: run.style.clone(),
+                href: run.href.clone(),
+                footnote: None,
+            });
+        }
+
+        return Some(anchor_runs);
+    }
+
+    None
+}
+
+fn build_tab_advance_expr(index: usize, segment: &[Run], tab_stops: Option<&[TabStop]>) -> String {
+    let prefix_width_var = format!("tab_prefix_width_{index}");
+    let segment_width_var = format!("tab_segment_width_{index}");
+    let decimal_width_var =
+        extract_decimal_anchor_runs(segment).map(|_| format!("tab_decimal_width_{index}"));
+    let default_expr = build_default_tab_advance_expr(index);
+
+    let Some(tab_stops) = tab_stops else {
+        return default_expr;
+    };
+
+    if tab_stops.is_empty() {
+        return default_expr;
+    }
+
+    let mut expr = String::new();
+    for (stop_index, stop) in tab_stops.iter().enumerate() {
+        let branch = format!(
+            "calc.max(0pt, {}pt - {prefix_width_var} - {})",
+            format_f64(stop.position),
+            tab_alignment_offset_expr(stop, &segment_width_var, decimal_width_var.as_deref())
+        );
+
+        if stop_index == 0 {
+            let _ = write!(
+                expr,
+                "if {prefix_width_var} < {}pt {{ {branch} }}",
+                format_f64(stop.position)
+            );
+        } else {
+            let _ = write!(
+                expr,
+                " else if {prefix_width_var} < {}pt {{ {branch} }}",
+                format_f64(stop.position)
+            );
+        }
+    }
+
+    let _ = write!(expr, " else {{ {default_expr} }}");
+    expr
+}
+
+fn build_default_tab_advance_expr(index: usize) -> String {
+    format!(
+        "if tab_default_remainder_{index} == 0 {{ {}pt }} else {{ ({} - tab_default_remainder_{index}) * 1pt }}",
+        format_f64(DEFAULT_TAB_WIDTH_PT),
+        format_f64(DEFAULT_TAB_WIDTH_PT)
+    )
+}
+
+fn tab_alignment_offset_expr(
+    stop: &TabStop,
+    segment_width_var: &str,
+    decimal_width_var: Option<&str>,
+) -> String {
+    match stop.alignment {
+        TabAlignment::Left => "0pt".to_string(),
+        TabAlignment::Center => format!("{segment_width_var} / 2"),
+        TabAlignment::Right => segment_width_var.to_string(),
+        TabAlignment::Decimal => decimal_width_var.unwrap_or(segment_width_var).to_string(),
+    }
 }
 
 fn generate_run(out: &mut String, run: &Run) {
@@ -2351,7 +2485,7 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_tab_with_default_spacing() {
+    fn test_generate_tab_uses_measured_default_stops() {
         let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
             style: ParagraphStyle::default(),
             runs: vec![Run {
@@ -2363,13 +2497,25 @@ mod tests {
         })])]);
         let result = generate_typst(&doc).unwrap().source;
         assert!(
-            result.contains("Name:") && result.contains("#h(36pt)") && result.contains("Value"),
-            "Expected default tab spacing in: {result}"
+            result.contains("#context {"),
+            "Expected contextual tab rendering in: {result}"
+        );
+        assert!(
+            result.contains("measure(tab_prefix_0).width"),
+            "Expected tab spacing to measure the rendered prefix in: {result}"
+        );
+        assert!(
+            result.contains("calc.rem-euclid(tab_prefix_width_1.abs.pt(), 36)"),
+            "Expected default tabs to advance to the next 36pt stop in: {result}"
+        );
+        assert!(
+            !result.contains("#h(36pt)"),
+            "Expected default tabs to avoid a hard-coded 36pt gap in: {result}"
         );
     }
 
     #[test]
-    fn test_generate_tab_with_custom_tab_stops() {
+    fn test_generate_tab_uses_next_explicit_stop_and_alignment() {
         use crate::ir::{TabAlignment, TabLeader, TabStop};
 
         let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
@@ -2397,17 +2543,21 @@ mod tests {
         })])]);
         let result = generate_typst(&doc).unwrap().source;
         assert!(
-            result.contains("#h(72pt)"),
-            "Expected first tab stop at 72pt in: {result}"
+            result.contains("if tab_prefix_width_1 < 72pt"),
+            "Expected the first explicit stop to be chosen by measured width in: {result}"
         );
         assert!(
-            result.contains("#h(144pt)"),
-            "Expected second tab to advance by 144pt to the 216pt stop in: {result}"
+            result.contains("else if tab_prefix_width_2 < 216pt"),
+            "Expected the next explicit stop to be selected after the first one in: {result}"
+        );
+        assert!(
+            result.contains("216pt - tab_prefix_width_2 - tab_segment_width_2"),
+            "Expected right-aligned tabs to subtract the following segment width in: {result}"
         );
     }
 
     #[test]
-    fn test_generate_tab_exceeds_defined_stops() {
+    fn test_generate_tab_falls_back_to_next_default_stop_after_explicit_tabs() {
         use crate::ir::{TabAlignment, TabLeader, TabStop};
 
         let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
@@ -2428,12 +2578,12 @@ mod tests {
         })])]);
         let result = generate_typst(&doc).unwrap().source;
         assert!(
-            result.contains("#h(100pt)"),
-            "Expected first tab at 100pt in: {result}"
+            result.contains("if tab_prefix_width_1 < 100pt"),
+            "Expected the explicit stop to be used when it is still ahead of the prefix in: {result}"
         );
         assert!(
-            result.contains("#h(36pt)"),
-            "Expected fallback tab at 36pt in: {result}"
+            result.contains("calc.rem-euclid(tab_prefix_width_2.abs.pt(), 36)"),
+            "Expected tabs beyond explicit stops to use the next default stop in: {result}"
         );
     }
 

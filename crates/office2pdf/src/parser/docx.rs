@@ -1823,7 +1823,11 @@ fn extract_tab_stops(tabs: &[docx_rs::Tab]) -> Option<Vec<TabStop>> {
 
     stops.sort_by(|a, b| a.position.partial_cmp(&b.position).unwrap());
 
-    if stops.is_empty() { None } else { Some(stops) }
+    if stops.is_empty() {
+        Some(vec![])
+    } else {
+        Some(stops)
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -6182,6 +6186,52 @@ mod tests {
         assert!(
             flow.columns.is_none(),
             "Single column should not produce column layout"
+        );
+    }
+
+    #[test]
+    fn test_extract_tab_stops_preserves_explicit_clear_override() {
+        let tabs = vec![
+            docx_rs::Tab::new()
+                .val(docx_rs::TabValueType::Clear)
+                .pos(1440),
+        ];
+
+        let tab_stops = extract_tab_stops(&tabs);
+
+        assert_eq!(
+            tab_stops,
+            Some(vec![]),
+            "A paragraph-level clear tab must remain an explicit empty override"
+        );
+    }
+
+    #[test]
+    fn test_merge_paragraph_style_allows_clearing_inherited_tab_stops() {
+        let inherited = TabStop {
+            position: 72.0,
+            alignment: TabAlignment::Left,
+            leader: TabLeader::None,
+        };
+        let explicit = ParagraphStyle {
+            tab_stops: Some(vec![]),
+            ..ParagraphStyle::default()
+        };
+        let style = ResolvedStyle {
+            text: TextStyle::default(),
+            paragraph: ParagraphStyle {
+                tab_stops: Some(vec![inherited]),
+                ..ParagraphStyle::default()
+            },
+            heading_level: None,
+        };
+
+        let merged = merge_paragraph_style(&explicit, Some(&style));
+
+        assert_eq!(
+            merged.tab_stops,
+            Some(vec![]),
+            "Explicit paragraph tab clearing must override inherited style tab stops"
         );
     }
 
