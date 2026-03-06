@@ -1312,6 +1312,22 @@ fn generate_table_inner(
         let _ = writeln!(out, "  columns: {num_cols},");
     }
 
+    if table.rows.iter().any(|row| row.height.is_some()) {
+        out.push_str("  rows: (");
+        for (i, row) in table.rows.iter().enumerate() {
+            if i > 0 {
+                out.push_str(", ");
+            }
+            match row.height {
+                Some(height) => {
+                    let _ = write!(out, "{}pt", format_f64(height));
+                }
+                None => out.push_str("auto"),
+            }
+        }
+        out.push_str("),\n");
+    }
+
     // Rows and cells — clamp colspan to prevent exceeding available columns.
     // Also handle merge continuation cells: col_span=0 (hMerge) and row_span=0
     // (vMerge) are continuation markers that must not be emitted as Typst cells.
@@ -2400,6 +2416,47 @@ mod tests {
             "Expected rowspan: 2 in: {result}"
         );
         assert!(result.contains("Tall"), "Expected Tall in: {result}");
+    }
+
+    #[test]
+    fn test_table_with_explicit_row_sizes_and_cell_vertical_align() {
+        let centered_cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Centered".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            vertical_align: Some(CellVerticalAlign::Center),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![centered_cell, make_text_cell("B1")],
+                    height: Some(36.0),
+                },
+                TableRow {
+                    cells: vec![make_text_cell("A2"), make_text_cell("B2")],
+                    height: None,
+                },
+            ],
+            column_widths: vec![100.0, 100.0],
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+
+        assert!(
+            result.contains("rows: (36pt, auto)"),
+            "Expected explicit Typst row sizes in: {result}"
+        );
+        assert!(
+            result.contains("align: horizon"),
+            "Expected centered vertical alignment in: {result}"
+        );
     }
 
     #[test]

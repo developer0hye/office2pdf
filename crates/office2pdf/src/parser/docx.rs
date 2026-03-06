@@ -1819,6 +1819,11 @@ struct RawCell {
     vertical_align: Option<CellVerticalAlign>,
 }
 
+struct RawRow {
+    cells: Vec<RawCell>,
+    height: Option<f64>,
+}
+
 #[allow(clippy::too_many_arguments)]
 /// Extract raw rows from a docx-rs Table, tracking column indices and vmerge state.
 fn extract_raw_rows(
@@ -1831,11 +1836,19 @@ fn extract_raw_rows(
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
     depth: usize,
-) -> Vec<Vec<RawCell>> {
+) -> Vec<RawRow> {
     let mut raw_rows = Vec::new();
 
     for table_child in &table.rows {
         let docx_rs::TableChild::TableRow(row) = table_child;
+        let row_prop_json = serde_json::to_value(&row.property).ok();
+        // Typst row tracks are exact sizes, so only preserve DOCX row heights
+        // when Word marks them as exact. AtLeast would require min-content sizing.
+        let height = row_prop_json
+            .as_ref()
+            .filter(|j| j.get("heightRule").and_then(|v| v.as_str()) == Some("exact"))
+            .and_then(|j| j.get("rowHeight"))
+            .and_then(|v| v.as_f64());
         let mut cells = Vec::new();
         let mut col_index: usize = 0;
 
@@ -1890,20 +1903,20 @@ fn extract_raw_rows(
             col_index += grid_span as usize;
         }
 
-        raw_rows.push(cells);
+        raw_rows.push(RawRow { cells, height });
     }
 
     raw_rows
 }
 
 /// Resolve vertical merges: compute rowspan for "restart" cells and skip "continue" cells.
-fn resolve_vmerge_and_build_rows(raw_rows: &[Vec<RawCell>]) -> Vec<TableRow> {
+fn resolve_vmerge_and_build_rows(raw_rows: &[RawRow]) -> Vec<TableRow> {
     let mut rows = Vec::new();
 
     for (row_idx, raw_row) in raw_rows.iter().enumerate() {
         let mut cells = Vec::new();
 
-        for raw_cell in raw_row {
+        for raw_cell in &raw_row.cells {
             match raw_cell.vmerge.as_deref() {
                 Some("continue") => {
                     // Skip continue cells — they are part of a vertical merge above
@@ -1941,7 +1954,7 @@ fn resolve_vmerge_and_build_rows(raw_rows: &[Vec<RawCell>]) -> Vec<TableRow> {
 
         rows.push(TableRow {
             cells,
-            height: None,
+            height: raw_row.height,
         });
     }
 
@@ -1950,10 +1963,11 @@ fn resolve_vmerge_and_build_rows(raw_rows: &[Vec<RawCell>]) -> Vec<TableRow> {
 
 /// Count the vertical merge span starting from a "restart" cell.
 /// Looks at rows below `start_row` for "continue" cells at the same column index.
-fn count_vmerge_span(raw_rows: &[Vec<RawCell>], start_row: usize, col_index: usize) -> u32 {
+fn count_vmerge_span(raw_rows: &[RawRow], start_row: usize, col_index: usize) -> u32 {
     let mut span = 1u32;
     for row in raw_rows.iter().skip(start_row + 1) {
         let has_continue = row
+            .cells
             .iter()
             .any(|c| c.col_index == col_index && c.vmerge.as_deref() == Some("continue"));
         if has_continue {
@@ -3233,6 +3247,36 @@ mod tests {
         // so rows[1] and rows[2] should have only 1 cell each (B2, B3)
         assert_eq!(t.rows[1].cells.len(), 1);
         assert_eq!(t.rows[2].cells.len(), 1);
+    }
+
+    #[test]
+    fn test_table_exact_row_height_and_cell_vertical_align() {
+        let table = docx_rs::Table::new(vec![
+            docx_rs::TableRow::new(vec![
+                docx_rs::TableCell::new()
+                    .add_paragraph(
+                        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Centered")),
+                    )
+                    .vertical_align(docx_rs::VAlignType::Center),
+                docx_rs::TableCell::new().add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Peer")),
+                ),
+            ])
+            .row_height(36.0)
+            .height_rule(docx_rs::HeightRule::Exact),
+        ])
+        .set_grid(vec![2000, 2000]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.rows[0].height, Some(36.0));
+        assert_eq!(
+            t.rows[0].cells[0].vertical_align,
+            Some(CellVerticalAlign::Center)
+        );
     }
 
     #[test]
