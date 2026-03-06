@@ -171,6 +171,7 @@ fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyle>) -> Text
         font_size: style_text.font_size,
         color: style_text.color,
         font_family: style_text.font_family.clone(),
+        highlight: style_text.highlight,
         vertical_align: style_text.vertical_align,
         all_caps: style_text.all_caps,
         small_caps: style_text.small_caps,
@@ -207,6 +208,9 @@ fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyle>) -> Text
     }
     if explicit.font_family.is_some() {
         merged.font_family = explicit.font_family.clone();
+    }
+    if explicit.highlight.is_some() {
+        merged.highlight = explicit.highlight;
     }
     if explicit.vertical_align.is_some() {
         merged.vertical_align = explicit.vertical_align;
@@ -2124,10 +2128,39 @@ fn extract_run_style(rp: &docx_rs::RunProperty) -> TextStyle {
                 .and_then(|v| v.as_str())
                 .map(String::from)
         }),
+        highlight: rp.highlight.as_ref().and_then(|h| {
+            let json = serde_json::to_value(h).ok()?;
+            let name: &str = json.as_str()?;
+            resolve_highlight_color(name)
+        }),
         vertical_align,
         all_caps,
         // smallCaps is not exposed by docx-rs; set via SmallCapsContext XML scan
         small_caps: None,
+    }
+}
+
+/// Map OOXML named highlight colors to RGB values.
+/// The 16 named colors are defined in the ECMA-376 spec (ST_HighlightColor).
+fn resolve_highlight_color(name: &str) -> Option<Color> {
+    match name {
+        "yellow" => Some(Color::new(255, 255, 0)),
+        "green" => Some(Color::new(0, 255, 0)),
+        "cyan" => Some(Color::new(0, 255, 255)),
+        "magenta" => Some(Color::new(255, 0, 255)),
+        "blue" => Some(Color::new(0, 0, 255)),
+        "red" => Some(Color::new(255, 0, 0)),
+        "darkBlue" => Some(Color::new(0, 0, 128)),
+        "darkCyan" => Some(Color::new(0, 128, 128)),
+        "darkGreen" => Some(Color::new(0, 128, 0)),
+        "darkMagenta" => Some(Color::new(128, 0, 128)),
+        "darkRed" => Some(Color::new(128, 0, 0)),
+        "darkYellow" => Some(Color::new(128, 128, 0)),
+        "darkGray" => Some(Color::new(128, 128, 128)),
+        "lightGray" => Some(Color::new(192, 192, 192)),
+        "black" => Some(Color::new(0, 0, 0)),
+        "white" => Some(Color::new(255, 255, 255)),
+        _ => None, // "none" or unrecognized
     }
 }
 
@@ -6103,6 +6136,75 @@ mod tests {
         assert!(
             paras[1].style.direction.is_none(),
             "Second paragraph (English) should have no direction"
+        );
+    }
+
+    #[test]
+    fn test_resolve_highlight_color_named_colors() {
+        assert_eq!(
+            resolve_highlight_color("yellow"),
+            Some(Color::new(255, 255, 0))
+        );
+        assert_eq!(
+            resolve_highlight_color("green"),
+            Some(Color::new(0, 255, 0))
+        );
+        assert_eq!(
+            resolve_highlight_color("cyan"),
+            Some(Color::new(0, 255, 255))
+        );
+        assert_eq!(resolve_highlight_color("red"), Some(Color::new(255, 0, 0)));
+        assert_eq!(
+            resolve_highlight_color("darkBlue"),
+            Some(Color::new(0, 0, 128))
+        );
+        assert_eq!(resolve_highlight_color("black"), Some(Color::new(0, 0, 0)));
+        assert_eq!(
+            resolve_highlight_color("white"),
+            Some(Color::new(255, 255, 255))
+        );
+        assert_eq!(resolve_highlight_color("none"), None);
+        assert_eq!(resolve_highlight_color("unknown"), None);
+    }
+
+    #[test]
+    fn test_highlight_parsing_from_docx() {
+        let para = docx_rs::Paragraph::new().add_run(
+            docx_rs::Run::new()
+                .add_text("Highlighted")
+                .highlight("yellow"),
+        );
+        let data: Vec<u8> = build_docx_bytes(vec![para]);
+        let (doc, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let pages: Vec<&FlowPage> = doc
+            .pages
+            .iter()
+            .filter_map(|p| match p {
+                Page::Flow(fp) => Some(fp),
+                _ => None,
+            })
+            .collect();
+        let runs: Vec<&Run> = pages
+            .iter()
+            .flat_map(|p| &p.content)
+            .filter_map(|b| match b {
+                Block::Paragraph(p) => Some(&p.runs),
+                _ => None,
+            })
+            .flatten()
+            .collect();
+        let highlighted: Vec<&&Run> = runs
+            .iter()
+            .filter(|r| r.style.highlight.is_some())
+            .collect();
+        assert!(
+            !highlighted.is_empty(),
+            "Should have at least one run with highlight color"
+        );
+        assert_eq!(
+            highlighted[0].style.highlight,
+            Some(Color::new(255, 255, 0)),
+            "Yellow highlight should map to (255, 255, 0)"
         );
     }
 }

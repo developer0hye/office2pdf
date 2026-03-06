@@ -74,6 +74,8 @@ pub struct TextStyle {
     pub underline: Option<bool>,
     pub strikethrough: Option<bool>,
     pub color: Option<Color>,
+    /// Text highlight background color.
+    pub highlight: Option<Color>,
     /// Superscript or subscript vertical alignment.
     pub vertical_align: Option<VerticalTextAlign>,
     /// All caps: render text in uppercase.

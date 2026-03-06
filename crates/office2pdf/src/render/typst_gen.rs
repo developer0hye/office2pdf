@@ -1731,6 +1731,7 @@ fn generate_run(out: &mut String, run: &Run) {
     let needs_underline = matches!(style.underline, Some(true));
     let needs_strike = matches!(style.strikethrough, Some(true));
     let has_link = run.href.is_some();
+    let needs_highlight = style.highlight.is_some();
     let needs_super = matches!(style.vertical_align, Some(VerticalTextAlign::Superscript));
     let needs_sub = matches!(style.vertical_align, Some(VerticalTextAlign::Subscript));
     let needs_small_caps = matches!(style.small_caps, Some(true));
@@ -1746,6 +1747,11 @@ fn generate_run(out: &mut String, run: &Run) {
     // Wrap with link (outermost)
     if let Some(ref href) = run.href {
         let _ = write!(out, "#link(\"{href}\")[");
+    }
+
+    // Wrap with highlight
+    if let Some(ref hl) = style.highlight {
+        let _ = write!(out, "#highlight(fill: rgb({}, {}, {}))[", hl.r, hl.g, hl.b);
     }
 
     // Wrap with decorations
@@ -1806,6 +1812,9 @@ fn generate_run(out: &mut String, run: &Run) {
         out.push(']');
     }
     if needs_strike {
+        out.push(']');
+    }
+    if needs_highlight {
         out.push(']');
     }
     if has_link {
@@ -6994,6 +7003,53 @@ mod tests {
         assert!(
             result.contains("#super[") && result.contains("weight: \"bold\""),
             "Superscript with bold should combine both. Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_run_highlight_yellow() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Important".to_string(),
+                style: TextStyle {
+                    highlight: Some(Color::new(255, 255, 0)),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#highlight(fill: rgb(255, 255, 0))[Important]"),
+            "Highlight should use #highlight(fill: ...). Got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_generate_run_highlight_with_bold() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Bold Highlight".to_string(),
+                style: TextStyle {
+                    highlight: Some(Color::new(0, 255, 0)),
+                    bold: Some(true),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })])]);
+        let result = generate_typst(&doc).unwrap().source;
+        assert!(
+            result.contains("#highlight(fill: rgb(0, 255, 0))["),
+            "Should have highlight wrapper. Got: {result}"
+        );
+        assert!(
+            result.contains("weight: \"bold\""),
+            "Should have bold text. Got: {result}"
         );
     }
 }
