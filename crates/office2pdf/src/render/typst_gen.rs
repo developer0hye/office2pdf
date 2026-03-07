@@ -511,7 +511,10 @@ fn generate_fixed_element(
                 format_f64(elem.width),
                 format_f64(elem.height),
             );
-            for block in blocks {
+            for (index, block) in blocks.iter().enumerate() {
+                if index > 0 {
+                    out.push('\n');
+                }
                 generate_block(out, block, ctx)?;
             }
             out.push_str("]\n");
@@ -1900,7 +1903,10 @@ fn generate_floating_text_box_content(
         format_f64(ftb.width),
         format_f64(ftb.height)
     );
-    for block in &ftb.content {
+    for (index, block) in ftb.content.iter().enumerate() {
+        if index > 0 {
+            out.push('\n');
+        }
         generate_block(out, block, ctx)?;
     }
     out.push_str("]\n");
@@ -3087,6 +3093,10 @@ mod tests {
         let result = generate_typst(&doc).unwrap().source;
         assert!(result.contains("First paragraph"));
         assert!(result.contains("Second paragraph"));
+        assert!(
+            result.contains("First paragraph\n\nSecond paragraph"),
+            "Expected paragraph break between flow paragraphs in: {result}"
+        );
     }
 
     #[test]
@@ -4339,6 +4349,46 @@ mod tests {
         assert!(
             output.source.contains("200pt"),
             "Expected y position in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_text_box_multiple_paragraphs_preserve_breaks() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 100.0,
+                y: 200.0,
+                width: 300.0,
+                height: 100.0,
+                kind: FixedElementKind::TextBox(vec![
+                    Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "First item".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }),
+                    Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Second item".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }),
+                ]),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("First item\n\nSecond item"),
+            "Expected paragraph break inside fixed text box in: {}",
             output.source
         );
     }
