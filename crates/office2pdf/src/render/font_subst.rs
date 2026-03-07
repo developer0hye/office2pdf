@@ -196,11 +196,9 @@ fn paragraph_requests_font_family(paragraph: &Paragraph) -> bool {
 
 fn table_requests_font_family(table: &Table) -> bool {
     table.rows.iter().any(|row| {
-        row.cells.iter().any(|cell| {
-            cell.content
-                .iter()
-                .any(|block| block_requests_font_family(block))
-        })
+        row.cells
+            .iter()
+            .any(|cell| cell.content.iter().any(block_requests_font_family))
     })
 }
 
