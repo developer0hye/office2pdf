@@ -178,7 +178,10 @@ pub fn generate_typst_with_options(
     generate_document_metadata(&mut out, &doc.metadata);
 
     let mut ctx = GenCtx::new();
-    for page in &doc.pages {
+    for (index, page) in doc.pages.iter().enumerate() {
+        if index > 0 {
+            out.push_str("\n#pagebreak()\n");
+        }
         match page {
             Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx, options)?,
             Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx, options)?,
@@ -1200,17 +1203,68 @@ fn generate_smartart_steps(out: &mut String, smartart: &SmartArt) {
 ///
 /// Uses Typst's `#enum()` for ordered lists and `#list()` for unordered lists.
 /// Nested items are wrapped in `list.item()` / `enum.item()` with a sub-list.
-fn generate_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
-    let (func, item_func) = match list.kind {
+struct EffectiveListStyle<'a> {
+    kind: ListKind,
+    numbering_pattern: Option<&'a str>,
+    full_numbering: bool,
+}
+
+fn list_style_for_level<'a>(list: &'a List, level: u32) -> EffectiveListStyle<'a> {
+    if let Some(style) = list.level_styles.get(&level) {
+        EffectiveListStyle {
+            kind: style.kind,
+            numbering_pattern: style.numbering_pattern.as_deref(),
+            full_numbering: style.full_numbering,
+        }
+    } else {
+        EffectiveListStyle {
+            kind: list.kind,
+            numbering_pattern: None,
+            full_numbering: false,
+        }
+    }
+}
+
+fn list_funcs(kind: ListKind) -> (&'static str, &'static str) {
+    match kind {
         ListKind::Ordered => ("enum", "enum.item"),
         ListKind::Unordered => ("list", "list.item"),
-    };
+    }
+}
 
-    // Build nested structure from flat items with levels.
-    // We use Typst function syntax: #list(item, item, ...) or #enum(item, item, ...)
-    // Nested items use list.item(body) with a sub-list inside.
-    let _ = writeln!(out, "#{func}(");
-    generate_list_items(out, &list.items, 0, func, item_func)?;
+fn write_list_open(
+    out: &mut String,
+    prefix: &str,
+    style: &EffectiveListStyle<'_>,
+    start_at: Option<u32>,
+) {
+    let (func, _) = list_funcs(style.kind);
+    let _ = write!(out, "{prefix}{func}(");
+
+    if style.kind == ListKind::Ordered {
+        if let Some(numbering_pattern) = style.numbering_pattern {
+            let _ = write!(
+                out,
+                "numbering: \"{}\", ",
+                escape_typst_string(numbering_pattern)
+            );
+        }
+        if let Some(start_at) = start_at {
+            let _ = write!(out, "start: {start_at}, ");
+        }
+        if style.full_numbering {
+            out.push_str("full: true, ");
+        }
+    }
+
+    out.push('\n');
+}
+
+fn generate_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
+    let style = list_style_for_level(list, 0);
+    let start_at = list.items.first().and_then(|item| item.start_at);
+    write_list_open(out, "#", &style, start_at);
+    generate_list_items(out, list, &list.items, 0)?;
     out.push_str(")\n");
     Ok(())
 }
@@ -1218,11 +1272,12 @@ fn generate_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
 /// Recursively generate list items, grouping consecutive items at the same or deeper level.
 fn generate_list_items(
     out: &mut String,
+    list: &List,
     items: &[crate::ir::ListItem],
     base_level: u32,
-    func: &str,
-    item_func: &str,
 ) -> Result<(), ConvertError> {
+    let style = list_style_for_level(list, base_level);
+    let (_, item_func) = list_funcs(style.kind);
     let mut i = 0;
     while i < items.len() {
         let item = &items[i];
@@ -1244,14 +1299,10 @@ fn generate_list_items(
 
             if nested_end > nested_start {
                 // Emit nested sub-list inside the same content block
-                let _ = writeln!(out, " #{func}(");
-                generate_list_items(
-                    out,
-                    &items[nested_start..nested_end],
-                    base_level + 1,
-                    func,
-                    item_func,
-                )?;
+                let nested_style = list_style_for_level(list, base_level + 1);
+                let nested_start_at = items[nested_start].start_at;
+                write_list_open(out, " #", &nested_style, nested_start_at);
+                generate_list_items(out, list, &items[nested_start..nested_end], base_level + 1)?;
                 out.push(')');
                 i = nested_end;
             } else {
@@ -2234,9 +2285,10 @@ fn escape_typst(text: &str) -> String {
 mod tests {
     use super::*;
     use crate::ir::{
-        ChartSeries, ColumnLayout, GradientStop, HeaderFooterParagraph, Metadata, SmartArtNode,
-        StyleSheet,
+        ChartSeries, ColumnLayout, GradientStop, HeaderFooterParagraph, ListItem, ListKind,
+        ListLevelStyle, Metadata, SmartArtNode, StyleSheet,
     };
+    use std::collections::BTreeMap;
 
     /// Helper to create a minimal Document with one FlowPage.
     fn make_doc(pages: Vec<Page>) -> Document {
@@ -4525,7 +4577,7 @@ mod tests {
 
     #[test]
     fn test_generate_bulleted_list() {
-        use crate::ir::{List, ListItem, ListKind};
+        use crate::ir::List;
         let list = List {
             kind: ListKind::Unordered,
             items: vec![
@@ -4540,6 +4592,7 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: None,
                 },
                 ListItem {
                     content: vec![Paragraph {
@@ -4552,8 +4605,10 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: None,
                 },
             ],
+            level_styles: BTreeMap::new(),
         };
         let doc = make_doc(vec![Page::Flow(FlowPage {
             size: PageSize::default(),
@@ -4575,7 +4630,7 @@ mod tests {
 
     #[test]
     fn test_generate_numbered_list() {
-        use crate::ir::{List, ListItem, ListKind};
+        use crate::ir::List;
         let list = List {
             kind: ListKind::Ordered,
             items: vec![
@@ -4590,6 +4645,7 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: Some(3),
                 },
                 ListItem {
                     content: vec![Paragraph {
@@ -4602,8 +4658,17 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: None,
                 },
             ],
+            level_styles: BTreeMap::from([(
+                0,
+                ListLevelStyle {
+                    kind: ListKind::Ordered,
+                    numbering_pattern: Some("1.".to_string()),
+                    full_numbering: false,
+                },
+            )]),
         };
         let doc = make_doc(vec![Page::Flow(FlowPage {
             size: PageSize::default(),
@@ -4619,15 +4684,17 @@ mod tests {
             "Expected #enum( in: {}",
             output.source
         );
+        assert!(output.source.contains("start: 3"));
+        assert!(output.source.contains("numbering: \"1.\""));
         assert!(output.source.contains("Step 1"));
         assert!(output.source.contains("Step 2"));
     }
 
     #[test]
     fn test_generate_nested_list() {
-        use crate::ir::{List, ListItem, ListKind};
+        use crate::ir::List;
         let list = List {
-            kind: ListKind::Unordered,
+            kind: ListKind::Ordered,
             items: vec![
                 ListItem {
                     content: vec![Paragraph {
@@ -4640,6 +4707,7 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: Some(1),
                 },
                 ListItem {
                     content: vec![Paragraph {
@@ -4652,6 +4720,7 @@ mod tests {
                         }],
                     }],
                     level: 1,
+                    start_at: None,
                 },
                 ListItem {
                     content: vec![Paragraph {
@@ -4664,8 +4733,27 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: None,
                 },
             ],
+            level_styles: BTreeMap::from([
+                (
+                    0,
+                    ListLevelStyle {
+                        kind: ListKind::Ordered,
+                        numbering_pattern: Some("1.".to_string()),
+                        full_numbering: false,
+                    },
+                ),
+                (
+                    1,
+                    ListLevelStyle {
+                        kind: ListKind::Unordered,
+                        numbering_pattern: None,
+                        full_numbering: false,
+                    },
+                ),
+            ]),
         };
         let doc = make_doc(vec![Page::Flow(FlowPage {
             size: PageSize::default(),
@@ -4679,7 +4767,7 @@ mod tests {
         assert!(output.source.contains("Parent"));
         assert!(output.source.contains("Child"));
         assert!(output.source.contains("Sibling"));
-        // Nested list should contain a sub-list
+        assert!(output.source.contains("#enum("));
         assert!(
             output.source.contains("#list("),
             "Expected nested #list( in: {}",
@@ -4689,7 +4777,7 @@ mod tests {
 
     #[test]
     fn test_nested_list_single_content_block() {
-        use crate::ir::{List, ListItem, ListKind};
+        use crate::ir::List;
         // A parent item with a nested child must produce a single content block:
         //   list.item[Parent #list(...)]
         // NOT two blocks:
@@ -4708,6 +4796,7 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: None,
                 },
                 ListItem {
                     content: vec![Paragraph {
@@ -4720,8 +4809,10 @@ mod tests {
                         }],
                     }],
                     level: 1,
+                    start_at: None,
                 },
             ],
+            level_styles: BTreeMap::new(),
         };
         let doc = make_doc(vec![Page::Flow(FlowPage {
             size: PageSize::default(),
@@ -4744,6 +4835,65 @@ mod tests {
             "Nested list should be inside the parent item's content block.\nGot: {}",
             output.source
         );
+    }
+
+    #[test]
+    fn test_generate_nested_ordered_list_uses_full_numbering() {
+        use crate::ir::List;
+        let list = List {
+            kind: ListKind::Ordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Parent".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 0,
+                    start_at: Some(1),
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Child".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 1,
+                    start_at: Some(1),
+                },
+            ],
+            level_styles: BTreeMap::from([
+                (
+                    0,
+                    ListLevelStyle {
+                        kind: ListKind::Ordered,
+                        numbering_pattern: Some("1.".to_string()),
+                        full_numbering: false,
+                    },
+                ),
+                (
+                    1,
+                    ListLevelStyle {
+                        kind: ListKind::Ordered,
+                        numbering_pattern: Some("1.a.".to_string()),
+                        full_numbering: true,
+                    },
+                ),
+            ]),
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::List(list)])]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(output.source.contains("full: true"));
+        assert!(output.source.contains("numbering: \"1.a.\""));
     }
 
     // ----- US-020: Header/footer codegen tests -----
@@ -4870,6 +5020,35 @@ mod tests {
         assert!(
             !output.source.contains("footer:"),
             "Should NOT contain footer: when no footer. Got: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_generate_typst_inserts_pagebreak_between_flow_pages() {
+        let first = Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("First section")],
+            header: None,
+            footer: None,
+            columns: None,
+        });
+        let second = Page::Flow(FlowPage {
+            size: PageSize::default(),
+            margins: Margins::default(),
+            content: vec![make_paragraph("Second section")],
+            header: None,
+            footer: None,
+            columns: None,
+        });
+
+        let output = generate_typst(&make_doc(vec![first, second])).unwrap();
+        let pagebreak_count = output.source.matches("#pagebreak()").count();
+
+        assert_eq!(
+            pagebreak_count, 1,
+            "Expected exactly one page break between FlowPages. Got:\n{}",
             output.source
         );
     }

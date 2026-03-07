@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use super::style::{Color, ParagraphStyle, TextStyle};
 
 /// Header or footer content for flow pages.
@@ -116,11 +118,23 @@ pub enum ListKind {
     Unordered,
 }
 
+/// Numbering configuration for a specific list level.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ListLevelStyle {
+    pub kind: ListKind,
+    /// Optional Typst numbering pattern derived from Word's lvlText/numFmt.
+    pub numbering_pattern: Option<String>,
+    /// Whether parent numbers should be shown for nested ordered lists.
+    pub full_numbering: bool,
+}
+
 /// A list block containing items at various indent levels.
 #[derive(Debug, Clone)]
 pub struct List {
     pub kind: ListKind,
     pub items: Vec<ListItem>,
+    /// Per-level list style overrides. Levels not present fall back to `kind`.
+    pub level_styles: BTreeMap<u32, ListLevelStyle>,
 }
 
 /// A single list item with content and indent level.
@@ -128,6 +142,8 @@ pub struct List {
 pub struct ListItem {
     pub content: Vec<Paragraph>,
     pub level: u32,
+    /// Ordered list item number when this item begins a new numbering run.
+    pub start_at: Option<u32>,
 }
 
 /// A paragraph consisting of styled text runs.
@@ -389,6 +405,7 @@ mod tests {
                 }],
             }],
             level: 0,
+            start_at: None,
         };
         assert_eq!(item.level, 0);
         assert_eq!(item.content.len(), 1);
@@ -410,6 +427,7 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: None,
                 },
                 ListItem {
                     content: vec![Paragraph {
@@ -422,8 +440,10 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: None,
                 },
             ],
+            level_styles: BTreeMap::new(),
         };
         assert_eq!(list.kind, ListKind::Unordered);
         assert_eq!(list.items.len(), 2);
@@ -444,10 +464,20 @@ mod tests {
                     }],
                 }],
                 level: 0,
+                start_at: Some(3),
             }],
+            level_styles: BTreeMap::from([(
+                0,
+                ListLevelStyle {
+                    kind: ListKind::Ordered,
+                    numbering_pattern: Some("1.".to_string()),
+                    full_numbering: false,
+                },
+            )]),
         };
         assert_eq!(list.kind, ListKind::Ordered);
         assert_eq!(list.items.len(), 1);
+        assert_eq!(list.items[0].start_at, Some(3));
     }
 
     #[test]
@@ -466,6 +496,7 @@ mod tests {
                         }],
                     }],
                     level: 0,
+                    start_at: None,
                 },
                 ListItem {
                     content: vec![Paragraph {
@@ -478,11 +509,28 @@ mod tests {
                         }],
                     }],
                     level: 1,
+                    start_at: None,
                 },
             ],
+            level_styles: BTreeMap::from([(
+                1,
+                ListLevelStyle {
+                    kind: ListKind::Unordered,
+                    numbering_pattern: None,
+                    full_numbering: false,
+                },
+            )]),
         };
         assert_eq!(list.items[0].level, 0);
         assert_eq!(list.items[1].level, 1);
+        assert_eq!(
+            list.level_styles.get(&1),
+            Some(&ListLevelStyle {
+                kind: ListKind::Unordered,
+                numbering_pattern: None,
+                full_numbering: false,
+            })
+        );
     }
 
     #[test]

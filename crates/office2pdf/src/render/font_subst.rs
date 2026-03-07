@@ -27,6 +27,24 @@ pub fn substitutes(font_family: &str) -> Option<&'static [&'static str]> {
         "consolas" => Some(&["Inconsolata"]),
         "trebuchet ms" => Some(&["Ubuntu"]),
         "impact" => Some(&["Oswald"]),
+        "raleway" => Some(&[
+            "Helvetica",
+            "Arial",
+            "Arial Unicode MS",
+            "Apple SD Gothic Neo",
+            "Noto Sans CJK KR",
+            "Malgun Gothic",
+            "Liberation Sans",
+        ]),
+        "lato" => Some(&[
+            "Helvetica",
+            "Arial",
+            "Arial Unicode MS",
+            "Apple SD Gothic Neo",
+            "Noto Sans CJK KR",
+            "Malgun Gothic",
+            "Liberation Sans",
+        ]),
         _ => None,
     }
 }
@@ -191,6 +209,25 @@ mod tests {
     fn test_impact_substitutes() {
         let subs = substitutes("Impact").expect("Impact should have substitutes");
         assert!(subs.contains(&"Oswald"));
+    }
+
+    #[test]
+    fn test_raleway_substitutes() {
+        let subs = substitutes("Raleway").expect("Raleway should have substitutes");
+        assert!(subs.contains(&"Helvetica"));
+        assert!(subs.contains(&"Arial"));
+        assert!(subs.contains(&"Arial Unicode MS"));
+        assert!(subs.contains(&"Apple SD Gothic Neo"));
+        assert_eq!(subs[0], "Helvetica");
+    }
+
+    #[test]
+    fn test_lato_substitutes() {
+        let subs = substitutes("Lato").expect("Lato should have substitutes");
+        assert!(subs.contains(&"Helvetica"));
+        assert!(subs.contains(&"Arial"));
+        assert!(subs.contains(&"Arial Unicode MS"));
+        assert!(subs.contains(&"Apple SD Gothic Neo"));
     }
 
     // --- font_with_fallbacks() tests ---
