@@ -28,6 +28,39 @@ pub struct ParagraphStyle {
     pub heading_level: Option<u8>,
     /// Text direction for bidirectional rendering (RTL for Arabic/Hebrew).
     pub direction: Option<TextDirection>,
+    /// Custom tab stop positions for this paragraph.
+    pub tab_stops: Option<Vec<TabStop>>,
+}
+
+/// A custom tab stop definition.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TabStop {
+    /// Position in points from the left margin.
+    pub position: f64,
+    /// Alignment of text at this tab stop.
+    pub alignment: TabAlignment,
+    /// Leader character filling the space before this tab stop.
+    pub leader: TabLeader,
+}
+
+/// Tab stop alignment type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TabAlignment {
+    #[default]
+    Left,
+    Center,
+    Right,
+    Decimal,
+}
+
+/// Leader character for a tab stop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TabLeader {
+    #[default]
+    None,
+    Dot,
+    Hyphen,
+    Underscore,
 }
 
 /// Text direction for bidirectional (BiDi) rendering.

@@ -12,8 +12,8 @@ use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart, Color,
     ColumnLayout, Document, FloatingImage, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph,
     ImageData, ImageFormat, LineSpacing, List, ListItem, ListKind, Margins, MathEquation, Page,
-    PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, Table, TableCell, TableRow,
-    TextDirection, TextStyle, VerticalTextAlign, WrapMode,
+    PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment, TabLeader, TabStop, Table,
+    TableCell, TableRow, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -110,8 +110,15 @@ fn extract_num_info(para: &docx_rs::Paragraph) -> Option<NumInfo> {
 struct ResolvedStyle {
     text: TextStyle,
     paragraph: ParagraphStyle,
+    paragraph_tab_overrides: Option<Vec<TabStopOverride>>,
     /// Heading level from outline_lvl (0 = Heading 1, 1 = Heading 2, ..., 5 = Heading 6).
     heading_level: Option<usize>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum TabStopOverride {
+    Set(TabStop),
+    Clear(f64),
 }
 
 /// Map from style_id → resolved formatting.
@@ -133,6 +140,7 @@ fn build_style_map(styles: &docx_rs::Styles) -> StyleMap {
 
         let text = extract_run_style(&style.run_property);
         let paragraph = extract_paragraph_style(&style.paragraph_property);
+        let paragraph_tab_overrides = extract_tab_stop_overrides(&style.paragraph_property.tabs);
         let heading_level = style
             .paragraph_property
             .outline_lvl
@@ -145,6 +153,7 @@ fn build_style_map(styles: &docx_rs::Styles) -> StyleMap {
             ResolvedStyle {
                 text,
                 paragraph,
+                paragraph_tab_overrides,
                 heading_level,
             },
         );
@@ -233,27 +242,106 @@ fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyle>) -> Text
 /// Explicit formatting takes priority.
 fn merge_paragraph_style(
     explicit: &ParagraphStyle,
+    explicit_tab_overrides: Option<&[TabStopOverride]>,
     style: Option<&ResolvedStyle>,
 ) -> ParagraphStyle {
-    let style_para = match style {
-        Some(s) => &s.paragraph,
-        None => return explicit.clone(),
-    };
+    let style_para = style.map(|s| &s.paragraph);
+    let inherited_tab_stops = style.and_then(resolve_style_tab_stops);
 
     ParagraphStyle {
-        alignment: explicit.alignment.or(style_para.alignment),
-        indent_left: explicit.indent_left.or(style_para.indent_left),
-        indent_right: explicit.indent_right.or(style_para.indent_right),
-        indent_first_line: explicit.indent_first_line.or(style_para.indent_first_line),
-        line_spacing: explicit.line_spacing.or(style_para.line_spacing),
-        space_before: explicit.space_before.or(style_para.space_before),
-        space_after: explicit.space_after.or(style_para.space_after),
+        alignment: explicit.alignment.or(style_para.and_then(|s| s.alignment)),
+        indent_left: explicit
+            .indent_left
+            .or(style_para.and_then(|s| s.indent_left)),
+        indent_right: explicit
+            .indent_right
+            .or(style_para.and_then(|s| s.indent_right)),
+        indent_first_line: explicit
+            .indent_first_line
+            .or(style_para.and_then(|s| s.indent_first_line)),
+        line_spacing: explicit
+            .line_spacing
+            .or(style_para.and_then(|s| s.line_spacing)),
+        space_before: explicit
+            .space_before
+            .or(style_para.and_then(|s| s.space_before)),
+        space_after: explicit
+            .space_after
+            .or(style_para.and_then(|s| s.space_after)),
         // Heading level from the style definition (outline_lvl 0→H1, 1→H2, ...)
         heading_level: style
             .and_then(|s| s.heading_level)
             .map(|lvl| (lvl + 1) as u8),
         direction: explicit.direction,
+        tab_stops: merge_tab_stops(
+            explicit.tab_stops.as_deref(),
+            explicit_tab_overrides,
+            inherited_tab_stops.as_deref(),
+        ),
     }
+}
+
+fn resolve_style_tab_stops(style: &ResolvedStyle) -> Option<Vec<TabStop>> {
+    resolve_tab_stop_source(
+        style.paragraph.tab_stops.as_deref(),
+        style.paragraph_tab_overrides.as_deref(),
+    )
+}
+
+fn resolve_tab_stop_source(
+    tab_stops: Option<&[TabStop]>,
+    tab_overrides: Option<&[TabStopOverride]>,
+) -> Option<Vec<TabStop>> {
+    if let Some(tab_overrides) = tab_overrides {
+        let mut resolved: Vec<TabStop> = Vec::new();
+        apply_tab_stop_overrides(&mut resolved, tab_overrides);
+        return Some(resolved);
+    }
+
+    tab_stops.map(|tab_stops| tab_stops.to_vec())
+}
+
+fn merge_tab_stops(
+    explicit_tab_stops: Option<&[TabStop]>,
+    explicit_tab_overrides: Option<&[TabStopOverride]>,
+    inherited_tab_stops: Option<&[TabStop]>,
+) -> Option<Vec<TabStop>> {
+    if let Some(explicit_tab_overrides) = explicit_tab_overrides {
+        let mut resolved: Vec<TabStop> = inherited_tab_stops.unwrap_or(&[]).to_vec();
+        apply_tab_stop_overrides(&mut resolved, explicit_tab_overrides);
+        return Some(resolved);
+    }
+
+    explicit_tab_stops
+        .map(|explicit_tab_stops| explicit_tab_stops.to_vec())
+        .or_else(|| inherited_tab_stops.map(|inherited_tab_stops| inherited_tab_stops.to_vec()))
+}
+
+fn apply_tab_stop_overrides(tab_stops: &mut Vec<TabStop>, tab_overrides: &[TabStopOverride]) {
+    for tab_override in tab_overrides {
+        match tab_override {
+            TabStopOverride::Set(tab_stop) => {
+                tab_stops.retain(|existing| {
+                    !tab_stop_positions_match(existing.position, tab_stop.position)
+                });
+                tab_stops.push(*tab_stop);
+            }
+            TabStopOverride::Clear(position) => {
+                tab_stops
+                    .retain(|existing| !tab_stop_positions_match(existing.position, *position));
+            }
+        }
+    }
+
+    tab_stops.sort_by(|left, right| {
+        left.position
+            .partial_cmp(&right.position)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+}
+
+fn tab_stop_positions_match(left: f64, right: f64) -> bool {
+    (left - right).abs() < 0.01
 }
 
 /// Look up the pStyle reference from a paragraph's property.
@@ -1243,7 +1331,9 @@ fn extract_docx_footer(section_prop: &docx_rs::SectionProperty) -> Option<Header
 /// Convert a docx-rs Paragraph into a HeaderFooterParagraph.
 /// Detects PAGE field codes within runs and emits HFInline::PageNumber.
 fn convert_hf_paragraph(para: &docx_rs::Paragraph) -> HeaderFooterParagraph {
-    let style = extract_paragraph_style(&para.property);
+    let explicit_style = extract_paragraph_style(&para.property);
+    let explicit_tab_overrides = extract_tab_stop_overrides(&para.property.tabs);
+    let style = merge_paragraph_style(&explicit_style, explicit_tab_overrides.as_deref(), None);
     let mut elements: Vec<HFInline> = Vec::new();
 
     for child in &para.children {
@@ -1545,7 +1635,13 @@ fn convert_paragraph_blocks(
                     if !runs.is_empty() {
                         out.append(&mut inline_images);
                         let explicit_para_style = extract_paragraph_style(&para.property);
-                        let mut style = merge_paragraph_style(&explicit_para_style, resolved_style);
+                        let explicit_tab_overrides =
+                            extract_tab_stop_overrides(&para.property.tabs);
+                        let mut style = merge_paragraph_style(
+                            &explicit_para_style,
+                            explicit_tab_overrides.as_deref(),
+                            resolved_style,
+                        );
                         if is_rtl {
                             style.direction = Some(TextDirection::Rtl);
                         }
@@ -1620,7 +1716,12 @@ fn convert_paragraph_blocks(
     out.extend(inline_images);
 
     let explicit_para_style = extract_paragraph_style(&para.property);
-    let mut style = merge_paragraph_style(&explicit_para_style, resolved_style);
+    let explicit_tab_overrides = extract_tab_stop_overrides(&para.property.tabs);
+    let mut style = merge_paragraph_style(
+        &explicit_para_style,
+        explicit_tab_overrides.as_deref(),
+        resolved_style,
+    );
     if is_rtl {
         style.direction = Some(TextDirection::Rtl);
     }
@@ -1706,6 +1807,8 @@ fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> ParagraphStyle 
 
     let (line_spacing, space_before, space_after) = extract_line_spacing(&prop.line_spacing);
 
+    let tab_stops = extract_tab_stops(&prop.tabs);
+
     ParagraphStyle {
         alignment,
         indent_left,
@@ -1716,6 +1819,7 @@ fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> ParagraphStyle 
         space_after,
         heading_level: None,
         direction: None, // Set by BidiContext after style merge
+        tab_stops,
     }
 }
 
@@ -1773,6 +1877,58 @@ fn extract_line_spacing(
     });
 
     (line_spacing, space_before, space_after)
+}
+
+/// Extract tab stops from paragraph properties.
+/// docx-rs Tab has `pos` in twips and `val`/`leader` as enums.
+fn extract_tab_stops(tabs: &[docx_rs::Tab]) -> Option<Vec<TabStop>> {
+    let tab_overrides = extract_tab_stop_overrides(tabs)?;
+    let mut tab_stops: Vec<TabStop> = Vec::new();
+    apply_tab_stop_overrides(&mut tab_stops, &tab_overrides);
+    Some(tab_stops)
+}
+
+fn extract_tab_stop_overrides(tabs: &[docx_rs::Tab]) -> Option<Vec<TabStopOverride>> {
+    if tabs.is_empty() {
+        return None;
+    }
+
+    Some(
+        tabs.iter()
+            .filter_map(|tab| {
+                let position = tab.pos.map(|pos_twips| pos_twips as f64 / 20.0)?;
+
+                if matches!(tab.val, Some(docx_rs::TabValueType::Clear)) {
+                    return Some(TabStopOverride::Clear(position));
+                }
+
+                let alignment = match tab.val {
+                    Some(docx_rs::TabValueType::Center) => TabAlignment::Center,
+                    Some(docx_rs::TabValueType::Right) | Some(docx_rs::TabValueType::End) => {
+                        TabAlignment::Right
+                    }
+                    Some(docx_rs::TabValueType::Decimal) => TabAlignment::Decimal,
+                    _ => TabAlignment::Left,
+                };
+
+                let leader =
+                    match tab.leader {
+                        Some(docx_rs::TabLeaderType::Dot)
+                        | Some(docx_rs::TabLeaderType::MiddleDot) => TabLeader::Dot,
+                        Some(docx_rs::TabLeaderType::Hyphen)
+                        | Some(docx_rs::TabLeaderType::Heavy) => TabLeader::Hyphen,
+                        Some(docx_rs::TabLeaderType::Underscore) => TabLeader::Underscore,
+                        _ => TabLeader::None,
+                    };
+
+                Some(TabStopOverride::Set(TabStop {
+                    position,
+                    alignment,
+                    leader,
+                }))
+            })
+            .collect(),
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -6131,6 +6287,166 @@ mod tests {
         assert!(
             flow.columns.is_none(),
             "Single column should not produce column layout"
+        );
+    }
+
+    #[test]
+    fn test_extract_tab_stops_preserves_explicit_clear_override() {
+        let tabs = vec![
+            docx_rs::Tab::new()
+                .val(docx_rs::TabValueType::Clear)
+                .pos(1440),
+        ];
+
+        let tab_stops = extract_tab_stops(&tabs);
+
+        assert_eq!(
+            tab_stops,
+            Some(vec![]),
+            "A paragraph-level clear tab must remain an explicit empty override"
+        );
+    }
+
+    #[test]
+    fn test_merge_paragraph_style_preserves_inherited_tabs_not_overridden() {
+        let explicit_prop = docx_rs::ParagraphProperty::new().add_tab(
+            docx_rs::Tab::new()
+                .val(docx_rs::TabValueType::Left)
+                .pos(2160),
+        );
+        let explicit = extract_paragraph_style(&explicit_prop);
+        let explicit_tab_overrides = extract_tab_stop_overrides(&explicit_prop.tabs);
+        let style = ResolvedStyle {
+            text: TextStyle::default(),
+            paragraph: ParagraphStyle {
+                tab_stops: Some(vec![
+                    TabStop {
+                        position: 72.0,
+                        alignment: TabAlignment::Left,
+                        leader: TabLeader::None,
+                    },
+                    TabStop {
+                        position: 144.0,
+                        alignment: TabAlignment::Right,
+                        leader: TabLeader::Dot,
+                    },
+                ]),
+                ..ParagraphStyle::default()
+            },
+            paragraph_tab_overrides: None,
+            heading_level: None,
+        };
+
+        let merged =
+            merge_paragraph_style(&explicit, explicit_tab_overrides.as_deref(), Some(&style));
+
+        assert_eq!(
+            merged.tab_stops,
+            Some(vec![
+                TabStop {
+                    position: 72.0,
+                    alignment: TabAlignment::Left,
+                    leader: TabLeader::None,
+                },
+                TabStop {
+                    position: 108.0,
+                    alignment: TabAlignment::Left,
+                    leader: TabLeader::None,
+                },
+                TabStop {
+                    position: 144.0,
+                    alignment: TabAlignment::Right,
+                    leader: TabLeader::Dot,
+                },
+            ]),
+            "Paragraph-level tabs should extend inherited style tabs instead of replacing them"
+        );
+    }
+
+    #[test]
+    fn test_merge_paragraph_style_clears_only_targeted_inherited_tab_stop() {
+        let explicit_prop = docx_rs::ParagraphProperty::new()
+            .add_tab(
+                docx_rs::Tab::new()
+                    .val(docx_rs::TabValueType::Clear)
+                    .pos(2880),
+            )
+            .add_tab(
+                docx_rs::Tab::new()
+                    .val(docx_rs::TabValueType::Left)
+                    .pos(2160),
+            );
+        let explicit = extract_paragraph_style(&explicit_prop);
+        let explicit_tab_overrides = extract_tab_stop_overrides(&explicit_prop.tabs);
+        let style = ResolvedStyle {
+            text: TextStyle::default(),
+            paragraph: ParagraphStyle {
+                tab_stops: Some(vec![
+                    TabStop {
+                        position: 72.0,
+                        alignment: TabAlignment::Left,
+                        leader: TabLeader::None,
+                    },
+                    TabStop {
+                        position: 144.0,
+                        alignment: TabAlignment::Right,
+                        leader: TabLeader::Dot,
+                    },
+                ]),
+                ..ParagraphStyle::default()
+            },
+            paragraph_tab_overrides: None,
+            heading_level: None,
+        };
+
+        let merged =
+            merge_paragraph_style(&explicit, explicit_tab_overrides.as_deref(), Some(&style));
+
+        assert_eq!(
+            merged.tab_stops,
+            Some(vec![
+                TabStop {
+                    position: 72.0,
+                    alignment: TabAlignment::Left,
+                    leader: TabLeader::None,
+                },
+                TabStop {
+                    position: 108.0,
+                    alignment: TabAlignment::Left,
+                    leader: TabLeader::None,
+                },
+            ]),
+            "A clear tab should remove only the matching inherited stop, not the whole inherited list"
+        );
+    }
+
+    #[test]
+    fn test_merge_paragraph_style_allows_clearing_inherited_tab_stops() {
+        let inherited = TabStop {
+            position: 72.0,
+            alignment: TabAlignment::Left,
+            leader: TabLeader::None,
+        };
+        let explicit = ParagraphStyle {
+            tab_stops: Some(vec![]),
+            ..ParagraphStyle::default()
+        };
+        let style = ResolvedStyle {
+            text: TextStyle::default(),
+            paragraph: ParagraphStyle {
+                tab_stops: Some(vec![inherited]),
+                ..ParagraphStyle::default()
+            },
+            paragraph_tab_overrides: None,
+            heading_level: None,
+        };
+
+        let merged = merge_paragraph_style(&explicit, None, Some(&style));
+
+        assert_eq!(
+            merged.tab_stops,
+            Some(vec![]),
+            "Explicit paragraph tab clearing must override inherited style tab stops"
         );
     }
 
