@@ -66,7 +66,7 @@ fn all_blocks(pages: &[FlowPage]) -> Vec<&Block> {
     pages.iter().flat_map(|p| p.content.iter()).collect()
 }
 
-/// Recursively collect all runs from blocks (paragraphs, lists, tables, text-boxes).
+/// Recursively collect all runs from blocks (paragraphs, lists, tables, floating text boxes).
 fn all_runs<'a>(blocks: &'a [&'a Block]) -> Vec<&'a Run> {
     let mut runs = Vec::new();
     for block in blocks {
@@ -92,6 +92,11 @@ fn collect_runs_from_block<'a>(block: &'a Block, out: &mut Vec<&'a Run>) {
                         collect_runs_from_block(b, out);
                     }
                 }
+            }
+        }
+        Block::FloatingTextBox(text_box) => {
+            for block in &text_box.content {
+                collect_runs_from_block(block, out);
             }
         }
         Block::Image(_)

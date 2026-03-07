@@ -10,11 +10,11 @@ use crate::error::{ConvertError, ConvertWarning};
 const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart, Color,
-    ColumnLayout, Document, FloatingImage, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph,
-    ImageData, ImageFormat, LineSpacing, List, ListItem, ListKind, ListLevelStyle, Margins,
-    MathEquation, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment,
-    TabLeader, TabStop, Table, TableCell, TableRow, TextDirection, TextStyle, VerticalTextAlign,
-    WrapMode,
+    ColumnLayout, Document, FloatingImage, FloatingTextBox, FlowPage, HFInline, HeaderFooter,
+    HeaderFooterParagraph, ImageData, ImageFormat, Insets, LineSpacing, List, ListItem, ListKind,
+    ListLevelStyle, Margins, MathEquation, Page, PageSize, Paragraph, ParagraphStyle, Run,
+    StyleSheet, TabAlignment, TabLeader, TabStop, Table, TableCell, TableRow, TextDirection,
+    TextStyle, VerticalTextAlign, WrapMode,
 };
 use crate::parser::Parser;
 
@@ -794,16 +794,16 @@ impl NoteContext {
     }
 }
 
-/// Wrap type info for an anchor image, scanned from raw document XML.
+/// Wrap type info for an anchored drawing, scanned from raw document XML.
 struct AnchorWrapInfo {
     wrap_mode: WrapMode,
     behind_doc: bool,
 }
 
-/// Context for resolving wrap modes of anchor images during parsing.
-/// The `cursor` is advanced each time an anchor image is encountered.
+/// Context for resolving wrap modes of anchored drawings during parsing.
+/// The `cursor` is advanced each time an anchored drawing is encountered.
 struct WrapContext {
-    /// Ordered list of wrap info for anchor images as they appear in document.xml.
+    /// Ordered list of wrap info for anchored drawings as they appear in document.xml.
     wraps: Vec<AnchorWrapInfo>,
     /// Current position in `wraps`.
     cursor: Cell<usize>,
@@ -834,6 +834,432 @@ fn build_wrap_context_from_xml(doc_xml: Option<&str>) -> WrapContext {
         wraps,
         cursor: Cell::new(0),
     }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct DrawingTextBoxInfo {
+    width_pt: Option<f64>,
+    height_pt: Option<f64>,
+}
+
+/// Context for resolving DrawingML text box extents in document order.
+struct DrawingTextBoxContext {
+    text_boxes: Vec<DrawingTextBoxInfo>,
+    cursor: Cell<usize>,
+}
+
+impl DrawingTextBoxContext {
+    fn from_xml(xml: Option<&str>) -> Self {
+        Self {
+            text_boxes: xml.map(scan_drawing_text_boxes).unwrap_or_default(),
+            cursor: Cell::new(0),
+        }
+    }
+
+    fn consume_next(&self) -> DrawingTextBoxInfo {
+        let idx: usize = self.cursor.get();
+        self.cursor.set(idx + 1);
+        self.text_boxes.get(idx).copied().unwrap_or_default()
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct TableHeaderInfo {
+    repeat_rows: usize,
+}
+
+/// Context for resolving repeat-header rows on tables.
+/// docx-rs does not expose `w:tblHeader`, so we scan raw XML and consume the
+/// results in table encounter order.
+struct TableHeaderContext {
+    headers: Vec<TableHeaderInfo>,
+    cursor: Cell<usize>,
+}
+
+impl TableHeaderContext {
+    fn from_xml(xml: Option<&str>) -> Self {
+        Self {
+            headers: xml.map(scan_table_headers).unwrap_or_default(),
+            cursor: Cell::new(0),
+        }
+    }
+
+    fn consume_next(&self) -> TableHeaderInfo {
+        let idx: usize = self.cursor.get();
+        self.cursor.set(idx + 1);
+        self.headers.get(idx).copied().unwrap_or_default()
+    }
+}
+
+struct TableHeaderScanState {
+    table_index: usize,
+    repeat_rows: usize,
+    in_row: bool,
+    current_row_is_header: bool,
+    saw_body_row: bool,
+}
+
+fn scan_table_headers(xml: &str) -> Vec<TableHeaderInfo> {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    let mut buf: Vec<u8> = Vec::new();
+    let mut headers: Vec<TableHeaderInfo> = Vec::new();
+    let mut stack: Vec<TableHeaderScanState> = Vec::new();
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(quick_xml::events::Event::Start(ref e)) => match e.local_name().as_ref() {
+                b"tbl" => {
+                    headers.push(TableHeaderInfo::default());
+                    stack.push(TableHeaderScanState {
+                        table_index: headers.len() - 1,
+                        repeat_rows: 0,
+                        in_row: false,
+                        current_row_is_header: false,
+                        saw_body_row: false,
+                    });
+                }
+                b"tr" => {
+                    if let Some(state) = stack.last_mut() {
+                        state.in_row = true;
+                        state.current_row_is_header = false;
+                    }
+                }
+                b"tblHeader" => {
+                    if let Some(state) = stack.last_mut()
+                        && state.in_row
+                        && on_off_element_is_enabled(e)
+                    {
+                        state.current_row_is_header = true;
+                    }
+                }
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::Empty(ref e)) => match e.local_name().as_ref() {
+                b"tbl" => {
+                    headers.push(TableHeaderInfo::default());
+                }
+                b"tr" => {
+                    if let Some(state) = stack.last_mut() {
+                        state.in_row = true;
+                        state.current_row_is_header = false;
+                        finalize_table_header_row(state);
+                    }
+                }
+                b"tblHeader" => {
+                    if let Some(state) = stack.last_mut()
+                        && state.in_row
+                        && on_off_element_is_enabled(e)
+                    {
+                        state.current_row_is_header = true;
+                    }
+                }
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::End(ref e)) => match e.local_name().as_ref() {
+                b"tr" => {
+                    if let Some(state) = stack.last_mut() {
+                        finalize_table_header_row(state);
+                    }
+                }
+                b"tbl" => {
+                    if let Some(state) = stack.pop() {
+                        headers[state.table_index].repeat_rows = state.repeat_rows;
+                    }
+                }
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+        buf.clear();
+    }
+
+    headers
+}
+
+fn finalize_table_header_row(state: &mut TableHeaderScanState) {
+    if !state.in_row {
+        return;
+    }
+
+    if !state.saw_body_row && state.current_row_is_header {
+        state.repeat_rows += 1;
+    } else {
+        state.saw_body_row = true;
+    }
+
+    state.in_row = false;
+    state.current_row_is_header = false;
+}
+
+fn on_off_element_is_enabled(e: &quick_xml::events::BytesStart<'_>) -> bool {
+    for attr in e.attributes().flatten() {
+        if attr.key.local_name().as_ref() != b"val" {
+            continue;
+        }
+
+        let value = attr.value.as_ref();
+        if value.eq_ignore_ascii_case(b"0")
+            || value.eq_ignore_ascii_case(b"false")
+            || value.eq_ignore_ascii_case(b"off")
+        {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    let mut buf: Vec<u8> = Vec::new();
+    let mut result: Vec<DrawingTextBoxInfo> = Vec::new();
+    let mut in_body: bool = false;
+    let mut drawing_depth: usize = 0;
+    let mut current_info: DrawingTextBoxInfo = DrawingTextBoxInfo::default();
+    let mut saw_text_box: bool = false;
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(quick_xml::events::Event::Start(ref e)) => match e.local_name().as_ref() {
+                b"body" => in_body = true,
+                b"drawing" if in_body => {
+                    if drawing_depth == 0 {
+                        current_info = DrawingTextBoxInfo::default();
+                        saw_text_box = false;
+                    }
+                    drawing_depth += 1;
+                }
+                b"extent" if drawing_depth > 0 => {
+                    update_drawing_text_box_extent(&mut current_info, e);
+                }
+                b"txbx" if drawing_depth > 0 => saw_text_box = true,
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::Empty(ref e)) => match e.local_name().as_ref() {
+                b"extent" if drawing_depth > 0 => {
+                    update_drawing_text_box_extent(&mut current_info, e);
+                }
+                b"txbx" if drawing_depth > 0 => saw_text_box = true,
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::End(ref e)) => match e.local_name().as_ref() {
+                b"body" => in_body = false,
+                b"drawing" if drawing_depth > 0 => {
+                    drawing_depth -= 1;
+                    if drawing_depth == 0 && saw_text_box {
+                        result.push(current_info);
+                        current_info = DrawingTextBoxInfo::default();
+                        saw_text_box = false;
+                    }
+                }
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+        buf.clear();
+    }
+
+    result
+}
+
+fn update_drawing_text_box_extent(
+    info: &mut DrawingTextBoxInfo,
+    e: &quick_xml::events::BytesStart<'_>,
+) {
+    if info.width_pt.is_some() && info.height_pt.is_some() {
+        return;
+    }
+
+    let mut width_emu: Option<u32> = None;
+    let mut height_emu: Option<u32> = None;
+
+    for attr in e.attributes().flatten() {
+        match attr.key.local_name().as_ref() {
+            b"cx" => {
+                width_emu = std::str::from_utf8(attr.value.as_ref())
+                    .ok()
+                    .and_then(|value| value.parse::<u32>().ok());
+            }
+            b"cy" => {
+                height_emu = std::str::from_utf8(attr.value.as_ref())
+                    .ok()
+                    .and_then(|value| value.parse::<u32>().ok());
+            }
+            _ => {}
+        }
+    }
+
+    if let Some(width_emu) = width_emu {
+        info.width_pt = Some(emu_to_pt(width_emu));
+    }
+    if let Some(height_emu) = height_emu {
+        info.height_pt = Some(emu_to_pt(height_emu));
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+struct VmlTextBoxInfo {
+    paragraphs: Vec<String>,
+    wrap_mode: Option<WrapMode>,
+}
+
+impl VmlTextBoxInfo {
+    fn into_blocks(self) -> Vec<Block> {
+        self.paragraphs
+            .into_iter()
+            .filter(|text| !text.is_empty())
+            .map(|text| {
+                Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text,
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })
+            })
+            .collect()
+    }
+}
+
+/// Raw VML shape textbox content scanned in body order.
+struct VmlTextBoxContext {
+    text_boxes: Vec<VmlTextBoxInfo>,
+    cursor: Cell<usize>,
+}
+
+impl VmlTextBoxContext {
+    fn from_xml(xml: Option<&str>) -> Self {
+        Self {
+            text_boxes: xml.map(scan_vml_text_boxes).unwrap_or_default(),
+            cursor: Cell::new(0),
+        }
+    }
+
+    fn consume_next(&self) -> VmlTextBoxInfo {
+        let idx: usize = self.cursor.get();
+        self.cursor.set(idx + 1);
+        self.text_boxes.get(idx).cloned().unwrap_or_default()
+    }
+}
+
+fn scan_vml_text_boxes(xml: &str) -> Vec<VmlTextBoxInfo> {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    let mut buf: Vec<u8> = Vec::new();
+    let mut result: Vec<VmlTextBoxInfo> = Vec::new();
+    let mut in_body: bool = false;
+    let mut pict_depth: usize = 0;
+    let mut shape_depth: usize = 0;
+    let mut in_txbx_content: bool = false;
+    let mut in_paragraph: bool = false;
+    let mut current_pict_shapes: Vec<VmlTextBoxInfo> = Vec::new();
+    let mut current_pict_wrap: Option<WrapMode> = None;
+    let mut current_shape_paragraphs: Vec<String> = Vec::new();
+    let mut current_paragraph_text: String = String::new();
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(quick_xml::events::Event::Start(ref e)) => match e.local_name().as_ref() {
+                b"body" => in_body = true,
+                b"pict" if in_body => {
+                    if pict_depth == 0 {
+                        current_pict_shapes.clear();
+                        current_pict_wrap = None;
+                    }
+                    pict_depth += 1;
+                }
+                b"shape" if pict_depth > 0 => {
+                    if shape_depth == 0 {
+                        current_shape_paragraphs.clear();
+                    }
+                    shape_depth += 1;
+                }
+                b"txbxContent" if shape_depth > 0 => in_txbx_content = true,
+                b"p" if in_txbx_content => {
+                    in_paragraph = true;
+                    current_paragraph_text.clear();
+                }
+                b"wrap" if pict_depth > 0 => {
+                    current_pict_wrap = extract_vml_wrap_mode_from_element(e);
+                }
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::Empty(ref e)) => match e.local_name().as_ref() {
+                b"tab" if in_paragraph => current_paragraph_text.push('\t'),
+                b"br" if in_paragraph => current_paragraph_text.push('\n'),
+                b"wrap" if pict_depth > 0 => {
+                    current_pict_wrap = extract_vml_wrap_mode_from_element(e);
+                }
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::Text(ref e)) => {
+                if in_paragraph && let Ok(text) = e.xml_content() {
+                    current_paragraph_text.push_str(&text);
+                }
+            }
+            Ok(quick_xml::events::Event::End(ref e)) => match e.local_name().as_ref() {
+                b"body" => in_body = false,
+                b"p" if in_paragraph => {
+                    current_shape_paragraphs.push(std::mem::take(&mut current_paragraph_text));
+                    in_paragraph = false;
+                }
+                b"txbxContent" if in_txbx_content => in_txbx_content = false,
+                b"shape" if shape_depth > 0 => {
+                    shape_depth -= 1;
+                    if shape_depth == 0 {
+                        current_pict_shapes.push(VmlTextBoxInfo {
+                            paragraphs: std::mem::take(&mut current_shape_paragraphs),
+                            wrap_mode: None,
+                        });
+                        in_txbx_content = false;
+                        in_paragraph = false;
+                        current_paragraph_text.clear();
+                    }
+                }
+                b"pict" if pict_depth > 0 => {
+                    pict_depth -= 1;
+                    if pict_depth == 0 {
+                        for mut text_box in current_pict_shapes.drain(..) {
+                            text_box.wrap_mode = current_pict_wrap;
+                            result.push(text_box);
+                        }
+                        current_pict_wrap = None;
+                    }
+                }
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+        buf.clear();
+    }
+
+    result
+}
+
+fn extract_vml_wrap_mode_from_element(e: &quick_xml::events::BytesStart<'_>) -> Option<WrapMode> {
+    for attr in e.attributes().flatten() {
+        if attr.key.local_name().as_ref() != b"type" {
+            continue;
+        }
+
+        let value = std::str::from_utf8(attr.value.as_ref()).ok()?;
+        return match value {
+            "square" => Some(WrapMode::Square),
+            "none" => Some(WrapMode::None),
+            "tight" | "through" => Some(WrapMode::Tight),
+            "topAndBottom" | "top-and-bottom" => Some(WrapMode::TopAndBottom),
+            _ => None,
+        };
+    }
+
+    None
 }
 
 /// Scan document.xml for `<wp:anchor>` elements and extract their wrap type.
@@ -1575,6 +2001,9 @@ impl Parser for DocxParser {
             metadata,
             mut notes,
             wraps,
+            drawing_text_boxes,
+            table_headers,
+            vml_text_boxes,
             mut math,
             mut chart_ctx,
             column_layouts,
@@ -1589,6 +2018,9 @@ impl Parser for DocxParser {
                     let doc_xml = read_zip_text(&mut archive, "word/document.xml");
                     let notes = build_note_context_from_xml(doc_xml.as_deref(), &mut archive);
                     let wraps = build_wrap_context_from_xml(doc_xml.as_deref());
+                    let drawing_text_boxes = DrawingTextBoxContext::from_xml(doc_xml.as_deref());
+                    let table_headers = TableHeaderContext::from_xml(doc_xml.as_deref());
+                    let vml_text_boxes = VmlTextBoxContext::from_xml(doc_xml.as_deref());
                     let math = build_math_context_from_xml(doc_xml.as_deref());
                     let chart_ctx = build_chart_context_from_xml(doc_xml.as_deref(), &mut archive);
                     let column_layouts = doc_xml
@@ -1602,6 +2034,9 @@ impl Parser for DocxParser {
                         metadata,
                         notes,
                         wraps,
+                        drawing_text_boxes,
+                        table_headers,
+                        vml_text_boxes,
                         math,
                         chart_ctx,
                         column_layouts,
@@ -1631,6 +2066,9 @@ impl Parser for DocxParser {
                             wraps: Vec::new(),
                             cursor: Cell::new(0),
                         },
+                        DrawingTextBoxContext::from_xml(None),
+                        TableHeaderContext::from_xml(None),
+                        VmlTextBoxContext::from_xml(None),
                         MathContext {
                             equations: HashMap::new(),
                         },
@@ -1671,6 +2109,9 @@ impl Parser for DocxParser {
                         &style_map,
                         &notes,
                         &wraps,
+                        &drawing_text_boxes,
+                        &table_headers,
+                        &vml_text_boxes,
                         &bidi,
                         &small_caps,
                     )];
@@ -1694,6 +2135,9 @@ impl Parser for DocxParser {
                         &style_map,
                         &notes,
                         &wraps,
+                        &drawing_text_boxes,
+                        &table_headers,
+                        &vml_text_boxes,
                         &bidi,
                         &small_caps,
                         0,
@@ -1706,6 +2150,9 @@ impl Parser for DocxParser {
                     &style_map,
                     &notes,
                     &wraps,
+                    &drawing_text_boxes,
+                    &table_headers,
+                    &vml_text_boxes,
                     &bidi,
                     &small_caps,
                 ),
@@ -2041,6 +2488,9 @@ fn convert_sdt_children(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    drawing_text_boxes: &DrawingTextBoxContext,
+    table_headers: &TableHeaderContext,
+    vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
 ) -> Vec<TaggedElement> {
@@ -2049,17 +2499,48 @@ fn convert_sdt_children(
         match child {
             docx_rs::StructuredDataTagChild::Paragraph(para) => {
                 result.push(convert_paragraph_element(
-                    para, images, hyperlinks, style_map, notes, wraps, bidi, small_caps,
+                    para,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    notes,
+                    wraps,
+                    drawing_text_boxes,
+                    table_headers,
+                    vml_text_boxes,
+                    bidi,
+                    small_caps,
                 ));
             }
             docx_rs::StructuredDataTagChild::Table(table) => {
                 result.push(TaggedElement::Plain(vec![Block::Table(convert_table(
-                    table, images, hyperlinks, style_map, notes, wraps, bidi, small_caps, 0,
+                    table,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    notes,
+                    wraps,
+                    drawing_text_boxes,
+                    table_headers,
+                    vml_text_boxes,
+                    bidi,
+                    small_caps,
+                    0,
                 ))]));
             }
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
                 result.extend(convert_sdt_children(
-                    nested, images, hyperlinks, style_map, notes, wraps, bidi, small_caps,
+                    nested,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    notes,
+                    wraps,
+                    drawing_text_boxes,
+                    table_headers,
+                    vml_text_boxes,
+                    bidi,
+                    small_caps,
                 ));
             }
             _ => {}
@@ -2078,6 +2559,9 @@ fn convert_paragraph_element(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    drawing_text_boxes: &DrawingTextBoxContext,
+    table_headers: &TableHeaderContext,
+    vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
 ) -> TaggedElement {
@@ -2093,6 +2577,9 @@ fn convert_paragraph_element(
         style_map,
         notes,
         wraps,
+        drawing_text_boxes,
+        table_headers,
+        vml_text_boxes,
         bidi,
         small_caps,
     );
@@ -2148,6 +2635,9 @@ fn convert_paragraph_blocks(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    drawing_text_boxes: &DrawingTextBoxContext,
+    table_headers: &TableHeaderContext,
+    vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
 ) {
@@ -2167,6 +2657,7 @@ fn convert_paragraph_blocks(
     // Collect text runs and detect inline images
     let mut runs: Vec<Run> = Vec::new();
     let mut inline_images: Vec<Block> = Vec::new();
+    let mut emitted_text_box_blocks: bool = false;
 
     for child in &para.children {
         match child {
@@ -2187,13 +2678,43 @@ fn convert_paragraph_blocks(
                     continue;
                 }
 
-                // Check for column breaks and images in this run
+                // Check for column breaks and embedded drawings in this run.
                 let mut has_column_break = false;
+                let mut text_box_blocks: Vec<Block> = Vec::new();
                 for run_child in &run.children {
                     if let docx_rs::RunChild::Drawing(drawing) = run_child
                         && let Some(img_block) = extract_drawing_image(drawing, images, wraps)
                     {
                         inline_images.push(img_block);
+                    }
+                    if let docx_rs::RunChild::Drawing(drawing) = run_child {
+                        text_box_blocks.extend(extract_drawing_text_box_blocks(
+                            drawing,
+                            images,
+                            hyperlinks,
+                            style_map,
+                            notes,
+                            wraps,
+                            drawing_text_boxes,
+                            table_headers,
+                            vml_text_boxes,
+                            bidi,
+                            small_caps,
+                        ));
+                    }
+                    if let docx_rs::RunChild::Shape(shape) = run_child {
+                        let vml_text_box: VmlTextBoxInfo = vml_text_boxes.consume_next();
+                        if let Some(floating_text_box) =
+                            extract_vml_shape_text_box(shape, &vml_text_box)
+                        {
+                            text_box_blocks.push(Block::FloatingTextBox(floating_text_box));
+                        } else {
+                            text_box_blocks.extend(vml_text_box.into_blocks());
+                        }
+
+                        if let Some(img_block) = extract_shape_image(shape, images) {
+                            inline_images.push(img_block);
+                        }
                     }
                     if let docx_rs::RunChild::Break(br) = run_child
                         && is_column_break(br)
@@ -2202,25 +2723,22 @@ fn convert_paragraph_blocks(
                     }
                 }
 
+                if !text_box_blocks.is_empty() {
+                    if !runs.is_empty() {
+                        out.append(&mut inline_images);
+                        push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
+                    } else if !inline_images.is_empty() {
+                        out.append(&mut inline_images);
+                    }
+                    emitted_text_box_blocks = true;
+                    out.extend(text_box_blocks);
+                }
+
                 if has_column_break {
                     // Flush current runs as a paragraph before the column break
                     if !runs.is_empty() {
                         out.append(&mut inline_images);
-                        let explicit_para_style = extract_paragraph_style(&para.property);
-                        let explicit_tab_overrides =
-                            extract_tab_stop_overrides(&para.property.tabs);
-                        let mut style = merge_paragraph_style(
-                            &explicit_para_style,
-                            explicit_tab_overrides.as_deref(),
-                            resolved_style,
-                        );
-                        if is_rtl {
-                            style.direction = Some(TextDirection::Rtl);
-                        }
-                        out.push(Block::Paragraph(Paragraph {
-                            style,
-                            runs: std::mem::take(&mut runs),
-                        }));
+                        push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
                     }
                     out.push(Block::ColumnBreak);
 
@@ -2287,6 +2805,18 @@ fn convert_paragraph_blocks(
     // Emit image blocks before the paragraph (inline images are block-level in our IR)
     out.extend(inline_images);
 
+    if !runs.is_empty() || !emitted_text_box_blocks {
+        push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
+    }
+}
+
+fn push_paragraph_from_runs(
+    out: &mut Vec<Block>,
+    para: &docx_rs::Paragraph,
+    resolved_style: Option<&ResolvedStyle>,
+    is_rtl: bool,
+    runs: &mut Vec<Run>,
+) {
     let explicit_para_style = extract_paragraph_style(&para.property);
     let explicit_tab_overrides = extract_tab_stop_overrides(&para.property.tabs);
     let mut style = merge_paragraph_style(
@@ -2297,7 +2827,10 @@ fn convert_paragraph_blocks(
     if is_rtl {
         style.direction = Some(TextDirection::Rtl);
     }
-    out.push(Block::Paragraph(Paragraph { style, runs }));
+    out.push(Block::Paragraph(Paragraph {
+        style,
+        runs: std::mem::take(runs),
+    }));
 }
 
 /// Convert EMU (English Metric Units) to points for signed values (position offsets).
@@ -2363,6 +2896,233 @@ fn extract_drawing_image(
     } else {
         Some(Block::Image(image_data))
     }
+}
+
+fn extract_shape_image(shape: &docx_rs::Shape, images: &ImageMap) -> Option<Block> {
+    let image_id = shape.image_data.as_ref()?.id.as_str();
+    let data = images.get(image_id)?;
+
+    let width = extract_vml_style_dimension(shape.style.as_deref(), "width");
+    let height = extract_vml_style_dimension(shape.style.as_deref(), "height");
+
+    Some(Block::Image(ImageData {
+        data: data.clone(),
+        format: ImageFormat::Png,
+        width,
+        height,
+    }))
+}
+
+fn extract_vml_shape_text_box(
+    shape: &docx_rs::Shape,
+    text_box: &VmlTextBoxInfo,
+) -> Option<FloatingTextBox> {
+    if text_box.paragraphs.is_empty() {
+        return None;
+    }
+
+    let style = shape.style.as_deref()?;
+    if !is_positioned_vml_text_box(style) {
+        return None;
+    }
+
+    let width = extract_vml_style_length(Some(style), "width")?;
+    let height = extract_vml_style_length(Some(style), "height")?;
+    let offset_x = extract_vml_style_length(Some(style), "margin-left")
+        .or_else(|| extract_vml_style_length(Some(style), "left"))
+        .unwrap_or(0.0);
+    let offset_y = extract_vml_style_length(Some(style), "margin-top")
+        .or_else(|| extract_vml_style_length(Some(style), "top"))
+        .unwrap_or(0.0);
+    let wrap_mode = text_box
+        .wrap_mode
+        .or_else(|| extract_vml_style_wrap_mode(Some(style)))
+        .unwrap_or(WrapMode::Square);
+
+    Some(FloatingTextBox {
+        content: text_box.clone().into_blocks(),
+        wrap_mode,
+        width,
+        height,
+        offset_x,
+        offset_y,
+    })
+}
+
+fn is_positioned_vml_text_box(style: &str) -> bool {
+    has_vml_style_value(style, "position", "absolute")
+        || extract_vml_style_length(Some(style), "margin-left").is_some()
+        || extract_vml_style_length(Some(style), "margin-top").is_some()
+}
+
+fn has_vml_style_value(style: &str, key: &str, expected: &str) -> bool {
+    extract_vml_style_value(style, key)
+        .map(|value| value.eq_ignore_ascii_case(expected))
+        .unwrap_or(false)
+}
+
+fn extract_vml_style_wrap_mode(style: Option<&str>) -> Option<WrapMode> {
+    let value = extract_vml_style_value(style?, "mso-wrap-style")?;
+    match value.to_ascii_lowercase().as_str() {
+        "square" => Some(WrapMode::Square),
+        "none" => Some(WrapMode::None),
+        "tight" | "through" => Some(WrapMode::Tight),
+        "top-and-bottom" | "topandbottom" => Some(WrapMode::TopAndBottom),
+        _ => None,
+    }
+}
+
+fn extract_vml_style_value(style: &str, key: &str) -> Option<String> {
+    for part in style.split(';') {
+        let Some((name, value)) = part.split_once(':') else {
+            continue;
+        };
+        if name.trim() == key {
+            return Some(value.trim().to_string());
+        }
+    }
+
+    None
+}
+
+fn extract_vml_style_length(style: Option<&str>, key: &str) -> Option<f64> {
+    let value = extract_vml_style_value(style?, key)?;
+    let value = value.trim();
+    if let Some(raw) = value.strip_suffix("pt") {
+        return raw.trim().parse::<f64>().ok();
+    }
+    if let Some(raw) = value.strip_suffix("px") {
+        return raw.trim().parse::<f64>().ok().map(|px| px * 72.0 / 96.0);
+    }
+
+    None
+}
+
+fn extract_vml_style_dimension(style: Option<&str>, key: &str) -> Option<f64> {
+    let style = style?;
+    for part in style.split(';') {
+        let Some((name, value)) = part.split_once(':') else {
+            continue;
+        };
+        if name.trim() != key {
+            continue;
+        }
+
+        let value = value.trim();
+        if let Some(raw) = value.strip_suffix("pt") {
+            return raw.trim().parse::<f64>().ok();
+        }
+        if let Some(raw) = value.strip_suffix("px") {
+            return raw.trim().parse::<f64>().ok().map(|px| px * 72.0 / 96.0);
+        }
+        if let Ok(points) = value.parse::<f64>() {
+            return Some(points);
+        }
+    }
+
+    None
+}
+
+#[allow(clippy::too_many_arguments)]
+fn extract_drawing_text_box_blocks(
+    drawing: &docx_rs::Drawing,
+    images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
+    style_map: &StyleMap,
+    notes: &NoteContext,
+    wraps: &WrapContext,
+    drawing_text_boxes: &DrawingTextBoxContext,
+    table_headers: &TableHeaderContext,
+    vml_text_boxes: &VmlTextBoxContext,
+    bidi: &BidiContext,
+    small_caps: &SmallCapsContext,
+) -> Vec<Block> {
+    let Some(docx_rs::DrawingData::TextBox(text_box)) = &drawing.data else {
+        return Vec::new();
+    };
+
+    let layout: DrawingTextBoxInfo = drawing_text_boxes.consume_next();
+    let mut blocks: Vec<Block> = Vec::new();
+    for child in &text_box.children {
+        match child {
+            docx_rs::TextBoxContentChild::Paragraph(para) => convert_paragraph_blocks(
+                para,
+                &mut blocks,
+                images,
+                hyperlinks,
+                style_map,
+                notes,
+                wraps,
+                drawing_text_boxes,
+                table_headers,
+                vml_text_boxes,
+                bidi,
+                small_caps,
+            ),
+            docx_rs::TextBoxContentChild::Table(table) => {
+                blocks.push(Block::Table(convert_table(
+                    table,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    notes,
+                    wraps,
+                    drawing_text_boxes,
+                    table_headers,
+                    vml_text_boxes,
+                    bidi,
+                    small_caps,
+                    0,
+                )));
+            }
+        }
+    }
+
+    if text_box.position_type == docx_rs::DrawingPositionType::Anchor {
+        let wrap_mode = wraps.consume_next();
+        let offset_x = match text_box.position_h {
+            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt_signed(emu),
+            docx_rs::DrawingPosition::Align(_) => 0.0,
+        };
+        let offset_y = match text_box.position_v {
+            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt_signed(emu),
+            docx_rs::DrawingPosition::Align(_) => 0.0,
+        };
+        let (width, height) = resolve_drawing_text_box_size(text_box, layout);
+
+        vec![Block::FloatingTextBox(FloatingTextBox {
+            content: blocks,
+            wrap_mode,
+            width,
+            height,
+            offset_x,
+            offset_y,
+        })]
+    } else {
+        blocks
+    }
+}
+
+fn resolve_drawing_text_box_size(
+    text_box: &docx_rs::TextBox,
+    layout: DrawingTextBoxInfo,
+) -> (f64, f64) {
+    let width = layout.width_pt.unwrap_or_else(|| {
+        if text_box.size.0 > 0 {
+            emu_to_pt(text_box.size.0)
+        } else {
+            0.0
+        }
+    });
+    let height = layout.height_pt.unwrap_or_else(|| {
+        if text_box.size.1 > 0 {
+            emu_to_pt(text_box.size.1)
+        } else {
+            0.0
+        }
+    });
+
+    (width, height)
 }
 
 /// Extract paragraph-level formatting from docx-rs ParagraphProperty.
@@ -2503,6 +3263,107 @@ fn extract_tab_stop_overrides(tabs: &[docx_rs::Tab]) -> Option<Vec<TabStopOverri
     )
 }
 
+fn extract_margin_side_points(side_json: &serde_json::Value) -> Option<f64> {
+    let width_type = side_json
+        .get("widthType")
+        .and_then(|v| v.as_str())
+        .unwrap_or("dxa");
+    let value = side_json.get("val").and_then(|v| v.as_f64())?;
+
+    match width_type {
+        "dxa" => Some(value / 20.0),
+        _ => None,
+    }
+}
+
+fn extract_insets_from_margins_json(margins_json: &serde_json::Value) -> Option<Insets> {
+    let top = margins_json.get("top").and_then(extract_margin_side_points);
+    let right = margins_json
+        .get("right")
+        .and_then(extract_margin_side_points);
+    let bottom = margins_json
+        .get("bottom")
+        .and_then(extract_margin_side_points);
+    let left = margins_json
+        .get("left")
+        .and_then(extract_margin_side_points);
+
+    if top.is_none() && right.is_none() && bottom.is_none() && left.is_none() {
+        return None;
+    }
+
+    Some(Insets {
+        top: top.unwrap_or_default(),
+        right: right.unwrap_or_default(),
+        bottom: bottom.unwrap_or_default(),
+        left: left.unwrap_or_default(),
+    })
+}
+
+fn extract_table_alignment(prop_json: Option<&serde_json::Value>) -> Option<Alignment> {
+    prop_json
+        .and_then(|j| j.get("justification"))
+        .and_then(|v| v.as_str())
+        .and_then(|value| match value {
+            "center" => Some(Alignment::Center),
+            "right" | "end" => Some(Alignment::Right),
+            _ => None,
+        })
+}
+
+fn extract_table_default_cell_padding(prop_json: Option<&serde_json::Value>) -> Option<Insets> {
+    prop_json
+        .and_then(|j| j.get("margins"))
+        .and_then(extract_insets_from_margins_json)
+}
+
+fn extract_cell_padding(
+    prop_json: Option<&serde_json::Value>,
+    inherited_padding: Option<Insets>,
+) -> Option<Insets> {
+    let margins_json = prop_json.and_then(|j| j.get("margins"))?;
+    extract_insets_from_margins_json(margins_json)?;
+    let mut merged_padding = inherited_padding.unwrap_or_default();
+
+    if let Some(top) = margins_json.get("top").and_then(extract_margin_side_points) {
+        merged_padding.top = top;
+    }
+    if let Some(right) = margins_json
+        .get("right")
+        .and_then(extract_margin_side_points)
+    {
+        merged_padding.right = right;
+    }
+    if let Some(bottom) = margins_json
+        .get("bottom")
+        .and_then(extract_margin_side_points)
+    {
+        merged_padding.bottom = bottom;
+    }
+    if let Some(left) = margins_json
+        .get("left")
+        .and_then(extract_margin_side_points)
+    {
+        merged_padding.left = left;
+    }
+
+    Some(merged_padding)
+}
+
+fn extract_table_cell_width(prop_json: Option<&serde_json::Value>) -> Option<f64> {
+    let width_json = prop_json.and_then(|j| j.get("width"))?;
+    let width_type = width_json
+        .get("widthType")
+        .and_then(|v| v.as_str())
+        .unwrap_or("dxa");
+    let width = width_json.get("width").and_then(|v| v.as_f64())?;
+
+    match width_type {
+        "dxa" => Some(width / 20.0),
+        _ => None,
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 /// Convert a docx-rs Table to an IR Table.
 ///
@@ -2520,16 +3381,40 @@ fn convert_table(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    drawing_text_boxes: &DrawingTextBoxContext,
+    table_headers: &TableHeaderContext,
+    vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
     depth: usize,
 ) -> Table {
-    let column_widths: Vec<f64> = table.grid.iter().map(|&w| w as f64 / 20.0).collect();
+    let header_info = table_headers.consume_next();
+    let table_prop_json = serde_json::to_value(&table.property).ok();
+    let alignment = extract_table_alignment(table_prop_json.as_ref());
+    let default_cell_padding = extract_table_default_cell_padding(table_prop_json.as_ref());
 
     // First pass: extract raw rows with vmerge info for rowspan calculation
     let raw_rows = extract_raw_rows(
-        table, images, hyperlinks, style_map, notes, wraps, bidi, small_caps, depth,
+        table,
+        images,
+        hyperlinks,
+        style_map,
+        notes,
+        wraps,
+        drawing_text_boxes,
+        table_headers,
+        vml_text_boxes,
+        bidi,
+        small_caps,
+        depth,
+        default_cell_padding,
     );
+
+    let column_widths: Vec<f64> = if table.grid.is_empty() {
+        derive_column_widths_from_cells(&raw_rows).unwrap_or_default()
+    } else {
+        table.grid.iter().map(|&w| w as f64 / 20.0).collect()
+    };
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
@@ -2537,6 +3422,9 @@ fn convert_table(
     Table {
         rows,
         column_widths,
+        header_row_count: header_info.repeat_rows.min(table.rows.len()),
+        alignment,
+        default_cell_padding,
     }
 }
 
@@ -2545,10 +3433,12 @@ struct RawCell {
     content: Vec<Block>,
     col_span: u32,
     col_index: usize,
+    preferred_width: Option<f64>,
     vmerge: Option<String>, // "restart", "continue", or None
     border: Option<CellBorder>,
     background: Option<Color>,
     vertical_align: Option<CellVerticalAlign>,
+    padding: Option<Insets>,
 }
 
 struct RawRow {
@@ -2565,9 +3455,13 @@ fn extract_raw_rows(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    drawing_text_boxes: &DrawingTextBoxContext,
+    table_headers: &TableHeaderContext,
+    vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
     depth: usize,
+    default_cell_padding: Option<Insets>,
 ) -> Vec<RawRow> {
     let mut raw_rows = Vec::new();
 
@@ -2599,9 +3493,21 @@ fn extract_raw_rows(
                 .and_then(|j| j.get("verticalMerge"))
                 .and_then(|v| v.as_str())
                 .map(String::from);
+            let preferred_width = extract_table_cell_width(prop_json.as_ref());
 
             let content = extract_cell_content(
-                cell, images, hyperlinks, style_map, notes, wraps, bidi, small_caps, depth,
+                cell,
+                images,
+                hyperlinks,
+                style_map,
+                notes,
+                wraps,
+                drawing_text_boxes,
+                table_headers,
+                vml_text_boxes,
+                bidi,
+                small_caps,
+                depth,
             );
             let border = prop_json
                 .as_ref()
@@ -2621,15 +3527,18 @@ fn extract_raw_rows(
                     "bottom" => Some(CellVerticalAlign::Bottom),
                     _ => None, // "top" is default, skip
                 });
+            let padding = extract_cell_padding(prop_json.as_ref(), default_cell_padding);
 
             cells.push(RawCell {
                 content,
                 col_span: grid_span,
                 col_index,
+                preferred_width,
                 vmerge,
                 border,
                 background,
                 vertical_align,
+                padding,
             });
 
             col_index += grid_span as usize;
@@ -2639,6 +3548,48 @@ fn extract_raw_rows(
     }
 
     raw_rows
+}
+
+fn derive_column_widths_from_cells(raw_rows: &[RawRow]) -> Option<Vec<f64>> {
+    let num_cols = raw_rows
+        .iter()
+        .flat_map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.col_index + cell.col_span as usize)
+        })
+        .max()
+        .unwrap_or(0);
+
+    if num_cols == 0 {
+        return None;
+    }
+
+    let mut widths: Vec<f64> = vec![0.0; num_cols];
+    let mut saw_width = false;
+
+    for row in raw_rows {
+        for cell in &row.cells {
+            let Some(preferred_width) = cell.preferred_width else {
+                continue;
+            };
+            if cell.col_span == 0 {
+                continue;
+            }
+
+            let per_column_width = preferred_width / cell.col_span as f64;
+            for width in widths
+                .iter_mut()
+                .skip(cell.col_index)
+                .take(cell.col_span as usize)
+            {
+                *width = width.max(per_column_width);
+            }
+            saw_width = true;
+        }
+    }
+
+    saw_width.then_some(widths)
 }
 
 /// Resolve vertical merges: compute rowspan for "restart" cells and skip "continue" cells.
@@ -2666,6 +3617,7 @@ fn resolve_vmerge_and_build_rows(raw_rows: &[RawRow]) -> Vec<TableRow> {
                         data_bar: None,
                         icon_text: None,
                         vertical_align: raw_cell.vertical_align,
+                        padding: raw_cell.padding,
                     });
                 }
                 _ => {
@@ -2679,6 +3631,7 @@ fn resolve_vmerge_and_build_rows(raw_rows: &[RawRow]) -> Vec<TableRow> {
                         data_bar: None,
                         icon_text: None,
                         vertical_align: raw_cell.vertical_align,
+                        padding: raw_cell.padding,
                     });
                 }
             }
@@ -2720,6 +3673,9 @@ fn extract_cell_content(
     style_map: &StyleMap,
     notes: &NoteContext,
     wraps: &WrapContext,
+    drawing_text_boxes: &DrawingTextBoxContext,
+    table_headers: &TableHeaderContext,
+    vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
     depth: usize,
@@ -2736,6 +3692,9 @@ fn extract_cell_content(
                     style_map,
                     notes,
                     wraps,
+                    drawing_text_boxes,
+                    table_headers,
+                    vml_text_boxes,
                     bidi,
                     small_caps,
                 );
@@ -2749,6 +3708,9 @@ fn extract_cell_content(
                         style_map,
                         notes,
                         wraps,
+                        drawing_text_boxes,
+                        table_headers,
+                        vml_text_boxes,
                         bidi,
                         small_caps,
                         depth + 1,
@@ -3905,6 +4867,221 @@ mod tests {
     }
 
     #[test]
+    fn test_table_column_widths_from_cell_widths_without_grid() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new()
+                .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("A")))
+                .width(2000, docx_rs::WidthType::Dxa),
+            docx_rs::TableCell::new()
+                .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B")))
+                .width(3000, docx_rs::WidthType::Dxa),
+        ])]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.column_widths.len(), 2);
+        assert!(
+            (t.column_widths[0] - 100.0).abs() < 0.1,
+            "Expected 100pt, got {}",
+            t.column_widths[0]
+        );
+        assert!(
+            (t.column_widths[1] - 150.0).abs() < 0.1,
+            "Expected 150pt, got {}",
+            t.column_widths[1]
+        );
+    }
+
+    #[test]
+    fn test_table_column_widths_from_spanned_cell_widths_without_grid() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new()
+                .add_paragraph(
+                    docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Merged")),
+                )
+                .grid_span(2)
+                .width(4000, docx_rs::WidthType::Dxa),
+            docx_rs::TableCell::new()
+                .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("C")))
+                .width(2000, docx_rs::WidthType::Dxa),
+        ])]);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.column_widths.len(), 3);
+        assert!(
+            (t.column_widths[0] - 100.0).abs() < 0.1,
+            "Expected first merged column to be 100pt, got {}",
+            t.column_widths[0]
+        );
+        assert!(
+            (t.column_widths[1] - 100.0).abs() < 0.1,
+            "Expected second merged column to be 100pt, got {}",
+            t.column_widths[1]
+        );
+        assert!(
+            (t.column_widths[2] - 100.0).abs() < 0.1,
+            "Expected final column to be 100pt, got {}",
+            t.column_widths[2]
+        );
+    }
+
+    #[test]
+    fn test_scan_table_headers_counts_only_leading_rows() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:tbl>
+            <w:tr>
+                <w:trPr><w:tblHeader/></w:trPr>
+                <w:tc><w:p><w:r><w:t>H1</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+                <w:trPr><w:tblHeader/></w:trPr>
+                <w:tc><w:p><w:r><w:t>H2</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>D1</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+                <w:trPr><w:tblHeader/></w:trPr>
+                <w:tc><w:p><w:r><w:t>Ignored</w:t></w:r></w:p></w:tc>
+            </w:tr>
+        </w:tbl>
+        <w:tbl>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>Only body</w:t></w:r></w:p></w:tc>
+            </w:tr>
+        </w:tbl>
+    </w:body>
+</w:document>"#;
+
+        let headers = scan_table_headers(document_xml);
+
+        assert_eq!(headers.len(), 2);
+        assert_eq!(headers[0].repeat_rows, 2);
+        assert_eq!(headers[1].repeat_rows, 0);
+    }
+
+    #[test]
+    fn test_table_header_rows_from_raw_docx_xml() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:tbl>
+            <w:tblPr/>
+            <w:tblGrid>
+                <w:gridCol w:w="2000"/>
+                <w:gridCol w:w="2000"/>
+            </w:tblGrid>
+            <w:tr>
+                <w:trPr><w:tblHeader/></w:trPr>
+                <w:tc><w:p><w:r><w:t>Header A</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Header B</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+                <w:tc><w:p><w:r><w:t>Body A</w:t></w:r></w:p></w:tc>
+                <w:tc><w:p><w:r><w:t>Body B</w:t></w:r></w:p></w:tc>
+            </w:tr>
+        </w:tbl>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.header_row_count, 1);
+    }
+
+    #[test]
+    fn test_table_default_cell_margins_from_table_property() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new().add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Cell")),
+            ),
+        ])])
+        .margins(docx_rs::TableCellMargins::new().margin(40, 60, 20, 80));
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(
+            t.default_cell_padding,
+            Some(Insets {
+                top: 2.0,
+                right: 3.0,
+                bottom: 1.0,
+                left: 4.0,
+            })
+        );
+        assert!(t.rows[0].cells[0].padding.is_none());
+    }
+
+    #[test]
+    fn test_table_cell_margins_override_table_defaults() {
+        let mut cell = docx_rs::TableCell::new()
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Cell")));
+        cell.property = docx_rs::TableCellProperty::new()
+            .margin_top(100, docx_rs::WidthType::Dxa)
+            .margin_left(120, docx_rs::WidthType::Dxa);
+
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![cell])])
+            .margins(docx_rs::TableCellMargins::new().margin(20, 40, 60, 80));
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(
+            t.default_cell_padding,
+            Some(Insets {
+                top: 1.0,
+                right: 2.0,
+                bottom: 3.0,
+                left: 4.0,
+            })
+        );
+        assert_eq!(
+            t.rows[0].cells[0].padding,
+            Some(Insets {
+                top: 5.0,
+                right: 2.0,
+                bottom: 3.0,
+                left: 6.0,
+            })
+        );
+    }
+
+    #[test]
+    fn test_table_alignment_from_table_property() {
+        let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+            docx_rs::TableCell::new().add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Centered")),
+            ),
+        ])])
+        .align(docx_rs::TableAlignmentType::Center);
+
+        let data = build_docx_with_table(table);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let t = first_table(&doc);
+
+        assert_eq!(t.alignment, Some(Alignment::Center));
+    }
+
+    #[test]
     fn test_table_cell_with_formatted_text() {
         let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
             docx_rs::TableCell::new().add_paragraph(
@@ -4396,6 +5573,54 @@ mod tests {
         cursor.into_inner()
     }
 
+    /// Build a minimal DOCX with a custom `document.xml` and one image relationship.
+    fn build_docx_with_custom_image_document(document_xml: &str) -> Vec<u8> {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::FileOptions::default();
+
+        zip.start_file("[Content_Types].xml", options).unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="bmp" ContentType="image/bmp"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#,
+        )
+        .unwrap();
+
+        zip.start_file("_rels/.rels", options).unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#,
+        )
+        .unwrap();
+
+        zip.start_file("word/_rels/document.xml.rels", options)
+            .unwrap();
+        std::io::Write::write_all(
+            &mut zip,
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rIdImage1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.bmp"/>
+</Relationships>"#,
+        )
+        .unwrap();
+
+        zip.start_file("word/document.xml", options).unwrap();
+        std::io::Write::write_all(&mut zip, document_xml.as_bytes()).unwrap();
+
+        zip.start_file("word/media/image1.bmp", options).unwrap();
+        std::io::Write::write_all(&mut zip, &make_test_bmp()).unwrap();
+
+        zip.finish().unwrap().into_inner()
+    }
+
     /// Helper: find all Image blocks in a FlowPage.
     fn find_images(doc: &Document) -> Vec<&ImageData> {
         let page = match &doc.pages[0] {
@@ -4434,6 +5659,37 @@ mod tests {
             ImageFormat::Png,
             "Image format should be PNG"
         );
+    }
+
+    #[test]
+    fn test_docx_vml_shape_image_is_emitted() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:v="urn:schemas-microsoft-com:vml"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <w:body>
+        <w:p>
+            <w:r>
+                <w:pict>
+                    <v:shape id="VMLImage1" style="width:72pt;height:36pt">
+                        <v:imagedata r:id="rIdImage1"/>
+                    </v:shape>
+                </w:pict>
+            </w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_custom_image_document(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let images = find_images(&doc);
+        assert_eq!(images.len(), 1, "Expected one VML image");
+        assert_eq!(images[0].format, ImageFormat::Png);
+        assert_eq!(images[0].width, Some(72.0));
+        assert_eq!(images[0].height, Some(36.0));
     }
 
     #[test]
@@ -6226,6 +7482,573 @@ mod tests {
             all_text.iter().any(|t| t.contains("SDT Content")),
             "Expected 'SDT Content' in output, got: {all_text:?}"
         );
+    }
+
+    #[test]
+    fn test_docx_drawing_text_box_paragraph_is_emitted() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="wps">
+    <w:body>
+        <w:p>
+            <w:r><w:t>Before</w:t></w:r>
+            <w:r>
+                <w:drawing>
+                    <wp:inline distT="0" distB="0" distL="0" distR="0">
+                        <wp:extent cx="914400" cy="457200"/>
+                        <wp:docPr id="1" name="Text Box 1"/>
+                        <a:graphic>
+                            <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                                <wps:wsp>
+                                    <wps:txbx>
+                                        <w:txbxContent>
+                                            <w:p>
+                                                <w:r><w:t>Inside box</w:t></w:r>
+                                            </w:p>
+                                        </w:txbxContent>
+                                    </wps:txbx>
+                                    <wps:bodyPr/>
+                                </wps:wsp>
+                            </a:graphicData>
+                        </a:graphic>
+                    </wp:inline>
+                </w:drawing>
+            </w:r>
+            <w:r><w:t>After</w:t></w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let texts: Vec<String> = match &doc.pages[0] {
+            Page::Flow(flow) => flow
+                .content
+                .iter()
+                .filter_map(|block| match block {
+                    Block::Paragraph(p) => Some(p.runs.iter().map(|r| r.text.as_str()).collect()),
+                    _ => None,
+                })
+                .collect(),
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert_eq!(
+            texts,
+            vec![
+                "Before".to_string(),
+                "Inside box".to_string(),
+                "After".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_docx_drawing_text_box_multiple_paragraphs_are_emitted_in_order() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="wps">
+    <w:body>
+        <w:p><w:r><w:t>Lead-in</w:t></w:r></w:p>
+        <w:p>
+            <w:r>
+                <w:drawing>
+                    <wp:inline distT="0" distB="0" distL="0" distR="0">
+                        <wp:extent cx="914400" cy="457200"/>
+                        <wp:docPr id="1" name="Text Box 2"/>
+                        <a:graphic>
+                            <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                                <wps:wsp>
+                                    <wps:txbx>
+                                        <w:txbxContent>
+                                            <w:p><w:r><w:t>First line</w:t></w:r></w:p>
+                                            <w:p><w:r><w:t>Second line</w:t></w:r></w:p>
+                                        </w:txbxContent>
+                                    </wps:txbx>
+                                    <wps:bodyPr/>
+                                </wps:wsp>
+                            </a:graphicData>
+                        </a:graphic>
+                    </wp:inline>
+                </w:drawing>
+            </w:r>
+        </w:p>
+        <w:p><w:r><w:t>Tail</w:t></w:r></w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let texts: Vec<String> = match &doc.pages[0] {
+            Page::Flow(flow) => flow
+                .content
+                .iter()
+                .filter_map(|block| match block {
+                    Block::Paragraph(p) => Some(p.runs.iter().map(|r| r.text.as_str()).collect()),
+                    _ => None,
+                })
+                .collect(),
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert_eq!(
+            texts,
+            vec![
+                "Lead-in".to_string(),
+                "First line".to_string(),
+                "Second line".to_string(),
+                "Tail".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_docx_drawing_text_box_table_is_emitted() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="wps">
+    <w:body>
+        <w:p><w:r><w:t>Before table box</w:t></w:r></w:p>
+        <w:p>
+            <w:r>
+                <w:drawing>
+                    <wp:inline distT="0" distB="0" distL="0" distR="0">
+                        <wp:extent cx="914400" cy="457200"/>
+                        <wp:docPr id="1" name="Text Box Table"/>
+                        <a:graphic>
+                            <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                                <wps:wsp>
+                                    <wps:txbx>
+                                        <w:txbxContent>
+                                            <w:tbl>
+                                                <w:tblPr/>
+                                                <w:tblGrid>
+                                                    <w:gridCol w:w="2000"/>
+                                                    <w:gridCol w:w="2000"/>
+                                                </w:tblGrid>
+                                                <w:tr>
+                                                    <w:tc><w:p><w:r><w:t>A</w:t></w:r></w:p></w:tc>
+                                                    <w:tc><w:p><w:r><w:t>B</w:t></w:r></w:p></w:tc>
+                                                </w:tr>
+                                            </w:tbl>
+                                        </w:txbxContent>
+                                    </wps:txbx>
+                                    <wps:bodyPr/>
+                                </wps:wsp>
+                            </a:graphicData>
+                        </a:graphic>
+                    </wp:inline>
+                </w:drawing>
+            </w:r>
+        </w:p>
+        <w:p><w:r><w:t>After table box</w:t></w:r></w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let flow = match &doc.pages[0] {
+            Page::Flow(flow) => flow,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let has_table = flow
+            .content
+            .iter()
+            .any(|block| matches!(block, Block::Table(_)));
+        assert!(has_table, "Expected a table extracted from text box");
+
+        let table = first_table(&doc);
+        assert_eq!(table.rows.len(), 1);
+        assert_eq!(table.rows[0].cells.len(), 2);
+
+        let cell_text: Vec<String> = table.rows[0]
+            .cells
+            .iter()
+            .map(|cell| {
+                cell.content
+                    .iter()
+                    .filter_map(|block| match block {
+                        Block::Paragraph(p) => Some(
+                            p.runs
+                                .iter()
+                                .map(|run| run.text.as_str())
+                                .collect::<String>(),
+                        ),
+                        _ => None,
+                    })
+                    .collect::<String>()
+            })
+            .collect();
+        assert_eq!(cell_text, vec!["A".to_string(), "B".to_string()]);
+    }
+
+    #[test]
+    fn test_docx_vml_text_box_paragraph_is_emitted() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:v="urn:schemas-microsoft-com:vml">
+    <w:body>
+        <w:p>
+            <w:r><w:t>Before</w:t></w:r>
+            <w:r>
+                <w:pict>
+                    <v:shape id="TextBox1" style="width:100pt;height:40pt">
+                        <v:textbox>
+                            <w:txbxContent>
+                                <w:p><w:r><w:t>VML box</w:t></w:r></w:p>
+                            </w:txbxContent>
+                        </v:textbox>
+                    </v:shape>
+                </w:pict>
+            </w:r>
+            <w:r><w:t>After</w:t></w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let texts: Vec<String> = match &doc.pages[0] {
+            Page::Flow(flow) => flow
+                .content
+                .iter()
+                .filter_map(|block| match block {
+                    Block::Paragraph(p) => Some(p.runs.iter().map(|r| r.text.as_str()).collect()),
+                    _ => None,
+                })
+                .collect(),
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert_eq!(
+            texts,
+            vec![
+                "Before".to_string(),
+                "VML box".to_string(),
+                "After".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_docx_vml_text_box_multiple_paragraphs_are_emitted_in_order() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:v="urn:schemas-microsoft-com:vml">
+    <w:body>
+        <w:p><w:r><w:t>Lead-in</w:t></w:r></w:p>
+        <w:p>
+            <w:r>
+                <w:pict>
+                    <v:shape id="TextBox2" style="width:120pt;height:60pt">
+                        <v:textbox>
+                            <w:txbxContent>
+                                <w:p><w:r><w:t>First VML line</w:t></w:r></w:p>
+                                <w:p><w:r><w:t>Second VML line</w:t></w:r></w:p>
+                            </w:txbxContent>
+                        </v:textbox>
+                    </v:shape>
+                </w:pict>
+            </w:r>
+        </w:p>
+        <w:p><w:r><w:t>Tail</w:t></w:r></w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let texts: Vec<String> = match &doc.pages[0] {
+            Page::Flow(flow) => flow
+                .content
+                .iter()
+                .filter_map(|block| match block {
+                    Block::Paragraph(p) => Some(p.runs.iter().map(|r| r.text.as_str()).collect()),
+                    _ => None,
+                })
+                .collect(),
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert_eq!(
+            texts,
+            vec![
+                "Lead-in".to_string(),
+                "First VML line".to_string(),
+                "Second VML line".to_string(),
+                "Tail".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_docx_vml_floating_text_box_square_wrap() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:v="urn:schemas-microsoft-com:vml"
+            xmlns:w10="urn:schemas-microsoft-com:office:word">
+    <w:body>
+        <w:p>
+            <w:r><w:t>Before</w:t></w:r>
+            <w:r>
+                <w:pict>
+                    <v:shape id="TextBox3"
+                             style="position:absolute;margin-left:72pt;margin-top:36pt;width:144pt;height:72pt;z-index:1;visibility:visible;mso-wrap-style:square">
+                        <v:textbox>
+                            <w:txbxContent>
+                                <w:p><w:r><w:t>VML floating box</w:t></w:r></w:p>
+                            </w:txbxContent>
+                        </v:textbox>
+                    </v:shape>
+                    <w10:wrap type="square"/>
+                </w:pict>
+            </w:r>
+            <w:r><w:t>After</w:t></w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let floating = find_floating_text_boxes(&doc);
+        assert_eq!(floating.len(), 1, "Expected one floating VML text box");
+
+        let ftb = floating[0];
+        assert_eq!(ftb.wrap_mode, WrapMode::Square);
+        assert!((ftb.offset_x - 72.0).abs() < 0.5);
+        assert!((ftb.offset_y - 36.0).abs() < 0.5);
+        assert!((ftb.width - 144.0).abs() < 0.5);
+        assert!((ftb.height - 72.0).abs() < 0.5);
+
+        let texts: Vec<String> = ftb
+            .content
+            .iter()
+            .filter_map(|block| match block {
+                Block::Paragraph(p) => Some(p.runs.iter().map(|r| r.text.as_str()).collect()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(texts, vec!["VML floating box".to_string()]);
+    }
+
+    #[test]
+    fn test_docx_vml_floating_text_box_none_wrap() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:v="urn:schemas-microsoft-com:vml"
+            xmlns:w10="urn:schemas-microsoft-com:office:word">
+    <w:body>
+        <w:p>
+            <w:r>
+                <w:pict>
+                    <v:shape id="TextBox4"
+                             style="position:absolute;margin-left:12pt;margin-top:18pt;width:90pt;height:40pt;z-index:1;visibility:visible;mso-wrap-style:square">
+                        <v:textbox>
+                            <w:txbxContent>
+                                <w:p><w:r><w:t>No wrap box</w:t></w:r></w:p>
+                            </w:txbxContent>
+                        </v:textbox>
+                    </v:shape>
+                    <w10:wrap type="none"/>
+                </w:pict>
+            </w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let floating = find_floating_text_boxes(&doc);
+        assert_eq!(floating.len(), 1, "Expected one floating VML text box");
+        assert_eq!(floating[0].wrap_mode, WrapMode::None);
+    }
+
+    /// Helper: find all FloatingTextBox blocks in a FlowPage.
+    fn find_floating_text_boxes(doc: &Document) -> Vec<&FloatingTextBox> {
+        let page = match &doc.pages[0] {
+            Page::Flow(f) => f,
+            _ => panic!("Expected FlowPage"),
+        };
+        page.content
+            .iter()
+            .filter_map(|b| match b {
+                Block::FloatingTextBox(ftb) => Some(ftb),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_docx_floating_text_box_square_wrap() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="wps">
+    <w:body>
+        <w:p>
+            <w:r><w:t>Before</w:t></w:r>
+            <w:r>
+                <w:drawing>
+                    <wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" allowOverlap="0" behindDoc="0" locked="0" layoutInCell="1" relativeHeight="251659264">
+                        <wp:simplePos x="0" y="0"/>
+                        <wp:positionH relativeFrom="margin"><wp:posOffset>914400</wp:posOffset></wp:positionH>
+                        <wp:positionV relativeFrom="margin"><wp:posOffset>457200</wp:posOffset></wp:positionV>
+                        <wp:extent cx="1828800" cy="914400"/>
+                        <wp:effectExtent l="0" t="0" r="0" b="0"/>
+                        <wp:wrapSquare wrapText="bothSides"/>
+                        <wp:docPr id="1" name="Anchored Text Box"/>
+                        <wp:cNvGraphicFramePr>
+                            <a:graphicFrameLocks noChangeAspect="1"/>
+                        </wp:cNvGraphicFramePr>
+                        <a:graphic>
+                            <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                                <wps:wsp>
+                                    <wps:txbx>
+                                        <w:txbxContent>
+                                            <w:p><w:r><w:t>Inside anchored box</w:t></w:r></w:p>
+                                        </w:txbxContent>
+                                    </wps:txbx>
+                                    <wps:bodyPr/>
+                                </wps:wsp>
+                            </a:graphicData>
+                        </a:graphic>
+                    </wp:anchor>
+                </w:drawing>
+            </w:r>
+            <w:r><w:t>After</w:t></w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let floating = find_floating_text_boxes(&doc);
+        assert_eq!(floating.len(), 1, "Expected one floating text box");
+
+        let ftb = floating[0];
+        assert_eq!(ftb.wrap_mode, WrapMode::Square);
+        assert!(
+            (ftb.offset_x - 72.0).abs() < 0.5,
+            "Expected offset_x ~72pt, got {}",
+            ftb.offset_x
+        );
+        assert!(
+            (ftb.offset_y - 36.0).abs() < 0.5,
+            "Expected offset_y ~36pt, got {}",
+            ftb.offset_y
+        );
+        assert!(
+            (ftb.width - 144.0).abs() < 0.5,
+            "Expected width ~144pt, got {}",
+            ftb.width
+        );
+        assert!(
+            (ftb.height - 72.0).abs() < 0.5,
+            "Expected height ~72pt, got {}",
+            ftb.height
+        );
+
+        let texts: Vec<String> = ftb
+            .content
+            .iter()
+            .filter_map(|block| match block {
+                Block::Paragraph(p) => Some(p.runs.iter().map(|r| r.text.as_str()).collect()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(texts, vec!["Inside anchored box".to_string()]);
+    }
+
+    #[test]
+    fn test_docx_floating_text_box_top_and_bottom_wrap() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="wps">
+    <w:body>
+        <w:p>
+            <w:r>
+                <w:drawing>
+                    <wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" allowOverlap="1" behindDoc="0" locked="0" layoutInCell="1" relativeHeight="251659264">
+                        <wp:simplePos x="0" y="0"/>
+                        <wp:positionH relativeFrom="margin"><wp:posOffset>0</wp:posOffset></wp:positionH>
+                        <wp:positionV relativeFrom="margin"><wp:posOffset>0</wp:posOffset></wp:positionV>
+                        <wp:extent cx="1270000" cy="635000"/>
+                        <wp:effectExtent l="0" t="0" r="0" b="0"/>
+                        <wp:wrapTopAndBottom/>
+                        <wp:docPr id="2" name="Top Bottom Text Box"/>
+                        <wp:cNvGraphicFramePr>
+                            <a:graphicFrameLocks noChangeAspect="1"/>
+                        </wp:cNvGraphicFramePr>
+                        <a:graphic>
+                            <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                                <wps:wsp>
+                                    <wps:txbx>
+                                        <w:txbxContent>
+                                            <w:p><w:r><w:t>Top and bottom box</w:t></w:r></w:p>
+                                        </w:txbxContent>
+                                    </wps:txbx>
+                                    <wps:bodyPr/>
+                                </wps:wsp>
+                            </a:graphicData>
+                        </a:graphic>
+                    </wp:anchor>
+                </w:drawing>
+            </w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let floating = find_floating_text_boxes(&doc);
+        assert_eq!(floating.len(), 1, "Expected one floating text box");
+        assert_eq!(floating[0].wrap_mode, WrapMode::TopAndBottom);
     }
 
     // ── Floating image (anchor) tests ──

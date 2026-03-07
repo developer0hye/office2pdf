@@ -1468,6 +1468,7 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
                             data_bar: None,
                             icon_text: None,
                             vertical_align: None,
+                            padding: None,
                         });
                         in_cell = false;
                         in_tc_pr = false;
@@ -1535,6 +1536,9 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
     Ok(Table {
         rows,
         column_widths,
+        header_row_count: 0,
+        alignment: None,
+        default_cell_padding: None,
     })
 }
 

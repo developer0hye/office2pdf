@@ -966,6 +966,7 @@ fn build_rows_for_range(
                 data_bar,
                 icon_text,
                 vertical_align: None,
+                padding: None,
             });
         }
 
@@ -1105,6 +1106,9 @@ impl XlsxParser {
                         table: Table {
                             rows,
                             column_widths: ctx.column_widths.clone(),
+                            header_row_count: 0,
+                            alignment: None,
+                            default_cell_padding: None,
                         },
                         header: sheet_header.clone(),
                         footer: sheet_footer.clone(),
@@ -1193,6 +1197,9 @@ impl Parser for XlsxParser {
                     table: Table {
                         rows,
                         column_widths: ctx.column_widths,
+                        header_row_count: 0,
+                        alignment: None,
+                        default_cell_padding: None,
                     },
                     header: sheet_header.clone(),
                     footer: sheet_footer.clone(),
@@ -1230,6 +1237,9 @@ impl Parser for XlsxParser {
                         table: Table {
                             rows: segment,
                             column_widths: ctx.column_widths.clone(),
+                            header_row_count: 0,
+                            alignment: None,
+                            default_cell_padding: None,
                         },
                         header: sheet_header.clone(),
                         footer: sheet_footer.clone(),

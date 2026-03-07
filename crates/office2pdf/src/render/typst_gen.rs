@@ -1,5 +1,4 @@
 use std::fmt::Write;
-
 use unicode_normalization::UnicodeNormalization;
 
 use crate::config::ConvertOptions;
@@ -7,10 +6,11 @@ use crate::error::ConvertError;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart, ChartType,
     Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
-    FlowPage, GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat, LineSpacing, List,
-    ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run,
-    Shadow, Shape, ShapeKind, SmartArt, TabAlignment, TabLeader, TabStop, Table, TableCell,
-    TablePage, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
+    FloatingTextBox, FlowPage, GradientFill, HFInline, HeaderFooter, ImageData, ImageFormat,
+    Insets, LineSpacing, List, ListKind, Margins, MathEquation, Metadata, Page, PageSize,
+    Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, TabAlignment, TabLeader,
+    TabStop, Table, TableCell, TablePage, TableRow, TextDirection, TextStyle, VerticalTextAlign,
+    WrapMode,
 };
 
 /// An image asset to be embedded in the Typst compilation.
@@ -378,6 +378,13 @@ fn generate_table_with_charts(
                 let segment = Table {
                     rows: table.rows[row_start..=row_end].to_vec(),
                     column_widths: table.column_widths.clone(),
+                    header_row_count: if row_start == 0 {
+                        table.header_row_count.min(row_end + 1)
+                    } else {
+                        0
+                    },
+                    alignment: table.alignment,
+                    default_cell_padding: table.default_cell_padding,
                 };
                 generate_table(out, &segment, ctx)?;
                 out.push('\n');
@@ -395,6 +402,13 @@ fn generate_table_with_charts(
         let segment = Table {
             rows: table.rows[row_start..].to_vec(),
             column_widths: table.column_widths.clone(),
+            header_row_count: if row_start == 0 {
+                table.header_row_count.min(total_rows - row_start)
+            } else {
+                0
+            },
+            alignment: table.alignment,
+            default_cell_padding: table.default_cell_padding,
         };
         generate_table(out, &segment, ctx)?;
         out.push('\n');
@@ -878,6 +892,7 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             generate_floating_image(out, fi, ctx);
             Ok(())
         }
+        Block::FloatingTextBox(ftb) => generate_floating_text_box(out, ftb, ctx),
         Block::List(list) => generate_list(out, list),
         Block::MathEquation(math) => {
             generate_math_equation(out, math);
@@ -1328,7 +1343,21 @@ fn generate_list_items(
 
 fn generate_table(out: &mut String, table: &Table, ctx: &mut GenCtx) -> Result<(), ConvertError> {
     ctx.table_depth += 1;
-    let result = generate_table_inner(out, table, ctx);
+    let result = match table.alignment {
+        Some(Alignment::Center) => {
+            out.push_str("#align(center)[\n");
+            let result = generate_table_inner(out, table, ctx);
+            out.push_str("]\n");
+            result
+        }
+        Some(Alignment::Right) => {
+            out.push_str("#align(right)[\n");
+            let result = generate_table_inner(out, table, ctx);
+            out.push_str("]\n");
+            result
+        }
+        _ => generate_table_inner(out, table, ctx),
+    };
     ctx.table_depth -= 1;
     result
 }
@@ -1339,6 +1368,10 @@ fn generate_table_inner(
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     out.push_str("#table(\n");
+
+    if let Some(padding) = table.default_cell_padding {
+        let _ = writeln!(out, "  inset: {},", format_insets(&padding));
+    }
 
     // Determine number of columns
     let num_cols = if !table.column_widths.is_empty() {
@@ -1385,35 +1418,67 @@ fn generate_table_inner(
     // Track column occupancy from rowspans so we clamp colspans correctly.
     // rowspan_remaining[c] = N means column c is occupied for N more rows.
     let mut rowspan_remaining = vec![0usize; num_cols];
-    for row in &table.rows {
-        // Decrement rowspan counters at the start of each row
-        for rs in &mut rowspan_remaining {
+    let header_row_count = table.header_row_count.min(table.rows.len());
+
+    if header_row_count > 0 {
+        out.push_str("  table.header(\n");
+        generate_table_rows(
+            out,
+            &table.rows[..header_row_count],
+            num_cols,
+            &mut rowspan_remaining,
+            "    ",
+            ctx,
+        )?;
+        out.push_str("  ),\n");
+    }
+
+    generate_table_rows(
+        out,
+        &table.rows[header_row_count..],
+        num_cols,
+        &mut rowspan_remaining,
+        "  ",
+        ctx,
+    )?;
+
+    out.push_str(")\n");
+    Ok(())
+}
+
+fn generate_table_rows(
+    out: &mut String,
+    rows: &[TableRow],
+    num_cols: usize,
+    rowspan_remaining: &mut [usize],
+    indent: &str,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    for row in rows {
+        // Decrement rowspan counters at the start of each row.
+        for rs in rowspan_remaining.iter_mut() {
             if *rs > 0 {
                 *rs -= 1;
             }
         }
+
         let mut col_pos: usize = 0;
         for cell in &row.cells {
-            // Skip hMerge continuation cells (col_span=0)
-            if cell.col_span == 0 {
+            if cell.col_span == 0 || cell.row_span == 0 {
                 continue;
             }
-            // Skip vMerge continuation cells (row_span=0)
-            if cell.row_span == 0 {
-                continue;
-            }
-            // Skip columns occupied by rowspans from previous rows
+
             while col_pos < num_cols && rowspan_remaining[col_pos] > 0 {
                 col_pos += 1;
             }
             if col_pos >= num_cols {
                 break;
             }
+
             let remaining = num_cols - col_pos;
             let clamped_colspan = (cell.col_span as usize).min(remaining).max(1) as u32;
-            generate_table_cell(out, cell, clamped_colspan, ctx)?;
-            // Register rowspan occupancy for subsequent rows (use full rowspan;
-            // the start-of-row decrement will reduce it each row)
+            generate_table_cell(out, cell, clamped_colspan, indent, ctx)?;
+
             if cell.row_span > 1 {
                 for rs in rowspan_remaining
                     .iter_mut()
@@ -1425,16 +1490,15 @@ fn generate_table_inner(
             }
             col_pos += clamped_colspan as usize;
         }
-        // Pad remaining columns with empty cells so Typst starts next row correctly
+
         while col_pos < num_cols {
             if rowspan_remaining[col_pos] == 0 {
-                out.push_str("  [],\n");
+                let _ = writeln!(out, "{indent}[],");
             }
             col_pos += 1;
         }
     }
 
-    out.push_str(")\n");
     Ok(())
 }
 
@@ -1442,20 +1506,24 @@ fn generate_table_cell(
     out: &mut String,
     cell: &TableCell,
     clamped_colspan: u32,
+    indent: &str,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     let needs_cell_fn = clamped_colspan > 1
         || cell.row_span > 1
         || cell.border.is_some()
         || cell.background.is_some()
-        || cell.vertical_align.is_some();
+        || cell.vertical_align.is_some()
+        || cell.padding.is_some();
 
     if needs_cell_fn {
-        out.push_str("  table.cell(");
+        out.push_str(indent);
+        out.push_str("table.cell(");
         write_cell_params(out, cell, clamped_colspan);
         out.push_str(")[");
     } else {
-        out.push_str("  [");
+        out.push_str(indent);
+        out.push('[');
     }
 
     // Render DataBar: colored box at fill percentage
@@ -1495,6 +1563,13 @@ fn write_cell_params(out: &mut String, cell: &TableCell, clamped_colspan: u32) {
     if let Some(ref bg) = cell.background {
         write_param(out, &mut first, &format_color(bg));
     }
+    if let Some(ref padding) = cell.padding {
+        write_param(
+            out,
+            &mut first,
+            &format!("inset: {}", format_insets(padding)),
+        );
+    }
     if let Some(ref border) = cell.border {
         let stroke = format_cell_stroke(border);
         if !stroke.is_empty() {
@@ -1509,6 +1584,16 @@ fn write_cell_params(out: &mut String, cell: &TableCell, clamped_colspan: u32) {
         };
         write_param(out, &mut first, &format!("align: {align_str}"));
     }
+}
+
+fn format_insets(insets: &Insets) -> String {
+    format!(
+        "(top: {}pt, right: {}pt, bottom: {}pt, left: {}pt)",
+        format_f64(insets.top),
+        format_f64(insets.right),
+        format_f64(insets.bottom),
+        format_f64(insets.left),
+    )
 }
 
 fn format_cell_stroke(border: &CellBorder) -> String {
@@ -1588,6 +1673,7 @@ fn generate_cell_content(
             }
             Block::Image(img) => generate_image(out, img, ctx),
             Block::FloatingImage(fi) => generate_floating_image(out, fi, ctx),
+            Block::FloatingTextBox(ftb) => generate_floating_text_box(out, ftb, ctx)?,
             Block::List(list) => generate_list(out, list)?,
             Block::MathEquation(math) => generate_math_equation(out, math),
             Block::Chart(chart) => generate_chart(out, chart),
@@ -1691,6 +1777,69 @@ fn generate_floating_image(out: &mut String, fi: &FloatingImage, ctx: &mut GenCt
             out.push_str(")]\n");
         }
     }
+}
+
+fn generate_floating_text_box(
+    out: &mut String,
+    ftb: &FloatingTextBox,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    match ftb.wrap_mode {
+        WrapMode::TopAndBottom => {
+            out.push_str("#block(width: 100%)[\n");
+            let _ = writeln!(
+                out,
+                "  #place(top + left, dx: {}pt, dy: 0pt)[",
+                format_f64(ftb.offset_x)
+            );
+            generate_floating_text_box_content(out, ftb, ctx)?;
+            out.push_str("  ]\n");
+            if ftb.height > 0.0 {
+                let _ = writeln!(out, "  #v({}pt)", format_f64(ftb.height));
+            }
+            out.push_str("]\n");
+        }
+        WrapMode::Behind | WrapMode::InFront | WrapMode::None => {
+            let _ = writeln!(
+                out,
+                "#place(top + left, dx: {}pt, dy: {}pt)[",
+                format_f64(ftb.offset_x),
+                format_f64(ftb.offset_y)
+            );
+            generate_floating_text_box_content(out, ftb, ctx)?;
+            out.push_str("]\n");
+        }
+        WrapMode::Square | WrapMode::Tight => {
+            let _ = writeln!(
+                out,
+                "#place(top + left, dx: {}pt, dy: {}pt, float: true)[",
+                format_f64(ftb.offset_x),
+                format_f64(ftb.offset_y)
+            );
+            generate_floating_text_box_content(out, ftb, ctx)?;
+            out.push_str("]\n");
+        }
+    }
+
+    Ok(())
+}
+
+fn generate_floating_text_box_content(
+    out: &mut String,
+    ftb: &FloatingTextBox,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let _ = writeln!(
+        out,
+        "#block(width: {}pt, height: {}pt)[",
+        format_f64(ftb.width),
+        format_f64(ftb.height)
+    );
+    for block in &ftb.content {
+        generate_block(out, block, ctx)?;
+    }
+    out.push_str("]\n");
+    Ok(())
 }
 
 fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
@@ -2889,7 +3038,7 @@ mod tests {
 
     // ── Table codegen tests ───────────────────────────────────────────
 
-    use crate::ir::{BorderSide, CellBorder, Table, TableCell, TableRow};
+    use crate::ir::{BorderSide, CellBorder, Insets, Table, TableCell, TableRow};
 
     /// Helper to create a table cell with plain text.
     fn make_text_cell(text: &str) -> TableCell {
@@ -2921,6 +3070,7 @@ mod tests {
                 },
             ],
             column_widths: vec![100.0, 200.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -2933,6 +3083,131 @@ mod tests {
         assert!(result.contains("B1"), "Expected B1 in: {result}");
         assert!(result.contains("A2"), "Expected A2 in: {result}");
         assert!(result.contains("B2"), "Expected B2 in: {result}");
+    }
+
+    #[test]
+    fn test_table_with_default_cell_padding() {
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![make_text_cell("Padded")],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+            header_row_count: 0,
+            alignment: None,
+            default_cell_padding: Some(Insets {
+                top: 2.0,
+                right: 3.0,
+                bottom: 1.0,
+                left: 4.0,
+            }),
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+
+        assert!(
+            result.contains("inset: (top: 2pt, right: 3pt, bottom: 1pt, left: 4pt)"),
+            "Expected table inset in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_cell_with_padding_override() {
+        let cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Inset".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            padding: Some(Insets {
+                top: 5.0,
+                right: 2.0,
+                bottom: 3.0,
+                left: 6.0,
+            }),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![cell],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+            header_row_count: 0,
+            alignment: None,
+            default_cell_padding: Some(Insets {
+                top: 1.0,
+                right: 2.0,
+                bottom: 3.0,
+                left: 4.0,
+            }),
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+
+        assert!(
+            result.contains("table.cell(inset: (top: 5pt, right: 2pt, bottom: 3pt, left: 6pt))"),
+            "Expected cell inset override in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_alignment_center_wraps_table() {
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![make_text_cell("Centered table")],
+                height: None,
+            }],
+            column_widths: vec![100.0],
+            header_row_count: 0,
+            alignment: Some(Alignment::Center),
+            default_cell_padding: None,
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+
+        assert!(
+            result.contains("#align(center)["),
+            "Expected center wrapper in: {result}"
+        );
+        assert!(
+            result.contains("#table("),
+            "Expected table inside wrapper in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_with_repeating_header_rows_uses_table_header() {
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![make_text_cell("Header 1"), make_text_cell("Header 2")],
+                    height: None,
+                },
+                TableRow {
+                    cells: vec![make_text_cell("Body 1"), make_text_cell("Body 2")],
+                    height: None,
+                },
+            ],
+            column_widths: vec![100.0, 100.0],
+            header_row_count: 1,
+            ..Table::default()
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+
+        assert!(
+            result.contains("table.header("),
+            "Expected table.header wrapper in: {result}"
+        );
+        assert!(
+            result.contains("Header 1") && result.contains("Body 1"),
+            "Expected header and body cell content in: {result}"
+        );
     }
 
     #[test]
@@ -2962,6 +3237,7 @@ mod tests {
                 },
             ],
             column_widths: vec![100.0, 200.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -2999,6 +3275,7 @@ mod tests {
                 },
             ],
             column_widths: vec![100.0, 200.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3036,6 +3313,7 @@ mod tests {
                 },
             ],
             column_widths: vec![100.0, 100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3086,6 +3364,7 @@ mod tests {
                 },
             ],
             column_widths: vec![100.0, 100.0, 100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3121,6 +3400,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3165,6 +3445,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3199,6 +3480,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3221,6 +3503,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0, 100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3239,6 +3522,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3290,6 +3574,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3342,6 +3627,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3465,6 +3751,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3510,6 +3797,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![200.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3531,6 +3819,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![200.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3549,6 +3838,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![
             make_paragraph("Before table"),
@@ -4262,6 +4552,7 @@ mod tests {
                 })
                 .collect(),
             column_widths: vec![],
+            ..Table::default()
         }
     }
 
@@ -4404,6 +4695,7 @@ mod tests {
                 },
             ],
             column_widths: vec![],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_table_page(
             "MergeSheet",
@@ -4456,6 +4748,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0, 200.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_table_page(
             "Widths",
@@ -4477,6 +4770,7 @@ mod tests {
         let table = Table {
             rows: vec![],
             column_widths: vec![],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_table_page(
             "Empty",
@@ -4554,6 +4848,7 @@ mod tests {
                 },
             ],
             column_widths: vec![],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_table_page(
             "RowMerge",
@@ -5129,6 +5424,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0, 100.0],
+            ..Table::default()
         };
 
         let page = Page::Fixed(FixedPage {
@@ -5759,6 +6055,83 @@ mod tests {
         assert!(
             !output.source.contains("float: true"),
             "Behind wrap should NOT use float, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_floating_text_box_square_wrap_codegen() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::FloatingTextBox(
+            FloatingTextBox {
+                content: vec![make_paragraph("Anchored box")],
+                wrap_mode: WrapMode::Square,
+                width: 200.0,
+                height: 100.0,
+                offset_x: 72.0,
+                offset_y: 36.0,
+            },
+        )])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#place("),
+            "Expected #place() for floating text box, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("float: true"),
+            "Expected float: true for square-wrapped text box, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("dx: 72pt"),
+            "Expected dx: 72pt, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("width: 200pt"),
+            "Expected width: 200pt, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("height: 100pt"),
+            "Expected height: 100pt, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Anchored box"),
+            "Expected text box content, got:\n{}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_floating_text_box_top_and_bottom_codegen() {
+        let doc = make_doc(vec![make_flow_page(vec![Block::FloatingTextBox(
+            FloatingTextBox {
+                content: vec![make_paragraph("Top box")],
+                wrap_mode: WrapMode::TopAndBottom,
+                width: 150.0,
+                height: 60.0,
+                offset_x: 10.0,
+                offset_y: 0.0,
+            },
+        )])]);
+
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#block(width: 100%)"),
+            "Expected block wrapper for top-and-bottom text box, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#v(60pt)"),
+            "Expected reserved vertical space for text box height, got:\n{}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Top box"),
+            "Expected text box content, got:\n{}",
             output.source
         );
     }
@@ -6411,6 +6784,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let page = Page::Table(TablePage {
             name: "Sheet1".to_string(),
@@ -6456,6 +6830,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let page = Page::Table(TablePage {
             name: "Sheet1".to_string(),
@@ -6504,6 +6879,7 @@ mod tests {
                 },
             ],
             column_widths: vec![100.0, 200.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -6542,6 +6918,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0, 100.0, 100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -6584,6 +6961,7 @@ mod tests {
                 },
             ],
             column_widths: vec![],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -7414,6 +7792,7 @@ mod tests {
             table: Table {
                 rows: vec![],
                 column_widths: vec![],
+                ..Table::default()
             },
             header: None,
             footer: None,
@@ -7831,6 +8210,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -7886,6 +8266,7 @@ mod tests {
                 height: None,
             }],
             column_widths: vec![100.0],
+            ..Table::default()
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
