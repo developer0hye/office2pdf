@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::{Cursor, Read};
 
 use quick_xml::Reader;
-use quick_xml::events::Event;
+use quick_xml::events::{BytesStart, Event};
 use zip::ZipArchive;
 
 use crate::config::ConvertOptions;
@@ -84,10 +84,278 @@ struct ThemeData {
     minor_font: Option<String>,
 }
 
+/// Effective scheme-color aliases for a slide part.
+#[derive(Debug, Clone, Default)]
+struct ColorMapData {
+    aliases: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct ParsedColor {
+    color: Option<Color>,
+    alpha: Option<f64>,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ColorTransform {
+    LumMod(f64),
+    LumOff(f64),
+}
+
+const COLOR_MAP_KEYS: &[&str] = &[
+    "bg1", "tx1", "bg2", "tx2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6",
+    "hlink", "folHlink",
+];
+
 /// Convert EMU (English Metric Units) to points.
 /// 1 inch = 914400 EMU, 1 inch = 72 points, so 1 pt = 12700 EMU.
 fn emu_to_pt(emu: i64) -> f64 {
     emu as f64 / 12700.0
+}
+
+fn default_color_map() -> ColorMapData {
+    let aliases = COLOR_MAP_KEYS
+        .iter()
+        .map(|name| ((*name).to_string(), (*name).to_string()))
+        .collect();
+    ColorMapData { aliases }
+}
+
+fn parse_color_map_attrs(element: &BytesStart<'_>) -> ColorMapData {
+    let mut aliases = HashMap::new();
+    for key in COLOR_MAP_KEYS {
+        if let Some(target) = get_attr_str(element, key.as_bytes()) {
+            aliases.insert((*key).to_string(), target);
+        }
+    }
+
+    if aliases.is_empty() {
+        default_color_map()
+    } else {
+        ColorMapData { aliases }
+    }
+}
+
+fn parse_master_color_map(xml: &str) -> ColorMapData {
+    let mut reader = Reader::from_str(xml);
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e))
+                if e.local_name().as_ref() == b"clrMap" =>
+            {
+                return parse_color_map_attrs(e);
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    default_color_map()
+}
+
+fn parse_color_map_override(xml: &str) -> Option<ColorMapData> {
+    let mut reader = Reader::from_str(xml);
+    let mut in_override = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e))
+                if e.local_name().as_ref() == b"clrMapOvr" =>
+            {
+                in_override = true;
+            }
+            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e))
+                if in_override && e.local_name().as_ref() == b"masterClrMapping" =>
+            {
+                return None;
+            }
+            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e))
+                if in_override
+                    && (e.local_name().as_ref() == b"overrideClrMapping"
+                        || e.local_name().as_ref() == b"clrMap") =>
+            {
+                return Some(parse_color_map_attrs(e));
+            }
+            Ok(Event::End(ref e)) if e.local_name().as_ref() == b"clrMapOvr" => {
+                in_override = false;
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    None
+}
+
+fn resolve_effective_color_map(xml: &str, master_color_map: &ColorMapData) -> ColorMapData {
+    parse_color_map_override(xml).unwrap_or_else(|| master_color_map.clone())
+}
+
+fn resolve_scheme_color(
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+    scheme_name: &str,
+) -> Option<Color> {
+    let mapped_name = color_map
+        .aliases
+        .get(scheme_name)
+        .map(String::as_str)
+        .unwrap_or(scheme_name);
+
+    theme
+        .colors
+        .get(mapped_name)
+        .copied()
+        .or_else(|| theme.colors.get(scheme_name).copied())
+}
+
+fn parse_base_color(
+    element: &BytesStart<'_>,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+) -> Option<Color> {
+    match element.local_name().as_ref() {
+        b"srgbClr" => get_attr_str(element, b"val").and_then(|hex| parse_hex_color(&hex)),
+        b"schemeClr" => get_attr_str(element, b"val")
+            .and_then(|name| resolve_scheme_color(theme, color_map, &name)),
+        b"sysClr" => get_attr_str(element, b"lastClr").and_then(|hex| parse_hex_color(&hex)),
+        _ => None,
+    }
+}
+
+fn parse_color_transform(element: &BytesStart<'_>) -> Option<ColorTransform> {
+    let val = get_attr_i64(element, b"val")? as f64 / 100_000.0;
+    match element.local_name().as_ref() {
+        b"lumMod" => Some(ColorTransform::LumMod(val)),
+        b"lumOff" => Some(ColorTransform::LumOff(val)),
+        _ => None,
+    }
+}
+
+fn apply_color_transforms(color: Color, transforms: &[ColorTransform]) -> Color {
+    let (mut hue, mut saturation, mut lightness) = rgb_to_hsl(color);
+
+    for transform in transforms {
+        match transform {
+            ColorTransform::LumMod(value) => {
+                lightness = (lightness * value).clamp(0.0, 1.0);
+            }
+            ColorTransform::LumOff(value) => {
+                lightness = (lightness + value).clamp(0.0, 1.0);
+            }
+        }
+    }
+
+    saturation = saturation.clamp(0.0, 1.0);
+    hue = hue.rem_euclid(360.0);
+    hsl_to_rgb(hue, saturation, lightness)
+}
+
+fn parse_color_from_empty(
+    element: &BytesStart<'_>,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+) -> ParsedColor {
+    ParsedColor {
+        color: parse_base_color(element, theme, color_map),
+        alpha: None,
+    }
+}
+
+fn parse_color_from_start(
+    reader: &mut Reader<&[u8]>,
+    element: &BytesStart<'_>,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+) -> ParsedColor {
+    let base_color = parse_base_color(element, theme, color_map);
+    let mut transforms: Vec<ColorTransform> = Vec::new();
+    let mut alpha: Option<f64> = None;
+    let mut depth: usize = 1;
+
+    while depth > 0 {
+        match reader.read_event() {
+            Ok(Event::Start(ref child)) => {
+                depth += 1;
+                if let Some(transform) = parse_color_transform(child) {
+                    transforms.push(transform);
+                } else if child.local_name().as_ref() == b"alpha" {
+                    alpha = get_attr_i64(child, b"val").map(|v| v as f64 / 100_000.0);
+                }
+            }
+            Ok(Event::Empty(ref child)) => {
+                if let Some(transform) = parse_color_transform(child) {
+                    transforms.push(transform);
+                } else if child.local_name().as_ref() == b"alpha" {
+                    alpha = get_attr_i64(child, b"val").map(|v| v as f64 / 100_000.0);
+                }
+            }
+            Ok(Event::End(_)) => {
+                depth -= 1;
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    let color = base_color.map(|base| apply_color_transforms(base, &transforms));
+
+    ParsedColor { color, alpha }
+}
+
+fn rgb_to_hsl(color: Color) -> (f64, f64, f64) {
+    let red = color.r as f64 / 255.0;
+    let green = color.g as f64 / 255.0;
+    let blue = color.b as f64 / 255.0;
+
+    let max = red.max(green.max(blue));
+    let min = red.min(green.min(blue));
+    let delta = max - min;
+    let lightness = (max + min) / 2.0;
+
+    if delta == 0.0 {
+        return (0.0, 0.0, lightness);
+    }
+
+    let saturation = delta / (1.0 - (2.0 * lightness - 1.0).abs());
+    let hue_sector = if max == red {
+        ((green - blue) / delta).rem_euclid(6.0)
+    } else if max == green {
+        ((blue - red) / delta) + 2.0
+    } else {
+        ((red - green) / delta) + 4.0
+    };
+
+    (60.0 * hue_sector, saturation, lightness)
+}
+
+fn hsl_to_rgb(hue: f64, saturation: f64, lightness: f64) -> Color {
+    if saturation == 0.0 {
+        let channel = (lightness * 255.0).round() as u8;
+        return Color::new(channel, channel, channel);
+    }
+
+    let chroma = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation;
+    let hue_prime = hue / 60.0;
+    let secondary = chroma * (1.0 - ((hue_prime.rem_euclid(2.0)) - 1.0).abs());
+    let match_lightness = lightness - chroma / 2.0;
+
+    let (red, green, blue) = match hue_prime {
+        h if (0.0..1.0).contains(&h) => (chroma, secondary, 0.0),
+        h if (1.0..2.0).contains(&h) => (secondary, chroma, 0.0),
+        h if (2.0..3.0).contains(&h) => (0.0, chroma, secondary),
+        h if (3.0..4.0).contains(&h) => (0.0, secondary, chroma),
+        h if (4.0..5.0).contains(&h) => (secondary, 0.0, chroma),
+        _ => (chroma, 0.0, secondary),
+    };
+
+    let to_u8 = |value: f64| ((value + match_lightness).clamp(0.0, 1.0) * 255.0).round() as u8;
+
+    Color::new(to_u8(red), to_u8(green), to_u8(blue))
 }
 
 /// Map OOXML preset dash values to `BorderLineStyle`.
@@ -222,26 +490,44 @@ fn parse_single_slide<R: Read + std::io::Seek>(
     archive: &mut ZipArchive<R>,
 ) -> Result<(Page, Vec<ConvertWarning>), ConvertError> {
     let slide_xml = read_zip_entry(archive, slide_path)?;
+    let (layout_path, master_path) = resolve_layout_master_paths(slide_path, archive);
+    let master_xml = master_path
+        .as_ref()
+        .and_then(|path| read_zip_entry(archive, path).ok());
+    let layout_xml = layout_path
+        .as_ref()
+        .and_then(|path| read_zip_entry(archive, path).ok());
+    let master_color_map = master_xml
+        .as_deref()
+        .map(parse_master_color_map)
+        .unwrap_or_else(default_color_map);
+    let slide_color_map = resolve_effective_color_map(&slide_xml, &master_color_map);
+    let layout_color_map = layout_xml
+        .as_deref()
+        .map(|xml| resolve_effective_color_map(xml, &master_color_map));
+
     let slide_images = load_slide_images(slide_path, archive);
     let mut warnings = Vec::new();
-    let (slide_elements, slide_warnings) =
-        parse_slide_xml(&slide_xml, &slide_images, theme, slide_label)?;
+    let (slide_elements, slide_warnings) = parse_slide_xml(
+        &slide_xml,
+        &slide_images,
+        theme,
+        &slide_color_map,
+        slide_label,
+    )?;
     warnings.extend(slide_warnings);
-
-    // Resolve layout and master paths
-    let (layout_path, master_path) = resolve_layout_master_paths(slide_path, archive);
 
     // Build element list: master (behind) → layout → slide (on top)
     let mut elements = Vec::new();
 
     // Master elements (furthest back)
     if let Some(ref path) = master_path
-        && let Ok(xml) = read_zip_entry(archive, path)
+        && let Some(xml) = master_xml.as_deref()
     {
         let master_images = load_slide_images(path, archive);
         let master_label = format!("{slide_label} master");
         if let Ok((master_elements, master_warnings)) =
-            parse_slide_xml(&xml, &master_images, theme, &master_label)
+            parse_slide_xml(xml, &master_images, theme, &master_color_map, &master_label)
         {
             elements.extend(master_elements);
             warnings.extend(master_warnings);
@@ -250,12 +536,13 @@ fn parse_single_slide<R: Read + std::io::Seek>(
 
     // Layout elements (middle layer)
     if let Some(ref path) = layout_path
-        && let Ok(xml) = read_zip_entry(archive, path)
+        && let Some(xml) = layout_xml.as_deref()
+        && let Some(color_map) = layout_color_map.as_ref()
     {
         let layout_images = load_slide_images(path, archive);
         let layout_label = format!("{slide_label} layout");
         if let Ok((layout_elements, layout_warnings)) =
-            parse_slide_xml(&xml, &layout_images, theme, &layout_label)
+            parse_slide_xml(xml, &layout_images, theme, color_map, &layout_label)
         {
             elements.extend(layout_elements);
             warnings.extend(layout_warnings);
@@ -305,21 +592,26 @@ fn parse_single_slide<R: Read + std::io::Seek>(
 
     // Resolve background: try gradient first, then solid color.
     // Reuse already-resolved layout/master paths to avoid re-reading .rels files.
-    let background_gradient = parse_background_gradient(&slide_xml, theme);
+    let background_gradient = parse_background_gradient(&slide_xml, theme, &slide_color_map);
     let background_color = if background_gradient.is_some() {
         // When gradient is present, also extract first stop as fallback color
         background_gradient
             .as_ref()
             .and_then(|g| g.stops.first().map(|s| s.color))
     } else {
-        parse_background_color(&slide_xml, theme).or_else(|| {
-            resolve_inherited_background_with_paths(
-                layout_path.as_deref(),
-                master_path.as_deref(),
-                theme,
-                archive,
-            )
-        })
+        parse_background_color(&slide_xml, theme, &slide_color_map)
+            .or_else(|| {
+                layout_xml.as_deref().and_then(|xml| {
+                    layout_color_map
+                        .as_ref()
+                        .and_then(|map| parse_background_color(xml, theme, map))
+                })
+            })
+            .or_else(|| {
+                master_xml
+                    .as_deref()
+                    .and_then(|xml| parse_background_color(xml, theme, &master_color_map))
+            })
     };
 
     Ok((
@@ -389,30 +681,6 @@ fn resolve_layout_master_paths<R: Read + std::io::Seek>(
 /// Returns the first background color found in the inheritance chain.
 /// Resolve inherited background color from pre-resolved layout/master paths.
 /// This avoids re-reading .rels files that were already parsed in `parse_single_slide`.
-fn resolve_inherited_background_with_paths<R: Read + std::io::Seek>(
-    layout_path: Option<&str>,
-    master_path: Option<&str>,
-    theme: &ThemeData,
-    archive: &mut ZipArchive<R>,
-) -> Option<Color> {
-    // Try layout background
-    if let Some(path) = layout_path
-        && let Ok(xml) = read_zip_entry(archive, path)
-        && let Some(color) = parse_background_color(&xml, theme)
-    {
-        return Some(color);
-    }
-
-    // Try master background
-    if let Some(path) = master_path
-        && let Ok(xml) = read_zip_entry(archive, path)
-    {
-        return parse_background_color(&xml, theme);
-    }
-
-    None
-}
-
 /// Read a file from the ZIP archive as a UTF-8 string.
 fn read_zip_entry<R: Read + std::io::Seek>(
     archive: &mut ZipArchive<R>,
@@ -926,7 +1194,7 @@ fn parse_theme_xml(xml: &str) -> ThemeData {
 ///
 /// Looks for `<p:bg><p:bgPr><a:solidFill>` and extracts the color
 /// (either `<a:srgbClr>` or `<a:schemeClr>` resolved via theme).
-fn parse_background_color(xml: &str, theme: &ThemeData) -> Option<Color> {
+fn parse_background_color(xml: &str, theme: &ThemeData, color_map: &ColorMapData) -> Option<Color> {
     let mut reader = Reader::from_str(xml);
     let mut in_bg = false;
     let mut in_bg_pr = false;
@@ -940,11 +1208,8 @@ fn parse_background_color(xml: &str, theme: &ThemeData) -> Option<Color> {
                     b"bg" => in_bg = true,
                     b"bgPr" if in_bg => in_bg_pr = true,
                     b"solidFill" if in_bg_pr => in_solid_fill = true,
-                    // schemeClr as Start element (may have children like <a:tint>)
-                    b"schemeClr" if in_solid_fill => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val") {
-                            return theme.colors.get(&scheme_name).copied();
-                        }
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_solid_fill => {
+                        return parse_color_from_start(&mut reader, e, theme, color_map).color;
                     }
                     _ => {}
                 }
@@ -952,15 +1217,8 @@ fn parse_background_color(xml: &str, theme: &ThemeData) -> Option<Color> {
             Ok(Event::Empty(ref e)) => {
                 let local = e.local_name();
                 match local.as_ref() {
-                    b"srgbClr" if in_solid_fill => {
-                        if let Some(hex) = get_attr_str(e, b"val") {
-                            return parse_hex_color(&hex);
-                        }
-                    }
-                    b"schemeClr" if in_solid_fill => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val") {
-                            return theme.colors.get(&scheme_name).copied();
-                        }
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_solid_fill => {
+                        return parse_color_from_empty(e, theme, color_map).color;
                     }
                     _ => {}
                 }
@@ -987,7 +1245,11 @@ fn parse_background_color(xml: &str, theme: &ThemeData) -> Option<Color> {
 ///
 /// Looks for `<p:bg><p:bgPr><a:gradFill>` and extracts gradient stops and angle.
 /// Returns `None` if no gradient background is found.
-fn parse_background_gradient(xml: &str, theme: &ThemeData) -> Option<GradientFill> {
+fn parse_background_gradient(
+    xml: &str,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+) -> Option<GradientFill> {
     let mut reader = Reader::from_str(xml);
     let mut in_bg = false;
     let mut in_bg_pr = false;
@@ -1012,19 +1274,9 @@ fn parse_background_gradient(xml: &str, theme: &ThemeData) -> Option<GradientFil
                         in_gs = true;
                         current_pos = get_attr_i64(e, b"pos").unwrap_or(0) as f64 / 100_000.0;
                     }
-                    b"srgbClr" if in_gs => {
-                        if let Some(hex) = get_attr_str(e, b"val")
-                            && let Some(color) = parse_hex_color(&hex)
-                        {
-                            stops.push(GradientStop {
-                                position: current_pos,
-                                color,
-                            });
-                        }
-                    }
-                    b"schemeClr" if in_gs => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val")
-                            && let Some(color) = theme.colors.get(&scheme_name).copied()
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_gs => {
+                        if let Some(color) =
+                            parse_color_from_start(&mut reader, e, theme, color_map).color
                         {
                             stops.push(GradientStop {
                                 position: current_pos,
@@ -1038,20 +1290,8 @@ fn parse_background_gradient(xml: &str, theme: &ThemeData) -> Option<GradientFil
             Ok(Event::Empty(ref e)) => {
                 let local = e.local_name();
                 match local.as_ref() {
-                    b"srgbClr" if in_gs => {
-                        if let Some(hex) = get_attr_str(e, b"val")
-                            && let Some(color) = parse_hex_color(&hex)
-                        {
-                            stops.push(GradientStop {
-                                position: current_pos,
-                                color,
-                            });
-                        }
-                    }
-                    b"schemeClr" if in_gs => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val")
-                            && let Some(color) = theme.colors.get(&scheme_name).copied()
-                        {
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_gs => {
+                        if let Some(color) = parse_color_from_empty(e, theme, color_map).color {
                             stops.push(GradientStop {
                                 position: current_pos,
                                 color,
@@ -1098,6 +1338,7 @@ fn parse_background_gradient(xml: &str, theme: &ThemeData) -> Option<GradientFil
 fn parse_shape_gradient_fill(
     reader: &mut Reader<&[u8]>,
     theme: &ThemeData,
+    color_map: &ColorMapData,
 ) -> Option<GradientFill> {
     let mut in_gs_lst = false;
     let mut in_gs = false;
@@ -1117,19 +1358,9 @@ fn parse_shape_gradient_fill(
                         in_gs = true;
                         current_pos = get_attr_i64(e, b"pos").unwrap_or(0) as f64 / 100_000.0;
                     }
-                    b"srgbClr" if in_gs => {
-                        if let Some(hex) = get_attr_str(e, b"val")
-                            && let Some(color) = parse_hex_color(&hex)
-                        {
-                            stops.push(GradientStop {
-                                position: current_pos,
-                                color,
-                            });
-                        }
-                    }
-                    b"schemeClr" if in_gs => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val")
-                            && let Some(color) = theme.colors.get(&scheme_name).copied()
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_gs => {
+                        if let Some(color) =
+                            parse_color_from_start(reader, e, theme, color_map).color
                         {
                             stops.push(GradientStop {
                                 position: current_pos,
@@ -1143,20 +1374,8 @@ fn parse_shape_gradient_fill(
             Ok(Event::Empty(ref e)) => {
                 let local = e.local_name();
                 match local.as_ref() {
-                    b"srgbClr" if in_gs => {
-                        if let Some(hex) = get_attr_str(e, b"val")
-                            && let Some(color) = parse_hex_color(&hex)
-                        {
-                            stops.push(GradientStop {
-                                position: current_pos,
-                                color,
-                            });
-                        }
-                    }
-                    b"schemeClr" if in_gs => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val")
-                            && let Some(color) = theme.colors.get(&scheme_name).copied()
-                        {
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_gs => {
+                        if let Some(color) = parse_color_from_empty(e, theme, color_map).color {
                             stops.push(GradientStop {
                                 position: current_pos,
                                 color,
@@ -1200,7 +1419,11 @@ fn parse_shape_gradient_fill(
 ///
 /// The reader should be positioned right after the `<a:effectLst>` Start event.
 /// Reads until the matching `</a:effectLst>` End event.
-fn parse_effect_list(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Option<Shadow> {
+fn parse_effect_list(
+    reader: &mut Reader<&[u8]>,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+) -> Option<Shadow> {
     let mut shadow: Option<Shadow> = None;
     let mut in_outer_shdw = false;
     let mut shdw_blur: f64 = 0.0;
@@ -1226,14 +1449,11 @@ fn parse_effect_list(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Option<Sh
                         shdw_color = None;
                         shdw_opacity = 1.0;
                     }
-                    b"srgbClr" if in_outer_shdw => {
-                        if let Some(hex) = get_attr_str(e, b"val") {
-                            shdw_color = parse_hex_color(&hex);
-                        }
-                    }
-                    b"schemeClr" if in_outer_shdw => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val") {
-                            shdw_color = theme.colors.get(&scheme_name).copied();
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_outer_shdw => {
+                        let parsed = parse_color_from_start(reader, e, theme, color_map);
+                        shdw_color = parsed.color;
+                        if let Some(alpha) = parsed.alpha {
+                            shdw_opacity = alpha;
                         }
                     }
                     _ => {}
@@ -1255,14 +1475,11 @@ fn parse_effect_list(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Option<Sh
                             opacity: 1.0,
                         });
                     }
-                    b"srgbClr" if in_outer_shdw => {
-                        if let Some(hex) = get_attr_str(e, b"val") {
-                            shdw_color = parse_hex_color(&hex);
-                        }
-                    }
-                    b"schemeClr" if in_outer_shdw => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val") {
-                            shdw_color = theme.colors.get(&scheme_name).copied();
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_outer_shdw => {
+                        let parsed = parse_color_from_empty(e, theme, color_map);
+                        shdw_color = parsed.color;
+                        if let Some(alpha) = parsed.alpha {
+                            shdw_opacity = alpha;
                         }
                     }
                     b"alpha" if in_outer_shdw => {
@@ -1305,7 +1522,11 @@ fn parse_effect_list(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Option<Sh
 ///
 /// The reader should be positioned right after the `<a:tbl>` Start event.
 /// Reads until the matching `</a:tbl>` End event.
-fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Table, ConvertError> {
+fn parse_pptx_table(
+    reader: &mut Reader<&[u8]>,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+) -> Result<Table, ConvertError> {
     let mut column_widths = Vec::new();
     let mut rows: Vec<TableRow> = Vec::new();
 
@@ -1408,15 +1629,15 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
                     b"solidFill" if in_border_ln => {
                         solid_fill_ctx = SolidFillCtx::LineFill;
                     }
-                    b"schemeClr" if solid_fill_ctx != SolidFillCtx::None => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val") {
-                            let color = theme.colors.get(&scheme_name).copied();
-                            match solid_fill_ctx {
-                                SolidFillCtx::ShapeFill => cell_background = color,
-                                SolidFillCtx::LineFill => border_ln_color = color,
-                                SolidFillCtx::RunFill => run_style.color = color,
-                                SolidFillCtx::None => {}
-                            }
+                    b"srgbClr" | b"schemeClr" | b"sysClr"
+                        if solid_fill_ctx != SolidFillCtx::None =>
+                    {
+                        let color = parse_color_from_start(reader, e, theme, color_map).color;
+                        match solid_fill_ctx {
+                            SolidFillCtx::ShapeFill => cell_background = color,
+                            SolidFillCtx::LineFill => border_ln_color = color,
+                            SolidFillCtx::RunFill => run_style.color = color,
+                            SolidFillCtx::None => {}
                         }
                     }
                     b"t" if in_run => {
@@ -1470,26 +1691,15 @@ fn parse_pptx_table(reader: &mut Reader<&[u8]>, theme: &ThemeData) -> Result<Tab
                             column_widths.push(emu_to_pt(w));
                         }
                     }
-                    b"srgbClr" if solid_fill_ctx != SolidFillCtx::None => {
-                        if let Some(hex) = get_attr_str(e, b"val") {
-                            let color = parse_hex_color(&hex);
-                            match solid_fill_ctx {
-                                SolidFillCtx::ShapeFill => cell_background = color,
-                                SolidFillCtx::LineFill => border_ln_color = color,
-                                SolidFillCtx::RunFill => run_style.color = color,
-                                SolidFillCtx::None => {}
-                            }
-                        }
-                    }
-                    b"schemeClr" if solid_fill_ctx != SolidFillCtx::None => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val") {
-                            let color = theme.colors.get(&scheme_name).copied();
-                            match solid_fill_ctx {
-                                SolidFillCtx::ShapeFill => cell_background = color,
-                                SolidFillCtx::LineFill => border_ln_color = color,
-                                SolidFillCtx::RunFill => run_style.color = color,
-                                SolidFillCtx::None => {}
-                            }
+                    b"srgbClr" | b"schemeClr" | b"sysClr"
+                        if solid_fill_ctx != SolidFillCtx::None =>
+                    {
+                        let color = parse_color_from_empty(e, theme, color_map).color;
+                        match solid_fill_ctx {
+                            SolidFillCtx::ShapeFill => cell_background = color,
+                            SolidFillCtx::LineFill => border_ln_color = color,
+                            SolidFillCtx::RunFill => run_style.color = color,
+                            SolidFillCtx::None => {}
                         }
                     }
                     b"prstDash" if in_border_ln => {
@@ -1699,6 +1909,7 @@ fn parse_group_shape(
     xml: &str,
     images: &SlideImageMap,
     theme: &ThemeData,
+    color_map: &ColorMapData,
     warning_context: &str,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
     let mut transform = GroupTransform::default();
@@ -1781,7 +1992,7 @@ fn parse_group_shape(
                     );
 
                     let (mut child_elements, warnings) =
-                        parse_slide_xml(&wrapped, images, theme, warning_context)?;
+                        parse_slide_xml(&wrapped, images, theme, color_map, warning_context)?;
                     for elem in &mut child_elements {
                         transform.apply(elem);
                     }
@@ -1889,6 +2100,7 @@ fn parse_slide_xml(
     xml: &str,
     images: &SlideImageMap,
     theme: &ThemeData,
+    color_map: &ColorMapData,
     warning_context: &str,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
     let mut reader = Reader::from_str(xml);
@@ -1977,7 +2189,7 @@ fn parse_slide_xml(
                     }
                     b"tbl" if in_graphic_frame => {
                         // Parse the table and emit as a FixedElement
-                        if let Ok(table) = parse_pptx_table(&mut reader, theme) {
+                        if let Ok(table) = parse_pptx_table(&mut reader, theme, color_map) {
                             elements.push(FixedElement {
                                 x: emu_to_pt(gf_x),
                                 y: emu_to_pt(gf_y),
@@ -1989,9 +2201,14 @@ fn parse_slide_xml(
                     }
                     // ── Group shape start ────────────────────────────
                     b"grpSp" if !in_shape && !in_pic && !in_graphic_frame => {
-                        if let Ok((group_elems, group_warnings)) =
-                            parse_group_shape(&mut reader, xml, images, theme, warning_context)
-                        {
+                        if let Ok((group_elems, group_warnings)) = parse_group_shape(
+                            &mut reader,
+                            xml,
+                            images,
+                            theme,
+                            color_map,
+                            warning_context,
+                        ) {
                             elements.extend(group_elems);
                             warnings.extend(group_warnings);
                         }
@@ -2043,7 +2260,8 @@ fn parse_slide_xml(
                     }
                     b"gradFill" if in_sp_pr && !in_ln && !in_rpr => {
                         // Parse gradient fill using sub-parser; reader is consumed up to </gradFill>
-                        shape_gradient_fill = parse_shape_gradient_fill(&mut reader, theme);
+                        shape_gradient_fill =
+                            parse_shape_gradient_fill(&mut reader, theme, color_map);
                         // Also set solid fill as fallback (first stop color)
                         if let Some(ref gf) = shape_gradient_fill
                             && shape_fill.is_none()
@@ -2052,7 +2270,7 @@ fn parse_slide_xml(
                         }
                     }
                     b"effectLst" if in_sp_pr && !in_ln => {
-                        shape_shadow = parse_effect_list(&mut reader, theme);
+                        shape_shadow = parse_effect_list(&mut reader, theme, color_map);
                     }
                     b"ln" if in_sp_pr => {
                         in_ln = true;
@@ -2093,35 +2311,20 @@ fn parse_slide_xml(
                     b"solidFill" if in_rpr => {
                         solid_fill_ctx = SolidFillCtx::RunFill;
                     }
-                    // ── Scheme color as Start element (has children) ──
-                    b"schemeClr" if solid_fill_ctx != SolidFillCtx::None => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val") {
-                            let color = theme.colors.get(&scheme_name).copied();
-                            match solid_fill_ctx {
-                                SolidFillCtx::ShapeFill => shape_fill = color,
-                                SolidFillCtx::LineFill => ln_color = color,
-                                SolidFillCtx::RunFill => run_style.color = color,
-                                SolidFillCtx::None => {}
+                    b"srgbClr" | b"schemeClr" | b"sysClr"
+                        if solid_fill_ctx != SolidFillCtx::None =>
+                    {
+                        let parsed = parse_color_from_start(&mut reader, e, theme, color_map);
+                        match solid_fill_ctx {
+                            SolidFillCtx::ShapeFill => {
+                                shape_fill = parsed.color;
+                                if let Some(alpha) = parsed.alpha {
+                                    shape_opacity = Some(alpha);
+                                }
                             }
-                        }
-                    }
-                    // ── srgbClr as Start element (has alpha/tint children) ──
-                    b"srgbClr" if solid_fill_ctx != SolidFillCtx::None => {
-                        if let Some(hex) = get_attr_str(e, b"val") {
-                            let color = parse_hex_color(&hex);
-                            match solid_fill_ctx {
-                                SolidFillCtx::ShapeFill => shape_fill = color,
-                                SolidFillCtx::LineFill => ln_color = color,
-                                SolidFillCtx::RunFill => run_style.color = color,
-                                SolidFillCtx::None => {}
-                            }
-                        }
-                    }
-                    // ── Alpha element inside srgbClr ──
-                    b"alpha" if solid_fill_ctx == SolidFillCtx::ShapeFill => {
-                        if let Some(val) = get_attr_i64(e, b"val") {
-                            // val is in 1000ths of percent (e.g. 50000 = 50%)
-                            shape_opacity = Some(val as f64 / 100_000.0);
+                            SolidFillCtx::LineFill => ln_color = parsed.color,
+                            SolidFillCtx::RunFill => run_style.color = parsed.color,
+                            SolidFillCtx::None => {}
                         }
                     }
                     b"t" if in_run => {
@@ -2236,34 +2439,20 @@ fn parse_slide_xml(
                     }
 
                     // ── Color value ──────────────────────────────────
-                    b"srgbClr" if solid_fill_ctx != SolidFillCtx::None => {
-                        if let Some(hex) = get_attr_str(e, b"val") {
-                            let color = parse_hex_color(&hex);
-                            match solid_fill_ctx {
-                                SolidFillCtx::ShapeFill => shape_fill = color,
-                                SolidFillCtx::LineFill => ln_color = color,
-                                SolidFillCtx::RunFill => run_style.color = color,
-                                SolidFillCtx::None => {}
+                    b"srgbClr" | b"schemeClr" | b"sysClr"
+                        if solid_fill_ctx != SolidFillCtx::None =>
+                    {
+                        let parsed = parse_color_from_empty(e, theme, color_map);
+                        match solid_fill_ctx {
+                            SolidFillCtx::ShapeFill => {
+                                shape_fill = parsed.color;
+                                if let Some(alpha) = parsed.alpha {
+                                    shape_opacity = Some(alpha);
+                                }
                             }
-                        }
-                    }
-                    // ── Scheme color reference (theme) ─────────────
-                    b"schemeClr" if solid_fill_ctx != SolidFillCtx::None => {
-                        if let Some(scheme_name) = get_attr_str(e, b"val") {
-                            let color = theme.colors.get(&scheme_name).copied();
-                            match solid_fill_ctx {
-                                SolidFillCtx::ShapeFill => shape_fill = color,
-                                SolidFillCtx::LineFill => ln_color = color,
-                                SolidFillCtx::RunFill => run_style.color = color,
-                                SolidFillCtx::None => {}
-                            }
-                        }
-                    }
-
-                    // ── Alpha element (empty, self-closing) ──────────
-                    b"alpha" if solid_fill_ctx == SolidFillCtx::ShapeFill => {
-                        if let Some(val) = get_attr_i64(e, b"val") {
-                            shape_opacity = Some(val as f64 / 100_000.0);
+                            SolidFillCtx::LineFill => ln_color = parsed.color,
+                            SolidFillCtx::RunFill => run_style.color = parsed.color,
+                            SolidFillCtx::None => {}
                         }
                     }
 
@@ -4077,6 +4266,67 @@ mod tests {
         cursor.into_inner()
     }
 
+    /// Build a test PPTX with a single slide, layout/master chain, and theme.
+    fn build_test_pptx_with_theme_layout_master(
+        slide_cx_emu: i64,
+        slide_cy_emu: i64,
+        slide_xml: &str,
+        layout_xml: &str,
+        master_xml: &str,
+        theme_xml: &str,
+    ) -> Vec<u8> {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let opts = FileOptions::default();
+
+        let ct = r#"<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/></Types>"#;
+        zip.start_file("[Content_Types].xml", opts).unwrap();
+        zip.write_all(ct.as_bytes()).unwrap();
+
+        zip.start_file("_rels/.rels", opts).unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>"#,
+        )
+        .unwrap();
+
+        let pres = format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldSz cx="{slide_cx_emu}" cy="{slide_cy_emu}"/><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst></p:presentation>"#,
+        );
+        zip.start_file("ppt/presentation.xml", opts).unwrap();
+        zip.write_all(pres.as_bytes()).unwrap();
+
+        let pres_rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>"#;
+        zip.start_file("ppt/_rels/presentation.xml.rels", opts)
+            .unwrap();
+        zip.write_all(pres_rels.as_bytes()).unwrap();
+
+        zip.start_file("ppt/theme/theme1.xml", opts).unwrap();
+        zip.write_all(theme_xml.as_bytes()).unwrap();
+
+        zip.start_file("ppt/slides/slide1.xml", opts).unwrap();
+        zip.write_all(slide_xml.as_bytes()).unwrap();
+
+        let slide_rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>"#;
+        zip.start_file("ppt/slides/_rels/slide1.xml.rels", opts)
+            .unwrap();
+        zip.write_all(slide_rels.as_bytes()).unwrap();
+
+        zip.start_file("ppt/slideLayouts/slideLayout1.xml", opts)
+            .unwrap();
+        zip.write_all(layout_xml.as_bytes()).unwrap();
+
+        let layout_rels = r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>"#;
+        zip.start_file("ppt/slideLayouts/_rels/slideLayout1.xml.rels", opts)
+            .unwrap();
+        zip.write_all(layout_rels.as_bytes()).unwrap();
+
+        zip.start_file("ppt/slideMasters/slideMaster1.xml", opts)
+            .unwrap();
+        zip.write_all(master_xml.as_bytes()).unwrap();
+
+        let cursor = zip.finish().unwrap();
+        cursor.into_inner()
+    }
+
     /// Build a test PPTX with multiple slides that all share the same layout and master.
     fn build_test_pptx_with_layout_master_multi_slide(
         slide_cx_emu: i64,
@@ -4423,6 +4673,68 @@ mod tests {
         let shape = get_shape(&page.elements[0]);
         // Color is resolved from the scheme (tint is ignored for now but base color is read)
         assert_eq!(shape.fill, Some(Color::new(0xA5, 0xA5, 0xA5)));
+    }
+
+    #[test]
+    fn test_scheme_color_lum_mod_applies_to_shape_fill() {
+        let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent1"><a:lumMod val="50000"/></a:schemeClr></a:solidFill></p:spPr></p:sp>"#;
+        let slide = make_slide_xml(&[shape_xml.to_string()]);
+        let theme_xml = make_theme_xml(
+            &[("dk1", "000000"), ("lt1", "FFFFFF"), ("accent1", "808080")],
+            "Calibri Light",
+            "Calibri",
+        );
+        let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let shape = get_shape(&page.elements[0]);
+        assert_eq!(shape.fill, Some(Color::new(0x40, 0x40, 0x40)));
+    }
+
+    #[test]
+    fn test_layout_shape_uses_master_color_map_with_luminance_offset() {
+        let slide_xml = make_empty_slide_xml();
+        let layout_shape = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="tx1"><a:lumOff val="50000"/></a:schemeClr></a:solidFill><a:ln w="6350"><a:noFill/></a:ln></p:spPr></p:sp>"#;
+        let layout_xml = format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>{layout_shape}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>"#
+        );
+        let master_xml = r#"<?xml version="1.0" encoding="UTF-8"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt1" tx2="dk1" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/></p:sldMaster>"#;
+        let theme_xml = make_theme_xml(
+            &[
+                ("dk1", "000000"),
+                ("dk2", "222222"),
+                ("lt1", "FFFFFF"),
+                ("lt2", "EEEEEE"),
+                ("accent1", "4472C4"),
+                ("accent2", "ED7D31"),
+                ("accent3", "A5A5A5"),
+                ("accent4", "FFC000"),
+                ("accent5", "5B9BD5"),
+                ("accent6", "70AD47"),
+                ("hlink", "0563C1"),
+                ("folHlink", "954F72"),
+            ],
+            "Calibri Light",
+            "Calibri",
+        );
+        let data = build_test_pptx_with_theme_layout_master(
+            SLIDE_CX,
+            SLIDE_CY,
+            &slide_xml,
+            &layout_xml,
+            master_xml,
+            &theme_xml,
+        );
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let shape = get_shape(&page.elements[0]);
+        assert_eq!(shape.fill, Some(Color::new(0x80, 0x80, 0x80)));
     }
 
     // ── Slide background tests ───────────────────────────────────────────
