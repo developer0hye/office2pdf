@@ -1179,6 +1179,7 @@ mod tests {
                                 }],
                             }],
                             level: 0,
+                            start_at: None,
                         },
                         ListItem {
                             content: vec![Paragraph {
@@ -1191,8 +1192,10 @@ mod tests {
                                 }],
                             }],
                             level: 0,
+                            start_at: None,
                         },
                     ],
+                    level_styles: std::collections::BTreeMap::new(),
                 })],
                 header: None,
                 footer: None,

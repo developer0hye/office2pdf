@@ -1,6 +1,6 @@
 use std::cell::Cell;
-use std::collections::{HashMap, HashSet};
-use std::io::Read;
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::io::{Read, Seek};
 
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
@@ -11,9 +11,10 @@ const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart, Color,
     ColumnLayout, Document, FloatingImage, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph,
-    ImageData, ImageFormat, LineSpacing, List, ListItem, ListKind, Margins, MathEquation, Page,
-    PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment, TabLeader, TabStop, Table,
-    TableCell, TableRow, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
+    ImageData, ImageFormat, LineSpacing, List, ListItem, ListKind, ListLevelStyle, Margins,
+    MathEquation, Page, PageSize, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment,
+    TabLeader, TabStop, Table, TableCell, TableRow, TextDirection, TextStyle, VerticalTextAlign,
+    WrapMode,
 };
 use crate::parser::Parser;
 
@@ -26,6 +27,13 @@ type ImageMap = HashMap<String, Vec<u8>>;
 /// Map from relationship ID → hyperlink URL.
 type HyperlinkMap = HashMap<String, String>;
 
+/// Parsed header/footer assets addressed by relationship ID.
+#[derive(Default)]
+struct HeaderFooterAssets {
+    headers: HashMap<String, HeaderFooter>,
+    footers: HashMap<String, HeaderFooter>,
+}
+
 /// Build a lookup map from the DOCX's hyperlinks (reader-populated field).
 /// The reader stores hyperlinks as `(rid, url, type)` in `docx.hyperlinks`.
 fn build_hyperlink_map(docx: &docx_rs::Docx) -> HyperlinkMap {
@@ -33,6 +41,108 @@ fn build_hyperlink_map(docx: &docx_rs::Docx) -> HyperlinkMap {
         .iter()
         .map(|(rid, url, _type)| (rid.clone(), url.clone()))
         .collect()
+}
+
+fn scan_header_footer_relationships(
+    rels_xml: &str,
+) -> (HashMap<String, String>, HashMap<String, String>) {
+    let mut headers: HashMap<String, String> = HashMap::new();
+    let mut footers: HashMap<String, String> = HashMap::new();
+    let mut reader = quick_xml::Reader::from_str(rels_xml);
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e))
+            | Ok(quick_xml::events::Event::Empty(ref e)) => {
+                if e.local_name().as_ref() != b"Relationship" {
+                    continue;
+                }
+
+                let mut id: Option<String> = None;
+                let mut target: Option<String> = None;
+                let mut rel_type: Option<String> = None;
+
+                for attr in e.attributes().flatten() {
+                    match attr.key.local_name().as_ref() {
+                        b"Id" => {
+                            if let Ok(value) = attr.unescape_value() {
+                                id = Some(value.to_string());
+                            }
+                        }
+                        b"Target" => {
+                            if let Ok(value) = attr.unescape_value() {
+                                target = Some(value.to_string());
+                            }
+                        }
+                        b"Type" => {
+                            if let Ok(value) = attr.unescape_value() {
+                                rel_type = Some(value.to_string());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                let Some(id) = id else { continue };
+                let Some(target) = target else { continue };
+                let Some(rel_type) = rel_type else { continue };
+
+                let full_path = if let Some(stripped) = target.strip_prefix('/') {
+                    stripped.to_string()
+                } else {
+                    format!("word/{target}")
+                };
+
+                if rel_type.ends_with("/header") {
+                    headers.insert(id, full_path);
+                } else if rel_type.ends_with("/footer") {
+                    footers.insert(id, full_path);
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    (headers, footers)
+}
+
+fn build_header_footer_assets<R: Read + Seek>(
+    archive: &mut zip::ZipArchive<R>,
+) -> HeaderFooterAssets {
+    let rels_xml = match read_zip_text(archive, "word/_rels/document.xml.rels") {
+        Some(xml) => xml,
+        None => return HeaderFooterAssets::default(),
+    };
+    let (header_rels, footer_rels) = scan_header_footer_relationships(&rels_xml);
+    let mut assets = HeaderFooterAssets::default();
+
+    for (rid, path) in header_rels {
+        let Some(xml) = read_zip_text(archive, &path) else {
+            continue;
+        };
+        let Ok(header) = <docx_rs::Header as docx_rs::FromXML>::from_xml(xml.as_bytes()) else {
+            continue;
+        };
+        if let Some(converted) = convert_docx_header(&header) {
+            assets.headers.insert(rid, converted);
+        }
+    }
+
+    for (rid, path) in footer_rels {
+        let Some(xml) = read_zip_text(archive, &path) else {
+            continue;
+        };
+        let Ok(footer) = <docx_rs::Footer as docx_rs::FromXML>::from_xml(xml.as_bytes()) else {
+            continue;
+        };
+        if let Some(converted) = convert_docx_footer(&footer) {
+            assets.footers.insert(rid, converted);
+        }
+    }
+
+    assets
 }
 
 /// Build a lookup map from the DOCX's embedded images.
@@ -57,37 +167,195 @@ struct NumInfo {
     level: u32,
 }
 
-/// Map from numId → ListKind (Ordered or Unordered).
-/// Built by resolving numId → abstractNumId → first level's format.
-type NumKindMap = HashMap<usize, ListKind>;
+#[derive(Debug, Clone)]
+struct ResolvedListLevel {
+    style: ListLevelStyle,
+    start: u32,
+}
 
-/// Build a map from numbering instance ID → list kind by inspecting the
-/// abstract numbering definitions.
-fn build_num_kind_map(numberings: &docx_rs::Numberings) -> NumKindMap {
-    // Map abstractNumId → is bullet?
-    let mut abstract_kinds: HashMap<usize, ListKind> = HashMap::new();
-    for abs in &numberings.abstract_nums {
-        // Check the first level's format to determine if bullet or ordered
-        let kind = if abs.levels.iter().any(|lvl| {
-            let json = serde_json::to_value(&lvl.format).ok();
-            json.and_then(|j| j.as_str().map(|s| s.to_owned()))
-                .is_some_and(|val| val == "bullet")
-        }) {
-            ListKind::Unordered
-        } else {
-            ListKind::Ordered
-        };
-        abstract_kinds.insert(abs.id, kind);
+#[derive(Debug, Clone)]
+struct ResolvedNumbering {
+    kind: ListKind,
+    levels: BTreeMap<u32, ResolvedListLevel>,
+}
+
+#[derive(Debug, Clone)]
+struct RawListLevel {
+    start: u32,
+    number_format: String,
+    level_text: String,
+}
+
+type NumberingMap = HashMap<usize, ResolvedNumbering>;
+
+fn serialize_string<T: serde::Serialize>(value: &T) -> Option<String> {
+    serde_json::to_value(value)
+        .ok()?
+        .as_str()
+        .map(|s| s.to_string())
+}
+
+fn serialize_u32<T: serde::Serialize>(value: &T) -> Option<u32> {
+    serde_json::to_value(value)
+        .ok()?
+        .as_u64()
+        .and_then(|v| u32::try_from(v).ok())
+}
+
+fn level_kind(number_format: &str) -> ListKind {
+    if number_format == "bullet" {
+        ListKind::Unordered
+    } else {
+        ListKind::Ordered
+    }
+}
+
+fn typst_counter_symbol(number_format: &str) -> Option<&'static str> {
+    match number_format {
+        "decimal" | "decimalZero" => Some("1"),
+        "lowerLetter" => Some("a"),
+        "upperLetter" => Some("A"),
+        "lowerRoman" => Some("i"),
+        "upperRoman" => Some("I"),
+        _ => None,
+    }
+}
+
+fn build_typst_numbering_pattern(
+    level_text: &str,
+    current_level: u32,
+    levels: &BTreeMap<u32, RawListLevel>,
+) -> Option<(String, bool)> {
+    let mut pattern: String = String::new();
+    let mut chars = level_text.chars().peekable();
+    let mut saw_current_level: bool = false;
+    let mut saw_parent_level: bool = false;
+
+    while let Some(ch) = chars.next() {
+        if ch == '%' {
+            let mut digits: String = String::new();
+            while let Some(next) = chars.peek().copied() {
+                if next.is_ascii_digit() {
+                    digits.push(next);
+                    chars.next();
+                } else {
+                    break;
+                }
+            }
+
+            if digits.is_empty() {
+                pattern.push(ch);
+                continue;
+            }
+
+            let referenced_level: u32 = digits.parse::<u32>().ok()?.checked_sub(1)?;
+            let referenced = levels.get(&referenced_level)?;
+            let symbol = typst_counter_symbol(&referenced.number_format)?;
+            pattern.push_str(symbol);
+            if referenced_level == current_level {
+                saw_current_level = true;
+            } else if referenced_level < current_level {
+                saw_parent_level = true;
+            }
+            continue;
+        }
+
+        pattern.push(ch);
     }
 
-    // Map numId → abstractNumId → ListKind
-    let mut map = NumKindMap::new();
-    for num in &numberings.numberings {
-        if let Some(&kind) = abstract_kinds.get(&num.abstract_num_id) {
-            map.insert(num.id, kind);
+    if !saw_current_level {
+        let current = levels.get(&current_level)?;
+        let symbol = typst_counter_symbol(&current.number_format)?;
+        pattern.insert_str(0, symbol);
+    }
+
+    Some((pattern, saw_parent_level))
+}
+
+fn extract_raw_level(level: &docx_rs::Level) -> RawListLevel {
+    RawListLevel {
+        start: serialize_u32(&level.start).unwrap_or(1),
+        number_format: level.format.val.clone(),
+        level_text: serialize_string(&level.text).unwrap_or_default(),
+    }
+}
+
+fn resolve_numbering(
+    num: &docx_rs::Numbering,
+    numberings: &docx_rs::Numberings,
+) -> ResolvedNumbering {
+    let abstract_num = numberings
+        .abstract_nums
+        .iter()
+        .find(|abs| abs.id == num.abstract_num_id);
+
+    let mut raw_levels: BTreeMap<u32, RawListLevel> = abstract_num
+        .map(|abs| {
+            abs.levels
+                .iter()
+                .map(|level| (level.level as u32, extract_raw_level(level)))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    for override_level in &num.level_overrides {
+        let level_index = override_level.level as u32;
+        if let Some(level) = &override_level.override_level {
+            raw_levels.insert(level_index, extract_raw_level(level));
+        }
+        if let Some(start) = override_level.override_start {
+            raw_levels
+                .entry(level_index)
+                .and_modify(|level| level.start = start as u32)
+                .or_insert_with(|| RawListLevel {
+                    start: start as u32,
+                    number_format: "decimal".to_string(),
+                    level_text: format!("%{}.", level_index + 1),
+                });
         }
     }
-    map
+
+    let levels: BTreeMap<u32, ResolvedListLevel> = raw_levels
+        .iter()
+        .map(|(level_index, level)| {
+            let kind = level_kind(&level.number_format);
+            let (numbering_pattern, full_numbering) = if kind == ListKind::Ordered {
+                build_typst_numbering_pattern(&level.level_text, *level_index, &raw_levels)
+                    .map(|(pattern, full)| (Some(pattern), full))
+                    .unwrap_or((None, false))
+            } else {
+                (None, false)
+            };
+
+            (
+                *level_index,
+                ResolvedListLevel {
+                    style: ListLevelStyle {
+                        kind,
+                        numbering_pattern,
+                        full_numbering,
+                    },
+                    start: level.start,
+                },
+            )
+        })
+        .collect();
+
+    let kind = levels
+        .get(&0)
+        .map(|level| level.style.kind)
+        .or_else(|| levels.values().next().map(|level| level.style.kind))
+        .unwrap_or(ListKind::Unordered);
+
+    ResolvedNumbering { kind, levels }
+}
+
+fn build_numbering_map(numberings: &docx_rs::Numberings) -> NumberingMap {
+    numberings
+        .numberings
+        .iter()
+        .map(|num| (num.id, resolve_numbering(num, numberings)))
+        .collect()
 }
 
 /// Extract numbering info from a paragraph, if it has numPr.
@@ -124,6 +392,9 @@ enum TabStopOverride {
 /// Map from style_id → resolved formatting.
 type StyleMap = HashMap<String, ResolvedStyle>;
 
+/// Synthetic style ID used for document-level default text properties.
+const DOC_DEFAULT_STYLE_ID: &str = "__office2pdf_doc_defaults";
+
 /// Default font sizes for heading levels (Heading 1-6).
 /// Index 0 = Heading 1 (outline_lvl 0), index 5 = Heading 6 (outline_lvl 5).
 const HEADING_DEFAULT_SIZES: [f64; 6] = [24.0, 20.0, 16.0, 14.0, 12.0, 11.0];
@@ -132,13 +403,28 @@ const HEADING_DEFAULT_SIZES: [f64; 6] = [24.0, 20.0, 16.0, 14.0, 12.0, 11.0];
 /// from each style's run_property and paragraph_property.
 fn build_style_map(styles: &docx_rs::Styles) -> StyleMap {
     let mut map = StyleMap::new();
+    let default_text: TextStyle = extract_doc_default_text_style(styles);
+
+    map.insert(
+        DOC_DEFAULT_STYLE_ID.to_string(),
+        ResolvedStyle {
+            text: default_text.clone(),
+            paragraph: ParagraphStyle::default(),
+            paragraph_tab_overrides: None,
+            heading_level: None,
+        },
+    );
+
     for style in &styles.styles {
         // Only process paragraph styles (not character or table styles)
         if style.style_type != docx_rs::StyleType::Paragraph {
             continue;
         }
 
-        let text = extract_run_style(&style.run_property);
+        let text = merge_text_style(
+            &extract_run_style(&style.run_property),
+            map.get(DOC_DEFAULT_STYLE_ID),
+        );
         let paragraph = extract_paragraph_style(&style.paragraph_property);
         let paragraph_tab_overrides = extract_tab_stop_overrides(&style.paragraph_property.tabs);
         let heading_level = style
@@ -357,9 +643,47 @@ enum TaggedElement {
     ListParagraph { info: NumInfo, paragraph: Paragraph },
 }
 
+fn finalize_list(num_id: usize, mut items: Vec<ListItem>, numberings: &NumberingMap) -> List {
+    let resolved = numberings.get(&num_id);
+
+    let kind = resolved
+        .map(|numbering| numbering.kind)
+        .unwrap_or(ListKind::Unordered);
+    let level_styles = resolved
+        .map(|numbering| {
+            numbering
+                .levels
+                .iter()
+                .map(|(level, resolved_level)| (*level, resolved_level.style.clone()))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let mut previous_level: Option<u32> = None;
+    for item in &mut items {
+        let level_style = resolved.and_then(|numbering| numbering.levels.get(&item.level));
+        item.start_at = match (level_style, previous_level) {
+            (Some(level), None) if level.style.kind == ListKind::Ordered => Some(level.start),
+            (Some(level), Some(prev_level))
+                if level.style.kind == ListKind::Ordered && item.level > prev_level =>
+            {
+                Some(level.start)
+            }
+            _ => None,
+        };
+        previous_level = Some(item.level);
+    }
+
+    List {
+        kind,
+        items,
+        level_styles,
+    }
+}
+
 /// Group consecutive list paragraphs (with the same numId) into List blocks.
 /// Non-list elements pass through unchanged.
-fn group_into_lists(elements: Vec<TaggedElement>, num_kinds: &NumKindMap) -> Vec<Block> {
+fn group_into_lists(elements: Vec<TaggedElement>, numberings: &NumberingMap) -> Vec<Block> {
     let mut result: Vec<Block> = Vec::new();
 
     // Accumulator for current list run
@@ -374,18 +698,16 @@ fn group_into_lists(elements: Vec<TaggedElement>, num_kinds: &NumKindMap) -> Vec
                         items.push(ListItem {
                             content: vec![paragraph],
                             level: info.level,
+                            start_at: None,
                         });
                         continue;
                     }
                     // Different list — flush current
-                    let kind = num_kinds
-                        .get(&cur_num_id)
-                        .copied()
-                        .unwrap_or(ListKind::Unordered);
-                    result.push(Block::List(List {
-                        kind,
-                        items: std::mem::take(items),
-                    }));
+                    result.push(Block::List(finalize_list(
+                        cur_num_id,
+                        std::mem::take(items),
+                        numberings,
+                    )));
                 }
                 // Start new list
                 current_list = Some((
@@ -393,17 +715,14 @@ fn group_into_lists(elements: Vec<TaggedElement>, num_kinds: &NumKindMap) -> Vec
                     vec![ListItem {
                         content: vec![paragraph],
                         level: info.level,
+                        start_at: None,
                     }],
                 ));
             }
             TaggedElement::Plain(blocks) => {
                 // Flush any pending list
                 if let Some((num_id, items)) = current_list.take() {
-                    let kind = num_kinds
-                        .get(&num_id)
-                        .copied()
-                        .unwrap_or(ListKind::Unordered);
-                    result.push(Block::List(List { kind, items }));
+                    result.push(Block::List(finalize_list(num_id, items, numberings)));
                 }
                 result.extend(blocks);
             }
@@ -412,11 +731,7 @@ fn group_into_lists(elements: Vec<TaggedElement>, num_kinds: &NumKindMap) -> Vec
 
     // Flush trailing list
     if let Some((num_id, items)) = current_list {
-        let kind = num_kinds
-            .get(&num_id)
-            .copied()
-            .unwrap_or(ListKind::Unordered);
-        result.push(Block::List(List { kind, items }));
+        result.push(Block::List(finalize_list(num_id, items, numberings)));
     }
 
     result
@@ -758,11 +1073,11 @@ impl SmallCapsContext {
     }
 }
 
-/// Scan document.xml for `<w:cols>` within `<w:sectPr>` to extract column layout.
-/// docx-rs does not parse the `w:cols` element from section properties.
-/// Returns `None` for single-column (default) layout.
-fn scan_column_layout(xml: &str) -> Option<ColumnLayout> {
+/// Scan document.xml for `<w:cols>` within each `<w:sectPr>` in document order.
+/// docx-rs exposes equal-width column count and spacing, but not unequal widths.
+fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayout>> {
     let mut reader = quick_xml::Reader::from_str(xml);
+    let mut layouts: Vec<Option<ColumnLayout>> = Vec::new();
 
     let mut in_sect_pr = false;
     let mut in_cols = false;
@@ -771,16 +1086,34 @@ fn scan_column_layout(xml: &str) -> Option<ColumnLayout> {
     let mut equal_width = true;
     let mut col_widths: Vec<f64> = Vec::new();
 
+    let build_layout =
+        |num_columns: u32, spacing_twips: f64, equal_width: bool, col_widths: &[f64]| {
+            if num_columns < 2 {
+                return None;
+            }
+
+            let column_widths = if !equal_width && !col_widths.is_empty() {
+                Some(col_widths.to_vec())
+            } else {
+                None
+            };
+
+            Some(ColumnLayout {
+                num_columns,
+                spacing: spacing_twips / 20.0, // twips → points
+                column_widths,
+            })
+        };
+
     loop {
         match reader.read_event() {
-            Ok(quick_xml::events::Event::Start(ref e))
-            | Ok(quick_xml::events::Event::Empty(ref e)) => {
+            Ok(quick_xml::events::Event::Start(ref e)) => {
                 let local = e.local_name();
                 let name = local.as_ref();
                 match name {
                     b"sectPr" => {
                         in_sect_pr = true;
-                        // Reset for each sectPr (last one wins — document's final sectPr)
+                        // Reset for each sectPr.
                         num_columns = 1;
                         spacing_twips = 720.0;
                         equal_width = true;
@@ -825,10 +1158,63 @@ fn scan_column_layout(xml: &str) -> Option<ColumnLayout> {
                     _ => {}
                 }
             }
+            Ok(quick_xml::events::Event::Empty(ref e)) => {
+                let local = e.local_name();
+                let name = local.as_ref();
+                match name {
+                    b"sectPr" => {
+                        layouts.push(build_layout(1, 720.0, true, &[]));
+                    }
+                    b"cols" if in_sect_pr => {
+                        in_cols = false;
+                        for attr in e.attributes().flatten() {
+                            let key = attr.key.local_name();
+                            if let Ok(val) = attr.unescape_value() {
+                                match key.as_ref() {
+                                    b"num" => {
+                                        if let Ok(n) = val.parse::<u32>() {
+                                            num_columns = n;
+                                        }
+                                    }
+                                    b"space" => {
+                                        if let Ok(s) = val.parse::<f64>() {
+                                            spacing_twips = s;
+                                        }
+                                    }
+                                    b"equalWidth" => {
+                                        equal_width = val != "0";
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                    b"col" if in_cols => {
+                        for attr in e.attributes().flatten() {
+                            let key = attr.key.local_name();
+                            if key.as_ref() == b"w"
+                                && let Ok(val) = attr.unescape_value()
+                                && let Ok(w) = val.parse::<f64>()
+                            {
+                                col_widths.push(w / 20.0); // twips → points
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
             Ok(quick_xml::events::Event::End(ref e)) => {
                 let local = e.local_name();
                 match local.as_ref() {
-                    b"sectPr" => in_sect_pr = false,
+                    b"sectPr" => {
+                        layouts.push(build_layout(
+                            num_columns,
+                            spacing_twips,
+                            equal_width,
+                            &col_widths,
+                        ));
+                        in_sect_pr = false;
+                    }
                     b"cols" => in_cols = false,
                     _ => {}
                 }
@@ -839,20 +1225,20 @@ fn scan_column_layout(xml: &str) -> Option<ColumnLayout> {
         }
     }
 
-    if num_columns < 2 {
+    layouts
+}
+
+fn extract_column_layout_from_section_property(
+    section_prop: &docx_rs::SectionProperty,
+) -> Option<ColumnLayout> {
+    if section_prop.columns < 2 {
         return None;
     }
 
-    let column_widths = if !equal_width && !col_widths.is_empty() {
-        Some(col_widths)
-    } else {
-        None
-    };
-
     Some(ColumnLayout {
-        num_columns,
-        spacing: spacing_twips / 20.0, // twips → points
-        column_widths,
+        num_columns: section_prop.columns as u32,
+        spacing: section_prop.space as f64 / 20.0,
+        column_widths: None,
     })
 }
 
@@ -973,10 +1359,7 @@ fn build_note_context_from_xml(
 }
 
 /// Read a ZIP entry as a UTF-8 string.
-fn read_zip_text(
-    archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
-    name: &str,
-) -> Option<String> {
+fn read_zip_text(archive: &mut zip::ZipArchive<impl Read + Seek>, name: &str) -> Option<String> {
     let mut file = archive.by_name(name).ok()?;
     let mut contents = String::new();
     file.read_to_string(&mut contents).ok()?;
@@ -1106,6 +1489,79 @@ fn is_note_reference_run(run: &docx_rs::Run, notes: &NoteContext) -> bool {
     false
 }
 
+fn build_flow_page_from_section(
+    section_prop: &docx_rs::SectionProperty,
+    elements: Vec<TaggedElement>,
+    numberings: &NumberingMap,
+    header_footer_assets: &HeaderFooterAssets,
+    column_layout: Option<ColumnLayout>,
+    warnings: &mut Vec<ConvertWarning>,
+) -> FlowPage {
+    let (size, margins) = extract_page_setup(section_prop);
+    let content = group_into_lists(elements, numberings);
+
+    for block in &content {
+        if let Block::Chart(chart) = block {
+            let title = chart.title.as_deref().unwrap_or("untitled").to_string();
+            warnings.push(ConvertWarning::FallbackUsed {
+                format: "DOCX".to_string(),
+                from: format!("chart ({title})"),
+                to: "data table".to_string(),
+            });
+        }
+    }
+
+    if matches!(
+        section_prop.section_type,
+        Some(docx_rs::SectionType::Continuous | docx_rs::SectionType::NextColumn)
+    ) {
+        warnings.push(ConvertWarning::FallbackUsed {
+            format: "DOCX".to_string(),
+            from: "continuous section break".to_string(),
+            to: "page-level section split".to_string(),
+        });
+    }
+
+    if section_prop.first_header_reference.is_some()
+        || section_prop.first_footer_reference.is_some()
+        || section_prop.even_header_reference.is_some()
+        || section_prop.even_footer_reference.is_some()
+        || section_prop.first_header.is_some()
+        || section_prop.first_footer.is_some()
+        || section_prop.even_header.is_some()
+        || section_prop.even_footer.is_some()
+    {
+        warnings.push(ConvertWarning::FallbackUsed {
+            format: "DOCX".to_string(),
+            from: "header/footer variants".to_string(),
+            to: "single header/footer per section".to_string(),
+        });
+    }
+
+    if section_prop
+        .page_num_type
+        .as_ref()
+        .and_then(|page_num_type| page_num_type.start)
+        .is_some()
+    {
+        warnings.push(ConvertWarning::FallbackUsed {
+            format: "DOCX".to_string(),
+            from: "section page number restart".to_string(),
+            to: "global page counter".to_string(),
+        });
+    }
+
+    FlowPage {
+        size,
+        margins,
+        content,
+        header: extract_docx_header(section_prop, header_footer_assets),
+        footer: extract_docx_footer(section_prop, header_footer_assets),
+        columns: column_layout
+            .or_else(|| extract_column_layout_from_section_property(section_prop)),
+    }
+}
+
 impl Parser for DocxParser {
     fn parse(
         &self,
@@ -1115,7 +1571,17 @@ impl Parser for DocxParser {
         // Open ZIP once and build all pre-parse contexts from a single pass.
         // This consolidates what was previously 5 separate ZIP opens + multiple
         // reads of word/document.xml into a single archive + single doc read.
-        let (metadata, mut notes, wraps, mut math, mut chart_ctx, column_layout, bidi, small_caps) = {
+        let (
+            metadata,
+            mut notes,
+            wraps,
+            mut math,
+            mut chart_ctx,
+            column_layouts,
+            bidi,
+            small_caps,
+            header_footer_assets,
+        ) = {
             let cursor = std::io::Cursor::new(data);
             match zip::ZipArchive::new(cursor) {
                 Ok(mut archive) => {
@@ -1125,18 +1591,23 @@ impl Parser for DocxParser {
                     let wraps = build_wrap_context_from_xml(doc_xml.as_deref());
                     let math = build_math_context_from_xml(doc_xml.as_deref());
                     let chart_ctx = build_chart_context_from_xml(doc_xml.as_deref(), &mut archive);
-                    let column_layout = doc_xml.as_deref().and_then(scan_column_layout);
+                    let column_layouts = doc_xml
+                        .as_deref()
+                        .map(scan_column_layouts)
+                        .unwrap_or_default();
                     let bidi = BidiContext::from_xml(doc_xml.as_deref());
                     let small_caps = SmallCapsContext::from_xml(doc_xml.as_deref());
+                    let header_footer_assets = build_header_footer_assets(&mut archive);
                     (
                         metadata,
                         notes,
                         wraps,
                         math,
                         chart_ctx,
-                        column_layout,
+                        column_layouts,
                         bidi,
                         small_caps,
+                        header_footer_assets,
                     )
                 }
                 Err(_) => {
@@ -1166,9 +1637,10 @@ impl Parser for DocxParser {
                         ChartContext {
                             charts: HashMap::new(),
                         },
-                        None,
+                        Vec::new(),
                         BidiContext::from_xml(None),
                         SmallCapsContext::from_xml(None),
+                        HeaderFooterAssets::default(),
                     )
                 }
             }
@@ -1180,14 +1652,15 @@ impl Parser for DocxParser {
         // Populate locale-specific footnote/endnote style IDs from docx styles
         notes.populate_style_ids(&docx.styles);
 
-        let (size, margins) = extract_page_setup(&docx.document.section_property);
         let images = build_image_map(&docx);
         let hyperlinks = build_hyperlink_map(&docx);
-        let num_kinds = build_num_kind_map(&docx.numberings);
+        let numberings = build_numbering_map(&docx.numberings);
         let style_map = build_style_map(&docx.styles);
-        let mut warnings = Vec::new();
+        let mut warnings: Vec<ConvertWarning> = Vec::new();
 
         let mut elements: Vec<TaggedElement> = Vec::new();
+        let mut pages: Vec<Page> = Vec::new();
+        let mut section_layout_index: usize = 0;
         for (idx, child) in docx.document.children.iter().enumerate() {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
                 docx_rs::DocumentChild::Paragraph(para) => {
@@ -1257,36 +1730,43 @@ impl Parser for DocxParser {
                     });
                 }
             }
-        }
 
-        let content = group_into_lists(elements, &num_kinds);
-
-        // Emit structured warnings for fallback-rendered elements
-        for block in &content {
-            if let Block::Chart(chart) = block {
-                let title = chart.title.as_deref().unwrap_or("untitled").to_string();
-                warnings.push(ConvertWarning::FallbackUsed {
-                    format: "DOCX".to_string(),
-                    from: format!("chart ({title})"),
-                    to: "data table".to_string(),
-                });
+            if let docx_rs::DocumentChild::Paragraph(para) = child
+                && let Some(section_prop) = para.property.section_property.as_ref()
+            {
+                let column_layout = match column_layouts.get(section_layout_index) {
+                    Some(layout) => layout.clone(),
+                    None => extract_column_layout_from_section_property(section_prop),
+                };
+                pages.push(Page::Flow(build_flow_page_from_section(
+                    section_prop,
+                    std::mem::take(&mut elements),
+                    &numberings,
+                    &header_footer_assets,
+                    column_layout,
+                    &mut warnings,
+                )));
+                section_layout_index += 1;
             }
         }
 
-        let header = extract_docx_header(&docx.document.section_property);
-        let footer = extract_docx_footer(&docx.document.section_property);
+        let final_column_layout = match column_layouts.get(section_layout_index) {
+            Some(layout) => layout.clone(),
+            None => extract_column_layout_from_section_property(&docx.document.section_property),
+        };
+        pages.push(Page::Flow(build_flow_page_from_section(
+            &docx.document.section_property,
+            elements,
+            &numberings,
+            &header_footer_assets,
+            final_column_layout,
+            &mut warnings,
+        )));
 
         Ok((
             Document {
                 metadata,
-                pages: vec![Page::Flow(FlowPage {
-                    size,
-                    margins,
-                    content,
-                    header,
-                    footer,
-                    columns: column_layout,
-                })],
+                pages,
                 styles: StyleSheet::default(),
             },
             warnings,
@@ -1294,9 +1774,7 @@ impl Parser for DocxParser {
     }
 }
 
-/// Extract the default header from DOCX section properties, if present.
-fn extract_docx_header(section_prop: &docx_rs::SectionProperty) -> Option<HeaderFooter> {
-    let (_rid, header) = section_prop.header.as_ref()?;
+fn convert_docx_header(header: &docx_rs::Header) -> Option<HeaderFooter> {
     let paragraphs = header
         .children
         .iter()
@@ -1311,9 +1789,7 @@ fn extract_docx_header(section_prop: &docx_rs::SectionProperty) -> Option<Header
     Some(HeaderFooter { paragraphs })
 }
 
-/// Extract the default footer from DOCX section properties, if present.
-fn extract_docx_footer(section_prop: &docx_rs::SectionProperty) -> Option<HeaderFooter> {
-    let (_rid, footer) = section_prop.footer.as_ref()?;
+fn convert_docx_footer(footer: &docx_rs::Footer) -> Option<HeaderFooter> {
     let paragraphs = footer
         .children
         .iter()
@@ -1328,8 +1804,92 @@ fn extract_docx_footer(section_prop: &docx_rs::SectionProperty) -> Option<Header
     Some(HeaderFooter { paragraphs })
 }
 
+/// Extract the header for a section, preferring the default variant and falling back to
+/// first/even variants when that is all the source document provides.
+fn extract_docx_header(
+    section_prop: &docx_rs::SectionProperty,
+    assets: &HeaderFooterAssets,
+) -> Option<HeaderFooter> {
+    section_prop
+        .header
+        .as_ref()
+        .and_then(|(_rid, header)| convert_docx_header(header))
+        .or_else(|| {
+            section_prop
+                .header_reference
+                .as_ref()
+                .and_then(|reference| assets.headers.get(&reference.id).cloned())
+        })
+        .or_else(|| {
+            section_prop
+                .first_header
+                .as_ref()
+                .and_then(|(_rid, header)| convert_docx_header(header))
+        })
+        .or_else(|| {
+            section_prop
+                .first_header_reference
+                .as_ref()
+                .and_then(|reference| assets.headers.get(&reference.id).cloned())
+        })
+        .or_else(|| {
+            section_prop
+                .even_header
+                .as_ref()
+                .and_then(|(_rid, header)| convert_docx_header(header))
+        })
+        .or_else(|| {
+            section_prop
+                .even_header_reference
+                .as_ref()
+                .and_then(|reference| assets.headers.get(&reference.id).cloned())
+        })
+}
+
+/// Extract the footer for a section, preferring the default variant and falling back to
+/// first/even variants when that is all the source document provides.
+fn extract_docx_footer(
+    section_prop: &docx_rs::SectionProperty,
+    assets: &HeaderFooterAssets,
+) -> Option<HeaderFooter> {
+    section_prop
+        .footer
+        .as_ref()
+        .and_then(|(_rid, footer)| convert_docx_footer(footer))
+        .or_else(|| {
+            section_prop
+                .footer_reference
+                .as_ref()
+                .and_then(|reference| assets.footers.get(&reference.id).cloned())
+        })
+        .or_else(|| {
+            section_prop
+                .first_footer
+                .as_ref()
+                .and_then(|(_rid, footer)| convert_docx_footer(footer))
+        })
+        .or_else(|| {
+            section_prop
+                .first_footer_reference
+                .as_ref()
+                .and_then(|reference| assets.footers.get(&reference.id).cloned())
+        })
+        .or_else(|| {
+            section_prop
+                .even_footer
+                .as_ref()
+                .and_then(|(_rid, footer)| convert_docx_footer(footer))
+        })
+        .or_else(|| {
+            section_prop
+                .even_footer_reference
+                .as_ref()
+                .and_then(|reference| assets.footers.get(&reference.id).cloned())
+        })
+}
+
 /// Convert a docx-rs Paragraph into a HeaderFooterParagraph.
-/// Detects PAGE field codes within runs and emits HFInline::PageNumber.
+/// Detects PAGE/NUMPAGES field codes within runs and emits page counter inlines.
 fn convert_hf_paragraph(para: &docx_rs::Paragraph) -> HeaderFooterParagraph {
     let explicit_style = extract_paragraph_style(&para.property);
     let explicit_tab_overrides = extract_tab_stop_overrides(&para.property.tabs);
@@ -1347,14 +1907,14 @@ fn convert_hf_paragraph(para: &docx_rs::Paragraph) -> HeaderFooterParagraph {
 }
 
 /// Extract inline elements from a run's children for header/footer use.
-/// Recognizes text, tabs, and PAGE field codes.
+/// Recognizes text, tabs, and PAGE/NUMPAGES field codes.
 fn extract_hf_run_elements(
     children: &[docx_rs::RunChild],
     style: &TextStyle,
     elements: &mut Vec<HFInline>,
 ) {
     let mut in_field = false;
-    let mut field_is_page = false;
+    let mut field_inline: Option<HFInline> = None;
     let mut past_separate = false;
 
     for child in children {
@@ -1362,32 +1922,42 @@ fn extract_hf_run_elements(
             docx_rs::RunChild::FieldChar(fc) => match fc.field_char_type {
                 docx_rs::FieldCharType::Begin => {
                     in_field = true;
-                    field_is_page = false;
+                    field_inline = None;
                     past_separate = false;
                 }
                 docx_rs::FieldCharType::Separate => {
                     past_separate = true;
                 }
                 docx_rs::FieldCharType::End => {
-                    if field_is_page {
-                        elements.push(HFInline::PageNumber);
+                    if let Some(inline) = field_inline.take() {
+                        elements.push(inline);
                     }
                     in_field = false;
-                    field_is_page = false;
                     past_separate = false;
                 }
                 _ => {}
             },
             docx_rs::RunChild::InstrText(instr) => {
-                if in_field && matches!(instr.as_ref(), docx_rs::InstrText::PAGE(_)) {
-                    field_is_page = true;
+                if !in_field {
+                    continue;
                 }
+                field_inline = match instr.as_ref() {
+                    docx_rs::InstrText::PAGE(_) => Some(HFInline::PageNumber),
+                    docx_rs::InstrText::NUMPAGES(_) => Some(HFInline::TotalPages),
+                    _ => field_inline,
+                };
             }
             docx_rs::RunChild::InstrTextString(s) => {
+                if !in_field {
+                    continue;
+                }
                 // After round-tripping through build/read_docx, InstrText::PAGE
-                // becomes InstrTextString("PAGE").
-                if in_field && s.trim().eq_ignore_ascii_case("page") {
-                    field_is_page = true;
+                // becomes InstrTextString("PAGE"), and NUMPAGES likewise.
+                let trimmed = s.trim();
+                if trimmed.eq_ignore_ascii_case("page") {
+                    field_inline = Some(HFInline::PageNumber);
+                } else if trimmed.eq_ignore_ascii_case("numpages") {
+                    field_inline = Some(HFInline::TotalPages);
                 }
             }
             docx_rs::RunChild::Text(t) => {
@@ -1590,7 +2160,9 @@ fn convert_paragraph_blocks(
     }
 
     // Look up the paragraph's referenced style
-    let resolved_style = get_paragraph_style_id(&para.property).and_then(|id| style_map.get(id));
+    let resolved_style = get_paragraph_style_id(&para.property)
+        .and_then(|id| style_map.get(id))
+        .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID));
 
     // Collect text runs and detect inline images
     let mut runs: Vec<Run> = Vec::new();
@@ -2272,66 +2844,85 @@ fn extract_cell_shading(shading_json: &serde_json::Value) -> Option<Color> {
 
 /// Extract inline text style from a docx-rs RunProperty.
 ///
-/// docx-rs types with private fields serialize directly as their inner value
-/// (e.g. Bold → `true`, Sz → `24`, Color → `"FF0000"`), not as `{"val": ...}`.
-/// Strike has a public `val` field and can be accessed directly.
+/// docx-rs types serialize directly as their inner value (e.g. Bold → `true`,
+/// Sz → `24`, Color → `"FF0000"`), so JSON extraction works for both explicit
+/// run properties and docDefaults run properties.
 fn extract_run_style(rp: &docx_rs::RunProperty) -> TextStyle {
-    let vertical_align: Option<VerticalTextAlign> = rp.vert_align.as_ref().and_then(|va| {
-        let json = serde_json::to_value(va).ok()?;
-        match json.as_str()? {
+    let json = serde_json::to_value(rp).unwrap_or(serde_json::Value::Null);
+    extract_run_style_from_json(&json)
+}
+
+/// Extract inline text style from a serialized RunProperty-like JSON object.
+fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
+    let vertical_align: Option<VerticalTextAlign> =
+        rp.get("vertAlign").and_then(|va| match va.as_str()? {
             "superscript" => Some(VerticalTextAlign::Superscript),
             "subscript" => Some(VerticalTextAlign::Subscript),
             _ => None,
-        }
-    });
+        });
 
-    let all_caps: Option<bool> = extract_bool_prop(&rp.caps);
+    let all_caps: Option<bool> = rp.get("caps").and_then(serde_json::Value::as_bool);
 
     TextStyle {
-        bold: extract_bool_prop(&rp.bold),
-        italic: extract_bool_prop(&rp.italic),
-        underline: rp.underline.as_ref().and_then(|u| {
-            let json = serde_json::to_value(u).ok()?;
-            let val = json.as_str()?;
-            if val == "none" { None } else { Some(true) }
-        }),
-        strikethrough: rp.strike.as_ref().map(|s| s.val),
-        font_size: rp.sz.as_ref().and_then(|sz| {
-            let json = serde_json::to_value(sz).ok()?;
-            let half_points = json.as_f64()?;
-            Some(half_points / 2.0)
-        }),
-        color: rp.color.as_ref().and_then(|c| {
-            let json = serde_json::to_value(c).ok()?;
-            let hex = json.as_str()?;
-            parse_hex_color(hex)
-        }),
-        font_family: rp.fonts.as_ref().and_then(|f| {
-            let json = serde_json::to_value(f).ok()?;
-            // Prefer ascii font name, fall back to hi_ansi, east_asia, cs
-            json.get("ascii")
-                .or_else(|| json.get("hi_ansi"))
-                .or_else(|| json.get("east_asia"))
-                .or_else(|| json.get("cs"))
-                .and_then(|v| v.as_str())
+        bold: rp.get("bold").and_then(serde_json::Value::as_bool),
+        italic: rp.get("italic").and_then(serde_json::Value::as_bool),
+        underline: rp
+            .get("underline")
+            .and_then(|u| u.as_str())
+            .and_then(|val| if val == "none" { None } else { Some(true) }),
+        strikethrough: rp.get("strike").and_then(json_bool_or_val),
+        font_size: rp
+            .get("sz")
+            .and_then(serde_json::Value::as_f64)
+            .map(|half_points| half_points / 2.0),
+        color: rp
+            .get("color")
+            .and_then(serde_json::Value::as_str)
+            .and_then(parse_hex_color),
+        font_family: rp.get("fonts").and_then(|fonts| {
+            fonts
+                .get("ascii")
+                .or_else(|| fonts.get("hiAnsi"))
+                .or_else(|| fonts.get("eastAsia"))
+                .or_else(|| fonts.get("cs"))
+                .and_then(serde_json::Value::as_str)
                 .map(String::from)
         }),
-        highlight: rp.highlight.as_ref().and_then(|h| {
-            let json = serde_json::to_value(h).ok()?;
-            let name: &str = json.as_str()?;
-            resolve_highlight_color(name)
-        }),
+        highlight: rp
+            .get("highlight")
+            .and_then(serde_json::Value::as_str)
+            .and_then(resolve_highlight_color),
         vertical_align,
         all_caps,
         // smallCaps is not exposed by docx-rs; set via SmallCapsContext XML scan
         small_caps: None,
         // character_spacing is in twips (1/20 pt); convert to points
-        letter_spacing: rp.character_spacing.as_ref().and_then(|cs| {
-            let json = serde_json::to_value(cs).ok()?;
-            let twips = json.as_i64()?;
-            Some(twips as f64 / 20.0)
-        }),
+        letter_spacing: rp
+            .get("characterSpacing")
+            .and_then(serde_json::Value::as_i64)
+            .map(|twips| twips as f64 / 20.0),
     }
+}
+
+fn json_bool_or_val(value: &serde_json::Value) -> Option<bool> {
+    value
+        .as_bool()
+        .or_else(|| value.get("val").and_then(serde_json::Value::as_bool))
+}
+
+/// Extract document-level default text style from styles.xml docDefaults.
+fn extract_doc_default_text_style(styles: &docx_rs::Styles) -> TextStyle {
+    let Ok(json) = serde_json::to_value(&styles.doc_defaults) else {
+        return TextStyle::default();
+    };
+    let Some(run_property) = json
+        .get("runPropertyDefault")
+        .and_then(|value| value.get("runProperty"))
+    else {
+        return TextStyle::default();
+    };
+
+    extract_run_style_from_json(run_property)
 }
 
 /// Map OOXML named highlight colors to RGB values.
@@ -2356,15 +2947,6 @@ fn resolve_highlight_color(name: &str) -> Option<Color> {
         "white" => Some(Color::new(255, 255, 255)),
         _ => None, // "none" or unrecognized
     }
-}
-
-/// Extract a boolean property (Bold, Italic) via serde. Returns None if absent.
-/// docx-rs serializes Bold/Italic directly as a boolean (e.g. `true`).
-fn extract_bool_prop<T: serde::Serialize>(prop: &Option<T>) -> Option<bool> {
-    prop.as_ref().and_then(|p| {
-        let json = serde_json::to_value(p).ok()?;
-        json.as_bool()
-    })
 }
 
 /// Parse a 6-character hex color string (e.g. "FF0000") to an IR Color.
@@ -2448,6 +3030,7 @@ fn extract_run_text(run: &docx_rs::Run) -> String {
 mod tests {
     use super::*;
     use crate::ir::*;
+    use std::collections::BTreeMap;
     use std::io::Cursor;
 
     /// Helper: build a minimal DOCX as bytes using docx-rs builder.
@@ -4082,6 +4665,14 @@ mod tests {
         assert_eq!(lists[0].kind, ListKind::Unordered);
         assert_eq!(lists[0].items.len(), 3);
         assert_eq!(lists[0].items[0].level, 0);
+        assert_eq!(
+            lists[0].level_styles.get(&0),
+            Some(&ListLevelStyle {
+                kind: ListKind::Unordered,
+                numbering_pattern: None,
+                full_numbering: false,
+            })
+        );
 
         // Verify item content
         let text0: String = lists[0].items[0]
@@ -4134,6 +4725,15 @@ mod tests {
         assert_eq!(lists.len(), 1, "Expected 1 list block");
         assert_eq!(lists[0].kind, ListKind::Ordered);
         assert_eq!(lists[0].items.len(), 2);
+        assert_eq!(lists[0].items[0].start_at, Some(1));
+        assert_eq!(
+            lists[0].level_styles.get(&0),
+            Some(&ListLevelStyle {
+                kind: ListKind::Ordered,
+                numbering_pattern: Some("1.".to_string()),
+                full_numbering: false,
+            })
+        );
     }
 
     #[test]
@@ -4191,6 +4791,137 @@ mod tests {
         assert_eq!(lists[0].items[0].level, 0);
         assert_eq!(lists[0].items[1].level, 1);
         assert_eq!(lists[0].items[2].level, 0);
+        assert_eq!(
+            lists[0].level_styles.get(&1),
+            Some(&ListLevelStyle {
+                kind: ListKind::Unordered,
+                numbering_pattern: None,
+                full_numbering: false,
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_numbered_list_start_override() {
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("decimal"),
+            docx_rs::LevelText::new("%1."),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numbering =
+            docx_rs::Numbering::new(1, 0).add_override(docx_rs::LevelOverride::new(0).start(3));
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Third"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Fourth"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        let list = page
+            .content
+            .iter()
+            .find_map(|block| match block {
+                Block::List(list) => Some(list),
+                _ => None,
+            })
+            .expect("Expected list block");
+
+        assert_eq!(list.items[0].start_at, Some(3));
+        assert_eq!(list.items[1].start_at, None);
+        assert_eq!(
+            list.level_styles.get(&0),
+            Some(&ListLevelStyle {
+                kind: ListKind::Ordered,
+                numbering_pattern: Some("1.".to_string()),
+                full_numbering: false,
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_mixed_ordered_and_bulleted_levels() {
+        let abstract_num = docx_rs::AbstractNumbering::new(0)
+            .add_level(docx_rs::Level::new(
+                0,
+                docx_rs::Start::new(1),
+                docx_rs::NumberFormat::new("decimal"),
+                docx_rs::LevelText::new("%1."),
+                docx_rs::LevelJc::new("left"),
+            ))
+            .add_level(docx_rs::Level::new(
+                1,
+                docx_rs::Start::new(1),
+                docx_rs::NumberFormat::new("bullet"),
+                docx_rs::LevelText::new("•"),
+                docx_rs::LevelJc::new("left"),
+            ));
+        let numbering = docx_rs::Numbering::new(1, 0);
+
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![numbering],
+            vec![
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Step"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Bullet child"))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(1)),
+            ],
+        );
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+        let list = page
+            .content
+            .iter()
+            .find_map(|block| match block {
+                Block::List(list) => Some(list),
+                _ => None,
+            })
+            .expect("Expected list block");
+
+        assert_eq!(list.kind, ListKind::Ordered);
+        assert_eq!(
+            list.level_styles,
+            BTreeMap::from([
+                (
+                    0,
+                    ListLevelStyle {
+                        kind: ListKind::Ordered,
+                        numbering_pattern: Some("1.".to_string()),
+                        full_numbering: false,
+                    },
+                ),
+                (
+                    1,
+                    ListLevelStyle {
+                        kind: ListKind::Unordered,
+                        numbering_pattern: None,
+                        full_numbering: false,
+                    },
+                ),
+            ])
+        );
     }
 
     #[test]
@@ -4374,6 +5105,137 @@ mod tests {
             has_text,
             "Footer should contain 'Page ' text before page number"
         );
+    }
+
+    /// Helper: build a DOCX with a total page count field in footer.
+    fn build_docx_with_total_pages_footer() -> Vec<u8> {
+        let footer = docx_rs::Footer::new().add_paragraph(
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Total "))
+                .add_run(
+                    docx_rs::Run::new()
+                        .add_field_char(docx_rs::FieldCharType::Begin, false)
+                        .add_instr_text(docx_rs::InstrText::NUMPAGES(docx_rs::InstrNUMPAGES::new()))
+                        .add_field_char(docx_rs::FieldCharType::Separate, false)
+                        .add_text("1")
+                        .add_field_char(docx_rs::FieldCharType::End, false),
+                ),
+        );
+        let docx = docx_rs::Docx::new()
+            .footer(footer)
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Body")));
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    #[test]
+    fn test_parse_docx_with_total_pages_in_footer() {
+        let data = build_docx_with_total_pages_footer();
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = match &doc.pages[0] {
+            Page::Flow(p) => p,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        let footer = page.footer.as_ref().expect("Should have footer");
+        let has_total_pages = footer.paragraphs.iter().any(|p| {
+            p.elements
+                .iter()
+                .any(|e| matches!(e, crate::ir::HFInline::TotalPages))
+        });
+        assert!(has_total_pages, "Footer should contain a TotalPages field");
+    }
+
+    #[test]
+    fn test_parse_docx_multiple_sections_with_distinct_page_setup_and_headers() {
+        let first_header = docx_rs::Header::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Section One Header")),
+        );
+        let second_header = docx_rs::Header::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Section Two Header")),
+        );
+
+        let first_section = docx_rs::Section::new()
+            .page_size(docx_rs::PageSize::new().size(12240, 15840))
+            .header(first_header)
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Section One")),
+            );
+
+        let docx = docx_rs::Docx::new()
+            .add_section(first_section)
+            .header(second_header)
+            .page_size(15840, 12240)
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Section Two")),
+            );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        assert_eq!(doc.pages.len(), 2, "Expected one FlowPage per DOCX section");
+
+        let first_page = match &doc.pages[0] {
+            Page::Flow(page) => page,
+            _ => panic!("Expected first page to be FlowPage"),
+        };
+        let second_page = match &doc.pages[1] {
+            Page::Flow(page) => page,
+            _ => panic!("Expected second page to be FlowPage"),
+        };
+
+        assert!(
+            (first_page.size.width - 612.0).abs() < 0.1,
+            "first page width should come from first section"
+        );
+        assert!(
+            (first_page.size.height - 792.0).abs() < 0.1,
+            "first page height should come from first section"
+        );
+        assert!(
+            (second_page.size.width - 792.0).abs() < 0.1,
+            "second page width should come from final section"
+        );
+        assert!(
+            (second_page.size.height - 612.0).abs() < 0.1,
+            "second page height should come from final section"
+        );
+
+        let first_header_text = first_page
+            .header
+            .as_ref()
+            .and_then(|hf| {
+                hf.paragraphs
+                    .iter()
+                    .flat_map(|p| p.elements.iter())
+                    .find_map(|e| match e {
+                        crate::ir::HFInline::Run(run) => Some(run.text.as_str()),
+                        _ => None,
+                    })
+            })
+            .unwrap_or("");
+        assert_eq!(first_header_text, "Section One Header");
+
+        let second_header_text = second_page
+            .header
+            .as_ref()
+            .and_then(|hf| {
+                hf.paragraphs
+                    .iter()
+                    .flat_map(|p| p.elements.iter())
+                    .find_map(|e| match e {
+                        crate::ir::HFInline::Run(run) => Some(run.text.as_str()),
+                        _ => None,
+                    })
+            })
+            .unwrap_or("");
+        assert_eq!(second_header_text, "Section Two Header");
     }
 
     #[test]
@@ -4590,6 +5452,21 @@ mod tests {
         for s in styles {
             docx = docx.add_style(s);
         }
+        for p in paragraphs {
+            docx = docx.add_paragraph(p);
+        }
+        let buf = Vec::new();
+        let mut cursor = Cursor::new(buf);
+        docx.build().pack(&mut cursor).unwrap();
+        cursor.into_inner()
+    }
+
+    /// Helper: build a DOCX with an explicit stylesheet and paragraphs.
+    fn build_docx_bytes_with_stylesheet(
+        paragraphs: Vec<docx_rs::Paragraph>,
+        styles: docx_rs::Styles,
+    ) -> Vec<u8> {
+        let mut docx = docx_rs::Docx::new().styles(styles);
         for p in paragraphs {
             docx = docx.add_paragraph(p);
         }
@@ -4861,6 +5738,38 @@ mod tests {
 
         assert_eq!(run.style.color, Some(Color::new(255, 0, 0)));
         assert_eq!(run.style.font_family, Some("Georgia".to_string()));
+    }
+
+    #[test]
+    fn test_runs_inherit_document_default_font() {
+        let styles = docx_rs::Styles::new()
+            .default_fonts(docx_rs::RunFonts::new().ascii("Raleway"))
+            .default_size(18);
+
+        let link = docx_rs::Hyperlink::new("https://example.com", docx_rs::HyperlinkType::External)
+            .add_run(
+                docx_rs::Run::new()
+                    .color("1155cc")
+                    .underline("single")
+                    .add_text("Linked text"),
+            );
+        let paragraph = docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("Plain text "))
+            .add_hyperlink(link);
+        let data = build_docx_bytes_with_stylesheet(vec![paragraph], styles);
+
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let para = first_paragraph(&doc);
+
+        assert_eq!(para.runs.len(), 2);
+        assert_eq!(para.runs[0].style.font_family.as_deref(), Some("Raleway"));
+        assert_eq!(para.runs[0].style.font_size, Some(9.0));
+        assert_eq!(para.runs[1].href.as_deref(), Some("https://example.com"));
+        assert_eq!(para.runs[1].style.font_family.as_deref(), Some("Raleway"));
+        assert_eq!(para.runs[1].style.font_size, Some(9.0));
+        assert_eq!(para.runs[1].style.color, Some(Color::new(17, 85, 204)));
+        assert_eq!(para.runs[1].style.underline, Some(true));
     }
 
     // ----- Hyperlink tests (US-030) -----
@@ -6154,6 +7063,52 @@ mod tests {
         assert!(
             cols.column_widths.is_none(),
             "Equal columns should not have per-column widths"
+        );
+    }
+
+    #[test]
+    fn test_parse_docx_section_specific_column_layouts() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>Section one intro</w:t></w:r></w:p>
+        <w:p>
+            <w:pPr>
+                <w:sectPr>
+                    <w:cols w:num="2" w:space="720"/>
+                </w:sectPr>
+            </w:pPr>
+            <w:r><w:t>Section one end</w:t></w:r>
+        </w:p>
+        <w:p><w:r><w:t>Section two content</w:t></w:r></w:p>
+        <w:sectPr>
+            <w:cols w:num="1" w:space="720"/>
+        </w:sectPr>
+    </w:body>
+</w:document>"#;
+        let data = build_docx_with_columns(document_xml);
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        assert_eq!(doc.pages.len(), 2, "Expected one FlowPage per section");
+
+        let first = match &doc.pages[0] {
+            Page::Flow(flow) => flow,
+            _ => panic!("Expected FlowPage"),
+        };
+        let second = match &doc.pages[1] {
+            Page::Flow(flow) => flow,
+            _ => panic!("Expected FlowPage"),
+        };
+
+        assert_eq!(
+            first.columns.as_ref().map(|layout| layout.num_columns),
+            Some(2),
+            "First section should keep the two-column layout"
+        );
+        assert!(
+            second.columns.is_none(),
+            "Final single-column section should not expose a column layout"
         );
     }
 
