@@ -1,4 +1,3 @@
-
 use super::*;
 use crate::ir::{
     ChartSeries, ColumnLayout, GradientStop, HeaderFooterParagraph, ListItem, ListKind,

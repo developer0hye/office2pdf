@@ -1,4 +1,3 @@
-
 use super::*;
 use crate::ir::ImageCrop;
 use std::io::Write;
