@@ -207,6 +207,9 @@ pub struct Table {
     pub alignment: Option<Alignment>,
     /// Default cell padding applied by the table when cells don't override it.
     pub default_cell_padding: Option<Insets>,
+    /// When true, row heights should be derived from content instead of forced to
+    /// the exact source row sizes. PowerPoint often renders slide tables this way.
+    pub use_content_driven_row_heights: bool,
 }
 
 /// A table row.

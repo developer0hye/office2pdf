@@ -8,11 +8,12 @@ use zip::ZipArchive;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, Document,
-    FixedElement, FixedElementKind, FixedPage, GradientFill, GradientStop, ImageCrop, ImageData,
-    ImageFormat, Insets, LineSpacing, List, ListItem, ListKind, ListLevelStyle, Page, PageSize,
-    Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, SmartArtNode, StyleSheet,
-    Table, TableCell, TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection, TextStyle,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart, Color,
+    Document, FixedElement, FixedElementKind, FixedPage, GradientFill, GradientStop, ImageCrop,
+    ImageData, ImageFormat, Insets, LineSpacing, List, ListItem, ListKind, ListLevelStyle, Page,
+    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, SmartArtNode,
+    StyleSheet, Table, TableCell, TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection,
+    TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::chart as chart_parser;
@@ -74,7 +75,7 @@ enum SolidFillCtx {
 #[derive(Debug, Clone)]
 struct PptxParagraphEntry {
     paragraph: Paragraph,
-    auto_numbering: Option<PptxAutoNumbering>,
+    list_marker: Option<PptxListMarker>,
 }
 
 const PPTX_DEFAULT_TEXT_BOX_LEFT_RIGHT_INSET_PT: f64 = 7.2;
@@ -89,6 +90,10 @@ fn default_pptx_text_box_padding() -> Insets {
     }
 }
 
+fn default_pptx_table_cell_padding() -> Insets {
+    default_pptx_text_box_padding()
+}
+
 #[derive(Debug, Clone)]
 struct PptxAutoNumbering {
     level: u32,
@@ -97,49 +102,97 @@ struct PptxAutoNumbering {
 }
 
 #[derive(Debug, Clone)]
-struct PendingPptxAutoNumberList {
+enum PptxListMarker {
+    Ordered(PptxAutoNumbering),
+    Unordered { level: u32 },
+}
+
+impl PptxListMarker {
+    fn kind(&self) -> ListKind {
+        match self {
+            Self::Ordered(_) => ListKind::Ordered,
+            Self::Unordered { .. } => ListKind::Unordered,
+        }
+    }
+
+    fn level(&self) -> u32 {
+        match self {
+            Self::Ordered(auto_numbering) => auto_numbering.level,
+            Self::Unordered { level } => *level,
+        }
+    }
+
+    fn numbering_pattern(&self) -> Option<&str> {
+        match self {
+            Self::Ordered(auto_numbering) => auto_numbering.numbering_pattern.as_deref(),
+            Self::Unordered { .. } => None,
+        }
+    }
+
+    fn start_at(&self) -> Option<u32> {
+        match self {
+            Self::Ordered(auto_numbering) => auto_numbering.start_at,
+            Self::Unordered { .. } => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct PendingPptxList {
+    kind: ListKind,
     items: Vec<ListItem>,
     level_styles: BTreeMap<u32, ListLevelStyle>,
     last_level: u32,
 }
 
-impl PendingPptxAutoNumberList {
-    fn new() -> Self {
+impl PendingPptxList {
+    fn new(marker: &PptxListMarker) -> Self {
         Self {
+            kind: marker.kind(),
             items: Vec::new(),
             level_styles: BTreeMap::new(),
             last_level: 0,
         }
     }
 
-    fn can_extend(&self, auto_numbering: &PptxAutoNumbering) -> bool {
+    fn can_extend(&self, marker: &PptxListMarker) -> bool {
+        if self.kind != marker.kind() {
+            return false;
+        }
+
         if self.items.is_empty() {
             return true;
         }
 
-        if auto_numbering.start_at.is_some() && auto_numbering.level <= self.last_level {
-            return false;
+        if let PptxListMarker::Ordered(auto_numbering) = marker {
+            if auto_numbering.start_at.is_some() && auto_numbering.level <= self.last_level {
+                return false;
+            }
+
+            return self
+                .level_styles
+                .get(&auto_numbering.level)
+                .is_none_or(|style| style.numbering_pattern == auto_numbering.numbering_pattern);
         }
 
-        self.level_styles
-            .get(&auto_numbering.level)
-            .is_none_or(|style| style.numbering_pattern == auto_numbering.numbering_pattern)
+        true
     }
 
-    fn push(&mut self, paragraph: Paragraph, auto_numbering: PptxAutoNumbering) {
-        let level: u32 = auto_numbering.level;
+    fn push(&mut self, paragraph: Paragraph, marker: PptxListMarker) {
+        let level: u32 = marker.level();
+        let numbering_pattern: Option<String> = marker.numbering_pattern().map(str::to_string);
         self.level_styles
             .entry(level)
             .or_insert_with(|| ListLevelStyle {
-                kind: ListKind::Ordered,
-                numbering_pattern: auto_numbering.numbering_pattern.clone(),
+                kind: self.kind,
+                numbering_pattern,
                 full_numbering: false,
             });
         self.items.push(ListItem {
             content: vec![paragraph],
             level,
             start_at: if self.items.is_empty() {
-                auto_numbering.start_at
+                marker.start_at()
             } else {
                 None
             },
@@ -149,7 +202,7 @@ impl PendingPptxAutoNumberList {
 
     fn into_block(self) -> Block {
         Block::List(List {
-            kind: ListKind::Ordered,
+            kind: self.kind,
             items: self.items,
             level_styles: self.level_styles,
         })
@@ -1660,13 +1713,15 @@ fn parse_pptx_table(
     let mut is_v_merge = false;
     let mut cell_text_entries: Vec<PptxParagraphEntry> = Vec::new();
     let mut cell_background: Option<Color> = None;
+    let mut cell_vertical_align: Option<CellVerticalAlign> = None;
+    let mut cell_padding: Option<Insets> = None;
 
     // Text parsing state (reused per cell)
     let mut in_txbody = false;
     let mut in_para = false;
     let mut para_style = ParagraphStyle::default();
     let mut para_level: u32 = 0;
-    let mut para_auto_numbering: Option<PptxAutoNumbering> = None;
+    let mut para_list_marker: Option<PptxListMarker> = None;
     let mut in_ln_spc = false;
     let mut runs: Vec<Run> = Vec::new();
     let mut in_run = false;
@@ -1701,6 +1756,13 @@ fn parse_pptx_table(
             Ok(Event::Start(ref e)) => {
                 let local = e.local_name();
                 match local.as_ref() {
+                    b"gridCol" => {
+                        // PowerPoint may attach extLst children to gridCol, so width
+                        // must be captured on the start tag as well as self-closing form.
+                        if let Some(w) = get_attr_i64(e, b"w") {
+                            column_widths.push(emu_to_pt(w));
+                        }
+                    }
                     b"tr" => {
                         in_row = true;
                         row_height_emu = get_attr_i64(e, b"h").unwrap_or(0);
@@ -1714,6 +1776,8 @@ fn parse_pptx_table(
                         is_v_merge = get_attr_str(e, b"vMerge").is_some();
                         cell_text_entries.clear();
                         cell_background = None;
+                        cell_vertical_align = None;
+                        cell_padding = None;
                         in_tc_pr = false;
                         border_left = None;
                         border_right = None;
@@ -1727,7 +1791,7 @@ fn parse_pptx_table(
                         in_para = true;
                         para_style = ParagraphStyle::default();
                         para_level = 0;
-                        para_auto_numbering = None;
+                        para_list_marker = None;
                         in_ln_spc = false;
                         runs.clear();
                     }
@@ -1745,10 +1809,15 @@ fn parse_pptx_table(
                         extract_pptx_line_spacing_pts(e, &mut para_style);
                     }
                     b"buAutoNum" if in_para && !in_run => {
-                        para_auto_numbering = Some(parse_pptx_auto_numbering(e, para_level));
+                        para_list_marker = Some(PptxListMarker::Ordered(
+                            parse_pptx_auto_numbering(e, para_level),
+                        ));
+                    }
+                    b"buChar" if in_para && !in_run => {
+                        para_list_marker = Some(parse_pptx_bullet_marker(para_level));
                     }
                     b"buNone" if in_para && !in_run => {
-                        para_auto_numbering = None;
+                        para_list_marker = None;
                     }
                     b"r" if in_para => {
                         in_run = true;
@@ -1784,6 +1853,11 @@ fn parse_pptx_table(
                     }
                     b"tcPr" if in_cell => {
                         in_tc_pr = true;
+                        extract_pptx_table_cell_props(
+                            e,
+                            &mut cell_vertical_align,
+                            &mut cell_padding,
+                        );
                     }
                     b"lnL" if in_tc_pr => {
                         in_border_ln = true;
@@ -1850,6 +1924,13 @@ fn parse_pptx_table(
                     b"rPr" if in_run => {
                         extract_rpr_attributes(e, &mut run_style);
                     }
+                    b"tcPr" if in_cell => {
+                        extract_pptx_table_cell_props(
+                            e,
+                            &mut cell_vertical_align,
+                            &mut cell_padding,
+                        );
+                    }
                     b"pPr" if in_para && !in_run => {
                         extract_paragraph_props(e, &mut para_style);
                         para_level = extract_paragraph_level(e);
@@ -1864,10 +1945,15 @@ fn parse_pptx_table(
                         extract_pptx_line_spacing_pts(e, &mut para_style);
                     }
                     b"buAutoNum" if in_para && !in_run => {
-                        para_auto_numbering = Some(parse_pptx_auto_numbering(e, para_level));
+                        para_list_marker = Some(PptxListMarker::Ordered(
+                            parse_pptx_auto_numbering(e, para_level),
+                        ));
+                    }
+                    b"buChar" if in_para && !in_run => {
+                        para_list_marker = Some(parse_pptx_bullet_marker(para_level));
                     }
                     b"buNone" if in_para && !in_run => {
-                        para_auto_numbering = None;
+                        para_list_marker = None;
                     }
                     b"latin" if in_rpr => {
                         if let Some(typeface) = get_attr_str(e, b"typeface") {
@@ -1929,8 +2015,8 @@ fn parse_pptx_table(
                             background: cell_background.take(),
                             data_bar: None,
                             icon_text: None,
-                            vertical_align: None,
-                            padding: None,
+                            vertical_align: cell_vertical_align.take(),
+                            padding: cell_padding.take(),
                         });
                         in_cell = false;
                         in_tc_pr = false;
@@ -1944,18 +2030,21 @@ fn parse_pptx_table(
                                 style: para_style.clone(),
                                 runs: std::mem::take(&mut runs),
                             },
-                            auto_numbering: para_auto_numbering.take(),
+                            list_marker: para_list_marker.take(),
                         });
                         in_para = false;
                     }
                     b"r" if in_run => {
                         if !run_text.is_empty() {
-                            runs.push(Run {
-                                text: std::mem::take(&mut run_text),
-                                style: run_style.clone(),
-                                href: None,
-                                footnote: None,
-                            });
+                            push_pptx_run(
+                                &mut runs,
+                                Run {
+                                    text: std::mem::take(&mut run_text),
+                                    style: run_style.clone(),
+                                    href: None,
+                                    footnote: None,
+                                },
+                            );
                         }
                         in_run = false;
                     }
@@ -2006,8 +2095,33 @@ fn parse_pptx_table(
         column_widths,
         header_row_count: 0,
         alignment: None,
-        default_cell_padding: None,
+        default_cell_padding: Some(default_pptx_table_cell_padding()),
+        use_content_driven_row_heights: true,
     })
+}
+
+fn scale_pptx_table_geometry_to_frame(
+    table: &mut Table,
+    frame_width_pt: f64,
+    frame_height_pt: f64,
+) {
+    let intrinsic_width_pt: f64 = table.column_widths.iter().sum();
+    if intrinsic_width_pt > 0.0 && frame_width_pt > 0.0 {
+        let x_scale: f64 = frame_width_pt / intrinsic_width_pt;
+        for width in &mut table.column_widths {
+            *width *= x_scale;
+        }
+    }
+
+    let intrinsic_height_pt: f64 = table.rows.iter().filter_map(|row| row.height).sum();
+    if intrinsic_height_pt > 0.0 && frame_height_pt > 0.0 {
+        let y_scale: f64 = frame_height_pt / intrinsic_height_pt;
+        for row in &mut table.rows {
+            if let Some(height) = row.height.as_mut() {
+                *height *= y_scale;
+            }
+        }
+    }
 }
 
 /// Group shape coordinate transform.
@@ -2301,7 +2415,7 @@ fn parse_slide_xml(
     let mut para_style = ParagraphStyle::default();
     let mut para_level: u32 = 0;
     let mut para_default_run_style = TextStyle::default();
-    let mut para_auto_numbering: Option<PptxAutoNumbering> = None;
+    let mut para_list_marker: Option<PptxListMarker> = None;
     let mut in_ln_spc = false;
     let mut runs: Vec<Run> = Vec::new();
 
@@ -2354,7 +2468,12 @@ fn parse_slide_xml(
                     }
                     b"tbl" if in_graphic_frame => {
                         // Parse the table and emit as a FixedElement
-                        if let Ok(table) = parse_pptx_table(&mut reader, theme, color_map) {
+                        if let Ok(mut table) = parse_pptx_table(&mut reader, theme, color_map) {
+                            scale_pptx_table_geometry_to_frame(
+                                &mut table,
+                                emu_to_pt(gf_cx),
+                                emu_to_pt(gf_cy),
+                            );
                             elements.push(FixedElement {
                                 x: emu_to_pt(gf_x),
                                 y: emu_to_pt(gf_y),
@@ -2476,7 +2595,7 @@ fn parse_slide_xml(
                         para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
                         para_default_run_style =
                             text_body_style_defaults.run_style_for_level(para_level);
-                        para_auto_numbering = None;
+                        para_list_marker = None;
                         in_ln_spc = false;
                         runs.clear();
                     }
@@ -2497,10 +2616,15 @@ fn parse_slide_xml(
                         extract_pptx_line_spacing_pts(e, &mut para_style);
                     }
                     b"buAutoNum" if in_para && !in_run => {
-                        para_auto_numbering = Some(parse_pptx_auto_numbering(e, para_level));
+                        para_list_marker = Some(PptxListMarker::Ordered(
+                            parse_pptx_auto_numbering(e, para_level),
+                        ));
+                    }
+                    b"buChar" if in_para && !in_run => {
+                        para_list_marker = Some(parse_pptx_bullet_marker(para_level));
                     }
                     b"buNone" if in_para && !in_run => {
-                        para_auto_numbering = None;
+                        para_list_marker = None;
                     }
                     b"r" if in_para => {
                         in_run = true;
@@ -2679,10 +2803,15 @@ fn parse_slide_xml(
                         extract_pptx_line_spacing_pts(e, &mut para_style);
                     }
                     b"buAutoNum" if in_para && !in_run => {
-                        para_auto_numbering = Some(parse_pptx_auto_numbering(e, para_level));
+                        para_list_marker = Some(PptxListMarker::Ordered(
+                            parse_pptx_auto_numbering(e, para_level),
+                        ));
+                    }
+                    b"buChar" if in_para && !in_run => {
+                        para_list_marker = Some(parse_pptx_bullet_marker(para_level));
                     }
                     b"buNone" if in_para && !in_run => {
-                        para_auto_numbering = None;
+                        para_list_marker = None;
                     }
                     b"latin" | b"ea" | b"cs" if in_rpr => {
                         apply_typeface_to_style(e, &mut run_style, theme);
@@ -2773,18 +2902,21 @@ fn parse_slide_xml(
                                 style: para_style.clone(),
                                 runs: std::mem::take(&mut runs),
                             },
-                            auto_numbering: para_auto_numbering.take(),
+                            list_marker: para_list_marker.take(),
                         });
                         in_para = false;
                     }
                     b"r" if in_run => {
                         if !run_text.is_empty() {
-                            runs.push(Run {
-                                text: std::mem::take(&mut run_text),
-                                style: run_style.clone(),
-                                href: None,
-                                footnote: None,
-                            });
+                            push_pptx_run(
+                                &mut runs,
+                                Run {
+                                    text: std::mem::take(&mut run_text),
+                                    style: run_style.clone(),
+                                    href: None,
+                                    footnote: None,
+                                },
+                            );
                         }
                         in_run = false;
                     }
@@ -3318,6 +3450,97 @@ fn extract_pptx_text_box_body_props(
     }
 }
 
+fn extract_pptx_table_cell_props(
+    e: &quick_xml::events::BytesStart,
+    vertical_align: &mut Option<CellVerticalAlign>,
+    padding: &mut Option<Insets>,
+) {
+    if let Some(anchor) = get_attr_str(e, b"anchor") {
+        *vertical_align = Some(match anchor.as_str() {
+            "ctr" => CellVerticalAlign::Center,
+            "b" => CellVerticalAlign::Bottom,
+            _ => CellVerticalAlign::Top,
+        });
+    }
+
+    let mut cell_padding = (*padding).unwrap_or_default();
+    let mut has_padding = false;
+    if let Some(value) = get_attr_i64(e, b"marL") {
+        cell_padding.left = emu_to_pt(value);
+        has_padding = true;
+    }
+    if let Some(value) = get_attr_i64(e, b"marR") {
+        cell_padding.right = emu_to_pt(value);
+        has_padding = true;
+    }
+    if let Some(value) = get_attr_i64(e, b"marT") {
+        cell_padding.top = emu_to_pt(value);
+        has_padding = true;
+    }
+    if let Some(value) = get_attr_i64(e, b"marB") {
+        cell_padding.bottom = emu_to_pt(value);
+        has_padding = true;
+    }
+    if has_padding {
+        *padding = Some(cell_padding);
+    }
+}
+
+fn push_pptx_run(runs: &mut Vec<Run>, run: Run) {
+    if let Some(previous) = runs.last_mut()
+        && previous.style == run.style
+        && previous.href == run.href
+        && previous.footnote == run.footnote
+    {
+        previous.text.push_str(&run.text);
+        return;
+    }
+
+    let mut run = run;
+    normalize_pptx_run_boundary_spacing(runs.last(), &mut run);
+    runs.push(run);
+}
+
+fn normalize_pptx_run_boundary_spacing(previous: Option<&Run>, run: &mut Run) {
+    let Some(previous) = previous else {
+        return;
+    };
+
+    if previous.href != run.href
+        || previous.footnote.is_some()
+        || run.footnote.is_some()
+        || previous
+            .text
+            .chars()
+            .last()
+            .is_some_and(char::is_whitespace)
+    {
+        return;
+    }
+
+    let mut chars = run.text.chars();
+    let Some(first_char) = chars.next() else {
+        return;
+    };
+    let Some(next_char) = chars.next() else {
+        return;
+    };
+
+    if first_char == ' ' && should_preserve_pptx_run_boundary_space(next_char) {
+        // PowerPoint often splits styled phrases into adjacent runs such as
+        // `K` + ` = 100)`. Preserve that boundary space as non-breaking so
+        // Typst does not wrap at the style change and spill punctuation.
+        run.text.replace_range(0..1, "\u{00A0}");
+    }
+}
+
+fn should_preserve_pptx_run_boundary_space(next_char: char) -> bool {
+    matches!(
+        next_char,
+        '=' | '+' | '-' | '/' | '%' | ')' | ']' | '}' | ':' | ';' | ',' | '.'
+    )
+}
+
 fn extract_paragraph_level(e: &quick_xml::events::BytesStart) -> u32 {
     get_attr_i64(e, b"lvl")
         .and_then(|value| u32::try_from(value).ok())
@@ -3336,6 +3559,10 @@ fn parse_pptx_auto_numbering(e: &quick_xml::events::BytesStart, level: u32) -> P
         numbering_pattern,
         start_at,
     }
+}
+
+fn parse_pptx_bullet_marker(level: u32) -> PptxListMarker {
+    PptxListMarker::Unordered { level }
 }
 
 fn pptx_auto_numbering_pattern(numbering_type: &str) -> Option<&'static str> {
@@ -3357,22 +3584,22 @@ fn pptx_auto_numbering_pattern(numbering_type: &str) -> Option<&'static str> {
 
 fn group_pptx_text_blocks(entries: Vec<PptxParagraphEntry>) -> Vec<Block> {
     let mut blocks: Vec<Block> = Vec::new();
-    let mut pending_list: Option<PendingPptxAutoNumberList> = None;
+    let mut pending_list: Option<PendingPptxList> = None;
 
     for entry in entries {
-        match entry.auto_numbering {
-            Some(auto_numbering) => {
+        match entry.list_marker {
+            Some(list_marker) => {
                 if pending_list
                     .as_ref()
-                    .is_some_and(|list| !list.can_extend(&auto_numbering))
+                    .is_some_and(|list| !list.can_extend(&list_marker))
                 {
                     blocks.push(pending_list.take().unwrap().into_block());
                 }
 
                 let paragraph: Paragraph = entry.paragraph;
                 pending_list
-                    .get_or_insert_with(PendingPptxAutoNumberList::new)
-                    .push(paragraph, auto_numbering);
+                    .get_or_insert_with(|| PendingPptxList::new(&list_marker))
+                    .push(paragraph, list_marker);
             }
             None => {
                 if let Some(list) = pending_list.take() {
@@ -3705,6 +3932,32 @@ mod tests {
         );
         assert_eq!(list.items[0].content[0].runs[0].text, "First");
         assert_eq!(list.items[1].content[0].runs[0].text, "Second");
+    }
+
+    #[test]
+    fn test_text_box_bulleted_paragraphs_group_into_list() {
+        let paragraphs_xml = concat!(
+            r#"<a:p><a:pPr indent="-216000"><a:buChar char="•"/></a:pPr><a:r><a:t>First bullet</a:t></a:r></a:p>"#,
+            r#"<a:p><a:pPr indent="-216000"><a:buChar char="•"/></a:pPr><a:r><a:t>Second bullet</a:t></a:r></a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        assert_eq!(blocks.len(), 1, "Expected a single grouped list block");
+
+        let list = match &blocks[0] {
+            Block::List(list) => list,
+            other => panic!("Expected List block, got {other:?}"),
+        };
+        assert_eq!(list.kind, crate::ir::ListKind::Unordered);
+        assert_eq!(list.items.len(), 2);
+        assert_eq!(list.items[0].content[0].runs[0].text, "First bullet");
+        assert_eq!(list.items[1].content[0].runs[0].text, "Second bullet");
     }
 
     #[test]
@@ -5911,6 +6164,221 @@ mod tests {
         } else {
             panic!("Expected paragraph in cell");
         }
+    }
+
+    #[test]
+    fn test_slide_table_scales_geometry_to_graphic_frame_extent() {
+        let rows_xml = format!(
+            "{}{}",
+            make_table_row(&["A1", "B1"]),
+            make_table_row(&["A2", "B2"]),
+        );
+        let table_frame = make_table_graphic_frame(
+            914400,
+            914400,
+            3_657_600,
+            1_483_360,
+            &[914_400, 914_400],
+            &rows_xml,
+        );
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let elem = &page.elements[0];
+        let table = table_element(elem);
+
+        assert_eq!(table.column_widths.len(), 2);
+        assert!((table.column_widths[0] - 144.0).abs() < 0.1);
+        assert!((table.column_widths.iter().sum::<f64>() - elem.width).abs() < 0.1);
+
+        assert_eq!(table.rows.len(), 2);
+        assert_eq!(table.rows[0].height, Some(58.4));
+        assert_eq!(table.rows[1].height, Some(58.4));
+        assert!(
+            (table
+                .rows
+                .iter()
+                .map(|row| row.height.unwrap_or(0.0))
+                .sum::<f64>()
+                - elem.height)
+                .abs()
+                < 0.1
+        );
+    }
+
+    #[test]
+    fn test_slide_table_reads_column_widths_from_gridcol_with_extensions() {
+        let rows_xml = make_table_row(&["A1", "B1"]);
+        let table_frame = r#"<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Table"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="0" y="0"/><a:ext cx="1828800" cy="370840"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr/><a:tblGrid><a:gridCol w="914400"><a:extLst><a:ext uri="{9D8B030D-6E8A-4147-A177-3AD203B41FA5}"><a16:colId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" val="1"/></a:ext></a:extLst></a:gridCol><a:gridCol w="914400"><a:extLst><a:ext uri="{9D8B030D-6E8A-4147-A177-3AD203B41FA5}"><a16:colId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" val="2"/></a:ext></a:extLst></a:gridCol></a:tblGrid>"#.to_string()
+            + &rows_xml
+            + r#"</a:tbl></a:graphicData></a:graphic></p:graphicFrame>"#;
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+
+        assert_eq!(table.column_widths.len(), 2);
+        assert!((table.column_widths[0] - 72.0).abs() < 0.1);
+        assert!((table.column_widths[1] - 72.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_slide_table_cell_anchor_maps_to_vertical_alignment() {
+        let rows_xml = concat!(
+            r#"<a:tr h="370840">"#,
+            r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>Centered</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"/></a:tc>"#,
+            r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>Bottom</a:t></a:r></a:p></a:txBody><a:tcPr anchor="b"/></a:tc>"#,
+            r#"</a:tr>"#,
+        );
+        let table_frame =
+            make_table_graphic_frame(0, 0, 1_828_800, 370_840, &[914_400, 914_400], rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+
+        assert_eq!(
+            table.rows[0].cells[0].vertical_align,
+            Some(crate::ir::CellVerticalAlign::Center)
+        );
+        assert_eq!(
+            table.rows[0].cells[1].vertical_align,
+            Some(crate::ir::CellVerticalAlign::Bottom)
+        );
+    }
+
+    #[test]
+    fn test_slide_table_cell_margins_map_to_padding() {
+        let rows_xml = concat!(
+            r#"<a:tr h="370840">"#,
+            r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>Padded</a:t></a:r></a:p></a:txBody><a:tcPr marL="76200" marR="76200" marT="38100" marB="38100"/></a:tc>"#,
+            r#"</a:tr>"#,
+        );
+        let table_frame = make_table_graphic_frame(0, 0, 914_400, 370_840, &[914_400], rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+
+        assert_eq!(
+            table.rows[0].cells[0].padding,
+            Some(crate::ir::Insets {
+                top: 3.0,
+                right: 6.0,
+                bottom: 3.0,
+                left: 6.0,
+            })
+        );
+    }
+
+    #[test]
+    fn test_slide_table_uses_powerpoint_default_cell_padding() {
+        let rows_xml = concat!(
+            r#"<a:tr h="370840">"#,
+            r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>DefaultPadding</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>"#,
+            r#"</a:tr>"#,
+        );
+        let table_frame = make_table_graphic_frame(0, 0, 914_400, 370_840, &[914_400], rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+
+        assert_eq!(
+            table.default_cell_padding,
+            Some(crate::ir::Insets {
+                top: 3.6,
+                right: 7.2,
+                bottom: 3.6,
+                left: 7.2,
+            })
+        );
+        assert_eq!(table.rows[0].cells[0].padding, None);
+        assert!(table.use_content_driven_row_heights);
+    }
+
+    #[test]
+    fn test_slide_table_coalesces_adjacent_runs_with_same_style() {
+        let rows_xml = concat!(
+            r#"<a:tr h="370840">"#,
+            r#"<a:tc><a:txBody><a:bodyPr/><a:p>"#,
+            r#"<a:r><a:rPr lang="en-US" sz="1100"><a:latin typeface="Arial"/></a:rPr><a:t>YOLOv8n + </a:t></a:r>"#,
+            r#"<a:r><a:rPr lang="en-US" sz="1100" err="1"><a:latin typeface="Arial"/></a:rPr><a:t>topk filtering on gpu(</a:t></a:r>"#,
+            r#"<a:r><a:rPr lang="en-US" sz="1100" i="1"><a:latin typeface="Arial"/></a:rPr><a:t>K</a:t></a:r>"#,
+            r#"<a:r><a:rPr lang="en-US" sz="1100"><a:latin typeface="Arial"/></a:rPr><a:t> = 100)</a:t></a:r>"#,
+            r#"</a:p></a:txBody><a:tcPr/></a:tc>"#,
+            r#"</a:tr>"#,
+        );
+        let table_frame = make_table_graphic_frame(0, 0, 914_400, 370_840, &[914_400], rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+        let paragraph = match &table.rows[0].cells[0].content[0] {
+            Block::Paragraph(paragraph) => paragraph,
+            other => panic!("Expected paragraph, got {other:?}"),
+        };
+
+        assert_eq!(paragraph.runs.len(), 3);
+        assert_eq!(paragraph.runs[0].text, "YOLOv8n + topk filtering on gpu(");
+        assert_eq!(paragraph.runs[1].text, "K");
+        assert_eq!(paragraph.runs[2].text, "\u{00A0}= 100)");
+        assert_eq!(paragraph.runs[1].style.italic, Some(true));
+    }
+
+    #[test]
+    fn test_slide_table_cell_bulleted_paragraphs_group_into_list() {
+        let rows_xml = concat!(
+            r#"<a:tr h="740000">"#,
+            r#"<a:tc><a:txBody><a:bodyPr/>"#,
+            r#"<a:p><a:pPr indent="-216000"><a:buChar char="•"/></a:pPr><a:r><a:rPr lang="en-US"/><a:t>First bullet</a:t></a:r></a:p>"#,
+            r#"<a:p><a:pPr indent="-216000"><a:buChar char="•"/></a:pPr><a:r><a:rPr lang="en-US"/><a:t>Second bullet</a:t></a:r></a:p>"#,
+            r#"</a:txBody><a:tcPr/></a:tc>"#,
+            r#"</a:tr>"#,
+        );
+        let table_frame = make_table_graphic_frame(0, 0, 914_400, 740_000, &[914_400], rows_xml);
+        let slide = make_slide_xml(&[table_frame]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let table = table_element(&page.elements[0]);
+        assert_eq!(table.rows[0].cells[0].content.len(), 1);
+
+        let list = match &table.rows[0].cells[0].content[0] {
+            Block::List(list) => list,
+            other => panic!("Expected List block, got {other:?}"),
+        };
+        assert_eq!(list.kind, crate::ir::ListKind::Unordered);
+        assert_eq!(list.items.len(), 2);
+        assert_eq!(list.items[0].content[0].runs[0].text, "First bullet");
+        assert_eq!(list.items[1].content[0].runs[0].text, "Second bullet");
     }
 
     #[test]

@@ -118,7 +118,8 @@ When comparing PDF output against ground truth (classified fixtures):
    - `gt-*.png` — rendered pages from ground truth PDF
    - `output.txt` / `gt.txt` — extracted text
 5. Compare output and GT PNGs **visually** to identify specific rendering differences (layout, font, table, image, margin, page break, etc.).
-6. Fix root causes in parser/codegen via TDD. Prioritize high-leverage fixes that improve multiple files.
+6. For user-provided DOCX/XLSX/PPTX files on macOS, if Word/Excel/PowerPoint is available for that file type, export a PDF from the native Microsoft app first and compare that GT before guessing.
+7. Fix root causes in parser/codegen via TDD. Prioritize high-leverage fixes that improve multiple files.
 
 ## Release Procedure
 

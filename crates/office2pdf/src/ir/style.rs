@@ -98,7 +98,7 @@ pub enum VerticalTextAlign {
 }
 
 /// Character-level formatting.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct TextStyle {
     pub font_family: Option<String>,
     pub font_size: Option<f64>,

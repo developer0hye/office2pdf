@@ -3427,6 +3427,7 @@ fn convert_table(
         header_row_count: header_info.repeat_rows.min(table.rows.len()),
         alignment,
         default_cell_padding,
+        use_content_driven_row_heights: false,
     }
 }
 

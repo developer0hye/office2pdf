@@ -458,6 +458,7 @@ fn generate_table_with_charts(
                     },
                     alignment: table.alignment,
                     default_cell_padding: table.default_cell_padding,
+                    use_content_driven_row_heights: table.use_content_driven_row_heights,
                 };
                 generate_table(out, &segment, ctx)?;
                 out.push('\n');
@@ -482,6 +483,7 @@ fn generate_table_with_charts(
             },
             alignment: table.alignment,
             default_cell_padding: table.default_cell_padding,
+            use_content_driven_row_heights: table.use_content_driven_row_heights,
         };
         generate_table(out, &segment, ctx)?;
         out.push('\n');
@@ -1427,7 +1429,7 @@ fn can_render_fixed_text_list_inline(list: &List) -> bool {
 }
 
 fn paragraph_styles_match(left: &ParagraphStyle, right: &ParagraphStyle) -> bool {
-    left.alignment == right.alignment
+    alignment_matches(left.alignment, right.alignment)
         && option_f64_matches(left.indent_left, right.indent_left)
         && option_f64_matches(left.indent_right, right.indent_right)
         && option_f64_matches(left.indent_first_line, right.indent_first_line)
@@ -1437,6 +1439,13 @@ fn paragraph_styles_match(left: &ParagraphStyle, right: &ParagraphStyle) -> bool
         && left.heading_level == right.heading_level
         && left.direction == right.direction
         && tab_stops_match(left.tab_stops.as_deref(), right.tab_stops.as_deref())
+}
+
+fn alignment_matches(left: Option<Alignment>, right: Option<Alignment>) -> bool {
+    match (left, right) {
+        (Some(Alignment::Left), None) | (None, Some(Alignment::Left)) => true,
+        _ => left == right,
+    }
 }
 
 fn option_f64_matches(left: Option<f64>, right: Option<f64>) -> bool {
@@ -1466,7 +1475,11 @@ fn tab_stops_match(left: Option<&[TabStop]>, right: Option<&[TabStop]>) -> bool 
     }
 }
 
-fn generate_fixed_text_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
+fn generate_fixed_text_list(
+    out: &mut String,
+    list: &List,
+    include_item_spacing: bool,
+) -> Result<(), ConvertError> {
     let paragraph: &Paragraph = &list.items[0].content[0];
     let style: &ParagraphStyle = &paragraph.style;
     let effective_style: EffectiveListStyle<'_> = list_style_for_level(list, 0);
@@ -1481,7 +1494,7 @@ fn generate_fixed_text_list(out: &mut String, list: &List) -> Result<(), Convert
     }
 
     out.push_str("#stack(dir: ttb");
-    if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0) {
+    if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0 && include_item_spacing) {
         let _ = write!(out, ", spacing: {}pt", format_f64(gap));
     }
     out.push_str(",\n");
@@ -1534,7 +1547,6 @@ fn generate_fixed_text_list(out: &mut String, list: &List) -> Result<(), Convert
 
 fn fixed_text_list_alignment(alignment: Option<Alignment>) -> Option<&'static str> {
     match alignment {
-        Some(Alignment::Left) => Some("left"),
         Some(Alignment::Center) => Some("center"),
         Some(Alignment::Right) => Some("right"),
         _ => None,
@@ -1794,7 +1806,7 @@ fn generate_table_inner(
         let _ = writeln!(out, "  columns: {num_cols},");
     }
 
-    if table.rows.iter().any(|row| row.height.is_some()) {
+    if !table.use_content_driven_row_heights && table.rows.iter().any(|row| row.height.is_some()) {
         out.push_str("  rows: (");
         for (i, row) in table.rows.iter().enumerate() {
             if i > 0 {
@@ -2072,7 +2084,13 @@ fn generate_cell_content(
             Block::Image(img) => generate_image(out, img, ctx),
             Block::FloatingImage(fi) => generate_floating_image(out, fi, ctx),
             Block::FloatingTextBox(ftb) => generate_floating_text_box(out, ftb, ctx)?,
-            Block::List(list) => generate_list(out, list)?,
+            Block::List(list) => {
+                if can_render_fixed_text_list_inline(list) {
+                    generate_fixed_text_list(out, list, false)?;
+                } else {
+                    generate_list(out, list)?;
+                }
+            }
             Block::MathEquation(math) => generate_math_equation(out, math),
             Block::Chart(chart) => generate_chart(out, chart),
             Block::PageBreak | Block::ColumnBreak => {}
@@ -2250,7 +2268,7 @@ fn generate_fixed_text_box_block(
 ) -> Result<(), ConvertError> {
     match block {
         Block::List(list) if can_render_fixed_text_list_inline(list) => {
-            generate_fixed_text_list(out, list)
+            generate_fixed_text_list(out, list, true)
         }
         _ => generate_block(out, block, ctx),
     }
@@ -3563,6 +3581,7 @@ mod tests {
                 bottom: 1.0,
                 left: 4.0,
             }),
+            use_content_driven_row_heights: false,
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3607,6 +3626,7 @@ mod tests {
                 bottom: 3.0,
                 left: 4.0,
             }),
+            use_content_driven_row_heights: false,
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3628,6 +3648,7 @@ mod tests {
             header_row_count: 0,
             alignment: Some(Alignment::Center),
             default_cell_padding: None,
+            use_content_driven_row_heights: false,
         };
         let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
         let result = generate_typst(&doc).unwrap().source;
@@ -3787,6 +3808,32 @@ mod tests {
         assert!(
             result.contains("align: horizon"),
             "Expected centered vertical alignment in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_with_content_driven_row_heights_omits_explicit_rows() {
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    cells: vec![make_text_cell("A1"), make_text_cell("B1")],
+                    height: Some(36.0),
+                },
+                TableRow {
+                    cells: vec![make_text_cell("A2"), make_text_cell("B2")],
+                    height: Some(48.0),
+                },
+            ],
+            column_widths: vec![100.0, 100.0],
+            use_content_driven_row_heights: true,
+            ..Table::default()
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+
+        assert!(
+            !result.contains("rows: ("),
+            "Content-driven row-height tables should not emit exact Typst row sizes: {result}"
         );
     }
 
@@ -4270,6 +4317,200 @@ mod tests {
         assert!(
             result.contains("Second para"),
             "Expected Second para in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_cell_simple_list_uses_compact_fixed_text_layout() {
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "First item".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 0,
+                    start_at: None,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Second item".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 0,
+                    start_at: None,
+                },
+            ],
+            level_styles: BTreeMap::new(),
+        };
+        let cell = TableCell {
+            content: vec![Block::List(list)],
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![cell],
+                height: None,
+            }],
+            column_widths: vec![200.0],
+            ..Table::default()
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+
+        assert!(
+            result.contains("#stack(dir: ttb"),
+            "Expected compact stack-based list layout in: {result}"
+        );
+        assert!(
+            !result.contains("#list("),
+            "Compact table-cell lists should not use Typst list layout in: {result}"
+        );
+        assert!(result.contains("First item"));
+        assert!(result.contains("Second item"));
+    }
+
+    #[test]
+    fn test_table_cell_simple_list_treats_default_and_explicit_left_as_same_style() {
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle {
+                            alignment: Some(Alignment::Left),
+                            ..ParagraphStyle::default()
+                        },
+                        runs: vec![Run {
+                            text: "First item".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 0,
+                    start_at: None,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Second item".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 0,
+                    start_at: None,
+                },
+            ],
+            level_styles: BTreeMap::new(),
+        };
+        let cell = TableCell {
+            content: vec![Block::List(list)],
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![cell],
+                height: None,
+            }],
+            column_widths: vec![200.0],
+            ..Table::default()
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+
+        assert!(
+            result.contains("#stack(dir: ttb"),
+            "Expected compact stack-based list layout when only left-alignment explicitness differs: {result}"
+        );
+        assert!(
+            !result.contains("#list("),
+            "Equivalent left-alignment styles should not force Typst list layout in: {result}"
+        );
+    }
+
+    #[test]
+    fn test_table_cell_compact_list_uses_leading_without_extra_item_spacing() {
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle {
+                            line_spacing: Some(LineSpacing::Proportional(1.5)),
+                            ..ParagraphStyle::default()
+                        },
+                        runs: vec![Run {
+                            text: "First item".to_string(),
+                            style: TextStyle {
+                                font_size: Some(24.0),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 0,
+                    start_at: None,
+                },
+                ListItem {
+                    content: vec![Paragraph {
+                        style: ParagraphStyle {
+                            line_spacing: Some(LineSpacing::Proportional(1.5)),
+                            ..ParagraphStyle::default()
+                        },
+                        runs: vec![Run {
+                            text: "Second item".to_string(),
+                            style: TextStyle {
+                                font_size: Some(24.0),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        }],
+                    }],
+                    level: 0,
+                    start_at: None,
+                },
+            ],
+            level_styles: BTreeMap::new(),
+        };
+        let cell = TableCell {
+            content: vec![Block::List(list)],
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![cell],
+                height: None,
+            }],
+            column_widths: vec![200.0],
+            ..Table::default()
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let result = generate_typst(&doc).unwrap().source;
+
+        assert!(
+            result.contains("#set par(leading: 12pt)"),
+            "Expected paragraph leading derived from PPT line spacing in: {result}"
+        );
+        assert!(
+            !result.contains("#stack(dir: ttb, spacing: 12pt"),
+            "Compact table-cell lists should not add extra inter-item spacing in: {result}"
         );
     }
 

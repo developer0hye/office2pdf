@@ -9,9 +9,11 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 | [docx4j](https://github.com/plutext/docx4j) | Java | DOCX/PPTX/XLSX parsing + PDF export | [docx4j.md](docx4j.md) |
 | [python-docx](https://github.com/python-openxml/python-docx) | Python | DOCX object model | [python-docx.md](python-docx.md) |
 | [python-pptx](https://github.com/scanny/python-pptx) | Python | PPTX slide master/layout inheritance | [python-pptx.md](python-pptx.md) |
+| [Apache POI](https://github.com/apache/poi) | Java | OOXML row/column/cell object model | [apache-poi.md](apache-poi.md) |
 | [excelize](https://github.com/qax-os/excelize) | Go | XLSX (most complete impl) | [excelize.md](excelize.md) |
 | [Open-XML-SDK](https://github.com/dotnet/Open-XML-SDK) | C# | Microsoft's official OOXML SDK | [open-xml-sdk.md](open-xml-sdk.md) |
 | [docxjs](https://github.com/VolodymyrBaydalka/docxjs) | TS | DOCX → HTML renderer | [docxjs.md](docxjs.md) |
+| [PptxGenJS](https://github.com/gitbrent/PptxGenJS) | TS | PPTX table text layout heuristics | [pptxgenjs.md](pptxgenjs.md) |
 
 ## Document Conversion & IR Design
 
