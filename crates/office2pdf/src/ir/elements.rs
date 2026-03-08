@@ -150,13 +150,17 @@ pub enum ListKind {
 }
 
 /// Numbering configuration for a specific list level.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ListLevelStyle {
     pub kind: ListKind,
     /// Optional Typst numbering pattern derived from Word's lvlText/numFmt.
     pub numbering_pattern: Option<String>,
     /// Whether parent numbers should be shown for nested ordered lists.
     pub full_numbering: bool,
+    /// Optional concrete marker text for unordered PPTX bullet lists.
+    pub marker_text: Option<String>,
+    /// Optional concrete marker presentation resolved from the source format.
+    pub marker_style: Option<TextStyle>,
 }
 
 /// A list block containing items at various indent levels.
@@ -542,6 +546,8 @@ mod tests {
                     kind: ListKind::Ordered,
                     numbering_pattern: Some("1.".to_string()),
                     full_numbering: false,
+                    marker_text: None,
+                    marker_style: None,
                 },
             )]),
         };
@@ -588,6 +594,8 @@ mod tests {
                     kind: ListKind::Unordered,
                     numbering_pattern: None,
                     full_numbering: false,
+                    marker_text: None,
+                    marker_style: None,
                 },
             )]),
         };
@@ -599,6 +607,8 @@ mod tests {
                 kind: ListKind::Unordered,
                 numbering_pattern: None,
                 full_numbering: false,
+                marker_text: None,
+                marker_style: None,
             })
         );
     }

@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::io::{Cursor, Read};
 
 use quick_xml::Reader;
+use quick_xml::escape::unescape as unescape_xml_text;
 use quick_xml::events::{BytesStart, Event};
 use zip::ZipArchive;
 
@@ -70,6 +71,10 @@ enum SolidFillCtx {
     LineFill,
     /// Text run color (inside `<a:rPr>`).
     RunFill,
+    /// Paragraph end-run color (inside `<a:endParaRPr>`).
+    EndParaFill,
+    /// Bullet marker color (inside `<a:buClr>`).
+    BulletFill,
 }
 
 #[derive(Debug, Clone)]
@@ -95,45 +100,101 @@ fn default_pptx_table_cell_padding() -> Insets {
     default_pptx_text_box_padding()
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct PptxAutoNumbering {
     level: u32,
     numbering_pattern: Option<String>,
     start_at: Option<u32>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum PptxBulletKind {
+    None,
+    Character(String),
+    AutoNumber(PptxAutoNumbering),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum PptxBulletFontSource {
+    FollowText,
+    Explicit(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum PptxBulletColorSource {
+    FollowText,
+    Explicit(Color),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum PptxBulletSizeSource {
+    FollowText,
+    Percent(f64),
+    Points(f64),
+}
+
+#[derive(Debug, Clone, Default)]
+struct PptxBulletDefinition {
+    kind: Option<PptxBulletKind>,
+    font: Option<PptxBulletFontSource>,
+    color: Option<PptxBulletColorSource>,
+    size: Option<PptxBulletSizeSource>,
+}
+
 #[derive(Debug, Clone)]
 enum PptxListMarker {
-    Ordered(PptxAutoNumbering),
-    Unordered { level: u32 },
+    Ordered {
+        auto_numbering: PptxAutoNumbering,
+        marker_style: Option<TextStyle>,
+    },
+    Unordered {
+        level: u32,
+        marker_text: String,
+        marker_style: Option<TextStyle>,
+    },
 }
 
 impl PptxListMarker {
     fn kind(&self) -> ListKind {
         match self {
-            Self::Ordered(_) => ListKind::Ordered,
+            Self::Ordered { .. } => ListKind::Ordered,
             Self::Unordered { .. } => ListKind::Unordered,
         }
     }
 
     fn level(&self) -> u32 {
         match self {
-            Self::Ordered(auto_numbering) => auto_numbering.level,
-            Self::Unordered { level } => *level,
+            Self::Ordered { auto_numbering, .. } => auto_numbering.level,
+            Self::Unordered { level, .. } => *level,
         }
     }
 
     fn numbering_pattern(&self) -> Option<&str> {
         match self {
-            Self::Ordered(auto_numbering) => auto_numbering.numbering_pattern.as_deref(),
+            Self::Ordered { auto_numbering, .. } => auto_numbering.numbering_pattern.as_deref(),
             Self::Unordered { .. } => None,
         }
     }
 
     fn start_at(&self) -> Option<u32> {
         match self {
-            Self::Ordered(auto_numbering) => auto_numbering.start_at,
+            Self::Ordered { auto_numbering, .. } => auto_numbering.start_at,
             Self::Unordered { .. } => None,
+        }
+    }
+
+    fn marker_text(&self) -> Option<&str> {
+        match self {
+            Self::Ordered { .. } => None,
+            Self::Unordered { marker_text, .. } => Some(marker_text),
+        }
+    }
+
+    fn marker_style(&self) -> Option<&TextStyle> {
+        match self {
+            Self::Ordered { marker_style, .. } | Self::Unordered { marker_style, .. } => {
+                marker_style.as_ref()
+            }
         }
     }
 }
@@ -165,7 +226,7 @@ impl PendingPptxList {
             return true;
         }
 
-        if let PptxListMarker::Ordered(auto_numbering) = marker {
+        if let PptxListMarker::Ordered { auto_numbering, .. } = marker {
             if auto_numbering.start_at.is_some() && auto_numbering.level <= self.last_level {
                 return false;
             }
@@ -173,21 +234,31 @@ impl PendingPptxList {
             return self
                 .level_styles
                 .get(&auto_numbering.level)
-                .is_none_or(|style| style.numbering_pattern == auto_numbering.numbering_pattern);
+                .is_none_or(|style| {
+                    style.numbering_pattern == auto_numbering.numbering_pattern
+                        && style.marker_style.as_ref() == marker.marker_style()
+                });
         }
 
-        true
+        self.level_styles.get(&marker.level()).is_none_or(|style| {
+            style.marker_text.as_deref() == marker.marker_text()
+                && style.marker_style.as_ref() == marker.marker_style()
+        })
     }
 
     fn push(&mut self, paragraph: Paragraph, marker: PptxListMarker) {
         let level: u32 = marker.level();
         let numbering_pattern: Option<String> = marker.numbering_pattern().map(str::to_string);
+        let marker_text: Option<String> = marker.marker_text().map(str::to_string);
+        let marker_style: Option<TextStyle> = marker.marker_style().cloned();
         self.level_styles
             .entry(level)
             .or_insert_with(|| ListLevelStyle {
                 kind: self.kind,
                 numbering_pattern,
                 full_numbering: false,
+                marker_text,
+                marker_style,
             });
         self.items.push(ListItem {
             content: vec![paragraph],
@@ -214,12 +285,14 @@ impl PendingPptxList {
 struct PptxTextLevelStyle {
     paragraph: ParagraphStyle,
     run: TextStyle,
+    bullet: PptxBulletDefinition,
 }
 
 #[derive(Debug, Clone, Default)]
 struct PptxTextBodyStyleDefaults {
     default_paragraph: ParagraphStyle,
     default_run: TextStyle,
+    default_bullet: PptxBulletDefinition,
     levels: BTreeMap<u32, PptxTextLevelStyle>,
 }
 
@@ -238,6 +311,27 @@ impl PptxTextBodyStyleDefaults {
             merge_text_style(&mut style, &level_style.run);
         }
         style
+    }
+
+    fn bullet_for_level(&self, level: u32) -> PptxBulletDefinition {
+        let mut bullet = self.default_bullet.clone();
+        if let Some(level_style) = self.levels.get(&level) {
+            merge_pptx_bullet_definition(&mut bullet, &level_style.bullet);
+        }
+        bullet
+    }
+
+    fn merge_from(&mut self, overlay: &PptxTextBodyStyleDefaults) {
+        merge_paragraph_style(&mut self.default_paragraph, &overlay.default_paragraph);
+        merge_text_style(&mut self.default_run, &overlay.default_run);
+        merge_pptx_bullet_definition(&mut self.default_bullet, &overlay.default_bullet);
+
+        for (level, overlay_style) in &overlay.levels {
+            let target = self.levels.entry(*level).or_default();
+            merge_paragraph_style(&mut target.paragraph, &overlay_style.paragraph);
+            merge_text_style(&mut target.run, &overlay_style.run);
+            merge_pptx_bullet_definition(&mut target.bullet, &overlay_style.bullet);
+        }
     }
 }
 
@@ -324,6 +418,27 @@ fn parse_master_color_map(xml: &str) -> ColorMapData {
     }
 
     default_color_map()
+}
+
+fn parse_master_other_style(
+    xml: &str,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+) -> PptxTextBodyStyleDefaults {
+    let mut reader = Reader::from_str(xml);
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) if e.local_name().as_ref() == b"otherStyle" => {
+                return parse_pptx_list_style(&mut reader, theme, color_map);
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    PptxTextBodyStyleDefaults::default()
 }
 
 fn parse_color_map_override(xml: &str) -> Option<ColorMapData> {
@@ -672,6 +787,10 @@ fn parse_single_slide<R: Read + std::io::Seek>(
         .as_deref()
         .map(parse_master_color_map)
         .unwrap_or_else(default_color_map);
+    let master_text_style_defaults = master_xml
+        .as_deref()
+        .map(|xml| parse_master_other_style(xml, theme, &master_color_map))
+        .unwrap_or_default();
     let slide_color_map = resolve_effective_color_map(&slide_xml, &master_color_map);
     let layout_color_map = layout_xml
         .as_deref()
@@ -685,6 +804,7 @@ fn parse_single_slide<R: Read + std::io::Seek>(
         theme,
         &slide_color_map,
         slide_label,
+        &master_text_style_defaults,
     )?;
     warnings.extend(slide_warnings);
 
@@ -697,9 +817,14 @@ fn parse_single_slide<R: Read + std::io::Seek>(
     {
         let master_images = load_slide_images(path, archive);
         let master_label = format!("{slide_label} master");
-        if let Ok((master_elements, master_warnings)) =
-            parse_slide_xml(xml, &master_images, theme, &master_color_map, &master_label)
-        {
+        if let Ok((master_elements, master_warnings)) = parse_slide_xml(
+            xml,
+            &master_images,
+            theme,
+            &master_color_map,
+            &master_label,
+            &master_text_style_defaults,
+        ) {
             elements.extend(master_elements);
             warnings.extend(master_warnings);
         }
@@ -712,9 +837,14 @@ fn parse_single_slide<R: Read + std::io::Seek>(
     {
         let layout_images = load_slide_images(path, archive);
         let layout_label = format!("{slide_label} layout");
-        if let Ok((layout_elements, layout_warnings)) =
-            parse_slide_xml(xml, &layout_images, theme, color_map, &layout_label)
-        {
+        if let Ok((layout_elements, layout_warnings)) = parse_slide_xml(
+            xml,
+            &layout_images,
+            theme,
+            color_map,
+            &layout_label,
+            &master_text_style_defaults,
+        ) {
             elements.extend(layout_elements);
             warnings.extend(layout_warnings);
         }
@@ -1719,10 +1849,13 @@ fn parse_pptx_table(
 
     // Text parsing state (reused per cell)
     let mut in_txbody = false;
+    let mut text_body_style_defaults = PptxTextBodyStyleDefaults::default();
     let mut in_para = false;
     let mut para_style = ParagraphStyle::default();
     let mut para_level: u32 = 0;
-    let mut para_list_marker: Option<PptxListMarker> = None;
+    let mut para_default_run_style = TextStyle::default();
+    let mut para_end_run_style = TextStyle::default();
+    let mut para_bullet_definition = PptxBulletDefinition::default();
     let mut in_ln_spc = false;
     let mut runs: Vec<Run> = Vec::new();
     let mut in_run = false;
@@ -1730,6 +1863,7 @@ fn parse_pptx_table(
     let mut run_text = String::new();
     let mut in_text = false;
     let mut in_rpr = false;
+    let mut in_end_para_rpr = false;
     let mut solid_fill_ctx = SolidFillCtx::None;
 
     // Cell property state
@@ -1787,18 +1921,33 @@ fn parse_pptx_table(
                     }
                     b"txBody" if in_cell => {
                         in_txbody = true;
+                        text_body_style_defaults = PptxTextBodyStyleDefaults::default();
+                    }
+                    b"lstStyle" if in_txbody => {
+                        let local_defaults = parse_pptx_list_style(reader, theme, color_map);
+                        text_body_style_defaults.merge_from(&local_defaults);
                     }
                     b"p" if in_txbody => {
                         in_para = true;
-                        para_style = ParagraphStyle::default();
                         para_level = 0;
-                        para_list_marker = None;
+                        para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
+                        para_default_run_style =
+                            text_body_style_defaults.run_style_for_level(para_level);
+                        para_end_run_style = para_default_run_style.clone();
+                        para_bullet_definition =
+                            text_body_style_defaults.bullet_for_level(para_level);
                         in_ln_spc = false;
                         runs.clear();
                     }
                     b"pPr" if in_para && !in_run => {
-                        extract_paragraph_props(e, &mut para_style);
                         para_level = extract_paragraph_level(e);
+                        para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
+                        para_default_run_style =
+                            text_body_style_defaults.run_style_for_level(para_level);
+                        para_end_run_style = para_default_run_style.clone();
+                        para_bullet_definition =
+                            text_body_style_defaults.bullet_for_level(para_level);
+                        extract_paragraph_props(e, &mut para_style);
                     }
                     b"lnSpc" if in_para && !in_run => {
                         in_ln_spc = true;
@@ -1810,30 +1959,69 @@ fn parse_pptx_table(
                         extract_pptx_line_spacing_pts(e, &mut para_style);
                     }
                     b"buAutoNum" if in_para && !in_run => {
-                        para_list_marker = Some(PptxListMarker::Ordered(
+                        para_bullet_definition.kind = Some(PptxBulletKind::AutoNumber(
                             parse_pptx_auto_numbering(e, para_level),
                         ));
                     }
                     b"buChar" if in_para && !in_run => {
-                        para_list_marker = Some(parse_pptx_bullet_marker(para_level));
+                        para_bullet_definition.kind = parse_pptx_bullet_marker(e, para_level);
                     }
                     b"buNone" if in_para && !in_run => {
-                        para_list_marker = None;
+                        para_bullet_definition.kind = Some(PptxBulletKind::None);
+                    }
+                    b"buFontTx" if in_para && !in_run => {
+                        para_bullet_definition.font = Some(PptxBulletFontSource::FollowText);
+                    }
+                    b"buFont" if in_para && !in_run => {
+                        if let Some(typeface) = get_attr_str(e, b"typeface") {
+                            para_bullet_definition.font = Some(PptxBulletFontSource::Explicit(
+                                resolve_theme_font(&typeface, theme),
+                            ));
+                        }
+                    }
+                    b"buClrTx" if in_para && !in_run => {
+                        para_bullet_definition.color = Some(PptxBulletColorSource::FollowText);
+                    }
+                    b"buClr" if in_para && !in_run => {
+                        solid_fill_ctx = SolidFillCtx::BulletFill;
+                    }
+                    b"buSzTx" if in_para && !in_run => {
+                        para_bullet_definition.size = Some(PptxBulletSizeSource::FollowText);
+                    }
+                    b"buSzPct" if in_para && !in_run => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            para_bullet_definition.size =
+                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
+                        }
+                    }
+                    b"buSzPts" if in_para && !in_run => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            para_bullet_definition.size =
+                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
+                        }
                     }
                     b"br" if in_para && !in_run => {
-                        push_pptx_soft_line_break(&mut runs, &TextStyle::default());
+                        push_pptx_soft_line_break(&mut runs, &para_default_run_style);
                     }
                     b"r" if in_para => {
                         in_run = true;
-                        run_style = TextStyle::default();
+                        run_style = para_default_run_style.clone();
                         run_text.clear();
                     }
                     b"rPr" if in_run => {
                         in_rpr = true;
                         extract_rpr_attributes(e, &mut run_style);
                     }
+                    b"endParaRPr" if in_para && !in_run => {
+                        in_end_para_rpr = true;
+                        para_end_run_style = para_default_run_style.clone();
+                        extract_rpr_attributes(e, &mut para_end_run_style);
+                    }
                     b"solidFill" if in_rpr => {
                         solid_fill_ctx = SolidFillCtx::RunFill;
+                    }
+                    b"solidFill" if in_end_para_rpr => {
+                        solid_fill_ctx = SolidFillCtx::EndParaFill;
                     }
                     b"solidFill" if in_tc_pr && !in_border_ln => {
                         solid_fill_ctx = SolidFillCtx::ShapeFill;
@@ -1849,6 +2037,11 @@ fn parse_pptx_table(
                             SolidFillCtx::ShapeFill => cell_background = color,
                             SolidFillCtx::LineFill => border_ln_color = color,
                             SolidFillCtx::RunFill => run_style.color = color,
+                            SolidFillCtx::EndParaFill => para_end_run_style.color = color,
+                            SolidFillCtx::BulletFill => {
+                                para_bullet_definition.color =
+                                    color.map(PptxBulletColorSource::Explicit);
+                            }
                             SolidFillCtx::None => {}
                         }
                     }
@@ -1916,6 +2109,11 @@ fn parse_pptx_table(
                             SolidFillCtx::ShapeFill => cell_background = color,
                             SolidFillCtx::LineFill => border_ln_color = color,
                             SolidFillCtx::RunFill => run_style.color = color,
+                            SolidFillCtx::EndParaFill => para_end_run_style.color = color,
+                            SolidFillCtx::BulletFill => {
+                                para_bullet_definition.color =
+                                    color.map(PptxBulletColorSource::Explicit);
+                            }
                             SolidFillCtx::None => {}
                         }
                     }
@@ -1928,6 +2126,10 @@ fn parse_pptx_table(
                     b"rPr" if in_run => {
                         extract_rpr_attributes(e, &mut run_style);
                     }
+                    b"endParaRPr" if in_para && !in_run => {
+                        para_end_run_style = para_default_run_style.clone();
+                        extract_rpr_attributes(e, &mut para_end_run_style);
+                    }
                     b"tcPr" if in_cell => {
                         extract_pptx_table_cell_props(
                             e,
@@ -1936,8 +2138,14 @@ fn parse_pptx_table(
                         );
                     }
                     b"pPr" if in_para && !in_run => {
-                        extract_paragraph_props(e, &mut para_style);
                         para_level = extract_paragraph_level(e);
+                        para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
+                        para_default_run_style =
+                            text_body_style_defaults.run_style_for_level(para_level);
+                        para_end_run_style = para_default_run_style.clone();
+                        para_bullet_definition =
+                            text_body_style_defaults.bullet_for_level(para_level);
+                        extract_paragraph_props(e, &mut para_style);
                     }
                     b"lnSpc" if in_para && !in_run => {
                         in_ln_spc = true;
@@ -1949,29 +2157,66 @@ fn parse_pptx_table(
                         extract_pptx_line_spacing_pts(e, &mut para_style);
                     }
                     b"buAutoNum" if in_para && !in_run => {
-                        para_list_marker = Some(PptxListMarker::Ordered(
+                        para_bullet_definition.kind = Some(PptxBulletKind::AutoNumber(
                             parse_pptx_auto_numbering(e, para_level),
                         ));
                     }
                     b"buChar" if in_para && !in_run => {
-                        para_list_marker = Some(parse_pptx_bullet_marker(para_level));
+                        para_bullet_definition.kind = parse_pptx_bullet_marker(e, para_level);
                     }
                     b"buNone" if in_para && !in_run => {
-                        para_list_marker = None;
+                        para_bullet_definition.kind = Some(PptxBulletKind::None);
+                    }
+                    b"buFontTx" if in_para && !in_run => {
+                        para_bullet_definition.font = Some(PptxBulletFontSource::FollowText);
+                    }
+                    b"buFont" if in_para && !in_run => {
+                        if let Some(typeface) = get_attr_str(e, b"typeface") {
+                            para_bullet_definition.font = Some(PptxBulletFontSource::Explicit(
+                                resolve_theme_font(&typeface, theme),
+                            ));
+                        }
+                    }
+                    b"buClrTx" if in_para && !in_run => {
+                        para_bullet_definition.color = Some(PptxBulletColorSource::FollowText);
+                    }
+                    b"buClr" if in_para && !in_run => {
+                        solid_fill_ctx = SolidFillCtx::BulletFill;
+                    }
+                    b"buSzTx" if in_para && !in_run => {
+                        para_bullet_definition.size = Some(PptxBulletSizeSource::FollowText);
+                    }
+                    b"buSzPct" if in_para && !in_run => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            para_bullet_definition.size =
+                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
+                        }
+                    }
+                    b"buSzPts" if in_para && !in_run => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            para_bullet_definition.size =
+                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
+                        }
                     }
                     b"br" if in_para && !in_run => {
-                        push_pptx_soft_line_break(&mut runs, &TextStyle::default());
+                        push_pptx_soft_line_break(&mut runs, &para_default_run_style);
                     }
-                    b"latin" if in_rpr => {
-                        if let Some(typeface) = get_attr_str(e, b"typeface") {
-                            run_style.font_family = Some(resolve_theme_font(&typeface, theme));
-                        }
+                    b"latin" | b"ea" | b"cs" if in_rpr => {
+                        apply_typeface_to_style(e, &mut run_style, theme);
+                    }
+                    b"latin" | b"ea" | b"cs" if in_end_para_rpr => {
+                        apply_typeface_to_style(e, &mut para_end_run_style, theme);
                     }
                     _ => {}
                 }
             }
             Ok(Event::Text(ref t)) => {
-                if in_text && let Ok(text) = t.xml_content() {
+                if in_text && let Some(text) = decode_pptx_text_event(t) {
+                    run_text.push_str(&text);
+                }
+            }
+            Ok(Event::GeneralRef(ref reference)) => {
+                if in_text && let Some(text) = decode_pptx_general_ref(reference) {
                     run_text.push_str(&text);
                 }
             }
@@ -2032,12 +2277,20 @@ fn parse_pptx_table(
                         in_txbody = false;
                     }
                     b"p" if in_para => {
+                        let resolved_list_marker = resolve_pptx_list_marker(
+                            &para_bullet_definition,
+                            para_level,
+                            &runs,
+                            &para_end_run_style,
+                            &para_default_run_style,
+                        );
+                        let paragraph_runs = std::mem::take(&mut runs);
                         cell_text_entries.push(PptxParagraphEntry {
                             paragraph: Paragraph {
                                 style: para_style.clone(),
-                                runs: std::mem::take(&mut runs),
+                                runs: paragraph_runs,
                             },
-                            list_marker: para_list_marker.take(),
+                            list_marker: resolved_list_marker,
                         });
                         in_para = false;
                     }
@@ -2057,6 +2310,9 @@ fn parse_pptx_table(
                     }
                     b"rPr" if in_rpr => {
                         in_rpr = false;
+                    }
+                    b"endParaRPr" if in_end_para_rpr => {
+                        in_end_para_rpr = false;
                     }
                     b"lnSpc" if in_ln_spc => {
                         in_ln_spc = false;
@@ -2190,6 +2446,7 @@ fn parse_group_shape(
     theme: &ThemeData,
     color_map: &ColorMapData,
     warning_context: &str,
+    inherited_text_body_defaults: &PptxTextBodyStyleDefaults,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
     let mut transform = GroupTransform::default();
     let mut in_xfrm = false;
@@ -2270,8 +2527,14 @@ fn parse_group_shape(
                         r#"<r xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">{children_xml}</r>"#
                     );
 
-                    let (mut child_elements, warnings) =
-                        parse_slide_xml(&wrapped, images, theme, color_map, warning_context)?;
+                    let (mut child_elements, warnings) = parse_slide_xml(
+                        &wrapped,
+                        images,
+                        theme,
+                        color_map,
+                        warning_context,
+                        inherited_text_body_defaults,
+                    )?;
                     for elem in &mut child_elements {
                         transform.apply(elem);
                     }
@@ -2381,6 +2644,7 @@ fn parse_slide_xml(
     theme: &ThemeData,
     color_map: &ColorMapData,
     warning_context: &str,
+    inherited_text_body_defaults: &PptxTextBodyStyleDefaults,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
     let mut reader = Reader::from_str(xml);
     let mut elements = Vec::new();
@@ -2393,6 +2657,7 @@ fn parse_slide_xml(
     let mut shape_y: i64 = 0;
     let mut shape_cx: i64 = 0;
     let mut shape_cy: i64 = 0;
+    let mut shape_has_placeholder = false;
 
     // Shape property state (geometry, fill, border)
     let mut in_sp_pr = false;
@@ -2422,7 +2687,8 @@ fn parse_slide_xml(
     let mut para_style = ParagraphStyle::default();
     let mut para_level: u32 = 0;
     let mut para_default_run_style = TextStyle::default();
-    let mut para_list_marker: Option<PptxListMarker> = None;
+    let mut para_end_run_style = TextStyle::default();
+    let mut para_bullet_definition = PptxBulletDefinition::default();
     let mut in_ln_spc = false;
     let mut runs: Vec<Run> = Vec::new();
 
@@ -2434,6 +2700,7 @@ fn parse_slide_xml(
     // Sub-element state
     let mut in_text = false;
     let mut in_rpr = false;
+    let mut in_end_para_rpr = false;
     let mut solid_fill_ctx = SolidFillCtx::None;
 
     // ── Picture-level state ──────────────────────────────────────────────
@@ -2499,6 +2766,7 @@ fn parse_slide_xml(
                             theme,
                             color_map,
                             warning_context,
+                            inherited_text_body_defaults,
                         ) {
                             elements.extend(group_elems);
                             warnings.extend(group_warnings);
@@ -2513,6 +2781,7 @@ fn parse_slide_xml(
                         shape_y = 0;
                         shape_cx = 0;
                         shape_cy = 0;
+                        shape_has_placeholder = false;
                         in_sp_pr = false;
                         prst_geom = None;
                         shape_fill = None;
@@ -2579,11 +2848,18 @@ fn parse_slide_xml(
                     b"solidFill" if in_ln => {
                         solid_fill_ctx = SolidFillCtx::LineFill;
                     }
+                    b"ph" if in_shape => {
+                        shape_has_placeholder = true;
+                    }
 
                     // ── Text body ────────────────────────────────────
                     b"txBody" if in_shape => {
                         in_txbody = true;
-                        text_body_style_defaults = PptxTextBodyStyleDefaults::default();
+                        text_body_style_defaults = if shape_has_placeholder {
+                            PptxTextBodyStyleDefaults::default()
+                        } else {
+                            inherited_text_body_defaults.clone()
+                        };
                     }
                     b"bodyPr" if in_shape && in_txbody => {
                         extract_pptx_text_box_body_props(
@@ -2593,8 +2869,8 @@ fn parse_slide_xml(
                         );
                     }
                     b"lstStyle" if in_shape && in_txbody => {
-                        text_body_style_defaults =
-                            parse_pptx_list_style(&mut reader, theme, color_map);
+                        let local_defaults = parse_pptx_list_style(&mut reader, theme, color_map);
+                        text_body_style_defaults.merge_from(&local_defaults);
                     }
                     b"p" if in_txbody => {
                         in_para = true;
@@ -2602,7 +2878,9 @@ fn parse_slide_xml(
                         para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
                         para_default_run_style =
                             text_body_style_defaults.run_style_for_level(para_level);
-                        para_list_marker = None;
+                        para_end_run_style = para_default_run_style.clone();
+                        para_bullet_definition =
+                            text_body_style_defaults.bullet_for_level(para_level);
                         in_ln_spc = false;
                         runs.clear();
                     }
@@ -2611,6 +2889,9 @@ fn parse_slide_xml(
                         para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
                         para_default_run_style =
                             text_body_style_defaults.run_style_for_level(para_level);
+                        para_end_run_style = para_default_run_style.clone();
+                        para_bullet_definition =
+                            text_body_style_defaults.bullet_for_level(para_level);
                         extract_paragraph_props(e, &mut para_style);
                     }
                     b"lnSpc" if in_para && !in_run => {
@@ -2623,15 +2904,46 @@ fn parse_slide_xml(
                         extract_pptx_line_spacing_pts(e, &mut para_style);
                     }
                     b"buAutoNum" if in_para && !in_run => {
-                        para_list_marker = Some(PptxListMarker::Ordered(
+                        para_bullet_definition.kind = Some(PptxBulletKind::AutoNumber(
                             parse_pptx_auto_numbering(e, para_level),
                         ));
                     }
                     b"buChar" if in_para && !in_run => {
-                        para_list_marker = Some(parse_pptx_bullet_marker(para_level));
+                        para_bullet_definition.kind = parse_pptx_bullet_marker(e, para_level);
                     }
                     b"buNone" if in_para && !in_run => {
-                        para_list_marker = None;
+                        para_bullet_definition.kind = Some(PptxBulletKind::None);
+                    }
+                    b"buFontTx" if in_para && !in_run => {
+                        para_bullet_definition.font = Some(PptxBulletFontSource::FollowText);
+                    }
+                    b"buFont" if in_para && !in_run => {
+                        if let Some(typeface) = get_attr_str(e, b"typeface") {
+                            para_bullet_definition.font = Some(PptxBulletFontSource::Explicit(
+                                resolve_theme_font(&typeface, theme),
+                            ));
+                        }
+                    }
+                    b"buClrTx" if in_para && !in_run => {
+                        para_bullet_definition.color = Some(PptxBulletColorSource::FollowText);
+                    }
+                    b"buClr" if in_para && !in_run => {
+                        solid_fill_ctx = SolidFillCtx::BulletFill;
+                    }
+                    b"buSzTx" if in_para && !in_run => {
+                        para_bullet_definition.size = Some(PptxBulletSizeSource::FollowText);
+                    }
+                    b"buSzPct" if in_para && !in_run => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            para_bullet_definition.size =
+                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
+                        }
+                    }
+                    b"buSzPts" if in_para && !in_run => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            para_bullet_definition.size =
+                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
+                        }
                     }
                     b"br" if in_para && !in_run => {
                         push_pptx_soft_line_break(&mut runs, &para_default_run_style);
@@ -2645,8 +2957,16 @@ fn parse_slide_xml(
                         in_rpr = true;
                         extract_rpr_attributes(e, &mut run_style);
                     }
+                    b"endParaRPr" if in_para && !in_run => {
+                        in_end_para_rpr = true;
+                        para_end_run_style = para_default_run_style.clone();
+                        extract_rpr_attributes(e, &mut para_end_run_style);
+                    }
                     b"solidFill" if in_rpr => {
                         solid_fill_ctx = SolidFillCtx::RunFill;
+                    }
+                    b"solidFill" if in_end_para_rpr => {
+                        solid_fill_ctx = SolidFillCtx::EndParaFill;
                     }
                     b"srgbClr" | b"schemeClr" | b"sysClr"
                         if solid_fill_ctx != SolidFillCtx::None =>
@@ -2661,6 +2981,11 @@ fn parse_slide_xml(
                             }
                             SolidFillCtx::LineFill => ln_color = parsed.color,
                             SolidFillCtx::RunFill => run_style.color = parsed.color,
+                            SolidFillCtx::EndParaFill => para_end_run_style.color = parsed.color,
+                            SolidFillCtx::BulletFill => {
+                                para_bullet_definition.color =
+                                    parsed.color.map(PptxBulletColorSource::Explicit);
+                            }
                             SolidFillCtx::None => {}
                         }
                     }
@@ -2788,6 +3113,11 @@ fn parse_slide_xml(
                             }
                             SolidFillCtx::LineFill => ln_color = parsed.color,
                             SolidFillCtx::RunFill => run_style.color = parsed.color,
+                            SolidFillCtx::EndParaFill => para_end_run_style.color = parsed.color,
+                            SolidFillCtx::BulletFill => {
+                                para_bullet_definition.color =
+                                    parsed.color.map(PptxBulletColorSource::Explicit);
+                            }
                             SolidFillCtx::None => {}
                         }
                     }
@@ -2796,11 +3126,18 @@ fn parse_slide_xml(
                     b"rPr" if in_run => {
                         extract_rpr_attributes(e, &mut run_style);
                     }
+                    b"endParaRPr" if in_para && !in_run => {
+                        para_end_run_style = para_default_run_style.clone();
+                        extract_rpr_attributes(e, &mut para_end_run_style);
+                    }
                     b"pPr" if in_para && !in_run => {
                         para_level = extract_paragraph_level(e);
                         para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
                         para_default_run_style =
                             text_body_style_defaults.run_style_for_level(para_level);
+                        para_end_run_style = para_default_run_style.clone();
+                        para_bullet_definition =
+                            text_body_style_defaults.bullet_for_level(para_level);
                         extract_paragraph_props(e, &mut para_style);
                     }
                     b"lnSpc" if in_para && !in_run => {
@@ -2813,15 +3150,46 @@ fn parse_slide_xml(
                         extract_pptx_line_spacing_pts(e, &mut para_style);
                     }
                     b"buAutoNum" if in_para && !in_run => {
-                        para_list_marker = Some(PptxListMarker::Ordered(
+                        para_bullet_definition.kind = Some(PptxBulletKind::AutoNumber(
                             parse_pptx_auto_numbering(e, para_level),
                         ));
                     }
                     b"buChar" if in_para && !in_run => {
-                        para_list_marker = Some(parse_pptx_bullet_marker(para_level));
+                        para_bullet_definition.kind = parse_pptx_bullet_marker(e, para_level);
                     }
                     b"buNone" if in_para && !in_run => {
-                        para_list_marker = None;
+                        para_bullet_definition.kind = Some(PptxBulletKind::None);
+                    }
+                    b"buFontTx" if in_para && !in_run => {
+                        para_bullet_definition.font = Some(PptxBulletFontSource::FollowText);
+                    }
+                    b"buFont" if in_para && !in_run => {
+                        if let Some(typeface) = get_attr_str(e, b"typeface") {
+                            para_bullet_definition.font = Some(PptxBulletFontSource::Explicit(
+                                resolve_theme_font(&typeface, theme),
+                            ));
+                        }
+                    }
+                    b"buClrTx" if in_para && !in_run => {
+                        para_bullet_definition.color = Some(PptxBulletColorSource::FollowText);
+                    }
+                    b"buClr" if in_para && !in_run => {
+                        solid_fill_ctx = SolidFillCtx::BulletFill;
+                    }
+                    b"buSzTx" if in_para && !in_run => {
+                        para_bullet_definition.size = Some(PptxBulletSizeSource::FollowText);
+                    }
+                    b"buSzPct" if in_para && !in_run => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            para_bullet_definition.size =
+                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
+                        }
+                    }
+                    b"buSzPts" if in_para && !in_run => {
+                        if let Some(val) = get_attr_i64(e, b"val") {
+                            para_bullet_definition.size =
+                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
+                        }
                     }
                     b"br" if in_para && !in_run => {
                         push_pptx_soft_line_break(&mut runs, &para_default_run_style);
@@ -2829,12 +3197,20 @@ fn parse_slide_xml(
                     b"latin" | b"ea" | b"cs" if in_rpr => {
                         apply_typeface_to_style(e, &mut run_style, theme);
                     }
+                    b"latin" | b"ea" | b"cs" if in_end_para_rpr => {
+                        apply_typeface_to_style(e, &mut para_end_run_style, theme);
+                    }
 
                     _ => {}
                 }
             }
             Ok(Event::Text(ref t)) => {
-                if in_text && let Ok(text) = t.xml_content() {
+                if in_text && let Some(text) = decode_pptx_text_event(t) {
+                    run_text.push_str(&text);
+                }
+            }
+            Ok(Event::GeneralRef(ref reference)) => {
+                if in_text && let Some(text) = decode_pptx_general_ref(reference) {
                     run_text.push_str(&text);
                 }
             }
@@ -2910,12 +3286,20 @@ fn parse_slide_xml(
                         in_txbody = false;
                     }
                     b"p" if in_para => {
+                        let resolved_list_marker = resolve_pptx_list_marker(
+                            &para_bullet_definition,
+                            para_level,
+                            &runs,
+                            &para_end_run_style,
+                            &para_default_run_style,
+                        );
+                        let paragraph_runs = std::mem::take(&mut runs);
                         paragraphs.push(PptxParagraphEntry {
                             paragraph: Paragraph {
                                 style: para_style.clone(),
-                                runs: std::mem::take(&mut runs),
+                                runs: paragraph_runs,
                             },
-                            list_marker: para_list_marker.take(),
+                            list_marker: resolved_list_marker,
                         });
                         in_para = false;
                     }
@@ -2935,6 +3319,9 @@ fn parse_slide_xml(
                     }
                     b"rPr" if in_rpr => {
                         in_rpr = false;
+                    }
+                    b"endParaRPr" if in_end_para_rpr => {
+                        in_end_para_rpr = false;
                     }
                     b"lnSpc" if in_ln_spc => {
                         in_ln_spc = false;
@@ -3199,6 +3586,21 @@ fn merge_text_style(target: &mut TextStyle, source: &TextStyle) {
     }
 }
 
+fn merge_pptx_bullet_definition(target: &mut PptxBulletDefinition, source: &PptxBulletDefinition) {
+    if source.kind.is_some() {
+        target.kind = source.kind.clone();
+    }
+    if source.font.is_some() {
+        target.font = source.font.clone();
+    }
+    if source.color.is_some() {
+        target.color = source.color.clone();
+    }
+    if source.size.is_some() {
+        target.size = source.size.clone();
+    }
+}
+
 fn parse_pptx_list_style_level(name: &[u8]) -> Option<u32> {
     if name.len() != 7 || !name.starts_with(b"lvl") || !name.ends_with(b"pPr") {
         return None;
@@ -3240,6 +3642,7 @@ fn parse_pptx_list_style(
     let mut active_run_target: Option<ParagraphTarget> = None;
     let mut in_ln_spc = false;
     let mut in_run_fill = false;
+    let mut in_bullet_fill = false;
 
     fn paragraph_style_mut(
         defaults: &mut PptxTextBodyStyleDefaults,
@@ -3260,6 +3663,16 @@ fn parse_pptx_list_style(
         match target {
             ParagraphTarget::Default => &mut defaults.default_run,
             ParagraphTarget::Level(level) => &mut defaults.levels.entry(level).or_default().run,
+        }
+    }
+
+    fn bullet_style_mut(
+        defaults: &mut PptxTextBodyStyleDefaults,
+        target: ParagraphTarget,
+    ) -> &mut PptxBulletDefinition {
+        match target {
+            ParagraphTarget::Default => &mut defaults.default_bullet,
+            ParagraphTarget::Level(level) => &mut defaults.levels.entry(level).or_default().bullet,
         }
     }
 
@@ -3302,6 +3715,80 @@ fn parse_pptx_list_style(
                             );
                         }
                     }
+                    b"buAutoNum" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            let level = match target {
+                                ParagraphTarget::Default => 0,
+                                ParagraphTarget::Level(level) => level,
+                            };
+                            bullet_style_mut(&mut defaults, target).kind = Some(
+                                PptxBulletKind::AutoNumber(parse_pptx_auto_numbering(e, level)),
+                            );
+                        }
+                    }
+                    b"buChar" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            let level = match target {
+                                ParagraphTarget::Default => 0,
+                                ParagraphTarget::Level(level) => level,
+                            };
+                            bullet_style_mut(&mut defaults, target).kind =
+                                parse_pptx_bullet_marker(e, level);
+                        }
+                    }
+                    b"buNone" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            bullet_style_mut(&mut defaults, target).kind =
+                                Some(PptxBulletKind::None);
+                        }
+                    }
+                    b"buFontTx" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            bullet_style_mut(&mut defaults, target).font =
+                                Some(PptxBulletFontSource::FollowText);
+                        }
+                    }
+                    b"buFont" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target
+                            && let Some(typeface) = get_attr_str(e, b"typeface")
+                        {
+                            bullet_style_mut(&mut defaults, target).font =
+                                Some(PptxBulletFontSource::Explicit(resolve_theme_font(
+                                    &typeface, theme,
+                                )));
+                        }
+                    }
+                    b"buClrTx" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            bullet_style_mut(&mut defaults, target).color =
+                                Some(PptxBulletColorSource::FollowText);
+                        }
+                    }
+                    b"buClr" if active_paragraph_target.is_some() => {
+                        in_bullet_fill = true;
+                    }
+                    b"buSzTx" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            bullet_style_mut(&mut defaults, target).size =
+                                Some(PptxBulletSizeSource::FollowText);
+                        }
+                    }
+                    b"buSzPct" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target
+                            && let Some(val) = get_attr_i64(e, b"val")
+                        {
+                            bullet_style_mut(&mut defaults, target).size =
+                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
+                        }
+                    }
+                    b"buSzPts" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target
+                            && let Some(val) = get_attr_i64(e, b"val")
+                        {
+                            bullet_style_mut(&mut defaults, target).size =
+                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
+                        }
+                    }
                     b"defRPr" if active_paragraph_target.is_some() => {
                         active_run_target = active_paragraph_target;
                         if let Some(target) = active_run_target {
@@ -3320,6 +3807,13 @@ fn parse_pptx_list_style(
                     b"latin" | b"ea" | b"cs" if active_run_target.is_some() => {
                         if let Some(target) = active_run_target {
                             apply_typeface_to_style(e, run_style_mut(&mut defaults, target), theme);
+                        }
+                    }
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_bullet_fill => {
+                        if let Some(target) = active_paragraph_target {
+                            let parsed = parse_color_from_start(reader, e, theme, color_map);
+                            bullet_style_mut(&mut defaults, target).color =
+                                parsed.color.map(PptxBulletColorSource::Explicit);
                         }
                     }
                     _ => {}
@@ -3354,6 +3848,78 @@ fn parse_pptx_list_style(
                             );
                         }
                     }
+                    b"buAutoNum" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            let level = match target {
+                                ParagraphTarget::Default => 0,
+                                ParagraphTarget::Level(level) => level,
+                            };
+                            bullet_style_mut(&mut defaults, target).kind = Some(
+                                PptxBulletKind::AutoNumber(parse_pptx_auto_numbering(e, level)),
+                            );
+                        }
+                    }
+                    b"buChar" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            let level = match target {
+                                ParagraphTarget::Default => 0,
+                                ParagraphTarget::Level(level) => level,
+                            };
+                            bullet_style_mut(&mut defaults, target).kind =
+                                parse_pptx_bullet_marker(e, level);
+                        }
+                    }
+                    b"buNone" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            bullet_style_mut(&mut defaults, target).kind =
+                                Some(PptxBulletKind::None);
+                        }
+                    }
+                    b"buFontTx" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            bullet_style_mut(&mut defaults, target).font =
+                                Some(PptxBulletFontSource::FollowText);
+                        }
+                    }
+                    b"buFont" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target
+                            && let Some(typeface) = get_attr_str(e, b"typeface")
+                        {
+                            bullet_style_mut(&mut defaults, target).font =
+                                Some(PptxBulletFontSource::Explicit(resolve_theme_font(
+                                    &typeface, theme,
+                                )));
+                        }
+                    }
+                    b"buClrTx" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            bullet_style_mut(&mut defaults, target).color =
+                                Some(PptxBulletColorSource::FollowText);
+                        }
+                    }
+                    b"buClr" if active_paragraph_target.is_some() => {}
+                    b"buSzTx" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            bullet_style_mut(&mut defaults, target).size =
+                                Some(PptxBulletSizeSource::FollowText);
+                        }
+                    }
+                    b"buSzPct" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target
+                            && let Some(val) = get_attr_i64(e, b"val")
+                        {
+                            bullet_style_mut(&mut defaults, target).size =
+                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
+                        }
+                    }
+                    b"buSzPts" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target
+                            && let Some(val) = get_attr_i64(e, b"val")
+                        {
+                            bullet_style_mut(&mut defaults, target).size =
+                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
+                        }
+                    }
                     b"defRPr" if active_paragraph_target.is_some() => {
                         if let Some(target) = active_paragraph_target {
                             extract_rpr_attributes(e, run_style_mut(&mut defaults, target));
@@ -3370,13 +3936,20 @@ fn parse_pptx_list_style(
                             apply_typeface_to_style(e, run_style_mut(&mut defaults, target), theme);
                         }
                     }
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_bullet_fill => {
+                        if let Some(target) = active_paragraph_target {
+                            let parsed = parse_color_from_empty(e, theme, color_map);
+                            bullet_style_mut(&mut defaults, target).color =
+                                parsed.color.map(PptxBulletColorSource::Explicit);
+                        }
+                    }
                     _ => {}
                 }
             }
             Ok(Event::End(ref e)) => {
                 let local = e.local_name();
                 match local.as_ref() {
-                    b"lstStyle" => break,
+                    b"lstStyle" | b"otherStyle" => break,
                     b"defPPr" => {
                         active_paragraph_target = None;
                         in_ln_spc = false;
@@ -3391,6 +3964,9 @@ fn parse_pptx_list_style(
                     }
                     b"solidFill" if in_run_fill => {
                         in_run_fill = false;
+                    }
+                    b"buClr" if in_bullet_fill => {
+                        in_bullet_fill = false;
                     }
                     b"lnSpc" if in_ln_spc => {
                         in_ln_spc = false;
@@ -3535,6 +4111,19 @@ fn push_pptx_soft_line_break(runs: &mut Vec<Run>, style: &TextStyle) {
     );
 }
 
+fn decode_pptx_text_event(text: &quick_xml::events::BytesText<'_>) -> Option<String> {
+    let decoded = text.decode().ok()?;
+    let unescaped = unescape_xml_text(decoded.as_ref()).ok()?;
+    Some(unescaped.into_owned())
+}
+
+fn decode_pptx_general_ref(reference: &quick_xml::events::BytesRef<'_>) -> Option<String> {
+    let decoded = reference.decode().ok()?;
+    let wrapped = format!("&{};", decoded.as_ref());
+    let unescaped = unescape_xml_text(&wrapped).ok()?;
+    Some(unescaped.into_owned())
+}
+
 fn normalize_pptx_run_boundary_spacing(previous: Option<&Run>, run: &mut Run) {
     let Some(previous) = previous else {
         return;
@@ -3575,6 +4164,86 @@ fn should_preserve_pptx_run_boundary_space(next_char: char) -> bool {
     )
 }
 
+fn first_pptx_visible_run_style(runs: &[Run]) -> Option<TextStyle> {
+    runs.iter()
+        .find(|run| !run.text.is_empty() && run.footnote.is_none())
+        .map(|run| run.style.clone())
+}
+
+fn resolve_pptx_marker_base_style(
+    runs: &[Run],
+    end_para_run_style: &TextStyle,
+    default_run_style: &TextStyle,
+) -> TextStyle {
+    first_pptx_visible_run_style(runs)
+        .or_else(|| {
+            (end_para_run_style != &TextStyle::default()).then(|| end_para_run_style.clone())
+        })
+        .unwrap_or_else(|| default_run_style.clone())
+}
+
+fn finalize_pptx_marker_style(style: TextStyle) -> Option<TextStyle> {
+    (style != TextStyle::default()).then_some(style)
+}
+
+fn resolve_pptx_marker_style(
+    bullet: &PptxBulletDefinition,
+    runs: &[Run],
+    end_para_run_style: &TextStyle,
+    default_run_style: &TextStyle,
+) -> Option<TextStyle> {
+    let mut style = resolve_pptx_marker_base_style(runs, end_para_run_style, default_run_style);
+
+    match bullet.font.as_ref() {
+        Some(PptxBulletFontSource::FollowText) | None => {}
+        Some(PptxBulletFontSource::Explicit(font_family)) => {
+            style.font_family = Some(font_family.clone());
+        }
+    }
+
+    match bullet.color.as_ref() {
+        Some(PptxBulletColorSource::FollowText) | None => {}
+        Some(PptxBulletColorSource::Explicit(color)) => {
+            style.color = Some(*color);
+        }
+    }
+
+    match bullet.size.as_ref() {
+        Some(PptxBulletSizeSource::FollowText) | None => {}
+        Some(PptxBulletSizeSource::Points(points)) => {
+            style.font_size = Some(*points);
+        }
+        Some(PptxBulletSizeSource::Percent(percent)) => {
+            style.font_size = style.font_size.map(|size| size * percent);
+        }
+    }
+
+    finalize_pptx_marker_style(style)
+}
+
+fn resolve_pptx_list_marker(
+    bullet: &PptxBulletDefinition,
+    level: u32,
+    runs: &[Run],
+    end_para_run_style: &TextStyle,
+    default_run_style: &TextStyle,
+) -> Option<PptxListMarker> {
+    let marker_style =
+        resolve_pptx_marker_style(bullet, runs, end_para_run_style, default_run_style);
+    match bullet.kind.as_ref()? {
+        PptxBulletKind::None => None,
+        PptxBulletKind::Character(character) => Some(PptxListMarker::Unordered {
+            level,
+            marker_text: character.clone(),
+            marker_style,
+        }),
+        PptxBulletKind::AutoNumber(auto_numbering) => Some(PptxListMarker::Ordered {
+            auto_numbering: auto_numbering.clone(),
+            marker_style,
+        }),
+    }
+}
+
 fn extract_paragraph_level(e: &quick_xml::events::BytesStart) -> u32 {
     get_attr_i64(e, b"lvl")
         .and_then(|value| u32::try_from(value).ok())
@@ -3595,8 +4264,13 @@ fn parse_pptx_auto_numbering(e: &quick_xml::events::BytesStart, level: u32) -> P
     }
 }
 
-fn parse_pptx_bullet_marker(level: u32) -> PptxListMarker {
-    PptxListMarker::Unordered { level }
+fn parse_pptx_bullet_marker(
+    e: &quick_xml::events::BytesStart,
+    level: u32,
+) -> Option<PptxBulletKind> {
+    get_attr_str(e, b"char")
+        .map(PptxBulletKind::Character)
+        .or_else(|| (level == 0).then(|| PptxBulletKind::Character("•".to_string())))
 }
 
 fn pptx_auto_numbering_pattern(numbering_type: &str) -> Option<&'static str> {
@@ -3617,6 +4291,9 @@ fn pptx_auto_numbering_pattern(numbering_type: &str) -> Option<&'static str> {
 }
 
 fn group_pptx_text_blocks(entries: Vec<PptxParagraphEntry>) -> Vec<Block> {
+    let mut entries = entries;
+    trim_trailing_empty_pptx_list_entries(&mut entries);
+
     let mut blocks: Vec<Block> = Vec::new();
     let mut pending_list: Option<PendingPptxList> = None;
 
@@ -3649,6 +4326,29 @@ fn group_pptx_text_blocks(entries: Vec<PptxParagraphEntry>) -> Vec<Block> {
     }
 
     blocks
+}
+
+fn trim_trailing_empty_pptx_list_entries(entries: &mut Vec<PptxParagraphEntry>) {
+    while entries.len() > 1 {
+        let Some(last_entry) = entries.last() else {
+            break;
+        };
+        if last_entry.list_marker.is_none()
+            || pptx_paragraph_has_visible_content(&last_entry.paragraph)
+        {
+            break;
+        }
+        entries.pop();
+    }
+}
+
+fn pptx_paragraph_has_visible_content(paragraph: &Paragraph) -> bool {
+    paragraph.runs.iter().any(|run| {
+        run.footnote.is_some()
+            || run.text.chars().any(|character| {
+                character != PPTX_SOFT_LINE_BREAK_CHAR && !character.is_whitespace()
+            })
+    })
 }
 
 /// Extract text formatting attributes from `<a:rPr>` element.
@@ -3995,6 +4695,84 @@ mod tests {
     }
 
     #[test]
+    fn test_text_box_bulleted_paragraph_preserves_char_marker_and_uses_run_style() {
+        let paragraphs_xml = concat!(
+            r#"<a:p><a:pPr indent="-216000"><a:buFontTx/><a:buChar char="-"/></a:pPr>"#,
+            r#"<a:r><a:rPr lang="en-US" sz="1400"><a:solidFill><a:srgbClr val="112233"/></a:solidFill><a:latin typeface="Pretendard"/></a:rPr><a:t>First bullet</a:t></a:r>"#,
+            r#"</a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let list = match &blocks[0] {
+            Block::List(list) => list,
+            other => panic!("Expected List block, got {other:?}"),
+        };
+        let style = list.level_styles.get(&0).expect("Expected level 0 style");
+        assert_eq!(style.marker_text.as_deref(), Some("-"));
+        assert_eq!(
+            style
+                .marker_style
+                .as_ref()
+                .and_then(|style| style.font_family.as_deref()),
+            Some("Pretendard")
+        );
+        assert_eq!(
+            style
+                .marker_style
+                .as_ref()
+                .and_then(|style| style.font_size),
+            Some(14.0)
+        );
+        assert_eq!(
+            style.marker_style.as_ref().and_then(|style| style.color),
+            Some(Color::new(0x11, 0x22, 0x33))
+        );
+    }
+
+    #[test]
+    fn test_text_box_bulleted_paragraph_preserves_explicit_marker_font() {
+        let paragraphs_xml = concat!(
+            r#"<a:p><a:pPr indent="-216000"><a:buFont typeface="Wingdings"/><a:buChar char="è"/></a:pPr>"#,
+            r#"<a:r><a:rPr lang="en-US" sz="1400"><a:latin typeface="Pretendard"/></a:rPr><a:t>Symbol bullet</a:t></a:r>"#,
+            r#"</a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let list = match &blocks[0] {
+            Block::List(list) => list,
+            other => panic!("Expected List block, got {other:?}"),
+        };
+        let style = list.level_styles.get(&0).expect("Expected level 0 style");
+        assert_eq!(style.marker_text.as_deref(), Some("è"));
+        assert_eq!(
+            style
+                .marker_style
+                .as_ref()
+                .and_then(|style| style.font_family.as_deref()),
+            Some("Wingdings")
+        );
+        assert_eq!(
+            style
+                .marker_style
+                .as_ref()
+                .and_then(|style| style.font_size),
+            Some(14.0)
+        );
+    }
+
+    #[test]
     fn test_text_box_paragraph_line_spacing_pct_extracted() {
         let paragraphs_xml = concat!(
             r#"<a:p><a:pPr><a:lnSpc><a:spcPct val="150000"/></a:lnSpc></a:pPr><a:r><a:t>First</a:t></a:r></a:p>"#,
@@ -4109,6 +4887,50 @@ mod tests {
     }
 
     #[test]
+    fn test_text_box_auto_numbered_paragraph_resolves_marker_style_from_text() {
+        let paragraphs_xml = concat!(
+            r#"<a:p><a:pPr marL="457200" indent="-457200">"#,
+            r#"<a:buClrTx/><a:buSzTx/><a:buFontTx/><a:buAutoNum type="arabicParenR"/>"#,
+            r#"</a:pPr>"#,
+            r#"<a:r><a:rPr lang="ko-KR" sz="2000"><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:latin typeface="Pretendard Medium"/></a:rPr><a:t>First</a:t></a:r>"#,
+            r#"</a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let list = match &blocks[0] {
+            Block::List(list) => list,
+            other => panic!("Expected List block, got {other:?}"),
+        };
+        let style = list.level_styles.get(&0).expect("Expected level 0 style");
+        assert_eq!(style.numbering_pattern.as_deref(), Some("1)"));
+        assert_eq!(style.marker_text, None);
+        assert_eq!(
+            style
+                .marker_style
+                .as_ref()
+                .and_then(|style| style.font_family.as_deref()),
+            Some("Pretendard Medium")
+        );
+        assert_eq!(
+            style
+                .marker_style
+                .as_ref()
+                .and_then(|style| style.font_size),
+            Some(20.0)
+        );
+        assert_eq!(
+            style.marker_style.as_ref().and_then(|style| style.color),
+            Some(Color::black())
+        );
+    }
+
+    #[test]
     fn test_text_box_paragraph_preserves_soft_line_breaks() {
         let paragraphs_xml = concat!(
             r#"<a:p>"#,
@@ -4131,6 +4953,126 @@ mod tests {
         };
         let text: String = paragraph.runs.iter().map(|run| run.text.as_str()).collect();
         assert_eq!(text, "Line 1\u{000B}Line 2");
+    }
+
+    #[test]
+    fn test_text_box_plain_paragraph_between_bullets_breaks_list_sequence() {
+        let paragraphs_xml = concat!(
+            r#"<a:p><a:pPr marL="742950" lvl="1" indent="-285750"><a:buFontTx/><a:buChar char="-"/></a:pPr><a:r><a:t>1) First bullet</a:t></a:r></a:p>"#,
+            r#"<a:p><a:r><a:t>-> Continuation paragraph</a:t></a:r></a:p>"#,
+            r#"<a:p><a:pPr marL="742950" lvl="1" indent="-285750"><a:buFontTx/><a:buChar char="-"/></a:pPr><a:r><a:t>2) Second bullet</a:t></a:r></a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        assert_eq!(blocks.len(), 3, "Expected list / paragraph / list split");
+        match &blocks[0] {
+            Block::List(list) => {
+                assert_eq!(list.items.len(), 1);
+                assert_eq!(
+                    list.level_styles
+                        .get(&1)
+                        .and_then(|style| style.marker_text.as_deref()),
+                    Some("-")
+                );
+            }
+            other => panic!("Expected first block to be a list, got {other:?}"),
+        }
+        match &blocks[1] {
+            Block::Paragraph(paragraph) => {
+                let text: String = paragraph.runs.iter().map(|run| run.text.as_str()).collect();
+                assert_eq!(text, "-> Continuation paragraph");
+            }
+            other => panic!("Expected middle block to be a paragraph, got {other:?}"),
+        }
+        match &blocks[2] {
+            Block::List(list) => {
+                assert_eq!(list.items.len(), 1);
+                assert_eq!(
+                    list.level_styles
+                        .get(&1)
+                        .and_then(|style| style.marker_text.as_deref()),
+                    Some("-")
+                );
+            }
+            other => panic!("Expected last block to be a list, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_text_box_plain_paragraph_preserves_leading_arrow_text() {
+        let paragraphs_xml = r#"<a:p><a:r><a:t>-> Continuation paragraph</a:t></a:r></a:p>"#;
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let paragraph = match &blocks[0] {
+            Block::Paragraph(paragraph) => paragraph,
+            other => panic!("Expected paragraph block, got {other:?}"),
+        };
+        let text: String = paragraph.runs.iter().map(|run| run.text.as_str()).collect();
+        assert_eq!(text, "-> Continuation paragraph");
+    }
+
+    #[test]
+    fn test_text_box_plain_paragraph_preserves_escaped_gt_entity() {
+        let paragraphs_xml = r#"<a:p><a:r><a:t>-&gt; Continuation paragraph</a:t></a:r></a:p>"#;
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let paragraph = match &blocks[0] {
+            Block::Paragraph(paragraph) => paragraph,
+            other => panic!("Expected paragraph block, got {other:?}"),
+        };
+        let text: String = paragraph.runs.iter().map(|run| run.text.as_str()).collect();
+        assert_eq!(text, "-> Continuation paragraph");
+    }
+
+    #[test]
+    fn test_text_box_trailing_empty_bullets_do_not_override_nested_marker_style() {
+        let paragraphs_xml = concat!(
+            r#"<a:p><a:pPr marL="742950" lvl="1" indent="-285750"><a:buFont typeface="Wingdings"/><a:buChar char="è"/></a:pPr><a:r><a:rPr lang="en-US" sz="1400"><a:latin typeface="Pretendard"/></a:rPr><a:t>Arrow bullet</a:t></a:r></a:p>"#,
+            r#"<a:p><a:pPr marL="285750" indent="-285750"><a:buFontTx/><a:buChar char="-"/></a:pPr></a:p>"#,
+            r#"<a:p><a:pPr marL="285750" indent="-285750"><a:buFontTx/><a:buChar char="-"/></a:pPr></a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let list = match &blocks[0] {
+            Block::List(list) => list,
+            other => panic!("Expected List block, got {other:?}"),
+        };
+        assert_eq!(list.items.len(), 1);
+        assert_eq!(list.items[0].level, 1);
+        assert_eq!(
+            list.level_styles
+                .get(&1)
+                .and_then(|style| style.marker_text.as_deref()),
+            Some("è")
+        );
+        assert!(
+            list.level_styles.get(&0).is_none(),
+            "Trailing empty dash bullets should not create a level-0 marker style"
+        );
     }
 
     #[test]
@@ -4157,6 +5099,85 @@ mod tests {
         assert_eq!(run.style.font_size, Some(14.0));
         assert_eq!(run.style.bold, Some(true));
         assert_eq!(run.style.color, Some(Color::new(0x03, 0x25, 0x43)));
+    }
+
+    #[test]
+    fn test_non_placeholder_shape_inherits_master_other_style_run_defaults() {
+        let slide_shape = concat!(
+            r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Caption"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>"#,
+            r#"<p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="500000"/></a:xfrm></p:spPr>"#,
+            r#"<p:txBody><a:bodyPr/><a:lstStyle/>"#,
+            r#"<a:p><a:r><a:rPr lang="ko-KR"/><a:t>신</a:t></a:r><a:r><a:rPr lang="ko-KR" sz="1800"/><a:t>형</a:t></a:r></a:p>"#,
+            r#"</p:txBody></p:sp>"#,
+        );
+        let slide_xml = make_slide_xml(&[slide_shape.to_string()]);
+        let layout_xml = r#"<?xml version="1.0" encoding="UTF-8"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>"#;
+        let master_xml = r#"<?xml version="1.0" encoding="UTF-8"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld><p:txStyles><p:otherStyle><a:defPPr><a:defRPr lang="ko-KR"/></a:defPPr><a:lvl1pPr marL="0"><a:defRPr sz="1800"><a:solidFill><a:srgbClr val="224466"/></a:solidFill><a:latin typeface="Pretendard"/><a:ea typeface="Pretendard"/><a:cs typeface="Pretendard"/></a:defRPr></a:lvl1pPr></p:otherStyle></p:txStyles><p:clrMap bg1="lt1" tx1="dk1" bg2="lt1" tx2="dk1" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/></p:sldMaster>"#;
+        let data = build_test_pptx_with_layout_master(
+            SLIDE_CX, SLIDE_CY, &slide_xml, layout_xml, master_xml,
+        );
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let paragraph = match &blocks[0] {
+            Block::Paragraph(paragraph) => paragraph,
+            other => panic!("Expected Paragraph block, got {other:?}"),
+        };
+        let text: String = paragraph.runs.iter().map(|run| run.text.as_str()).collect();
+        assert_eq!(text, "신형");
+        assert!(
+            paragraph
+                .runs
+                .iter()
+                .all(|run| run.style.font_size == Some(18.0))
+        );
+        assert!(
+            paragraph
+                .runs
+                .iter()
+                .all(|run| run.style.font_family.as_deref() == Some("Pretendard"))
+        );
+        assert!(
+            paragraph
+                .runs
+                .iter()
+                .all(|run| run.style.color == Some(Color::new(0x22, 0x44, 0x66)))
+        );
+    }
+
+    #[test]
+    fn test_text_box_lst_style_overrides_master_other_style_run_defaults() {
+        let slide_shape = concat!(
+            r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="TextBox"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>"#,
+            r#"<p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="500000"/></a:xfrm></p:spPr>"#,
+            r#"<p:txBody><a:bodyPr/><a:lstStyle><a:lvl1pPr><a:defRPr sz="2400"><a:latin typeface="Pretendard SemiBold"/><a:ea typeface="Pretendard SemiBold"/><a:cs typeface="Pretendard SemiBold"/></a:defRPr></a:lvl1pPr></a:lstStyle>"#,
+            r#"<a:p><a:r><a:rPr lang="ko-KR"/><a:t>경력</a:t></a:r></a:p>"#,
+            r#"</p:txBody></p:sp>"#,
+        );
+        let slide_xml = make_slide_xml(&[slide_shape.to_string()]);
+        let layout_xml = r#"<?xml version="1.0" encoding="UTF-8"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>"#;
+        let master_xml = r#"<?xml version="1.0" encoding="UTF-8"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld><p:txStyles><p:otherStyle><a:lvl1pPr marL="0"><a:defRPr sz="1800"><a:latin typeface="Pretendard"/></a:defRPr></a:lvl1pPr></p:otherStyle></p:txStyles><p:clrMap bg1="lt1" tx1="dk1" bg2="lt1" tx2="dk1" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/></p:sldMaster>"#;
+        let data = build_test_pptx_with_layout_master(
+            SLIDE_CX, SLIDE_CY, &slide_xml, layout_xml, master_xml,
+        );
+
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let paragraph = match &blocks[0] {
+            Block::Paragraph(paragraph) => paragraph,
+            other => panic!("Expected Paragraph block, got {other:?}"),
+        };
+        assert_eq!(paragraph.runs[0].style.font_size, Some(24.0));
+        assert_eq!(
+            paragraph.runs[0].style.font_family.as_deref(),
+            Some("Pretendard SemiBold")
+        );
     }
 
     #[test]

@@ -334,6 +334,8 @@ fn resolve_numbering(
                         kind,
                         numbering_pattern,
                         full_numbering,
+                        marker_text: None,
+                        marker_style: None,
                     },
                     start: level.start,
                 },
@@ -5930,6 +5932,8 @@ mod tests {
                 kind: ListKind::Unordered,
                 numbering_pattern: None,
                 full_numbering: false,
+                marker_text: None,
+                marker_style: None,
             })
         );
 
@@ -5991,6 +5995,8 @@ mod tests {
                 kind: ListKind::Ordered,
                 numbering_pattern: Some("1.".to_string()),
                 full_numbering: false,
+                marker_text: None,
+                marker_style: None,
             })
         );
     }
@@ -6056,6 +6062,8 @@ mod tests {
                 kind: ListKind::Unordered,
                 numbering_pattern: None,
                 full_numbering: false,
+                marker_text: None,
+                marker_style: None,
             })
         );
     }
@@ -6108,6 +6116,8 @@ mod tests {
                 kind: ListKind::Ordered,
                 numbering_pattern: Some("1.".to_string()),
                 full_numbering: false,
+                marker_text: None,
+                marker_style: None,
             })
         );
     }
@@ -6169,6 +6179,8 @@ mod tests {
                         kind: ListKind::Ordered,
                         numbering_pattern: Some("1.".to_string()),
                         full_numbering: false,
+                        marker_text: None,
+                        marker_style: None,
                     },
                 ),
                 (
@@ -6177,6 +6189,8 @@ mod tests {
                         kind: ListKind::Unordered,
                         numbering_pattern: None,
                         full_numbering: false,
+                        marker_text: None,
+                        marker_style: None,
                     },
                 ),
             ])
