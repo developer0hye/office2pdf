@@ -80,6 +80,7 @@ struct PptxParagraphEntry {
 
 const PPTX_DEFAULT_TEXT_BOX_LEFT_RIGHT_INSET_PT: f64 = 7.2;
 const PPTX_DEFAULT_TEXT_BOX_TOP_BOTTOM_INSET_PT: f64 = 3.6;
+const PPTX_SOFT_LINE_BREAK_CHAR: char = '\u{000B}';
 
 fn default_pptx_text_box_padding() -> Insets {
     Insets {
@@ -1819,6 +1820,9 @@ fn parse_pptx_table(
                     b"buNone" if in_para && !in_run => {
                         para_list_marker = None;
                     }
+                    b"br" if in_para && !in_run => {
+                        push_pptx_soft_line_break(&mut runs, &TextStyle::default());
+                    }
                     b"r" if in_para => {
                         in_run = true;
                         run_style = TextStyle::default();
@@ -1954,6 +1958,9 @@ fn parse_pptx_table(
                     }
                     b"buNone" if in_para && !in_run => {
                         para_list_marker = None;
+                    }
+                    b"br" if in_para && !in_run => {
+                        push_pptx_soft_line_break(&mut runs, &TextStyle::default());
                     }
                     b"latin" if in_rpr => {
                         if let Some(typeface) = get_attr_str(e, b"typeface") {
@@ -2626,6 +2633,9 @@ fn parse_slide_xml(
                     b"buNone" if in_para && !in_run => {
                         para_list_marker = None;
                     }
+                    b"br" if in_para && !in_run => {
+                        push_pptx_soft_line_break(&mut runs, &para_default_run_style);
+                    }
                     b"r" if in_para => {
                         in_run = true;
                         run_style = para_default_run_style.clone();
@@ -2812,6 +2822,9 @@ fn parse_slide_xml(
                     }
                     b"buNone" if in_para && !in_run => {
                         para_list_marker = None;
+                    }
+                    b"br" if in_para && !in_run => {
+                        push_pptx_soft_line_break(&mut runs, &para_default_run_style);
                     }
                     b"latin" | b"ea" | b"cs" if in_rpr => {
                         apply_typeface_to_style(e, &mut run_style, theme);
@@ -3410,6 +3423,15 @@ fn extract_paragraph_props(e: &quick_xml::events::BytesStart, style: &mut Paragr
     {
         style.direction = Some(TextDirection::Rtl);
     }
+    if let Some(value) = get_attr_i64(e, b"marL") {
+        style.indent_left = Some(emu_to_pt(value));
+    }
+    if let Some(value) = get_attr_i64(e, b"marR") {
+        style.indent_right = Some(emu_to_pt(value));
+    }
+    if let Some(value) = get_attr_i64(e, b"indent") {
+        style.indent_first_line = Some(emu_to_pt(value));
+    }
 }
 
 fn extract_pptx_line_spacing_pct(e: &quick_xml::events::BytesStart, style: &mut ParagraphStyle) {
@@ -3499,6 +3521,18 @@ fn push_pptx_run(runs: &mut Vec<Run>, run: Run) {
     let mut run = run;
     normalize_pptx_run_boundary_spacing(runs.last(), &mut run);
     runs.push(run);
+}
+
+fn push_pptx_soft_line_break(runs: &mut Vec<Run>, style: &TextStyle) {
+    push_pptx_run(
+        runs,
+        Run {
+            text: PPTX_SOFT_LINE_BREAK_CHAR.to_string(),
+            style: style.clone(),
+            href: None,
+            footnote: None,
+        },
+    );
 }
 
 fn normalize_pptx_run_boundary_spacing(previous: Option<&Run>, run: &mut Run) {
@@ -4042,6 +4076,61 @@ mod tests {
                 .and_then(|style| style.numbering_pattern.as_deref()),
             Some("A.")
         );
+    }
+
+    #[test]
+    fn test_text_box_auto_numbered_paragraph_extracts_hanging_indent() {
+        let paragraphs_xml = concat!(
+            r#"<a:p><a:pPr marL="457200" indent="-457200"><a:buAutoNum type="arabicParenR"/></a:pPr><a:r><a:t>First</a:t></a:r></a:p>"#,
+            r#"<a:p><a:pPr marL="457200" indent="-457200"><a:buAutoNum type="arabicParenR"/></a:pPr><a:r><a:t>Second</a:t></a:r></a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let list = match &blocks[0] {
+            Block::List(list) => list,
+            other => panic!("Expected List block, got {other:?}"),
+        };
+
+        let paragraph = &list.items[0].content[0];
+        assert_eq!(paragraph.style.indent_left, Some(36.0));
+        assert_eq!(paragraph.style.indent_first_line, Some(-36.0));
+        assert_eq!(
+            list.level_styles
+                .get(&0)
+                .and_then(|style| style.numbering_pattern.as_deref()),
+            Some("1)")
+        );
+    }
+
+    #[test]
+    fn test_text_box_paragraph_preserves_soft_line_breaks() {
+        let paragraphs_xml = concat!(
+            r#"<a:p>"#,
+            r#"<a:r><a:t>Line 1</a:t></a:r>"#,
+            r#"<a:br/>"#,
+            r#"<a:r><a:t>Line 2</a:t></a:r>"#,
+            r#"</a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let paragraph = match &blocks[0] {
+            Block::Paragraph(paragraph) => paragraph,
+            other => panic!("Expected Paragraph block, got {other:?}"),
+        };
+        let text: String = paragraph.runs.iter().map(|run| run.text.as_str()).collect();
+        assert_eq!(text, "Line 1\u{000B}Line 2");
     }
 
     #[test]

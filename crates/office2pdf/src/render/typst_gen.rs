@@ -567,7 +567,7 @@ fn generate_fixed_text_box(
             out.push('\n');
         }
         out.push_str("  ");
-        generate_fixed_text_box_block(out, block, ctx)?;
+        generate_fixed_text_box_block(out, block, ctx, Some(inner_width_pt))?;
     }
     out.push_str("  ]\n");
 
@@ -1479,6 +1479,7 @@ fn generate_fixed_text_list(
     out: &mut String,
     list: &List,
     include_item_spacing: bool,
+    available_width_pt: Option<f64>,
 ) -> Result<(), ConvertError> {
     let paragraph: &Paragraph = &list.items[0].content[0];
     let style: &ParagraphStyle = &paragraph.style;
@@ -1493,51 +1494,81 @@ fn generate_fixed_text_list(
         write_fixed_text_list_par_settings(out, style, line_gap_pt);
     }
 
-    out.push_str("#stack(dir: ttb");
-    if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0 && include_item_spacing) {
-        let _ = write!(out, ", spacing: {}pt", format_f64(gap));
-    }
-    out.push_str(",\n");
-
     let align_str: Option<&str> = fixed_text_list_alignment(style.alignment);
-
     let mut current_number: u32 = list
         .items
         .first()
         .and_then(|item| item.start_at)
         .unwrap_or(1);
-    for (index, item) in list.items.iter().enumerate() {
-        if index > 0 {
-            out.push_str(",\n");
-            if let Some(start_at) = item.start_at {
-                current_number = start_at;
+    if available_width_pt.is_some() {
+        for (index, item) in list.items.iter().enumerate() {
+            if index > 0 {
+                out.push('\n');
+                if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0 && include_item_spacing) {
+                    let _ = writeln!(out, "#v({}pt)", format_f64(gap));
+                }
+                if let Some(start_at) = item.start_at {
+                    current_number = start_at;
+                }
+            }
+
+            let item_paragraph: &Paragraph = &item.content[0];
+            let marker_text: String = fixed_text_list_marker(
+                list.kind,
+                &effective_style,
+                current_number,
+                &item_paragraph.runs,
+            );
+            let runs: Vec<Run> = prepend_fixed_text_list_marker_run(
+                &item_paragraph.style,
+                &item_paragraph.runs,
+                marker_text,
+            );
+            write_fixed_text_list_item(out, item_paragraph, &runs, align_str, available_width_pt);
+            out.push('\n');
+
+            if list.kind == ListKind::Ordered {
+                current_number += 1;
+            }
+        }
+    } else {
+        out.push_str("#stack(dir: ttb");
+        if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0 && include_item_spacing) {
+            let _ = write!(out, ", spacing: {}pt", format_f64(gap));
+        }
+        out.push_str(",\n");
+
+        for (index, item) in list.items.iter().enumerate() {
+            if index > 0 {
+                out.push_str(",\n");
+                if let Some(start_at) = item.start_at {
+                    current_number = start_at;
+                }
+            }
+
+            let item_paragraph: &Paragraph = &item.content[0];
+            let marker_text: String = fixed_text_list_marker(
+                list.kind,
+                &effective_style,
+                current_number,
+                &item_paragraph.runs,
+            );
+            let runs: Vec<Run> = prepend_fixed_text_list_marker_run(
+                &item_paragraph.style,
+                &item_paragraph.runs,
+                marker_text,
+            );
+            out.push('[');
+            write_fixed_text_list_item(out, item_paragraph, &runs, align_str, available_width_pt);
+            out.push(']');
+
+            if list.kind == ListKind::Ordered {
+                current_number += 1;
             }
         }
 
-        let item_paragraph: &Paragraph = &item.content[0];
-        let marker_text: String = fixed_text_list_marker(
-            list.kind,
-            &effective_style,
-            current_number,
-            &item_paragraph.runs,
-        );
-        let runs: Vec<Run> = prepend_marker_run(&item_paragraph.runs, marker_text);
-        out.push('[');
-        if let Some(align) = align_str {
-            let _ = write!(out, "#block(width: 100%)[#align({align})[");
-        }
-        generate_runs_with_tabs(out, &runs, style.tab_stops.as_deref());
-        if align_str.is_some() {
-            out.push_str("]]");
-        }
-        out.push(']');
-
-        if list.kind == ListKind::Ordered {
-            current_number += 1;
-        }
+        out.push_str("\n)");
     }
-
-    out.push_str("\n)");
     if has_para_style {
         out.push_str("\n]");
     }
@@ -1550,6 +1581,194 @@ fn fixed_text_list_alignment(alignment: Option<Alignment>) -> Option<&'static st
         Some(Alignment::Center) => Some("center"),
         Some(Alignment::Right) => Some("right"),
         _ => None,
+    }
+}
+
+fn write_fixed_text_list_item(
+    out: &mut String,
+    paragraph: &Paragraph,
+    runs: &[Run],
+    align_str: Option<&str>,
+    available_width_pt: Option<f64>,
+) {
+    let inset: Insets = fixed_text_list_item_inset(&paragraph.style);
+    let has_inset: bool = inset.left > 0.0 || inset.right > 0.0;
+
+    out.push_str("#block(width: ");
+    if let Some(width_pt) = available_width_pt {
+        let _ = write!(out, "{}pt", format_f64(width_pt));
+    } else {
+        out.push_str("100%");
+    }
+    if has_inset {
+        let _ = write!(out, ", inset: {}", format_insets(&inset));
+    }
+    out.push_str(")[");
+
+    if let Some(align) = align_str {
+        let _ = write!(out, "#align({align})[");
+    }
+
+    write_fixed_text_list_item_paragraph(out, &paragraph.style, runs);
+
+    if align_str.is_some() {
+        out.push(']');
+    }
+    out.push(']');
+}
+
+fn fixed_text_list_item_inset(style: &ParagraphStyle) -> Insets {
+    let left_inset: f64 = if fixed_text_list_hanging_indent_pt(style).is_some() {
+        fixed_text_list_marker_origin_pt(style)
+    } else {
+        style.indent_left.unwrap_or(0.0).max(0.0)
+    };
+    Insets {
+        top: 0.0,
+        right: style.indent_right.unwrap_or(0.0).max(0.0),
+        bottom: 0.0,
+        left: left_inset,
+    }
+}
+
+fn write_fixed_text_list_item_paragraph(out: &mut String, style: &ParagraphStyle, runs: &[Run]) {
+    write_common_text_settings(out, runs, "");
+    write_fixed_text_default_par_settings(out, style, runs, "");
+    let hanging_indent_pt: Option<f64> = fixed_text_list_hanging_indent_pt(style);
+    let tab_stops: Option<Vec<TabStop>> = fixed_text_list_tab_stops(style, hanging_indent_pt);
+    if let Some(hanging_indent_pt) = hanging_indent_pt {
+        let _ = write!(
+            out,
+            "#par(hanging-indent: {}pt)[",
+            format_f64(hanging_indent_pt)
+        );
+    } else if let Some(indent) = style.indent_first_line.filter(|value| value.abs() > 0.0001) {
+        let _ = write!(
+            out,
+            "#par(first-line-indent: (amount: {}pt, all: true))[",
+            format_f64(indent)
+        );
+    } else {
+        out.push_str("#par[");
+    }
+
+    generate_runs_with_tabs(out, runs, tab_stops.as_deref());
+    out.push(']');
+}
+
+fn fixed_text_list_marker_origin_pt(style: &ParagraphStyle) -> f64 {
+    let indent_left: f64 = style.indent_left.unwrap_or(0.0).max(0.0);
+    let indent_first_line: f64 = style.indent_first_line.unwrap_or(0.0);
+
+    if indent_first_line < 0.0 {
+        (indent_left + indent_first_line).max(0.0)
+    } else {
+        indent_left
+    }
+}
+
+fn fixed_text_list_hanging_indent_pt(style: &ParagraphStyle) -> Option<f64> {
+    let indent_first_line: f64 = style.indent_first_line.unwrap_or(0.0);
+    if indent_first_line >= -0.0001 {
+        return None;
+    }
+
+    let indent_left: f64 = style.indent_left.unwrap_or(0.0).max(0.0);
+    let hanging_indent_pt: f64 = (indent_left - fixed_text_list_marker_origin_pt(style)).max(0.0);
+    (hanging_indent_pt > 0.0001).then_some(hanging_indent_pt)
+}
+
+fn fixed_text_list_tab_stops(
+    style: &ParagraphStyle,
+    hanging_indent_pt: Option<f64>,
+) -> Option<Vec<TabStop>> {
+    let mut tab_stops: Vec<TabStop> = style.tab_stops.clone().unwrap_or_default();
+
+    if let Some(hanging_indent_pt) = hanging_indent_pt
+        && !tab_stops
+            .iter()
+            .any(|stop| (stop.position - hanging_indent_pt).abs() < 0.0001)
+    {
+        tab_stops.push(TabStop {
+            position: hanging_indent_pt,
+            alignment: TabAlignment::Left,
+            leader: TabLeader::None,
+        });
+        tab_stops.sort_by(|left, right| left.position.total_cmp(&right.position));
+    }
+
+    (!tab_stops.is_empty()).then_some(tab_stops)
+}
+
+fn write_common_text_settings(out: &mut String, runs: &[Run], indent: &str) {
+    let Some(style) = common_text_style(runs) else {
+        return;
+    };
+
+    out.push_str(indent);
+    out.push_str("#set text(");
+    write_text_params(out, &style);
+    out.push_str(")\n");
+}
+
+fn write_fixed_text_default_par_settings(
+    out: &mut String,
+    style: &ParagraphStyle,
+    runs: &[Run],
+    indent: &str,
+) {
+    if style.line_spacing.is_some() {
+        return;
+    }
+
+    let Some(leading_pt) = fixed_text_default_leading_pt(runs) else {
+        return;
+    };
+
+    out.push_str(indent);
+    let _ = writeln!(out, "#set par(leading: {}pt)", format_f64(leading_pt));
+}
+
+fn common_text_style(runs: &[Run]) -> Option<TextStyle> {
+    let mut visible_runs = runs
+        .iter()
+        .filter(|run| run.footnote.is_none() && !run.text.is_empty());
+    let first_style: TextStyle = visible_runs.next()?.style.clone();
+    let common_style: TextStyle = visible_runs.fold(first_style, |common, run| {
+        intersect_text_style(&common, &run.style)
+    });
+
+    has_text_properties(&common_style).then_some(common_style)
+}
+
+fn fixed_text_default_leading_pt(runs: &[Run]) -> Option<f64> {
+    let font_size_pt: Option<f64> = common_text_style(runs)
+        .and_then(|style| style.font_size)
+        .or_else(|| {
+            runs.iter()
+                .filter_map(|run| run.style.font_size)
+                .max_by(f64::total_cmp)
+        });
+    font_size_pt.map(|size| size * 0.65)
+}
+
+fn intersect_text_style(left: &TextStyle, right: &TextStyle) -> TextStyle {
+    TextStyle {
+        font_family: (left.font_family == right.font_family)
+            .then(|| left.font_family.clone())
+            .flatten(),
+        font_size: (left.font_size == right.font_size)
+            .then_some(left.font_size)
+            .flatten(),
+        bold: (left.bold == right.bold).then_some(left.bold).flatten(),
+        italic: (left.italic == right.italic)
+            .then_some(left.italic)
+            .flatten(),
+        color: (left.color == right.color).then_some(left.color).flatten(),
+        letter_spacing: (left.letter_spacing == right.letter_spacing)
+            .then_some(left.letter_spacing)
+            .flatten(),
+        ..TextStyle::default()
     }
 }
 
@@ -1625,6 +1844,18 @@ fn prepend_marker_run(runs: &[Run], marker_text: String) -> Vec<Run> {
     });
     combined_runs.extend_from_slice(runs);
     combined_runs
+}
+
+fn prepend_fixed_text_list_marker_run(
+    style: &ParagraphStyle,
+    runs: &[Run],
+    marker_text: String,
+) -> Vec<Run> {
+    if fixed_text_list_hanging_indent_pt(style).is_some() {
+        return prepend_marker_run(runs, format!("{marker_text}\t"));
+    }
+
+    prepend_marker_run(runs, marker_text)
 }
 
 fn first_visible_char_is_whitespace(runs: &[Run]) -> bool {
@@ -2086,7 +2317,7 @@ fn generate_cell_content(
             Block::FloatingTextBox(ftb) => generate_floating_text_box(out, ftb, ctx)?,
             Block::List(list) => {
                 if can_render_fixed_text_list_inline(list) {
-                    generate_fixed_text_list(out, list, false)?;
+                    generate_fixed_text_list(out, list, false, None)?;
                 } else {
                     generate_list(out, list)?;
                 }
@@ -2255,7 +2486,7 @@ fn generate_floating_text_box_content(
         if index > 0 {
             out.push('\n');
         }
-        generate_fixed_text_box_block(out, block, ctx)?;
+        generate_fixed_text_box_block(out, block, ctx, Some(ftb.width))?;
     }
     out.push_str("]\n");
     Ok(())
@@ -2265,13 +2496,59 @@ fn generate_fixed_text_box_block(
     out: &mut String,
     block: &Block,
     ctx: &mut GenCtx,
+    available_width_pt: Option<f64>,
 ) -> Result<(), ConvertError> {
     match block {
         Block::List(list) if can_render_fixed_text_list_inline(list) => {
-            generate_fixed_text_list(out, list, true)
+            generate_fixed_text_list(out, list, true, available_width_pt)
         }
+        Block::Paragraph(para) => generate_fixed_text_paragraph(out, para),
         _ => generate_block(out, block, ctx),
     }
+}
+
+fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
+    let style: &ParagraphStyle = &para.style;
+    let needs_text_scope: bool = common_text_style(&para.runs).is_some();
+    let has_para_style: bool = needs_block_wrapper(style) || needs_text_scope;
+
+    if has_para_style {
+        out.push_str("#block(");
+        write_block_params(out, style);
+        out.push_str(")[\n");
+        write_par_settings(out, style);
+        write_common_text_settings(out, &para.runs, "  ");
+        write_fixed_text_default_par_settings(out, style, &para.runs, "  ");
+    }
+
+    let alignment = style.alignment;
+    let use_align = matches!(
+        alignment,
+        Some(Alignment::Center) | Some(Alignment::Right) | Some(Alignment::Left)
+    );
+
+    if use_align {
+        let align_str = match alignment {
+            Some(Alignment::Left) => "left",
+            Some(Alignment::Center) => "center",
+            Some(Alignment::Right) => "right",
+            _ => "left",
+        };
+        let _ = write!(out, "#align({align_str})[");
+    }
+
+    generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
+
+    if use_align {
+        out.push(']');
+    }
+
+    if has_para_style {
+        out.push_str("\n]");
+    }
+
+    out.push('\n');
+    Ok(())
 }
 
 fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
@@ -2368,6 +2645,7 @@ fn write_par_settings(out: &mut String, style: &ParagraphStyle) {
 
 /// Word's default tab stop interval (0.5 inch = 36pt).
 const DEFAULT_TAB_WIDTH_PT: f64 = 36.0;
+const PPTX_SOFT_LINE_BREAK_CHAR: char = '\u{000B}';
 
 fn generate_runs_with_tabs(out: &mut String, runs: &[Run], tab_stops: Option<&[TabStop]>) {
     if !paragraph_contains_tabs(runs) {
@@ -2686,8 +2964,37 @@ fn generate_run(out: &mut String, run: &Run) {
         return;
     }
 
+    if run.text.contains(PPTX_SOFT_LINE_BREAK_CHAR) {
+        write_run_with_soft_line_breaks(out, run);
+        return;
+    }
+
+    write_run_segment(out, run, &run.text);
+}
+
+fn write_run_with_soft_line_breaks(out: &mut String, run: &Run) {
+    let mut segment_start: usize = 0;
+
+    for (offset, ch) in run.text.char_indices() {
+        if ch != PPTX_SOFT_LINE_BREAK_CHAR {
+            continue;
+        }
+
+        if segment_start < offset {
+            write_run_segment(out, run, &run.text[segment_start..offset]);
+        }
+        out.push_str("#linebreak()");
+        segment_start = offset + ch.len_utf8();
+    }
+
+    if segment_start < run.text.len() {
+        write_run_segment(out, run, &run.text[segment_start..]);
+    }
+}
+
+fn write_run_segment(out: &mut String, run: &Run, text: &str) {
     let style = &run.style;
-    let escaped = escape_typst(&run.text);
+    let escaped = escape_typst(text);
 
     let has_text_props = has_text_properties(style);
     let needs_underline = matches!(style.underline, Some(true));
@@ -2701,7 +3008,7 @@ fn generate_run(out: &mut String, run: &Run) {
 
     // Apply all-caps text transformation before escaping
     let escaped: String = if needs_all_caps {
-        escape_typst(&run.text.to_uppercase())
+        escape_typst(&text.to_uppercase())
     } else {
         escaped
     };
@@ -5174,13 +5481,286 @@ mod tests {
             output.source
         );
         assert!(
-            output.source.contains("#stack(dir: ttb, spacing: 12pt"),
-            "Expected stack spacing derived from font size and PPT line spacing in: {}",
+            output.source.contains("#v(12pt)"),
+            "Expected item spacing derived from font size and PPT line spacing in: {}",
             output.source
         );
         assert!(
             output.source.contains("#set par(leading: 12pt)"),
             "Expected paragraph leading derived from font size and PPT line spacing in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_text_box_compact_list_items_use_full_width_blocks() {
+        use crate::ir::List;
+
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 100.0,
+                y: 200.0,
+                width: 320.0,
+                height: 140.0,
+                kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                    content: vec![Block::List(List {
+                        kind: ListKind::Ordered,
+                        items: vec![
+                            ListItem {
+                                content: vec![Paragraph {
+                                    style: ParagraphStyle::default(),
+                                    runs: vec![Run {
+                                        text: "Long first item that should wrap inside the fixed text box width".to_string(),
+                                        style: TextStyle {
+                                            font_size: Some(20.0),
+                                            ..TextStyle::default()
+                                        },
+                                        href: None,
+                                        footnote: None,
+                                    }],
+                                }],
+                                level: 0,
+                                start_at: Some(1),
+                            },
+                            ListItem {
+                                content: vec![Paragraph {
+                                    style: ParagraphStyle::default(),
+                                    runs: vec![Run {
+                                        text: "Long second item that should also wrap inside the fixed text box width".to_string(),
+                                        style: TextStyle {
+                                            font_size: Some(20.0),
+                                            ..TextStyle::default()
+                                        },
+                                        href: None,
+                                        footnote: None,
+                                    }],
+                                }],
+                                level: 0,
+                                start_at: None,
+                            },
+                        ],
+                        level_styles: BTreeMap::from([(
+                            0,
+                            ListLevelStyle {
+                                kind: ListKind::Ordered,
+                                numbering_pattern: Some("1)".to_string()),
+                                full_numbering: false,
+                            },
+                        )]),
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert_eq!(
+            output.source.matches("#block(width: 320pt)[").count(),
+            2,
+            "Compact fixed-text list items should use the fixed text box width so stack measurement accounts for wrapping: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_text_box_compact_list_preserves_hanging_indent() {
+        use crate::ir::List;
+
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 100.0,
+                y: 200.0,
+                width: 320.0,
+                height: 140.0,
+                kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                    content: vec![Block::List(List {
+                        kind: ListKind::Ordered,
+                        items: vec![ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle {
+                                    indent_left: Some(36.0),
+                                    indent_first_line: Some(-36.0),
+                                    ..ParagraphStyle::default()
+                                },
+                                runs: vec![Run {
+                                    text: "Long first item that should wrap under the body text instead of the number".to_string(),
+                                    style: TextStyle {
+                                        font_size: Some(20.0),
+                                        ..TextStyle::default()
+                                    },
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: Some(1),
+                        }],
+                        level_styles: BTreeMap::from([(
+                            0,
+                            ListLevelStyle {
+                                kind: ListKind::Ordered,
+                                numbering_pattern: Some("1)".to_string()),
+                                full_numbering: false,
+                            },
+                        )]),
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(
+            output.source.contains("hanging-indent: 36pt"),
+            "Expected hanging-indent derived from PPT hanging indent in: {}",
+            output.source
+        );
+        assert!(
+            output
+                .source
+                .contains("tab_advance_1 = if tab_prefix_width_1 < 36pt"),
+            "Expected fixed text list item to route marker/body separation through Typst tab-stop layout in: {}",
+            output.source
+        );
+        assert!(
+            !output.source.contains("first-line-indent"),
+            "Expected fixed text list item to avoid first-line-indent workaround in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_text_box_compact_list_preserves_marker_origin_offset() {
+        use crate::ir::List;
+
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 100.0,
+                y: 200.0,
+                width: 320.0,
+                height: 140.0,
+                kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                    content: vec![Block::List(List {
+                        kind: ListKind::Ordered,
+                        items: vec![ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle {
+                                    indent_left: Some(54.0),
+                                    indent_first_line: Some(-36.0),
+                                    ..ParagraphStyle::default()
+                                },
+                                runs: vec![Run {
+                                    text: "Marker origin should stay inset while wrapped lines align to the text column"
+                                        .to_string(),
+                                    style: TextStyle {
+                                        font_size: Some(20.0),
+                                        ..TextStyle::default()
+                                    },
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: Some(1),
+                        }],
+                        level_styles: BTreeMap::from([(
+                            0,
+                            ListLevelStyle {
+                                kind: ListKind::Ordered,
+                                numbering_pattern: Some("1)".to_string()),
+                                full_numbering: false,
+                            },
+                        )]),
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(
+            output
+                .source
+                .contains("inset: (top: 0pt, right: 0pt, bottom: 0pt, left: 18pt)"),
+            "Expected fixed text list item inset to preserve positive marker origin offset in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("hanging-indent: 36pt"),
+            "Expected wrapped lines to stay aligned to the text column width in: {}",
+            output.source
+        );
+    }
+
+    #[test]
+    fn test_fixed_page_text_box_compact_list_preserves_soft_line_breaks() {
+        use crate::ir::List;
+
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 100.0,
+                y: 200.0,
+                width: 320.0,
+                height: 140.0,
+                kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                    content: vec![Block::List(List {
+                        kind: ListKind::Ordered,
+                        items: vec![ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "Line 1\u{000B}Line 2".to_string(),
+                                    style: TextStyle {
+                                        font_size: Some(20.0),
+                                        ..TextStyle::default()
+                                    },
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: Some(1),
+                        }],
+                        level_styles: BTreeMap::from([(
+                            0,
+                            ListLevelStyle {
+                                kind: ListKind::Ordered,
+                                numbering_pattern: Some("1)".to_string()),
+                                full_numbering: false,
+                            },
+                        )]),
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(
+            output.source.contains("#linebreak()"),
+            "Expected soft line break inside fixed text list item in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#set text(size: 20pt"),
+            "Expected fixed text list item to set ambient text size for line metrics in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("leading: 13pt"),
+            "Expected fixed text list item to set explicit leading from font size in: {}",
             output.source
         );
     }
