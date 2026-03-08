@@ -1350,6 +1350,8 @@ struct EffectiveListStyle<'a> {
     kind: ListKind,
     numbering_pattern: Option<&'a str>,
     full_numbering: bool,
+    marker_text: Option<&'a str>,
+    marker_style: Option<&'a TextStyle>,
 }
 
 fn list_style_for_level<'a>(list: &'a List, level: u32) -> EffectiveListStyle<'a> {
@@ -1358,12 +1360,16 @@ fn list_style_for_level<'a>(list: &'a List, level: u32) -> EffectiveListStyle<'a
             kind: style.kind,
             numbering_pattern: style.numbering_pattern.as_deref(),
             full_numbering: style.full_numbering,
+            marker_text: style.marker_text.as_deref(),
+            marker_style: style.marker_style.as_ref(),
         }
     } else {
         EffectiveListStyle {
             kind: list.kind,
             numbering_pattern: None,
             full_numbering: false,
+            marker_text: None,
+            marker_style: None,
         }
     }
 }
@@ -1385,7 +1391,10 @@ fn write_list_open(
     let _ = write!(out, "{prefix}{func}(");
 
     if style.kind == ListKind::Ordered {
-        if let Some(numbering_pattern) = style.numbering_pattern {
+        if style.marker_style.is_some_and(has_text_properties) {
+            write_ordered_list_numbering_function(out, style);
+            out.push_str(", ");
+        } else if let Some(numbering_pattern) = style.numbering_pattern {
             let _ = write!(
                 out,
                 "numbering: \"{}\", ",
@@ -1398,16 +1407,65 @@ fn write_list_open(
         if style.full_numbering {
             out.push_str("full: true, ");
         }
+    } else if style.marker_text.is_some() || style.marker_style.is_some() {
+        out.push_str("marker: [");
+        write_unordered_list_marker_content(out, style);
+        out.push_str("], ");
     }
 
     out.push('\n');
 }
 
+fn write_ordered_list_numbering_function(out: &mut String, style: &EffectiveListStyle<'_>) {
+    let pattern: &str = style.numbering_pattern.unwrap_or("1.");
+    out.push_str("numbering: nums => [");
+    if let Some(marker_style) = style
+        .marker_style
+        .filter(|style| has_text_properties(style))
+    {
+        out.push_str("#text(");
+        write_text_params(out, marker_style);
+        out.push_str(")[");
+    }
+    let _ = write!(
+        out,
+        "#numbering(\"{}\", ..nums)",
+        escape_typst_string(pattern)
+    );
+    if style.marker_style.is_some_and(has_text_properties) {
+        out.push(']');
+    }
+    out.push(']');
+}
+
+fn write_unordered_list_marker_content(out: &mut String, style: &EffectiveListStyle<'_>) {
+    let (marker_text, marker_style) =
+        renderable_unordered_marker(style.marker_text.unwrap_or("•"), style.marker_style);
+    if let Some(marker_style) = marker_style
+        .as_ref()
+        .filter(|style| has_text_properties(style))
+    {
+        out.push_str("#text(");
+        write_text_params(out, marker_style);
+        out.push_str(")[");
+        out.push_str(&escape_typst(&marker_text));
+        out.push(']');
+        return;
+    }
+
+    out.push_str(&escape_typst(&marker_text));
+}
+
+fn list_root_level(list: &List) -> u32 {
+    list.items.first().map(|item| item.level).unwrap_or(0)
+}
+
 fn generate_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
-    let style = list_style_for_level(list, 0);
+    let root_level: u32 = list_root_level(list);
+    let style = list_style_for_level(list, root_level);
     let start_at = list.items.first().and_then(|item| item.start_at);
     write_list_open(out, "#", &style, start_at);
-    generate_list_items(out, list, &list.items, 0)?;
+    generate_list_items(out, list, &list.items, root_level)?;
     out.push_str(")\n");
     Ok(())
 }
@@ -1416,13 +1474,18 @@ fn can_render_fixed_text_list_inline(list: &List) -> bool {
     let Some(first_item) = list.items.first() else {
         return false;
     };
-    if first_item.level != 0 || first_item.content.len() != 1 {
+    let root_level: u32 = first_item.level;
+    let root_style: EffectiveListStyle<'_> = list_style_for_level(list, root_level);
+    if list.kind == ListKind::Unordered && root_style.marker_text == Some("-") {
+        return false;
+    }
+    if first_item.content.len() != 1 {
         return false;
     }
 
     let first_style: &ParagraphStyle = &first_item.content[0].style;
     list.items.iter().all(|item| {
-        item.level == 0
+        item.level == root_level
             && item.content.len() == 1
             && paragraph_styles_match(&item.content[0].style, first_style)
     })
@@ -1483,7 +1546,8 @@ fn generate_fixed_text_list(
 ) -> Result<(), ConvertError> {
     let paragraph: &Paragraph = &list.items[0].content[0];
     let style: &ParagraphStyle = &paragraph.style;
-    let effective_style: EffectiveListStyle<'_> = list_style_for_level(list, 0);
+    let root_level: u32 = list_root_level(list);
+    let effective_style: EffectiveListStyle<'_> = list_style_for_level(list, root_level);
     let has_para_style: bool = needs_block_wrapper(style);
     let line_gap_pt: Option<f64> = fixed_text_list_line_gap_pt(style, list);
 
@@ -1521,6 +1585,7 @@ fn generate_fixed_text_list(
             );
             let runs: Vec<Run> = prepend_fixed_text_list_marker_run(
                 &item_paragraph.style,
+                &effective_style,
                 &item_paragraph.runs,
                 marker_text,
             );
@@ -1555,6 +1620,7 @@ fn generate_fixed_text_list(
             );
             let runs: Vec<Run> = prepend_fixed_text_list_marker_run(
                 &item_paragraph.style,
+                &effective_style,
                 &item_paragraph.runs,
                 marker_text,
             );
@@ -1821,7 +1887,11 @@ fn fixed_text_list_marker(
 ) -> String {
     let marker: String = match kind {
         ListKind::Ordered => ordered_marker(style.numbering_pattern.unwrap_or("1."), number),
-        ListKind::Unordered => "•".to_string(),
+        ListKind::Unordered => {
+            let (marker_text, _) =
+                renderable_unordered_marker(style.marker_text.unwrap_or("•"), style.marker_style);
+            marker_text
+        }
     };
     if first_visible_char_is_whitespace(runs) {
         marker
@@ -1830,10 +1900,14 @@ fn fixed_text_list_marker(
     }
 }
 
-fn prepend_marker_run(runs: &[Run], marker_text: String) -> Vec<Run> {
-    let marker_style: TextStyle = runs
-        .first()
-        .map(|run| run.style.clone())
+fn prepend_marker_run(
+    runs: &[Run],
+    marker_text: String,
+    marker_style: Option<&TextStyle>,
+) -> Vec<Run> {
+    let marker_style: TextStyle = marker_style
+        .cloned()
+        .or_else(|| runs.first().map(|run| run.style.clone()))
         .unwrap_or_default();
     let mut combined_runs: Vec<Run> = Vec::with_capacity(runs.len() + 1);
     combined_runs.push(Run {
@@ -1848,14 +1922,28 @@ fn prepend_marker_run(runs: &[Run], marker_text: String) -> Vec<Run> {
 
 fn prepend_fixed_text_list_marker_run(
     style: &ParagraphStyle,
+    list_style: &EffectiveListStyle<'_>,
     runs: &[Run],
     marker_text: String,
 ) -> Vec<Run> {
+    let normalized_marker_style: Option<TextStyle> = if list_style.kind == ListKind::Unordered {
+        renderable_unordered_marker(
+            list_style.marker_text.unwrap_or("•"),
+            list_style.marker_style,
+        )
+        .1
+    } else {
+        list_style.marker_style.cloned()
+    };
     if fixed_text_list_hanging_indent_pt(style).is_some() {
-        return prepend_marker_run(runs, format!("{marker_text}\t"));
+        return prepend_marker_run(
+            runs,
+            format!("{marker_text}\t"),
+            normalized_marker_style.as_ref(),
+        );
     }
 
-    prepend_marker_run(runs, marker_text)
+    prepend_marker_run(runs, marker_text, normalized_marker_style.as_ref())
 }
 
 fn first_visible_char_is_whitespace(runs: &[Run]) -> bool {
@@ -1881,6 +1969,55 @@ fn ordered_marker(pattern: &str, number: u32) -> String {
         return pattern.replacen('I', &roman_marker(number, true), 1);
     }
     format!("{number}.")
+}
+
+fn renderable_unordered_marker(
+    marker_text: &str,
+    marker_style: Option<&TextStyle>,
+) -> (String, Option<TextStyle>) {
+    let mut normalized_text: String = marker_text.to_string();
+    let mut normalized_style: Option<TextStyle> = marker_style.cloned();
+
+    if let Some(font_family) = marker_style.and_then(|style| style.font_family.as_deref())
+        && let Some(mapped_text) = map_symbol_font_marker(font_family, marker_text)
+    {
+        normalized_text = mapped_text.to_string();
+        if let Some(style) = normalized_style.as_mut() {
+            style.font_family = None;
+        }
+        if normalized_style
+            .as_ref()
+            .is_some_and(|style| !has_text_properties(style))
+        {
+            normalized_style = None;
+        }
+    }
+
+    (normalized_text, normalized_style)
+}
+
+fn map_symbol_font_marker(font_family: &str, marker_text: &str) -> Option<&'static str> {
+    let mut chars = marker_text.chars();
+    let marker_char = chars.next()?;
+    if chars.next().is_some() {
+        return None;
+    }
+
+    let normalized_family: String = font_family
+        .chars()
+        .filter(|character| !character.is_whitespace() && *character != '-')
+        .flat_map(char::to_lowercase)
+        .collect();
+
+    match (normalized_family.as_str(), marker_char) {
+        ("wingdings", '\u{00D8}') => Some("➢"),
+        ("wingdings", '\u{00E8}') => Some("➔"),
+        ("wingdings", '\u{00FB}') => Some("✖"),
+        ("wingdings", '\u{00FC}') => Some("✔"),
+        ("wingdings", '\u{00FD}') => Some("☒"),
+        ("wingdings", '\u{00FE}') => Some("☑"),
+        _ => None,
+    }
 }
 
 fn alpha_marker(mut number: u32, uppercase: bool) -> String {
@@ -3199,16 +3336,32 @@ fn format_f64(v: f64) -> String {
 /// Also normalizes text to Unicode NFC form to prevent decomposed characters
 /// (e.g., Korean NFD jamo, combining diacritics) from causing issues in PDFs.
 fn escape_typst(text: &str) -> String {
-    let mut result = String::with_capacity(text.len());
-    for ch in text.nfc() {
+    let normalized_text: String = text.nfc().collect();
+    let mut result = String::with_capacity(normalized_text.len());
+    let mut chars = normalized_text.chars().peekable();
+    let mut is_first_char = true;
+
+    while let Some(ch) = chars.next() {
+        let should_escape_list_prefix: bool = is_first_char
+            && matches!(ch, '-' | '+')
+            && chars.peek().is_some_and(|next| next.is_whitespace());
+
         match ch {
             '#' | '*' | '_' | '`' | '<' | '>' | '@' | '\\' | '~' | '/' | '$' | '[' | ']' | '{'
-            | '}' => {
+            | '}'
+                if !should_escape_list_prefix =>
+            {
+                result.push('\\');
+                result.push(ch);
+            }
+            _ if should_escape_list_prefix => {
                 result.push('\\');
                 result.push(ch);
             }
             _ => result.push(ch),
         }
+
+        is_first_char = false;
     }
     result
 }
@@ -5447,6 +5600,8 @@ mod tests {
                                 kind: ListKind::Ordered,
                                 numbering_pattern: Some("1.".to_string()),
                                 full_numbering: false,
+                                marker_text: None,
+                                marker_style: None,
                             },
                         )]),
                     })],
@@ -5547,6 +5702,8 @@ mod tests {
                                 kind: ListKind::Ordered,
                                 numbering_pattern: Some("1)".to_string()),
                                 full_numbering: false,
+                                marker_text: None,
+                                marker_style: None,
                             },
                         )]),
                     })],
@@ -5606,6 +5763,8 @@ mod tests {
                                 kind: ListKind::Ordered,
                                 numbering_pattern: Some("1)".to_string()),
                                 full_numbering: false,
+                                marker_text: None,
+                                marker_style: None,
                             },
                         )]),
                     })],
@@ -5677,6 +5836,8 @@ mod tests {
                                 kind: ListKind::Ordered,
                                 numbering_pattern: Some("1)".to_string()),
                                 full_numbering: false,
+                                marker_text: None,
+                                marker_style: None,
                             },
                         )]),
                     })],
@@ -5699,6 +5860,160 @@ mod tests {
             "Expected wrapped lines to stay aligned to the text column width in: {}",
             output.source
         );
+    }
+
+    #[test]
+    fn test_fixed_page_text_box_compact_bulleted_list_uses_custom_marker_style() {
+        use crate::ir::List;
+
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 100.0,
+                y: 200.0,
+                width: 320.0,
+                height: 140.0,
+                kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                    content: vec![Block::List(List {
+                        kind: ListKind::Unordered,
+                        items: vec![ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle {
+                                    indent_left: Some(22.5),
+                                    indent_first_line: Some(-22.5),
+                                    ..ParagraphStyle::default()
+                                },
+                                runs: vec![Run {
+                                    text: "Symbol bullet".to_string(),
+                                    style: TextStyle {
+                                        font_family: Some("Pretendard".to_string()),
+                                        font_size: Some(14.0),
+                                        ..TextStyle::default()
+                                    },
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: None,
+                        }],
+                        level_styles: BTreeMap::from([(
+                            0,
+                            ListLevelStyle {
+                                kind: ListKind::Unordered,
+                                numbering_pattern: None,
+                                full_numbering: false,
+                                marker_text: Some("è".to_string()),
+                                marker_style: Some(TextStyle {
+                                    font_family: Some("Wingdings".to_string()),
+                                    font_size: Some(14.0),
+                                    ..TextStyle::default()
+                                }),
+                            },
+                        )]),
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(!output.source.contains("Wingdings"));
+        assert!(output.source.contains("➔"));
+        assert!(output.source.contains("tab_advance_1"));
+        assert!(output.source.contains("Symbol bullet"));
+    }
+
+    #[test]
+    fn test_escape_typst_escapes_leading_dash_list_prefix() {
+        assert_eq!(escape_typst("- bullet"), "\\- bullet");
+    }
+
+    #[test]
+    fn test_fixed_page_text_box_dash_bullets_use_generic_list_path() {
+        use crate::ir::List;
+
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 100.0,
+                y: 200.0,
+                width: 320.0,
+                height: 140.0,
+                kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                    content: vec![Block::List(List {
+                        kind: ListKind::Unordered,
+                        items: vec![
+                            ListItem {
+                                content: vec![Paragraph {
+                                    style: ParagraphStyle {
+                                        indent_left: Some(22.5),
+                                        indent_first_line: Some(-22.5),
+                                        ..ParagraphStyle::default()
+                                    },
+                                    runs: vec![Run {
+                                        text: "First dash bullet".to_string(),
+                                        style: TextStyle {
+                                            font_family: Some("Pretendard".to_string()),
+                                            font_size: Some(14.0),
+                                            ..TextStyle::default()
+                                        },
+                                        href: None,
+                                        footnote: None,
+                                    }],
+                                }],
+                                level: 0,
+                                start_at: None,
+                            },
+                            ListItem {
+                                content: vec![Paragraph {
+                                    style: ParagraphStyle {
+                                        indent_left: Some(22.5),
+                                        indent_first_line: Some(-22.5),
+                                        ..ParagraphStyle::default()
+                                    },
+                                    runs: vec![Run {
+                                        text: "Second dash bullet".to_string(),
+                                        style: TextStyle {
+                                            font_family: Some("Pretendard".to_string()),
+                                            font_size: Some(14.0),
+                                            ..TextStyle::default()
+                                        },
+                                        href: None,
+                                        footnote: None,
+                                    }],
+                                }],
+                                level: 0,
+                                start_at: None,
+                            },
+                        ],
+                        level_styles: BTreeMap::from([(
+                            0,
+                            ListLevelStyle {
+                                kind: ListKind::Unordered,
+                                numbering_pattern: None,
+                                full_numbering: false,
+                                marker_text: Some("-".to_string()),
+                                marker_style: Some(TextStyle {
+                                    font_family: Some("Pretendard".to_string()),
+                                    font_size: Some(14.0),
+                                    ..TextStyle::default()
+                                }),
+                            },
+                        )]),
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                }),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(output.source.contains("#list(marker: ["));
+        assert!(!output.source.contains("tab_advance_1"));
     }
 
     #[test]
@@ -5738,6 +6053,8 @@ mod tests {
                                 kind: ListKind::Ordered,
                                 numbering_pattern: Some("1)".to_string()),
                                 full_numbering: false,
+                                marker_text: None,
+                                marker_style: None,
                             },
                         )]),
                     })],
@@ -6542,6 +6859,8 @@ mod tests {
                     kind: ListKind::Ordered,
                     numbering_pattern: Some("1.".to_string()),
                     full_numbering: false,
+                    marker_text: None,
+                    marker_style: None,
                 },
             )]),
         };
@@ -6618,6 +6937,8 @@ mod tests {
                         kind: ListKind::Ordered,
                         numbering_pattern: Some("1.".to_string()),
                         full_numbering: false,
+                        marker_text: None,
+                        marker_style: None,
                     },
                 ),
                 (
@@ -6626,6 +6947,8 @@ mod tests {
                         kind: ListKind::Unordered,
                         numbering_pattern: None,
                         full_numbering: false,
+                        marker_text: None,
+                        marker_style: None,
                     },
                 ),
             ]),
@@ -6752,6 +7075,8 @@ mod tests {
                         kind: ListKind::Ordered,
                         numbering_pattern: Some("1.".to_string()),
                         full_numbering: false,
+                        marker_text: None,
+                        marker_style: None,
                     },
                 ),
                 (
@@ -6760,6 +7085,8 @@ mod tests {
                         kind: ListKind::Ordered,
                         numbering_pattern: Some("1.a.".to_string()),
                         full_numbering: true,
+                        marker_text: None,
+                        marker_style: None,
                     },
                 ),
             ]),
@@ -6769,6 +7096,200 @@ mod tests {
 
         assert!(output.source.contains("full: true"));
         assert!(output.source.contains("numbering: \"1.a.\""));
+    }
+
+    #[test]
+    fn test_generate_bulleted_list_with_custom_marker_text_and_style() {
+        use crate::ir::List;
+
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Dash marker".to_string(),
+                        style: TextStyle {
+                            font_family: Some("Pretendard".to_string()),
+                            font_size: Some(14.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                }],
+                level: 0,
+                start_at: None,
+            }],
+            level_styles: BTreeMap::from([(
+                0,
+                ListLevelStyle {
+                    kind: ListKind::Unordered,
+                    numbering_pattern: None,
+                    full_numbering: false,
+                    marker_text: Some("-".to_string()),
+                    marker_style: Some(TextStyle {
+                        font_family: Some("Pretendard".to_string()),
+                        font_size: Some(14.0),
+                        color: Some(Color::new(0x11, 0x22, 0x33)),
+                        ..TextStyle::default()
+                    }),
+                },
+            )]),
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::List(list)])]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(output.source.contains("#list("));
+        assert!(output.source.contains("marker: [#text("));
+        assert!(output.source.contains("Pretendard"));
+        assert!(output.source.contains("fill: rgb(17, 34, 51)"));
+        assert!(output.source.contains("Dash marker"));
+    }
+
+    #[test]
+    fn test_generate_ordered_list_with_custom_marker_style_uses_numbering_function() {
+        use crate::ir::List;
+
+        let list = List {
+            kind: ListKind::Ordered,
+            items: vec![ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Ordered marker".to_string(),
+                        style: TextStyle {
+                            font_size: Some(20.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                }],
+                level: 0,
+                start_at: Some(1),
+            }],
+            level_styles: BTreeMap::from([(
+                0,
+                ListLevelStyle {
+                    kind: ListKind::Ordered,
+                    numbering_pattern: Some("1)".to_string()),
+                    full_numbering: false,
+                    marker_text: None,
+                    marker_style: Some(TextStyle {
+                        font_family: Some("Pretendard Medium".to_string()),
+                        font_size: Some(20.0),
+                        color: Some(Color::black()),
+                        ..TextStyle::default()
+                    }),
+                },
+            )]),
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::List(list)])]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(output.source.contains("#enum("));
+        assert!(output.source.contains("numbering: nums => ["));
+        assert!(output.source.contains("#numbering(\"1)\", ..nums)"));
+        assert!(output.source.contains("Pretendard Medium"));
+    }
+
+    #[test]
+    fn test_generate_bulleted_list_with_symbol_font_marker_uses_unicode_fallback() {
+        use crate::ir::List;
+
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Arrow bullet".to_string(),
+                        style: TextStyle {
+                            font_family: Some("Pretendard".to_string()),
+                            font_size: Some(14.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                }],
+                level: 0,
+                start_at: None,
+            }],
+            level_styles: BTreeMap::from([(
+                0,
+                ListLevelStyle {
+                    kind: ListKind::Unordered,
+                    numbering_pattern: None,
+                    full_numbering: false,
+                    marker_text: Some("è".to_string()),
+                    marker_style: Some(TextStyle {
+                        font_family: Some("Wingdings".to_string()),
+                        font_size: Some(14.0),
+                        color: Some(Color::black()),
+                        ..TextStyle::default()
+                    }),
+                },
+            )]),
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::List(list)])]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(output.source.contains("➔"));
+        assert!(!output.source.contains("Wingdings"));
+        assert!(output.source.contains("fill: rgb(0, 0, 0)"));
+    }
+
+    #[test]
+    fn test_generate_list_uses_first_item_level_marker_when_list_starts_nested() {
+        use crate::ir::List;
+
+        let list = List {
+            kind: ListKind::Unordered,
+            items: vec![ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Nested arrow bullet".to_string(),
+                        style: TextStyle {
+                            font_family: Some("Pretendard".to_string()),
+                            font_size: Some(14.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                }],
+                level: 1,
+                start_at: None,
+            }],
+            level_styles: BTreeMap::from([(
+                1,
+                ListLevelStyle {
+                    kind: ListKind::Unordered,
+                    numbering_pattern: None,
+                    full_numbering: false,
+                    marker_text: Some("è".to_string()),
+                    marker_style: Some(TextStyle {
+                        font_family: Some("Wingdings".to_string()),
+                        font_size: Some(14.0),
+                        color: Some(Color::black()),
+                        ..TextStyle::default()
+                    }),
+                },
+            )]),
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::List(list)])]);
+        let output = generate_typst(&doc).unwrap();
+
+        assert!(output.source.contains("➔"));
+        assert!(!output.source.contains("marker: [#text(font: \"Wingdings\""));
+        assert!(
+            !output.source.contains(
+                "marker: [#text(font: \"맑은 고딕\", size: 14pt, fill: rgb(0, 0, 0))[-]]"
+            )
+        );
     }
 
     // ----- US-020: Header/footer codegen tests -----
@@ -9011,7 +9532,7 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_typst_preserves_metric_font_order_when_context_present() {
+    fn test_generate_typst_prefers_office_font_order_when_context_present() {
         let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
             style: ParagraphStyle::default(),
             runs: vec![Run {
@@ -9047,8 +9568,8 @@ mod tests {
             .find("\"Malgun Gothic\"")
             .expect("Malgun Gothic should appear in Typst output");
         assert!(
-            apple_index < malgun_index,
-            "Metric-compatible ordering should win over office source rank: {}",
+            malgun_index < apple_index,
+            "Office-resolved font ordering should win in Typst output: {}",
             output.source
         );
     }
