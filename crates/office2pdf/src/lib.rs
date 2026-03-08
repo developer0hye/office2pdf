@@ -2135,18 +2135,22 @@ mod tests {
                     y: 50.0,
                     width: 620.0,
                     height: 80.0,
-                    kind: FixedElementKind::TextBox(vec![Block::Paragraph(Paragraph {
-                        style: ParagraphStyle::default(),
-                        runs: vec![Run {
-                            text: format!("Slide {i} content"),
-                            style: TextStyle {
-                                font_size: Some(32.0),
-                                ..TextStyle::default()
-                            },
-                            href: None,
-                            footnote: None,
-                        }],
-                    })]),
+                    kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: format!("Slide {i} content"),
+                                style: TextStyle {
+                                    font_size: Some(32.0),
+                                    ..TextStyle::default()
+                                },
+                                href: None,
+                                footnote: None,
+                            }],
+                        })],
+                        padding: crate::ir::Insets::default(),
+                        vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                    }),
                 }],
             }));
         }
@@ -2161,6 +2165,55 @@ mod tests {
             "5-slide FixedPage PDF should be under 500KB, actual: {} bytes ({:.1} KB)",
             pdf.len(),
             pdf.len() as f64 / 1024.0
+        );
+    }
+
+    #[test]
+    fn test_render_document_with_centered_fixed_text_box() {
+        let doc = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Fixed(FixedPage {
+                size: PageSize {
+                    width: 300.0,
+                    height: 200.0,
+                },
+                background_color: None,
+                background_gradient: None,
+                elements: vec![FixedElement {
+                    x: 20.0,
+                    y: 20.0,
+                    width: 200.0,
+                    height: 60.0,
+                    kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                        content: vec![Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "Centered badge".to_string(),
+                                style: TextStyle {
+                                    font_size: Some(18.0),
+                                    ..TextStyle::default()
+                                },
+                                href: None,
+                                footnote: None,
+                            }],
+                        })],
+                        padding: crate::ir::Insets {
+                            top: 3.6,
+                            right: 7.2,
+                            bottom: 3.6,
+                            left: 7.2,
+                        },
+                        vertical_align: crate::ir::TextBoxVerticalAlign::Center,
+                    }),
+                }],
+            })],
+            styles: StyleSheet::default(),
+        };
+
+        let pdf = render_document(&doc).unwrap();
+        assert!(
+            pdf.starts_with(b"%PDF"),
+            "Centered fixed text box should compile to a valid PDF"
         );
     }
 

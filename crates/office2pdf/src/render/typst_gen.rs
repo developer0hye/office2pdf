@@ -12,8 +12,8 @@ use crate::ir::{
     FloatingTextBox, FlowPage, GradientFill, HFInline, HeaderFooter, ImageCrop, ImageData,
     ImageFormat, Insets, LineSpacing, List, ListKind, Margins, MathEquation, Metadata, Page,
     PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, TabAlignment,
-    TabLeader, TabStop, Table, TableCell, TablePage, TableRow, TextDirection, TextStyle,
-    VerticalTextAlign, WrapMode,
+    TabLeader, TabStop, Table, TableCell, TablePage, TableRow, TextBoxData, TextBoxVerticalAlign,
+    TextDirection, TextStyle, VerticalTextAlign, WrapMode,
 };
 
 use super::font_context::FontSearchContext;
@@ -43,6 +43,7 @@ const MAX_TABLE_DEPTH: usize = 64;
 struct GenCtx {
     images: Vec<ImageAsset>,
     next_image_id: usize,
+    next_text_box_id: usize,
     table_depth: usize,
 }
 
@@ -51,6 +52,7 @@ impl GenCtx {
         Self {
             images: Vec::new(),
             next_image_id: 0,
+            next_text_box_id: 0,
             table_depth: 0,
         }
     }
@@ -66,6 +68,12 @@ impl GenCtx {
             data,
         });
         path
+    }
+
+    fn next_text_box_id(&mut self) -> usize {
+        let id = self.next_text_box_id;
+        self.next_text_box_id += 1;
+        id
     }
 }
 
@@ -504,21 +512,7 @@ fn generate_fixed_element(
     out.push_str(")[\n");
 
     match &elem.kind {
-        FixedElementKind::TextBox(blocks) => {
-            let _ = writeln!(
-                out,
-                "#block(width: {}pt, height: {}pt)[",
-                format_f64(elem.width),
-                format_f64(elem.height),
-            );
-            for (index, block) in blocks.iter().enumerate() {
-                if index > 0 {
-                    out.push('\n');
-                }
-                generate_block(out, block, ctx)?;
-            }
-            out.push_str("]\n");
-        }
+        FixedElementKind::TextBox(text_box) => generate_fixed_text_box(out, elem, text_box, ctx)?,
         FixedElementKind::Image(img) => {
             generate_image(out, img, ctx);
         }
@@ -533,6 +527,70 @@ fn generate_fixed_element(
         }
         FixedElementKind::Chart(chart) => {
             generate_chart(out, chart);
+        }
+    }
+
+    out.push_str("]\n");
+    Ok(())
+}
+
+fn generate_fixed_text_box(
+    out: &mut String,
+    elem: &FixedElement,
+    text_box: &TextBoxData,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let outer_width_pt: f64 = elem.width.max(0.0);
+    let outer_height_pt: f64 = elem.height.max(0.0);
+    let inner_width_pt: f64 =
+        (outer_width_pt - text_box.padding.left - text_box.padding.right).max(0.0);
+    let inner_height_pt: f64 =
+        (outer_height_pt - text_box.padding.top - text_box.padding.bottom).max(0.0);
+    let text_box_id: usize = ctx.next_text_box_id();
+
+    let _ = writeln!(
+        out,
+        "#block(width: {}pt, height: {}pt, inset: {})[",
+        format_f64(outer_width_pt),
+        format_f64(outer_height_pt),
+        format_insets(&text_box.padding),
+    );
+    let _ = writeln!(
+        out,
+        "  #let text_box_content_{text_box_id} = block(width: {}pt)[",
+        format_f64(inner_width_pt),
+    );
+    for (index, block) in text_box.content.iter().enumerate() {
+        if index > 0 {
+            out.push('\n');
+        }
+        out.push_str("  ");
+        generate_fixed_text_box_block(out, block, ctx)?;
+    }
+    out.push_str("  ]\n");
+
+    match text_box.vertical_align {
+        TextBoxVerticalAlign::Top => {
+            let _ = writeln!(out, "  #text_box_content_{text_box_id}");
+        }
+        TextBoxVerticalAlign::Center | TextBoxVerticalAlign::Bottom => {
+            out.push_str("  #context {\n");
+            let _ = writeln!(
+                out,
+                "    let text_box_slack_{text_box_id} = calc.max({}pt - measure(text_box_content_{text_box_id}).height, 0pt)",
+                format_f64(inner_height_pt),
+            );
+            let spacer_expr = match text_box.vertical_align {
+                TextBoxVerticalAlign::Center => format!("text_box_slack_{text_box_id} / 2"),
+                TextBoxVerticalAlign::Bottom => format!("text_box_slack_{text_box_id}"),
+                TextBoxVerticalAlign::Top => unreachable!(),
+            };
+            let _ = writeln!(out, "    let text_box_aligned_{text_box_id} = [");
+            let _ = writeln!(out, "      #v({spacer_expr})");
+            let _ = writeln!(out, "      #text_box_content_{text_box_id}");
+            out.push_str("    ]\n");
+            let _ = writeln!(out, "    text_box_aligned_{text_box_id}");
+            out.push_str("  }\n");
         }
     }
 
@@ -1352,6 +1410,278 @@ fn generate_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
     Ok(())
 }
 
+fn can_render_fixed_text_list_inline(list: &List) -> bool {
+    let Some(first_item) = list.items.first() else {
+        return false;
+    };
+    if first_item.level != 0 || first_item.content.len() != 1 {
+        return false;
+    }
+
+    let first_style: &ParagraphStyle = &first_item.content[0].style;
+    list.items.iter().all(|item| {
+        item.level == 0
+            && item.content.len() == 1
+            && paragraph_styles_match(&item.content[0].style, first_style)
+    })
+}
+
+fn paragraph_styles_match(left: &ParagraphStyle, right: &ParagraphStyle) -> bool {
+    left.alignment == right.alignment
+        && option_f64_matches(left.indent_left, right.indent_left)
+        && option_f64_matches(left.indent_right, right.indent_right)
+        && option_f64_matches(left.indent_first_line, right.indent_first_line)
+        && line_spacing_matches(left.line_spacing, right.line_spacing)
+        && option_f64_matches(left.space_before, right.space_before)
+        && option_f64_matches(left.space_after, right.space_after)
+        && left.heading_level == right.heading_level
+        && left.direction == right.direction
+        && tab_stops_match(left.tab_stops.as_deref(), right.tab_stops.as_deref())
+}
+
+fn option_f64_matches(left: Option<f64>, right: Option<f64>) -> bool {
+    match (left, right) {
+        (Some(l), Some(r)) => (l - r).abs() < 0.0001,
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+fn line_spacing_matches(left: Option<LineSpacing>, right: Option<LineSpacing>) -> bool {
+    match (left, right) {
+        (Some(LineSpacing::Proportional(l)), Some(LineSpacing::Proportional(r))) => {
+            (l - r).abs() < 0.0001
+        }
+        (Some(LineSpacing::Exact(l)), Some(LineSpacing::Exact(r))) => (l - r).abs() < 0.0001,
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+fn tab_stops_match(left: Option<&[TabStop]>, right: Option<&[TabStop]>) -> bool {
+    match (left, right) {
+        (Some(left_stops), Some(right_stops)) => left_stops == right_stops,
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+fn generate_fixed_text_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
+    let paragraph: &Paragraph = &list.items[0].content[0];
+    let style: &ParagraphStyle = &paragraph.style;
+    let effective_style: EffectiveListStyle<'_> = list_style_for_level(list, 0);
+    let has_para_style: bool = needs_block_wrapper(style);
+    let line_gap_pt: Option<f64> = fixed_text_list_line_gap_pt(style, list);
+
+    if has_para_style {
+        out.push_str("#block(");
+        write_block_params(out, style);
+        out.push_str(")[\n");
+        write_fixed_text_list_par_settings(out, style, line_gap_pt);
+    }
+
+    out.push_str("#stack(dir: ttb");
+    if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0) {
+        let _ = write!(out, ", spacing: {}pt", format_f64(gap));
+    }
+    out.push_str(",\n");
+
+    let align_str: Option<&str> = fixed_text_list_alignment(style.alignment);
+
+    let mut current_number: u32 = list
+        .items
+        .first()
+        .and_then(|item| item.start_at)
+        .unwrap_or(1);
+    for (index, item) in list.items.iter().enumerate() {
+        if index > 0 {
+            out.push_str(",\n");
+            if let Some(start_at) = item.start_at {
+                current_number = start_at;
+            }
+        }
+
+        let item_paragraph: &Paragraph = &item.content[0];
+        let marker_text: String = fixed_text_list_marker(
+            list.kind,
+            &effective_style,
+            current_number,
+            &item_paragraph.runs,
+        );
+        let runs: Vec<Run> = prepend_marker_run(&item_paragraph.runs, marker_text);
+        out.push('[');
+        if let Some(align) = align_str {
+            let _ = write!(out, "#block(width: 100%)[#align({align})[");
+        }
+        generate_runs_with_tabs(out, &runs, style.tab_stops.as_deref());
+        if align_str.is_some() {
+            out.push_str("]]");
+        }
+        out.push(']');
+
+        if list.kind == ListKind::Ordered {
+            current_number += 1;
+        }
+    }
+
+    out.push_str("\n)");
+    if has_para_style {
+        out.push_str("\n]");
+    }
+    out.push('\n');
+    Ok(())
+}
+
+fn fixed_text_list_alignment(alignment: Option<Alignment>) -> Option<&'static str> {
+    match alignment {
+        Some(Alignment::Left) => Some("left"),
+        Some(Alignment::Center) => Some("center"),
+        Some(Alignment::Right) => Some("right"),
+        _ => None,
+    }
+}
+
+fn fixed_text_list_line_gap_pt(style: &ParagraphStyle, list: &List) -> Option<f64> {
+    let font_size_pt: f64 = fixed_text_list_font_size_pt(list);
+    match style.line_spacing {
+        Some(LineSpacing::Proportional(factor)) if factor > 1.0 => {
+            Some((font_size_pt * (factor - 1.0)).max(0.0))
+        }
+        Some(LineSpacing::Exact(points)) => Some((points - font_size_pt).max(0.0)),
+        _ => None,
+    }
+}
+
+fn fixed_text_list_font_size_pt(list: &List) -> f64 {
+    let max_explicit_size: Option<f64> = list
+        .items
+        .iter()
+        .flat_map(|item| item.content.iter())
+        .flat_map(|paragraph| paragraph.runs.iter())
+        .filter_map(|run| run.style.font_size)
+        .max_by(f64::total_cmp);
+    max_explicit_size.unwrap_or(12.0)
+}
+
+fn write_fixed_text_list_par_settings(
+    out: &mut String,
+    style: &ParagraphStyle,
+    line_gap_pt: Option<f64>,
+) {
+    if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0) {
+        let _ = writeln!(out, "  #set par(leading: {}pt)", format_f64(gap));
+    } else {
+        write_par_settings(out, style);
+        return;
+    }
+    if matches!(style.alignment, Some(Alignment::Justify)) {
+        out.push_str("  #set par(justify: true)\n");
+    }
+    if matches!(style.direction, Some(TextDirection::Rtl)) {
+        out.push_str("  #set text(dir: rtl)\n");
+    }
+}
+
+fn fixed_text_list_marker(
+    kind: ListKind,
+    style: &EffectiveListStyle<'_>,
+    number: u32,
+    runs: &[Run],
+) -> String {
+    let marker: String = match kind {
+        ListKind::Ordered => ordered_marker(style.numbering_pattern.unwrap_or("1."), number),
+        ListKind::Unordered => "•".to_string(),
+    };
+    if first_visible_char_is_whitespace(runs) {
+        marker
+    } else {
+        format!("{marker} ")
+    }
+}
+
+fn prepend_marker_run(runs: &[Run], marker_text: String) -> Vec<Run> {
+    let marker_style: TextStyle = runs
+        .first()
+        .map(|run| run.style.clone())
+        .unwrap_or_default();
+    let mut combined_runs: Vec<Run> = Vec::with_capacity(runs.len() + 1);
+    combined_runs.push(Run {
+        text: marker_text,
+        style: marker_style,
+        href: None,
+        footnote: None,
+    });
+    combined_runs.extend_from_slice(runs);
+    combined_runs
+}
+
+fn first_visible_char_is_whitespace(runs: &[Run]) -> bool {
+    runs.iter()
+        .find_map(|run| run.text.chars().next())
+        .is_some_and(char::is_whitespace)
+}
+
+fn ordered_marker(pattern: &str, number: u32) -> String {
+    if pattern.contains('1') {
+        return pattern.replacen('1', &number.to_string(), 1);
+    }
+    if pattern.contains('a') {
+        return pattern.replacen('a', &alpha_marker(number, false), 1);
+    }
+    if pattern.contains('A') {
+        return pattern.replacen('A', &alpha_marker(number, true), 1);
+    }
+    if pattern.contains('i') {
+        return pattern.replacen('i', &roman_marker(number, false), 1);
+    }
+    if pattern.contains('I') {
+        return pattern.replacen('I', &roman_marker(number, true), 1);
+    }
+    format!("{number}.")
+}
+
+fn alpha_marker(mut number: u32, uppercase: bool) -> String {
+    let mut chars: Vec<char> = Vec::new();
+    while number > 0 {
+        let remainder: u8 = ((number - 1) % 26) as u8;
+        let base: u8 = if uppercase { b'A' } else { b'a' };
+        chars.push((base + remainder) as char);
+        number = (number - 1) / 26;
+    }
+    chars.iter().rev().collect()
+}
+
+fn roman_marker(mut number: u32, uppercase: bool) -> String {
+    const ROMAN_VALUES: &[(u32, &str)] = &[
+        (1000, "M"),
+        (900, "CM"),
+        (500, "D"),
+        (400, "CD"),
+        (100, "C"),
+        (90, "XC"),
+        (50, "L"),
+        (40, "XL"),
+        (10, "X"),
+        (9, "IX"),
+        (5, "V"),
+        (4, "IV"),
+        (1, "I"),
+    ];
+
+    let mut result: String = String::new();
+    for (value, symbol) in ROMAN_VALUES {
+        while number >= *value {
+            number -= *value;
+            result.push_str(symbol);
+        }
+    }
+    if uppercase {
+        result
+    } else {
+        result.to_lowercase()
+    }
+}
+
 /// Recursively generate list items, grouping consecutive items at the same or deeper level.
 fn generate_list_items(
     out: &mut String,
@@ -1907,10 +2237,23 @@ fn generate_floating_text_box_content(
         if index > 0 {
             out.push('\n');
         }
-        generate_block(out, block, ctx)?;
+        generate_fixed_text_box_block(out, block, ctx)?;
     }
     out.push_str("]\n");
     Ok(())
+}
+
+fn generate_fixed_text_box_block(
+    out: &mut String,
+    block: &Block,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    match block {
+        Block::List(list) if can_render_fixed_text_list_inline(list) => {
+            generate_fixed_text_list(out, list)
+        }
+        _ => generate_block(out, block, ctx),
+    }
 }
 
 fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
@@ -4242,15 +4585,19 @@ mod tests {
             y,
             width: w,
             height: h,
-            kind: FixedElementKind::TextBox(vec![Block::Paragraph(Paragraph {
-                style: ParagraphStyle::default(),
-                runs: vec![Run {
-                    text: text.to_string(),
-                    style: TextStyle::default(),
-                    href: None,
-                    footnote: None,
-                }],
-            })]),
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: text.to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+            }),
         }
     }
 
@@ -4277,6 +4624,28 @@ mod tests {
                 rotation_deg: None,
                 opacity: None,
                 shadow: None,
+            }),
+        }
+    }
+
+    fn make_fixed_text_box(
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        padding: Insets,
+        vertical_align: crate::ir::TextBoxVerticalAlign,
+        content: Vec<Block>,
+    ) -> FixedElement {
+        FixedElement {
+            x,
+            y,
+            width: w,
+            height: h,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content,
+                padding,
+                vertical_align,
             }),
         }
     }
@@ -4354,6 +4723,68 @@ mod tests {
     }
 
     #[test]
+    fn test_fixed_page_text_box_uses_padding_and_center_vertical_align() {
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_fixed_text_box(
+                100.0,
+                200.0,
+                300.0,
+                50.0,
+                Insets {
+                    top: 3.6,
+                    right: 7.2,
+                    bottom: 3.6,
+                    left: 7.2,
+                },
+                crate::ir::TextBoxVerticalAlign::Center,
+                vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Centered".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+            )],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output
+                .source
+                .contains("inset: (top: 3.6pt, right: 7.2pt, bottom: 3.6pt, left: 7.2pt)"),
+            "Expected text box inset in: {}",
+            output.source
+        );
+        assert!(
+            output
+                .source
+                .contains("#let text_box_content_0 = block(width: 285.6pt)["),
+            "Expected inner width-constrained content block in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains(
+                "#context {\n    let text_box_slack_0 = calc.max(42.8pt - measure(text_box_content_0).height, 0pt)"
+            ),
+            "Expected vertical slack measurement in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#v(text_box_slack_0 / 2)"),
+            "Expected centered vertical spacer in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("let text_box_aligned_0 = ["),
+            "Expected aligned content block in: {}",
+            output.source
+        );
+    }
+
+    #[test]
     fn test_fixed_page_text_box_multiple_paragraphs_preserve_breaks() {
         let doc = make_doc(vec![make_fixed_page(
             960.0,
@@ -4363,38 +4794,52 @@ mod tests {
                 y: 200.0,
                 width: 300.0,
                 height: 100.0,
-                kind: FixedElementKind::TextBox(vec![
-                    Block::Paragraph(Paragraph {
-                        style: ParagraphStyle::default(),
-                        runs: vec![Run {
-                            text: "First item".to_string(),
-                            style: TextStyle::default(),
-                            href: None,
-                            footnote: None,
-                        }],
-                    }),
-                    Block::Paragraph(Paragraph {
-                        style: ParagraphStyle::default(),
-                        runs: vec![Run {
-                            text: "Second item".to_string(),
-                            style: TextStyle::default(),
-                            href: None,
-                            footnote: None,
-                        }],
-                    }),
-                ]),
+                kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                    content: vec![
+                        Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "First item".to_string(),
+                                style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
+                            }],
+                        }),
+                        Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "Second item".to_string(),
+                                style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
+                            }],
+                        }),
+                    ],
+                    padding: Insets::default(),
+                    vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                }),
             }],
         )]);
         let output = generate_typst(&doc).unwrap();
         assert!(
-            output.source.contains("First item\n\nSecond item"),
+            output.source.contains("First item"),
+            "Expected first paragraph inside fixed text box in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("Second item"),
+            "Expected second paragraph inside fixed text box in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("First item\n\n  Second item"),
             "Expected paragraph break inside fixed text box in: {}",
             output.source
         );
     }
 
     #[test]
-    fn test_fixed_page_text_box_ordered_list_renders_enum() {
+    fn test_fixed_page_text_box_ordered_list_preserves_textbox_styling() {
         use crate::ir::List;
 
         let doc = make_doc(vec![make_fixed_page(
@@ -4405,56 +4850,98 @@ mod tests {
                 y: 200.0,
                 width: 300.0,
                 height: 100.0,
-                kind: FixedElementKind::TextBox(vec![Block::List(List {
-                    kind: ListKind::Ordered,
-                    items: vec![
-                        ListItem {
-                            content: vec![Paragraph {
-                                style: ParagraphStyle::default(),
-                                runs: vec![Run {
-                                    text: "First item".to_string(),
-                                    style: TextStyle::default(),
-                                    href: None,
-                                    footnote: None,
+                kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                    content: vec![Block::List(List {
+                        kind: ListKind::Ordered,
+                        items: vec![
+                            ListItem {
+                                content: vec![Paragraph {
+                                    style: ParagraphStyle {
+                                        line_spacing: Some(LineSpacing::Proportional(1.5)),
+                                        ..ParagraphStyle::default()
+                                    },
+                                    runs: vec![Run {
+                                        text: " First item".to_string(),
+                                        style: TextStyle {
+                                            font_size: Some(24.0),
+                                            ..TextStyle::default()
+                                        },
+                                        href: None,
+                                        footnote: None,
+                                    }],
                                 }],
-                            }],
-                            level: 0,
-                            start_at: Some(1),
-                        },
-                        ListItem {
-                            content: vec![Paragraph {
-                                style: ParagraphStyle::default(),
-                                runs: vec![Run {
-                                    text: "Second item".to_string(),
-                                    style: TextStyle::default(),
-                                    href: None,
-                                    footnote: None,
+                                level: 0,
+                                start_at: Some(1),
+                            },
+                            ListItem {
+                                content: vec![Paragraph {
+                                    style: ParagraphStyle {
+                                        line_spacing: Some(LineSpacing::Proportional(1.5)),
+                                        ..ParagraphStyle::default()
+                                    },
+                                    runs: vec![Run {
+                                        text: " Second item".to_string(),
+                                        style: TextStyle {
+                                            font_size: Some(24.0),
+                                            ..TextStyle::default()
+                                        },
+                                        href: None,
+                                        footnote: None,
+                                    }],
                                 }],
-                            }],
-                            level: 0,
-                            start_at: None,
-                        },
-                    ],
-                    level_styles: BTreeMap::from([(
-                        0,
-                        ListLevelStyle {
-                            kind: ListKind::Ordered,
-                            numbering_pattern: Some("1.".to_string()),
-                            full_numbering: false,
-                        },
-                    )]),
-                })]),
+                                level: 0,
+                                start_at: None,
+                            },
+                        ],
+                        level_styles: BTreeMap::from([(
+                            0,
+                            ListLevelStyle {
+                                kind: ListKind::Ordered,
+                                numbering_pattern: Some("1.".to_string()),
+                                full_numbering: false,
+                            },
+                        )]),
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                }),
             }],
         )]);
         let output = generate_typst(&doc).unwrap();
         assert!(
-            output.source.contains("#enum("),
-            "Expected ordered list markup inside fixed text box in: {}",
+            !output.source.contains("#enum("),
+            "Fixed text boxes should not use Typst enum styling: {}",
             output.source
         );
-        assert!(output.source.contains("numbering: \"1.\""));
-        assert!(output.source.contains("First item"));
-        assert!(output.source.contains("Second item"));
+        assert!(
+            output
+                .source
+                .contains("#text(size: 24pt)[1.]#text(size: 24pt)[ First item]"),
+            "Expected first list item text in: {}",
+            output.source
+        );
+        assert!(
+            output
+                .source
+                .contains("#text(size: 24pt)[2.]#text(size: 24pt)[ Second item]"),
+            "Expected second list item text in: {}",
+            output.source
+        );
+        assert!(
+            !output.source.contains("\\\n2. Second item"),
+            "Fixed text lists should not flatten items with manual line breaks: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#stack(dir: ttb, spacing: 12pt"),
+            "Expected stack spacing derived from font size and PPT line spacing in: {}",
+            output.source
+        );
+        assert!(
+            output.source.contains("#set par(leading: 12pt)"),
+            "Expected paragraph leading derived from font size and PPT line spacing in: {}",
+            output.source
+        );
     }
 
     #[test]
@@ -7703,7 +8190,7 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_typst_prefers_office_font_fallback_order_when_context_present() {
+    fn test_generate_typst_preserves_metric_font_order_when_context_present() {
         let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
             style: ParagraphStyle::default(),
             runs: vec![Run {
@@ -7730,11 +8217,17 @@ mod tests {
         )
         .unwrap();
 
+        let apple_index = output
+            .source
+            .find("\"Apple SD Gothic Neo\"")
+            .expect("Apple SD Gothic Neo should appear in Typst output");
+        let malgun_index = output
+            .source
+            .find("\"Malgun Gothic\"")
+            .expect("Malgun Gothic should appear in Typst output");
         assert!(
-            output
-                .source
-                .contains(r#"font: ("Pretendard", "Malgun Gothic", "Apple SD Gothic Neo""#),
-            "Office-managed font should be emitted ahead of system fallback: {}",
+            apple_index < malgun_index,
+            "Metric-compatible ordering should win over office source rank: {}",
             output.source
         );
     }

@@ -62,7 +62,7 @@ fn fallback_candidates(font_family: &str, context: Option<&FontSearchContext>) -
                 Some((rank, index, *sub))
             })
             .collect();
-        ranked_subs.sort_by_key(|(rank, index, _)| (*rank, *index));
+        ranked_subs.sort_by_key(|(rank, index, _)| (*index, *rank));
         for (_, _, sub) in ranked_subs {
             candidates.push(sub.to_string());
         }
@@ -299,8 +299,8 @@ fn collect_document_font_families(doc: &Document) -> BTreeSet<String> {
             Page::Fixed(page) => {
                 for element in &page.elements {
                     match &element.kind {
-                        FixedElementKind::TextBox(blocks) => {
-                            for block in blocks {
+                        FixedElementKind::TextBox(text_box) => {
+                            for block in &text_box.content {
                                 collect_block_fonts(block, &mut fonts);
                             }
                         }
@@ -340,7 +340,9 @@ pub(crate) fn document_requests_font_families(doc: &Document) -> bool {
                 || page.content.iter().any(block_requests_font_family)
         }
         Page::Fixed(page) => page.elements.iter().any(|element| match &element.kind {
-            FixedElementKind::TextBox(blocks) => blocks.iter().any(block_requests_font_family),
+            FixedElementKind::TextBox(text_box) => {
+                text_box.content.iter().any(block_requests_font_family)
+            }
             FixedElementKind::Table(table) => table_requests_font_family(table),
             FixedElementKind::Image(_)
             | FixedElementKind::Shape(_)
@@ -623,7 +625,7 @@ mod tests {
     }
 
     #[test]
-    fn test_font_with_fallbacks_prefers_office_family_order_in_active_context() {
+    fn test_font_with_fallbacks_preserves_metric_order_ahead_of_office_source_rank() {
         let context = FontSearchContext::for_test(
             Vec::new(),
             &["Apple SD Gothic Neo", "Malgun Gothic"],
@@ -631,14 +633,20 @@ mod tests {
             &[],
         );
         let result = with_font_search_context(Some(&context), || font_with_fallbacks("Pretendard"));
+        let apple_index = result
+            .find("\"Apple SD Gothic Neo\"")
+            .expect("Apple SD Gothic Neo should appear in fallback list");
+        let malgun_index = result
+            .find("\"Malgun Gothic\"")
+            .expect("Malgun Gothic should appear in fallback list");
         assert!(
-            result.contains(r#""Pretendard", "Malgun Gothic", "Apple SD Gothic Neo""#),
-            "office-managed fonts should be preferred in fallback order: {result}"
+            apple_index < malgun_index,
+            "metric-compatible fallback order should win over source rank: {result}"
         );
     }
 
     #[test]
-    fn test_detect_missing_font_fallbacks_with_context_prefers_office_font() {
+    fn test_detect_missing_font_fallbacks_with_context_prefers_metric_match_before_office_font() {
         let context = FontSearchContext::for_test(
             Vec::new(),
             &["Malgun Gothic", "Apple SD Gothic Neo"],
@@ -672,7 +680,10 @@ mod tests {
         let fallbacks = detect_missing_font_fallbacks_with_context(&doc, &context);
         assert_eq!(
             fallbacks,
-            vec![("Pretendard Medium".to_string(), "Malgun Gothic".to_string())]
+            vec![(
+                "Pretendard Medium".to_string(),
+                "Apple SD Gothic Neo".to_string()
+            )]
         );
     }
 

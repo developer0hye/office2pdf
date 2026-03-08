@@ -125,6 +125,23 @@ pub struct FloatingTextBox {
     pub offset_y: f64,
 }
 
+/// Vertical alignment for fixed text box content.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TextBoxVerticalAlign {
+    #[default]
+    Top,
+    Center,
+    Bottom,
+}
+
+/// A fixed-position text box with content padding and vertical alignment.
+#[derive(Debug, Clone)]
+pub struct TextBoxData {
+    pub content: Vec<Block>,
+    pub padding: Insets,
+    pub vertical_align: TextBoxVerticalAlign,
+}
+
 /// The kind of list: ordered (numbered) or unordered (bulleted).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ListKind {
