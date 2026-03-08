@@ -5070,7 +5070,7 @@ mod tests {
             Some("è")
         );
         assert!(
-            list.level_styles.get(&0).is_none(),
+            !list.level_styles.contains_key(&0),
             "Trailing empty dash bullets should not create a level-0 marker style"
         );
     }
