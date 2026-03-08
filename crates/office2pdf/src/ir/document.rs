@@ -123,7 +123,7 @@ pub struct FixedElement {
 /// Types of fixed-position elements.
 #[derive(Debug, Clone)]
 pub enum FixedElementKind {
-    TextBox(Vec<Block>),
+    TextBox(super::elements::TextBoxData),
     Image(super::elements::ImageData),
     Shape(super::elements::Shape),
     Table(super::elements::Table),

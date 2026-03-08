@@ -70,7 +70,7 @@ fn has_textbox_with_content(pages: &[FixedPage]) -> bool {
         .iter()
         .flat_map(|p| p.elements.iter())
         .any(|e| match &e.kind {
-            FixedElementKind::TextBox(blocks) => blocks.iter().any(|b| match b {
+            FixedElementKind::TextBox(text_box) => text_box.content.iter().any(|b| match b {
                 Block::Paragraph(para) => para.runs.iter().any(|r| !r.text.is_empty()),
                 _ => false,
             }),
