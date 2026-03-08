@@ -4394,6 +4394,70 @@ mod tests {
     }
 
     #[test]
+    fn test_fixed_page_text_box_ordered_list_renders_enum() {
+        use crate::ir::List;
+
+        let doc = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![FixedElement {
+                x: 100.0,
+                y: 200.0,
+                width: 300.0,
+                height: 100.0,
+                kind: FixedElementKind::TextBox(vec![Block::List(List {
+                    kind: ListKind::Ordered,
+                    items: vec![
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "First item".to_string(),
+                                    style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: Some(1),
+                        },
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle::default(),
+                                runs: vec![Run {
+                                    text: "Second item".to_string(),
+                                    style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: None,
+                        },
+                    ],
+                    level_styles: BTreeMap::from([(
+                        0,
+                        ListLevelStyle {
+                            kind: ListKind::Ordered,
+                            numbering_pattern: Some("1.".to_string()),
+                            full_numbering: false,
+                        },
+                    )]),
+                })]),
+            }],
+        )]);
+        let output = generate_typst(&doc).unwrap();
+        assert!(
+            output.source.contains("#enum("),
+            "Expected ordered list markup inside fixed text box in: {}",
+            output.source
+        );
+        assert!(output.source.contains("numbering: \"1.\""));
+        assert!(output.source.contains("First item"));
+        assert!(output.source.contains("Second item"));
+    }
+
+    #[test]
     fn test_fixed_page_text_box_with_width_height() {
         let doc = make_doc(vec![make_fixed_page(
             960.0,

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::{Cursor, Read};
 
 use quick_xml::Reader;
@@ -10,8 +10,9 @@ use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, Chart, Color, Document,
     FixedElement, FixedElementKind, FixedPage, GradientFill, GradientStop, ImageCrop, ImageData,
-    ImageFormat, Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind,
-    SmartArt, SmartArtNode, StyleSheet, Table, TableCell, TableRow, TextDirection, TextStyle,
+    ImageFormat, List, ListItem, ListKind, ListLevelStyle, Page, PageSize, Paragraph,
+    ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, SmartArtNode, StyleSheet, Table,
+    TableCell, TableRow, TextDirection, TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::chart as chart_parser;
@@ -68,6 +69,79 @@ enum SolidFillCtx {
     LineFill,
     /// Text run color (inside `<a:rPr>`).
     RunFill,
+}
+
+#[derive(Debug, Clone)]
+struct PptxParagraphEntry {
+    paragraph: Paragraph,
+    auto_numbering: Option<PptxAutoNumbering>,
+}
+
+#[derive(Debug, Clone)]
+struct PptxAutoNumbering {
+    level: u32,
+    numbering_pattern: Option<String>,
+    start_at: Option<u32>,
+}
+
+#[derive(Debug, Clone)]
+struct PendingPptxAutoNumberList {
+    items: Vec<ListItem>,
+    level_styles: BTreeMap<u32, ListLevelStyle>,
+    last_level: u32,
+}
+
+impl PendingPptxAutoNumberList {
+    fn new() -> Self {
+        Self {
+            items: Vec::new(),
+            level_styles: BTreeMap::new(),
+            last_level: 0,
+        }
+    }
+
+    fn can_extend(&self, auto_numbering: &PptxAutoNumbering) -> bool {
+        if self.items.is_empty() {
+            return true;
+        }
+
+        if auto_numbering.start_at.is_some() && auto_numbering.level <= self.last_level {
+            return false;
+        }
+
+        self.level_styles
+            .get(&auto_numbering.level)
+            .is_none_or(|style| style.numbering_pattern == auto_numbering.numbering_pattern)
+    }
+
+    fn push(&mut self, paragraph: Paragraph, auto_numbering: PptxAutoNumbering) {
+        let level: u32 = auto_numbering.level;
+        self.level_styles
+            .entry(level)
+            .or_insert_with(|| ListLevelStyle {
+                kind: ListKind::Ordered,
+                numbering_pattern: auto_numbering.numbering_pattern.clone(),
+                full_numbering: false,
+            });
+        self.items.push(ListItem {
+            content: vec![paragraph],
+            level,
+            start_at: if self.items.is_empty() {
+                auto_numbering.start_at
+            } else {
+                None
+            },
+        });
+        self.last_level = level;
+    }
+
+    fn into_block(self) -> Block {
+        Block::List(List {
+            kind: ListKind::Ordered,
+            items: self.items,
+            level_styles: self.level_styles,
+        })
+    }
 }
 
 /// Parser for PPTX (Office Open XML PowerPoint) presentations.
@@ -1541,13 +1615,15 @@ fn parse_pptx_table(
     let mut cell_row_span: u32 = 1;
     let mut is_h_merge = false;
     let mut is_v_merge = false;
-    let mut cell_paragraphs: Vec<Paragraph> = Vec::new();
+    let mut cell_text_entries: Vec<PptxParagraphEntry> = Vec::new();
     let mut cell_background: Option<Color> = None;
 
     // Text parsing state (reused per cell)
     let mut in_txbody = false;
     let mut in_para = false;
     let mut para_style = ParagraphStyle::default();
+    let mut para_level: u32 = 0;
+    let mut para_auto_numbering: Option<PptxAutoNumbering> = None;
     let mut runs: Vec<Run> = Vec::new();
     let mut in_run = false;
     let mut run_style = TextStyle::default();
@@ -1592,7 +1668,7 @@ fn parse_pptx_table(
                         cell_row_span = get_attr_i64(e, b"rowSpan").map(|v| v as u32).unwrap_or(1);
                         is_h_merge = get_attr_str(e, b"hMerge").is_some();
                         is_v_merge = get_attr_str(e, b"vMerge").is_some();
-                        cell_paragraphs.clear();
+                        cell_text_entries.clear();
                         cell_background = None;
                         in_tc_pr = false;
                         border_left = None;
@@ -1606,10 +1682,19 @@ fn parse_pptx_table(
                     b"p" if in_txbody => {
                         in_para = true;
                         para_style = ParagraphStyle::default();
+                        para_level = 0;
+                        para_auto_numbering = None;
                         runs.clear();
                     }
                     b"pPr" if in_para && !in_run => {
                         extract_paragraph_props(e, &mut para_style);
+                        para_level = extract_paragraph_level(e);
+                    }
+                    b"buAutoNum" if in_para && !in_run => {
+                        para_auto_numbering = Some(parse_pptx_auto_numbering(e, para_level));
+                    }
+                    b"buNone" if in_para && !in_run => {
+                        para_auto_numbering = None;
                     }
                     b"r" if in_para => {
                         in_run = true;
@@ -1713,6 +1798,13 @@ fn parse_pptx_table(
                     }
                     b"pPr" if in_para && !in_run => {
                         extract_paragraph_props(e, &mut para_style);
+                        para_level = extract_paragraph_level(e);
+                    }
+                    b"buAutoNum" if in_para && !in_run => {
+                        para_auto_numbering = Some(parse_pptx_auto_numbering(e, para_level));
+                    }
+                    b"buNone" if in_para && !in_run => {
+                        para_auto_numbering = None;
                     }
                     b"latin" if in_rpr => {
                         if let Some(typeface) = get_attr_str(e, b"typeface") {
@@ -1758,10 +1850,7 @@ fn parse_pptx_table(
                         };
 
                         cells.push(TableCell {
-                            content: std::mem::take(&mut cell_paragraphs)
-                                .into_iter()
-                                .map(Block::Paragraph)
-                                .collect(),
+                            content: group_pptx_text_blocks(std::mem::take(&mut cell_text_entries)),
                             col_span,
                             row_span,
                             border: if has_border {
@@ -1787,9 +1876,12 @@ fn parse_pptx_table(
                         in_txbody = false;
                     }
                     b"p" if in_para => {
-                        cell_paragraphs.push(Paragraph {
-                            style: para_style.clone(),
-                            runs: std::mem::take(&mut runs),
+                        cell_text_entries.push(PptxParagraphEntry {
+                            paragraph: Paragraph {
+                                style: para_style.clone(),
+                                runs: std::mem::take(&mut runs),
+                            },
+                            auto_numbering: para_auto_numbering.take(),
                         });
                         in_para = false;
                     }
@@ -2133,11 +2225,13 @@ fn parse_slide_xml(
 
     // Text body state
     let mut in_txbody = false;
-    let mut paragraphs: Vec<Paragraph> = Vec::new();
+    let mut paragraphs: Vec<PptxParagraphEntry> = Vec::new();
 
     // Paragraph state
     let mut in_para = false;
     let mut para_style = ParagraphStyle::default();
+    let mut para_level: u32 = 0;
+    let mut para_auto_numbering: Option<PptxAutoNumbering> = None;
     let mut runs: Vec<Run> = Vec::new();
 
     // Run state
@@ -2294,10 +2388,19 @@ fn parse_slide_xml(
                     b"p" if in_txbody => {
                         in_para = true;
                         para_style = ParagraphStyle::default();
+                        para_level = 0;
+                        para_auto_numbering = None;
                         runs.clear();
                     }
                     b"pPr" if in_para && !in_run => {
                         extract_paragraph_props(e, &mut para_style);
+                        para_level = extract_paragraph_level(e);
+                    }
+                    b"buAutoNum" if in_para && !in_run => {
+                        para_auto_numbering = Some(parse_pptx_auto_numbering(e, para_level));
+                    }
+                    b"buNone" if in_para && !in_run => {
+                        para_auto_numbering = None;
                     }
                     b"r" if in_para => {
                         in_run = true;
@@ -2462,6 +2565,13 @@ fn parse_slide_xml(
                     }
                     b"pPr" if in_para && !in_run => {
                         extract_paragraph_props(e, &mut para_style);
+                        para_level = extract_paragraph_level(e);
+                    }
+                    b"buAutoNum" if in_para && !in_run => {
+                        para_auto_numbering = Some(parse_pptx_auto_numbering(e, para_level));
+                    }
+                    b"buNone" if in_para && !in_run => {
+                        para_auto_numbering = None;
                     }
                     b"latin" if in_rpr => {
                         if let Some(typeface) = get_attr_str(e, b"typeface") {
@@ -2484,12 +2594,14 @@ fn parse_slide_xml(
                     b"sp" if in_shape => {
                         shape_depth -= 1;
                         if shape_depth == 0 {
-                            let has_text = paragraphs.iter().any(|p| !p.runs.is_empty());
+                            let has_text = paragraphs
+                                .iter()
+                                .any(|entry| !entry.paragraph.runs.is_empty());
 
                             if has_text {
                                 // TextBox — has visible text content
                                 let blocks: Vec<Block> =
-                                    paragraphs.drain(..).map(Block::Paragraph).collect();
+                                    group_pptx_text_blocks(std::mem::take(&mut paragraphs));
                                 elements.push(FixedElement {
                                     x: emu_to_pt(shape_x),
                                     y: emu_to_pt(shape_y),
@@ -2543,9 +2655,12 @@ fn parse_slide_xml(
                         in_txbody = false;
                     }
                     b"p" if in_para => {
-                        paragraphs.push(Paragraph {
-                            style: para_style.clone(),
-                            runs: std::mem::take(&mut runs),
+                        paragraphs.push(PptxParagraphEntry {
+                            paragraph: Paragraph {
+                                style: para_style.clone(),
+                                runs: std::mem::take(&mut runs),
+                            },
+                            auto_numbering: para_auto_numbering.take(),
                         });
                         in_para = false;
                     }
@@ -2767,6 +2882,78 @@ fn extract_paragraph_props(e: &quick_xml::events::BytesStart, style: &mut Paragr
     {
         style.direction = Some(TextDirection::Rtl);
     }
+}
+
+fn extract_paragraph_level(e: &quick_xml::events::BytesStart) -> u32 {
+    get_attr_i64(e, b"lvl")
+        .and_then(|value| u32::try_from(value).ok())
+        .unwrap_or(0)
+}
+
+fn parse_pptx_auto_numbering(e: &quick_xml::events::BytesStart, level: u32) -> PptxAutoNumbering {
+    let numbering_pattern: Option<String> = get_attr_str(e, b"type")
+        .as_deref()
+        .and_then(pptx_auto_numbering_pattern)
+        .map(str::to_string);
+    let start_at: Option<u32> = get_attr_i64(e, b"startAt").and_then(|value| value.try_into().ok());
+
+    PptxAutoNumbering {
+        level,
+        numbering_pattern,
+        start_at,
+    }
+}
+
+fn pptx_auto_numbering_pattern(numbering_type: &str) -> Option<&'static str> {
+    match numbering_type {
+        "arabicPeriod" => Some("1."),
+        "arabicParenR" => Some("1)"),
+        "arabicParenBoth" => Some("(1)"),
+        "alphaLcPeriod" => Some("a."),
+        "alphaUcPeriod" => Some("A."),
+        "alphaLcParenR" => Some("a)"),
+        "alphaUcParenR" => Some("A)"),
+        "romanLcPeriod" => Some("i."),
+        "romanUcPeriod" => Some("I."),
+        "romanLcParenR" => Some("i)"),
+        "romanUcParenR" => Some("I)"),
+        _ => None,
+    }
+}
+
+fn group_pptx_text_blocks(entries: Vec<PptxParagraphEntry>) -> Vec<Block> {
+    let mut blocks: Vec<Block> = Vec::new();
+    let mut pending_list: Option<PendingPptxAutoNumberList> = None;
+
+    for entry in entries {
+        match entry.auto_numbering {
+            Some(auto_numbering) => {
+                if pending_list
+                    .as_ref()
+                    .is_some_and(|list| !list.can_extend(&auto_numbering))
+                {
+                    blocks.push(pending_list.take().unwrap().into_block());
+                }
+
+                let paragraph: Paragraph = entry.paragraph;
+                pending_list
+                    .get_or_insert_with(PendingPptxAutoNumberList::new)
+                    .push(paragraph, auto_numbering);
+            }
+            None => {
+                if let Some(list) = pending_list.take() {
+                    blocks.push(list.into_block());
+                }
+                blocks.push(Block::Paragraph(entry.paragraph));
+            }
+        }
+    }
+
+    if let Some(list) = pending_list {
+        blocks.push(list.into_block());
+    }
+
+    blocks
 }
 
 /// Extract text formatting attributes from `<a:rPr>` element.
@@ -3035,6 +3222,66 @@ mod tests {
         };
         assert_eq!(para.runs.len(), 1);
         assert_eq!(para.runs[0].text, "Hello World");
+    }
+
+    #[test]
+    fn test_text_box_auto_numbered_paragraphs_group_into_list() {
+        let paragraphs_xml = concat!(
+            r#"<a:p><a:pPr indent="-216000"><a:buAutoNum type="arabicPeriod"/></a:pPr><a:r><a:t>First</a:t></a:r></a:p>"#,
+            r#"<a:p><a:pPr indent="-216000"><a:buAutoNum type="arabicPeriod"/></a:pPr><a:r><a:t>Second</a:t></a:r></a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        assert_eq!(blocks.len(), 1, "Expected a single grouped list block");
+
+        let list = match &blocks[0] {
+            Block::List(list) => list,
+            other => panic!("Expected List block, got {other:?}"),
+        };
+        assert_eq!(list.kind, crate::ir::ListKind::Ordered);
+        assert_eq!(list.items.len(), 2);
+        assert_eq!(
+            list.level_styles
+                .get(&0)
+                .and_then(|style| style.numbering_pattern.as_deref()),
+            Some("1.")
+        );
+        assert_eq!(list.items[0].content[0].runs[0].text, "First");
+        assert_eq!(list.items[1].content[0].runs[0].text, "Second");
+    }
+
+    #[test]
+    fn test_text_box_auto_numbered_paragraph_start_override_sets_list_start() {
+        let paragraphs_xml = concat!(
+            r#"<a:p><a:pPr indent="-216000"><a:buAutoNum type="alphaUcPeriod" startAt="3"/></a:pPr><a:r><a:t>Gamma</a:t></a:r></a:p>"#,
+            r#"<a:p><a:pPr indent="-216000"><a:buAutoNum type="alphaUcPeriod"/></a:pPr><a:r><a:t>Delta</a:t></a:r></a:p>"#,
+        );
+        let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+        let slide = make_slide_xml(&[shape]);
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+        let parser = PptxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = first_fixed_page(&doc);
+        let blocks = text_box_blocks(&page.elements[0]);
+        let list = match &blocks[0] {
+            Block::List(list) => list,
+            other => panic!("Expected List block, got {other:?}"),
+        };
+        assert_eq!(list.kind, crate::ir::ListKind::Ordered);
+        assert_eq!(list.items[0].start_at, Some(3));
+        assert_eq!(
+            list.level_styles
+                .get(&0)
+                .and_then(|style| style.numbering_pattern.as_deref()),
+            Some("A.")
+        );
     }
 
     #[test]
