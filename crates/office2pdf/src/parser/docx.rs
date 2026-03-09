@@ -2370,6 +2370,31 @@ fn extract_table_cell_width(prop_json: Option<&serde_json::Value>) -> Option<f64
     }
 }
 
+fn is_auto_table_width(prop_json: Option<&serde_json::Value>) -> bool {
+    prop_json
+        .and_then(|json| json.get("width"))
+        .and_then(|width| width.get("widthType"))
+        .and_then(|value| value.as_str())
+        == Some("auto")
+}
+
+fn has_placeholder_autofit_grid(
+    table: &docx_rs::Table,
+    prop_json: Option<&serde_json::Value>,
+) -> bool {
+    if table.grid.is_empty() || !is_auto_table_width(prop_json) {
+        return false;
+    }
+
+    // Some generators emit gridCol=100 twips (5pt) placeholders for auto-fit
+    // tables. Treat these as non-authoritative to avoid collapsed columns.
+    const PLACEHOLDER_GRID_MAX_TWIPS: usize = 200;
+    table
+        .grid
+        .iter()
+        .all(|column_width_twips| *column_width_twips <= PLACEHOLDER_GRID_MAX_TWIPS)
+}
+
 #[allow(clippy::too_many_arguments)]
 /// Convert a docx-rs Table to an IR Table.
 ///
@@ -2416,11 +2441,12 @@ fn convert_table(
         default_cell_padding,
     );
 
-    let column_widths: Vec<f64> = if table.grid.is_empty() {
-        derive_column_widths_from_cells(&raw_rows).unwrap_or_default()
-    } else {
-        table.grid.iter().map(|&w| w as f64 / 20.0).collect()
-    };
+    let column_widths: Vec<f64> =
+        if table.grid.is_empty() || has_placeholder_autofit_grid(table, table_prop_json.as_ref()) {
+            derive_column_widths_from_cells(&raw_rows).unwrap_or_default()
+        } else {
+            table.grid.iter().map(|&w| w as f64 / 20.0).collect()
+        };
 
     // Second pass: resolve vertical merges into rowspan values and build IR rows
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
