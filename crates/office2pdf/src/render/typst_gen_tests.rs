@@ -220,6 +220,12 @@ mod diagram_visual_tests;
 #[path = "typst_gen_advanced_tests.rs"]
 mod advanced_tests;
 
+#[path = "typst_gen_metadata_tests.rs"]
+mod metadata_tests;
+
+#[path = "typst_gen_font_heading_tests.rs"]
+mod font_heading_tests;
+
 #[path = "typst_gen_text_pipeline_tests.rs"]
 mod text_pipeline_tests;
 
