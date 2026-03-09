@@ -270,7 +270,9 @@ pub(crate) fn generate_typst_with_options_and_font_context(
                 out.push_str("\n#pagebreak()\n");
             }
             match page {
-                Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx, options)?,
+                Page::Flow(flow) => {
+                    generate_flow_page(&mut out, flow, &mut ctx, options, index == 0)?
+                }
                 Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx, options)?,
                 Page::Table(table_page) => {
                     generate_table_page(&mut out, table_page, &mut ctx, options)?;
@@ -289,9 +291,15 @@ fn generate_flow_page(
     page: &FlowPage,
     ctx: &mut GenCtx,
     options: &ConvertOptions,
+    is_first_page_in_document: bool,
 ) -> Result<(), ConvertError> {
     let size = resolve_page_size(&page.size, options);
     write_flow_page_setup(out, page, &size);
+    if let Some(page_number_start) = page.page_number_start {
+        if page_number_start > 1 || is_first_page_in_document {
+            let _ = writeln!(out, "#counter(page).update({page_number_start})");
+        }
+    }
     out.push('\n');
 
     if let Some(ref cols) = page.columns {

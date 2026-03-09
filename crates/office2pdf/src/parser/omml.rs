@@ -498,6 +498,60 @@ fn map_math_text(input: &str) -> String {
         flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
     }
 
+    normalize_leading_letter_digit_tokens(&result)
+}
+
+/// Normalize tokens like `R1` at token boundaries into Typst subscript form
+/// (`R_1`) to avoid "unknown variable" errors in math mode.
+///
+/// Also handles leading patterns with trailing letters, e.g. `R1R` -> `R_1 R`.
+fn normalize_leading_letter_digit_tokens(input: &str) -> String {
+    let mut result: String = String::with_capacity(input.len() + 8);
+    let mut token: String = String::new();
+
+    fn flush_token(out: &mut String, token: &str) {
+        if token.len() >= 2 {
+            let mut chars = token.chars();
+            let first = chars.next().unwrap_or_default();
+            let second = chars.next().unwrap_or_default();
+            if first.is_ascii_alphabetic() && second.is_ascii_digit() {
+                let rest: String = token[first.len_utf8()..].to_string();
+                let digit_end = rest
+                    .char_indices()
+                    .find(|(_, ch)| !ch.is_ascii_digit())
+                    .map(|(idx, _)| idx)
+                    .unwrap_or(rest.len());
+                let digits = &rest[..digit_end];
+                let trailing = &rest[digit_end..];
+
+                out.push(first);
+                out.push('_');
+                out.push_str(digits);
+                if !trailing.is_empty() {
+                    out.push(' ');
+                    out.push_str(trailing);
+                }
+                return;
+            }
+        }
+        out.push_str(token);
+    }
+
+    for ch in input.chars() {
+        if ch.is_ascii_alphanumeric() {
+            token.push(ch);
+        } else {
+            if !token.is_empty() {
+                flush_token(&mut result, &token);
+                token.clear();
+            }
+            result.push(ch);
+        }
+    }
+    if !token.is_empty() {
+        flush_token(&mut result, &token);
+    }
+
     result
 }
 
@@ -1478,6 +1532,22 @@ mod tests {
         assert_eq!(map_math_text("-4ac"), "-4a c");
         // Single letter after digit is fine
         assert_eq!(map_math_text("2a"), "2a");
+    }
+
+    #[test]
+    fn test_map_math_text_leading_letter_digit_uses_subscript() {
+        assert_eq!(map_math_text("R1"), "R_1");
+        assert_eq!(map_math_text("R12"), "R_12");
+    }
+
+    #[test]
+    fn test_map_math_text_leading_letter_digit_with_trailing_letters() {
+        assert_eq!(map_math_text("R1R"), "R_1 R");
+    }
+
+    #[test]
+    fn test_map_math_text_log10_keeps_word_digit_split() {
+        assert_eq!(map_math_text("log10"), "log 10");
     }
 
     // --- parse_math_run with Greek letters via omml_to_typst ---

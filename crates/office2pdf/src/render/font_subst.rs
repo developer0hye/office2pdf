@@ -673,6 +673,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: crate::ir::StyleSheet::default(),
         };
@@ -703,6 +704,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: crate::ir::StyleSheet::default(),
         };
@@ -732,6 +734,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: crate::ir::StyleSheet::default(),
         };

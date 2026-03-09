@@ -92,6 +92,8 @@ pub struct FlowPage {
     pub footer: Option<super::elements::HeaderFooter>,
     /// Optional multi-column layout for the page.
     pub columns: Option<ColumnLayout>,
+    /// Optional section page-number restart value (`w:pgNumType/@w:start`).
+    pub page_number_start: Option<u32>,
 }
 
 /// A fixed-layout page (PPTX slides).

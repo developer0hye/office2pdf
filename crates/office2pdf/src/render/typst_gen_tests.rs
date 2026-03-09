@@ -23,6 +23,7 @@ fn make_flow_page(content: Vec<Block>) -> Page {
         header: None,
         footer: None,
         columns: None,
+        page_number_start: None,
     })
 }
 
@@ -63,6 +64,7 @@ fn test_generate_page_setup() {
         header: None,
         footer: None,
         columns: None,
+        page_number_start: None,
     })]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(result.contains("612pt"));
@@ -3433,6 +3435,7 @@ fn test_generate_bulleted_list() {
         header: None,
         footer: None,
         columns: None,
+        page_number_start: None,
     })]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -3495,6 +3498,7 @@ fn test_generate_numbered_list() {
         header: None,
         footer: None,
         columns: None,
+        page_number_start: None,
     })]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -3584,6 +3588,7 @@ fn test_generate_nested_list() {
         header: None,
         footer: None,
         columns: None,
+        page_number_start: None,
     })]);
     let output = generate_typst(&doc).unwrap();
     assert!(output.source.contains("Parent"));
@@ -3643,6 +3648,7 @@ fn test_nested_list_single_content_block() {
         header: None,
         footer: None,
         columns: None,
+        page_number_start: None,
     })]);
     let output = generate_typst(&doc).unwrap();
     // Must NOT have "][#list" — that would be two content blocks
@@ -3938,6 +3944,7 @@ fn test_generate_flow_page_with_text_header() {
         }),
         footer: None,
         columns: None,
+        page_number_start: None,
     })]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -3975,6 +3982,7 @@ fn test_generate_flow_page_with_page_number_footer() {
             }],
         }),
         columns: None,
+        page_number_start: None,
     })]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -3990,6 +3998,26 @@ fn test_generate_flow_page_with_page_number_footer() {
     assert!(
         output.source.contains("Page "),
         "Footer should contain 'Page ' text. Got: {}",
+        output.source
+    );
+}
+
+#[test]
+fn test_generate_flow_page_with_page_number_restart() {
+    let doc = make_doc(vec![Page::Flow(FlowPage {
+        size: PageSize::default(),
+        margins: Margins::default(),
+        content: vec![make_paragraph("Body text")],
+        header: None,
+        footer: None,
+        columns: None,
+        page_number_start: Some(25),
+    })]);
+
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("#counter(page).update(25)"),
+        "Flow page restart should emit page counter reset. Got: {}",
         output.source
     );
 }
@@ -4019,6 +4047,7 @@ fn test_generate_flow_page_with_header_and_footer() {
             }],
         }),
         columns: None,
+        page_number_start: None,
     })]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -4053,6 +4082,7 @@ fn test_generate_typst_inserts_pagebreak_between_flow_pages() {
         header: None,
         footer: None,
         columns: None,
+        page_number_start: None,
     });
     let second = Page::Flow(FlowPage {
         size: PageSize::default(),
@@ -4061,6 +4091,7 @@ fn test_generate_typst_inserts_pagebreak_between_flow_pages() {
         header: None,
         footer: None,
         columns: None,
+        page_number_start: None,
     });
 
     let output = generate_typst(&make_doc(vec![first, second])).unwrap();
@@ -4069,6 +4100,36 @@ fn test_generate_typst_inserts_pagebreak_between_flow_pages() {
     assert_eq!(
         pagebreak_count, 1,
         "Expected exactly one page break between FlowPages. Got:\n{}",
+        output.source
+    );
+}
+
+#[test]
+fn test_generate_typst_skips_redundant_restart_to_one_on_later_sections() {
+    let first = Page::Flow(FlowPage {
+        size: PageSize::default(),
+        margins: Margins::default(),
+        content: vec![make_paragraph("First section")],
+        header: None,
+        footer: None,
+        columns: None,
+        page_number_start: Some(1),
+    });
+    let second = Page::Flow(FlowPage {
+        size: PageSize::default(),
+        margins: Margins::default(),
+        content: vec![make_paragraph("Second section")],
+        header: None,
+        footer: None,
+        columns: None,
+        page_number_start: Some(1),
+    });
+
+    let output = generate_typst(&make_doc(vec![first, second])).unwrap();
+    let restart_count = output.source.matches("#counter(page).update(1)").count();
+    assert_eq!(
+        restart_count, 1,
+        "Only the first section should emit update(1). Got:\n{}",
         output.source
     );
 }
@@ -4684,6 +4745,7 @@ fn test_floating_image_square_wrap_codegen() {
             header: None,
             footer: None,
             columns: None,
+            page_number_start: None,
         })],
         styles: StyleSheet::default(),
     };
@@ -4729,6 +4791,7 @@ fn test_floating_image_top_and_bottom_codegen() {
             header: None,
             footer: None,
             columns: None,
+            page_number_start: None,
         })],
         styles: StyleSheet::default(),
     };
@@ -4769,6 +4832,7 @@ fn test_floating_image_behind_codegen() {
             header: None,
             footer: None,
             columns: None,
+            page_number_start: None,
         })],
         styles: StyleSheet::default(),
     };
@@ -6402,6 +6466,7 @@ fn test_generate_flow_page_with_equal_columns() {
             spacing: 36.0,
             column_widths: None,
         }),
+        page_number_start: None,
     })]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(
@@ -6427,6 +6492,7 @@ fn test_generate_flow_page_with_three_columns() {
             spacing: 18.0,
             column_widths: None,
         }),
+        page_number_start: None,
     })]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(
@@ -6448,6 +6514,7 @@ fn test_generate_flow_page_with_unequal_columns() {
             spacing: 36.0,
             column_widths: Some(vec![300.0, 150.0]),
         }),
+        page_number_start: None,
     })]);
     let result = generate_typst(&doc).unwrap().source;
     // Unequal columns should use grid() with explicit widths
@@ -6474,6 +6541,7 @@ fn test_generate_column_break() {
             spacing: 36.0,
             column_widths: None,
         }),
+        page_number_start: None,
     })]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(

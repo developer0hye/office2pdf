@@ -173,18 +173,10 @@ pub(super) fn build_flow_page_from_section(
         });
     }
 
-    if section_prop
+    let page_number_start = section_prop
         .page_num_type
         .as_ref()
-        .and_then(|page_number_type| page_number_type.start)
-        .is_some()
-    {
-        warnings.push(ConvertWarning::FallbackUsed {
-            format: "DOCX".to_string(),
-            from: "section page number restart".to_string(),
-            to: "global page counter".to_string(),
-        });
-    }
+        .and_then(|page_number_type| page_number_type.start);
 
     FlowPage {
         size,
@@ -194,6 +186,7 @@ pub(super) fn build_flow_page_from_section(
         footer: extract_docx_footer(section_prop, header_footer_assets),
         columns: column_layout
             .or_else(|| extract_column_layout_from_section_property(section_prop)),
+        page_number_start,
     }
 }
 
@@ -318,15 +311,34 @@ fn convert_hf_paragraph(paragraph: &docx_rs::Paragraph) -> HeaderFooterParagraph
     let explicit_tab_overrides = extract_tab_stop_overrides(&paragraph.property.tabs);
     let style = merge_paragraph_style(&explicit_style, explicit_tab_overrides.as_deref(), None);
     let mut elements: Vec<HFInline> = Vec::new();
+    let mut field_state = HeaderFooterFieldState::default();
 
     for child in &paragraph.children {
         if let docx_rs::ParagraphChild::Run(run) = child {
             let run_style = extract_run_style(&run.run_property);
-            extract_hf_run_elements(&run.children, &run_style, &mut elements);
+            extract_hf_run_elements(&run.children, &run_style, &mut elements, &mut field_state);
         }
     }
 
     HeaderFooterParagraph { style, elements }
+}
+
+#[derive(Debug, Default)]
+struct HeaderFooterFieldState {
+    in_field: bool,
+    field_inline: Option<HFInline>,
+    past_separate: bool,
+}
+
+fn parse_hf_field_instruction(value: &str) -> Option<HFInline> {
+    let first_token = value.split_whitespace().next()?;
+    if first_token.eq_ignore_ascii_case("PAGE") {
+        Some(HFInline::PageNumber)
+    } else if first_token.eq_ignore_ascii_case("NUMPAGES") {
+        Some(HFInline::TotalPages)
+    } else {
+        None
+    }
 }
 
 /// Extract inline elements from a run's children for header/footer use.
@@ -335,57 +347,51 @@ fn extract_hf_run_elements(
     children: &[docx_rs::RunChild],
     style: &TextStyle,
     elements: &mut Vec<HFInline>,
+    field_state: &mut HeaderFooterFieldState,
 ) {
-    let mut in_field = false;
-    let mut field_inline: Option<HFInline> = None;
-    let mut past_separate = false;
-
     for child in children {
         match child {
             docx_rs::RunChild::FieldChar(field_char) => match field_char.field_char_type {
                 docx_rs::FieldCharType::Begin => {
-                    in_field = true;
-                    field_inline = None;
-                    past_separate = false;
+                    field_state.in_field = true;
+                    field_state.field_inline = None;
+                    field_state.past_separate = false;
                 }
                 docx_rs::FieldCharType::Separate => {
-                    past_separate = true;
+                    field_state.past_separate = true;
                 }
                 docx_rs::FieldCharType::End => {
-                    if let Some(inline) = field_inline.take() {
+                    if let Some(inline) = field_state.field_inline.take() {
                         elements.push(inline);
                     }
-                    in_field = false;
-                    past_separate = false;
+                    field_state.in_field = false;
+                    field_state.past_separate = false;
                 }
                 _ => {}
             },
             docx_rs::RunChild::InstrText(instruction) => {
-                if !in_field {
+                if !field_state.in_field {
                     continue;
                 }
-                field_inline = match instruction.as_ref() {
+                field_state.field_inline = match instruction.as_ref() {
                     docx_rs::InstrText::PAGE(_) => Some(HFInline::PageNumber),
                     docx_rs::InstrText::NUMPAGES(_) => Some(HFInline::TotalPages),
-                    _ => field_inline,
+                    _ => field_state.field_inline.take(),
                 };
             }
             docx_rs::RunChild::InstrTextString(value) => {
-                if !in_field {
+                if !field_state.in_field {
                     continue;
                 }
-                let trimmed = value.trim();
-                if trimmed.eq_ignore_ascii_case("page") {
-                    field_inline = Some(HFInline::PageNumber);
-                } else if trimmed.eq_ignore_ascii_case("numpages") {
-                    field_inline = Some(HFInline::TotalPages);
+                if let Some(inline) = parse_hf_field_instruction(value) {
+                    field_state.field_inline = Some(inline);
                 }
             }
             docx_rs::RunChild::Text(text) => {
-                if in_field && past_separate {
+                if field_state.in_field && field_state.past_separate {
                     continue;
                 }
-                if !in_field && !text.text.is_empty() {
+                if !field_state.in_field && !text.text.is_empty() {
                     elements.push(HFInline::Run(Run {
                         text: text.text.clone(),
                         style: style.clone(),
@@ -395,7 +401,7 @@ fn extract_hf_run_elements(
                 }
             }
             docx_rs::RunChild::Tab(_) => {
-                if !in_field {
+                if !field_state.in_field {
                     elements.push(HFInline::Run(Run {
                         text: "\t".to_string(),
                         style: style.clone(),
@@ -452,5 +458,84 @@ fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
         bottom: page_margin.bottom as f64 / 20.0,
         left: page_margin.left as f64 / 20.0,
         right: page_margin.right as f64 / 20.0,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::error::ConvertWarning;
+
+    #[test]
+    fn test_parse_hf_field_instruction_with_switches() {
+        assert!(matches!(
+            parse_hf_field_instruction(" PAGE   \\* MERGEFORMAT "),
+            Some(HFInline::PageNumber)
+        ));
+        assert!(matches!(
+            parse_hf_field_instruction("NUMPAGES  \\* Arabic"),
+            Some(HFInline::TotalPages)
+        ));
+    }
+
+    #[test]
+    fn test_convert_hf_paragraph_tracks_page_field_across_runs() {
+        let footer_xml = r#"
+            <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+              <w:p>
+                <w:r><w:fldChar w:fldCharType="begin"/></w:r>
+                <w:r><w:instrText xml:space="preserve"> PAGE   \* MERGEFORMAT </w:instrText></w:r>
+                <w:r><w:fldChar w:fldCharType="separate"/></w:r>
+                <w:r><w:t>25</w:t></w:r>
+                <w:r><w:fldChar w:fldCharType="end"/></w:r>
+              </w:p>
+            </w:ftr>
+        "#;
+        let footer = <docx_rs::Footer as docx_rs::FromXML>::from_xml(footer_xml.as_bytes())
+            .expect("parse footer");
+        let converted = convert_docx_footer(&footer).expect("convert footer");
+        let paragraph = converted
+            .paragraphs
+            .first()
+            .expect("converted footer paragraph");
+
+        assert!(
+            paragraph
+                .elements
+                .iter()
+                .any(|element| matches!(element, HFInline::PageNumber)),
+            "Expected PAGE field to become HFInline::PageNumber"
+        );
+        assert!(
+            !paragraph.elements.iter().any(|element| matches!(
+                element,
+                HFInline::Run(run) if run.text.trim() == "25"
+            )),
+            "PAGE field result text should be suppressed when field codes are present"
+        );
+    }
+
+    #[test]
+    fn test_build_flow_page_from_section_preserves_page_number_start() {
+        let section_prop =
+            docx_rs::SectionProperty::new().page_num_type(docx_rs::PageNumType::new().start(25));
+        let mut warnings: Vec<ConvertWarning> = Vec::new();
+        let flow_page = build_flow_page_from_section(
+            &section_prop,
+            Vec::new(),
+            &NumberingMap::new(),
+            &HeaderFooterAssets::default(),
+            None,
+            &mut warnings,
+        );
+
+        assert_eq!(flow_page.page_number_start, Some(25));
+        assert!(
+            !warnings.iter().any(|warning| matches!(
+                warning,
+                ConvertWarning::FallbackUsed { from, .. } if from == "section page number restart"
+            )),
+            "section page number restart fallback warning should be removed after support"
+        );
     }
 }

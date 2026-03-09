@@ -521,6 +521,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         }
@@ -678,6 +679,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -725,6 +727,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -753,6 +756,7 @@ mod tests {
                     header: None,
                     footer: None,
                     columns: None,
+                    page_number_start: None,
                 }),
                 Page::Flow(FlowPage {
                     size: PageSize::default(),
@@ -769,6 +773,7 @@ mod tests {
                     header: None,
                     footer: None,
                     columns: None,
+                    page_number_start: None,
                 }),
             ],
             styles: StyleSheet::default(),
@@ -809,6 +814,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -863,6 +869,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -951,6 +958,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -996,6 +1004,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -1232,6 +1241,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -1274,6 +1284,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -1415,6 +1426,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -1509,6 +1521,7 @@ mod tests {
                 }),
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -1549,6 +1562,7 @@ mod tests {
                     }],
                 }),
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -1616,6 +1630,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -2049,6 +2064,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             })],
             styles: StyleSheet::default(),
         };
@@ -2102,6 +2118,7 @@ mod tests {
                 header: None,
                 footer: None,
                 columns: None,
+                page_number_start: None,
             }));
         }
         let doc = Document {
