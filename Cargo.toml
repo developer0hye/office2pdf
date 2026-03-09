@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/office2pdf", "crates/office2pdf-cli"]
+members = ["crates/office2pdf", "crates/office2pdf-cli", "crates/office2typst"]
 resolver = "3"
 
 [workspace.package]
