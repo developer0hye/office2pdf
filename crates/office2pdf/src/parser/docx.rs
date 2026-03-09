@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-#[cfg(test)]
-use std::io::Read;
 
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
