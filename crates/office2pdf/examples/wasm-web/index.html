@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>office2pdf WASM Browser Demo</title>
+    <style>
+      :root {
+        --bg: linear-gradient(120deg, #f8fbff 0%, #eef4ff 50%, #f8fffa 100%);
+        --card: #ffffff;
+        --ink: #1f2937;
+        --muted: #64748b;
+        --line: #dbe5f2;
+        --brand: #0f766e;
+        --brand-ink: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+      }
+
+      .layout {
+        width: min(1080px, 92vw);
+        margin: 36px auto;
+        display: grid;
+        gap: 16px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
+        padding: 18px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(1.3rem, 2vw, 1.8rem);
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .controls {
+        display: grid;
+        gap: 12px;
+      }
+
+      @media (min-width: 900px) {
+        .controls {
+          grid-template-columns: 1fr 180px auto;
+          align-items: end;
+        }
+      }
+
+      label {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      input[type="file"],
+      select,
+      button {
+        width: 100%;
+        margin-top: 6px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        font-size: 0.95rem;
+      }
+
+      button {
+        background: var(--brand);
+        color: var(--brand-ink);
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .status {
+        margin-top: 12px;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .viewer {
+        display: none;
+      }
+
+      .viewer.visible {
+        display: block;
+      }
+
+      iframe {
+        width: 100%;
+        height: min(76vh, 900px);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #f9fbfd;
+      }
+
+      .download {
+        display: inline-flex;
+        margin-bottom: 10px;
+        color: var(--brand);
+        font-weight: 600;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="layout">
+      <section class="card">
+        <h1>office2pdf WASM Demo</h1>
+        <p>Upload a DOCX, PPTX, or XLSX file and preview the converted PDF in the browser.</p>
+      </section>
+
+      <section class="card">
+        <div class="controls">
+          <label>
+            Office File
+            <input id="fileInput" type="file" accept=".docx,.pptx,.xlsx" />
+          </label>
+
+          <label>
+            Format
+            <select id="formatSelect">
+              <option value="auto">Auto detect</option>
+              <option value="docx">DOCX</option>
+              <option value="pptx">PPTX</option>
+              <option value="xlsx">XLSX</option>
+            </select>
+          </label>
+
+          <label>
+            Convert
+            <button id="convertButton" type="button">Convert to PDF</button>
+          </label>
+        </div>
+
+        <div id="status" class="status">WASM not loaded yet.</div>
+      </section>
+
+      <section id="viewer" class="card viewer">
+        <a id="downloadLink" class="download" href="#" download="converted.pdf">Download PDF</a>
+        <iframe id="previewFrame" title="PDF preview"></iframe>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

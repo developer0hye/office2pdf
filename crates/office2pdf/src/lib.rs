@@ -48,6 +48,8 @@ pub mod render;
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
+use std::time::Duration;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
 use config::{ConvertOptions, Format};
@@ -65,6 +67,29 @@ fn format_label(format: Format) -> &'static str {
 fn dedup_warnings(warnings: &mut Vec<ConvertWarning>) {
     let mut seen = HashSet::new();
     warnings.retain(|warning| seen.insert(warning.to_string()));
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+type TimingMark = Instant;
+#[cfg(target_arch = "wasm32")]
+type TimingMark = ();
+
+#[cfg(not(target_arch = "wasm32"))]
+fn start_timing() -> TimingMark {
+    Instant::now()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn start_timing() -> TimingMark {}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn elapsed_since(start: TimingMark) -> Duration {
+    start.elapsed()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn elapsed_since(_start: TimingMark) -> Duration {
+    Duration::ZERO
 }
 
 /// Extract a human-readable message from a caught panic payload.
@@ -178,7 +203,7 @@ pub fn convert_bytes(
         return convert_bytes_streaming_xlsx(data, options);
     }
 
-    let total_start = Instant::now();
+    let total_start = start_timing();
     let input_size_bytes = data.len() as u64;
 
     let parser: Box<dyn Parser> = match format {
@@ -190,7 +215,7 @@ pub fn convert_bytes(
     // Stage 1: Parse (OOXML → IR)
     // Wrap with catch_unwind to convert upstream panics (e.g. unwrap() in
     // umya-spreadsheet / docx-rs) into ConvertError::Parse.
-    let parse_start = Instant::now();
+    let parse_start = start_timing();
     let parse_result =
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| parser.parse(data, options)));
     let (doc, mut warnings) = match parse_result {
@@ -202,7 +227,7 @@ pub fn convert_bytes(
             )));
         }
     };
-    let parse_duration = parse_start.elapsed();
+    let parse_duration = elapsed_since(parse_start);
     let page_count = doc.pages.len() as u32;
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -233,44 +258,56 @@ pub fn convert_bytes(
     );
     dedup_warnings(&mut warnings);
 
-    // Stage 2: Codegen (IR → Typst)
-    let codegen_start = Instant::now();
-    #[cfg(not(target_arch = "wasm32"))]
-    let output = render::typst_gen::generate_typst_with_options_and_font_context(
-        &doc,
-        options,
-        font_context.as_ref(),
-    )?;
-    #[cfg(target_arch = "wasm32")]
-    let output = render::typst_gen::generate_typst_with_options(&doc, options)?;
-    let codegen_duration = codegen_start.elapsed();
+    // Stage 2+3: Codegen + Compile
+    let render_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let codegen_start = start_timing();
+        #[cfg(not(target_arch = "wasm32"))]
+        let output = render::typst_gen::generate_typst_with_options_and_font_context(
+            &doc,
+            options,
+            font_context.as_ref(),
+        )?;
+        #[cfg(target_arch = "wasm32")]
+        let output = render::typst_gen::generate_typst_with_options(&doc, options)?;
+        let codegen_duration = elapsed_since(codegen_start);
 
-    // Stage 3: Compile (Typst → PDF)
-    let compile_start = Instant::now();
-    #[cfg(not(target_arch = "wasm32"))]
-    let pdf = render::pdf::compile_to_pdf(
-        &output.source,
-        &output.images,
-        options.pdf_standard,
-        font_context
-            .as_ref()
-            .map(|context| context.search_paths())
-            .unwrap_or(&[]),
-        options.tagged,
-        options.pdf_ua,
-    )?;
-    #[cfg(target_arch = "wasm32")]
-    let pdf = render::pdf::compile_to_pdf(
-        &output.source,
-        &output.images,
-        options.pdf_standard,
-        &options.font_paths,
-        options.tagged,
-        options.pdf_ua,
-    )?;
-    let compile_duration = compile_start.elapsed();
+        let compile_start = start_timing();
+        #[cfg(not(target_arch = "wasm32"))]
+        let pdf = render::pdf::compile_to_pdf(
+            &output.source,
+            &output.images,
+            options.pdf_standard,
+            font_context
+                .as_ref()
+                .map(|context| context.search_paths())
+                .unwrap_or(&[]),
+            options.tagged,
+            options.pdf_ua,
+        )?;
+        #[cfg(target_arch = "wasm32")]
+        let pdf = render::pdf::compile_to_pdf(
+            &output.source,
+            &output.images,
+            options.pdf_standard,
+            &options.font_paths,
+            options.tagged,
+            options.pdf_ua,
+        )?;
+        let compile_duration = elapsed_since(compile_start);
 
-    let total_duration = total_start.elapsed();
+        Ok::<(Vec<u8>, Duration, Duration), ConvertError>((pdf, codegen_duration, compile_duration))
+    }));
+    let (pdf, codegen_duration, compile_duration) = match render_result {
+        Ok(result) => result?,
+        Err(panic_info) => {
+            return Err(ConvertError::Render(format!(
+                "render pipeline panicked: {}",
+                extract_panic_message(&panic_info)
+            )));
+        }
+    };
+
+    let total_duration = elapsed_since(total_start);
     let output_size_bytes = pdf.len() as u64;
 
     Ok(ConvertResult {
@@ -298,7 +335,7 @@ fn convert_bytes_streaming_xlsx(
     data: &[u8],
     options: &ConvertOptions,
 ) -> Result<ConvertResult, ConvertError> {
-    let total_start = Instant::now();
+    let total_start = start_timing();
     let input_size_bytes = data.len() as u64;
     let chunk_size = options.streaming_chunk_size.unwrap_or(1000);
 
@@ -306,7 +343,7 @@ fn convert_bytes_streaming_xlsx(
 
     // Stage 1: Parse into chunks
     // Wrap with catch_unwind (same rationale as convert_bytes).
-    let parse_start = Instant::now();
+    let parse_start = start_timing();
     let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         xlsx_parser.parse_streaming(data, options, chunk_size)
     }));
@@ -319,7 +356,7 @@ fn convert_bytes_streaming_xlsx(
             )));
         }
     };
-    let parse_duration = parse_start.elapsed();
+    let parse_duration = elapsed_since(parse_start);
 
     if chunk_docs.is_empty() {
         // Empty spreadsheet — produce a minimal empty PDF
@@ -353,15 +390,15 @@ fn convert_bytes_streaming_xlsx(
         #[cfg(target_arch = "wasm32")]
         let pdf =
             render::pdf::compile_to_pdf(&output.source, &output.images, None, &[], false, false)?;
-        let total_duration = total_start.elapsed();
+        let total_duration = elapsed_since(total_start);
         dedup_warnings(&mut warnings);
         return Ok(ConvertResult {
             pdf,
             warnings,
             metrics: Some(ConvertMetrics {
                 parse_duration,
-                codegen_duration: std::time::Duration::ZERO,
-                compile_duration: std::time::Duration::ZERO,
+            codegen_duration: Duration::ZERO,
+            compile_duration: Duration::ZERO,
                 total_duration,
                 input_size_bytes,
                 output_size_bytes: 0,
@@ -372,8 +409,8 @@ fn convert_bytes_streaming_xlsx(
 
     // Stage 2+3: Codegen + Compile each chunk independently
     let mut all_pdfs: Vec<Vec<u8>> = Vec::with_capacity(chunk_docs.len());
-    let mut codegen_duration_total = std::time::Duration::ZERO;
-    let mut compile_duration_total = std::time::Duration::ZERO;
+    let mut codegen_duration_total = Duration::ZERO;
+    let mut compile_duration_total = Duration::ZERO;
     let mut total_page_count = 0u32;
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -392,7 +429,7 @@ fn convert_bytes_streaming_xlsx(
     for chunk_doc in chunk_docs {
         total_page_count += chunk_doc.pages.len() as u32;
 
-        let codegen_start = Instant::now();
+        let codegen_start = start_timing();
         #[cfg(not(target_arch = "wasm32"))]
         let output = render::typst_gen::generate_typst_with_options_and_font_context(
             &chunk_doc,
@@ -401,9 +438,9 @@ fn convert_bytes_streaming_xlsx(
         )?;
         #[cfg(target_arch = "wasm32")]
         let output = render::typst_gen::generate_typst_with_options(&chunk_doc, options)?;
-        codegen_duration_total += codegen_start.elapsed();
+        codegen_duration_total += elapsed_since(codegen_start);
 
-        let compile_start = Instant::now();
+        let compile_start = start_timing();
         #[cfg(not(target_arch = "wasm32"))]
         let pdf = render::pdf::compile_to_pdf(
             &output.source,
@@ -425,7 +462,7 @@ fn convert_bytes_streaming_xlsx(
             options.tagged,
             options.pdf_ua,
         )?;
-        compile_duration_total += compile_start.elapsed();
+        compile_duration_total += elapsed_since(compile_start);
 
         all_pdfs.push(pdf);
         // chunk_doc and output are dropped here, freeing their memory
@@ -439,7 +476,7 @@ fn convert_bytes_streaming_xlsx(
         pdf_ops::merge(&refs).map_err(|e| ConvertError::Render(format!("PDF merge failed: {e}")))?
     };
 
-    let total_duration = total_start.elapsed();
+    let total_duration = elapsed_since(total_start);
     let output_size_bytes = final_pdf.len() as u64;
     dedup_warnings(&mut warnings);
 

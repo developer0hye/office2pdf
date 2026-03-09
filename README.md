@@ -110,6 +110,19 @@ const pdfBytes2 = convertToPdf(xlsxBytes, "xlsx");
 
 Available functions: `convertToPdf(data, format)`, `convertDocxToPdf(data)`, `convertPptxToPdf(data)`, `convertXlsxToPdf(data)`.
 
+Browser upload + preview demo:
+
+```sh
+cd crates/office2pdf
+wasm-pack build --target web --features wasm
+python3 -m http.server 8000
+# open http://localhost:8000/examples/wasm-web/index.html
+```
+
+Demo source files:
+- `crates/office2pdf/examples/wasm-web/index.html`
+- `crates/office2pdf/examples/wasm-web/app.js`
+
 ## CLI Options
 
 | Flag | Description |

@@ -7,45 +7,79 @@ license.workspace = true
 repository.workspace = true
 description = "Convert DOCX, XLSX, and PPTX files to PDF using pure Rust"
 readme = "../../README.md"
-keywords = ["pdf", "docx", "xlsx", "pptx", "converter"]
-categories = ["text-processing"]
+keywords = [
+    "pdf",
+    "docx",
+    "xlsx",
+    "pptx",
+    "converter",
+]
+categories = [
+    "text-processing",
+]
 
 [features]
-wasm = ["wasm-bindgen"]
-pdf-ops = ["lopdf"]
-typescript = ["ts-rs"]
+wasm = [
+    "wasm-bindgen",
+    "console_error_panic_hook",
+]
+pdf-ops = [
+    "lopdf",
+]
+typescript = [
+    "ts-rs",
+]
 
 [dependencies]
 thiserror = "2"
 lopdf = { version = "0.39", optional = true }
 typst = "0.14"
 typst-pdf = "0.14"
-typst-kit = { version = "0.14", default-features = false, features = ["fonts", "embed-fonts"] }
+typst-kit = { version = "0.14", default-features = false, features = [
+    "fonts",
+    "embed-fonts",
+] }
 comemo = "0.5"
 docx-rs = "0.4"
 serde = "1"
 serde_json = "1"
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
+zip = { version = "0.6", default-features = false, features = [
+    "deflate",
+] }
 quick-xml = "0.38"
 umya-spreadsheet = "2"
 unicode-normalization = "0.1"
 image = "0.25"
 tracing = "0.1"
 wasm-bindgen = { version = "0.2", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
 ts-rs = { version = "12", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
-getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom_02 = { package = "getrandom", version = "0.2", features = [
+    "js",
+] }
+getrandom = { version = "0.3", features = [
+    "wasm_js",
+] }
+js-sys = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.5", features = [
+    "html_reports",
+] }
 paste = "1"
 pdf-extract = "0.10"
 
 [[bench]]
 name = "conversion"
 harness = false
+
+[lib]
+crate-type = [
+    "cdylib",
+    "rlib",
+]

@@ -28,6 +28,12 @@ use wasm_bindgen::prelude::*;
 use crate::config::{ConvertOptions, Format};
 use crate::convert_bytes;
 
+/// Install panic hook so Rust panic messages are forwarded to JS console.
+#[wasm_bindgen(start)]
+pub fn wasm_start() {
+    console_error_panic_hook::set_once();
+}
+
 /// Internal: convert with format string, returning a `String` error (testable on native).
 fn convert_to_pdf_inner(data: &[u8], format: &str) -> Result<Vec<u8>, String> {
     let fmt =

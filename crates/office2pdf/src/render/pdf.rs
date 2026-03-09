@@ -2,6 +2,7 @@ use std::collections::HashMap;
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use typst::diag::FileResult;
@@ -177,12 +178,19 @@ fn compile_to_pdf_inner(
             .map_err(|e| ConvertError::Render(format!("PDF standard configuration error: {e}")))?
     };
 
-    // PDF/A and PDF/UA require a document creation timestamp
-    let needs_timestamp = pdf_standard.is_some() || pdf_ua;
-    let timestamp = if needs_timestamp {
-        Some(typst_pdf::Timestamp::new_utc(current_utc_datetime()))
-    } else {
-        None
+    #[cfg(target_arch = "wasm32")]
+    let timestamp = Some(typst_pdf::Timestamp::new_utc(current_utc_datetime()));
+
+    // PDF/A and PDF/UA require a document creation timestamp.
+    // For regular PDFs on native, omit timestamp to keep behavior unchanged.
+    #[cfg(not(target_arch = "wasm32"))]
+    let timestamp = {
+        let needs_timestamp = pdf_standard.is_some() || pdf_ua;
+        if needs_timestamp {
+            Some(typst_pdf::Timestamp::new_utc(current_utc_datetime()))
+        } else {
+            None
+        }
     };
 
     // Enable tagging when explicitly requested or when PDF/UA requires it
@@ -205,6 +213,7 @@ fn compile_to_pdf_inner(
 /// Uses `std::time::SystemTime` to avoid an external chrono dependency.
 /// The civil date is computed from the Unix timestamp using Howard Hinnant's
 /// algorithm (<http://howardhinnant.github.io/date_algorithms.html>).
+#[cfg(not(target_arch = "wasm32"))]
 fn current_utc_datetime() -> Datetime {
     let duration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -232,6 +241,23 @@ fn current_utc_datetime() -> Datetime {
 
     Datetime::from_ymd_hms(y, m, d, hours, minutes, seconds)
         .expect("valid date derived from SystemTime")
+}
+
+/// Convert current JS `Date` to Typst UTC datetime on wasm32.
+#[cfg(target_arch = "wasm32")]
+fn current_utc_datetime() -> Datetime {
+    let now = js_sys::Date::new_0();
+    let year: i32 = now.get_utc_full_year() as i32;
+    let month: u8 = now.get_utc_month() as u8 + 1;
+    let day: u8 = now.get_utc_date() as u8;
+    let hour: u8 = now.get_utc_hours() as u8;
+    let minute: u8 = now.get_utc_minutes() as u8;
+    let second: u8 = now.get_utc_seconds() as u8;
+
+    Datetime::from_ymd_hms(year, month, day, hour, minute, second).unwrap_or_else(|| {
+        Datetime::from_ymd_hms(1970, 1, 1, 0, 0, 0)
+            .expect("epoch datetime should always be valid")
+    })
 }
 
 /// Font data source: either a static reference to cached fonts or owned
