@@ -3819,7 +3819,7 @@ fn test_generate_ordered_list_with_custom_marker_style_uses_numbering_function()
     let output = generate_typst(&doc).unwrap();
 
     assert!(output.source.contains("#enum("));
-    assert!(output.source.contains("numbering: nums => ["));
+    assert!(output.source.contains("numbering: (..nums) => ["));
     assert!(output.source.contains("#numbering(\"1)\", ..nums)"));
     assert!(output.source.contains("Pretendard Medium"));
 }
