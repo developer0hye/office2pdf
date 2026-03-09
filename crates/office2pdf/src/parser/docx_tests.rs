@@ -2065,63 +2065,6 @@ fn test_parse_simple_numbered_list() {
 }
 
 #[test]
-fn test_parse_ordered_list_carries_marker_style_from_item_text() {
-    let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
-        0,
-        docx_rs::Start::new(1),
-        docx_rs::NumberFormat::new("decimal"),
-        docx_rs::LevelText::new("%1."),
-        docx_rs::LevelJc::new("left"),
-    ));
-    let numbering = docx_rs::Numbering::new(1, 0);
-
-    let data = build_docx_with_numbering(
-        vec![abstract_num],
-        vec![numbering],
-        vec![
-            docx_rs::Paragraph::new().add_run(
-                docx_rs::Run::new()
-                    .add_text("Bold first")
-                    .bold()
-                    .size(24),
-            )
-            .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
-            docx_rs::Paragraph::new().add_run(
-                docx_rs::Run::new()
-                    .add_text("Bold second")
-                    .bold()
-                    .size(24),
-            )
-            .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
-        ],
-    );
-
-    let parser = DocxParser;
-    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let page = match &doc.pages[0] {
-        Page::Flow(p) => p,
-        _ => panic!("Expected FlowPage"),
-    };
-
-    let list = page
-        .content
-        .iter()
-        .find_map(|block| match block {
-            Block::List(list) => Some(list),
-            _ => None,
-        })
-        .expect("Expected list block");
-
-    let marker_style = list
-        .level_styles
-        .get(&0)
-        .and_then(|style| style.marker_style.as_ref())
-        .expect("Expected ordered level marker style from list item text style");
-    assert_eq!(marker_style.bold, Some(true));
-    assert_eq!(marker_style.font_size, Some(12.0));
-}
-
-#[test]
 fn test_parse_nested_multi_level_list() {
     let abstract_num = docx_rs::AbstractNumbering::new(0)
         .add_level(docx_rs::Level::new(

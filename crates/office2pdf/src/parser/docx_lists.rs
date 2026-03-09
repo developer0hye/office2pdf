@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use crate::ir::{Block, List, ListItem, ListKind, ListLevelStyle, Paragraph, TextStyle};
+use crate::ir::{Block, List, ListItem, ListKind, ListLevelStyle, Paragraph};
 
 /// Numbering info extracted from a paragraph's numPr.
 #[derive(Debug, Clone)]
@@ -288,14 +288,6 @@ fn fallback_level_style(kind: ListKind) -> ListLevelStyle {
     }
 }
 
-fn marker_style_from_paragraph(paragraph: &Paragraph) -> Option<TextStyle> {
-    paragraph
-        .runs
-        .iter()
-        .map(|run| run.style.clone())
-        .find(|style| *style != TextStyle::default())
-}
-
 fn list_belongs_to_pending(current: &PendingList, info: &NumInfo) -> bool {
     if info.level < current.root_level {
         return false;
@@ -318,7 +310,7 @@ fn finalize_list(pending: PendingList, numberings: &NumberingMap) -> List {
 
     let mut level_styles: BTreeMap<u32, ListLevelStyle> = BTreeMap::new();
     for item in &pending.items {
-        let style_entry = level_styles.entry(item.level).or_insert_with(|| {
+        level_styles.entry(item.level).or_insert_with(|| {
             resolved_list_level(numberings, item.num_id, item.level)
                 .map(|resolved| resolved.style.clone())
                 .or_else(|| {
@@ -326,10 +318,6 @@ fn finalize_list(pending: PendingList, numberings: &NumberingMap) -> List {
                 })
                 .unwrap_or_else(|| fallback_level_style(root_kind))
         });
-
-        if style_entry.kind == ListKind::Ordered && style_entry.marker_style.is_none() {
-            style_entry.marker_style = marker_style_from_paragraph(&item.paragraph);
-        }
     }
 
     let mut items: Vec<ListItem> = Vec::with_capacity(pending.items.len());
