@@ -212,6 +212,9 @@ fn test_slide_dimensions() {
 #[path = "pptx_text_box_tests.rs"]
 mod text_box_tests;
 
+#[path = "pptx_text_box_semantic_tests.rs"]
+mod text_box_semantic_tests;
+
 #[test]
 fn test_parse_invalid_data() {
     let parser = PptxParser;
