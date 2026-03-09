@@ -37,7 +37,6 @@
 //! std::fs::write("report.pdf", &result.pdf).unwrap();
 //! ```
 
-use std::collections::HashSet;
 pub mod config;
 pub mod error;
 pub mod ir;
@@ -48,61 +47,20 @@ pub mod render;
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
-use std::time::Instant;
-
 use config::{ConvertOptions, Format};
-use error::{ConvertError, ConvertMetrics, ConvertResult, ConvertWarning};
-use parser::Parser;
+use error::{ConvertError, ConvertResult};
+#[path = "lib_pipeline.rs"]
+mod pipeline;
 
-fn format_label(format: Format) -> &'static str {
-    match format {
-        Format::Docx => "DOCX",
-        Format::Pptx => "PPTX",
-        Format::Xlsx => "XLSX",
-    }
-}
-
-fn dedup_warnings(warnings: &mut Vec<ConvertWarning>) {
-    let mut seen = HashSet::new();
-    warnings.retain(|warning| seen.insert(warning.to_string()));
-}
-
-/// Extract a human-readable message from a caught panic payload.
-fn extract_panic_message(payload: &Box<dyn std::any::Any + Send>) -> String {
-    if let Some(s) = payload.downcast_ref::<String>() {
-        s.clone()
-    } else if let Some(s) = payload.downcast_ref::<&str>() {
-        (*s).to_string()
-    } else {
-        "unknown panic".to_string()
-    }
-}
-
-/// OLE2 Compound Binary File magic bytes.
-///
-/// Encrypted OOXML files are wrapped in an OLE2 container instead of being
-/// ZIP archives.  Detecting this signature lets us return a clear
-/// [`ConvertError::UnsupportedEncryption`] before the ZIP reader sees
-/// invalid data.
-const OLE2_MAGIC: [u8; 8] = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
-
-/// Returns `true` if `data` starts with the OLE2 compound-file magic bytes.
+#[cfg(test)]
 fn is_ole2(data: &[u8]) -> bool {
-    data.len() >= OLE2_MAGIC.len() && data[..OLE2_MAGIC.len()] == OLE2_MAGIC
+    pipeline::is_ole2(data)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(test)]
 fn should_resolve_font_context(doc: &ir::Document, options: &ConvertOptions) -> bool {
-    !options.font_paths.is_empty() || render::font_subst::document_requests_font_families(doc)
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn resolve_font_context_if_needed(
-    doc: &ir::Document,
-    options: &ConvertOptions,
-) -> Option<render::font_context::FontSearchContext> {
-    should_resolve_font_context(doc, options)
-        .then(|| render::font_context::resolve_font_search_context(&options.font_paths))
+    pipeline::should_resolve_font_context(doc, options)
 }
 
 /// Convert a file at the given path to PDF bytes with warnings.
@@ -119,7 +77,7 @@ fn resolve_font_context_if_needed(
 /// parse/render failures.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn convert(path: impl AsRef<std::path::Path>) -> Result<ConvertResult, ConvertError> {
-    convert_with_options(path, &ConvertOptions::default())
+    pipeline::convert(path)
 }
 
 /// Convert a file at the given path to PDF bytes with options.
@@ -137,17 +95,7 @@ pub fn convert_with_options(
     path: impl AsRef<std::path::Path>,
     options: &ConvertOptions,
 ) -> Result<ConvertResult, ConvertError> {
-    let path = path.as_ref();
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .ok_or_else(|| ConvertError::UnsupportedFormat("no file extension".to_string()))?;
-
-    let format = Format::from_extension(ext)
-        .ok_or_else(|| ConvertError::UnsupportedFormat(ext.to_string()))?;
-
-    let data = std::fs::read(path)?;
-    convert_bytes(&data, format, options)
+    pipeline::convert_with_options(path, options)
 }
 
 /// Convert raw bytes of a known format to PDF bytes with warnings.
@@ -167,295 +115,7 @@ pub fn convert_bytes(
     format: Format,
     options: &ConvertOptions,
 ) -> Result<ConvertResult, ConvertError> {
-    // Encrypted OOXML files are wrapped in OLE2 containers — reject early.
-    if is_ole2(data) {
-        return Err(ConvertError::UnsupportedEncryption);
-    }
-
-    // Use streaming path for XLSX when requested and pdf-ops is available
-    #[cfg(feature = "pdf-ops")]
-    if options.streaming && format == Format::Xlsx {
-        return convert_bytes_streaming_xlsx(data, options);
-    }
-
-    let total_start = Instant::now();
-    let input_size_bytes = data.len() as u64;
-
-    let parser: Box<dyn Parser> = match format {
-        Format::Docx => Box::new(parser::docx::DocxParser),
-        Format::Pptx => Box::new(parser::pptx::PptxParser),
-        Format::Xlsx => Box::new(parser::xlsx::XlsxParser),
-    };
-
-    // Stage 1: Parse (OOXML → IR)
-    // Wrap with catch_unwind to convert upstream panics (e.g. unwrap() in
-    // umya-spreadsheet / docx-rs) into ConvertError::Parse.
-    let parse_start = Instant::now();
-    let parse_result =
-        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| parser.parse(data, options)));
-    let (doc, mut warnings) = match parse_result {
-        Ok(result) => result?,
-        Err(panic_info) => {
-            return Err(ConvertError::Parse(format!(
-                "upstream parser panicked: {}",
-                extract_panic_message(&panic_info)
-            )));
-        }
-    };
-    let parse_duration = parse_start.elapsed();
-    let page_count = doc.pages.len() as u32;
-
-    #[cfg(not(target_arch = "wasm32"))]
-    let font_context = resolve_font_context_if_needed(&doc, options);
-
-    #[cfg(not(target_arch = "wasm32"))]
-    if let Some(font_context) = font_context.as_ref() {
-        warnings.extend(
-            render::font_subst::detect_missing_font_fallbacks_with_context(&doc, font_context)
-                .into_iter()
-                .map(|(from, to)| ConvertWarning::FallbackUsed {
-                    format: format_label(format).to_string(),
-                    from,
-                    to,
-                }),
-        );
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    warnings.extend(
-        render::font_subst::detect_missing_font_fallbacks(&doc, &options.font_paths)
-            .into_iter()
-            .map(|(from, to)| ConvertWarning::FallbackUsed {
-                format: format_label(format).to_string(),
-                from,
-                to,
-            }),
-    );
-    dedup_warnings(&mut warnings);
-
-    // Stage 2: Codegen (IR → Typst)
-    let codegen_start = Instant::now();
-    #[cfg(not(target_arch = "wasm32"))]
-    let output = render::typst_gen::generate_typst_with_options_and_font_context(
-        &doc,
-        options,
-        font_context.as_ref(),
-    )?;
-    #[cfg(target_arch = "wasm32")]
-    let output = render::typst_gen::generate_typst_with_options(&doc, options)?;
-    let codegen_duration = codegen_start.elapsed();
-
-    // Stage 3: Compile (Typst → PDF)
-    let compile_start = Instant::now();
-    #[cfg(not(target_arch = "wasm32"))]
-    let pdf = render::pdf::compile_to_pdf(
-        &output.source,
-        &output.images,
-        options.pdf_standard,
-        font_context
-            .as_ref()
-            .map(|context| context.search_paths())
-            .unwrap_or(&[]),
-        options.tagged,
-        options.pdf_ua,
-    )?;
-    #[cfg(target_arch = "wasm32")]
-    let pdf = render::pdf::compile_to_pdf(
-        &output.source,
-        &output.images,
-        options.pdf_standard,
-        &options.font_paths,
-        options.tagged,
-        options.pdf_ua,
-    )?;
-    let compile_duration = compile_start.elapsed();
-
-    let total_duration = total_start.elapsed();
-    let output_size_bytes = pdf.len() as u64;
-
-    Ok(ConvertResult {
-        pdf,
-        warnings,
-        metrics: Some(ConvertMetrics {
-            parse_duration,
-            codegen_duration,
-            compile_duration,
-            total_duration,
-            input_size_bytes,
-            output_size_bytes,
-            page_count,
-        }),
-    })
-}
-
-/// Streaming conversion for XLSX: process rows in chunks with bounded memory.
-///
-/// Each chunk of rows is compiled independently to a PDF, then all chunk PDFs
-/// are merged. This bounds peak memory during Typst compilation because only
-/// one chunk's worth of Typst source and compilation state is in memory at a time.
-#[cfg(feature = "pdf-ops")]
-fn convert_bytes_streaming_xlsx(
-    data: &[u8],
-    options: &ConvertOptions,
-) -> Result<ConvertResult, ConvertError> {
-    let total_start = Instant::now();
-    let input_size_bytes = data.len() as u64;
-    let chunk_size = options.streaming_chunk_size.unwrap_or(1000);
-
-    let xlsx_parser = parser::xlsx::XlsxParser;
-
-    // Stage 1: Parse into chunks
-    // Wrap with catch_unwind (same rationale as convert_bytes).
-    let parse_start = Instant::now();
-    let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        xlsx_parser.parse_streaming(data, options, chunk_size)
-    }));
-    let (chunk_docs, mut warnings) = match parse_result {
-        Ok(result) => result?,
-        Err(panic_info) => {
-            return Err(ConvertError::Parse(format!(
-                "upstream parser panicked: {}",
-                extract_panic_message(&panic_info)
-            )));
-        }
-    };
-    let parse_duration = parse_start.elapsed();
-
-    if chunk_docs.is_empty() {
-        // Empty spreadsheet — produce a minimal empty PDF
-        let empty_doc = ir::Document {
-            metadata: ir::Metadata::default(),
-            pages: vec![],
-            styles: ir::StyleSheet::default(),
-        };
-        #[cfg(not(target_arch = "wasm32"))]
-        let font_context = resolve_font_context_if_needed(&empty_doc, options);
-        #[cfg(not(target_arch = "wasm32"))]
-        let output = render::typst_gen::generate_typst_with_options_and_font_context(
-            &empty_doc,
-            &ConvertOptions::default(),
-            font_context.as_ref(),
-        )?;
-        #[cfg(target_arch = "wasm32")]
-        let output = render::typst_gen::generate_typst(&empty_doc)?;
-        #[cfg(not(target_arch = "wasm32"))]
-        let pdf = render::pdf::compile_to_pdf(
-            &output.source,
-            &output.images,
-            None,
-            font_context
-                .as_ref()
-                .map(|context| context.search_paths())
-                .unwrap_or(&[]),
-            false,
-            false,
-        )?;
-        #[cfg(target_arch = "wasm32")]
-        let pdf =
-            render::pdf::compile_to_pdf(&output.source, &output.images, None, &[], false, false)?;
-        let total_duration = total_start.elapsed();
-        dedup_warnings(&mut warnings);
-        return Ok(ConvertResult {
-            pdf,
-            warnings,
-            metrics: Some(ConvertMetrics {
-                parse_duration,
-                codegen_duration: std::time::Duration::ZERO,
-                compile_duration: std::time::Duration::ZERO,
-                total_duration,
-                input_size_bytes,
-                output_size_bytes: 0,
-                page_count: 0,
-            }),
-        });
-    }
-
-    // Stage 2+3: Codegen + Compile each chunk independently
-    let mut all_pdfs: Vec<Vec<u8>> = Vec::with_capacity(chunk_docs.len());
-    let mut codegen_duration_total = std::time::Duration::ZERO;
-    let mut compile_duration_total = std::time::Duration::ZERO;
-    let mut total_page_count = 0u32;
-
-    #[cfg(not(target_arch = "wasm32"))]
-    let font_context = if options.font_paths.is_empty()
-        && !chunk_docs
-            .iter()
-            .any(render::font_subst::document_requests_font_families)
-    {
-        None
-    } else {
-        Some(render::font_context::resolve_font_search_context(
-            &options.font_paths,
-        ))
-    };
-
-    for chunk_doc in chunk_docs {
-        total_page_count += chunk_doc.pages.len() as u32;
-
-        let codegen_start = Instant::now();
-        #[cfg(not(target_arch = "wasm32"))]
-        let output = render::typst_gen::generate_typst_with_options_and_font_context(
-            &chunk_doc,
-            options,
-            font_context.as_ref(),
-        )?;
-        #[cfg(target_arch = "wasm32")]
-        let output = render::typst_gen::generate_typst_with_options(&chunk_doc, options)?;
-        codegen_duration_total += codegen_start.elapsed();
-
-        let compile_start = Instant::now();
-        #[cfg(not(target_arch = "wasm32"))]
-        let pdf = render::pdf::compile_to_pdf(
-            &output.source,
-            &output.images,
-            options.pdf_standard,
-            font_context
-                .as_ref()
-                .map(|context| context.search_paths())
-                .unwrap_or(&[]),
-            options.tagged,
-            options.pdf_ua,
-        )?;
-        #[cfg(target_arch = "wasm32")]
-        let pdf = render::pdf::compile_to_pdf(
-            &output.source,
-            &output.images,
-            options.pdf_standard,
-            &options.font_paths,
-            options.tagged,
-            options.pdf_ua,
-        )?;
-        compile_duration_total += compile_start.elapsed();
-
-        all_pdfs.push(pdf);
-        // chunk_doc and output are dropped here, freeing their memory
-    }
-
-    // Stage 4: Merge all chunk PDFs
-    let final_pdf = if all_pdfs.len() == 1 {
-        all_pdfs.into_iter().next().unwrap()
-    } else {
-        let refs: Vec<&[u8]> = all_pdfs.iter().map(|p| p.as_slice()).collect();
-        pdf_ops::merge(&refs).map_err(|e| ConvertError::Render(format!("PDF merge failed: {e}")))?
-    };
-
-    let total_duration = total_start.elapsed();
-    let output_size_bytes = final_pdf.len() as u64;
-    dedup_warnings(&mut warnings);
-
-    Ok(ConvertResult {
-        pdf: final_pdf,
-        warnings,
-        metrics: Some(ConvertMetrics {
-            parse_duration,
-            codegen_duration: codegen_duration_total,
-            compile_duration: compile_duration_total,
-            total_duration,
-            input_size_bytes,
-            output_size_bytes,
-            page_count: total_page_count,
-        }),
-    })
+    pipeline::convert_bytes(data, format, options)
 }
 
 /// Render an IR Document to PDF bytes.
@@ -469,32 +129,7 @@ fn convert_bytes_streaming_xlsx(
 ///
 /// Returns [`ConvertError::Render`] if Typst compilation or PDF export fails.
 pub fn render_document(doc: &ir::Document) -> Result<Vec<u8>, ConvertError> {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let options = ConvertOptions::default();
-        let font_context = resolve_font_context_if_needed(doc, &options);
-        let output = render::typst_gen::generate_typst_with_options_and_font_context(
-            doc,
-            &options,
-            font_context.as_ref(),
-        )?;
-        render::pdf::compile_to_pdf(
-            &output.source,
-            &output.images,
-            None,
-            font_context
-                .as_ref()
-                .map(|context| context.search_paths())
-                .unwrap_or(&[]),
-            false,
-            false,
-        )
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        let output = render::typst_gen::generate_typst(doc)?;
-        render::pdf::compile_to_pdf(&output.source, &output.images, None, &[], false, false)
-    }
+    pipeline::render_document(doc)
 }
 
 #[cfg(test)]
