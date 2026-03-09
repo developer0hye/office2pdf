@@ -82,6 +82,12 @@ fn all_blocks(doc: &Document) -> &[Block] {
 #[path = "docx_foundation_tests.rs"]
 mod foundation_tests;
 
+#[path = "docx_inline_style_tests.rs"]
+mod inline_style_tests;
+
+#[path = "docx_paragraph_format_tests.rs"]
+mod paragraph_format_tests;
+
 // ----- Table parsing tests (US-007) -----
 
 /// Helper: build a DOCX with a table using docx-rs builder.
