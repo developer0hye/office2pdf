@@ -116,6 +116,9 @@ fn first_table(doc: &Document) -> &crate::ir::Table {
 #[path = "docx_table_tests.rs"]
 mod table_tests;
 
+#[path = "docx_table_structure_tests.rs"]
+mod table_structure_tests;
+
 #[path = "docx_image_tests.rs"]
 mod image_tests;
 
