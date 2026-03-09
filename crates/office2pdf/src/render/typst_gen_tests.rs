@@ -214,6 +214,9 @@ mod page_misc_tests;
 #[path = "typst_gen_visual_tests.rs"]
 mod visual_tests;
 
+#[path = "typst_gen_diagram_visual_tests.rs"]
+mod diagram_visual_tests;
+
 #[path = "typst_gen_advanced_tests.rs"]
 mod advanced_tests;
 
