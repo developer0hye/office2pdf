@@ -228,39 +228,136 @@ pub(super) enum TaggedElement {
     ListParagraph { info: NumInfo, paragraph: Paragraph },
 }
 
-fn finalize_list(num_id: usize, mut items: Vec<ListItem>, numberings: &NumberingMap) -> List {
-    let resolved = numberings.get(&num_id);
+#[derive(Debug, Clone)]
+struct PendingListItem {
+    num_id: usize,
+    level: u32,
+    paragraph: Paragraph,
+}
 
-    let kind = resolved
-        .map(|numbering| numbering.kind)
+#[derive(Debug, Clone)]
+struct PendingList {
+    root_num_id: usize,
+    root_level: u32,
+    items: Vec<PendingListItem>,
+}
+
+impl PendingList {
+    fn new(info: NumInfo, paragraph: Paragraph) -> Self {
+        Self {
+            root_num_id: info.num_id,
+            root_level: info.level,
+            items: vec![PendingListItem {
+                num_id: info.num_id,
+                level: info.level,
+                paragraph,
+            }],
+        }
+    }
+
+    fn push(&mut self, info: NumInfo, paragraph: Paragraph) {
+        self.items.push(PendingListItem {
+            num_id: info.num_id,
+            level: info.level,
+            paragraph,
+        });
+    }
+}
+
+fn resolved_list_level(
+    numberings: &NumberingMap,
+    num_id: usize,
+    level: u32,
+) -> Option<&ResolvedListLevel> {
+    numberings.get(&num_id)?.levels.get(&level)
+}
+
+fn resolved_level_kind(numberings: &NumberingMap, num_id: usize, level: u32) -> Option<ListKind> {
+    resolved_list_level(numberings, num_id, level)
+        .map(|resolved| resolved.style.kind)
+        .or_else(|| numberings.get(&num_id).map(|resolved| resolved.kind))
+}
+
+fn fallback_level_style(kind: ListKind) -> ListLevelStyle {
+    ListLevelStyle {
+        kind,
+        numbering_pattern: None,
+        full_numbering: false,
+        marker_text: None,
+        marker_style: None,
+    }
+}
+
+fn list_belongs_to_pending(current: &PendingList, info: &NumInfo) -> bool {
+    if info.level < current.root_level {
+        return false;
+    }
+
+    if info.level == current.root_level {
+        return info.num_id == current.root_num_id;
+    }
+
+    current.items.iter().any(|item| item.level < info.level)
+}
+
+fn finalize_list(pending: PendingList, numberings: &NumberingMap) -> List {
+    let root_kind: ListKind = pending
+        .items
+        .iter()
+        .find(|item| item.level == pending.root_level)
+        .and_then(|item| resolved_level_kind(numberings, item.num_id, item.level))
         .unwrap_or(ListKind::Unordered);
-    let level_styles = resolved
-        .map(|numbering| {
-            numbering
-                .levels
-                .iter()
-                .map(|(level, resolved_level)| (*level, resolved_level.style.clone()))
-                .collect()
-        })
-        .unwrap_or_default();
 
+    let mut level_styles: BTreeMap<u32, ListLevelStyle> = BTreeMap::new();
+    for item in &pending.items {
+        level_styles.entry(item.level).or_insert_with(|| {
+            resolved_list_level(numberings, item.num_id, item.level)
+                .map(|resolved| resolved.style.clone())
+                .or_else(|| {
+                    resolved_level_kind(numberings, item.num_id, item.level).map(fallback_level_style)
+                })
+                .unwrap_or_else(|| fallback_level_style(root_kind))
+        });
+    }
+
+    let mut items: Vec<ListItem> = Vec::with_capacity(pending.items.len());
     let mut previous_level: Option<u32> = None;
-    for item in &mut items {
-        let level_style = resolved.and_then(|numbering| numbering.levels.get(&item.level));
-        item.start_at = match (level_style, previous_level) {
-            (Some(level), None) if level.style.kind == ListKind::Ordered => Some(level.start),
-            (Some(level), Some(previous_level))
-                if level.style.kind == ListKind::Ordered && item.level > previous_level =>
-            {
-                Some(level.start)
+    let mut previous_num_id: Option<usize> = None;
+    for pending_item in pending.items {
+        let style_kind: ListKind = level_styles
+            .get(&pending_item.level)
+            .map(|style| style.kind)
+            .unwrap_or(root_kind);
+        let start_value: u32 = resolved_list_level(numberings, pending_item.num_id, pending_item.level)
+            .map(|resolved| resolved.start)
+            .unwrap_or(1);
+
+        let start_at: Option<u32> = if style_kind == ListKind::Ordered {
+            match (previous_level, previous_num_id) {
+                (None, _) => Some(start_value),
+                (Some(prev_level), Some(prev_num_id))
+                    if pending_item.level > prev_level
+                        || (pending_item.level == prev_level && pending_item.num_id != prev_num_id) =>
+                {
+                    Some(start_value)
+                }
+                _ => None,
             }
-            _ => None,
+        } else {
+            None
         };
-        previous_level = Some(item.level);
+
+        items.push(ListItem {
+            content: vec![pending_item.paragraph],
+            level: pending_item.level,
+            start_at,
+        });
+        previous_level = Some(pending_item.level);
+        previous_num_id = Some(pending_item.num_id);
     }
 
     List {
-        kind,
+        kind: root_kind,
         items,
         level_styles,
     }
@@ -273,46 +370,34 @@ pub(super) fn group_into_lists(
     numberings: &NumberingMap,
 ) -> Vec<Block> {
     let mut result: Vec<Block> = Vec::new();
-    let mut current_list: Option<(usize, Vec<ListItem>)> = None;
+    let mut current_list: Option<PendingList> = None;
 
     for element in elements {
         match element {
             TaggedElement::ListParagraph { info, paragraph } => {
-                if let Some((current_num_id, ref mut items)) = current_list {
-                    if info.num_id == current_num_id {
-                        items.push(ListItem {
-                            content: vec![paragraph],
-                            level: info.level,
-                            start_at: None,
-                        });
+                if let Some(current) = current_list.as_mut() {
+                    if list_belongs_to_pending(current, &info) {
+                        current.push(info, paragraph);
                         continue;
                     }
-                    result.push(Block::List(finalize_list(
-                        current_num_id,
-                        std::mem::take(items),
-                        numberings,
-                    )));
+                    let finished = current_list
+                        .take()
+                        .expect("current list should exist when flushing");
+                    result.push(Block::List(finalize_list(finished, numberings)));
                 }
-                current_list = Some((
-                    info.num_id,
-                    vec![ListItem {
-                        content: vec![paragraph],
-                        level: info.level,
-                        start_at: None,
-                    }],
-                ));
+                current_list = Some(PendingList::new(info, paragraph));
             }
             TaggedElement::Plain(blocks) => {
-                if let Some((num_id, items)) = current_list.take() {
-                    result.push(Block::List(finalize_list(num_id, items, numberings)));
+                if let Some(list) = current_list.take() {
+                    result.push(Block::List(finalize_list(list, numberings)));
                 }
                 result.extend(blocks);
             }
         }
     }
 
-    if let Some((num_id, items)) = current_list {
-        result.push(Block::List(finalize_list(num_id, items, numberings)));
+    if let Some(list) = current_list {
+        result.push(Block::List(finalize_list(list, numberings)));
     }
 
     result

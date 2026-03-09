@@ -1,6 +1,5 @@
 use super::*;
 use crate::ir::*;
-use std::collections::BTreeMap;
 use std::io::Cursor;
 
 /// Helper: build a minimal DOCX as bytes using docx-rs builder.
@@ -896,7 +895,7 @@ fn test_table_tiny_autofit_grid_is_ignored() {
 }
 
 #[test]
-fn test_table_tiny_non_auto_grid_is_kept() {
+fn test_table_tiny_non_auto_grid_is_normalized_to_table_width() {
     let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
         docx_rs::TableCell::new()
             .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("A"))),
@@ -912,8 +911,31 @@ fn test_table_tiny_non_auto_grid_is_kept() {
     let t = first_table(&doc);
 
     assert_eq!(t.column_widths.len(), 2);
-    assert!((t.column_widths[0] - 5.0).abs() < 0.1);
-    assert!((t.column_widths[1] - 5.0).abs() < 0.1);
+    assert!((t.column_widths[0] - 10.0).abs() < 0.1);
+    assert!((t.column_widths[1] - 10.0).abs() < 0.1);
+}
+
+#[test]
+fn test_table_single_column_placeholder_grid_uses_table_width() {
+    let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+        docx_rs::TableCell::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Long single cell")),
+        ),
+    ])])
+    .set_grid(vec![100])
+    .width(9360, docx_rs::WidthType::Dxa);
+
+    let data = build_docx_with_table(table);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let t = first_table(&doc);
+
+    assert_eq!(t.column_widths.len(), 1);
+    assert!(
+        (t.column_widths[0] - 468.0).abs() < 0.2,
+        "Expected table width normalization to 468pt, got {}",
+        t.column_widths[0]
+    );
 }
 
 #[test]
@@ -2213,7 +2235,7 @@ fn test_parse_mixed_ordered_and_bulleted_levels() {
     assert_eq!(list.kind, ListKind::Ordered);
     assert_eq!(
         list.level_styles,
-        BTreeMap::from([
+        std::collections::BTreeMap::from([
             (
                 0,
                 ListLevelStyle {
@@ -2236,6 +2258,90 @@ fn test_parse_mixed_ordered_and_bulleted_levels() {
             ),
         ])
     );
+}
+
+#[test]
+fn test_parse_mixed_levels_with_different_num_ids_preserves_parent_sequence() {
+    let ordered_abstract = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+        0,
+        docx_rs::Start::new(1),
+        docx_rs::NumberFormat::new("decimal"),
+        docx_rs::LevelText::new("%1."),
+        docx_rs::LevelJc::new("left"),
+    ));
+    let bullet_abstract = docx_rs::AbstractNumbering::new(1)
+        .add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("bullet"),
+            docx_rs::LevelText::new("•"),
+            docx_rs::LevelJc::new("left"),
+        ))
+        .add_level(docx_rs::Level::new(
+            1,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("bullet"),
+            docx_rs::LevelText::new("•"),
+            docx_rs::LevelJc::new("left"),
+        ));
+
+    let data = build_docx_with_numbering(
+        vec![ordered_abstract, bullet_abstract],
+        vec![
+            docx_rs::Numbering::new(1, 1),
+            docx_rs::Numbering::new(2, 0),
+        ],
+        vec![
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Parent 1"))
+                .numbering(docx_rs::NumberingId::new(2), docx_rs::IndentLevel::new(0)),
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Child A"))
+                .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(1)),
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Child B"))
+                .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(1)),
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Parent 2"))
+                .numbering(docx_rs::NumberingId::new(2), docx_rs::IndentLevel::new(0)),
+        ],
+    );
+
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page = match &doc.pages[0] {
+        Page::Flow(p) => p,
+        _ => panic!("Expected FlowPage"),
+    };
+
+    let lists: Vec<&List> = page
+        .content
+        .iter()
+        .filter_map(|b| match b {
+            Block::List(l) => Some(l),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        lists.len(),
+        1,
+        "Expected one merged mixed list when nested level uses a different numId"
+    );
+
+    let list = lists[0];
+    assert_eq!(list.kind, ListKind::Ordered);
+    assert_eq!(list.items.len(), 4);
+    assert_eq!(list.items[0].level, 0);
+    assert_eq!(list.items[1].level, 1);
+    assert_eq!(list.items[2].level, 1);
+    assert_eq!(list.items[3].level, 0);
+    assert_eq!(list.items[0].start_at, Some(1));
+    assert_eq!(
+        list.items[3].start_at,
+        None,
+        "Top-level numbering should continue after nested bullet items"
+    );
+    assert!(list.level_styles.contains_key(&1));
 }
 
 #[test]
