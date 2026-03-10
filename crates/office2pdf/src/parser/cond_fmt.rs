@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ir::{Color, DataBarInfo};
-
-/// A (column, row) coordinate pair (1-indexed).
-type CellPos = (u32, u32);
+use crate::parser::xlsx::{CellPos, CellRange, parse_cell_ref};
+use crate::parser::xml_util;
 
 /// A conditional formatting override for a specific cell.
 pub(crate) struct CondFmtOverride {
@@ -12,41 +11,6 @@ pub(crate) struct CondFmtOverride {
     pub bold: Option<bool>,
     pub data_bar: Option<DataBarInfo>,
     pub icon_text: Option<String>,
-}
-
-/// A cell range within a sheet (1-indexed, inclusive).
-#[derive(Debug, Clone, Copy)]
-struct CellRange {
-    start_col: u32,
-    start_row: u32,
-    end_col: u32,
-    end_row: u32,
-}
-
-/// Parse an Excel column letter string (e.g., "A", "B", "AA") into a 1-indexed column number.
-fn parse_column_letters(s: &str) -> Option<u32> {
-    if s.is_empty() {
-        return None;
-    }
-    let mut col: u32 = 0;
-    for c in s.chars() {
-        if !c.is_ascii_uppercase() {
-            return None;
-        }
-        col = col * 26 + (c as u32 - b'A' as u32 + 1);
-    }
-    Some(col)
-}
-
-/// Parse a cell reference like "$A$1", "A1", "$B$10" into (col, row), both 1-indexed.
-fn parse_cell_ref(s: &str) -> Option<(u32, u32)> {
-    let s = s.replace('$', "");
-    let split_pos = s.find(|c: char| c.is_ascii_digit())?;
-    let col_str = &s[..split_pos];
-    let row_str = &s[split_pos..];
-    let col = parse_column_letters(col_str)?;
-    let row: u32 = row_str.parse().ok()?;
-    Some((col, row))
 }
 
 /// Parse an sqref string (e.g., "A1:C10" or "A1") into a list of CellRanges.
@@ -76,16 +40,7 @@ fn parse_sqref(sqref: &str) -> Vec<CellRange> {
         .collect()
 }
 
-/// Parse an ARGB hex string (e.g. "FFFF0000") into an IR Color.
-fn parse_argb_color(argb: &str) -> Option<Color> {
-    if argb.len() < 8 {
-        return None;
-    }
-    let r = u8::from_str_radix(&argb[2..4], 16).ok()?;
-    let g = u8::from_str_radix(&argb[4..6], 16).ok()?;
-    let b = u8::from_str_radix(&argb[6..8], 16).ok()?;
-    Some(Color::new(r, g, b))
-}
+use xml_util::parse_argb_color;
 
 /// Try to get a numeric value from a cell.
 fn cell_numeric_value(cell: &umya_spreadsheet::Cell) -> Option<f64> {

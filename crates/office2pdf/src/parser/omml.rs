@@ -6,6 +6,8 @@
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
+use super::xml_util;
+
 /// Convert an OMML XML fragment to Typst math notation.
 ///
 /// The input should be the inner content of an `<m:oMath>` element.
@@ -102,7 +104,7 @@ fn parse_omml_children(reader: &mut Reader<&[u8]>, out: &mut String, end_tag: &[
                     b"r" => parse_math_run(reader, out),
                     b"oMath" => parse_omml_children(reader, out, b"oMath"),
                     b"oMathPara" => parse_omml_children(reader, out, b"oMathPara"),
-                    _ => skip_element(reader, name),
+                    _ => xml_util::skip_element(reader, name),
                 }
             }
             Ok(Event::End(ref e)) => {
@@ -140,8 +142,8 @@ fn parse_fraction(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"num" => num = parse_sub_element(reader, b"num"),
                 b"den" => den = parse_sub_element(reader, b"den"),
-                b"fPr" => skip_element(reader, b"fPr"),
-                other => skip_element(reader, other),
+                b"fPr" => xml_util::skip_element(reader, b"fPr"),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"f" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -161,8 +163,8 @@ fn parse_superscript(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"e" => base = parse_sub_element(reader, b"e"),
                 b"sup" => sup = parse_sub_element(reader, b"sup"),
-                b"sSupPr" => skip_element(reader, b"sSupPr"),
-                other => skip_element(reader, other),
+                b"sSupPr" => xml_util::skip_element(reader, b"sSupPr"),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"sSup" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -188,8 +190,8 @@ fn parse_subscript(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"e" => base = parse_sub_element(reader, b"e"),
                 b"sub" => sub = parse_sub_element(reader, b"sub"),
-                b"sSubPr" => skip_element(reader, b"sSubPr"),
-                other => skip_element(reader, other),
+                b"sSubPr" => xml_util::skip_element(reader, b"sSubPr"),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"sSub" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -217,8 +219,8 @@ fn parse_sub_superscript(reader: &mut Reader<&[u8]>, out: &mut String) {
                 b"e" => base = parse_sub_element(reader, b"e"),
                 b"sub" => sub = parse_sub_element(reader, b"sub"),
                 b"sup" => sup = parse_sub_element(reader, b"sup"),
-                b"sSubSupPr" => skip_element(reader, b"sSubSupPr"),
-                other => skip_element(reader, other),
+                b"sSubSupPr" => xml_util::skip_element(reader, b"sSubSupPr"),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"sSubSup" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -249,7 +251,7 @@ fn parse_radical(reader: &mut Reader<&[u8]>, out: &mut String) {
                 b"radPr" => deg_hide = parse_radical_props(reader),
                 b"deg" => deg = parse_sub_element(reader, b"deg"),
                 b"e" => content = parse_sub_element(reader, b"e"),
-                other => skip_element(reader, other),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"rad" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -299,7 +301,7 @@ fn parse_delimiter(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"dPr" => parse_delimiter_props(reader, &mut beg_chr, &mut end_chr),
                 b"e" => elements.push(parse_sub_element(reader, b"e")),
-                other => skip_element(reader, other),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"d" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -372,7 +374,7 @@ fn parse_math_run(reader: &mut Reader<&[u8]>, out: &mut String) {
         match reader.read_event() {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"t" => in_text = true,
-                b"rPr" => skip_element(reader, b"rPr"),
+                b"rPr" => xml_util::skip_element(reader, b"rPr"),
                 _ => {}
             },
             Ok(Event::Text(ref t)) if in_text => {
@@ -719,7 +721,7 @@ fn parse_nary(reader: &mut Reader<&[u8]>, out: &mut String) {
                 b"sub" => sub = parse_sub_element(reader, b"sub"),
                 b"sup" => sup = parse_sub_element(reader, b"sup"),
                 b"e" => content = parse_sub_element(reader, b"e"),
-                other => skip_element(reader, other),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"nary" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -786,8 +788,8 @@ fn parse_function(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"fName" => name = parse_sub_element(reader, b"fName"),
                 b"e" => content = parse_sub_element(reader, b"e"),
-                b"funcPr" => skip_element(reader, b"funcPr"),
-                other => skip_element(reader, other),
+                b"funcPr" => xml_util::skip_element(reader, b"funcPr"),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"func" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -808,8 +810,8 @@ fn parse_lim_low(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"e" => base = parse_sub_element(reader, b"e"),
                 b"lim" => lim = parse_sub_element(reader, b"lim"),
-                b"limLowPr" => skip_element(reader, b"limLowPr"),
-                other => skip_element(reader, other),
+                b"limLowPr" => xml_util::skip_element(reader, b"limLowPr"),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"limLow" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -830,8 +832,8 @@ fn parse_lim_upp(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"e" => base = parse_sub_element(reader, b"e"),
                 b"lim" => lim = parse_sub_element(reader, b"lim"),
-                b"limUppPr" => skip_element(reader, b"limUppPr"),
-                other => skip_element(reader, other),
+                b"limUppPr" => xml_util::skip_element(reader, b"limUppPr"),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"limUpp" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -852,7 +854,7 @@ fn parse_accent(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"accPr" => parse_accent_props(reader, &mut chr),
                 b"e" => content = parse_sub_element(reader, b"e"),
-                other => skip_element(reader, other),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"acc" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -912,7 +914,7 @@ fn parse_bar(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"barPr" => parse_bar_props(reader, &mut pos),
                 b"e" => content = parse_sub_element(reader, b"e"),
-                other => skip_element(reader, other),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"bar" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -957,7 +959,7 @@ fn parse_group_chr(reader: &mut Reader<&[u8]>, out: &mut String) {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"groupChrPr" => parse_group_chr_props(reader, &mut chr),
                 b"e" => content = parse_sub_element(reader, b"e"),
-                other => skip_element(reader, other),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"groupChr" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -1001,8 +1003,8 @@ fn parse_matrix(reader: &mut Reader<&[u8]>, out: &mut String) {
         match reader.read_event() {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"mr" => rows.push(parse_matrix_row(reader)),
-                b"mPr" => skip_element(reader, b"mPr"),
-                other => skip_element(reader, other),
+                b"mPr" => xml_util::skip_element(reader, b"mPr"),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"m" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -1029,7 +1031,7 @@ fn parse_matrix_row(reader: &mut Reader<&[u8]>) -> Vec<String> {
                 if e.local_name().as_ref() == b"e" {
                     elements.push(parse_sub_element(reader, b"e"));
                 } else {
-                    skip_element(reader, e.local_name().as_ref());
+                    xml_util::skip_element(reader, e.local_name().as_ref());
                 }
             }
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"mr" => break,
@@ -1048,8 +1050,8 @@ fn parse_eq_array(reader: &mut Reader<&[u8]>, out: &mut String) {
         match reader.read_event() {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"e" => equations.push(parse_sub_element(reader, b"e")),
-                b"eqArrPr" => skip_element(reader, b"eqArrPr"),
-                other => skip_element(reader, other),
+                b"eqArrPr" => xml_util::skip_element(reader, b"eqArrPr"),
+                other => xml_util::skip_element(reader, other),
             },
             Ok(Event::End(ref e)) if e.local_name().as_ref() == b"eqArr" => break,
             Ok(Event::Eof) | Err(_) => break,
@@ -1071,29 +1073,6 @@ fn wrap_if_needed(s: &str) -> String {
         trimmed.to_string()
     } else {
         format!("({trimmed})")
-    }
-}
-
-fn skip_element(reader: &mut Reader<&[u8]>, end_tag: &[u8]) {
-    let mut depth = 1u32;
-    loop {
-        match reader.read_event() {
-            Ok(Event::Start(ref e)) => {
-                if e.local_name().as_ref() == end_tag {
-                    depth += 1;
-                }
-            }
-            Ok(Event::End(ref e)) => {
-                if e.local_name().as_ref() == end_tag {
-                    depth -= 1;
-                    if depth == 0 {
-                        return;
-                    }
-                }
-            }
-            Ok(Event::Eof) | Err(_) => return,
-            _ => {}
-        }
     }
 }
 

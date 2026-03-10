@@ -224,6 +224,210 @@ fn select_picture_asset(
     (None, warnings)
 }
 
+// ── State structs ───────────────────────────────────────────────────────
+
+/// Accumulated state for a `<p:pic>` element.
+#[derive(Default)]
+struct PictureState {
+    x: i64,
+    y: i64,
+    cx: i64,
+    cy: i64,
+    blip_embed: Option<String>,
+    svg_blip_embed: Option<String>,
+    img_layer_embeds: Vec<String>,
+    crop: Option<ImageCrop>,
+    in_xfrm: bool,
+}
+
+impl PictureState {
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+/// Accumulated state for a `<p:graphicFrame>` element.
+#[derive(Default)]
+struct GraphicFrameState {
+    x: i64,
+    y: i64,
+    cx: i64,
+    cy: i64,
+    in_xfrm: bool,
+}
+
+impl GraphicFrameState {
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+/// Accumulated state for a `<p:sp>` (shape) element and its nested properties.
+struct ShapeState {
+    depth: usize,
+    x: i64,
+    y: i64,
+    cx: i64,
+    cy: i64,
+    has_placeholder: bool,
+    rotation_deg: Option<f64>,
+    opacity: Option<f64>,
+    shadow: Option<Shadow>,
+    in_sp_pr: bool,
+    prst_geom: Option<String>,
+    fill: Option<Color>,
+    gradient_fill: Option<GradientFill>,
+    in_xfrm: bool,
+    in_ln: bool,
+    ln_width_emu: i64,
+    ln_color: Option<Color>,
+    ln_dash_style: BorderLineStyle,
+}
+
+impl Default for ShapeState {
+    fn default() -> Self {
+        Self {
+            depth: 0,
+            x: 0,
+            y: 0,
+            cx: 0,
+            cy: 0,
+            has_placeholder: false,
+            rotation_deg: None,
+            opacity: None,
+            shadow: None,
+            in_sp_pr: false,
+            prst_geom: None,
+            fill: None,
+            gradient_fill: None,
+            in_xfrm: false,
+            in_ln: false,
+            ln_width_emu: 0,
+            ln_color: None,
+            ln_dash_style: BorderLineStyle::Solid,
+        }
+    }
+}
+
+impl ShapeState {
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+// ── Finalization helpers ────────────────────────────────────────────────
+
+/// Finalize a shape element when `</p:sp>` is reached.
+/// Returns either a TextBox (if the shape has text) or a Shape geometry element.
+fn finalize_shape(
+    shape: &mut ShapeState,
+    paragraphs: &mut Vec<PptxParagraphEntry>,
+    text_box_padding: Insets,
+    text_box_vertical_align: TextBoxVerticalAlign,
+) -> Option<FixedElement> {
+    let has_text = paragraphs
+        .iter()
+        .any(|entry| !entry.paragraph.runs.is_empty());
+
+    if has_text {
+        let blocks: Vec<Block> = group_pptx_text_blocks(std::mem::take(paragraphs));
+        Some(FixedElement {
+            x: emu_to_pt(shape.x),
+            y: emu_to_pt(shape.y),
+            width: emu_to_pt(shape.cx),
+            height: emu_to_pt(shape.cy),
+            kind: FixedElementKind::TextBox(TextBoxData {
+                content: blocks,
+                padding: text_box_padding,
+                vertical_align: text_box_vertical_align,
+            }),
+        })
+    } else if let Some(ref geom) = shape.prst_geom {
+        let kind = prst_to_shape_kind(geom, emu_to_pt(shape.cx), emu_to_pt(shape.cy));
+        let stroke = shape.ln_color.map(|color| BorderSide {
+            width: shape.ln_width_emu as f64 / 12700.0,
+            color,
+            style: shape.ln_dash_style,
+        });
+        Some(FixedElement {
+            x: emu_to_pt(shape.x),
+            y: emu_to_pt(shape.y),
+            width: emu_to_pt(shape.cx),
+            height: emu_to_pt(shape.cy),
+            kind: FixedElementKind::Shape(Shape {
+                kind,
+                fill: shape.fill,
+                gradient_fill: shape.gradient_fill.take(),
+                stroke,
+                rotation_deg: shape.rotation_deg,
+                opacity: shape.opacity,
+                shadow: shape.shadow.take(),
+            }),
+        })
+    } else {
+        None
+    }
+}
+
+/// Finalize a picture element when `</p:pic>` is reached.
+fn finalize_picture(
+    pic: &PictureState,
+    images: &SlideImageMap,
+    warning_context: &str,
+) -> (Option<FixedElement>, Vec<ConvertWarning>) {
+    let (selected_asset, picture_warnings) = select_picture_asset(
+        images,
+        warning_context,
+        pic.blip_embed.as_deref(),
+        pic.svg_blip_embed.as_deref(),
+        &pic.img_layer_embeds,
+    );
+    let element = selected_asset.and_then(|asset| {
+        asset.format().map(|format| FixedElement {
+            x: emu_to_pt(pic.x),
+            y: emu_to_pt(pic.y),
+            width: emu_to_pt(pic.cx),
+            height: emu_to_pt(pic.cy),
+            kind: FixedElementKind::Image(ImageData {
+                data: asset.data.clone(),
+                format,
+                width: Some(emu_to_pt(pic.cx)),
+                height: Some(emu_to_pt(pic.cy)),
+                crop: pic.crop,
+            }),
+        })
+    });
+    (element, picture_warnings)
+}
+
+/// Apply a parsed solid fill color to the appropriate target based on the current context.
+fn apply_solid_fill_color(
+    ctx: SolidFillCtx,
+    parsed: &ParsedColor,
+    shape: &mut ShapeState,
+    run_style: &mut TextStyle,
+    end_run_style: &mut TextStyle,
+    bullet_def: &mut PptxBulletDefinition,
+) {
+    match ctx {
+        SolidFillCtx::ShapeFill => {
+            shape.fill = parsed.color;
+            if let Some(alpha) = parsed.alpha {
+                shape.opacity = Some(alpha);
+            }
+        }
+        SolidFillCtx::LineFill => shape.ln_color = parsed.color,
+        SolidFillCtx::RunFill => run_style.color = parsed.color,
+        SolidFillCtx::EndParaFill => end_run_style.color = parsed.color,
+        SolidFillCtx::BulletFill => {
+            bullet_def.color = parsed.color.map(PptxBulletColorSource::Explicit);
+        }
+        SolidFillCtx::None => {}
+    }
+}
+
+// ── Main parse function ─────────────────────────────────────────────────
+
 /// Parse a slide XML to extract positioned elements (text boxes, shapes, images).
 pub(super) fn parse_slide_xml(
     xml: &str,
@@ -238,26 +442,7 @@ pub(super) fn parse_slide_xml(
     let mut warnings = Vec::new();
 
     let mut in_shape = false;
-    let mut shape_depth: usize = 0;
-    let mut shape_x: i64 = 0;
-    let mut shape_y: i64 = 0;
-    let mut shape_cx: i64 = 0;
-    let mut shape_cy: i64 = 0;
-    let mut shape_has_placeholder = false;
-
-    let mut in_sp_pr = false;
-    let mut prst_geom: Option<String> = None;
-    let mut shape_fill: Option<Color> = None;
-    let mut shape_gradient_fill: Option<GradientFill> = None;
-    let mut in_ln = false;
-    let mut ln_width_emu: i64 = 0;
-    let mut ln_color: Option<Color> = None;
-    let mut ln_dash_style: BorderLineStyle = BorderLineStyle::Solid;
-    let mut shape_rotation_deg: Option<f64> = None;
-    let mut shape_opacity: Option<f64> = None;
-    let mut shape_shadow: Option<Shadow> = None;
-
-    let mut in_xfrm = false;
+    let mut shape = ShapeState::default();
 
     let mut in_txbody = false;
     let mut paragraphs: Vec<PptxParagraphEntry> = Vec::new();
@@ -284,22 +469,10 @@ pub(super) fn parse_slide_xml(
     let mut solid_fill_ctx = SolidFillCtx::None;
 
     let mut in_pic = false;
-    let mut pic_x: i64 = 0;
-    let mut pic_y: i64 = 0;
-    let mut pic_cx: i64 = 0;
-    let mut pic_cy: i64 = 0;
-    let mut blip_embed: Option<String> = None;
-    let mut svg_blip_embed: Option<String> = None;
-    let mut img_layer_embeds: Vec<String> = Vec::new();
-    let mut pic_crop: Option<ImageCrop> = None;
-    let mut in_pic_xfrm = false;
+    let mut pic = PictureState::default();
 
     let mut in_graphic_frame = false;
-    let mut gf_x: i64 = 0;
-    let mut gf_y: i64 = 0;
-    let mut gf_cx: i64 = 0;
-    let mut gf_cy: i64 = 0;
-    let mut in_gf_xfrm = false;
+    let mut gf = GraphicFrameState::default();
 
     loop {
         match reader.read_event() {
@@ -308,27 +481,23 @@ pub(super) fn parse_slide_xml(
                 match local.as_ref() {
                     b"graphicFrame" if !in_shape && !in_pic && !in_graphic_frame => {
                         in_graphic_frame = true;
-                        gf_x = 0;
-                        gf_y = 0;
-                        gf_cx = 0;
-                        gf_cy = 0;
-                        in_gf_xfrm = false;
+                        gf.reset();
                     }
                     b"xfrm" if in_graphic_frame && !in_shape => {
-                        in_gf_xfrm = true;
+                        gf.in_xfrm = true;
                     }
                     b"tbl" if in_graphic_frame => {
                         if let Ok(mut table) = parse_pptx_table(&mut reader, theme, color_map) {
                             scale_pptx_table_geometry_to_frame(
                                 &mut table,
-                                emu_to_pt(gf_cx),
-                                emu_to_pt(gf_cy),
+                                emu_to_pt(gf.cx),
+                                emu_to_pt(gf.cy),
                             );
                             elements.push(FixedElement {
-                                x: emu_to_pt(gf_x),
-                                y: emu_to_pt(gf_y),
-                                width: emu_to_pt(gf_cx),
-                                height: emu_to_pt(gf_cy),
+                                x: emu_to_pt(gf.x),
+                                y: emu_to_pt(gf.y),
+                                width: emu_to_pt(gf.cx),
+                                height: emu_to_pt(gf.cy),
                                 kind: FixedElementKind::Table(table),
                             });
                         }
@@ -349,79 +518,65 @@ pub(super) fn parse_slide_xml(
                     }
                     b"sp" if !in_shape && !in_pic => {
                         in_shape = true;
-                        shape_depth = 1;
-                        shape_x = 0;
-                        shape_y = 0;
-                        shape_cx = 0;
-                        shape_cy = 0;
-                        shape_has_placeholder = false;
-                        in_sp_pr = false;
-                        prst_geom = None;
-                        shape_fill = None;
-                        shape_gradient_fill = None;
-                        in_ln = false;
-                        ln_width_emu = 0;
-                        ln_color = None;
-                        shape_rotation_deg = None;
-                        shape_opacity = None;
-                        shape_shadow = None;
+                        shape.reset();
+                        shape.depth = 1;
                         in_txbody = false;
                         paragraphs.clear();
                         text_box_padding = default_pptx_text_box_padding();
                         text_box_vertical_align = TextBoxVerticalAlign::Top;
                     }
                     b"sp" if in_shape => {
-                        shape_depth += 1;
+                        shape.depth += 1;
                     }
                     b"spPr" if in_shape && !in_txbody => {
-                        in_sp_pr = true;
+                        shape.in_sp_pr = true;
                     }
-                    b"xfrm" if in_shape && in_sp_pr => {
-                        in_xfrm = true;
+                    b"xfrm" if in_shape && shape.in_sp_pr => {
+                        shape.in_xfrm = true;
                         if let Some(rot) = get_attr_i64(e, b"rot") {
-                            shape_rotation_deg = Some(rot as f64 / 60_000.0);
+                            shape.rotation_deg = Some(rot as f64 / 60_000.0);
                         }
                     }
-                    b"prstGeom" if in_sp_pr => {
+                    b"prstGeom" if shape.in_sp_pr => {
                         if let Some(prst) = get_attr_str(e, b"prst") {
-                            prst_geom = Some(prst);
+                            shape.prst_geom = Some(prst);
                         }
                     }
-                    b"solidFill" if in_sp_pr && !in_ln && !in_rpr => {
+                    b"solidFill" if shape.in_sp_pr && !shape.in_ln && !in_rpr => {
                         solid_fill_ctx = SolidFillCtx::ShapeFill;
                     }
-                    b"gradFill" if in_sp_pr && !in_ln && !in_rpr => {
-                        shape_gradient_fill =
+                    b"gradFill" if shape.in_sp_pr && !shape.in_ln && !in_rpr => {
+                        shape.gradient_fill =
                             parse_shape_gradient_fill(&mut reader, theme, color_map);
-                        if let Some(ref gradient_fill) = shape_gradient_fill
-                            && shape_fill.is_none()
+                        if let Some(ref gradient_fill) = shape.gradient_fill
+                            && shape.fill.is_none()
                         {
-                            shape_fill = gradient_fill.stops.first().map(|stop| stop.color);
+                            shape.fill = gradient_fill.stops.first().map(|stop| stop.color);
                         }
                     }
-                    b"effectLst" if in_sp_pr && !in_ln => {
-                        shape_shadow = parse_effect_list(&mut reader, theme, color_map);
+                    b"effectLst" if shape.in_sp_pr && !shape.in_ln => {
+                        shape.shadow = parse_effect_list(&mut reader, theme, color_map);
                     }
-                    b"ln" if in_sp_pr => {
-                        in_ln = true;
-                        ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
-                        ln_dash_style = BorderLineStyle::Solid;
+                    b"ln" if shape.in_sp_pr => {
+                        shape.in_ln = true;
+                        shape.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+                        shape.ln_dash_style = BorderLineStyle::Solid;
                     }
-                    b"prstDash" if in_ln => {
-                        ln_dash_style = get_attr_str(e, b"val")
+                    b"prstDash" if shape.in_ln => {
+                        shape.ln_dash_style = get_attr_str(e, b"val")
                             .as_deref()
                             .map(pptx_dash_to_border_style)
                             .unwrap_or(BorderLineStyle::Solid);
                     }
-                    b"solidFill" if in_ln => {
+                    b"solidFill" if shape.in_ln => {
                         solid_fill_ctx = SolidFillCtx::LineFill;
                     }
                     b"ph" if in_shape => {
-                        shape_has_placeholder = true;
+                        shape.has_placeholder = true;
                     }
                     b"txBody" if in_shape => {
                         in_txbody = true;
-                        text_body_style_defaults = if shape_has_placeholder {
+                        text_body_style_defaults = if shape.has_placeholder {
                             PptxTextBodyStyleDefaults::default()
                         } else {
                             inherited_text_body_defaults.clone()
@@ -538,56 +693,40 @@ pub(super) fn parse_slide_xml(
                         if solid_fill_ctx != SolidFillCtx::None =>
                     {
                         let parsed = parse_color_from_start(&mut reader, e, theme, color_map);
-                        match solid_fill_ctx {
-                            SolidFillCtx::ShapeFill => {
-                                shape_fill = parsed.color;
-                                if let Some(alpha) = parsed.alpha {
-                                    shape_opacity = Some(alpha);
-                                }
-                            }
-                            SolidFillCtx::LineFill => ln_color = parsed.color,
-                            SolidFillCtx::RunFill => run_style.color = parsed.color,
-                            SolidFillCtx::EndParaFill => para_end_run_style.color = parsed.color,
-                            SolidFillCtx::BulletFill => {
-                                para_bullet_definition.color =
-                                    parsed.color.map(PptxBulletColorSource::Explicit);
-                            }
-                            SolidFillCtx::None => {}
-                        }
+                        apply_solid_fill_color(
+                            solid_fill_ctx,
+                            &parsed,
+                            &mut shape,
+                            &mut run_style,
+                            &mut para_end_run_style,
+                            &mut para_bullet_definition,
+                        );
                     }
                     b"t" if in_run => {
                         in_text = true;
                     }
                     b"pic" if !in_shape && !in_pic => {
                         in_pic = true;
-                        pic_x = 0;
-                        pic_y = 0;
-                        pic_cx = 0;
-                        pic_cy = 0;
-                        blip_embed = None;
-                        svg_blip_embed = None;
-                        img_layer_embeds.clear();
-                        pic_crop = None;
-                        in_pic_xfrm = false;
+                        pic.reset();
                     }
                     b"spPr" if in_pic => {}
                     b"xfrm" if in_pic => {
-                        in_pic_xfrm = true;
+                        pic.in_xfrm = true;
                     }
                     b"blipFill" if in_pic => {}
                     b"blip" if in_pic => {
-                        blip_embed = get_attr_str(e, b"r:embed");
+                        pic.blip_embed = get_attr_str(e, b"r:embed");
                     }
                     b"svgBlip" if in_pic => {
-                        svg_blip_embed = get_attr_str(e, b"r:embed");
+                        pic.svg_blip_embed = get_attr_str(e, b"r:embed");
                     }
                     b"imgLayer" if in_pic => {
                         if let Some(rid) = get_attr_str(e, b"r:embed") {
-                            img_layer_embeds.push(rid);
+                            pic.img_layer_embeds.push(rid);
                         }
                     }
                     b"srcRect" if in_pic => {
-                        pic_crop = parse_src_rect(e);
+                        pic.crop = parse_src_rect(e);
                     }
                     _ => {}
                 }
@@ -595,54 +734,54 @@ pub(super) fn parse_slide_xml(
             Ok(Event::Empty(ref e)) => {
                 let local = e.local_name();
                 match local.as_ref() {
-                    b"off" if in_xfrm => {
-                        shape_x = get_attr_i64(e, b"x").unwrap_or(0);
-                        shape_y = get_attr_i64(e, b"y").unwrap_or(0);
+                    b"off" if shape.in_xfrm => {
+                        shape.x = get_attr_i64(e, b"x").unwrap_or(0);
+                        shape.y = get_attr_i64(e, b"y").unwrap_or(0);
                     }
-                    b"ext" if in_xfrm => {
-                        shape_cx = get_attr_i64(e, b"cx").unwrap_or(0);
-                        shape_cy = get_attr_i64(e, b"cy").unwrap_or(0);
+                    b"ext" if shape.in_xfrm => {
+                        shape.cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                        shape.cy = get_attr_i64(e, b"cy").unwrap_or(0);
                     }
-                    b"off" if in_pic_xfrm => {
-                        pic_x = get_attr_i64(e, b"x").unwrap_or(0);
-                        pic_y = get_attr_i64(e, b"y").unwrap_or(0);
+                    b"off" if pic.in_xfrm => {
+                        pic.x = get_attr_i64(e, b"x").unwrap_or(0);
+                        pic.y = get_attr_i64(e, b"y").unwrap_or(0);
                     }
-                    b"ext" if in_pic_xfrm => {
-                        pic_cx = get_attr_i64(e, b"cx").unwrap_or(0);
-                        pic_cy = get_attr_i64(e, b"cy").unwrap_or(0);
+                    b"ext" if pic.in_xfrm => {
+                        pic.cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                        pic.cy = get_attr_i64(e, b"cy").unwrap_or(0);
                     }
-                    b"off" if in_gf_xfrm => {
-                        gf_x = get_attr_i64(e, b"x").unwrap_or(0);
-                        gf_y = get_attr_i64(e, b"y").unwrap_or(0);
+                    b"off" if gf.in_xfrm => {
+                        gf.x = get_attr_i64(e, b"x").unwrap_or(0);
+                        gf.y = get_attr_i64(e, b"y").unwrap_or(0);
                     }
-                    b"ext" if in_gf_xfrm => {
-                        gf_cx = get_attr_i64(e, b"cx").unwrap_or(0);
-                        gf_cy = get_attr_i64(e, b"cy").unwrap_or(0);
+                    b"ext" if gf.in_xfrm => {
+                        gf.cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                        gf.cy = get_attr_i64(e, b"cy").unwrap_or(0);
                     }
                     b"blip" if in_pic => {
-                        blip_embed = get_attr_str(e, b"r:embed");
+                        pic.blip_embed = get_attr_str(e, b"r:embed");
                     }
                     b"svgBlip" if in_pic => {
-                        svg_blip_embed = get_attr_str(e, b"r:embed");
+                        pic.svg_blip_embed = get_attr_str(e, b"r:embed");
                     }
                     b"imgLayer" if in_pic => {
                         if let Some(rid) = get_attr_str(e, b"r:embed") {
-                            img_layer_embeds.push(rid);
+                            pic.img_layer_embeds.push(rid);
                         }
                     }
                     b"srcRect" if in_pic => {
-                        pic_crop = parse_src_rect(e);
+                        pic.crop = parse_src_rect(e);
                     }
-                    b"prstGeom" if in_sp_pr => {
+                    b"prstGeom" if shape.in_sp_pr => {
                         if let Some(prst) = get_attr_str(e, b"prst") {
-                            prst_geom = Some(prst);
+                            shape.prst_geom = Some(prst);
                         }
                     }
-                    b"ln" if in_sp_pr => {
-                        ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+                    b"ln" if shape.in_sp_pr => {
+                        shape.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
                     }
-                    b"prstDash" if in_ln => {
-                        ln_dash_style = get_attr_str(e, b"val")
+                    b"prstDash" if shape.in_ln => {
+                        shape.ln_dash_style = get_attr_str(e, b"val")
                             .as_deref()
                             .map(pptx_dash_to_border_style)
                             .unwrap_or(BorderLineStyle::Solid);
@@ -651,22 +790,14 @@ pub(super) fn parse_slide_xml(
                         if solid_fill_ctx != SolidFillCtx::None =>
                     {
                         let parsed = parse_color_from_empty(e, theme, color_map);
-                        match solid_fill_ctx {
-                            SolidFillCtx::ShapeFill => {
-                                shape_fill = parsed.color;
-                                if let Some(alpha) = parsed.alpha {
-                                    shape_opacity = Some(alpha);
-                                }
-                            }
-                            SolidFillCtx::LineFill => ln_color = parsed.color,
-                            SolidFillCtx::RunFill => run_style.color = parsed.color,
-                            SolidFillCtx::EndParaFill => para_end_run_style.color = parsed.color,
-                            SolidFillCtx::BulletFill => {
-                                para_bullet_definition.color =
-                                    parsed.color.map(PptxBulletColorSource::Explicit);
-                            }
-                            SolidFillCtx::None => {}
-                        }
+                        apply_solid_fill_color(
+                            solid_fill_ctx,
+                            &parsed,
+                            &mut shape,
+                            &mut run_style,
+                            &mut para_end_run_style,
+                            &mut para_bullet_definition,
+                        );
                     }
                     b"rPr" if in_run => {
                         extract_rpr_attributes(e, &mut run_style);
@@ -762,64 +893,27 @@ pub(super) fn parse_slide_xml(
                 let local = e.local_name();
                 match local.as_ref() {
                     b"sp" if in_shape => {
-                        shape_depth -= 1;
-                        if shape_depth == 0 {
-                            let has_text = paragraphs
-                                .iter()
-                                .any(|entry| !entry.paragraph.runs.is_empty());
-
-                            if has_text {
-                                let blocks: Vec<Block> =
-                                    group_pptx_text_blocks(std::mem::take(&mut paragraphs));
-                                elements.push(FixedElement {
-                                    x: emu_to_pt(shape_x),
-                                    y: emu_to_pt(shape_y),
-                                    width: emu_to_pt(shape_cx),
-                                    height: emu_to_pt(shape_cy),
-                                    kind: FixedElementKind::TextBox(TextBoxData {
-                                        content: blocks,
-                                        padding: text_box_padding,
-                                        vertical_align: text_box_vertical_align,
-                                    }),
-                                });
-                            } else if let Some(ref geom) = prst_geom {
-                                let kind = prst_to_shape_kind(
-                                    geom,
-                                    emu_to_pt(shape_cx),
-                                    emu_to_pt(shape_cy),
-                                );
-                                let stroke = ln_color.map(|color| BorderSide {
-                                    width: ln_width_emu as f64 / 12700.0,
-                                    color,
-                                    style: ln_dash_style,
-                                });
-                                elements.push(FixedElement {
-                                    x: emu_to_pt(shape_x),
-                                    y: emu_to_pt(shape_y),
-                                    width: emu_to_pt(shape_cx),
-                                    height: emu_to_pt(shape_cy),
-                                    kind: FixedElementKind::Shape(Shape {
-                                        kind,
-                                        fill: shape_fill,
-                                        gradient_fill: shape_gradient_fill.take(),
-                                        stroke,
-                                        rotation_deg: shape_rotation_deg,
-                                        opacity: shape_opacity,
-                                        shadow: shape_shadow.take(),
-                                    }),
-                                });
+                        shape.depth -= 1;
+                        if shape.depth == 0 {
+                            if let Some(element) = finalize_shape(
+                                &mut shape,
+                                &mut paragraphs,
+                                text_box_padding,
+                                text_box_vertical_align,
+                            ) {
+                                elements.push(element);
                             }
                             in_shape = false;
                         }
                     }
-                    b"spPr" if in_sp_pr => {
-                        in_sp_pr = false;
+                    b"spPr" if shape.in_sp_pr => {
+                        shape.in_sp_pr = false;
                     }
-                    b"xfrm" if in_xfrm => {
-                        in_xfrm = false;
+                    b"xfrm" if shape.in_xfrm => {
+                        shape.in_xfrm = false;
                     }
-                    b"ln" if in_ln => {
-                        in_ln = false;
+                    b"ln" if shape.in_ln => {
+                        shape.in_ln = false;
                     }
                     b"txBody" if in_txbody => {
                         in_txbody = false;
@@ -872,41 +966,22 @@ pub(super) fn parse_slide_xml(
                         in_text = false;
                     }
                     b"pic" if in_pic => {
-                        let (selected_asset, picture_warnings) = select_picture_asset(
-                            images,
-                            warning_context,
-                            blip_embed.as_deref(),
-                            svg_blip_embed.as_deref(),
-                            &img_layer_embeds,
-                        );
+                        let (element, picture_warnings) =
+                            finalize_picture(&pic, images, warning_context);
                         warnings.extend(picture_warnings);
-                        if let Some(asset) = selected_asset
-                            && let Some(format) = asset.format()
-                        {
-                            elements.push(FixedElement {
-                                x: emu_to_pt(pic_x),
-                                y: emu_to_pt(pic_y),
-                                width: emu_to_pt(pic_cx),
-                                height: emu_to_pt(pic_cy),
-                                kind: FixedElementKind::Image(ImageData {
-                                    data: asset.data.clone(),
-                                    format,
-                                    width: Some(emu_to_pt(pic_cx)),
-                                    height: Some(emu_to_pt(pic_cy)),
-                                    crop: pic_crop,
-                                }),
-                            });
+                        if let Some(element) = element {
+                            elements.push(element);
                         }
                         in_pic = false;
                     }
-                    b"xfrm" if in_pic_xfrm => {
-                        in_pic_xfrm = false;
+                    b"xfrm" if pic.in_xfrm => {
+                        pic.in_xfrm = false;
                     }
                     b"graphicFrame" if in_graphic_frame => {
                         in_graphic_frame = false;
                     }
-                    b"xfrm" if in_gf_xfrm => {
-                        in_gf_xfrm = false;
+                    b"xfrm" if gf.in_xfrm => {
+                        gf.in_xfrm = false;
                     }
                     _ => {}
                 }
