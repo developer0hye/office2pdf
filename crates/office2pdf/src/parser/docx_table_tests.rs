@@ -78,6 +78,74 @@ fn test_table_column_widths_from_grid() {
 }
 
 #[test]
+fn test_table_tiny_autofit_grid_is_ignored() {
+    let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+        docx_rs::TableCell::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Left column text")),
+        ),
+        docx_rs::TableCell::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Right column text")),
+        ),
+    ])])
+    .set_grid(vec![100, 100]);
+
+    let data = build_docx_with_table(table);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let t = first_table(&doc);
+
+    assert!(
+        t.column_widths.is_empty(),
+        "Expected tiny autofit grid widths to be ignored, got {:?}",
+        t.column_widths
+    );
+}
+
+#[test]
+fn test_table_tiny_non_auto_grid_is_normalized_to_table_width() {
+    let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+        docx_rs::TableCell::new()
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("A"))),
+        docx_rs::TableCell::new()
+            .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("B"))),
+    ])])
+    .set_grid(vec![100, 100])
+    .width(400, docx_rs::WidthType::Dxa);
+
+    let data = build_docx_with_table(table);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let t = first_table(&doc);
+
+    assert_eq!(t.column_widths.len(), 2);
+    assert!((t.column_widths[0] - 10.0).abs() < 0.1);
+    assert!((t.column_widths[1] - 10.0).abs() < 0.1);
+}
+
+#[test]
+fn test_table_single_column_placeholder_grid_uses_table_width() {
+    let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+        docx_rs::TableCell::new().add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Long single cell")),
+        ),
+    ])])
+    .set_grid(vec![100])
+    .width(9360, docx_rs::WidthType::Dxa);
+
+    let data = build_docx_with_table(table);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let t = first_table(&doc);
+
+    assert_eq!(t.column_widths.len(), 1);
+    assert!(
+        (t.column_widths[0] - 468.0).abs() < 0.2,
+        "Expected table width normalization to 468pt, got {}",
+        t.column_widths[0]
+    );
+}
+
+#[test]
 fn test_table_column_widths_from_cell_widths_without_grid() {
     let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
         docx_rs::TableCell::new()
