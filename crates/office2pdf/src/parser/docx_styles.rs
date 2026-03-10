@@ -191,6 +191,9 @@ pub(super) fn merge_paragraph_style(
             .and_then(|resolved_style| resolved_style.heading_level)
             .map(|level| (level + 1) as u8),
         direction: explicit.direction,
+        east_asian_line_break: explicit
+            .east_asian_line_break
+            .or(style_paragraph.and_then(|style| style.east_asian_line_break)),
         tab_stops: merge_tab_stops(
             explicit.tab_stops.as_deref(),
             explicit_tab_overrides,

@@ -312,6 +312,68 @@ fn test_generate_line_spacing_exact() {
 }
 
 #[test]
+fn test_generate_line_spacing_exact_uses_line_gap_when_font_size_known() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            line_spacing: Some(LineSpacing::Exact(18.0)),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Exact spaced".to_string(),
+            style: TextStyle {
+                font_size: Some(12.0),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains("leading: 6pt"),
+        "Expected exact line spacing to emit line gap (18pt - 12pt) in: {result}"
+    );
+}
+
+#[test]
+fn test_fixed_text_paragraph_exact_line_spacing_uses_line_gap_when_font_size_known() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 10.0,
+            y: 20.0,
+            width: 280.0,
+            height: 120.0,
+            kind: FixedElementKind::TextBox(TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        line_spacing: Some(LineSpacing::Exact(18.0)),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "Fixed paragraph".to_string(),
+                        style: TextStyle {
+                            font_size: Some(24.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: TextBoxVerticalAlign::Top,
+            }),
+        }],
+    )]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains("leading: 0pt"),
+        "Expected fixed text exact spacing to clamp to zero line gap when font exceeds line spacing in: {result}"
+    );
+}
+
+#[test]
 fn test_generate_letter_spacing() {
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
         style: ParagraphStyle::default(),
@@ -2710,6 +2772,76 @@ fn test_fixed_page_text_box_compact_list_preserves_soft_line_breaks() {
     assert!(
         output.source.contains("leading: 13pt"),
         "Expected fixed text list item to set explicit leading from font size in: {}",
+        output.source
+    );
+}
+
+#[test]
+fn test_fixed_page_tabbed_paragraph_uses_non_wrapping_box() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 120.0,
+            width: 320.0,
+            height: 40.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "A\tB".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+
+    assert!(
+        output.source.contains("#box(width: 100%)[#context {"),
+        "Expected fixed tabbed paragraph to wrap tab context in a full-width box in: {}",
+        output.source
+    );
+}
+
+#[test]
+fn test_fixed_page_east_asian_line_break_disabled_inserts_word_joiner() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 120.0,
+            width: 320.0,
+            height: 40.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        east_asian_line_break: Some(false),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "行业背景及意义".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains('\u{2060}'),
+        "Expected word-joiner insertion for eaLnBrk=0 in: {}",
         output.source
     );
 }

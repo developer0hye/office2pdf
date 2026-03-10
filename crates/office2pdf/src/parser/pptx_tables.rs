@@ -129,6 +129,9 @@ pub(super) fn parse_pptx_table(
                     b"lnSpc" if in_para && !in_run => {
                         in_line_spacing = true;
                     }
+                    b"tab" if in_para && !in_run => {
+                        extract_pptx_tab_stop(e, &mut para_style);
+                    }
                     b"spcPct" if in_line_spacing => {
                         extract_pptx_line_spacing_pct(e, &mut para_style);
                     }
@@ -327,6 +330,9 @@ pub(super) fn parse_pptx_table(
                     b"lnSpc" if in_para && !in_run => {
                         in_line_spacing = true;
                     }
+                    b"tab" if in_para && !in_run => {
+                        extract_pptx_tab_stop(e, &mut para_style);
+                    }
                     b"spcPct" if in_line_spacing => {
                         extract_pptx_line_spacing_pct(e, &mut para_style);
                     }
@@ -379,10 +385,10 @@ pub(super) fn parse_pptx_table(
                         push_pptx_soft_line_break(&mut runs, &para_default_run_style);
                     }
                     b"latin" | b"ea" | b"cs" if in_run_properties => {
-                        apply_typeface_to_style(e, &mut run_style, theme);
+                        apply_typeface_to_style(e, &mut run_style, theme, true);
                     }
                     b"latin" | b"ea" | b"cs" if in_end_paragraph_run_properties => {
-                        apply_typeface_to_style(e, &mut para_end_run_style, theme);
+                        apply_typeface_to_style(e, &mut para_end_run_style, theme, true);
                     }
                     _ => {}
                 }

@@ -463,6 +463,9 @@ pub(super) fn parse_slide_xml(
                     b"lnSpc" if in_para && !in_run => {
                         in_ln_spc = true;
                     }
+                    b"tab" if in_para && !in_run => {
+                        extract_pptx_tab_stop(e, &mut para_style);
+                    }
                     b"spcPct" if in_ln_spc => {
                         extract_pptx_line_spacing_pct(e, &mut para_style);
                     }
@@ -638,6 +641,13 @@ pub(super) fn parse_slide_xml(
                             prst_geom = Some(prst);
                         }
                     }
+                    b"bodyPr" if in_shape && in_txbody => {
+                        extract_pptx_text_box_body_props(
+                            e,
+                            &mut text_box_padding,
+                            &mut text_box_vertical_align,
+                        );
+                    }
                     b"ln" if in_sp_pr => {
                         ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
                     }
@@ -687,6 +697,9 @@ pub(super) fn parse_slide_xml(
                     }
                     b"lnSpc" if in_para && !in_run => {
                         in_ln_spc = true;
+                    }
+                    b"tab" if in_para && !in_run => {
+                        extract_pptx_tab_stop(e, &mut para_style);
                     }
                     b"spcPct" if in_ln_spc => {
                         extract_pptx_line_spacing_pct(e, &mut para_style);
@@ -740,10 +753,10 @@ pub(super) fn parse_slide_xml(
                         push_pptx_soft_line_break(&mut runs, &para_default_run_style);
                     }
                     b"latin" | b"ea" | b"cs" if in_rpr => {
-                        apply_typeface_to_style(e, &mut run_style, theme);
+                        apply_typeface_to_style(e, &mut run_style, theme, true);
                     }
                     b"latin" | b"ea" | b"cs" if in_end_para_rpr => {
-                        apply_typeface_to_style(e, &mut para_end_run_style, theme);
+                        apply_typeface_to_style(e, &mut para_end_run_style, theme, true);
                     }
                     _ => {}
                 }

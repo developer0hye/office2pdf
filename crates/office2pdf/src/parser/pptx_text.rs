@@ -28,6 +28,9 @@ pub(super) fn merge_paragraph_style(target: &mut ParagraphStyle, source: &Paragr
     if source.direction.is_some() {
         target.direction = source.direction;
     }
+    if source.east_asian_line_break.is_some() {
+        target.east_asian_line_break = source.east_asian_line_break;
+    }
     if source.tab_stops.is_some() {
         target.tab_stops = source.tab_stops.clone();
     }
@@ -105,14 +108,30 @@ pub(super) fn apply_typeface_to_style(
     element: &quick_xml::events::BytesStart,
     style: &mut TextStyle,
     theme: &ThemeData,
+    allow_override_existing: bool,
 ) {
     let Some(typeface) = get_attr_str(element, b"typeface") else {
         return;
     };
-    if typeface.trim().is_empty() || style.font_family.is_some() {
+    if typeface.trim().is_empty() {
         return;
     }
-    style.font_family = Some(resolve_theme_font(&typeface, theme));
+
+    let resolved_font: String = resolve_theme_font(&typeface, theme);
+    if resolved_font.trim().is_empty() {
+        return;
+    }
+
+    if !allow_override_existing
+        && style
+            .font_family
+            .as_ref()
+            .is_some_and(|font_family| !font_family.trim().is_empty())
+    {
+        return;
+    }
+
+    style.font_family = Some(resolved_font);
 }
 
 pub(super) fn parse_pptx_list_style(
@@ -187,6 +206,11 @@ pub(super) fn parse_pptx_list_style(
                     }
                     b"lnSpc" if active_paragraph_target.is_some() => {
                         in_ln_spc = true;
+                    }
+                    b"tab" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            extract_pptx_tab_stop(e, paragraph_style_mut(&mut defaults, target));
+                        }
                     }
                     b"spcPct" if in_ln_spc => {
                         if let Some(target) = active_paragraph_target {
@@ -295,7 +319,12 @@ pub(super) fn parse_pptx_list_style(
                     }
                     b"latin" | b"ea" | b"cs" if active_run_target.is_some() => {
                         if let Some(target) = active_run_target {
-                            apply_typeface_to_style(e, run_style_mut(&mut defaults, target), theme);
+                            apply_typeface_to_style(
+                                e,
+                                run_style_mut(&mut defaults, target),
+                                theme,
+                                false,
+                            );
                         }
                     }
                     b"srgbClr" | b"schemeClr" | b"sysClr" if in_bullet_fill => {
@@ -320,6 +349,11 @@ pub(super) fn parse_pptx_list_style(
                             e,
                             &mut defaults.levels.entry(level).or_default().paragraph,
                         );
+                    }
+                    b"tab" if active_paragraph_target.is_some() => {
+                        if let Some(target) = active_paragraph_target {
+                            extract_pptx_tab_stop(e, paragraph_style_mut(&mut defaults, target));
+                        }
                     }
                     b"spcPct" if in_ln_spc => {
                         if let Some(target) = active_paragraph_target {
@@ -422,7 +456,12 @@ pub(super) fn parse_pptx_list_style(
                     }
                     b"latin" | b"ea" | b"cs" if active_run_target.is_some() => {
                         if let Some(target) = active_run_target {
-                            apply_typeface_to_style(e, run_style_mut(&mut defaults, target), theme);
+                            apply_typeface_to_style(
+                                e,
+                                run_style_mut(&mut defaults, target),
+                                theme,
+                                false,
+                            );
                         }
                     }
                     b"srgbClr" | b"schemeClr" | b"sysClr" if in_bullet_fill => {
@@ -490,6 +529,13 @@ pub(super) fn extract_paragraph_props(
     {
         style.direction = Some(TextDirection::Rtl);
     }
+    if let Some(val) = get_attr_str(e, b"eaLnBrk") {
+        style.east_asian_line_break = match val.as_str() {
+            "1" | "true" => Some(true),
+            "0" | "false" => Some(false),
+            _ => None,
+        };
+    }
     if let Some(value) = get_attr_i64(e, b"marL") {
         style.indent_left = Some(emu_to_pt(value));
     }
@@ -499,6 +545,35 @@ pub(super) fn extract_paragraph_props(
     if let Some(value) = get_attr_i64(e, b"indent") {
         style.indent_first_line = Some(emu_to_pt(value));
     }
+}
+
+pub(super) fn extract_pptx_tab_stop(
+    e: &quick_xml::events::BytesStart,
+    style: &mut ParagraphStyle,
+) {
+    let Some(position_emu) = get_attr_i64(e, b"pos") else {
+        return;
+    };
+
+    let alignment = match get_attr_str(e, b"algn").as_deref() {
+        Some("ctr") => TabAlignment::Center,
+        Some("r") => TabAlignment::Right,
+        Some("dec") => TabAlignment::Decimal,
+        _ => TabAlignment::Left,
+    };
+
+    let leader = match get_attr_str(e, b"leader").as_deref() {
+        Some("dot") => TabLeader::Dot,
+        Some("hyphen") => TabLeader::Hyphen,
+        Some("undrLn") => TabLeader::Underscore,
+        _ => TabLeader::None,
+    };
+
+    style.tab_stops.get_or_insert_with(Vec::new).push(TabStop {
+        position: emu_to_pt(position_emu),
+        alignment,
+        leader,
+    });
 }
 
 pub(super) fn extract_pptx_line_spacing_pct(
@@ -869,5 +944,9 @@ pub(super) fn extract_rpr_attributes(e: &quick_xml::events::BytesStart, style: &
     if let Some(sz) = get_attr_i64(e, b"sz") {
         // Font size in hundredths of a point (e.g. 1200 = 12pt)
         style.font_size = Some(sz as f64 / 100.0);
+    }
+    if let Some(spc) = get_attr_i64(e, b"spc") {
+        // DrawingML text spacing is in 1/100 pt.
+        style.letter_spacing = Some(spc as f64 / 100.0);
     }
 }

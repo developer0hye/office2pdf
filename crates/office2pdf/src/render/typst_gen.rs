@@ -1011,7 +1011,7 @@ fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
         for elem in &para.elements {
             match elem {
                 HFInline::Run(run) => {
-                    generate_run(out, run);
+                    generate_run(out, run, false);
                 }
                 HFInline::PageNumber => {
                     out.push_str("#counter(page).display()");
@@ -1268,6 +1268,8 @@ fn generate_fixed_text_box_block(
 
 fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
     let style: &ParagraphStyle = &para.style;
+    let reference_font_size_pt: Option<f64> = paragraph_reference_font_size_pt(&para.runs);
+    let disable_east_asian_breaks: bool = matches!(style.east_asian_line_break, Some(false));
     let needs_text_scope: bool = common_text_style(&para.runs).is_some();
     let has_para_style: bool = needs_block_wrapper(style) || needs_text_scope;
 
@@ -1275,7 +1277,7 @@ fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(
         out.push_str("#block(");
         write_block_params(out, style);
         out.push_str(")[\n");
-        write_par_settings(out, style);
+        write_par_settings_with_reference_font_size(out, style, reference_font_size_pt);
         write_common_text_settings(out, &para.runs, "  ");
         write_fixed_text_default_par_settings(out, style, &para.runs, "  ");
     }
@@ -1285,6 +1287,7 @@ fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(
         alignment,
         Some(Alignment::Center) | Some(Alignment::Right) | Some(Alignment::Left)
     );
+    let has_tabs = para.runs.iter().any(|run| run.text.contains('\t'));
 
     if use_align {
         let align_str = match alignment {
@@ -1296,7 +1299,20 @@ fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(
         let _ = write!(out, "#align({align_str})[");
     }
 
-    generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
+    if has_tabs {
+        out.push_str("#box(width: 100%)[");
+    }
+
+    generate_runs_with_tabs(
+        out,
+        &para.runs,
+        style.tab_stops.as_deref(),
+        disable_east_asian_breaks,
+    );
+
+    if has_tabs {
+        out.push(']');
+    }
 
     if use_align {
         out.push(']');

@@ -356,6 +356,7 @@ fn fixed_text_list_item_inset(style: &ParagraphStyle) -> Insets {
 }
 
 fn write_fixed_text_list_item_paragraph(out: &mut String, style: &ParagraphStyle, runs: &[Run]) {
+    let disable_east_asian_breaks: bool = matches!(style.east_asian_line_break, Some(false));
     write_common_text_settings(out, runs, "");
     write_fixed_text_default_par_settings(out, style, runs, "");
     let hanging_indent_pt: Option<f64> = fixed_text_list_hanging_indent_pt(style);
@@ -376,7 +377,12 @@ fn write_fixed_text_list_item_paragraph(out: &mut String, style: &ParagraphStyle
         out.push_str("#par[");
     }
 
-    generate_runs_with_tabs(out, runs, tab_stops.as_deref());
+    generate_runs_with_tabs(
+        out,
+        runs,
+        tab_stops.as_deref(),
+        disable_east_asian_breaks,
+    );
     out.push(']');
 }
 
@@ -735,8 +741,10 @@ fn generate_list_items(
         if item.level == base_level {
             let _ = write!(out, "  {item_func}[");
             for para in &item.content {
+                let disable_east_asian_breaks: bool =
+                    matches!(para.style.east_asian_line_break, Some(false));
                 for run in &para.runs {
-                    generate_run(out, run);
+                    generate_run(out, run, disable_east_asian_breaks);
                 }
             }
 
@@ -761,8 +769,10 @@ fn generate_list_items(
         } else {
             let _ = write!(out, "  {item_func}[");
             for para in &item.content {
+                let disable_east_asian_breaks: bool =
+                    matches!(para.style.east_asian_line_break, Some(false));
                 for run in &para.runs {
-                    generate_run(out, run);
+                    generate_run(out, run, disable_east_asian_breaks);
                 }
             }
             out.push_str("],\n");

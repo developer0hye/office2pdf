@@ -704,14 +704,20 @@ pub(super) fn parse_effect_list(
 /// Resolve a font typeface, substituting theme font references.
 pub(super) fn resolve_theme_font(typeface: &str, theme: &ThemeData) -> String {
     match typeface {
+        // Empty theme font placeholders are common in real PPTX files.
+        // Treat them as "unset" so callers can keep searching for concrete fonts.
         "+mj-lt" => theme
             .major_font
-            .clone()
-            .unwrap_or_else(|| typeface.to_string()),
+            .as_deref()
+            .filter(|font| !font.trim().is_empty())
+            .unwrap_or("")
+            .to_string(),
         "+mn-lt" => theme
             .minor_font
-            .clone()
-            .unwrap_or_else(|| typeface.to_string()),
+            .as_deref()
+            .filter(|font| !font.trim().is_empty())
+            .unwrap_or("")
+            .to_string(),
         other => other.to_string(),
     }
 }

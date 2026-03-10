@@ -2157,6 +2157,7 @@ fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> ParagraphStyle 
         space_after,
         heading_level: None,
         direction: None, // Set by BidiContext after style merge
+        east_asian_line_break: None,
         tab_stops,
     }
 }
