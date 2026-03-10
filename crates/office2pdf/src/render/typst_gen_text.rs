@@ -13,14 +13,6 @@ const PPTX_SOFT_LINE_BREAK_CHAR: char = '\u{000B}';
 
 pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
     let style = &para.style;
-
-    if let Some(level) = style.heading_level {
-        let _ = write!(out, "#heading(level: {level})[");
-        generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
-        out.push_str("]\n");
-        return Ok(());
-    }
-
     let has_para_style = needs_block_wrapper(style);
 
     if has_para_style {
@@ -46,7 +38,13 @@ pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(
         let _ = write!(out, "#align({align_str})[");
     }
 
-    generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
+    if let Some(level) = style.heading_level {
+        let _ = write!(out, "#heading(level: {level})[");
+        generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
+        out.push(']');
+    } else {
+        generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
+    }
 
     if use_align {
         out.push(']');

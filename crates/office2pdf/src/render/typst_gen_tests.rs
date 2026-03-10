@@ -6403,6 +6403,34 @@ fn test_generate_heading_with_styled_run() {
 }
 
 #[test]
+fn test_generate_heading_respects_paragraph_spacing() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            heading_level: Some(3),
+            space_before: Some(16.0),
+            space_after: Some(8.0),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "ROI".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#block(above: 16pt, below: 8pt)"),
+        "Heading paragraph spacing should emit block above/below spacing: {result}"
+    );
+    assert!(
+        result.contains("#heading(level: 3)[ROI]"),
+        "Heading should still emit heading markup: {result}"
+    );
+}
+
+#[test]
 fn test_generate_regular_paragraph_no_heading() {
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
         style: ParagraphStyle::default(),

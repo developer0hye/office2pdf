@@ -2960,6 +2960,107 @@ fn extract_doc_default_text_style(styles: &docx_rs::Styles) -> TextStyle {
     extract_run_style_from_json(run_property)
 }
 
+/// Extract document-level default paragraph style from styles.xml docDefaults.
+fn extract_doc_default_paragraph_style(styles: &docx_rs::Styles) -> ParagraphStyle {
+    let Ok(json) = serde_json::to_value(&styles.doc_defaults) else {
+        return ParagraphStyle::default();
+    };
+    let Some(paragraph_property) = json
+        .get("paragraphPropertyDefault")
+        .and_then(|value| value.get("paragraphProperty"))
+    else {
+        return ParagraphStyle::default();
+    };
+
+    let alignment = paragraph_property
+        .get("alignment")
+        .and_then(|value| value.get("val"))
+        .and_then(serde_json::Value::as_str)
+        .and_then(|value| match value {
+            "center" => Some(Alignment::Center),
+            "right" | "end" => Some(Alignment::Right),
+            "left" | "start" => Some(Alignment::Left),
+            "both" | "justified" => Some(Alignment::Justify),
+            _ => None,
+        });
+
+    let indent = paragraph_property.get("indent");
+    let indent_left = indent
+        .and_then(|value| value.get("start"))
+        .and_then(serde_json::Value::as_f64)
+        .map(|value| value / 20.0);
+    let indent_right = indent
+        .and_then(|value| value.get("end"))
+        .and_then(serde_json::Value::as_f64)
+        .map(|value| value / 20.0);
+    let indent_first_line = indent
+        .and_then(|value| value.get("specialIndent"))
+        .and_then(|value| {
+            value
+                .get("firstLine")
+                .and_then(serde_json::Value::as_f64)
+                .map(|twips| twips / 20.0)
+                .or_else(|| {
+                    value
+                        .get("hanging")
+                        .and_then(serde_json::Value::as_f64)
+                        .map(|twips| -(twips / 20.0))
+                })
+        });
+
+    let (line_spacing, space_before, space_after) =
+        extract_line_spacing_from_json(paragraph_property.get("lineSpacing"));
+
+    ParagraphStyle {
+        alignment,
+        indent_left,
+        indent_right,
+        indent_first_line,
+        line_spacing,
+        space_before,
+        space_after,
+        heading_level: None,
+        direction: paragraph_property
+            .get("bidirectional")
+            .and_then(json_bool_or_val)
+            .and_then(|is_rtl| is_rtl.then_some(TextDirection::Rtl)),
+        tab_stops: None,
+    }
+}
+
+fn extract_line_spacing_from_json(
+    spacing: Option<&serde_json::Value>,
+) -> (Option<LineSpacing>, Option<f64>, Option<f64>) {
+    let Some(spacing) = spacing else {
+        return (None, None, None);
+    };
+
+    let space_before = spacing
+        .get("before")
+        .and_then(serde_json::Value::as_f64)
+        .map(|value| value / 20.0);
+    let space_after = spacing
+        .get("after")
+        .and_then(serde_json::Value::as_f64)
+        .map(|value| value / 20.0);
+
+    let line_spacing = spacing
+        .get("line")
+        .and_then(serde_json::Value::as_f64)
+        .map(|line| {
+            match spacing
+                .get("lineRule")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("auto")
+            {
+                "exact" | "atLeast" => LineSpacing::Exact(line / 20.0),
+                _ => LineSpacing::Proportional(line / 240.0),
+            }
+        });
+
+    (line_spacing, space_before, space_after)
+}
+
 /// Map OOXML named highlight colors to RGB values.
 /// The 16 named colors are defined in the ECMA-376 spec (ST_HighlightColor).
 fn resolve_highlight_color(name: &str) -> Option<Color> {

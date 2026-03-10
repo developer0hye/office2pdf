@@ -3062,6 +3062,34 @@ fn test_style_alignment_applied_to_paragraph() {
 }
 
 #[test]
+fn test_style_inherits_spacing_from_based_on_parent() {
+    let normal = docx_rs::Style::new("Normal", docx_rs::StyleType::Paragraph)
+        .name("Normal")
+        .line_spacing(docx_rs::LineSpacing::new().before(200).after(40));
+    let heading4 = docx_rs::Style::new("Heading4", docx_rs::StyleType::Paragraph)
+        .name("Heading 4")
+        .based_on("Normal")
+        .outline_lvl(3);
+
+    let data = build_docx_bytes_with_styles(
+        vec![
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Inherited spacing heading"))
+                .style("Heading4"),
+        ],
+        vec![normal, heading4],
+    );
+
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let para = first_paragraph(&doc);
+
+    assert_eq!(para.style.space_before, Some(10.0));
+    assert_eq!(para.style.space_after, Some(2.0));
+    assert_eq!(para.style.heading_level, Some(4));
+}
+
+#[test]
 fn test_normal_style_no_heading_defaults() {
     // Normal paragraphs (no heading) should not get heading defaults
     let normal = docx_rs::Style::new("Normal", docx_rs::StyleType::Paragraph).name("Normal");
