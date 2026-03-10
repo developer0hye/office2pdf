@@ -28,10 +28,10 @@ use self::slides::{parse_single_slide, parse_slide_xml};
 use self::tables::{parse_pptx_table, scale_pptx_table_geometry_to_frame};
 use self::text::*;
 use self::theme::{
-    ColorMapData, ThemeData, default_color_map, parse_background_color, parse_background_gradient,
-    parse_color_from_empty, parse_color_from_start, parse_effect_list, parse_master_color_map,
-    parse_master_other_style, parse_shape_gradient_fill, parse_theme_xml,
-    resolve_effective_color_map, resolve_theme_font,
+    ColorMapData, ParsedColor, ThemeData, default_color_map, parse_background_color,
+    parse_background_gradient, parse_color_from_empty, parse_color_from_start,
+    parse_effect_list, parse_master_color_map, parse_master_other_style,
+    parse_shape_gradient_fill, parse_theme_xml, resolve_effective_color_map, resolve_theme_font,
 };
 
 #[path = "pptx_package.rs"]
