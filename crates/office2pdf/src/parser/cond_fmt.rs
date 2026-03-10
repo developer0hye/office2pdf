@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ir::{Color, DataBarInfo};
+use crate::parser::xml_util;
 
 /// A (column, row) coordinate pair (1-indexed).
 type CellPos = (u32, u32);
@@ -76,16 +77,7 @@ fn parse_sqref(sqref: &str) -> Vec<CellRange> {
         .collect()
 }
 
-/// Parse an ARGB hex string (e.g. "FFFF0000") into an IR Color.
-fn parse_argb_color(argb: &str) -> Option<Color> {
-    if argb.len() < 8 {
-        return None;
-    }
-    let r = u8::from_str_radix(&argb[2..4], 16).ok()?;
-    let g = u8::from_str_radix(&argb[4..6], 16).ok()?;
-    let b = u8::from_str_radix(&argb[6..8], 16).ok()?;
-    Some(Color::new(r, g, b))
-}
+use xml_util::parse_argb_color;
 
 /// Try to get a numeric value from a cell.
 fn cell_numeric_value(cell: &umya_spreadsheet::Cell) -> Option<f64> {

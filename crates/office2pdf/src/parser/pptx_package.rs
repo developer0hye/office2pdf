@@ -381,23 +381,7 @@ pub(super) fn load_theme<R: Read + std::io::Seek>(
 }
 
 pub(super) fn resolve_relative_path(base_dir: &str, relative: &str) -> String {
-    let mut parts: Vec<&str> = if base_dir.is_empty() {
-        Vec::new()
-    } else {
-        base_dir.split('/').collect()
-    };
-
-    for component in relative.split('/') {
-        match component {
-            ".." => {
-                parts.pop();
-            }
-            "." | "" => {}
-            other => parts.push(other),
-        }
-    }
-
-    parts.join("/")
+    crate::parser::xml_util::resolve_relative_path(base_dir, relative)
 }
 
 fn image_format_from_ext(path: &str) -> Option<ImageFormat> {

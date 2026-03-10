@@ -11,6 +11,7 @@ use crate::ir::{
 use crate::parser::Parser;
 use crate::parser::chart::parse_chart_xml;
 use crate::parser::cond_fmt::build_cond_fmt_overrides;
+use crate::parser::xml_util;
 
 /// Parser for XLSX (Office Open XML Excel) spreadsheets.
 pub struct XlsxParser;
@@ -25,17 +26,7 @@ fn column_width_to_pt(char_width: f64) -> f64 {
     char_width * 7.0
 }
 
-/// Parse an ARGB hex string (e.g. "FFFF0000") into an IR Color.
-/// Returns None if the string is too short or invalid.
-fn parse_argb_color(argb: &str) -> Option<Color> {
-    if argb.len() < 8 {
-        return None;
-    }
-    let r = u8::from_str_radix(&argb[2..4], 16).ok()?;
-    let g = u8::from_str_radix(&argb[4..6], 16).ok()?;
-    let b = u8::from_str_radix(&argb[6..8], 16).ok()?;
-    Some(Color::new(r, g, b))
-}
+use xml_util::parse_argb_color;
 
 /// Map Excel border style name to width in points.
 fn border_style_to_width(style: &str) -> Option<f64> {
@@ -687,43 +678,7 @@ fn parse_workbook_sheet_rids(xml: &str) -> Vec<(String, String)> {
 
 /// Parse a .rels file to get Id → Target mapping.
 fn parse_rels_targets(xml: &str) -> HashMap<String, String> {
-    let mut map = HashMap::new();
-    let mut reader = quick_xml::Reader::from_str(xml);
-
-    loop {
-        match reader.read_event() {
-            Ok(quick_xml::events::Event::Start(ref e))
-            | Ok(quick_xml::events::Event::Empty(ref e)) => {
-                if e.local_name().as_ref() == b"Relationship" {
-                    let mut id = None;
-                    let mut target = None;
-                    for attr in e.attributes().flatten() {
-                        match attr.key.local_name().as_ref() {
-                            b"Id" => {
-                                if let Ok(v) = attr.unescape_value() {
-                                    id = Some(v.to_string());
-                                }
-                            }
-                            b"Target" => {
-                                if let Ok(v) = attr.unescape_value() {
-                                    target = Some(v.to_string());
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    if let (Some(id), Some(target)) = (id, target) {
-                        map.insert(id, target);
-                    }
-                }
-            }
-            Ok(quick_xml::events::Event::Eof) => break,
-            Err(_) => break,
-            _ => {}
-        }
-    }
-
-    map
+    xml_util::parse_rels_id_target(xml)
 }
 
 /// Parse a .rels file and return targets whose Type contains the given substring.
@@ -771,20 +726,7 @@ fn parse_rels_by_type(xml: &str, type_substring: &str) -> Vec<String> {
 
 /// Resolve a relative path (like `../drawings/drawing1.xml`) against a base directory.
 fn resolve_relative_xl_path(base_dir: &str, relative: &str) -> String {
-    if relative.starts_with('/') {
-        return relative.trim_start_matches('/').to_string();
-    }
-    let mut parts: Vec<&str> = base_dir.split('/').collect();
-    for segment in relative.split('/') {
-        match segment {
-            ".." => {
-                parts.pop();
-            }
-            "." | "" => {}
-            _ => parts.push(segment),
-        }
-    }
-    parts.join("/")
+    xml_util::resolve_relative_path(base_dir, relative)
 }
 
 /// Parse drawing XML for chart anchor positions.

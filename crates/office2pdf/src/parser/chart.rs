@@ -6,6 +6,7 @@
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
+use super::xml_util;
 use crate::ir::{Chart, ChartSeries, ChartType};
 
 /// Parse a chart XML file (e.g., `word/charts/chart1.xml`) into a `Chart` IR.
@@ -182,7 +183,7 @@ fn parse_single_series(reader: &mut Reader<&[u8]>) -> (ChartSeries, Vec<String>)
                     if categories.is_empty() {
                         categories = parse_category_data(reader);
                     } else {
-                        skip_element(reader, b"xVal");
+                        xml_util::skip_element(reader, b"xVal");
                     }
                 }
                 _ => {}
@@ -296,29 +297,6 @@ fn parse_value_data(reader: &mut Reader<&[u8]>) -> Vec<f64> {
     }
 
     values
-}
-
-fn skip_element(reader: &mut Reader<&[u8]>, end_tag: &[u8]) {
-    let mut depth = 1u32;
-    loop {
-        match reader.read_event() {
-            Ok(Event::Start(ref e)) => {
-                if e.local_name().as_ref() == end_tag {
-                    depth += 1;
-                }
-            }
-            Ok(Event::End(ref e)) => {
-                if e.local_name().as_ref() == end_tag {
-                    depth -= 1;
-                    if depth == 0 {
-                        return;
-                    }
-                }
-            }
-            Ok(Event::Eof) | Err(_) => return,
-            _ => {}
-        }
-    }
 }
 
 /// Scan document.xml for chart relationship IDs.

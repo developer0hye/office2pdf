@@ -2,6 +2,7 @@ use super::{
     Alignment, Color, HyperlinkMap, LineSpacing, ParagraphStyle, TabAlignment, TabLeader, TabStop,
     TabStopOverride, TextStyle, VerticalTextAlign, apply_tab_stop_overrides,
 };
+use crate::parser::xml_util;
 
 pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> ParagraphStyle {
     let alignment = prop.alignment.as_ref().and_then(|j| match j.val.as_str() {
@@ -155,7 +156,7 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
         color: rp
             .get("color")
             .and_then(serde_json::Value::as_str)
-            .and_then(parse_hex_color),
+            .and_then(xml_util::parse_hex_color),
         font_family: rp.get("fonts").and_then(|fonts| {
             fonts
                 .get("ascii")
@@ -221,15 +222,8 @@ pub(super) fn resolve_highlight_color(name: &str) -> Option<Color> {
     }
 }
 
-pub(super) fn parse_hex_color(hex: &str) -> Option<Color> {
-    if hex.len() != 6 {
-        return None;
-    }
-    let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-    let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-    let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-    Some(Color::new(r, g, b))
-}
+// Re-export for sibling modules that import from here.
+pub(super) use xml_util::parse_hex_color;
 
 pub(super) fn resolve_hyperlink_url(
     hyperlink: &docx_rs::Hyperlink,

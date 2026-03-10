@@ -5,6 +5,7 @@ pub(crate) mod metadata;
 pub(crate) mod omml;
 pub mod pptx;
 pub(crate) mod smartart;
+pub(crate) mod xml_util;
 pub mod xlsx;
 
 use crate::config::ConvertOptions;

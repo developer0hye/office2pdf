@@ -494,32 +494,10 @@ struct ChartRef {
 /// Map from relationship ID → parsed Chart data.
 type ChartMap = HashMap<String, Chart>;
 
-/// Get a string attribute value from an XML element.
-/// Matches on full qualified name first (e.g. `r:id`), then local name.
-fn get_attr_str(e: &quick_xml::events::BytesStart, key: &[u8]) -> Option<String> {
-    for attr in e.attributes().flatten() {
-        if attr.key.as_ref() == key || attr.key.local_name().as_ref() == key {
-            return attr.unescape_value().ok().map(|v| v.to_string());
-        }
-    }
-    None
-}
-
-/// Get an i64 attribute value from an XML element.
-fn get_attr_i64(e: &quick_xml::events::BytesStart, key: &[u8]) -> Option<i64> {
-    get_attr_str(e, key).and_then(|v| v.parse().ok())
-}
-
-/// Parse a 6-character hex color string (e.g. "FF0000") to an IR Color.
-fn parse_hex_color(hex: &str) -> Option<Color> {
-    if hex.len() != 6 {
-        return None;
-    }
-    let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-    let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-    let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-    Some(Color::new(r, g, b))
-}
+// Re-export shared XML utilities so submodules can use `super::get_attr_str` etc.
+use super::xml_util::get_attr_i64;
+use super::xml_util::get_attr_str;
+use super::xml_util::parse_hex_color;
 
 #[cfg(test)]
 #[path = "pptx_tests.rs"]
