@@ -34,8 +34,7 @@ fn test_discover_macos_office_font_paths_prefers_office_order() {
     let apps = temp.path().join("Applications");
     let home = temp.path().join("home");
 
-    fs::create_dir_all(apps.join("Microsoft PowerPoint.app/Contents/Resources/DFonts"))
-        .unwrap();
+    fs::create_dir_all(apps.join("Microsoft PowerPoint.app/Contents/Resources/DFonts")).unwrap();
     fs::create_dir_all(apps.join("Microsoft Word.app/Contents/Resources/DFonts")).unwrap();
     fs::create_dir_all(
         home.join("Library/Group Containers/UBF8T346G9.Office/FontCache/4/CloudFonts"),
@@ -47,27 +46,28 @@ fn test_discover_macos_office_font_paths_prefers_office_order() {
     .unwrap();
 
     let discovered = discover_macos_office_font_paths_from(&[apps], &home);
-    let expected =
-        vec![
-            fs::canonicalize(
-                temp.path()
-                    .join("Applications/Microsoft PowerPoint.app/Contents/Resources/DFonts"),
-            )
-            .unwrap(),
-            fs::canonicalize(
-                temp.path()
-                    .join("Applications/Microsoft Word.app/Contents/Resources/DFonts"),
-            )
-            .unwrap(),
-            fs::canonicalize(temp.path().join(
-                "home/Library/Group Containers/UBF8T346G9.Office/FontCache/4/CloudFonts",
-            ))
-            .unwrap(),
-            fs::canonicalize(temp.path().join(
-                "home/Library/Group Containers/UBF8T346G9.Office/FontCache/4/PreviewFont",
-            ))
-            .unwrap(),
-        ];
+    let expected = vec![
+        fs::canonicalize(
+            temp.path()
+                .join("Applications/Microsoft PowerPoint.app/Contents/Resources/DFonts"),
+        )
+        .unwrap(),
+        fs::canonicalize(
+            temp.path()
+                .join("Applications/Microsoft Word.app/Contents/Resources/DFonts"),
+        )
+        .unwrap(),
+        fs::canonicalize(
+            temp.path()
+                .join("home/Library/Group Containers/UBF8T346G9.Office/FontCache/4/CloudFonts"),
+        )
+        .unwrap(),
+        fs::canonicalize(
+            temp.path()
+                .join("home/Library/Group Containers/UBF8T346G9.Office/FontCache/4/PreviewFont"),
+        )
+        .unwrap(),
+    ];
 
     assert_eq!(discovered, expected);
 }

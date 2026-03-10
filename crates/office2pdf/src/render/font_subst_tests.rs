@@ -205,12 +205,8 @@ fn test_font_with_fallbacks_pretendard_variant_includes_base_family() {
 
 #[test]
 fn test_resolve_available_fallback_prefers_alias_before_system_fallback() {
-    let context = FontSearchContext::for_test(
-        Vec::new(),
-        &["Pretendard", "Apple SD Gothic Neo"],
-        &[],
-        &[],
-    );
+    let context =
+        FontSearchContext::for_test(Vec::new(), &["Pretendard", "Apple SD Gothic Neo"], &[], &[]);
     let fallback = resolve_available_fallback("Pretendard Medium", &context);
     assert_eq!(fallback.as_deref(), Some("Pretendard"));
 }

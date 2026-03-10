@@ -2,19 +2,22 @@ use super::*;
 
 #[test]
 fn test_simple_fraction() {
-    let xml = "<m:f><m:num><m:r><m:t>a</m:t></m:r></m:num><m:den><m:r><m:t>b</m:t></m:r></m:den></m:f>";
+    let xml =
+        "<m:f><m:num><m:r><m:t>a</m:t></m:r></m:num><m:den><m:r><m:t>b</m:t></m:r></m:den></m:f>";
     assert_eq!(omml_to_typst(xml), "frac(a, b)");
 }
 
 #[test]
 fn test_superscript() {
-    let xml = "<m:sSup><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup>";
+    let xml =
+        "<m:sSup><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup>";
     assert_eq!(omml_to_typst(xml), "x^2");
 }
 
 #[test]
 fn test_subscript() {
-    let xml = "<m:sSub><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sub><m:r><m:t>1</m:t></m:r></m:sub></m:sSub>";
+    let xml =
+        "<m:sSub><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sub><m:r><m:t>1</m:t></m:r></m:sub></m:sSub>";
     assert_eq!(omml_to_typst(xml), "x_1");
 }
 
@@ -577,13 +580,15 @@ fn test_extended_accents() {
 
 #[test]
 fn test_acute_accent_via_omml() {
-    let xml = r#"<m:acc><m:accPr><m:chr m:val="́"/></m:accPr><m:e><m:r><m:t>a</m:t></m:r></m:e></m:acc>"#;
+    let xml =
+        r#"<m:acc><m:accPr><m:chr m:val="́"/></m:accPr><m:e><m:r><m:t>a</m:t></m:r></m:e></m:acc>"#;
     assert_eq!(omml_to_typst(xml), "acute(a)");
 }
 
 #[test]
 fn test_grave_accent_via_omml() {
-    let xml = r#"<m:acc><m:accPr><m:chr m:val="̀"/></m:accPr><m:e><m:r><m:t>a</m:t></m:r></m:e></m:acc>"#;
+    let xml =
+        r#"<m:acc><m:accPr><m:chr m:val="̀"/></m:accPr><m:e><m:r><m:t>a</m:t></m:r></m:e></m:acc>"#;
     assert_eq!(omml_to_typst(xml), "grave(a)");
 }
 

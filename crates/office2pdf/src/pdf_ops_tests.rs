@@ -11,8 +11,7 @@ fn make_test_pdf(num_pages: u32) -> Vec<u8> {
     for i in 0..num_pages {
         // Create a content stream with a simple text marker
         let content = format!("BT /F1 12 Tf 100 700 Td (Page {}) Tj ET", i + 1);
-        let content_id =
-            doc.add_object(lopdf::Stream::new(dictionary! {}, content.into_bytes()));
+        let content_id = doc.add_object(lopdf::Stream::new(dictionary! {}, content.into_bytes()));
 
         let page_id = doc.add_object(dictionary! {
             "Type" => "Page",
