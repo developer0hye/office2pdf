@@ -8,15 +8,15 @@ use crate::ir::TableCell;
 
 /// A cell range within a sheet (1-indexed, inclusive).
 #[derive(Debug, Clone, Copy)]
-pub(super) struct CellRange {
-    pub(super) start_col: u32,
-    pub(super) start_row: u32,
-    pub(super) end_col: u32,
-    pub(super) end_row: u32,
+pub(crate) struct CellRange {
+    pub(crate) start_col: u32,
+    pub(crate) start_row: u32,
+    pub(crate) end_col: u32,
+    pub(crate) end_row: u32,
 }
 
 /// A (column, row) coordinate pair (1-indexed).
-pub(super) type CellPos = (u32, u32);
+pub(crate) type CellPos = (u32, u32);
 
 /// Info about a merged cell region, keyed by its top-left coordinate.
 pub(super) struct MergeInfo {
@@ -50,7 +50,7 @@ pub(super) fn parse_column_letters(s: &str) -> Option<u32> {
 }
 
 /// Parse a cell reference like "$A$1", "A1", "$B$10" into (col, row), both 1-indexed.
-pub(super) fn parse_cell_ref(s: &str) -> Option<(u32, u32)> {
+pub(crate) fn parse_cell_ref(s: &str) -> Option<(u32, u32)> {
     // Strip dollar signs
     let s = s.replace('$', "");
     // Split into letter part and number part

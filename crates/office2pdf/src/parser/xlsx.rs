@@ -20,6 +20,9 @@ use self::xlsx_cells::*;
 use self::xlsx_hf::*;
 use self::xlsx_drawing::*;
 
+// Re-export cell address types for cond_fmt module.
+pub(crate) use self::xlsx_cells::{CellPos, CellRange, parse_cell_ref};
+
 /// Parser for XLSX (Office Open XML Excel) spreadsheets.
 pub struct XlsxParser;
 
