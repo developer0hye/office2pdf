@@ -1,9 +1,9 @@
 use super::{
-    Alignment, BidiContext, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign,
-    Color, DrawingTextBoxContext, HyperlinkMap, ImageMap, Insets, MAX_TABLE_DEPTH, NoteContext,
-    SmallCapsContext, StyleMap, Table, TableCell, TableHeaderContext, TableRow, VmlTextBoxContext,
-    WrapContext, convert_paragraph_blocks, parse_hex_color,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Color,
+    HyperlinkMap, ImageMap, Insets, MAX_TABLE_DEPTH, StyleMap, Table, TableCell, TableRow,
+    convert_paragraph_blocks, parse_hex_color,
 };
+use super::contexts::DocxConversionContext;
 
 #[derive(Clone)]
 struct RawCell {
@@ -124,22 +124,15 @@ fn extract_table_cell_width(prop_json: Option<&serde_json::Value>) -> Option<f64
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn convert_table(
     table: &docx_rs::Table,
     images: &ImageMap,
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
-    notes: &NoteContext,
-    wraps: &WrapContext,
-    drawing_text_boxes: &DrawingTextBoxContext,
-    table_headers: &TableHeaderContext,
-    vml_text_boxes: &VmlTextBoxContext,
-    bidi: &BidiContext,
-    small_caps: &SmallCapsContext,
+    ctx: &DocxConversionContext,
     depth: usize,
 ) -> Table {
-    let header_info = table_headers.consume_next();
+    let header_info = ctx.table_headers.consume_next();
     let table_prop_json = serde_json::to_value(&table.property).ok();
     let alignment = extract_table_alignment(table_prop_json.as_ref());
     let default_cell_padding = extract_table_default_cell_padding(table_prop_json.as_ref());
@@ -149,13 +142,7 @@ pub(super) fn convert_table(
         images,
         hyperlinks,
         style_map,
-        notes,
-        wraps,
-        drawing_text_boxes,
-        table_headers,
-        vml_text_boxes,
-        bidi,
-        small_caps,
+        ctx,
         depth,
         default_cell_padding,
     );
@@ -178,19 +165,12 @@ pub(super) fn convert_table(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn extract_raw_rows(
     table: &docx_rs::Table,
     images: &ImageMap,
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
-    notes: &NoteContext,
-    wraps: &WrapContext,
-    drawing_text_boxes: &DrawingTextBoxContext,
-    table_headers: &TableHeaderContext,
-    vml_text_boxes: &VmlTextBoxContext,
-    bidi: &BidiContext,
-    small_caps: &SmallCapsContext,
+    ctx: &DocxConversionContext,
     depth: usize,
     default_cell_padding: Option<Insets>,
 ) -> Vec<RawRow> {
@@ -224,20 +204,7 @@ fn extract_raw_rows(
                 .map(String::from);
             let preferred_width = extract_table_cell_width(prop_json.as_ref());
 
-            let content = extract_cell_content(
-                cell,
-                images,
-                hyperlinks,
-                style_map,
-                notes,
-                wraps,
-                drawing_text_boxes,
-                table_headers,
-                vml_text_boxes,
-                bidi,
-                small_caps,
-                depth,
-            );
+            let content = extract_cell_content(cell, images, hyperlinks, style_map, ctx, depth);
             let border = prop_json
                 .as_ref()
                 .and_then(|j| j.get("borders"))
@@ -384,39 +351,19 @@ fn count_vmerge_span(raw_rows: &[RawRow], start_row: usize, col_index: usize) ->
     span
 }
 
-#[allow(clippy::too_many_arguments)]
 fn extract_cell_content(
     cell: &docx_rs::TableCell,
     images: &ImageMap,
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
-    notes: &NoteContext,
-    wraps: &WrapContext,
-    drawing_text_boxes: &DrawingTextBoxContext,
-    table_headers: &TableHeaderContext,
-    vml_text_boxes: &VmlTextBoxContext,
-    bidi: &BidiContext,
-    small_caps: &SmallCapsContext,
+    ctx: &DocxConversionContext,
     depth: usize,
 ) -> Vec<Block> {
     let mut blocks: Vec<Block> = Vec::new();
     for content in &cell.children {
         match content {
             docx_rs::TableCellContent::Paragraph(para) => {
-                convert_paragraph_blocks(
-                    para,
-                    &mut blocks,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    notes,
-                    wraps,
-                    drawing_text_boxes,
-                    table_headers,
-                    vml_text_boxes,
-                    bidi,
-                    small_caps,
-                );
+                convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, ctx);
             }
             docx_rs::TableCellContent::Table(nested_table) => {
                 if depth < MAX_TABLE_DEPTH {
@@ -425,13 +372,7 @@ fn extract_cell_content(
                         images,
                         hyperlinks,
                         style_map,
-                        notes,
-                        wraps,
-                        drawing_text_boxes,
-                        table_headers,
-                        vml_text_boxes,
-                        bidi,
-                        small_caps,
+                        ctx,
                         depth + 1,
                     )));
                 }

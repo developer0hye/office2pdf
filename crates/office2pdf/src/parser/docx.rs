@@ -17,11 +17,12 @@ use crate::parser::Parser;
 #[cfg(test)]
 use self::contexts::scan_table_headers;
 use self::contexts::{
-    BidiContext, ChartContext, DrawingTextBoxContext, DrawingTextBoxInfo, MathContext, NoteContext,
-    SmallCapsContext, TableHeaderContext, VmlTextBoxContext, VmlTextBoxInfo, WrapContext,
-    build_chart_context_from_xml, build_math_context_from_xml, build_note_context_from_xml,
-    build_wrap_context_from_xml, extract_column_layout_from_section_property,
-    is_note_reference_run, read_zip_text, scan_column_layouts,
+    BidiContext, ChartContext, DocxConversionContext, DrawingTextBoxContext, DrawingTextBoxInfo,
+    MathContext, NoteContext, SmallCapsContext, TableHeaderContext, VmlTextBoxContext,
+    VmlTextBoxInfo, WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
+    build_note_context_from_xml, build_wrap_context_from_xml,
+    extract_column_layout_from_section_property, is_note_reference_run, read_zip_text,
+    scan_column_layouts,
 };
 use self::lists::{
     NumberingMap, TaggedElement, build_numbering_map, extract_num_info, group_into_lists,
@@ -105,20 +106,7 @@ impl Parser for DocxParser {
         // Open ZIP once and build all pre-parse contexts from a single pass.
         // This consolidates what was previously 5 separate ZIP opens + multiple
         // reads of word/document.xml into a single archive + single doc read.
-        let (
-            metadata,
-            mut notes,
-            wraps,
-            drawing_text_boxes,
-            table_headers,
-            vml_text_boxes,
-            mut math,
-            mut chart_ctx,
-            column_layouts,
-            bidi,
-            small_caps,
-            header_footer_assets,
-        ) = {
+        let (metadata, mut ctx, mut math, mut chart_ctx, column_layouts, header_footer_assets) = {
             let cursor = std::io::Cursor::new(data);
             match zip::ZipArchive::new(cursor) {
                 Ok(mut archive) => {
@@ -138,36 +126,35 @@ impl Parser for DocxParser {
                     let bidi = BidiContext::from_xml(doc_xml.as_deref());
                     let small_caps = SmallCapsContext::from_xml(doc_xml.as_deref());
                     let header_footer_assets = build_header_footer_assets(&mut archive);
-                    (
-                        metadata,
+                    let ctx = DocxConversionContext {
                         notes,
                         wraps,
                         drawing_text_boxes,
                         table_headers,
                         vml_text_boxes,
-                        math,
-                        chart_ctx,
-                        column_layouts,
                         bidi,
                         small_caps,
-                        header_footer_assets,
-                    )
+                    };
+                    (metadata, ctx, math, chart_ctx, column_layouts, header_footer_assets)
                 }
                 Err(_) => {
                     // ZIP open failed — return empty contexts; docx-rs will
                     // produce a proper parse error downstream.
+                    let ctx = DocxConversionContext {
+                        notes: NoteContext::empty(),
+                        wraps: WrapContext::empty(),
+                        drawing_text_boxes: DrawingTextBoxContext::from_xml(None),
+                        table_headers: TableHeaderContext::from_xml(None),
+                        vml_text_boxes: VmlTextBoxContext::from_xml(None),
+                        bidi: BidiContext::from_xml(None),
+                        small_caps: SmallCapsContext::from_xml(None),
+                    };
                     (
                         crate::ir::Metadata::default(),
-                        NoteContext::empty(),
-                        WrapContext::empty(),
-                        DrawingTextBoxContext::from_xml(None),
-                        TableHeaderContext::from_xml(None),
-                        VmlTextBoxContext::from_xml(None),
+                        ctx,
                         MathContext::empty(),
                         ChartContext::empty(),
                         Vec::new(),
-                        BidiContext::from_xml(None),
-                        SmallCapsContext::from_xml(None),
                         HeaderFooterAssets::default(),
                     )
                 }
@@ -178,7 +165,7 @@ impl Parser for DocxParser {
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX (docx-rs): {e}")))?;
 
         // Populate locale-specific footnote/endnote style IDs from docx styles
-        notes.populate_style_ids(&docx.styles);
+        ctx.notes.populate_style_ids(&docx.styles);
 
         let images = build_image_map(&docx);
         let hyperlinks = build_hyperlink_map(&docx);
@@ -197,13 +184,7 @@ impl Parser for DocxParser {
                         &images,
                         &hyperlinks,
                         &style_map,
-                        &notes,
-                        &wraps,
-                        &drawing_text_boxes,
-                        &table_headers,
-                        &vml_text_boxes,
-                        &bidi,
-                        &small_caps,
+                        &ctx,
                     )];
                     // Inject math equations for this body child
                     let eqs = math.take(idx);
@@ -223,13 +204,7 @@ impl Parser for DocxParser {
                         &images,
                         &hyperlinks,
                         &style_map,
-                        &notes,
-                        &wraps,
-                        &drawing_text_boxes,
-                        &table_headers,
-                        &vml_text_boxes,
-                        &bidi,
-                        &small_caps,
+                        &ctx,
                         0,
                     ))])]
                 }
@@ -238,13 +213,7 @@ impl Parser for DocxParser {
                     &images,
                     &hyperlinks,
                     &style_map,
-                    &notes,
-                    &wraps,
-                    &drawing_text_boxes,
-                    &table_headers,
-                    &vml_text_boxes,
-                    &bidi,
-                    &small_caps,
+                    &ctx,
                 ),
                 _ => vec![TaggedElement::Plain(vec![])],
             }));
@@ -314,67 +283,29 @@ impl Parser for DocxParser {
 /// Extract content from a StructuredDataTag (SDT), processing its paragraph
 /// and table children through the standard conversion pipeline.
 /// SDTs are used for various structured content in DOCX, including Table of Contents.
-#[allow(clippy::too_many_arguments)]
 fn convert_sdt_children(
     sdt: &docx_rs::StructuredDataTag,
     images: &ImageMap,
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
-    notes: &NoteContext,
-    wraps: &WrapContext,
-    drawing_text_boxes: &DrawingTextBoxContext,
-    table_headers: &TableHeaderContext,
-    vml_text_boxes: &VmlTextBoxContext,
-    bidi: &BidiContext,
-    small_caps: &SmallCapsContext,
+    ctx: &DocxConversionContext,
 ) -> Vec<TaggedElement> {
     let mut result = Vec::new();
     for child in &sdt.children {
         match child {
             docx_rs::StructuredDataTagChild::Paragraph(para) => {
                 result.push(convert_paragraph_element(
-                    para,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    notes,
-                    wraps,
-                    drawing_text_boxes,
-                    table_headers,
-                    vml_text_boxes,
-                    bidi,
-                    small_caps,
+                    para, images, hyperlinks, style_map, ctx,
                 ));
             }
             docx_rs::StructuredDataTagChild::Table(table) => {
                 result.push(TaggedElement::Plain(vec![Block::Table(convert_table(
-                    table,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    notes,
-                    wraps,
-                    drawing_text_boxes,
-                    table_headers,
-                    vml_text_boxes,
-                    bidi,
-                    small_caps,
-                    0,
+                    table, images, hyperlinks, style_map, ctx, 0,
                 ))]));
             }
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
                 result.extend(convert_sdt_children(
-                    nested,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    notes,
-                    wraps,
-                    drawing_text_boxes,
-                    table_headers,
-                    vml_text_boxes,
-                    bidi,
-                    small_caps,
+                    nested, images, hyperlinks, style_map, ctx,
                 ));
             }
             _ => {}
@@ -385,38 +316,18 @@ fn convert_sdt_children(
 
 /// Convert a docx-rs Paragraph into a TaggedElement.
 /// If the paragraph has numbering, returns a `ListParagraph`; otherwise `Plain`.
-#[allow(clippy::too_many_arguments)]
 fn convert_paragraph_element(
     para: &docx_rs::Paragraph,
     images: &ImageMap,
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
-    notes: &NoteContext,
-    wraps: &WrapContext,
-    drawing_text_boxes: &DrawingTextBoxContext,
-    table_headers: &TableHeaderContext,
-    vml_text_boxes: &VmlTextBoxContext,
-    bidi: &BidiContext,
-    small_caps: &SmallCapsContext,
+    ctx: &DocxConversionContext,
 ) -> TaggedElement {
     let num_info = extract_num_info(para);
 
     // Build the paragraph IR
     let mut blocks = Vec::new();
-    convert_paragraph_blocks(
-        para,
-        &mut blocks,
-        images,
-        hyperlinks,
-        style_map,
-        notes,
-        wraps,
-        drawing_text_boxes,
-        table_headers,
-        vml_text_boxes,
-        bidi,
-        small_caps,
-    );
+    convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, ctx);
 
     match num_info {
         Some(info) => {
@@ -460,23 +371,16 @@ fn convert_paragraph_element(
 /// If the paragraph has `page_break_before`, a `Block::PageBreak` is emitted first.
 /// Inline images within runs are extracted as separate `Block::Image` elements.
 /// Style formatting from the document's style definitions is merged with explicit formatting.
-#[allow(clippy::too_many_arguments)]
 fn convert_paragraph_blocks(
     para: &docx_rs::Paragraph,
     out: &mut Vec<Block>,
     images: &ImageMap,
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
-    notes: &NoteContext,
-    wraps: &WrapContext,
-    drawing_text_boxes: &DrawingTextBoxContext,
-    table_headers: &TableHeaderContext,
-    vml_text_boxes: &VmlTextBoxContext,
-    bidi: &BidiContext,
-    small_caps: &SmallCapsContext,
+    ctx: &DocxConversionContext,
 ) {
     // Check bidi direction for this paragraph (must be called once per XML <w:p>)
-    let is_rtl = bidi.next_is_bidi();
+    let is_rtl = ctx.bidi.next_is_bidi();
 
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
@@ -497,11 +401,11 @@ fn convert_paragraph_blocks(
         match child {
             docx_rs::ParagraphChild::Run(run) => {
                 // Advance smallCaps cursor for every <w:r> in body
-                let is_small_caps: bool = small_caps.next_is_small_caps();
+                let is_small_caps: bool = ctx.small_caps.next_is_small_caps();
 
                 // Check for footnote/endnote reference runs
-                if is_note_reference_run(run, notes) {
-                    if let Some(content) = notes.consume_next() {
+                if is_note_reference_run(run, &ctx.notes) {
+                    if let Some(content) = ctx.notes.consume_next() {
                         runs.push(Run {
                             text: String::new(),
                             style: TextStyle::default(),
@@ -517,27 +421,18 @@ fn convert_paragraph_blocks(
                 let mut text_box_blocks: Vec<Block> = Vec::new();
                 for run_child in &run.children {
                     if let docx_rs::RunChild::Drawing(drawing) = run_child
-                        && let Some(img_block) = extract_drawing_image(drawing, images, wraps)
+                        && let Some(img_block) =
+                            extract_drawing_image(drawing, images, &ctx.wraps)
                     {
                         inline_images.push(img_block);
                     }
                     if let docx_rs::RunChild::Drawing(drawing) = run_child {
                         text_box_blocks.extend(extract_drawing_text_box_blocks(
-                            drawing,
-                            images,
-                            hyperlinks,
-                            style_map,
-                            notes,
-                            wraps,
-                            drawing_text_boxes,
-                            table_headers,
-                            vml_text_boxes,
-                            bidi,
-                            small_caps,
+                            drawing, images, hyperlinks, style_map, ctx,
                         ));
                     }
                     if let docx_rs::RunChild::Shape(shape) = run_child {
-                        let vml_text_box: VmlTextBoxInfo = vml_text_boxes.consume_next();
+                        let vml_text_box: VmlTextBoxInfo = ctx.vml_text_boxes.consume_next();
                         if let Some(floating_text_box) =
                             extract_vml_shape_text_box(shape, &vml_text_box)
                         {
@@ -614,7 +509,7 @@ fn convert_paragraph_blocks(
                 // Extract runs from inside the hyperlink element
                 for hchild in &hyperlink.children {
                     if let docx_rs::ParagraphChild::Run(run) = hchild {
-                        let hl_small_caps: bool = small_caps.next_is_small_caps();
+                        let hl_small_caps: bool = ctx.small_caps.next_is_small_caps();
                         let text = extract_run_text(run);
                         if !text.is_empty() {
                             let mut explicit_style: TextStyle =

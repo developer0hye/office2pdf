@@ -1,9 +1,8 @@
 use super::{
-    BidiContext, Block, DrawingTextBoxContext, DrawingTextBoxInfo, FloatingImage, FloatingTextBox,
-    HyperlinkMap, ImageData, ImageFormat, ImageMap, NoteContext, SmallCapsContext, StyleMap,
-    TableHeaderContext, VmlTextBoxContext, VmlTextBoxInfo, WrapContext, convert_paragraph_blocks,
-    convert_table,
+    Block, DrawingTextBoxInfo, FloatingImage, FloatingTextBox, HyperlinkMap, ImageData, ImageFormat,
+    ImageMap, StyleMap, VmlTextBoxInfo, WrapContext, convert_paragraph_blocks, convert_table,
 };
+use super::contexts::DocxConversionContext;
 
 fn emu_to_pt(emu: u32) -> f64 {
     emu as f64 / 12700.0
@@ -192,63 +191,34 @@ fn extract_vml_style_dimension(style: Option<&str>, key: &str) -> Option<f64> {
     None
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn extract_drawing_text_box_blocks(
     drawing: &docx_rs::Drawing,
     images: &ImageMap,
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
-    notes: &NoteContext,
-    wraps: &WrapContext,
-    drawing_text_boxes: &DrawingTextBoxContext,
-    table_headers: &TableHeaderContext,
-    vml_text_boxes: &VmlTextBoxContext,
-    bidi: &BidiContext,
-    small_caps: &SmallCapsContext,
+    ctx: &DocxConversionContext,
 ) -> Vec<Block> {
     let Some(docx_rs::DrawingData::TextBox(text_box)) = &drawing.data else {
         return Vec::new();
     };
 
-    let layout: DrawingTextBoxInfo = drawing_text_boxes.consume_next();
+    let layout: DrawingTextBoxInfo = ctx.drawing_text_boxes.consume_next();
     let mut blocks: Vec<Block> = Vec::new();
     for child in &text_box.children {
         match child {
-            docx_rs::TextBoxContentChild::Paragraph(para) => convert_paragraph_blocks(
-                para,
-                &mut blocks,
-                images,
-                hyperlinks,
-                style_map,
-                notes,
-                wraps,
-                drawing_text_boxes,
-                table_headers,
-                vml_text_boxes,
-                bidi,
-                small_caps,
-            ),
+            docx_rs::TextBoxContentChild::Paragraph(para) => {
+                convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, ctx);
+            }
             docx_rs::TextBoxContentChild::Table(table) => {
                 blocks.push(Block::Table(convert_table(
-                    table,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    notes,
-                    wraps,
-                    drawing_text_boxes,
-                    table_headers,
-                    vml_text_boxes,
-                    bidi,
-                    small_caps,
-                    0,
+                    table, images, hyperlinks, style_map, ctx, 0,
                 )));
             }
         }
     }
 
     if text_box.position_type == docx_rs::DrawingPositionType::Anchor {
-        let wrap_mode = wraps.consume_next();
+        let wrap_mode = ctx.wraps.consume_next();
         let offset_x = match text_box.position_h {
             docx_rs::DrawingPosition::Offset(emu) => emu_to_pt_signed(emu),
             docx_rs::DrawingPosition::Align(_) => 0.0,

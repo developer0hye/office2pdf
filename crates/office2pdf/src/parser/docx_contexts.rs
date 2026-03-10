@@ -28,6 +28,22 @@ pub(super) use notes::{
     NoteContext, build_note_context_from_xml, is_note_reference_run, read_zip_text,
 };
 pub(super) use small_caps::SmallCapsContext;
-pub(super) use table_header::{TableHeaderContext, TableHeaderInfo, scan_table_headers};
+pub(super) use table_header::TableHeaderContext;
+#[cfg(test)]
+pub(super) use table_header::{TableHeaderInfo, scan_table_headers};
 pub(super) use vml::{VmlTextBoxContext, VmlTextBoxInfo};
 pub(super) use wrap::{WrapContext, build_wrap_context_from_xml};
+
+/// Bundled conversion contexts threaded through the recursive DOCX call tree.
+///
+/// Groups the 7 context types that were previously passed as individual
+/// parameters, eliminating `#[allow(clippy::too_many_arguments)]` annotations.
+pub(super) struct DocxConversionContext {
+    pub(super) notes: NoteContext,
+    pub(super) wraps: WrapContext,
+    pub(super) drawing_text_boxes: DrawingTextBoxContext,
+    pub(super) table_headers: TableHeaderContext,
+    pub(super) vml_text_boxes: VmlTextBoxContext,
+    pub(super) bidi: BidiContext,
+    pub(super) small_caps: SmallCapsContext,
+}
