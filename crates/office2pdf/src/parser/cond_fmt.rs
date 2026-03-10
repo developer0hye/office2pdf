@@ -5,6 +5,7 @@ use crate::parser::xlsx::{CellPos, CellRange, parse_cell_ref};
 use crate::parser::xml_util;
 
 /// A conditional formatting override for a specific cell.
+#[derive(Default)]
 pub(crate) struct CondFmtOverride {
     pub background: Option<Color>,
     pub font_color: Option<Color>,
@@ -83,13 +84,7 @@ fn evaluate_cell_is_rule(
 
 /// Extract formatting overrides from a conditional formatting rule's style.
 fn extract_cond_fmt_style(rule: &umya_spreadsheet::ConditionalFormattingRule) -> CondFmtOverride {
-    let mut result = CondFmtOverride {
-        background: None,
-        font_color: None,
-        bold: None,
-        data_bar: None,
-        icon_text: None,
-    };
+    let mut result = CondFmtOverride::default();
 
     if let Some(style) = rule.get_style() {
         if let Some(bg) = style.get_background_color() {
@@ -147,6 +142,212 @@ fn collect_numeric_values_in_ranges(
     values
 }
 
+/// Compute the min, max, and range span of a set of values.
+/// Returns `None` if the slice is empty.
+fn compute_min_max(values: &[f64]) -> Option<(f64, f64, f64)> {
+    if values.is_empty() {
+        return None;
+    }
+    let min_val: f64 = values.iter().cloned().fold(f64::INFINITY, f64::min);
+    let max_val: f64 = values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    let val_range: f64 = max_val - min_val;
+    Some((min_val, max_val, val_range))
+}
+
+/// Apply a CellIs conditional formatting rule to matching cells in the given ranges.
+fn apply_cell_is_rule(
+    sheet: &umya_spreadsheet::Worksheet,
+    rule: &umya_spreadsheet::ConditionalFormattingRule,
+    ranges: &[CellRange],
+    overrides: &mut HashMap<CellPos, CondFmtOverride>,
+) {
+    let operator = rule.get_operator();
+    let fmt = extract_cond_fmt_style(rule);
+
+    for range in ranges {
+        for row in range.start_row..=range.end_row {
+            for col in range.start_col..=range.end_col {
+                if let Some(cell) = sheet.get_cell((col, row))
+                    && let Some(val) = cell_numeric_value(cell)
+                    && evaluate_cell_is_rule(val, operator, rule)
+                {
+                    let entry = overrides.entry((col, row)).or_default();
+                    if fmt.background.is_some() {
+                        entry.background = fmt.background;
+                    }
+                    if fmt.font_color.is_some() {
+                        entry.font_color = fmt.font_color;
+                    }
+                    if fmt.bold.is_some() {
+                        entry.bold = fmt.bold;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Apply a ColorScale conditional formatting rule to cells in the given ranges.
+fn apply_color_scale_rule(
+    sheet: &umya_spreadsheet::Worksheet,
+    rule: &umya_spreadsheet::ConditionalFormattingRule,
+    ranges: &[CellRange],
+    overrides: &mut HashMap<CellPos, CondFmtOverride>,
+) {
+    let Some(cs) = rule.get_color_scale() else {
+        return;
+    };
+
+    let colors: Vec<Option<Color>> = cs
+        .get_color_collection()
+        .iter()
+        .map(parse_umya_color_argb)
+        .collect();
+
+    if colors.len() < 2 {
+        return;
+    }
+
+    let numeric_vals: Vec<f64> = collect_numeric_values_in_ranges(sheet, ranges);
+    let Some((min_val, _max_val, val_range)) = compute_min_max(&numeric_vals) else {
+        return;
+    };
+
+    let color_min: Color = colors[0].unwrap_or(Color::white());
+    let color_max: Color = colors[colors.len() - 1].unwrap_or(Color::black());
+
+    for range in ranges {
+        for row in range.start_row..=range.end_row {
+            for col in range.start_col..=range.end_col {
+                if let Some(cell) = sheet.get_cell((col, row))
+                    && let Some(val) = cell_numeric_value(cell)
+                {
+                    let ratio: f64 = if val_range.abs() < f64::EPSILON {
+                        0.5
+                    } else {
+                        (val - min_val) / val_range
+                    };
+
+                    let color: Color = if colors.len() == 3 {
+                        let color_mid: Color = colors[1].unwrap_or(Color::new(255, 255, 0));
+                        if ratio <= 0.5 {
+                            interpolate_color(color_min, color_mid, ratio * 2.0)
+                        } else {
+                            interpolate_color(color_mid, color_max, (ratio - 0.5) * 2.0)
+                        }
+                    } else {
+                        interpolate_color(color_min, color_max, ratio)
+                    };
+
+                    let entry = overrides.entry((col, row)).or_default();
+                    entry.background = Some(color);
+                }
+            }
+        }
+    }
+}
+
+/// Apply a DataBar conditional formatting rule to cells in the given ranges.
+fn apply_data_bar_rule(
+    sheet: &umya_spreadsheet::Worksheet,
+    rule: &umya_spreadsheet::ConditionalFormattingRule,
+    ranges: &[CellRange],
+    overrides: &mut HashMap<CellPos, CondFmtOverride>,
+) {
+    let Some(db) = rule.get_data_bar() else {
+        return;
+    };
+
+    let bar_color: Color = db
+        .get_color_collection()
+        .first()
+        .and_then(parse_umya_color_argb)
+        .unwrap_or(Color::new(0x63, 0x8E, 0xC6)); // default blue
+
+    let numeric_vals: Vec<f64> = collect_numeric_values_in_ranges(sheet, ranges);
+    let Some((min_val, _max_val, val_range)) = compute_min_max(&numeric_vals) else {
+        return;
+    };
+
+    for range in ranges {
+        for row in range.start_row..=range.end_row {
+            for col in range.start_col..=range.end_col {
+                if let Some(cell) = sheet.get_cell((col, row))
+                    && let Some(val) = cell_numeric_value(cell)
+                {
+                    let pct: f64 = if val_range.abs() < f64::EPSILON {
+                        50.0
+                    } else {
+                        ((val - min_val) / val_range) * 100.0
+                    };
+                    let entry = overrides.entry((col, row)).or_default();
+                    entry.data_bar = Some(DataBarInfo {
+                        color: bar_color,
+                        fill_pct: pct,
+                    });
+                }
+            }
+        }
+    }
+}
+
+/// Apply an IconSet conditional formatting rule to cells in the given ranges.
+fn apply_icon_set_rule(
+    sheet: &umya_spreadsheet::Worksheet,
+    rule: &umya_spreadsheet::ConditionalFormattingRule,
+    ranges: &[CellRange],
+    overrides: &mut HashMap<CellPos, CondFmtOverride>,
+) {
+    let numeric_vals: Vec<f64> = collect_numeric_values_in_ranges(sheet, ranges);
+    let Some((min_val, _max_val, val_range)) = compute_min_max(&numeric_vals) else {
+        return;
+    };
+
+    // Try to parse thresholds from IconSet cfvos
+    let cfvo_thresholds: Vec<f64> = rule
+        .get_icon_set()
+        .map(|is| is.get_cfvo_collection())
+        .unwrap_or(&[])
+        .iter()
+        .filter_map(|cfvo| {
+            let pct: f64 = cfvo.get_val().parse().ok()?;
+            Some(min_val + val_range * (pct / 100.0))
+        })
+        .collect();
+
+    // Default to 3-icon equal-thirds if no thresholds available
+    let thresholds: Vec<f64> = if cfvo_thresholds.len() >= 2 {
+        cfvo_thresholds
+    } else {
+        vec![
+            min_val,
+            min_val + val_range / 3.0,
+            min_val + val_range * 2.0 / 3.0,
+        ]
+    };
+
+    // Default 3-icon arrows: down (low), right (mid), up (high)
+    let icons: &[&str] = if thresholds.len() >= 5 {
+        &["⇊", "↓", "→", "↑", "⇈"]
+    } else {
+        &["↓", "→", "↑"]
+    };
+
+    for range in ranges {
+        for row in range.start_row..=range.end_row {
+            for col in range.start_col..=range.end_col {
+                if let Some(cell) = sheet.get_cell((col, row))
+                    && let Some(val) = cell_numeric_value(cell)
+                {
+                    let icon_idx: usize = evaluate_icon_index(val, &thresholds, icons.len());
+                    let entry = overrides.entry((col, row)).or_default();
+                    entry.icon_text = Some(icons[icon_idx].to_string());
+                }
+            }
+        }
+    }
+}
+
 /// Build a map of conditional formatting overrides for all cells in the sheet.
 pub(crate) fn build_cond_fmt_overrides(
     sheet: &umya_spreadsheet::Worksheet,
@@ -155,234 +356,26 @@ pub(crate) fn build_cond_fmt_overrides(
 
     for cf in sheet.get_conditional_formatting_collection() {
         let sqref = cf.get_sequence_of_references().get_sqref();
-        let ranges = parse_sqref(&sqref);
+        let ranges: Vec<CellRange> = parse_sqref(&sqref);
         if ranges.is_empty() {
             continue;
         }
 
         for rule in cf.get_conditional_collection() {
-            let rule_type = rule.get_type();
             use umya_spreadsheet::ConditionalFormatValues;
 
-            match rule_type {
+            match rule.get_type() {
                 ConditionalFormatValues::CellIs => {
-                    let operator = rule.get_operator();
-                    let fmt = extract_cond_fmt_style(rule);
-
-                    for range in &ranges {
-                        for row in range.start_row..=range.end_row {
-                            for col in range.start_col..=range.end_col {
-                                if let Some(cell) = sheet.get_cell((col, row))
-                                    && let Some(val) = cell_numeric_value(cell)
-                                    && evaluate_cell_is_rule(val, operator, rule)
-                                {
-                                    let entry =
-                                        overrides.entry((col, row)).or_insert(CondFmtOverride {
-                                            background: None,
-                                            font_color: None,
-                                            bold: None,
-                                            data_bar: None,
-                                            icon_text: None,
-                                        });
-                                    if fmt.background.is_some() {
-                                        entry.background = fmt.background;
-                                    }
-                                    if fmt.font_color.is_some() {
-                                        entry.font_color = fmt.font_color;
-                                    }
-                                    if fmt.bold.is_some() {
-                                        entry.bold = fmt.bold;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    apply_cell_is_rule(sheet, rule, &ranges, &mut overrides);
                 }
                 ConditionalFormatValues::ColorScale => {
-                    if let Some(cs) = rule.get_color_scale() {
-                        let colors: Vec<Option<Color>> = cs
-                            .get_color_collection()
-                            .iter()
-                            .map(parse_umya_color_argb)
-                            .collect();
-
-                        if colors.len() < 2 {
-                            continue;
-                        }
-
-                        let numeric_vals = collect_numeric_values_in_ranges(sheet, &ranges);
-                        if numeric_vals.is_empty() {
-                            continue;
-                        }
-
-                        let min_val = numeric_vals.iter().cloned().fold(f64::INFINITY, f64::min);
-                        let max_val = numeric_vals
-                            .iter()
-                            .cloned()
-                            .fold(f64::NEG_INFINITY, f64::max);
-                        let val_range = max_val - min_val;
-
-                        let color_min = colors[0].unwrap_or(Color::white());
-                        let color_max = colors[colors.len() - 1].unwrap_or(Color::black());
-
-                        for range in &ranges {
-                            for row in range.start_row..=range.end_row {
-                                for col in range.start_col..=range.end_col {
-                                    if let Some(cell) = sheet.get_cell((col, row))
-                                        && let Some(val) = cell_numeric_value(cell)
-                                    {
-                                        let ratio = if val_range.abs() < f64::EPSILON {
-                                            0.5
-                                        } else {
-                                            (val - min_val) / val_range
-                                        };
-
-                                        let color = if colors.len() == 3 {
-                                            let color_mid =
-                                                colors[1].unwrap_or(Color::new(255, 255, 0));
-                                            if ratio <= 0.5 {
-                                                interpolate_color(color_min, color_mid, ratio * 2.0)
-                                            } else {
-                                                interpolate_color(
-                                                    color_mid,
-                                                    color_max,
-                                                    (ratio - 0.5) * 2.0,
-                                                )
-                                            }
-                                        } else {
-                                            interpolate_color(color_min, color_max, ratio)
-                                        };
-
-                                        let entry = overrides.entry((col, row)).or_insert(
-                                            CondFmtOverride {
-                                                background: None,
-                                                font_color: None,
-                                                bold: None,
-                                                data_bar: None,
-                                                icon_text: None,
-                                            },
-                                        );
-                                        entry.background = Some(color);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    apply_color_scale_rule(sheet, rule, &ranges, &mut overrides);
                 }
                 ConditionalFormatValues::DataBar => {
-                    if let Some(db) = rule.get_data_bar() {
-                        let bar_color = db
-                            .get_color_collection()
-                            .first()
-                            .and_then(parse_umya_color_argb)
-                            .unwrap_or(Color::new(0x63, 0x8E, 0xC6)); // default blue
-
-                        let numeric_vals = collect_numeric_values_in_ranges(sheet, &ranges);
-                        if numeric_vals.is_empty() {
-                            continue;
-                        }
-
-                        let min_val = numeric_vals.iter().cloned().fold(f64::INFINITY, f64::min);
-                        let max_val = numeric_vals
-                            .iter()
-                            .cloned()
-                            .fold(f64::NEG_INFINITY, f64::max);
-                        let val_range = max_val - min_val;
-
-                        for range in &ranges {
-                            for row in range.start_row..=range.end_row {
-                                for col in range.start_col..=range.end_col {
-                                    if let Some(cell) = sheet.get_cell((col, row))
-                                        && let Some(val) = cell_numeric_value(cell)
-                                    {
-                                        let pct = if val_range.abs() < f64::EPSILON {
-                                            50.0
-                                        } else {
-                                            ((val - min_val) / val_range) * 100.0
-                                        };
-                                        let entry = overrides.entry((col, row)).or_insert(
-                                            CondFmtOverride {
-                                                background: None,
-                                                font_color: None,
-                                                bold: None,
-                                                data_bar: None,
-                                                icon_text: None,
-                                            },
-                                        );
-                                        entry.data_bar = Some(DataBarInfo {
-                                            color: bar_color,
-                                            fill_pct: pct,
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    apply_data_bar_rule(sheet, rule, &ranges, &mut overrides);
                 }
                 ConditionalFormatValues::IconSet => {
-                    let numeric_vals = collect_numeric_values_in_ranges(sheet, &ranges);
-                    if numeric_vals.is_empty() {
-                        continue;
-                    }
-
-                    let min_val = numeric_vals.iter().cloned().fold(f64::INFINITY, f64::min);
-                    let max_val = numeric_vals
-                        .iter()
-                        .cloned()
-                        .fold(f64::NEG_INFINITY, f64::max);
-                    let val_range = max_val - min_val;
-
-                    // Try to parse thresholds from IconSet cfvos
-                    let cfvo_thresholds: Vec<f64> = rule
-                        .get_icon_set()
-                        .map(|is| is.get_cfvo_collection())
-                        .unwrap_or(&[])
-                        .iter()
-                        .filter_map(|cfvo| {
-                            let pct: f64 = cfvo.get_val().parse().ok()?;
-                            Some(min_val + val_range * (pct / 100.0))
-                        })
-                        .collect();
-
-                    // Default to 3-icon equal-thirds if no thresholds available
-                    let thresholds = if cfvo_thresholds.len() >= 2 {
-                        cfvo_thresholds
-                    } else {
-                        vec![
-                            min_val,
-                            min_val + val_range / 3.0,
-                            min_val + val_range * 2.0 / 3.0,
-                        ]
-                    };
-
-                    // Default 3-icon arrows: ↓ (low), → (mid), ↑ (high)
-                    let icons: &[&str] = if thresholds.len() >= 5 {
-                        &["⇊", "↓", "→", "↑", "⇈"]
-                    } else {
-                        &["↓", "→", "↑"]
-                    };
-
-                    for range in &ranges {
-                        for row in range.start_row..=range.end_row {
-                            for col in range.start_col..=range.end_col {
-                                if let Some(cell) = sheet.get_cell((col, row))
-                                    && let Some(val) = cell_numeric_value(cell)
-                                {
-                                    let icon_idx =
-                                        evaluate_icon_index(val, &thresholds, icons.len());
-                                    let entry =
-                                        overrides.entry((col, row)).or_insert(CondFmtOverride {
-                                            background: None,
-                                            font_color: None,
-                                            bold: None,
-                                            data_bar: None,
-                                            icon_text: None,
-                                        });
-                                    entry.icon_text = Some(icons[icon_idx].to_string());
-                                }
-                            }
-                        }
-                    }
+                    apply_icon_set_rule(sheet, rule, &ranges, &mut overrides);
                 }
                 _ => {}
             }
