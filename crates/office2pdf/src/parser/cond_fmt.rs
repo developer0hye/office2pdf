@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ir::{Color, DataBarInfo};
-use crate::parser::xml_util;
 use crate::parser::xlsx::{CellPos, CellRange, parse_cell_ref};
+use crate::parser::xml_util;
 
 /// A conditional formatting override for a specific cell.
 pub(crate) struct CondFmtOverride {

@@ -135,7 +135,14 @@ impl Parser for DocxParser {
                         bidi,
                         small_caps,
                     };
-                    (metadata, ctx, math, chart_ctx, column_layouts, header_footer_assets)
+                    (
+                        metadata,
+                        ctx,
+                        math,
+                        chart_ctx,
+                        column_layouts,
+                        header_footer_assets,
+                    )
                 }
                 Err(_) => {
                     // ZIP open failed — return empty contexts; docx-rs will
@@ -208,13 +215,9 @@ impl Parser for DocxParser {
                         0,
                     ))])]
                 }
-                docx_rs::DocumentChild::StructuredDataTag(sdt) => convert_sdt_children(
-                    sdt,
-                    &images,
-                    &hyperlinks,
-                    &style_map,
-                    &ctx,
-                ),
+                docx_rs::DocumentChild::StructuredDataTag(sdt) => {
+                    convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &ctx)
+                }
                 _ => vec![TaggedElement::Plain(vec![])],
             }));
 
@@ -421,8 +424,7 @@ fn convert_paragraph_blocks(
                 let mut text_box_blocks: Vec<Block> = Vec::new();
                 for run_child in &run.children {
                     if let docx_rs::RunChild::Drawing(drawing) = run_child
-                        && let Some(img_block) =
-                            extract_drawing_image(drawing, images, &ctx.wraps)
+                        && let Some(img_block) = extract_drawing_image(drawing, images, &ctx.wraps)
                     {
                         inline_images.push(img_block);
                     }

@@ -1,9 +1,9 @@
+use super::contexts::DocxConversionContext;
 use super::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Color,
     HyperlinkMap, ImageMap, Insets, MAX_TABLE_DEPTH, StyleMap, Table, TableCell, TableRow,
     convert_paragraph_blocks, parse_hex_color,
 };
-use super::contexts::DocxConversionContext;
 
 #[derive(Clone)]
 struct RawCell {

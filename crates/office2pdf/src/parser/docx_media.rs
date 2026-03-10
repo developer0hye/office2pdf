@@ -1,8 +1,9 @@
-use super::{
-    Block, DrawingTextBoxInfo, FloatingImage, FloatingTextBox, HyperlinkMap, ImageData, ImageFormat,
-    ImageMap, StyleMap, VmlTextBoxInfo, WrapContext, convert_paragraph_blocks, convert_table,
-};
 use super::contexts::DocxConversionContext;
+use super::{
+    Block, DrawingTextBoxInfo, FloatingImage, FloatingTextBox, HyperlinkMap, ImageData,
+    ImageFormat, ImageMap, StyleMap, VmlTextBoxInfo, WrapContext, convert_paragraph_blocks,
+    convert_table,
+};
 
 fn emu_to_pt(emu: u32) -> f64 {
     emu as f64 / 12700.0

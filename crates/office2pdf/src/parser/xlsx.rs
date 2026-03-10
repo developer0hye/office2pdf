@@ -9,16 +9,16 @@ use crate::parser::Parser;
 
 #[path = "xlsx_cells.rs"]
 mod xlsx_cells;
-#[path = "xlsx_style.rs"]
-mod xlsx_style;
-#[path = "xlsx_hf.rs"]
-mod xlsx_hf;
 #[path = "xlsx_drawing.rs"]
 mod xlsx_drawing;
+#[path = "xlsx_hf.rs"]
+mod xlsx_hf;
+#[path = "xlsx_style.rs"]
+mod xlsx_style;
 
 use self::xlsx_cells::*;
-use self::xlsx_hf::*;
 use self::xlsx_drawing::*;
+use self::xlsx_hf::*;
 
 // Re-export cell address types for cond_fmt module.
 pub(crate) use self::xlsx_cells::{CellPos, CellRange, parse_cell_ref};
