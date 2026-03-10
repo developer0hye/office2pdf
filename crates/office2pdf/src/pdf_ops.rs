@@ -52,10 +52,40 @@ impl PageRange {
     }
 }
 
+/// Load a PDF document from raw bytes, mapping errors to `ConvertError`.
+fn load_pdf_document(input: &[u8], context: &str) -> Result<Document, ConvertError> {
+    Document::load_mem(input)
+        .map_err(|e| ConvertError::Parse(format!("invalid PDF{context}: {e}")))
+}
+
+/// Validate that all page ranges fall within the document's page count.
+fn validate_page_ranges(
+    ranges: &[PageRange],
+    total_pages: u32,
+) -> Result<(), ConvertError> {
+    for range in ranges {
+        if range.start > total_pages || range.end > total_pages {
+            return Err(ConvertError::Parse(format!(
+                "page range {}-{} exceeds document page count ({total_pages})",
+                range.start, range.end
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// Compress a document and serialize it to PDF bytes.
+fn save_pdf_to_bytes(doc: &mut Document, context: &str) -> Result<Vec<u8>, ConvertError> {
+    doc.compress();
+    let mut output: Vec<u8> = Vec::new();
+    doc.save_to(&mut output)
+        .map_err(|e| ConvertError::Render(format!("failed to write {context} PDF: {e}")))?;
+    Ok(output)
+}
+
 /// Count the number of pages in a PDF.
 pub fn page_count(input: &[u8]) -> Result<u32, ConvertError> {
-    let doc =
-        Document::load_mem(input).map_err(|e| ConvertError::Parse(format!("invalid PDF: {e}")))?;
+    let doc: Document = load_pdf_document(input, "")?;
     Ok(doc.get_pages().len() as u32)
 }
 
@@ -77,10 +107,7 @@ pub fn merge(inputs: &[&[u8]]) -> Result<Vec<u8>, ConvertError> {
     let documents: Vec<Document> = inputs
         .iter()
         .enumerate()
-        .map(|(i, data)| {
-            Document::load_mem(data)
-                .map_err(|e| ConvertError::Parse(format!("invalid PDF at index {i}: {e}")))
-        })
+        .map(|(i, data)| load_pdf_document(data, &format!(" at index {i}")))
         .collect::<Result<_, _>>()?;
 
     // Use lopdf's merge approach: renumber objects, collect pages
@@ -142,7 +169,9 @@ pub fn merge(inputs: &[&[u8]]) -> Result<Vec<u8>, ConvertError> {
 
     // Update each page's Parent reference
     for page_id in &all_pages {
-        if let Ok(page_dict) = merged.objects.get_mut(page_id).unwrap().as_dict_mut() {
+        if let Some(object) = merged.objects.get_mut(page_id)
+            && let Ok(page_dict) = object.as_dict_mut()
+        {
             page_dict.set("Parent", lopdf::Object::Reference(pages_id));
         }
     }
@@ -182,14 +211,7 @@ pub fn merge(inputs: &[&[u8]]) -> Result<Vec<u8>, ConvertError> {
         merged.objects.remove(&id);
     }
 
-    merged.compress();
-
-    let mut output = Vec::new();
-    merged
-        .save_to(&mut output)
-        .map_err(|e| ConvertError::Render(format!("failed to write merged PDF: {e}")))?;
-
-    Ok(output)
+    save_pdf_to_bytes(&mut merged, "merged")
 }
 
 /// Split a PDF into multiple PDFs based on page ranges.
@@ -203,20 +225,10 @@ pub fn split(input: &[u8], ranges: &[PageRange]) -> Result<Vec<Vec<u8>>, Convert
         ));
     }
 
-    let doc =
-        Document::load_mem(input).map_err(|e| ConvertError::Parse(format!("invalid PDF: {e}")))?;
+    let doc: Document = load_pdf_document(input, "")?;
 
-    let total_pages = doc.get_pages().len() as u32;
-
-    // Validate ranges
-    for range in ranges {
-        if range.start > total_pages || range.end > total_pages {
-            return Err(ConvertError::Parse(format!(
-                "page range {}-{} exceeds document page count ({total_pages})",
-                range.start, range.end
-            )));
-        }
-    }
+    let total_pages: u32 = doc.get_pages().len() as u32;
+    validate_page_ranges(ranges, total_pages)?;
 
     let mut results = Vec::with_capacity(ranges.len());
 
@@ -232,14 +244,7 @@ pub fn split(input: &[u8], ranges: &[PageRange]) -> Result<Vec<Vec<u8>>, Convert
             split_doc.delete_pages(&pages_to_delete);
         }
 
-        split_doc.compress();
-
-        let mut output = Vec::new();
-        split_doc
-            .save_to(&mut output)
-            .map_err(|e| ConvertError::Render(format!("failed to write split PDF: {e}")))?;
-
-        results.push(output);
+        results.push(save_pdf_to_bytes(&mut split_doc, "split")?);
     }
 
     Ok(results)
