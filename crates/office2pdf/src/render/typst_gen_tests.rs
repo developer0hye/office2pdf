@@ -2715,6 +2715,53 @@ fn test_fixed_page_text_box_compact_list_preserves_soft_line_breaks() {
 }
 
 #[test]
+fn test_generate_paragraph_with_newline_emits_linebreak() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: "line one\n    line two".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let output = generate_typst(&doc).unwrap();
+
+    assert!(
+        output.source.contains("#linebreak()"),
+        "Expected newline in paragraph run to emit #linebreak() in: {}",
+        output.source
+    );
+    assert!(
+        output.source.contains("\u{00A0}\u{00A0}\u{00A0}\u{00A0}line two"),
+        "Expected leading indentation after linebreak to be preserved in: {}",
+        output.source
+    );
+}
+
+#[test]
+fn test_generate_paragraph_with_leading_spaces_preserves_indent() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: "        tmp_path = Path(tmp.name)".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let output = generate_typst(&doc).unwrap();
+
+    assert!(
+        output
+            .source
+            .contains("\u{00A0}\u{00A0}\u{00A0}\u{00A0}\u{00A0}\u{00A0}\u{00A0}\u{00A0}tmp\\_path = Path(tmp.name)"),
+        "Expected leading indentation in standalone line to be preserved in: {}",
+        output.source
+    );
+}
+
+#[test]
 fn test_fixed_page_text_box_with_width_height() {
     let doc = make_doc(vec![make_fixed_page(
         960.0,

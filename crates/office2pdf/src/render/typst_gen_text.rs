@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::Write;
 
 use unicode_normalization::UnicodeNormalization;
@@ -418,37 +419,77 @@ pub(super) fn generate_run(out: &mut String, run: &Run) {
         return;
     }
 
-    if run.text.contains(PPTX_SOFT_LINE_BREAK_CHAR) {
-        write_run_with_soft_line_breaks(out, run);
+    if run_contains_line_break(&run.text) {
+        write_run_with_line_breaks(out, run);
         return;
     }
 
-    write_run_segment(out, run, &run.text);
+    write_run_segment(out, run, &run.text, true);
 }
 
-fn write_run_with_soft_line_breaks(out: &mut String, run: &Run) {
-    let mut segment_start: usize = 0;
+fn run_contains_line_break(text: &str) -> bool {
+    text.chars()
+        .any(|character| is_inline_line_break(character))
+}
 
-    for (offset, ch) in run.text.char_indices() {
-        if ch != PPTX_SOFT_LINE_BREAK_CHAR {
+fn is_inline_line_break(character: char) -> bool {
+    character == PPTX_SOFT_LINE_BREAK_CHAR || character == '\n' || character == '\r'
+}
+
+fn write_run_with_line_breaks(out: &mut String, run: &Run) {
+    let mut segment_start: usize = 0;
+    let mut chars = run.text.char_indices().peekable();
+
+    while let Some((offset, character)) = chars.next() {
+        if !is_inline_line_break(character) {
             continue;
         }
 
         if segment_start < offset {
-            write_run_segment(out, run, &run.text[segment_start..offset]);
+            write_run_segment(out, run, &run.text[segment_start..offset], true);
         }
         out.push_str("#linebreak()");
-        segment_start = offset + ch.len_utf8();
+
+        // Treat CRLF as one logical line break.
+        if character == '\r'
+            && let Some((next_offset, '\n')) = chars.peek().copied()
+        {
+            chars.next();
+            segment_start = next_offset + '\n'.len_utf8();
+            continue;
+        }
+
+        segment_start = offset + character.len_utf8();
     }
 
     if segment_start < run.text.len() {
-        write_run_segment(out, run, &run.text[segment_start..]);
+        write_run_segment(out, run, &run.text[segment_start..], true);
     }
 }
 
-fn write_run_segment(out: &mut String, run: &Run, text: &str) {
+fn preserve_line_segment_leading_spaces(text: &str) -> Cow<'_, str> {
+    let leading_space_count: usize = text.bytes().take_while(|byte| *byte == b' ').count();
+    // Keep a single boundary space collapsible, but preserve indentation width.
+    if leading_space_count < 2 {
+        return Cow::Borrowed(text);
+    }
+
+    let mut normalized: String = String::with_capacity(text.len() + leading_space_count);
+    for _ in 0..leading_space_count {
+        normalized.push('\u{00A0}');
+    }
+    normalized.push_str(&text[leading_space_count..]);
+    Cow::Owned(normalized)
+}
+
+fn write_run_segment(out: &mut String, run: &Run, text: &str, preserve_leading_spaces: bool) {
     let style = &run.style;
-    let escaped = escape_typst(text);
+    let normalized_text: Cow<'_, str> = if preserve_leading_spaces {
+        preserve_line_segment_leading_spaces(text)
+    } else {
+        Cow::Borrowed(text)
+    };
+    let escaped = escape_typst(normalized_text.as_ref());
 
     let has_text_props = has_text_properties(style);
     let needs_underline = matches!(style.underline, Some(true));
@@ -461,7 +502,7 @@ fn write_run_segment(out: &mut String, run: &Run, text: &str) {
     let needs_all_caps = matches!(style.all_caps, Some(true));
 
     let escaped: String = if needs_all_caps {
-        escape_typst(&text.to_uppercase())
+        escape_typst(&normalized_text.to_uppercase())
     } else {
         escaped
     };
