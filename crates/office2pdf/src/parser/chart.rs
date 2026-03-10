@@ -9,6 +9,27 @@ use quick_xml::events::Event;
 use super::xml_util;
 use crate::ir::{Chart, ChartSeries, ChartType};
 
+/// Mapping from XML chart element tag names to their corresponding `ChartType`.
+/// Both 2-D and 3-D variants map to the same logical type.
+const CHART_TAG_TYPES: &[(&[u8], ChartType)] = &[
+    (b"barChart", ChartType::Bar),
+    (b"bar3DChart", ChartType::Bar),
+    (b"lineChart", ChartType::Line),
+    (b"line3DChart", ChartType::Line),
+    (b"pieChart", ChartType::Pie),
+    (b"pie3DChart", ChartType::Pie),
+    (b"areaChart", ChartType::Area),
+    (b"scatterChart", ChartType::Scatter),
+];
+
+/// Look up a tag name in [`CHART_TAG_TYPES`] and return the matching `ChartType`.
+fn chart_type_for_tag(tag: &[u8]) -> Option<ChartType> {
+    CHART_TAG_TYPES
+        .iter()
+        .find(|(name, _)| *name == tag)
+        .map(|(_, ct)| ct.clone())
+}
+
 /// Parse a chart XML file (e.g., `word/charts/chart1.xml`) into a `Chart` IR.
 pub(crate) fn parse_chart_xml(xml: &str) -> Option<Chart> {
     let mut reader = Reader::from_str(xml);
@@ -21,63 +42,12 @@ pub(crate) fn parse_chart_xml(xml: &str) -> Option<Chart> {
         match reader.read_event() {
             Ok(Event::Start(ref e)) => {
                 let local = e.local_name();
-                match local.as_ref() {
-                    b"title" if title.is_none() => {
-                        title = parse_chart_title(&mut reader);
-                    }
-                    b"barChart" => {
-                        chart_type = Some(ChartType::Bar);
-                        parse_chart_series(&mut reader, b"barChart", &mut categories, &mut series);
-                    }
-                    b"bar3DChart" => {
-                        chart_type = Some(ChartType::Bar);
-                        parse_chart_series(
-                            &mut reader,
-                            b"bar3DChart",
-                            &mut categories,
-                            &mut series,
-                        );
-                    }
-                    b"lineChart" => {
-                        chart_type = Some(ChartType::Line);
-                        parse_chart_series(&mut reader, b"lineChart", &mut categories, &mut series);
-                    }
-                    b"line3DChart" => {
-                        chart_type = Some(ChartType::Line);
-                        parse_chart_series(
-                            &mut reader,
-                            b"line3DChart",
-                            &mut categories,
-                            &mut series,
-                        );
-                    }
-                    b"pieChart" => {
-                        chart_type = Some(ChartType::Pie);
-                        parse_chart_series(&mut reader, b"pieChart", &mut categories, &mut series);
-                    }
-                    b"pie3DChart" => {
-                        chart_type = Some(ChartType::Pie);
-                        parse_chart_series(
-                            &mut reader,
-                            b"pie3DChart",
-                            &mut categories,
-                            &mut series,
-                        );
-                    }
-                    b"areaChart" => {
-                        chart_type = Some(ChartType::Area);
-                        parse_chart_series(&mut reader, b"areaChart", &mut categories, &mut series);
-                    }
-                    b"scatterChart" => {
-                        chart_type = Some(ChartType::Scatter);
-                        parse_chart_series(
-                            &mut reader,
-                            b"scatterChart",
-                            &mut categories,
-                            &mut series,
-                        );
-                    }
-                    _ => {}
+                let tag: &[u8] = local.as_ref();
+                if tag == b"title" && title.is_none() {
+                    title = parse_chart_title(&mut reader);
+                } else if let Some(ct) = chart_type_for_tag(tag) {
+                    chart_type = Some(ct);
+                    parse_chart_series(&mut reader, tag, &mut categories, &mut series);
                 }
             }
             Ok(Event::Eof) => break,
