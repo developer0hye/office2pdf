@@ -12,7 +12,7 @@ use crate::parser::xml_util;
 /// Charts without anchors (no drawing reference found) use `u32::MAX`
 /// as a sentinel to place them at the end of the sheet.
 pub(super) fn extract_charts_with_anchors(data: &[u8]) -> HashMap<String, Vec<(u32, Chart)>> {
-    let Ok(mut archive) = zip::ZipArchive::new(Cursor::new(data)) else {
+    let Ok(mut archive) = crate::parser::open_zip(data) else {
         return HashMap::new();
     };
 
@@ -138,7 +138,7 @@ pub(super) fn collect_positioned_chart_paths(
 ) -> HashSet<String> {
     // Re-trace the drawing → chart resolution to find which chart paths are covered.
     // This is intentionally conservative — if we can't determine the path, we skip.
-    let Ok(mut archive) = zip::ZipArchive::new(Cursor::new(data)) else {
+    let Ok(mut archive) = crate::parser::open_zip(data) else {
         return HashSet::new();
     };
     let mut positioned = HashSet::new();

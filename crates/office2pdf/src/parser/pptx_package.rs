@@ -61,10 +61,10 @@ pub(super) fn read_zip_entry<R: Read + std::io::Seek>(
 ) -> Result<String, ConvertError> {
     let mut file = archive
         .by_name(path)
-        .map_err(|error| ConvertError::Parse(format!("Missing {path} in PPTX: {error}")))?;
+        .map_err(|error| crate::parser::parse_err(format!("Missing {path} in PPTX: {error}")))?;
     let mut content = String::new();
     file.read_to_string(&mut content)
-        .map_err(|error| ConvertError::Parse(format!("Failed to read {path}: {error}")))?;
+        .map_err(|error| crate::parser::parse_err(format!("Failed to read {path}: {error}")))?;
     Ok(content)
 }
 
@@ -286,7 +286,7 @@ pub(super) fn parse_presentation_xml(xml: &str) -> Result<(PageSize, Vec<String>
             }
             Ok(Event::Eof) => break,
             Err(error) => {
-                return Err(ConvertError::Parse(format!(
+                return Err(crate::parser::parse_err(format!(
                     "XML error in presentation.xml: {error}"
                 )));
             }

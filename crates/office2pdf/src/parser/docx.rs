@@ -111,8 +111,7 @@ struct ZipPreParseAssets {
 /// Falls back to empty contexts if the ZIP cannot be opened, letting
 /// docx-rs produce a proper parse error downstream.
 fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
-    let cursor = std::io::Cursor::new(data);
-    match zip::ZipArchive::new(cursor) {
+    match crate::parser::open_zip(data) {
         Ok(mut archive) => {
             let metadata = crate::parser::metadata::extract_metadata_from_zip(&mut archive);
             let doc_xml = read_zip_text(&mut archive, "word/document.xml");
@@ -182,8 +181,9 @@ impl Parser for DocxParser {
             header_footer_assets,
         } = build_zip_preparse_assets(data);
 
-        let docx = docx_rs::read_docx(data)
-            .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX (docx-rs): {e}")))?;
+        let docx = docx_rs::read_docx(data).map_err(|e| {
+            crate::parser::parse_err(format!("Failed to parse DOCX (docx-rs): {e}"))
+        })?;
 
         // Populate locale-specific footnote/endnote style IDs from docx styles
         ctx.notes.populate_style_ids(&docx.styles);
