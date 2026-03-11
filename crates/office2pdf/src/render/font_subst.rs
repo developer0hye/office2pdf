@@ -175,109 +175,104 @@ pub(crate) fn with_font_search_context<T>(
     })
 }
 
-fn push_font_family(fonts: &mut BTreeSet<String>, font_family: Option<&str>) {
-    if let Some(font_family) = font_family.map(str::trim).filter(|font| !font.is_empty()) {
-        fonts.insert(font_family.to_string());
+/// Walk the IR tree rooted at a `Block`, calling `visitor` for each font family
+/// encountered. The visitor returns `true` to continue walking or `false` to
+/// short-circuit. Returns `false` when the visitor short-circuited.
+fn visit_block_fonts(block: &Block, visitor: &mut impl FnMut(&str) -> bool) -> bool {
+    match block {
+        Block::Paragraph(paragraph) => visit_paragraph_fonts(paragraph, visitor),
+        Block::Table(table) => visit_table_fonts(table, visitor),
+        Block::FloatingTextBox(text_box) => visit_blocks_fonts(&text_box.content, visitor),
+        Block::List(list) => list.items.iter().all(|item| {
+            item.content
+                .iter()
+                .all(|paragraph| visit_paragraph_fonts(paragraph, visitor))
+        }),
+        Block::Image(_)
+        | Block::FloatingImage(_)
+        | Block::MathEquation(_)
+        | Block::Chart(_)
+        | Block::PageBreak
+        | Block::ColumnBreak => true,
     }
 }
 
-fn has_font_family(font_family: Option<&str>) -> bool {
-    font_family
-        .map(str::trim)
-        .is_some_and(|font_family| !font_family.is_empty())
+/// Walk a slice of blocks, calling `visitor` for each font family found.
+fn visit_blocks_fonts(blocks: &[Block], visitor: &mut impl FnMut(&str) -> bool) -> bool {
+    blocks.iter().all(|block| visit_block_fonts(block, visitor))
 }
 
-fn paragraph_requests_font_family(paragraph: &Paragraph) -> bool {
-    paragraph
-        .runs
-        .iter()
-        .any(|run| has_font_family(run.style.font_family.as_deref()))
-}
-
-fn table_requests_font_family(table: &Table) -> bool {
-    table.rows.iter().any(|row| {
-        row.cells
-            .iter()
-            .any(|cell| cell.content.iter().any(block_requests_font_family))
+/// Walk a `Paragraph`'s runs, calling `visitor` for each font family.
+fn visit_paragraph_fonts(paragraph: &Paragraph, visitor: &mut impl FnMut(&str) -> bool) -> bool {
+    paragraph.runs.iter().all(|run| {
+        run.style
+            .font_family
+            .as_deref()
+            .map(str::trim)
+            .filter(|f| !f.is_empty())
+            .is_none_or(&mut *visitor)
     })
 }
 
-fn header_footer_requests_font_family(header_footer: &HeaderFooter) -> bool {
-    header_footer.paragraphs.iter().any(|paragraph| {
-        paragraph.elements.iter().any(|inline| match inline {
-            HFInline::Run(run) => has_font_family(run.style.font_family.as_deref()),
-            HFInline::PageNumber | HFInline::TotalPages => false,
+/// Walk a `Table`'s cells, calling `visitor` for each font family found.
+fn visit_table_fonts(table: &Table, visitor: &mut impl FnMut(&str) -> bool) -> bool {
+    table.rows.iter().all(|row| {
+        row.cells
+            .iter()
+            .all(|cell| visit_blocks_fonts(&cell.content, visitor))
+    })
+}
+
+/// Walk a `HeaderFooter`'s paragraphs, calling `visitor` for each font family.
+fn visit_header_footer_fonts(
+    header_footer: &HeaderFooter,
+    visitor: &mut impl FnMut(&str) -> bool,
+) -> bool {
+    header_footer.paragraphs.iter().all(|paragraph| {
+        paragraph.elements.iter().all(|inline| match inline {
+            HFInline::Run(run) => run
+                .style
+                .font_family
+                .as_deref()
+                .map(str::trim)
+                .filter(|f| !f.is_empty())
+                .is_none_or(&mut *visitor),
+            HFInline::PageNumber | HFInline::TotalPages => true,
         })
     })
 }
 
 fn block_requests_font_family(block: &Block) -> bool {
-    match block {
-        Block::Paragraph(paragraph) => paragraph_requests_font_family(paragraph),
-        Block::Table(table) => table_requests_font_family(table),
-        Block::FloatingTextBox(text_box) => text_box.content.iter().any(block_requests_font_family),
-        Block::List(list) => list
-            .items
-            .iter()
-            .any(|item| item.content.iter().any(paragraph_requests_font_family)),
-        Block::Image(_)
-        | Block::FloatingImage(_)
-        | Block::MathEquation(_)
-        | Block::Chart(_)
-        | Block::PageBreak
-        | Block::ColumnBreak => false,
-    }
+    !visit_block_fonts(block, &mut |_| false)
 }
 
-fn collect_paragraph_fonts(paragraph: &Paragraph, fonts: &mut BTreeSet<String>) {
-    for run in &paragraph.runs {
-        push_font_family(fonts, run.style.font_family.as_deref());
-    }
+fn table_requests_font_family(table: &Table) -> bool {
+    !visit_table_fonts(table, &mut |_| false)
 }
 
-fn collect_table_fonts(table: &Table, fonts: &mut BTreeSet<String>) {
-    for row in &table.rows {
-        for cell in &row.cells {
-            for block in &cell.content {
-                collect_block_fonts(block, fonts);
-            }
-        }
-    }
-}
-
-fn collect_header_footer_fonts(header_footer: &HeaderFooter, fonts: &mut BTreeSet<String>) {
-    for paragraph in &header_footer.paragraphs {
-        for inline in &paragraph.elements {
-            if let HFInline::Run(run) = inline {
-                push_font_family(fonts, run.style.font_family.as_deref());
-            }
-        }
-    }
+fn header_footer_requests_font_family(header_footer: &HeaderFooter) -> bool {
+    !visit_header_footer_fonts(header_footer, &mut |_| false)
 }
 
 fn collect_block_fonts(block: &Block, fonts: &mut BTreeSet<String>) {
-    match block {
-        Block::Paragraph(paragraph) => collect_paragraph_fonts(paragraph, fonts),
-        Block::Table(table) => collect_table_fonts(table, fonts),
-        Block::FloatingTextBox(text_box) => {
-            for block in &text_box.content {
-                collect_block_fonts(block, fonts);
-            }
-        }
-        Block::List(list) => {
-            for item in &list.items {
-                for paragraph in &item.content {
-                    collect_paragraph_fonts(paragraph, fonts);
-                }
-            }
-        }
-        Block::Image(_)
-        | Block::FloatingImage(_)
-        | Block::MathEquation(_)
-        | Block::Chart(_)
-        | Block::PageBreak
-        | Block::ColumnBreak => {}
-    }
+    visit_block_fonts(block, &mut |font| {
+        fonts.insert(font.to_string());
+        true
+    });
+}
+
+fn collect_table_fonts(table: &Table, fonts: &mut BTreeSet<String>) {
+    visit_table_fonts(table, &mut |font| {
+        fonts.insert(font.to_string());
+        true
+    });
+}
+
+fn collect_header_footer_fonts(header_footer: &HeaderFooter, fonts: &mut BTreeSet<String>) {
+    visit_header_footer_fonts(header_footer, &mut |font| {
+        fonts.insert(font.to_string());
+        true
+    });
 }
 
 fn collect_document_font_families(doc: &Document) -> BTreeSet<String> {
