@@ -19,6 +19,21 @@ fn dedup_warnings(warnings: &mut Vec<ConvertWarning>) {
     warnings.retain(|warning| seen.insert(warning.to_string()));
 }
 
+/// Build a `ConvertResult`, deduplicating warnings automatically so callers
+/// don't need to remember to call `dedup_warnings` before every return site.
+fn build_convert_result(
+    pdf: Vec<u8>,
+    mut warnings: Vec<ConvertWarning>,
+    metrics: Option<ConvertMetrics>,
+) -> ConvertResult {
+    dedup_warnings(&mut warnings);
+    ConvertResult {
+        pdf,
+        warnings,
+        metrics,
+    }
+}
+
 fn extract_panic_message(payload: &Box<dyn std::any::Any + Send>) -> String {
     if let Some(s) = payload.downcast_ref::<String>() {
         s.clone()
@@ -136,7 +151,6 @@ pub(super) fn convert_bytes(
                 to,
             }),
     );
-    dedup_warnings(&mut warnings);
 
     let codegen_start: Instant = Instant::now();
     #[cfg(not(target_arch = "wasm32"))]
@@ -176,10 +190,10 @@ pub(super) fn convert_bytes(
     let total_duration = total_start.elapsed();
     let output_size_bytes = pdf.len() as u64;
 
-    Ok(ConvertResult {
+    Ok(build_convert_result(
         pdf,
         warnings,
-        metrics: Some(ConvertMetrics {
+        Some(ConvertMetrics {
             parse_duration,
             codegen_duration,
             compile_duration,
@@ -188,7 +202,7 @@ pub(super) fn convert_bytes(
             output_size_bytes,
             page_count,
         }),
-    })
+    ))
 }
 
 #[cfg(feature = "pdf-ops")]
@@ -206,7 +220,7 @@ fn convert_bytes_streaming_xlsx(
     let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         xlsx_parser.parse_streaming(data, options, chunk_size)
     }));
-    let (chunk_docs, mut warnings) = match parse_result {
+    let (chunk_docs, warnings) = match parse_result {
         Ok(result) => result?,
         Err(panic_info) => {
             return Err(ConvertError::Parse(format!(
@@ -249,11 +263,10 @@ fn convert_bytes_streaming_xlsx(
         let pdf =
             render::pdf::compile_to_pdf(&output.source, &output.images, None, &[], false, false)?;
         let total_duration = total_start.elapsed();
-        dedup_warnings(&mut warnings);
-        return Ok(ConvertResult {
+        return Ok(build_convert_result(
             pdf,
             warnings,
-            metrics: Some(ConvertMetrics {
+            Some(ConvertMetrics {
                 parse_duration,
                 codegen_duration: std::time::Duration::ZERO,
                 compile_duration: std::time::Duration::ZERO,
@@ -262,7 +275,7 @@ fn convert_bytes_streaming_xlsx(
                 output_size_bytes: 0,
                 page_count: 0,
             }),
-        });
+        ));
     }
 
     let mut all_pdfs: Vec<Vec<u8>> = Vec::with_capacity(chunk_docs.len());
@@ -325,7 +338,11 @@ fn convert_bytes_streaming_xlsx(
     }
 
     let final_pdf = if all_pdfs.len() == 1 {
-        all_pdfs.into_iter().next().unwrap()
+        // Safety: len() == 1 guarantees at least one element
+        all_pdfs
+            .into_iter()
+            .next()
+            .expect("all_pdfs is non-empty (len == 1)")
     } else {
         let refs: Vec<&[u8]> = all_pdfs.iter().map(|p| p.as_slice()).collect();
         crate::pdf_ops::merge(&refs)
@@ -334,12 +351,11 @@ fn convert_bytes_streaming_xlsx(
 
     let total_duration = total_start.elapsed();
     let output_size_bytes = final_pdf.len() as u64;
-    dedup_warnings(&mut warnings);
 
-    Ok(ConvertResult {
-        pdf: final_pdf,
+    Ok(build_convert_result(
+        final_pdf,
         warnings,
-        metrics: Some(ConvertMetrics {
+        Some(ConvertMetrics {
             parse_duration,
             codegen_duration: codegen_duration_total,
             compile_duration: compile_duration_total,
@@ -348,7 +364,7 @@ fn convert_bytes_streaming_xlsx(
             output_size_bytes,
             page_count: total_page_count,
         }),
-    })
+    ))
 }
 
 pub(super) fn render_document(doc: &ir::Document) -> Result<Vec<u8>, ConvertError> {
