@@ -10,16 +10,29 @@ use super::*;
 /// Word's default tab stop interval (0.5 inch = 36pt).
 const DEFAULT_TAB_WIDTH_PT: f64 = 36.0;
 const PPTX_SOFT_LINE_BREAK_CHAR: char = '\u{000B}';
+// Empirical Word baseline-to-baseline height for single line spacing is ~1.2em.
+const WORD_SINGLE_LINE_HEIGHT_EM: f64 = 1.2;
 
 pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
     let style = &para.style;
     let has_para_style = needs_block_wrapper(style);
+    let needs_inline_justify: bool =
+        !has_para_style && matches!(style.alignment, Some(Alignment::Justify));
+    let needs_inline_rtl: bool =
+        !has_para_style && matches!(style.direction, Some(TextDirection::Rtl));
 
     if has_para_style {
         out.push_str("#block(");
-        write_block_params(out, style);
+        write_block_params(out, style, Some(&para.runs));
         out.push_str(")[\n");
-        write_par_settings(out, style);
+        write_par_settings(out, style, Some(&para.runs));
+    }
+
+    if needs_inline_rtl {
+        out.push_str("#text(dir: rtl)[");
+    }
+    if needs_inline_justify {
+        out.push_str("#par(justify: true)[");
     }
 
     let alignment = style.alignment;
@@ -50,6 +63,13 @@ pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(
         out.push(']');
     }
 
+    if needs_inline_justify {
+        out.push(']');
+    }
+    if needs_inline_rtl {
+        out.push(']');
+    }
+
     if has_para_style {
         out.push_str("\n]");
     }
@@ -62,32 +82,32 @@ pub(super) fn needs_block_wrapper(style: &ParagraphStyle) -> bool {
     style.space_before.is_some()
         || style.space_after.is_some()
         || style.line_spacing.is_some()
-        || matches!(style.alignment, Some(Alignment::Justify))
-        || matches!(style.direction, Some(TextDirection::Rtl))
 }
 
-pub(super) fn write_block_params(out: &mut String, style: &ParagraphStyle) {
+pub(super) fn write_block_params(
+    out: &mut String,
+    style: &ParagraphStyle,
+    runs: Option<&[Run]>,
+) {
     let mut first = true;
+    let line_gap_pt = paragraph_leading_pt(style, runs).filter(|gap| *gap > 0.0);
 
     if let Some(above) = style.space_before {
         write_param(out, &mut first, &format!("above: {}pt", format_f64(above)));
     }
-    if let Some(below) = style.space_after {
+    if style.space_after.is_some() || line_gap_pt.is_some() {
+        let below = style.space_after.unwrap_or(0.0) + line_gap_pt.unwrap_or(0.0);
         write_param(out, &mut first, &format!("below: {}pt", format_f64(below)));
     }
 }
 
-pub(super) fn write_par_settings(out: &mut String, style: &ParagraphStyle) {
-    if let Some(ref spacing) = style.line_spacing {
-        match spacing {
-            LineSpacing::Proportional(factor) => {
-                let leading = factor * 0.65;
-                let _ = writeln!(out, "  #set par(leading: {}em)", format_f64(leading));
-            }
-            LineSpacing::Exact(pts) => {
-                let _ = writeln!(out, "  #set par(leading: {}pt)", format_f64(*pts));
-            }
-        }
+pub(super) fn write_par_settings(
+    out: &mut String,
+    style: &ParagraphStyle,
+    runs: Option<&[Run]>,
+) {
+    if let Some(leading_pt) = paragraph_leading_pt(style, runs) {
+        let _ = writeln!(out, "  #set par(leading: {}pt)", format_f64(leading_pt));
     }
     if matches!(style.alignment, Some(Alignment::Justify)) {
         out.push_str("  #set par(justify: true)\n");
@@ -95,6 +115,41 @@ pub(super) fn write_par_settings(out: &mut String, style: &ParagraphStyle) {
     if matches!(style.direction, Some(TextDirection::Rtl)) {
         out.push_str("  #set text(dir: rtl)\n");
     }
+}
+
+pub(super) fn paragraph_leading_pt(style: &ParagraphStyle, runs: Option<&[Run]>) -> Option<f64> {
+    match style.line_spacing {
+        Some(LineSpacing::Proportional(factor)) => proportional_line_spacing_leading_pt(factor, runs),
+        Some(LineSpacing::Exact(line_height_pt)) => exact_line_spacing_leading_pt(line_height_pt, runs),
+        None => None,
+    }
+}
+
+fn proportional_line_spacing_leading_pt(factor: f64, runs: Option<&[Run]>) -> Option<f64> {
+    if factor <= 0.0 {
+        return None;
+    }
+
+    let font_size_pt = paragraph_effective_font_size_pt(runs).unwrap_or(12.0);
+    let leading_pt = font_size_pt * ((factor * WORD_SINGLE_LINE_HEIGHT_EM) - 1.0);
+    Some(round_two_decimals(leading_pt.max(0.0)))
+}
+
+fn exact_line_spacing_leading_pt(line_height_pt: f64, runs: Option<&[Run]>) -> Option<f64> {
+    let font_size_pt = paragraph_effective_font_size_pt(runs).unwrap_or(12.0);
+    Some(round_two_decimals((line_height_pt - font_size_pt).max(0.0)))
+}
+
+fn paragraph_effective_font_size_pt(runs: Option<&[Run]>) -> Option<f64> {
+    runs.and_then(|runs| {
+        runs.iter()
+            .filter_map(|run| run.style.font_size)
+            .max_by(f64::total_cmp)
+    })
+}
+
+fn round_two_decimals(value: f64) -> f64 {
+    (value * 100.0).round() / 100.0
 }
 
 pub(super) fn generate_runs_with_tabs(
@@ -481,15 +536,15 @@ fn preserve_line_segment_leading_spaces(text: &str) -> Cow<'_, str> {
 }
 
 fn write_run_segment(out: &mut String, run: &Run, text: &str, preserve_leading_spaces: bool) {
-    let style = &run.style;
     let normalized_text: Cow<'_, str> = if preserve_leading_spaces {
         preserve_line_segment_leading_spaces(text)
     } else {
         Cow::Borrowed(text)
     };
+    let style: TextStyle = effective_text_style_for_content(&run.style, normalized_text.as_ref());
     let escaped = escape_typst(normalized_text.as_ref());
 
-    let has_text_props = has_text_properties(style);
+    let has_text_props = has_text_properties(&style);
     let needs_underline = matches!(style.underline, Some(true));
     let needs_strike = matches!(style.strikethrough, Some(true));
     let has_link = run.href.is_some();
@@ -535,7 +590,7 @@ fn write_run_segment(out: &mut String, run: &Run, text: &str, preserve_leading_s
 
     if has_text_props {
         out.push_str("#text(");
-        write_text_params(out, style);
+        write_text_params(out, &style);
         out.push_str(")[");
         out.push_str(&escaped);
         out.push(']');
@@ -574,6 +629,87 @@ fn write_run_segment(out: &mut String, run: &Run, text: &str, preserve_leading_s
     if has_link {
         out.push(']');
     }
+}
+
+fn effective_text_style_for_content(style: &TextStyle, text: &str) -> TextStyle {
+    let mut resolved_style: TextStyle = style.clone();
+    if let Some(font_family) = preferred_font_family_for_content(style, text) {
+        resolved_style.font_family = Some(font_family);
+    }
+    resolved_style
+}
+
+fn preferred_font_family_for_content(style: &TextStyle, text: &str) -> Option<String> {
+    if contains_east_asian_char(text) {
+        return style
+            .font_family_east_asia
+            .clone()
+            .or_else(|| style.font_family.clone())
+            .or_else(|| style.font_family_ascii.clone())
+            .or_else(|| style.font_family_hansi.clone())
+            .or_else(|| style.font_family_cs.clone());
+    }
+
+    if contains_complex_script_char(text) {
+        return style
+            .font_family_cs
+            .clone()
+            .or_else(|| style.font_family.clone())
+            .or_else(|| style.font_family_ascii.clone())
+            .or_else(|| style.font_family_hansi.clone())
+            .or_else(|| style.font_family_east_asia.clone());
+    }
+
+    style
+        .font_family_ascii
+        .clone()
+        .or_else(|| style.font_family_hansi.clone())
+        .or_else(|| style.font_family.clone())
+        .or_else(|| style.font_family_east_asia.clone())
+        .or_else(|| style.font_family_cs.clone())
+}
+
+fn contains_east_asian_char(text: &str) -> bool {
+    text.chars().any(is_east_asian_char)
+}
+
+fn is_east_asian_char(character: char) -> bool {
+    matches!(
+        character,
+        '\u{1100}'..='\u{11FF}'
+            | '\u{2E80}'..='\u{2EFF}'
+            | '\u{2F00}'..='\u{2FDF}'
+            | '\u{3000}'..='\u{303F}'
+            | '\u{3040}'..='\u{30FF}'
+            | '\u{3130}'..='\u{318F}'
+            | '\u{31F0}'..='\u{31FF}'
+            | '\u{3400}'..='\u{4DBF}'
+            | '\u{4E00}'..='\u{9FFF}'
+            | '\u{AC00}'..='\u{D7AF}'
+            | '\u{F900}'..='\u{FAFF}'
+            | '\u{FF00}'..='\u{FFEF}'
+            | '\u{20000}'..='\u{2A6DF}'
+            | '\u{2A700}'..='\u{2B73F}'
+            | '\u{2B740}'..='\u{2B81F}'
+            | '\u{2B820}'..='\u{2CEAF}'
+            | '\u{2CEB0}'..='\u{2EBEF}'
+    )
+}
+
+fn contains_complex_script_char(text: &str) -> bool {
+    text.chars().any(is_complex_script_char)
+}
+
+fn is_complex_script_char(character: char) -> bool {
+    matches!(
+        character,
+        '\u{0590}'..='\u{05FF}'
+            | '\u{0600}'..='\u{06FF}'
+            | '\u{0750}'..='\u{077F}'
+            | '\u{08A0}'..='\u{08FF}'
+            | '\u{FB50}'..='\u{FDFF}'
+            | '\u{FE70}'..='\u{FEFF}'
+    )
 }
 
 pub(super) fn has_text_properties(style: &TextStyle) -> bool {

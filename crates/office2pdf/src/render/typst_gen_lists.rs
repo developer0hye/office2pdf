@@ -211,7 +211,7 @@ pub(super) fn generate_fixed_text_list(
 
     if has_para_style {
         out.push_str("#block(");
-        write_block_params(out, style);
+        write_block_params(out, style, Some(&paragraph.runs));
         out.push_str(")[\n");
         write_fixed_text_list_par_settings(out, style, line_gap_pt);
     }
@@ -499,12 +499,20 @@ fn intersect_text_style(left: &TextStyle, right: &TextStyle) -> TextStyle {
 fn fixed_text_list_line_gap_pt(style: &ParagraphStyle, list: &List) -> Option<f64> {
     let font_size_pt: f64 = fixed_text_list_font_size_pt(list);
     match style.line_spacing {
-        Some(LineSpacing::Proportional(factor)) if factor > 1.0 => {
-            Some((font_size_pt * (factor - 1.0)).max(0.0))
+        Some(LineSpacing::Proportional(factor)) if factor > 0.0 => {
+            // Keep list paragraph spacing aligned with flow-paragraph conversion semantics.
+            let leading_pt = font_size_pt * ((factor * 1.2) - 1.0);
+            Some(round_two_decimals(leading_pt.max(0.0)))
         }
-        Some(LineSpacing::Exact(points)) => Some((points - font_size_pt).max(0.0)),
+        Some(LineSpacing::Exact(points)) => {
+            Some(round_two_decimals((points - font_size_pt).max(0.0)))
+        }
         _ => None,
     }
+}
+
+fn round_two_decimals(value: f64) -> f64 {
+    (value * 100.0).round() / 100.0
 }
 
 fn fixed_text_list_font_size_pt(list: &List) -> f64 {
@@ -526,7 +534,7 @@ fn write_fixed_text_list_par_settings(
     if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0) {
         let _ = writeln!(out, "  #set par(leading: {}pt)", format_f64(gap));
     } else {
-        write_par_settings(out, style);
+        write_par_settings(out, style, None);
         return;
     }
     if matches!(style.alignment, Some(Alignment::Justify)) {
@@ -734,11 +742,7 @@ fn generate_list_items(
         let item = &items[i];
         if item.level == base_level {
             let _ = write!(out, "  {item_func}[");
-            for para in &item.content {
-                for run in &para.runs {
-                    generate_run(out, run);
-                }
-            }
+            generate_list_item_paragraphs(out, &item.content);
 
             let nested_start = i + 1;
             let mut nested_end = nested_start;
@@ -760,14 +764,93 @@ fn generate_list_items(
             out.push_str("],\n");
         } else {
             let _ = write!(out, "  {item_func}[");
-            for para in &item.content {
-                for run in &para.runs {
-                    generate_run(out, run);
-                }
-            }
+            generate_list_item_paragraphs(out, &item.content);
             out.push_str("],\n");
             i += 1;
         }
     }
     Ok(())
+}
+
+fn generate_list_item_paragraphs(out: &mut String, paragraphs: &[Paragraph]) {
+    for (index, paragraph) in paragraphs.iter().enumerate() {
+        if index > 0 {
+            out.push_str("#linebreak()");
+        }
+        generate_list_item_paragraph(out, paragraph);
+    }
+}
+
+fn generate_list_item_paragraph(out: &mut String, paragraph: &Paragraph) {
+    let style = &paragraph.style;
+    let has_para_style = needs_block_wrapper(style);
+    let needs_inline_justify: bool =
+        !has_para_style && matches!(style.alignment, Some(Alignment::Justify));
+    let needs_inline_rtl: bool =
+        !has_para_style && matches!(style.direction, Some(TextDirection::Rtl));
+
+    if has_para_style {
+        out.push_str("#block(");
+        write_block_params(out, style, Some(&paragraph.runs));
+        out.push_str(")[\n");
+        write_par_settings(out, style, Some(&paragraph.runs));
+    }
+
+    if needs_inline_rtl {
+        out.push_str("#text(dir: rtl)[");
+    }
+    if needs_inline_justify {
+        out.push_str("#par(justify: true)[");
+    }
+
+    let alignment = style.alignment;
+    let use_align = matches!(
+        alignment,
+        Some(Alignment::Center) | Some(Alignment::Right) | Some(Alignment::Left)
+    );
+
+    if use_align {
+        let align_str = match alignment {
+            Some(Alignment::Left) => "left",
+            Some(Alignment::Center) => "center",
+            Some(Alignment::Right) => "right",
+            _ => "left",
+        };
+        let _ = write!(out, "#align({align_str})[");
+    }
+
+    let hanging_indent_pt: Option<f64> = fixed_text_list_hanging_indent_pt(style);
+    let tab_stops: Option<Vec<TabStop>> = fixed_text_list_tab_stops(style, hanging_indent_pt);
+    if let Some(hanging_indent_pt) = hanging_indent_pt {
+        let _ = write!(
+            out,
+            "#par(hanging-indent: {}pt)[",
+            format_f64(hanging_indent_pt)
+        );
+    } else if let Some(indent) = style.indent_first_line.filter(|value| value.abs() > 0.0001) {
+        let _ = write!(
+            out,
+            "#par(first-line-indent: (amount: {}pt, all: true))[",
+            format_f64(indent)
+        );
+    } else {
+        out.push_str("#par[");
+    }
+    generate_runs_with_tabs(out, &paragraph.runs, tab_stops.as_deref());
+    out.push(']');
+
+    if use_align {
+        out.push(']');
+    }
+
+    if needs_inline_justify {
+        out.push(']');
+    }
+    if needs_inline_rtl {
+        out.push(']');
+    }
+
+    if has_para_style {
+        out.push_str("\n]");
+    }
 }

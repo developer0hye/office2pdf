@@ -142,6 +142,54 @@ fn test_generate_font_color() {
 }
 
 #[test]
+fn test_generate_cjk_text_prefers_east_asia_font_slot() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: "中文内容".to_string(),
+            style: TextStyle {
+                font_family: Some("Times New Roman".to_string()),
+                font_family_ascii: Some("Times New Roman".to_string()),
+                font_family_hansi: Some("Times New Roman".to_string()),
+                font_family_east_asia: Some("SimSun".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains("font: \"SimSun\""),
+        "Expected CJK text to prefer eastAsia font slot in: {result}"
+    );
+}
+
+#[test]
+fn test_generate_latin_text_prefers_ascii_font_slot_when_east_asia_exists() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: "Latin text".to_string(),
+            style: TextStyle {
+                font_family: Some("Times New Roman".to_string()),
+                font_family_ascii: Some("Times New Roman".to_string()),
+                font_family_hansi: Some("Times New Roman".to_string()),
+                font_family_east_asia: Some("SimSun".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains("font: (\"Times New Roman\", \"Liberation Serif\", \"Tinos\")"),
+        "Expected Latin text to prefer ascii/hAnsi font slot in: {result}"
+    );
+}
+
+#[test]
 fn test_generate_combined_text_styles() {
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
         style: ParagraphStyle::default(),
@@ -227,6 +275,10 @@ fn test_generate_alignment_justify() {
         result.contains("par(justify: true") || result.contains("set par(justify: true"),
         "Expected justify in: {result}"
     );
+    assert!(
+        !result.contains("#block("),
+        "Justify-only paragraph should not require a block wrapper: {result}"
+    );
 }
 
 #[test]
@@ -245,8 +297,8 @@ fn test_generate_line_spacing_proportional() {
     })])]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(
-        result.contains("leading:"),
-        "Expected leading setting in: {result}"
+        result.contains("leading: 16.8pt"),
+        "Expected proportional line-spacing mapped to Typst leading in: {result}"
     );
 }
 
@@ -266,8 +318,8 @@ fn test_generate_line_spacing_exact() {
     })])]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(
-        result.contains("leading: 18pt"),
-        "Expected exact leading in: {result}"
+        result.contains("leading: 6pt"),
+        "Expected exact line height mapped to Typst leading in: {result}"
     );
 }
 
@@ -590,5 +642,32 @@ fn test_generate_heading_respects_paragraph_spacing() {
     assert!(
         result.contains("#heading(level: 3)[ROI]"),
         "Heading should still emit heading markup: {result}"
+    );
+}
+
+#[test]
+fn test_generate_paragraph_block_below_includes_line_gap_compensation() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            line_spacing: Some(LineSpacing::Proportional(1.5)),
+            space_before: Some(10.0),
+            space_after: Some(0.5),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Compensated spacing".to_string(),
+            style: TextStyle {
+                font_size: Some(16.0),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#block(above: 10pt, below: 13.3pt)"),
+        "Expected line-gap compensation added to block below in: {result}"
     );
 }

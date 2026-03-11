@@ -201,8 +201,12 @@ fn test_generate_rtl_paragraph() {
     })])]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(
-        result.contains("#set text(dir: rtl)"),
-        "RTL paragraph should emit #set text(dir: rtl). Got: {result}"
+        result.contains("dir: rtl"),
+        "RTL paragraph should emit rtl direction scope. Got: {result}"
+    );
+    assert!(
+        !result.contains("#block("),
+        "RTL-only paragraph should not require a block wrapper. Got: {result}"
     );
 }
 
@@ -235,7 +239,7 @@ fn test_generate_mixed_rtl_ltr_paragraphs() {
     ])]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(
-        result.contains("#set text(dir: rtl)"),
+        result.contains("dir: rtl"),
         "Should contain RTL direction for Arabic paragraph. Got: {result}"
     );
     assert!(result.contains("مرحبا 123"), "Arabic text should appear");

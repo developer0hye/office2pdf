@@ -1270,14 +1270,25 @@ fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(
     let style: &ParagraphStyle = &para.style;
     let needs_text_scope: bool = common_text_style(&para.runs).is_some();
     let has_para_style: bool = needs_block_wrapper(style) || needs_text_scope;
+    let needs_inline_justify: bool =
+        !has_para_style && matches!(style.alignment, Some(Alignment::Justify));
+    let needs_inline_rtl: bool =
+        !has_para_style && matches!(style.direction, Some(TextDirection::Rtl));
 
     if has_para_style {
         out.push_str("#block(");
-        write_block_params(out, style);
+        write_block_params(out, style, Some(&para.runs));
         out.push_str(")[\n");
-        write_par_settings(out, style);
+        write_par_settings(out, style, Some(&para.runs));
         write_common_text_settings(out, &para.runs, "  ");
         write_fixed_text_default_par_settings(out, style, &para.runs, "  ");
+    }
+
+    if needs_inline_rtl {
+        out.push_str("#text(dir: rtl)[");
+    }
+    if needs_inline_justify {
+        out.push_str("#par(justify: true)[");
     }
 
     let alignment = style.alignment;
@@ -1299,6 +1310,13 @@ fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(
     generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
 
     if use_align {
+        out.push(']');
+    }
+
+    if needs_inline_justify {
+        out.push(']');
+    }
+    if needs_inline_rtl {
         out.push(']');
     }
 
