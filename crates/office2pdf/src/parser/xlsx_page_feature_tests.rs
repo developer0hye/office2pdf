@@ -17,7 +17,7 @@ fn test_sheet_filter_single_sheet() {
     let (doc, _warnings) = parser.parse(&data, &opts).unwrap();
 
     assert_eq!(doc.pages.len(), 1, "Should only include 1 sheet");
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.name, "Expenses");
     assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Cost");
 }
@@ -37,8 +37,8 @@ fn test_sheet_filter_multiple_sheets() {
     let (doc, _warnings) = parser.parse(&data, &opts).unwrap();
 
     assert_eq!(doc.pages.len(), 2, "Should include 2 sheets");
-    let tp0 = get_table_page(&doc, 0);
-    let tp1 = get_table_page(&doc, 1);
+    let tp0 = get_sheet_page(&doc, 0);
+    let tp1 = get_sheet_page(&doc, 1);
     assert_eq!(tp0.name, "Sales");
     assert_eq!(tp1.name, "Summary");
 }
@@ -135,7 +135,7 @@ fn test_print_area_limits_output() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     assert_eq!(doc.pages.len(), 1);
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows.len(), 2, "Should have 2 rows from print area");
     assert_eq!(
         tp.table.rows[0].cells.len(),
@@ -158,7 +158,7 @@ fn test_print_area_without_dollar_signs() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows.len(), 2);
     assert_eq!(tp.table.rows[0].cells.len(), 1, "Only column A");
     assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "X");
@@ -171,7 +171,7 @@ fn test_no_print_area_includes_all() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows.len(), 3);
     assert_eq!(tp.table.rows[0].cells.len(), 3);
 }
@@ -192,8 +192,8 @@ fn test_row_page_breaks_split_into_pages() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     assert_eq!(doc.pages.len(), 2, "Break should split into 2 pages");
-    let tp0 = get_table_page(&doc, 0);
-    let tp1 = get_table_page(&doc, 1);
+    let tp0 = get_sheet_page(&doc, 0);
+    let tp1 = get_sheet_page(&doc, 1);
 
     assert_eq!(tp0.table.rows.len(), 2, "First page: rows 1-2");
     assert_eq!(cell_text(&tp0.table.rows[0].cells[0]), "R1");
@@ -222,9 +222,9 @@ fn test_multiple_row_page_breaks() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     assert_eq!(doc.pages.len(), 3, "Two breaks should produce 3 pages");
-    let tp0 = get_table_page(&doc, 0);
-    let tp1 = get_table_page(&doc, 1);
-    let tp2 = get_table_page(&doc, 2);
+    let tp0 = get_sheet_page(&doc, 0);
+    let tp1 = get_sheet_page(&doc, 1);
+    let tp2 = get_sheet_page(&doc, 2);
 
     assert_eq!(tp0.table.rows.len(), 2);
     assert_eq!(tp1.table.rows.len(), 2);
@@ -242,7 +242,7 @@ fn test_no_page_breaks_single_page() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     assert_eq!(doc.pages.len(), 1);
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows.len(), 3);
 }
 
@@ -256,8 +256,8 @@ fn test_page_break_column_widths_preserved() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     assert_eq!(doc.pages.len(), 2);
-    let tp0 = get_table_page(&doc, 0);
-    let tp1 = get_table_page(&doc, 1);
+    let tp0 = get_sheet_page(&doc, 0);
+    let tp1 = get_sheet_page(&doc, 1);
     assert_eq!(tp0.table.column_widths.len(), 2);
     assert_eq!(tp1.table.column_widths.len(), 2);
     assert_eq!(tp0.table.column_widths, tp1.table.column_widths);
@@ -383,7 +383,7 @@ fn test_xlsx_sheet_with_custom_header() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let header = tp.header.as_ref().expect("Expected header");
     assert_eq!(header.paragraphs.len(), 1);
     assert_eq!(
@@ -402,7 +402,7 @@ fn test_xlsx_sheet_with_page_number_footer() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let footer = tp.footer.as_ref().expect("Expected footer");
     assert_eq!(footer.paragraphs.len(), 1);
     let elems = &footer.paragraphs[0].elements;

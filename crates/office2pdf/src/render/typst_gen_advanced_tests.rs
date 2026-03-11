@@ -30,7 +30,7 @@ fn test_data_bar_codegen() {
         column_widths: vec![100.0],
         ..Table::default()
     };
-    let page = Page::Table(TablePage {
+    let page = Page::Sheet(SheetPage {
         name: "Sheet1".to_string(),
         size: PageSize::default(),
         margins: Margins::default(),
@@ -76,7 +76,7 @@ fn test_icon_text_codegen() {
         column_widths: vec![100.0],
         ..Table::default()
     };
-    let page = Page::Table(TablePage {
+    let page = Page::Sheet(SheetPage {
         name: "Sheet1".to_string(),
         size: PageSize::default(),
         margins: Margins::default(),

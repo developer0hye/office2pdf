@@ -271,7 +271,7 @@ fn test_generate_fixed_page_empty_elements() {
 
 #[test]
 fn test_generate_table_page_empty_rows() {
-    let doc = make_doc(vec![Page::Table(TablePage {
+    let doc = make_doc(vec![Page::Sheet(SheetPage {
         name: String::new(),
         size: PageSize::default(),
         margins: Margins::default(),

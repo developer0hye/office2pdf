@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn test_table_page_basic() {
     let table = make_simple_table(vec![vec!["A1", "B1"], vec!["A2", "B2"]]);
-    let doc = make_doc(vec![make_table_page(
+    let doc = make_doc(vec![make_sheet_page(
         "Sheet1",
         595.28,
         841.89,
@@ -22,7 +22,7 @@ fn test_table_page_basic() {
 #[test]
 fn test_table_page_custom_page_size_and_margins() {
     let table = make_simple_table(vec![vec!["Data"]]);
-    let doc = make_doc(vec![make_table_page(
+    let doc = make_doc(vec![make_sheet_page(
         "Custom",
         800.0,
         600.0,
@@ -47,7 +47,7 @@ fn test_table_page_cell_data_types() {
         vec!["Name", "Age", "Date"],
         vec!["Alice", "30", "2024-01-15"],
     ]);
-    let doc = make_doc(vec![make_table_page(
+    let doc = make_doc(vec![make_sheet_page(
         "Data",
         595.28,
         841.89,
@@ -116,7 +116,7 @@ fn test_table_page_merged_cells() {
         column_widths: vec![],
         ..Table::default()
     };
-    let doc = make_doc(vec![make_table_page(
+    let doc = make_doc(vec![make_sheet_page(
         "MergeSheet",
         595.28,
         841.89,
@@ -165,7 +165,7 @@ fn test_table_page_with_column_widths() {
         column_widths: vec![100.0, 200.0],
         ..Table::default()
     };
-    let doc = make_doc(vec![make_table_page(
+    let doc = make_doc(vec![make_sheet_page(
         "Widths",
         595.28,
         841.89,
@@ -183,7 +183,7 @@ fn test_table_page_empty_table() {
         column_widths: vec![],
         ..Table::default()
     };
-    let doc = make_doc(vec![make_table_page(
+    let doc = make_doc(vec![make_sheet_page(
         "Empty",
         595.28,
         841.89,
@@ -199,8 +199,8 @@ fn test_table_page_multiple_sheets() {
     let table1 = make_simple_table(vec![vec!["Sheet1Data"]]);
     let table2 = make_simple_table(vec![vec!["Sheet2Data"]]);
     let doc = make_doc(vec![
-        make_table_page("Sheet1", 595.28, 841.89, Margins::default(), table1),
-        make_table_page("Sheet2", 595.28, 841.89, Margins::default(), table2),
+        make_sheet_page("Sheet1", 595.28, 841.89, Margins::default(), table1),
+        make_sheet_page("Sheet2", 595.28, 841.89, Margins::default(), table2),
     ]);
     let output = generate_typst(&doc).unwrap();
     assert!(output.source.contains("Sheet1Data"));
@@ -260,7 +260,7 @@ fn test_table_page_rowspan_merge() {
         column_widths: vec![],
         ..Table::default()
     };
-    let doc = make_doc(vec![make_table_page(
+    let doc = make_doc(vec![make_sheet_page(
         "RowMerge",
         595.28,
         841.89,

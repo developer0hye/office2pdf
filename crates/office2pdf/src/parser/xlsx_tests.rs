@@ -41,11 +41,11 @@ fn build_xlsx_multi_sheet(sheets: &[(&str, &[(&str, &str)])]) -> Vec<u8> {
     cursor.into_inner()
 }
 
-/// Helper: extract TablePage from Document by index.
-fn get_table_page(doc: &Document, idx: usize) -> &TablePage {
+/// Helper: extract SheetPage from Document by index.
+fn get_sheet_page(doc: &Document, idx: usize) -> &SheetPage {
     match &doc.pages[idx] {
-        Page::Table(tp) => tp,
-        _ => panic!("Expected TablePage at index {idx}"),
+        Page::Sheet(sp) => sp,
+        _ => panic!("Expected SheetPage at index {idx}"),
     }
 }
 
@@ -78,7 +78,7 @@ fn test_parse_single_cell() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     assert_eq!(doc.pages.len(), 1);
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.name, "Sheet1");
     assert_eq!(tp.table.rows.len(), 1);
     assert_eq!(tp.table.rows[0].cells.len(), 1);
@@ -94,7 +94,7 @@ fn test_parse_multiple_cells() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows.len(), 2);
     assert_eq!(tp.table.rows[0].cells.len(), 2);
     assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Name");
@@ -110,7 +110,7 @@ fn test_parse_empty_cells_in_grid() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows.len(), 2);
     assert_eq!(tp.table.rows[0].cells.len(), 2);
     // A1 has content
@@ -129,7 +129,7 @@ fn test_parse_numbers() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "42");
     assert_eq!(cell_text(&tp.table.rows[0].cells[1]), "3.14");
 }
@@ -140,7 +140,7 @@ fn test_parse_dates_as_text() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "2024-01-15");
     assert_eq!(cell_text(&tp.table.rows[1].cells[0]), "December 25");
 }
@@ -153,7 +153,7 @@ fn test_sheet_name_preserved() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.name, "Financial Report");
 }
 
@@ -169,8 +169,8 @@ fn test_parse_multiple_sheets() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     assert_eq!(doc.pages.len(), 2);
-    let tp1 = get_table_page(&doc, 0);
-    let tp2 = get_table_page(&doc, 1);
+    let tp1 = get_sheet_page(&doc, 0);
+    let tp2 = get_sheet_page(&doc, 1);
     assert_eq!(tp1.name, "Sheet1");
     assert_eq!(tp2.name, "Sheet2");
     assert_eq!(cell_text(&tp1.table.rows[0].cells[0]), "Data1");
@@ -185,7 +185,7 @@ fn test_column_widths_default() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.column_widths.len(), 2);
     // Default column width is ~8.43 chars * 7.0 ≈ 59 pt
     // umya-spreadsheet may use a slightly different default; allow 1pt tolerance
@@ -205,7 +205,7 @@ fn test_page_size_defaults() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let default_size = PageSize::default();
     assert!((tp.size.width - default_size.width).abs() < 0.01);
     assert!((tp.size.height - default_size.height).abs() < 0.01);
@@ -223,7 +223,7 @@ fn test_table_row_column_consistency() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows.len(), 3, "Expected 3 rows");
     // All rows should have same number of columns
     for row in &tp.table.rows {
@@ -265,7 +265,7 @@ fn test_empty_cells_have_no_content() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     // B1 should be empty (no paragraphs)
     assert!(
         tp.table.rows[0].cells[1].content.is_empty(),
@@ -279,7 +279,7 @@ fn test_cell_default_span_values() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let cell = &tp.table.rows[0].cells[0];
     assert_eq!(cell.col_span, 1);
     assert_eq!(cell.row_span, 1);

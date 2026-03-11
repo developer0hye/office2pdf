@@ -27,8 +27,8 @@ pub enum Page {
     Flow(FlowPage),
     /// PPTX: fixed coordinate pages.
     Fixed(FixedPage),
-    /// XLSX: table-based pages.
-    Table(TablePage),
+    /// XLSX: spreadsheet sheet pages.
+    Sheet(SheetPage),
 }
 
 /// Page dimensions.
@@ -129,9 +129,9 @@ pub enum FixedElementKind {
     Chart(super::elements::Chart),
 }
 
-/// A table-based page (XLSX sheets).
+/// A spreadsheet sheet page (XLSX sheets).
 #[derive(Debug, Clone)]
-pub struct TablePage {
+pub struct SheetPage {
     pub name: String,
     pub size: PageSize,
     pub margins: Margins,

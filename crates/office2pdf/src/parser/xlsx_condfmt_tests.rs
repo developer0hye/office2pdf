@@ -40,7 +40,7 @@ fn test_cond_fmt_greater_than_background() {
 
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
 
     assert!(
         tp.table.rows[0].cells[0].background.is_none(),
@@ -84,7 +84,7 @@ fn test_cond_fmt_less_than_font_color() {
 
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
 
     let style_a1 = first_run_style(&tp.table.rows[0].cells[0]);
     assert_eq!(
@@ -123,7 +123,7 @@ fn test_cond_fmt_equal_bold() {
 
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
 
     let style_a1 = first_run_style(&tp.table.rows[0].cells[0]);
     assert_eq!(style_a1.bold, Some(true), "A1 (100) should be bold");
@@ -163,7 +163,7 @@ fn test_cond_fmt_between() {
 
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
 
     assert!(tp.table.rows[0].cells[0].background.is_none());
     assert_eq!(
@@ -221,7 +221,7 @@ fn test_cond_fmt_color_scale_two_color() {
 
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
 
     let bg_a1 = tp.table.rows[0].cells[0]
         .background
@@ -254,7 +254,7 @@ fn test_cond_fmt_no_rules_unchanged() {
     let data = build_xlsx_bytes("Sheet1", &[("A1", "42")]);
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
 
     assert!(tp.table.rows[0].cells[0].background.is_none());
 }
@@ -286,7 +286,7 @@ fn test_cond_fmt_non_numeric_cell_skipped() {
 
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
 
     assert!(tp.table.rows[0].cells[0].background.is_none());
     assert_eq!(
@@ -328,7 +328,7 @@ fn test_cond_fmt_data_bar() {
 
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
 
     let db1 = tp.table.rows[0].cells[0]
         .data_bar
@@ -399,7 +399,7 @@ fn test_cond_fmt_icon_set() {
 
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
 
     let icon1 = tp.table.rows[0].cells[0]
         .icon_text

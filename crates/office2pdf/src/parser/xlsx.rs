@@ -3,7 +3,7 @@ use std::io::Cursor;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Document, Margins, Metadata, Page, PageSize, StyleSheet, Table, TablePage, TableRow,
+    Document, Margins, Metadata, Page, PageSize, SheetPage, StyleSheet, Table, TableRow,
 };
 use crate::parser::Parser;
 
@@ -29,7 +29,7 @@ pub struct XlsxParser;
 impl XlsxParser {
     /// Parse XLSX in streaming mode, returning one `Document` per chunk of rows.
     ///
-    /// Each chunk contains a single `TablePage` with at most `chunk_size` rows.
+    /// Each chunk contains a single `SheetPage` with at most `chunk_size` rows.
     /// This allows the caller to compile each chunk independently, bounding peak
     /// memory during Typst compilation.
     pub fn parse_streaming(
@@ -90,7 +90,7 @@ impl XlsxParser {
 
                 let doc = Document {
                     metadata: metadata.clone(),
-                    pages: vec![Page::Table(TablePage {
+                    pages: vec![Page::Sheet(SheetPage {
                         name: sheet_name.clone(),
                         size: PageSize::default(),
                         margins: Margins::default(),
@@ -182,7 +182,7 @@ impl Parser for XlsxParser {
 
             if row_breaks.is_empty() {
                 // No page breaks — single page
-                pages.push(Page::Table(TablePage {
+                pages.push(Page::Sheet(SheetPage {
                     name: sheet_name,
                     size: PageSize::default(),
                     margins: Margins::default(),
@@ -223,7 +223,7 @@ impl Parser for XlsxParser {
                 // For page-break segments, attach all charts to the first segment
                 let mut first_segment = true;
                 for segment in segments {
-                    pages.push(Page::Table(TablePage {
+                    pages.push(Page::Sheet(SheetPage {
                         name: sheet_name.clone(),
                         size: PageSize::default(),
                         margins: Margins::default(),
