@@ -199,16 +199,11 @@ fn visit_block_fonts(block: &Block, visitor: &mut impl FnMut(&str) -> bool) -> b
 
 /// Walk a slice of blocks, calling `visitor` for each font family found.
 fn visit_blocks_fonts(blocks: &[Block], visitor: &mut impl FnMut(&str) -> bool) -> bool {
-    blocks
-        .iter()
-        .all(|block| visit_block_fonts(block, visitor))
+    blocks.iter().all(|block| visit_block_fonts(block, visitor))
 }
 
 /// Walk a `Paragraph`'s runs, calling `visitor` for each font family.
-fn visit_paragraph_fonts(
-    paragraph: &Paragraph,
-    visitor: &mut impl FnMut(&str) -> bool,
-) -> bool {
+fn visit_paragraph_fonts(paragraph: &Paragraph, visitor: &mut impl FnMut(&str) -> bool) -> bool {
     paragraph.runs.iter().all(|run| {
         run.style
             .font_family
