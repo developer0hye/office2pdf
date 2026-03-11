@@ -89,21 +89,11 @@ pub(super) fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyl
         None => return explicit.clone(),
     };
 
-    let mut merged = TextStyle {
-        bold: style_text.bold,
-        italic: style_text.italic,
-        underline: style_text.underline,
-        strikethrough: style_text.strikethrough,
-        font_size: style_text.font_size,
-        color: style_text.color,
-        font_family: style_text.font_family.clone(),
-        highlight: style_text.highlight,
-        vertical_align: style_text.vertical_align,
-        all_caps: style_text.all_caps,
-        small_caps: style_text.small_caps,
-        letter_spacing: style_text.letter_spacing,
-    };
+    let mut merged: TextStyle = style_text.clone();
 
+    // Heading defaults: apply fallback size/bold when the style itself
+    // doesn't specify them. This must happen before the explicit overwrite
+    // so that explicit values still win.
     if let Some(level) = heading_level {
         if merged.font_size.is_none() {
             merged.font_size = Some(HEADING_FONT_SIZES[level]);
@@ -113,42 +103,7 @@ pub(super) fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyl
         }
     }
 
-    if explicit.bold.is_some() {
-        merged.bold = explicit.bold;
-    }
-    if explicit.italic.is_some() {
-        merged.italic = explicit.italic;
-    }
-    if explicit.underline.is_some() {
-        merged.underline = explicit.underline;
-    }
-    if explicit.strikethrough.is_some() {
-        merged.strikethrough = explicit.strikethrough;
-    }
-    if explicit.font_size.is_some() {
-        merged.font_size = explicit.font_size;
-    }
-    if explicit.color.is_some() {
-        merged.color = explicit.color;
-    }
-    if explicit.font_family.is_some() {
-        merged.font_family = explicit.font_family.clone();
-    }
-    if explicit.highlight.is_some() {
-        merged.highlight = explicit.highlight;
-    }
-    if explicit.vertical_align.is_some() {
-        merged.vertical_align = explicit.vertical_align;
-    }
-    if explicit.all_caps.is_some() {
-        merged.all_caps = explicit.all_caps;
-    }
-    if explicit.small_caps.is_some() {
-        merged.small_caps = explicit.small_caps;
-    }
-    if explicit.letter_spacing.is_some() {
-        merged.letter_spacing = explicit.letter_spacing;
-    }
+    merged.merge_from(explicit);
 
     merged
 }
