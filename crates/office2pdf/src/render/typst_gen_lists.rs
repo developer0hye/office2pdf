@@ -151,15 +151,37 @@ pub(super) fn can_render_fixed_text_list_inline(list: &List) -> bool {
 
 fn paragraph_styles_match(left: &ParagraphStyle, right: &ParagraphStyle) -> bool {
     alignment_matches(left.alignment, right.alignment)
-        && option_f64_matches(left.indent_left, right.indent_left)
-        && option_f64_matches(left.indent_right, right.indent_right)
-        && option_f64_matches(left.indent_first_line, right.indent_first_line)
-        && line_spacing_matches(left.line_spacing, right.line_spacing)
-        && option_f64_matches(left.space_before, right.space_before)
-        && option_f64_matches(left.space_after, right.space_after)
+        && both_match(left.indent_left, right.indent_left, f64_approx_eq)
+        && both_match(left.indent_right, right.indent_right, f64_approx_eq)
+        && both_match(
+            left.indent_first_line,
+            right.indent_first_line,
+            f64_approx_eq,
+        )
+        && both_match(left.line_spacing, right.line_spacing, line_spacing_eq)
+        && both_match(left.space_before, right.space_before, f64_approx_eq)
+        && both_match(left.space_after, right.space_after, f64_approx_eq)
         && left.heading_level == right.heading_level
         && left.direction == right.direction
-        && tab_stops_match(left.tab_stops.as_deref(), right.tab_stops.as_deref())
+        && both_match(
+            left.tab_stops.as_deref(),
+            right.tab_stops.as_deref(),
+            |left_stops, right_stops| left_stops == right_stops,
+        )
+}
+
+/// Compare two `Option` values: both `None` => true, both `Some` => delegate to `eq_fn`,
+/// mismatched `Some`/`None` => false.
+fn both_match<T>(left: Option<T>, right: Option<T>, eq_fn: impl FnOnce(T, T) -> bool) -> bool {
+    match (left, right) {
+        (Some(l), Some(r)) => eq_fn(l, r),
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+fn f64_approx_eq(left: f64, right: f64) -> bool {
+    (left - right).abs() < 0.0001
 }
 
 fn alignment_matches(left: Option<Alignment>, right: Option<Alignment>) -> bool {
@@ -169,29 +191,10 @@ fn alignment_matches(left: Option<Alignment>, right: Option<Alignment>) -> bool 
     }
 }
 
-fn option_f64_matches(left: Option<f64>, right: Option<f64>) -> bool {
+fn line_spacing_eq(left: LineSpacing, right: LineSpacing) -> bool {
     match (left, right) {
-        (Some(l), Some(r)) => (l - r).abs() < 0.0001,
-        (None, None) => true,
-        _ => false,
-    }
-}
-
-fn line_spacing_matches(left: Option<LineSpacing>, right: Option<LineSpacing>) -> bool {
-    match (left, right) {
-        (Some(LineSpacing::Proportional(l)), Some(LineSpacing::Proportional(r))) => {
-            (l - r).abs() < 0.0001
-        }
-        (Some(LineSpacing::Exact(l)), Some(LineSpacing::Exact(r))) => (l - r).abs() < 0.0001,
-        (None, None) => true,
-        _ => false,
-    }
-}
-
-fn tab_stops_match(left: Option<&[TabStop]>, right: Option<&[TabStop]>) -> bool {
-    match (left, right) {
-        (Some(left_stops), Some(right_stops)) => left_stops == right_stops,
-        (None, None) => true,
+        (LineSpacing::Proportional(l), LineSpacing::Proportional(r)) => f64_approx_eq(l, r),
+        (LineSpacing::Exact(l), LineSpacing::Exact(r)) => f64_approx_eq(l, r),
         _ => false,
     }
 }
@@ -222,75 +225,62 @@ pub(super) fn generate_fixed_text_list(
         .first()
         .and_then(|item| item.start_at)
         .unwrap_or(1);
-    if available_width_pt.is_some() {
-        for (index, item) in list.items.iter().enumerate() {
-            if index > 0 {
-                out.push('\n');
-                if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0 && include_item_spacing) {
-                    let _ = writeln!(out, "#v({}pt)", format_f64(gap));
-                }
-                if let Some(start_at) = item.start_at {
-                    current_number = start_at;
-                }
-            }
+    let active_gap: Option<f64> = line_gap_pt.filter(|gap| *gap > 0.0 && include_item_spacing);
+    let use_stack: bool = available_width_pt.is_none();
 
-            let item_paragraph: &Paragraph = &item.content[0];
-            let marker_text: String = fixed_text_list_marker(
-                list.kind,
-                &effective_style,
-                current_number,
-                &item_paragraph.runs,
-            );
-            let runs: Vec<Run> = prepend_fixed_text_list_marker_run(
-                &item_paragraph.style,
-                &effective_style,
-                &item_paragraph.runs,
-                marker_text,
-            );
-            write_fixed_text_list_item(out, item_paragraph, &runs, align_str, available_width_pt);
-            out.push('\n');
-
-            if list.kind == ListKind::Ordered {
-                current_number += 1;
-            }
-        }
-    } else {
+    if use_stack {
         out.push_str("#stack(dir: ttb");
-        if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0 && include_item_spacing) {
+        if let Some(gap) = active_gap {
             let _ = write!(out, ", spacing: {}pt", format_f64(gap));
         }
         out.push_str(",\n");
+    }
 
-        for (index, item) in list.items.iter().enumerate() {
-            if index > 0 {
+    for (index, item) in list.items.iter().enumerate() {
+        if index > 0 {
+            if use_stack {
                 out.push_str(",\n");
-                if let Some(start_at) = item.start_at {
-                    current_number = start_at;
+            } else {
+                out.push('\n');
+                if let Some(gap) = active_gap {
+                    let _ = writeln!(out, "#v({}pt)", format_f64(gap));
                 }
             }
-
-            let item_paragraph: &Paragraph = &item.content[0];
-            let marker_text: String = fixed_text_list_marker(
-                list.kind,
-                &effective_style,
-                current_number,
-                &item_paragraph.runs,
-            );
-            let runs: Vec<Run> = prepend_fixed_text_list_marker_run(
-                &item_paragraph.style,
-                &effective_style,
-                &item_paragraph.runs,
-                marker_text,
-            );
-            out.push('[');
-            write_fixed_text_list_item(out, item_paragraph, &runs, align_str, available_width_pt);
-            out.push(']');
-
-            if list.kind == ListKind::Ordered {
-                current_number += 1;
+            if let Some(start_at) = item.start_at {
+                current_number = start_at;
             }
         }
 
+        let item_paragraph: &Paragraph = &item.content[0];
+        let marker_text: String = fixed_text_list_marker(
+            list.kind,
+            &effective_style,
+            current_number,
+            &item_paragraph.runs,
+        );
+        let runs: Vec<Run> = prepend_fixed_text_list_marker_run(
+            &item_paragraph.style,
+            &effective_style,
+            &item_paragraph.runs,
+            marker_text,
+        );
+
+        if use_stack {
+            out.push('[');
+        }
+        write_fixed_text_list_item(out, item_paragraph, &runs, align_str, available_width_pt);
+        if use_stack {
+            out.push(']');
+        } else {
+            out.push('\n');
+        }
+
+        if list.kind == ListKind::Ordered {
+            current_number += 1;
+        }
+    }
+
+    if use_stack {
         out.push_str("\n)");
     }
     if has_para_style {
@@ -720,6 +710,14 @@ fn roman_marker(mut number: u32, uppercase: bool) -> String {
     }
 }
 
+fn write_list_item_content(out: &mut String, item: &crate::ir::ListItem) {
+    for para in &item.content {
+        for run in &para.runs {
+            generate_run(out, run);
+        }
+    }
+}
+
 /// Recursively generate list items, grouping consecutive items at the same or deeper level.
 fn generate_list_items(
     out: &mut String,
@@ -732,14 +730,10 @@ fn generate_list_items(
     let mut i = 0;
     while i < items.len() {
         let item = &items[i];
-        if item.level == base_level {
-            let _ = write!(out, "  {item_func}[");
-            for para in &item.content {
-                for run in &para.runs {
-                    generate_run(out, run);
-                }
-            }
+        let _ = write!(out, "  {item_func}[");
+        write_list_item_content(out, item);
 
+        if item.level == base_level {
             let nested_start = i + 1;
             let mut nested_end = nested_start;
             while nested_end < items.len() && items[nested_end].level > base_level {
@@ -756,18 +750,11 @@ fn generate_list_items(
             } else {
                 i += 1;
             }
-
-            out.push_str("],\n");
         } else {
-            let _ = write!(out, "  {item_func}[");
-            for para in &item.content {
-                for run in &para.runs {
-                    generate_run(out, run);
-                }
-            }
-            out.push_str("],\n");
             i += 1;
         }
+
+        out.push_str("],\n");
     }
     Ok(())
 }
