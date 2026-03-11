@@ -7,10 +7,10 @@ use crate::error::{ConvertError, ConvertWarning};
 /// truncated to prevent stack overflow on pathological documents.
 const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
-    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Color, Document,
-    FloatingImage, FloatingTextBox, ImageData, ImageFormat, Insets, LineSpacing, Page, Paragraph,
-    ParagraphStyle, Run, StyleSheet, TabAlignment, TabLeader, TabStop, Table, TableCell, TableRow,
-    TextDirection, TextStyle, VerticalTextAlign,
+    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Color,
+    ColumnLayout, Document, FloatingImage, FloatingTextBox, ImageData, ImageFormat, Insets,
+    LineSpacing, Page, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment, TabLeader,
+    TabStop, Table, TableCell, TableRow, TextDirection, TextStyle, VerticalTextAlign,
 };
 use crate::parser::Parser;
 
@@ -97,76 +97,90 @@ fn emu_to_pt(emu: u32) -> f64 {
     emu as f64 / 12700.0
 }
 
+/// Pre-parsed assets extracted from the DOCX ZIP archive before docx-rs parsing.
+struct ZipPreParseAssets {
+    metadata: crate::ir::Metadata,
+    ctx: DocxConversionContext,
+    math: MathContext,
+    chart_ctx: ChartContext,
+    column_layouts: Vec<Option<ColumnLayout>>,
+    header_footer_assets: HeaderFooterAssets,
+}
+
+/// Build all pre-parse contexts from the DOCX ZIP in a single pass.
+/// Falls back to empty contexts if the ZIP cannot be opened, letting
+/// docx-rs produce a proper parse error downstream.
+fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
+    let cursor = std::io::Cursor::new(data);
+    match zip::ZipArchive::new(cursor) {
+        Ok(mut archive) => {
+            let metadata = crate::parser::metadata::extract_metadata_from_zip(&mut archive);
+            let doc_xml = read_zip_text(&mut archive, "word/document.xml");
+            let notes = build_note_context_from_xml(doc_xml.as_deref(), &mut archive);
+            let wraps = build_wrap_context_from_xml(doc_xml.as_deref());
+            let drawing_text_boxes = DrawingTextBoxContext::from_xml(doc_xml.as_deref());
+            let table_headers = TableHeaderContext::from_xml(doc_xml.as_deref());
+            let vml_text_boxes = VmlTextBoxContext::from_xml(doc_xml.as_deref());
+            let math = build_math_context_from_xml(doc_xml.as_deref());
+            let chart_ctx = build_chart_context_from_xml(doc_xml.as_deref(), &mut archive);
+            let column_layouts = doc_xml
+                .as_deref()
+                .map(scan_column_layouts)
+                .unwrap_or_default();
+            let bidi = BidiContext::from_xml(doc_xml.as_deref());
+            let small_caps = SmallCapsContext::from_xml(doc_xml.as_deref());
+            let header_footer_assets = build_header_footer_assets(&mut archive);
+            let ctx = DocxConversionContext {
+                notes,
+                wraps,
+                drawing_text_boxes,
+                table_headers,
+                vml_text_boxes,
+                bidi,
+                small_caps,
+            };
+            ZipPreParseAssets {
+                metadata,
+                ctx,
+                math,
+                chart_ctx,
+                column_layouts,
+                header_footer_assets,
+            }
+        }
+        Err(_) => ZipPreParseAssets {
+            metadata: crate::ir::Metadata::default(),
+            ctx: DocxConversionContext {
+                notes: NoteContext::empty(),
+                wraps: WrapContext::empty(),
+                drawing_text_boxes: DrawingTextBoxContext::from_xml(None),
+                table_headers: TableHeaderContext::from_xml(None),
+                vml_text_boxes: VmlTextBoxContext::from_xml(None),
+                bidi: BidiContext::from_xml(None),
+                small_caps: SmallCapsContext::from_xml(None),
+            },
+            math: MathContext::empty(),
+            chart_ctx: ChartContext::empty(),
+            column_layouts: Vec::new(),
+            header_footer_assets: HeaderFooterAssets::default(),
+        },
+    }
+}
+
 impl Parser for DocxParser {
     fn parse(
         &self,
         data: &[u8],
         _options: &ConvertOptions,
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
-        // Open ZIP once and build all pre-parse contexts from a single pass.
-        // This consolidates what was previously 5 separate ZIP opens + multiple
-        // reads of word/document.xml into a single archive + single doc read.
-        let (metadata, mut ctx, mut math, mut chart_ctx, column_layouts, header_footer_assets) = {
-            let cursor = std::io::Cursor::new(data);
-            match zip::ZipArchive::new(cursor) {
-                Ok(mut archive) => {
-                    let metadata = crate::parser::metadata::extract_metadata_from_zip(&mut archive);
-                    let doc_xml = read_zip_text(&mut archive, "word/document.xml");
-                    let notes = build_note_context_from_xml(doc_xml.as_deref(), &mut archive);
-                    let wraps = build_wrap_context_from_xml(doc_xml.as_deref());
-                    let drawing_text_boxes = DrawingTextBoxContext::from_xml(doc_xml.as_deref());
-                    let table_headers = TableHeaderContext::from_xml(doc_xml.as_deref());
-                    let vml_text_boxes = VmlTextBoxContext::from_xml(doc_xml.as_deref());
-                    let math = build_math_context_from_xml(doc_xml.as_deref());
-                    let chart_ctx = build_chart_context_from_xml(doc_xml.as_deref(), &mut archive);
-                    let column_layouts = doc_xml
-                        .as_deref()
-                        .map(scan_column_layouts)
-                        .unwrap_or_default();
-                    let bidi = BidiContext::from_xml(doc_xml.as_deref());
-                    let small_caps = SmallCapsContext::from_xml(doc_xml.as_deref());
-                    let header_footer_assets = build_header_footer_assets(&mut archive);
-                    let ctx = DocxConversionContext {
-                        notes,
-                        wraps,
-                        drawing_text_boxes,
-                        table_headers,
-                        vml_text_boxes,
-                        bidi,
-                        small_caps,
-                    };
-                    (
-                        metadata,
-                        ctx,
-                        math,
-                        chart_ctx,
-                        column_layouts,
-                        header_footer_assets,
-                    )
-                }
-                Err(_) => {
-                    // ZIP open failed — return empty contexts; docx-rs will
-                    // produce a proper parse error downstream.
-                    let ctx = DocxConversionContext {
-                        notes: NoteContext::empty(),
-                        wraps: WrapContext::empty(),
-                        drawing_text_boxes: DrawingTextBoxContext::from_xml(None),
-                        table_headers: TableHeaderContext::from_xml(None),
-                        vml_text_boxes: VmlTextBoxContext::from_xml(None),
-                        bidi: BidiContext::from_xml(None),
-                        small_caps: SmallCapsContext::from_xml(None),
-                    };
-                    (
-                        crate::ir::Metadata::default(),
-                        ctx,
-                        MathContext::empty(),
-                        ChartContext::empty(),
-                        Vec::new(),
-                        HeaderFooterAssets::default(),
-                    )
-                }
-            }
-        };
+        let ZipPreParseAssets {
+            metadata,
+            mut ctx,
+            mut math,
+            mut chart_ctx,
+            column_layouts,
+            header_footer_assets,
+        } = build_zip_preparse_assets(data);
 
         let docx = docx_rs::read_docx(data)
             .map_err(|e| ConvertError::Parse(format!("Failed to parse DOCX (docx-rs): {e}")))?;
@@ -370,6 +384,114 @@ fn convert_paragraph_element(
     }
 }
 
+/// Build a text `Run` from extracted text, merging explicit run styling with the
+/// resolved paragraph style. Returns `None` when the text is empty, so callers
+/// can skip empty runs without duplicating the emptiness check.
+fn build_text_run(
+    text: String,
+    run_property: &docx_rs::RunProperty,
+    is_small_caps: bool,
+    resolved_style: Option<&ResolvedStyle>,
+    href: Option<String>,
+) -> Option<Run> {
+    if text.is_empty() {
+        return None;
+    }
+    let mut explicit_style: TextStyle = extract_run_style(run_property);
+    if is_small_caps {
+        explicit_style.small_caps = Some(true);
+    }
+    Some(Run {
+        text,
+        style: merge_text_style(&explicit_style, resolved_style),
+        href,
+        footnote: None,
+    })
+}
+
+/// Intermediate results from scanning a run's children for media, text boxes,
+/// and structural elements (column breaks).
+struct RunChildrenMedia {
+    has_column_break: bool,
+    text_box_blocks: Vec<Block>,
+}
+
+/// Scan a run's children for drawings, VML shapes, and column breaks.
+/// Extracted images are pushed to `inline_images`; text boxes and column break
+/// detection are returned in `RunChildrenMedia`.
+fn extract_run_children_media(
+    run: &docx_rs::Run,
+    images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
+    style_map: &StyleMap,
+    ctx: &DocxConversionContext,
+    inline_images: &mut Vec<Block>,
+) -> RunChildrenMedia {
+    let mut has_column_break: bool = false;
+    let mut text_box_blocks: Vec<Block> = Vec::new();
+
+    for run_child in &run.children {
+        if let docx_rs::RunChild::Drawing(drawing) = run_child
+            && let Some(img_block) = extract_drawing_image(drawing, images, &ctx.wraps)
+        {
+            inline_images.push(img_block);
+        }
+        if let docx_rs::RunChild::Drawing(drawing) = run_child {
+            text_box_blocks.extend(extract_drawing_text_box_blocks(
+                drawing, images, hyperlinks, style_map, ctx,
+            ));
+        }
+        if let docx_rs::RunChild::Shape(shape) = run_child {
+            let vml_text_box: VmlTextBoxInfo = ctx.vml_text_boxes.consume_next();
+            if let Some(floating_text_box) = extract_vml_shape_text_box(shape, &vml_text_box) {
+                text_box_blocks.push(Block::FloatingTextBox(floating_text_box));
+            } else {
+                text_box_blocks.extend(vml_text_box.into_blocks());
+            }
+
+            if let Some(img_block) = extract_shape_image(shape, images) {
+                inline_images.push(img_block);
+            }
+        }
+        if let docx_rs::RunChild::Break(br) = run_child
+            && is_column_break(br)
+        {
+            has_column_break = true;
+        }
+    }
+
+    RunChildrenMedia {
+        has_column_break,
+        text_box_blocks,
+    }
+}
+
+/// Process hyperlink children, extracting text runs with the resolved URL.
+fn process_hyperlink_runs(
+    hyperlink: &docx_rs::Hyperlink,
+    hyperlinks: &HyperlinkMap,
+    resolved_style: Option<&ResolvedStyle>,
+    ctx: &DocxConversionContext,
+    runs: &mut Vec<Run>,
+) {
+    let href: Option<String> = resolve_hyperlink_url(hyperlink, hyperlinks);
+    for hchild in &hyperlink.children {
+        if let docx_rs::ParagraphChild::Run(run) = hchild {
+            let hl_small_caps: bool = ctx.small_caps.next_is_small_caps();
+            let text: String = extract_run_text(run);
+            if let Some(ir_run) = build_text_run(
+                text,
+                &run.run_property,
+                hl_small_caps,
+                resolved_style,
+                href.clone(),
+            ) {
+                runs.push(ir_run);
+            }
+        }
+    }
+}
+
 /// Convert a docx-rs Paragraph to IR blocks, handling page breaks and inline images.
 /// If the paragraph has `page_break_before`, a `Block::PageBreak` is emitted first.
 /// Inline images within runs are extracted as separate `Block::Image` elements.
@@ -419,42 +541,16 @@ fn convert_paragraph_blocks(
                     continue;
                 }
 
-                // Check for column breaks and embedded drawings in this run.
-                let mut has_column_break = false;
-                let mut text_box_blocks: Vec<Block> = Vec::new();
-                for run_child in &run.children {
-                    if let docx_rs::RunChild::Drawing(drawing) = run_child
-                        && let Some(img_block) = extract_drawing_image(drawing, images, &ctx.wraps)
-                    {
-                        inline_images.push(img_block);
-                    }
-                    if let docx_rs::RunChild::Drawing(drawing) = run_child {
-                        text_box_blocks.extend(extract_drawing_text_box_blocks(
-                            drawing, images, hyperlinks, style_map, ctx,
-                        ));
-                    }
-                    if let docx_rs::RunChild::Shape(shape) = run_child {
-                        let vml_text_box: VmlTextBoxInfo = ctx.vml_text_boxes.consume_next();
-                        if let Some(floating_text_box) =
-                            extract_vml_shape_text_box(shape, &vml_text_box)
-                        {
-                            text_box_blocks.push(Block::FloatingTextBox(floating_text_box));
-                        } else {
-                            text_box_blocks.extend(vml_text_box.into_blocks());
-                        }
+                let media = extract_run_children_media(
+                    run,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    ctx,
+                    &mut inline_images,
+                );
 
-                        if let Some(img_block) = extract_shape_image(shape, images) {
-                            inline_images.push(img_block);
-                        }
-                    }
-                    if let docx_rs::RunChild::Break(br) = run_child
-                        && is_column_break(br)
-                    {
-                        has_column_break = true;
-                    }
-                }
-
-                if !text_box_blocks.is_empty() {
+                if !media.text_box_blocks.is_empty() {
                     if !runs.is_empty() {
                         out.append(&mut inline_images);
                         push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
@@ -462,10 +558,10 @@ fn convert_paragraph_blocks(
                         out.append(&mut inline_images);
                     }
                     emitted_text_box_blocks = true;
-                    out.extend(text_box_blocks);
+                    out.extend(media.text_box_blocks);
                 }
 
-                if has_column_break {
+                if media.has_column_break {
                     // Flush current runs as a paragraph before the column break
                     if !runs.is_empty() {
                         out.append(&mut inline_images);
@@ -474,60 +570,23 @@ fn convert_paragraph_blocks(
                     out.push(Block::ColumnBreak);
 
                     // Still extract any text from this run (after the break)
-                    let text = extract_run_text_skip_column_breaks(run);
-                    if !text.is_empty() {
-                        let mut explicit_style: TextStyle = extract_run_style(&run.run_property);
-                        if is_small_caps {
-                            explicit_style.small_caps = Some(true);
-                        }
-                        runs.push(Run {
-                            text,
-                            style: merge_text_style(&explicit_style, resolved_style),
-                            href: None,
-                            footnote: None,
-                        });
+                    let text: String = extract_run_text_skip_column_breaks(run);
+                    if let Some(ir_run) =
+                        build_text_run(text, &run.run_property, is_small_caps, resolved_style, None)
+                    {
+                        runs.push(ir_run);
                     }
                 } else {
-                    // Extract text from the run
-                    let text = extract_run_text(run);
-                    if !text.is_empty() {
-                        let mut explicit_style: TextStyle = extract_run_style(&run.run_property);
-                        if is_small_caps {
-                            explicit_style.small_caps = Some(true);
-                        }
-                        runs.push(Run {
-                            text,
-                            style: merge_text_style(&explicit_style, resolved_style),
-                            href: None,
-                            footnote: None,
-                        });
+                    let text: String = extract_run_text(run);
+                    if let Some(ir_run) =
+                        build_text_run(text, &run.run_property, is_small_caps, resolved_style, None)
+                    {
+                        runs.push(ir_run);
                     }
                 }
             }
             docx_rs::ParagraphChild::Hyperlink(hyperlink) => {
-                // Resolve the hyperlink URL from document relationships
-                let href = resolve_hyperlink_url(hyperlink, hyperlinks);
-
-                // Extract runs from inside the hyperlink element
-                for hchild in &hyperlink.children {
-                    if let docx_rs::ParagraphChild::Run(run) = hchild {
-                        let hl_small_caps: bool = ctx.small_caps.next_is_small_caps();
-                        let text = extract_run_text(run);
-                        if !text.is_empty() {
-                            let mut explicit_style: TextStyle =
-                                extract_run_style(&run.run_property);
-                            if hl_small_caps {
-                                explicit_style.small_caps = Some(true);
-                            }
-                            runs.push(Run {
-                                text,
-                                style: merge_text_style(&explicit_style, resolved_style),
-                                href: href.clone(),
-                                footnote: None,
-                            });
-                        }
-                    }
-                }
+                process_hyperlink_runs(hyperlink, hyperlinks, resolved_style, ctx, &mut runs);
             }
             _ => {}
         }
