@@ -101,6 +101,14 @@ pub enum VerticalTextAlign {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct TextStyle {
     pub font_family: Option<String>,
+    /// DOCX rFonts ascii slot.
+    pub font_family_ascii: Option<String>,
+    /// DOCX rFonts hAnsi/hiAnsi slot.
+    pub font_family_hansi: Option<String>,
+    /// DOCX rFonts eastAsia slot.
+    pub font_family_east_asia: Option<String>,
+    /// DOCX rFonts cs slot.
+    pub font_family_cs: Option<String>,
     pub font_size: Option<f64>,
     pub bold: Option<bool>,
     pub italic: Option<bool>,

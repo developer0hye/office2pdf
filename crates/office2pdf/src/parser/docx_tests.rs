@@ -505,6 +505,110 @@ fn test_parse_mixed_list_and_paragraphs() {
     assert!(para_count >= 1, "Expected at least 1 paragraph block");
 }
 
+#[test]
+fn test_parse_list_inherits_numbering_level_indent_and_hanging() {
+    let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(
+        docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("decimal"),
+            docx_rs::LevelText::new("%1."),
+            docx_rs::LevelJc::new("left"),
+        )
+        .indent(
+            Some(720),
+            Some(docx_rs::SpecialIndentType::Hanging(360)),
+            None,
+            None,
+        ),
+    );
+    let numbering = docx_rs::Numbering::new(1, 0);
+
+    let data = build_docx_with_numbering(
+        vec![abstract_num],
+        vec![numbering],
+        vec![
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Inherited indent"))
+                .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+        ],
+    );
+
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page = match &doc.pages[0] {
+        Page::Flow(p) => p,
+        _ => panic!("Expected FlowPage"),
+    };
+    let list = page
+        .content
+        .iter()
+        .find_map(|block| match block {
+            Block::List(list) => Some(list),
+            _ => None,
+        })
+        .expect("Expected list block");
+    let para = &list.items[0].content[0];
+
+    assert_eq!(para.style.indent_left, Some(36.0));
+    assert_eq!(para.style.indent_first_line, Some(-18.0));
+}
+
+#[test]
+fn test_parse_list_explicit_indent_overrides_numbering_level_indent() {
+    let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(
+        docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("decimal"),
+            docx_rs::LevelText::new("%1."),
+            docx_rs::LevelJc::new("left"),
+        )
+        .indent(
+            Some(720),
+            Some(docx_rs::SpecialIndentType::Hanging(360)),
+            None,
+            None,
+        ),
+    );
+    let numbering = docx_rs::Numbering::new(1, 0);
+
+    let data = build_docx_with_numbering(
+        vec![abstract_num],
+        vec![numbering],
+        vec![
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Explicit indent"))
+                .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0))
+                .indent(
+                    Some(1000),
+                    Some(docx_rs::SpecialIndentType::FirstLine(200)),
+                    None,
+                    None,
+                ),
+        ],
+    );
+
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page = match &doc.pages[0] {
+        Page::Flow(p) => p,
+        _ => panic!("Expected FlowPage"),
+    };
+    let list = page
+        .content
+        .iter()
+        .find_map(|block| match block {
+            Block::List(list) => Some(list),
+            _ => None,
+        })
+        .expect("Expected list block");
+    let para = &list.items[0].content[0];
+
+    assert_eq!(para.style.indent_left, Some(50.0));
+    assert_eq!(para.style.indent_first_line, Some(10.0));
+}
+
 #[path = "docx_page_feature_tests.rs"]
 mod page_feature_tests;
 

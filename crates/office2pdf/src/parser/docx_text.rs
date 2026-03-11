@@ -139,6 +139,17 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
         });
 
     let all_caps: Option<bool> = rp.get("caps").and_then(serde_json::Value::as_bool);
+    let (font_family_ascii, font_family_hansi, font_family_east_asia, font_family_cs): (
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    ) = rp.get("fonts").map_or((None, None, None, None), extract_font_slots);
+    let font_family: Option<String> = font_family_ascii
+        .clone()
+        .or_else(|| font_family_hansi.clone())
+        .or_else(|| font_family_east_asia.clone())
+        .or_else(|| font_family_cs.clone());
 
     TextStyle {
         bold: rp.get("bold").and_then(serde_json::Value::as_bool),
@@ -156,15 +167,11 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
             .get("color")
             .and_then(serde_json::Value::as_str)
             .and_then(parse_hex_color),
-        font_family: rp.get("fonts").and_then(|fonts| {
-            fonts
-                .get("ascii")
-                .or_else(|| fonts.get("hiAnsi"))
-                .or_else(|| fonts.get("eastAsia"))
-                .or_else(|| fonts.get("cs"))
-                .and_then(serde_json::Value::as_str)
-                .map(String::from)
-        }),
+        font_family,
+        font_family_ascii,
+        font_family_hansi,
+        font_family_east_asia,
+        font_family_cs,
         highlight: rp
             .get("highlight")
             .and_then(serde_json::Value::as_str)
@@ -177,6 +184,28 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
             .and_then(serde_json::Value::as_i64)
             .map(|twips| twips as f64 / 20.0),
     }
+}
+
+fn extract_font_slots(fonts: &serde_json::Value) -> (
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+) {
+    (
+        extract_font_slot_value(fonts, &["ascii"]),
+        extract_font_slot_value(fonts, &["hiAnsi", "hAnsi", "highAnsi"]),
+        extract_font_slot_value(fonts, &["eastAsia"]),
+        extract_font_slot_value(fonts, &["cs"]),
+    )
+}
+
+fn extract_font_slot_value(fonts: &serde_json::Value, keys: &[&str]) -> Option<String> {
+    keys.iter()
+        .find_map(|key| fonts.get(*key).and_then(serde_json::Value::as_str))
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(String::from)
 }
 
 fn json_bool_or_val(value: &serde_json::Value) -> Option<bool> {

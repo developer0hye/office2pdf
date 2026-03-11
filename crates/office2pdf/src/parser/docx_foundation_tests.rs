@@ -365,6 +365,33 @@ fn test_font_family_extracted() {
 }
 
 #[test]
+fn test_font_family_slots_extracted() {
+    let data = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(
+            docx_rs::Run::new().add_text("混合 Mixed").fonts(
+                docx_rs::RunFonts::new()
+                    .ascii("Times New Roman")
+                    .hi_ansi("Times New Roman")
+                    .east_asia("SimSun"),
+            ),
+        ),
+    ]);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let run = first_run(&doc);
+    assert_eq!(
+        run.style.font_family_ascii.as_deref(),
+        Some("Times New Roman")
+    );
+    assert_eq!(
+        run.style.font_family_hansi.as_deref(),
+        Some("Times New Roman")
+    );
+    assert_eq!(run.style.font_family_east_asia.as_deref(), Some("SimSun"));
+    assert_eq!(run.style.font_family.as_deref(), Some("Times New Roman"));
+}
+
+#[test]
 fn test_combined_formatting_extracted() {
     let data = build_docx_bytes(vec![
         docx_rs::Paragraph::new().add_run(

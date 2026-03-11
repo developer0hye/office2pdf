@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use crate::ir::{Block, List, ListItem, ListKind, ListLevelStyle, Paragraph};
+use crate::ir::{Block, List, ListItem, ListKind, ListLevelStyle, Paragraph, TabStop};
 
 /// Numbering info extracted from a paragraph's numPr.
 #[derive(Debug, Clone)]
@@ -13,6 +13,10 @@ pub(super) struct NumInfo {
 struct ResolvedListLevel {
     style: ListLevelStyle,
     start: u32,
+    indent_left: Option<f64>,
+    indent_right: Option<f64>,
+    indent_first_line: Option<f64>,
+    tab_stops: Option<Vec<TabStop>>,
 }
 
 #[derive(Debug, Clone)]
@@ -26,6 +30,10 @@ struct RawListLevel {
     start: u32,
     number_format: String,
     level_text: String,
+    indent_left: Option<f64>,
+    indent_right: Option<f64>,
+    indent_first_line: Option<f64>,
+    tab_stops: Option<Vec<TabStop>>,
 }
 
 pub(super) type NumberingMap = HashMap<usize, ResolvedNumbering>;
@@ -115,10 +123,24 @@ fn build_typst_numbering_pattern(
 }
 
 fn extract_raw_level(level: &docx_rs::Level) -> RawListLevel {
+    let indent = level.paragraph_property.indent.as_ref();
+    let indent_left = indent.and_then(|value| value.start).map(|value| value as f64 / 20.0);
+    let indent_right = indent.and_then(|value| value.end).map(|value| value as f64 / 20.0);
+    let indent_first_line = indent.and_then(|value| {
+        value.special_indent.map(|special_indent| match special_indent {
+            docx_rs::SpecialIndentType::FirstLine(amount) => amount as f64 / 20.0,
+            docx_rs::SpecialIndentType::Hanging(amount) => -(amount as f64 / 20.0),
+        })
+    });
+
     RawListLevel {
         start: serialize_u32(&level.start).unwrap_or(1),
         number_format: level.format.val.clone(),
         level_text: serialize_string(&level.text).unwrap_or_default(),
+        indent_left,
+        indent_right,
+        indent_first_line,
+        tab_stops: super::text::extract_tab_stops(&level.paragraph_property.tabs),
     }
 }
 
@@ -154,6 +176,10 @@ fn resolve_numbering(
                     start: start as u32,
                     number_format: "decimal".to_string(),
                     level_text: format!("%{}.", level_index + 1),
+                    indent_left: None,
+                    indent_right: None,
+                    indent_first_line: None,
+                    tab_stops: None,
                 });
         }
     }
@@ -181,6 +207,10 @@ fn resolve_numbering(
                         marker_style: None,
                     },
                     start: level.start,
+                    indent_left: level.indent_left,
+                    indent_right: level.indent_right,
+                    indent_first_line: level.indent_first_line,
+                    tab_stops: level.tab_stops.clone(),
                 },
             )
         })
@@ -324,20 +354,40 @@ fn finalize_list(pending: PendingList, numberings: &NumberingMap) -> List {
     let mut previous_level: Option<u32> = None;
     let mut previous_num_id: Option<usize> = None;
     for pending_item in pending.items {
+        let PendingListItem {
+            num_id,
+            level,
+            mut paragraph,
+        } = pending_item;
         let style_kind: ListKind = level_styles
-            .get(&pending_item.level)
+            .get(&level)
             .map(|style| style.kind)
             .unwrap_or(root_kind);
-        let start_value: u32 = resolved_list_level(numberings, pending_item.num_id, pending_item.level)
+        let resolved_level = resolved_list_level(numberings, num_id, level);
+        let start_value: u32 = resolved_level
             .map(|resolved| resolved.start)
             .unwrap_or(1);
+
+        if let Some(resolved_level) = resolved_level {
+            if paragraph.style.indent_left.is_none() {
+                paragraph.style.indent_left = resolved_level.indent_left;
+            }
+            if paragraph.style.indent_right.is_none() {
+                paragraph.style.indent_right = resolved_level.indent_right;
+            }
+            if paragraph.style.indent_first_line.is_none() {
+                paragraph.style.indent_first_line = resolved_level.indent_first_line;
+            }
+            if paragraph.style.tab_stops.is_none() {
+                paragraph.style.tab_stops = resolved_level.tab_stops.clone();
+            }
+        }
 
         let start_at: Option<u32> = if style_kind == ListKind::Ordered {
             match (previous_level, previous_num_id) {
                 (None, _) => Some(start_value),
                 (Some(prev_level), Some(prev_num_id))
-                    if pending_item.level > prev_level
-                        || (pending_item.level == prev_level && pending_item.num_id != prev_num_id) =>
+                    if level > prev_level || (level == prev_level && num_id != prev_num_id) =>
                 {
                     Some(start_value)
                 }
@@ -348,12 +398,12 @@ fn finalize_list(pending: PendingList, numberings: &NumberingMap) -> List {
         };
 
         items.push(ListItem {
-            content: vec![pending_item.paragraph],
-            level: pending_item.level,
+            content: vec![paragraph],
+            level,
             start_at,
         });
-        previous_level = Some(pending_item.level);
-        previous_num_id = Some(pending_item.num_id);
+        previous_level = Some(level);
+        previous_num_id = Some(num_id);
     }
 
     List {

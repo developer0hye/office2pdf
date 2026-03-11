@@ -95,6 +95,10 @@ fn extract_cell_text_style(cell: &umya_spreadsheet::Cell) -> TextStyle {
 
     TextStyle {
         font_family,
+        font_family_ascii: None,
+        font_family_hansi: None,
+        font_family_east_asia: None,
+        font_family_cs: None,
         font_size,
         bold,
         italic,

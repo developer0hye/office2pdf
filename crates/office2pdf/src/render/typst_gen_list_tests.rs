@@ -365,6 +365,118 @@ fn test_generate_bulleted_list_with_custom_marker_text_and_style() {
 }
 
 #[test]
+fn test_generate_list_item_applies_paragraph_line_spacing_using_font_size() {
+    let list = List {
+        kind: ListKind::Unordered,
+        items: vec![ListItem {
+            content: vec![Paragraph {
+                style: ParagraphStyle {
+                    line_spacing: Some(LineSpacing::Proportional(1.5)),
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![Run {
+                    text: "Spaced item".to_string(),
+                    style: TextStyle {
+                        font_size: Some(12.0),
+                        ..TextStyle::default()
+                    },
+                    href: None,
+                    footnote: None,
+                }],
+            }],
+            level: 0,
+            start_at: None,
+        }],
+        level_styles: BTreeMap::new(),
+    };
+
+    let doc = make_doc(vec![make_flow_page(vec![Block::List(list)])]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("leading: 9.6pt"),
+        "Expected list paragraph leading from DOCX spacing in: {}",
+        output.source
+    );
+}
+
+#[test]
+fn test_generate_list_item_block_below_includes_line_gap_compensation() {
+    let list = List {
+        kind: ListKind::Unordered,
+        items: vec![ListItem {
+            content: vec![Paragraph {
+                style: ParagraphStyle {
+                    line_spacing: Some(LineSpacing::Proportional(1.5)),
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![Run {
+                    text: "Compensated list item".to_string(),
+                    style: TextStyle {
+                        font_size: Some(12.0),
+                        ..TextStyle::default()
+                    },
+                    href: None,
+                    footnote: None,
+                }],
+            }],
+            level: 0,
+            start_at: None,
+        }],
+        level_styles: BTreeMap::new(),
+    };
+
+    let doc = make_doc(vec![make_flow_page(vec![Block::List(list)])]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("#block(below: 9.6pt)["),
+        "Expected list item block below compensation in: {}",
+        output.source
+    );
+}
+
+#[test]
+fn test_generate_list_item_multiple_paragraphs_preserves_paragraph_break() {
+    let list = List {
+        kind: ListKind::Unordered,
+        items: vec![ListItem {
+            content: vec![
+                Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "First paragraph".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                },
+                Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Second paragraph".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                },
+            ],
+            level: 0,
+            start_at: None,
+        }],
+        level_styles: BTreeMap::new(),
+    };
+
+    let doc = make_doc(vec![make_flow_page(vec![Block::List(list)])]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(output.source.contains("First paragraph"));
+    assert!(output.source.contains("Second paragraph"));
+    assert!(
+        output.source.contains("#linebreak()"),
+        "Expected explicit paragraph separation inside list item in: {}",
+        output.source
+    );
+}
+
+#[test]
 fn test_generate_ordered_list_with_custom_marker_style_uses_numbering_function() {
     use crate::ir::List;
 

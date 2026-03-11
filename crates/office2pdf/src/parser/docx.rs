@@ -38,6 +38,7 @@ use self::sections::{
 use self::styles::{
     DOC_DEFAULT_STYLE_ID, ResolvedStyle, StyleMap, TabStopOverride, apply_tab_stop_overrides,
     build_style_map, get_paragraph_style_id, merge_paragraph_style, merge_text_style,
+    normalize_style_id,
 };
 use self::tables::convert_table;
 use self::text::{
@@ -485,7 +486,10 @@ fn convert_paragraph_blocks(
 
     // Look up the paragraph's referenced style
     let resolved_style = get_paragraph_style_id(&para.property)
-        .and_then(|id| style_map.get(id))
+        .and_then(|id| {
+            let normalized_id = normalize_style_id(id);
+            style_map.get(&normalized_id)
+        })
         .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID));
 
     // Collect text runs and detect inline images

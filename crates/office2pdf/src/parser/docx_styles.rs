@@ -4,8 +4,7 @@ use crate::ir::{ParagraphStyle, TabStop, TextStyle};
 
 use super::{
     extract_doc_default_paragraph_style, extract_doc_default_text_style, extract_paragraph_style,
-    extract_run_style,
-    extract_tab_stop_overrides,
+    extract_run_style, extract_tab_stop_overrides,
 };
 
 /// Resolved style formatting extracted from a document style definition.
@@ -30,6 +29,10 @@ pub(super) type StyleMap = HashMap<String, ResolvedStyle>;
 
 /// Synthetic style ID used for document-level default text properties.
 pub(super) const DOC_DEFAULT_STYLE_ID: &str = "__office2pdf_doc_defaults";
+
+pub(super) fn normalize_style_id(style_id: &str) -> String {
+    style_id.to_ascii_lowercase()
+}
 
 /// Default font sizes for heading levels (Heading 1-6).
 /// Index 0 = Heading 1 (outline_lvl 0), index 5 = Heading 6 (outline_lvl 5).
@@ -56,7 +59,7 @@ pub(super) fn build_style_map(styles: &docx_rs::Styles) -> StyleMap {
         .styles
         .iter()
         .filter(|style| style.style_type == docx_rs::StyleType::Paragraph)
-        .map(|style| (style.style_id.clone(), style))
+        .map(|style| (normalize_style_id(&style.style_id), style))
         .collect();
 
     let style_ids: Vec<String> = paragraph_styles.keys().cloned().collect();
@@ -91,7 +94,12 @@ fn resolve_style(
     let style = *paragraph_styles.get(style_id)?;
     if !resolving.insert(style_id.to_string()) {
         // Style cycles are invalid OOXML. Fall back to local style fields.
-        return Some(build_resolved_style(style, None, default_text, default_paragraph));
+        return Some(build_resolved_style(
+            style,
+            None,
+            default_text,
+            default_paragraph,
+        ));
     }
 
     let parent = style_based_on_id(style).and_then(|parent_id| {
@@ -125,9 +133,11 @@ fn build_resolved_style(
     let inherited_text: &TextStyle = parent.map_or(default_text, |resolved| &resolved.text);
     let text: TextStyle = inherit_text_style(inherited_text, &own_text);
 
-    let inherited_paragraph: Option<&ParagraphStyle> =
-        parent.map(|resolved| &resolved.paragraph).or(Some(default_paragraph));
-    let mut paragraph: ParagraphStyle = inherit_paragraph_style(inherited_paragraph, &own_paragraph);
+    let inherited_paragraph: Option<&ParagraphStyle> = parent
+        .map(|resolved| &resolved.paragraph)
+        .or(Some(default_paragraph));
+    let mut paragraph: ParagraphStyle =
+        inherit_paragraph_style(inherited_paragraph, &own_paragraph);
 
     if let Some(tab_overrides) = own_tab_overrides.as_deref() {
         let mut resolved_tabs: Vec<TabStop> = inherited_paragraph
@@ -137,8 +147,8 @@ fn build_resolved_style(
         paragraph.tab_stops = (!resolved_tabs.is_empty()).then_some(resolved_tabs);
     }
 
-    let heading_level = extract_heading_level(style)
-        .or_else(|| parent.and_then(|resolved| resolved.heading_level));
+    let heading_level =
+        extract_heading_level(style).or_else(|| parent.and_then(|resolved| resolved.heading_level));
 
     ResolvedStyle {
         text,
@@ -154,7 +164,7 @@ fn style_based_on_id(style: &docx_rs::Style) -> Option<String> {
     serde_json::to_value(based_on)
         .ok()?
         .as_str()
-        .map(|value| value.to_string())
+        .map(normalize_style_id)
 }
 
 fn extract_heading_level(style: &docx_rs::Style) -> Option<usize> {
@@ -178,6 +188,22 @@ fn inherit_text_style(base: &TextStyle, override_style: &TextStyle) -> TextStyle
             .font_family
             .clone()
             .or_else(|| base.font_family.clone()),
+        font_family_ascii: override_style
+            .font_family_ascii
+            .clone()
+            .or_else(|| base.font_family_ascii.clone()),
+        font_family_hansi: override_style
+            .font_family_hansi
+            .clone()
+            .or_else(|| base.font_family_hansi.clone()),
+        font_family_east_asia: override_style
+            .font_family_east_asia
+            .clone()
+            .or_else(|| base.font_family_east_asia.clone()),
+        font_family_cs: override_style
+            .font_family_cs
+            .clone()
+            .or_else(|| base.font_family_cs.clone()),
         highlight: override_style.highlight.or(base.highlight),
         vertical_align: override_style.vertical_align.or(base.vertical_align),
         all_caps: override_style.all_caps.or(base.all_caps),
@@ -243,6 +269,10 @@ pub(super) fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyl
         font_size: style_text.font_size,
         color: style_text.color,
         font_family: style_text.font_family.clone(),
+        font_family_ascii: style_text.font_family_ascii.clone(),
+        font_family_hansi: style_text.font_family_hansi.clone(),
+        font_family_east_asia: style_text.font_family_east_asia.clone(),
+        font_family_cs: style_text.font_family_cs.clone(),
         highlight: style_text.highlight,
         vertical_align: style_text.vertical_align,
         all_caps: style_text.all_caps,
@@ -279,6 +309,18 @@ pub(super) fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyl
     }
     if explicit.font_family.is_some() {
         merged.font_family = explicit.font_family.clone();
+    }
+    if explicit.font_family_ascii.is_some() {
+        merged.font_family_ascii = explicit.font_family_ascii.clone();
+    }
+    if explicit.font_family_hansi.is_some() {
+        merged.font_family_hansi = explicit.font_family_hansi.clone();
+    }
+    if explicit.font_family_east_asia.is_some() {
+        merged.font_family_east_asia = explicit.font_family_east_asia.clone();
+    }
+    if explicit.font_family_cs.is_some() {
+        merged.font_family_cs = explicit.font_family_cs.clone();
     }
     if explicit.highlight.is_some() {
         merged.highlight = explicit.highlight;

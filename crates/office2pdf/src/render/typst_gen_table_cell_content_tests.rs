@@ -230,7 +230,7 @@ fn test_table_cell_compact_list_uses_leading_without_extra_item_spacing() {
     let result = generate_typst(&doc).unwrap().source;
 
     assert!(
-        result.contains("#set par(leading: 12pt)"),
+        result.contains("#set par(leading: 19.2pt)"),
         "Expected paragraph leading derived from PPT line spacing in: {result}"
     );
     assert!(

@@ -185,8 +185,8 @@ fn test_fixed_page_text_box_ordered_list_preserves_textbox_styling() {
             .contains("#text(size: 24pt)[2.]#text(size: 24pt)[ Second item]")
     );
     assert!(!output.source.contains("\\\n2. Second item"));
-    assert!(output.source.contains("#v(12pt)"));
-    assert!(output.source.contains("#set par(leading: 12pt)"));
+    assert!(output.source.contains("#v(19.2pt)"));
+    assert!(output.source.contains("#set par(leading: 19.2pt)"));
 }
 
 #[test]

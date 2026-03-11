@@ -279,6 +279,36 @@ fn test_style_with_color_and_font() {
 }
 
 #[test]
+fn test_style_id_match_is_case_insensitive_and_uses_last_definition() {
+    let heading3_upper = docx_rs::Style::new("Heading3", docx_rs::StyleType::Paragraph)
+        .name("Heading 3")
+        .color("2E74B5")
+        .size(28);
+    let heading3_lower = docx_rs::Style::new("heading3", docx_rs::StyleType::Paragraph)
+        .name("Heading 3")
+        .color("000000")
+        .size(44)
+        .bold();
+
+    let data = build_docx_bytes_with_styles(
+        vec![
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Case clash heading"))
+                .style("Heading3"),
+        ],
+        vec![heading3_upper, heading3_lower],
+    );
+
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let run = first_run(&doc);
+
+    assert_eq!(run.style.color, Some(Color::new(0, 0, 0)));
+    assert_eq!(run.style.font_size, Some(22.0));
+    assert_eq!(run.style.bold, Some(true));
+}
+
+#[test]
 fn test_runs_inherit_document_default_font() {
     let styles = docx_rs::Styles::new()
         .default_fonts(docx_rs::RunFonts::new().ascii("Raleway"))
