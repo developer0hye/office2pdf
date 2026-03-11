@@ -248,6 +248,10 @@ fn inherit_paragraph_style(
             .tab_stops
             .clone()
             .or_else(|| base.and_then(|style| style.tab_stops.clone())),
+        container: override_style
+            .container
+            .clone()
+            .or_else(|| base.and_then(|style| style.container.clone())),
     }
 }
 
@@ -382,6 +386,10 @@ pub(super) fn merge_paragraph_style(
             explicit_tab_overrides,
             inherited_tab_stops.as_deref(),
         ),
+        container: explicit
+            .container
+            .clone()
+            .or_else(|| style_paragraph.and_then(|style| style.container.clone())),
     }
 }
 

@@ -1,4 +1,5 @@
 use super::*;
+use crate::ir::{ParagraphBorder, ParagraphBorderSide, ParagraphContainerStyle};
 
 #[test]
 fn test_generate_plain_paragraph() {
@@ -669,5 +670,84 @@ fn test_generate_paragraph_block_below_includes_line_gap_compensation() {
     assert!(
         result.contains("#block(above: 10pt, below: 13.3pt)"),
         "Expected line-gap compensation added to block below in: {result}"
+    );
+}
+
+#[test]
+fn test_generate_paragraph_container_block_with_indent_padding() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            indent_left: Some(10.0),
+            indent_right: Some(10.0),
+            line_spacing: Some(LineSpacing::Proportional(1.15)),
+            space_before: Some(10.0),
+            space_after: Some(10.0),
+            container: Some(ParagraphContainerStyle {
+                background: Some(Color::new(246, 248, 250)),
+                border: Some(ParagraphBorder {
+                    top: Some(ParagraphBorderSide {
+                        width: 0.75,
+                        color: Color::new(225, 228, 232),
+                        style: BorderLineStyle::Solid,
+                    }),
+                    right: Some(ParagraphBorderSide {
+                        width: 0.75,
+                        color: Color::new(225, 228, 232),
+                        style: BorderLineStyle::Solid,
+                    }),
+                    bottom: Some(ParagraphBorderSide {
+                        width: 0.75,
+                        color: Color::new(225, 228, 232),
+                        style: BorderLineStyle::Solid,
+                    }),
+                    left: Some(ParagraphBorderSide {
+                        width: 0.75,
+                        color: Color::new(225, 228, 232),
+                        style: BorderLineStyle::Solid,
+                    }),
+                }),
+                padding: Some(Insets {
+                    top: 10.0,
+                    right: 10.0,
+                    bottom: 10.0,
+                    left: 10.0,
+                }),
+            }),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "let value = 1;".to_string(),
+            style: TextStyle {
+                font_family: Some("Consolas".to_string()),
+                font_size: Some(10.0),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#pad(left: 10pt, right: 10pt)["),
+        "Expected outer indent padding wrapper in: {result}"
+    );
+    assert!(
+        result.contains("width: 100%"),
+        "Expected container paragraphs to claim available width in: {result}"
+    );
+    assert!(
+        result.contains("fill: rgb(246, 248, 250)"),
+        "Expected container fill in: {result}"
+    );
+    assert!(
+        result.contains("stroke: (top: 0.75pt + rgb(225, 228, 232), bottom: 0.75pt + rgb(225, 228, 232), left: 0.75pt + rgb(225, 228, 232), right: 0.75pt + rgb(225, 228, 232))")
+            || result.contains("stroke: (top: 0.75pt + rgb(225, 228, 232), right: 0.75pt + rgb(225, 228, 232), bottom: 0.75pt + rgb(225, 228, 232), left: 0.75pt + rgb(225, 228, 232))"),
+        "Expected paragraph border stroke in: {result}"
+    );
+    assert!(
+        result.contains("inset: (top: 10pt, right: 10pt, bottom: 10pt, left: 10pt)"),
+        "Expected paragraph inset in: {result}"
     );
 }

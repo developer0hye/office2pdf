@@ -18,10 +18,11 @@ use crate::parser::Parser;
 use self::contexts::scan_table_headers;
 use self::contexts::{
     BidiContext, ChartContext, DrawingTextBoxContext, DrawingTextBoxInfo, MathContext, NoteContext,
-    SmallCapsContext, TableHeaderContext, VmlTextBoxContext, VmlTextBoxInfo, WrapContext,
-    build_chart_context_from_xml, build_math_context_from_xml, build_note_context_from_xml,
-    build_wrap_context_from_xml, extract_column_layout_from_section_property,
-    is_note_reference_run, read_zip_text, scan_column_layouts,
+    ParagraphContainerContext, SmallCapsContext, TableHeaderContext, VmlTextBoxContext,
+    VmlTextBoxInfo, WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
+    build_note_context_from_xml, build_wrap_context_from_xml,
+    extract_column_layout_from_section_property, is_note_reference_run, read_zip_text,
+    scan_column_layouts,
 };
 use self::lists::{
     NumberingMap, TaggedElement, build_numbering_map, extract_num_info, group_into_lists,
@@ -118,6 +119,7 @@ impl Parser for DocxParser {
             column_layouts,
             bidi,
             small_caps,
+            paragraph_containers,
             header_footer_assets,
         ) = {
             let cursor = std::io::Cursor::new(data);
@@ -138,6 +140,8 @@ impl Parser for DocxParser {
                         .unwrap_or_default();
                     let bidi = BidiContext::from_xml(doc_xml.as_deref());
                     let small_caps = SmallCapsContext::from_xml(doc_xml.as_deref());
+                    let paragraph_containers =
+                        ParagraphContainerContext::from_xml(doc_xml.as_deref());
                     let header_footer_assets = build_header_footer_assets(&mut archive);
                     (
                         metadata,
@@ -151,6 +155,7 @@ impl Parser for DocxParser {
                         column_layouts,
                         bidi,
                         small_caps,
+                        paragraph_containers,
                         header_footer_assets,
                     )
                 }
@@ -169,6 +174,7 @@ impl Parser for DocxParser {
                         Vec::new(),
                         BidiContext::from_xml(None),
                         SmallCapsContext::from_xml(None),
+                        ParagraphContainerContext::from_xml(None),
                         HeaderFooterAssets::default(),
                     )
                 }
@@ -205,6 +211,7 @@ impl Parser for DocxParser {
                         &vml_text_boxes,
                         &bidi,
                         &small_caps,
+                        &paragraph_containers,
                     )];
                     // Inject math equations for this body child
                     let eqs = math.take(idx);
@@ -231,6 +238,7 @@ impl Parser for DocxParser {
                         &vml_text_boxes,
                         &bidi,
                         &small_caps,
+                        &paragraph_containers,
                         0,
                     ))])]
                 }
@@ -246,6 +254,7 @@ impl Parser for DocxParser {
                     &vml_text_boxes,
                     &bidi,
                     &small_caps,
+                    &paragraph_containers,
                 ),
                 _ => vec![TaggedElement::Plain(vec![])],
             }));
@@ -328,6 +337,7 @@ fn convert_sdt_children(
     vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
+    paragraph_containers: &ParagraphContainerContext,
 ) -> Vec<TaggedElement> {
     let mut result = Vec::new();
     for child in &sdt.children {
@@ -345,6 +355,7 @@ fn convert_sdt_children(
                     vml_text_boxes,
                     bidi,
                     small_caps,
+                    paragraph_containers,
                 ));
             }
             docx_rs::StructuredDataTagChild::Table(table) => {
@@ -360,6 +371,7 @@ fn convert_sdt_children(
                     vml_text_boxes,
                     bidi,
                     small_caps,
+                    paragraph_containers,
                     0,
                 ))]));
             }
@@ -376,6 +388,7 @@ fn convert_sdt_children(
                     vml_text_boxes,
                     bidi,
                     small_caps,
+                    paragraph_containers,
                 ));
             }
             _ => {}
@@ -399,6 +412,7 @@ fn convert_paragraph_element(
     vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
+    paragraph_containers: &ParagraphContainerContext,
 ) -> TaggedElement {
     let num_info = extract_num_info(para);
 
@@ -417,6 +431,7 @@ fn convert_paragraph_element(
         vml_text_boxes,
         bidi,
         small_caps,
+        paragraph_containers,
     );
 
     match num_info {
@@ -475,9 +490,11 @@ fn convert_paragraph_blocks(
     vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
+    paragraph_containers: &ParagraphContainerContext,
 ) {
     // Check bidi direction for this paragraph (must be called once per XML <w:p>)
     let is_rtl = bidi.next_is_bidi();
+    let container_style = paragraph_containers.next_style();
 
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
@@ -538,6 +555,7 @@ fn convert_paragraph_blocks(
                             vml_text_boxes,
                             bidi,
                             small_caps,
+                            paragraph_containers,
                         ));
                     }
                     if let docx_rs::RunChild::Shape(shape) = run_child {
@@ -564,7 +582,14 @@ fn convert_paragraph_blocks(
                 if !text_box_blocks.is_empty() {
                     if !runs.is_empty() {
                         out.append(&mut inline_images);
-                        push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
+                        push_paragraph_from_runs(
+                            out,
+                            para,
+                            resolved_style,
+                            is_rtl,
+                            container_style.as_ref(),
+                            &mut runs,
+                        );
                     } else if !inline_images.is_empty() {
                         out.append(&mut inline_images);
                     }
@@ -576,7 +601,14 @@ fn convert_paragraph_blocks(
                     // Flush current runs as a paragraph before the column break
                     if !runs.is_empty() {
                         out.append(&mut inline_images);
-                        push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
+                        push_paragraph_from_runs(
+                            out,
+                            para,
+                            resolved_style,
+                            is_rtl,
+                            container_style.as_ref(),
+                            &mut runs,
+                        );
                     }
                     out.push(Block::ColumnBreak);
 
@@ -644,7 +676,14 @@ fn convert_paragraph_blocks(
     out.extend(inline_images);
 
     if !runs.is_empty() || !emitted_text_box_blocks {
-        push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
+        push_paragraph_from_runs(
+            out,
+            para,
+            resolved_style,
+            is_rtl,
+            container_style.as_ref(),
+            &mut runs,
+        );
     }
 }
 
@@ -653,6 +692,7 @@ fn push_paragraph_from_runs(
     para: &docx_rs::Paragraph,
     resolved_style: Option<&ResolvedStyle>,
     is_rtl: bool,
+    container_style: Option<&crate::ir::ParagraphContainerStyle>,
     runs: &mut Vec<Run>,
 ) {
     let explicit_para_style = extract_paragraph_style(&para.property);
@@ -664,6 +704,9 @@ fn push_paragraph_from_runs(
     );
     if is_rtl {
         style.direction = Some(TextDirection::Rtl);
+    }
+    if let Some(container_style) = container_style {
+        style.container = Some(container_style.clone());
     }
     out.push(Block::Paragraph(Paragraph {
         style,
@@ -736,6 +779,7 @@ fn extract_doc_default_paragraph_style(styles: &docx_rs::Styles) -> ParagraphSty
             .and_then(json_bool_or_val)
             .and_then(|is_rtl| is_rtl.then_some(TextDirection::Rtl)),
         tab_stops: None,
+        container: None,
     }
 }
 

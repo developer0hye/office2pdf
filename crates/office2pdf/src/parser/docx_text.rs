@@ -27,6 +27,7 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         heading_level: None,
         direction: None,
         tab_stops,
+        container: None,
     }
 }
 
@@ -144,7 +145,9 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
         Option<String>,
         Option<String>,
         Option<String>,
-    ) = rp.get("fonts").map_or((None, None, None, None), extract_font_slots);
+    ) = rp
+        .get("fonts")
+        .map_or((None, None, None, None), extract_font_slots);
     let font_family: Option<String> = font_family_ascii
         .clone()
         .or_else(|| font_family_hansi.clone())
@@ -186,7 +189,9 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
     }
 }
 
-fn extract_font_slots(fonts: &serde_json::Value) -> (
+fn extract_font_slots(
+    fonts: &serde_json::Value,
+) -> (
     Option<String>,
     Option<String>,
     Option<String>,

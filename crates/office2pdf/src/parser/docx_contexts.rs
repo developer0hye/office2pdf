@@ -2,12 +2,16 @@ use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek};
 
+use quick_xml::events::BytesStart;
+
 use crate::ir::{
-    Block, Chart, ColumnLayout, MathEquation, Paragraph, ParagraphStyle, Run, TextStyle, WrapMode,
+    Block, BorderLineStyle, Chart, Color, ColumnLayout, Insets, MathEquation, Paragraph,
+    ParagraphBorder, ParagraphBorderSide, ParagraphContainerStyle, ParagraphStyle, Run, TextStyle,
+    WrapMode,
 };
 use crate::parser::{chart, omml};
 
-use super::{emu_to_pt, extract_run_text};
+use super::{emu_to_pt, extract_run_text, parse_hex_color};
 
 // ── Footnote / Endnote support ──────────────────────────────────────────
 
@@ -757,6 +761,275 @@ impl SmallCapsContext {
     }
 }
 
+#[derive(Default)]
+struct ParagraphContainerAccumulator {
+    background: Option<Color>,
+    top: Option<ParagraphBorderSide>,
+    bottom: Option<ParagraphBorderSide>,
+    left: Option<ParagraphBorderSide>,
+    right: Option<ParagraphBorderSide>,
+    padding_top: Option<f64>,
+    padding_right: Option<f64>,
+    padding_bottom: Option<f64>,
+    padding_left: Option<f64>,
+}
+
+impl ParagraphContainerAccumulator {
+    fn set_background(&mut self, element: &BytesStart<'_>) {
+        let Some(fill) = xml_attr(element, b"fill") else {
+            return;
+        };
+        if fill.eq_ignore_ascii_case("auto") || fill.eq_ignore_ascii_case("none") {
+            return;
+        }
+        if let Some(color) = parse_hex_color(&fill) {
+            self.background = Some(color);
+        }
+    }
+
+    fn set_border_side(&mut self, side_name: &[u8], element: &BytesStart<'_>) {
+        let Some((side, padding)) = parse_paragraph_border_side(element) else {
+            return;
+        };
+
+        match side_name {
+            b"top" => {
+                self.top = Some(side);
+                if let Some(padding) = padding {
+                    self.padding_top = Some(padding);
+                }
+            }
+            b"bottom" => {
+                self.bottom = Some(side);
+                if let Some(padding) = padding {
+                    self.padding_bottom = Some(padding);
+                }
+            }
+            b"left" => {
+                self.left = Some(side);
+                if let Some(padding) = padding {
+                    self.padding_left = Some(padding);
+                }
+            }
+            b"right" => {
+                self.right = Some(side);
+                if let Some(padding) = padding {
+                    self.padding_right = Some(padding);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn into_style(self) -> Option<ParagraphContainerStyle> {
+        let border = if self.top.is_some()
+            || self.bottom.is_some()
+            || self.left.is_some()
+            || self.right.is_some()
+        {
+            Some(ParagraphBorder {
+                top: self.top,
+                bottom: self.bottom,
+                left: self.left,
+                right: self.right,
+            })
+        } else {
+            None
+        };
+
+        let padding = if self.padding_top.is_some()
+            || self.padding_right.is_some()
+            || self.padding_bottom.is_some()
+            || self.padding_left.is_some()
+        {
+            Some(Insets {
+                top: self.padding_top.unwrap_or(0.0),
+                right: self.padding_right.unwrap_or(0.0),
+                bottom: self.padding_bottom.unwrap_or(0.0),
+                left: self.padding_left.unwrap_or(0.0),
+            })
+        } else {
+            None
+        };
+
+        if self.background.is_none() && border.is_none() && padding.is_none() {
+            None
+        } else {
+            Some(ParagraphContainerStyle {
+                background: self.background,
+                border,
+                padding,
+            })
+        }
+    }
+}
+
+pub(super) struct ParagraphContainerContext {
+    styles: Vec<Option<ParagraphContainerStyle>>,
+    cursor: Cell<usize>,
+}
+
+impl ParagraphContainerContext {
+    pub(super) fn from_xml(xml: Option<&str>) -> Self {
+        let styles = xml.map(Self::scan).unwrap_or_default();
+        Self {
+            styles,
+            cursor: Cell::new(0),
+        }
+    }
+
+    pub(super) fn next_style(&self) -> Option<ParagraphContainerStyle> {
+        let index = self.cursor.get();
+        self.cursor.set(index + 1);
+        self.styles.get(index).cloned().flatten()
+    }
+
+    fn scan(xml: &str) -> Vec<Option<ParagraphContainerStyle>> {
+        let mut reader = quick_xml::Reader::from_str(xml);
+        let mut buffer: Vec<u8> = Vec::new();
+        let mut styles: Vec<Option<ParagraphContainerStyle>> = Vec::new();
+        let mut paragraph_stack: Vec<(usize, ParagraphContainerAccumulator)> = Vec::new();
+        let mut in_body = false;
+        let mut paragraph_property_depth: usize = 0;
+        let mut paragraph_border_depth: usize = 0;
+
+        loop {
+            match reader.read_event_into(&mut buffer) {
+                Ok(quick_xml::events::Event::Start(ref element)) => {
+                    match element.local_name().as_ref() {
+                        b"body" => in_body = true,
+                        b"p" if in_body => {
+                            let index = styles.len();
+                            styles.push(None);
+                            paragraph_stack.push((index, ParagraphContainerAccumulator::default()));
+                        }
+                        b"pPr" if in_body && !paragraph_stack.is_empty() => {
+                            paragraph_property_depth += 1;
+                        }
+                        b"pBdr" if paragraph_property_depth > 0 && !paragraph_stack.is_empty() => {
+                            paragraph_border_depth += 1;
+                        }
+                        b"shd" if paragraph_property_depth > 0 => {
+                            if let Some((_, paragraph)) = paragraph_stack.last_mut() {
+                                paragraph.set_background(element);
+                            }
+                        }
+                        b"top" | b"bottom" | b"left" | b"right" if paragraph_border_depth > 0 => {
+                            if let Some((_, paragraph)) = paragraph_stack.last_mut() {
+                                paragraph.set_border_side(element.local_name().as_ref(), element);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                Ok(quick_xml::events::Event::Empty(ref element)) => {
+                    match element.local_name().as_ref() {
+                        b"p" if in_body => styles.push(None),
+                        b"pPr" if in_body && !paragraph_stack.is_empty() => {
+                            paragraph_property_depth += 1;
+                            paragraph_property_depth -= 1;
+                        }
+                        b"pBdr" if paragraph_property_depth > 0 && !paragraph_stack.is_empty() => {
+                            paragraph_border_depth += 1;
+                            paragraph_border_depth -= 1;
+                        }
+                        b"shd" if paragraph_property_depth > 0 => {
+                            if let Some((_, paragraph)) = paragraph_stack.last_mut() {
+                                paragraph.set_background(element);
+                            }
+                        }
+                        b"top" | b"bottom" | b"left" | b"right" if paragraph_border_depth > 0 => {
+                            if let Some((_, paragraph)) = paragraph_stack.last_mut() {
+                                paragraph.set_border_side(element.local_name().as_ref(), element);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                Ok(quick_xml::events::Event::End(ref element)) => {
+                    match element.local_name().as_ref() {
+                        b"body" => in_body = false,
+                        b"pPr" => {
+                            paragraph_property_depth = paragraph_property_depth.saturating_sub(1)
+                        }
+                        b"pBdr" => {
+                            paragraph_border_depth = paragraph_border_depth.saturating_sub(1)
+                        }
+                        b"p" if in_body => {
+                            if let Some((index, paragraph)) = paragraph_stack.pop() {
+                                styles[index] = paragraph.into_style();
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                Ok(quick_xml::events::Event::Eof) => break,
+                Err(_) => break,
+                _ => {}
+            }
+            buffer.clear();
+        }
+
+        styles
+    }
+}
+
+fn xml_attr(element: &BytesStart<'_>, name: &[u8]) -> Option<String> {
+    element
+        .attributes()
+        .flatten()
+        .find(|attribute| attribute.key.local_name().as_ref() == name)
+        .and_then(|attribute| attribute.unescape_value().ok())
+        .map(|value| value.into_owned())
+}
+
+fn parse_paragraph_border_side(
+    element: &BytesStart<'_>,
+) -> Option<(ParagraphBorderSide, Option<f64>)> {
+    let border_type = xml_attr(element, b"val").unwrap_or_else(|| "single".to_string());
+    if matches!(border_type.as_str(), "none" | "nil") {
+        return None;
+    }
+
+    let width = xml_attr(element, b"sz")
+        .and_then(|value| value.parse::<f64>().ok())
+        .filter(|value| *value > 0.0)?
+        / 8.0;
+    let padding = xml_attr(element, b"space").and_then(|value| value.parse::<f64>().ok());
+    let color = xml_attr(element, b"color")
+        .filter(|value| !value.eq_ignore_ascii_case("auto"))
+        .as_deref()
+        .and_then(parse_hex_color)
+        .unwrap_or(Color::black());
+    let style = match border_type.as_str() {
+        "dashed" | "dashSmallGap" => BorderLineStyle::Dashed,
+        "dotted" => BorderLineStyle::Dotted,
+        "dashDotStroked" | "dotDash" => BorderLineStyle::DashDot,
+        "dotDotDash" => BorderLineStyle::DashDotDot,
+        "double"
+        | "thinThickSmallGap"
+        | "thickThinSmallGap"
+        | "thinThickMediumGap"
+        | "thickThinMediumGap"
+        | "thinThickLargeGap"
+        | "thickThinLargeGap"
+        | "thinThickThinSmallGap"
+        | "thinThickThinMediumGap"
+        | "thinThickThinLargeGap"
+        | "triple" => BorderLineStyle::Double,
+        _ => BorderLineStyle::Solid,
+    };
+
+    Some((
+        ParagraphBorderSide {
+            width,
+            color,
+            style,
+        },
+        padding,
+    ))
+}
+
 pub(super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayout>> {
     let mut reader = quick_xml::Reader::from_str(xml);
     let mut layouts: Vec<Option<ColumnLayout>> = Vec::new();
@@ -1109,4 +1382,63 @@ pub(super) fn is_note_reference_run(run: &docx_rs::Run, notes: &NoteContext) -> 
         return extract_run_text(run).is_empty();
     }
     false
+}
+
+#[cfg(test)]
+mod paragraph_container_tests {
+    use super::ParagraphContainerContext;
+    use crate::ir::{BorderLineStyle, Color, Insets, ParagraphBorderSide};
+
+    #[test]
+    fn test_paragraph_container_context_extracts_background_border_and_padding() {
+        let xml = r#"
+            <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+              <w:body>
+                <w:p>
+                  <w:r><w:t>Plain</w:t></w:r>
+                </w:p>
+                <w:p>
+                  <w:pPr>
+                    <w:pBdr>
+                      <w:top w:val="single" w:sz="6" w:space="10" w:color="E1E4E8"/>
+                      <w:left w:val="single" w:sz="6" w:space="10" w:color="E1E4E8"/>
+                      <w:bottom w:val="single" w:sz="6" w:space="10" w:color="E1E4E8"/>
+                      <w:right w:val="single" w:sz="6" w:space="10" w:color="E1E4E8"/>
+                    </w:pBdr>
+                    <w:shd w:fill="F6F8FA"/>
+                  </w:pPr>
+                  <w:r><w:t>Code</w:t></w:r>
+                </w:p>
+              </w:body>
+            </w:document>
+        "#;
+
+        let context = ParagraphContainerContext::from_xml(Some(xml));
+        assert_eq!(context.next_style(), None);
+
+        let container = context
+            .next_style()
+            .expect("second paragraph should produce a container style");
+        assert_eq!(container.background, Some(Color::new(246, 248, 250)));
+        assert_eq!(
+            container.padding,
+            Some(Insets {
+                top: 10.0,
+                right: 10.0,
+                bottom: 10.0,
+                left: 10.0,
+            })
+        );
+
+        let border = container.border.expect("expected paragraph border");
+        let expected_side = ParagraphBorderSide {
+            width: 0.75,
+            color: Color::new(225, 228, 232),
+            style: BorderLineStyle::Solid,
+        };
+        assert_eq!(border.top, Some(expected_side.clone()));
+        assert_eq!(border.right, Some(expected_side.clone()));
+        assert_eq!(border.bottom, Some(expected_side.clone()));
+        assert_eq!(border.left, Some(expected_side));
+    }
 }

@@ -3,6 +3,7 @@ use std::fmt::Write;
 
 use unicode_normalization::UnicodeNormalization;
 
+use crate::ir::{ParagraphBorder, ParagraphBorderSide};
 use crate::render::font_subst;
 
 use super::*;
@@ -16,6 +17,7 @@ const WORD_SINGLE_LINE_HEIGHT_EM: f64 = 1.2;
 pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
     let style = &para.style;
     let has_para_style = needs_block_wrapper(style);
+    let has_outer_pad = write_container_indent_wrapper_start(out, style);
     let needs_inline_justify: bool =
         !has_para_style && matches!(style.alignment, Some(Alignment::Justify));
     let needs_inline_rtl: bool =
@@ -73,6 +75,7 @@ pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(
     if has_para_style {
         out.push_str("\n]");
     }
+    write_container_indent_wrapper_end(out, has_outer_pad);
 
     out.push('\n');
     Ok(())
@@ -82,13 +85,38 @@ pub(super) fn needs_block_wrapper(style: &ParagraphStyle) -> bool {
     style.space_before.is_some()
         || style.space_after.is_some()
         || style.line_spacing.is_some()
+        || style.container.is_some()
 }
 
-pub(super) fn write_block_params(
+pub(super) fn write_container_indent_wrapper_start(
     out: &mut String,
     style: &ParagraphStyle,
-    runs: Option<&[Run]>,
-) {
+) -> bool {
+    let left = style.indent_left.filter(|value| value.abs() > 0.0001);
+    let right = style.indent_right.filter(|value| value.abs() > 0.0001);
+    if style.container.is_none() || (left.is_none() && right.is_none()) {
+        return false;
+    }
+
+    out.push_str("#pad(");
+    let mut first = true;
+    if let Some(left) = left {
+        write_param(out, &mut first, &format!("left: {}pt", format_f64(left)));
+    }
+    if let Some(right) = right {
+        write_param(out, &mut first, &format!("right: {}pt", format_f64(right)));
+    }
+    out.push_str(")[\n");
+    true
+}
+
+pub(super) fn write_container_indent_wrapper_end(out: &mut String, has_wrapper: bool) {
+    if has_wrapper {
+        out.push_str("\n]");
+    }
+}
+
+pub(super) fn write_block_params(out: &mut String, style: &ParagraphStyle, runs: Option<&[Run]>) {
     let mut first = true;
     let line_gap_pt = paragraph_leading_pt(style, runs).filter(|gap| *gap > 0.0);
 
@@ -99,13 +127,67 @@ pub(super) fn write_block_params(
         let below = style.space_after.unwrap_or(0.0) + line_gap_pt.unwrap_or(0.0);
         write_param(out, &mut first, &format!("below: {}pt", format_f64(below)));
     }
+    if let Some(container) = style.container.as_ref() {
+        write_param(out, &mut first, "width: 100%");
+        if let Some(background) = container.background {
+            write_param(out, &mut first, &format_color(&background));
+        }
+        if let Some(border) = container.border.as_ref()
+            && let Some(stroke) = format_paragraph_border(border)
+        {
+            write_param(out, &mut first, &stroke);
+        }
+        if let Some(inset) = container.padding.as_ref() {
+            write_param(out, &mut first, &format!("inset: {}", format_insets(inset)));
+        }
+    }
 }
 
-pub(super) fn write_par_settings(
-    out: &mut String,
-    style: &ParagraphStyle,
-    runs: Option<&[Run]>,
-) {
+fn format_paragraph_border(border: &ParagraphBorder) -> Option<String> {
+    let mut parts: Vec<String> = Vec::new();
+
+    if let Some(ref side) = border.top {
+        parts.push(format!("top: {}", format_paragraph_border_side(side)));
+    }
+    if let Some(ref side) = border.right {
+        parts.push(format!("right: {}", format_paragraph_border_side(side)));
+    }
+    if let Some(ref side) = border.bottom {
+        parts.push(format!("bottom: {}", format_paragraph_border_side(side)));
+    }
+    if let Some(ref side) = border.left {
+        parts.push(format!("left: {}", format_paragraph_border_side(side)));
+    }
+
+    if parts.is_empty() {
+        None
+    } else {
+        Some(format!("stroke: ({})", parts.join(", ")))
+    }
+}
+
+fn format_paragraph_border_side(side: &ParagraphBorderSide) -> String {
+    let base = format!(
+        "{}pt + rgb({}, {}, {})",
+        format_f64(side.width),
+        side.color.r,
+        side.color.g,
+        side.color.b,
+    );
+    match side.style {
+        BorderLineStyle::Solid | BorderLineStyle::None => base,
+        _ => format!(
+            "(paint: rgb({}, {}, {}), thickness: {}pt, dash: \"{}\")",
+            side.color.r,
+            side.color.g,
+            side.color.b,
+            format_f64(side.width),
+            border_line_style_to_typst(side.style),
+        ),
+    }
+}
+
+pub(super) fn write_par_settings(out: &mut String, style: &ParagraphStyle, runs: Option<&[Run]>) {
     if let Some(leading_pt) = paragraph_leading_pt(style, runs) {
         let _ = writeln!(out, "  #set par(leading: {}pt)", format_f64(leading_pt));
     }
@@ -119,8 +201,12 @@ pub(super) fn write_par_settings(
 
 pub(super) fn paragraph_leading_pt(style: &ParagraphStyle, runs: Option<&[Run]>) -> Option<f64> {
     match style.line_spacing {
-        Some(LineSpacing::Proportional(factor)) => proportional_line_spacing_leading_pt(factor, runs),
-        Some(LineSpacing::Exact(line_height_pt)) => exact_line_spacing_leading_pt(line_height_pt, runs),
+        Some(LineSpacing::Proportional(factor)) => {
+            proportional_line_spacing_leading_pt(factor, runs)
+        }
+        Some(LineSpacing::Exact(line_height_pt)) => {
+            exact_line_spacing_leading_pt(line_height_pt, runs)
+        }
         None => None,
     }
 }

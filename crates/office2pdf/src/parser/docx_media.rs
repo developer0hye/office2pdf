@@ -1,8 +1,8 @@
 use super::{
     BidiContext, Block, DrawingTextBoxContext, DrawingTextBoxInfo, FloatingImage, FloatingTextBox,
-    HyperlinkMap, ImageData, ImageFormat, ImageMap, NoteContext, SmallCapsContext, StyleMap,
-    TableHeaderContext, VmlTextBoxContext, VmlTextBoxInfo, WrapContext, convert_paragraph_blocks,
-    convert_table,
+    HyperlinkMap, ImageData, ImageFormat, ImageMap, NoteContext, ParagraphContainerContext,
+    SmallCapsContext, StyleMap, TableHeaderContext, VmlTextBoxContext, VmlTextBoxInfo, WrapContext,
+    convert_paragraph_blocks, convert_table,
 };
 
 fn emu_to_pt(emu: u32) -> f64 {
@@ -205,6 +205,7 @@ pub(super) fn extract_drawing_text_box_blocks(
     vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
+    paragraph_containers: &ParagraphContainerContext,
 ) -> Vec<Block> {
     let Some(docx_rs::DrawingData::TextBox(text_box)) = &drawing.data else {
         return Vec::new();
@@ -227,6 +228,7 @@ pub(super) fn extract_drawing_text_box_blocks(
                 vml_text_boxes,
                 bidi,
                 small_caps,
+                paragraph_containers,
             ),
             docx_rs::TextBoxContentChild::Table(table) => {
                 blocks.push(Block::Table(convert_table(
@@ -241,6 +243,7 @@ pub(super) fn extract_drawing_text_box_blocks(
                     vml_text_boxes,
                     bidi,
                     small_caps,
+                    paragraph_containers,
                     0,
                 )));
             }

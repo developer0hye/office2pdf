@@ -1270,6 +1270,7 @@ fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(
     let style: &ParagraphStyle = &para.style;
     let needs_text_scope: bool = common_text_style(&para.runs).is_some();
     let has_para_style: bool = needs_block_wrapper(style) || needs_text_scope;
+    let has_outer_pad = write_container_indent_wrapper_start(out, style);
     let needs_inline_justify: bool =
         !has_para_style && matches!(style.alignment, Some(Alignment::Justify));
     let needs_inline_rtl: bool =
@@ -1323,6 +1324,7 @@ fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(
     if has_para_style {
         out.push_str("\n]");
     }
+    write_container_indent_wrapper_end(out, has_outer_pad);
 
     out.push('\n');
     Ok(())

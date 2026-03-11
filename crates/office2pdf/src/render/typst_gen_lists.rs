@@ -784,6 +784,7 @@ fn generate_list_item_paragraphs(out: &mut String, paragraphs: &[Paragraph]) {
 fn generate_list_item_paragraph(out: &mut String, paragraph: &Paragraph) {
     let style = &paragraph.style;
     let has_para_style = needs_block_wrapper(style);
+    let has_outer_pad = write_container_indent_wrapper_start(out, style);
     let needs_inline_justify: bool =
         !has_para_style && matches!(style.alignment, Some(Alignment::Justify));
     let needs_inline_rtl: bool =
@@ -853,4 +854,5 @@ fn generate_list_item_paragraph(out: &mut String, paragraph: &Paragraph) {
     if has_para_style {
         out.push_str("\n]");
     }
+    write_container_indent_wrapper_end(out, has_outer_pad);
 }

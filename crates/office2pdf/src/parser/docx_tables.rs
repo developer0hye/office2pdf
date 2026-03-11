@@ -1,8 +1,8 @@
 use super::{
     Alignment, BidiContext, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign,
     Color, DrawingTextBoxContext, HyperlinkMap, ImageMap, Insets, MAX_TABLE_DEPTH, NoteContext,
-    SmallCapsContext, StyleMap, Table, TableCell, TableHeaderContext, TableRow, VmlTextBoxContext,
-    WrapContext, convert_paragraph_blocks, parse_hex_color,
+    ParagraphContainerContext, SmallCapsContext, StyleMap, Table, TableCell, TableHeaderContext,
+    TableRow, VmlTextBoxContext, WrapContext, convert_paragraph_blocks, parse_hex_color,
 };
 
 #[derive(Clone)]
@@ -175,6 +175,7 @@ pub(super) fn convert_table(
     vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
+    paragraph_containers: &ParagraphContainerContext,
     depth: usize,
 ) -> Table {
     let header_info = table_headers.consume_next();
@@ -194,6 +195,7 @@ pub(super) fn convert_table(
         vml_text_boxes,
         bidi,
         small_caps,
+        paragraph_containers,
         depth,
         default_cell_padding,
     );
@@ -254,6 +256,7 @@ fn extract_raw_rows(
     vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
+    paragraph_containers: &ParagraphContainerContext,
     depth: usize,
     default_cell_padding: Option<Insets>,
 ) -> Vec<RawRow> {
@@ -299,6 +302,7 @@ fn extract_raw_rows(
                 vml_text_boxes,
                 bidi,
                 small_caps,
+                paragraph_containers,
                 depth,
             );
             let border = prop_json
@@ -460,6 +464,7 @@ fn extract_cell_content(
     vml_text_boxes: &VmlTextBoxContext,
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
+    paragraph_containers: &ParagraphContainerContext,
     depth: usize,
 ) -> Vec<Block> {
     let mut blocks: Vec<Block> = Vec::new();
@@ -479,6 +484,7 @@ fn extract_cell_content(
                     vml_text_boxes,
                     bidi,
                     small_caps,
+                    paragraph_containers,
                 );
             }
             docx_rs::TableCellContent::Table(nested_table) => {
@@ -495,6 +501,7 @@ fn extract_cell_content(
                         vml_text_boxes,
                         bidi,
                         small_caps,
+                        paragraph_containers,
                         depth + 1,
                     )));
                 }

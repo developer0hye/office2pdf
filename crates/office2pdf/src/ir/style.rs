@@ -1,3 +1,5 @@
+use super::elements::{BorderLineStyle, Insets};
+
 /// Collection of named styles in the document.
 #[derive(Debug, Clone, Default)]
 pub struct StyleSheet {
@@ -30,6 +32,33 @@ pub struct ParagraphStyle {
     pub direction: Option<TextDirection>,
     /// Custom tab stop positions for this paragraph.
     pub tab_stops: Option<Vec<TabStop>>,
+    /// Visual container styling such as borders/backgrounds used by callouts and code blocks.
+    pub container: Option<ParagraphContainerStyle>,
+}
+
+/// Paragraph container styling derived from paragraph-level DOCX properties.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParagraphContainerStyle {
+    pub background: Option<Color>,
+    pub border: Option<ParagraphBorder>,
+    pub padding: Option<Insets>,
+}
+
+/// Paragraph border specification.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParagraphBorder {
+    pub top: Option<ParagraphBorderSide>,
+    pub bottom: Option<ParagraphBorderSide>,
+    pub left: Option<ParagraphBorderSide>,
+    pub right: Option<ParagraphBorderSide>,
+}
+
+/// A single paragraph border side.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParagraphBorderSide {
+    pub width: f64,
+    pub color: Color,
+    pub style: BorderLineStyle,
 }
 
 /// A custom tab stop definition.
