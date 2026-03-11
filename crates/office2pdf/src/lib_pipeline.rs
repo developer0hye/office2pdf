@@ -220,7 +220,7 @@ fn convert_bytes_streaming_xlsx(
     let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         xlsx_parser.parse_streaming(data, options, chunk_size)
     }));
-    let (chunk_docs, mut warnings) = match parse_result {
+    let (chunk_docs, warnings) = match parse_result {
         Ok(result) => result?,
         Err(panic_info) => {
             return Err(ConvertError::Parse(format!(
