@@ -297,12 +297,7 @@ fn generate_flow_page(
     if let Some(ref cols) = page.columns {
         generate_flow_page_columns(out, &page.content, cols, ctx)?;
     } else {
-        for (i, block) in page.content.iter().enumerate() {
-            if i > 0 {
-                out.push('\n');
-            }
-            generate_block(out, block, ctx)?;
-        }
+        generate_blocks(out, &page.content, ctx)?;
     }
     Ok(())
 }
@@ -352,12 +347,7 @@ fn generate_flow_page_columns(
             cols.num_columns,
             format_f64(cols.spacing)
         );
-        for (i, block) in content.iter().enumerate() {
-            if i > 0 {
-                out.push('\n');
-            }
-            generate_block(out, block, ctx)?;
-        }
+        generate_blocks(out, content, ctx)?;
         out.push_str("\n]\n");
     }
     Ok(())
@@ -1017,6 +1007,21 @@ fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
             out.push(']');
         }
     }
+}
+
+/// Generate Typst markup for a sequence of blocks, separating each with a newline.
+fn generate_blocks(
+    out: &mut String,
+    blocks: &[Block],
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    for (i, block) in blocks.iter().enumerate() {
+        if i > 0 {
+            out.push('\n');
+        }
+        generate_block(out, block, ctx)?;
+    }
+    Ok(())
 }
 
 fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(), ConvertError> {
