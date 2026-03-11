@@ -9,7 +9,7 @@ mod common;
 use std::path::PathBuf;
 
 use office2pdf::config::ConvertOptions;
-use office2pdf::ir::{Block, Page, TablePage};
+use office2pdf::ir::{Block, Page, SheetPage};
 use office2pdf::parser::Parser;
 use office2pdf::parser::xlsx::XlsxParser;
 
@@ -45,28 +45,28 @@ fn assert_produces_valid_pdf(name: &str) {
     }
 }
 
-/// Parse an XLSX fixture and return the table pages (sheets).
-fn table_pages(name: &str) -> Vec<TablePage> {
+/// Parse an XLSX fixture and return the sheet pages.
+fn sheet_pages(name: &str) -> Vec<SheetPage> {
     let data = load_fixture(name);
     let (doc, _warnings) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
     doc.pages
         .into_iter()
         .filter_map(|p| match p {
-            Page::Table(tp) => Some(tp),
+            Page::Sheet(sp) => Some(sp),
             _ => None,
         })
         .collect()
 }
 
-fn sheet_names(pages: &[TablePage]) -> Vec<&str> {
+fn sheet_names(pages: &[SheetPage]) -> Vec<&str> {
     pages.iter().map(|p| p.name.as_str()).collect()
 }
 
-fn total_rows(pages: &[TablePage]) -> usize {
+fn total_rows(pages: &[SheetPage]) -> usize {
     pages.iter().map(|p| p.table.rows.len()).sum()
 }
 
-fn has_cell_border(pages: &[TablePage]) -> bool {
+fn has_cell_border(pages: &[SheetPage]) -> bool {
     pages.iter().any(|p| {
         p.table
             .rows
@@ -76,7 +76,7 @@ fn has_cell_border(pages: &[TablePage]) -> bool {
     })
 }
 
-fn has_merged_cells(pages: &[TablePage]) -> bool {
+fn has_merged_cells(pages: &[SheetPage]) -> bool {
     pages.iter().any(|p| {
         p.table
             .rows
@@ -86,7 +86,7 @@ fn has_merged_cells(pages: &[TablePage]) -> bool {
     })
 }
 
-fn has_formatted_text(pages: &[TablePage]) -> bool {
+fn has_formatted_text(pages: &[SheetPage]) -> bool {
     pages.iter().any(|p| {
         p.table.rows.iter().flat_map(|r| r.cells.iter()).any(|c| {
             c.content.iter().any(|b| match b {
@@ -114,7 +114,7 @@ fn smoke_any_sheets() {
 fn structure_any_sheets() {
     // any_sheets.xlsx has 4 sheets: Visible, Hidden, VeryHidden, Chart.
     // Parser only returns visible data worksheets (not hidden/chart sheets).
-    let pages = table_pages("any_sheets.xlsx");
+    let pages = sheet_pages("any_sheets.xlsx");
     assert!(!pages.is_empty(), "should have at least one visible sheet");
     let names = sheet_names(&pages);
     assert!(
@@ -134,7 +134,7 @@ fn smoke_date() {
 
 #[test]
 fn structure_date() {
-    let pages = table_pages("date.xlsx");
+    let pages = sheet_pages("date.xlsx");
     assert!(!pages.is_empty(), "should have at least one sheet");
     assert!(total_rows(&pages) > 0, "should have data rows");
 }
@@ -150,7 +150,7 @@ fn smoke_merge_cells() {
 
 #[test]
 fn structure_merge_cells() {
-    let pages = table_pages("merge_cells.xlsx");
+    let pages = sheet_pages("merge_cells.xlsx");
     assert!(
         has_merged_cells(&pages),
         "should have cells with col_span > 1 or row_span > 1"
@@ -168,7 +168,7 @@ fn smoke_sh001_table() {
 
 #[test]
 fn structure_sh001_table() {
-    let pages = table_pages("SH001-Table.xlsx");
+    let pages = sheet_pages("SH001-Table.xlsx");
     assert!(!pages.is_empty(), "should have at least one sheet");
     assert!(total_rows(&pages) > 0, "should have data rows");
 }
@@ -184,7 +184,7 @@ fn smoke_sh002_two_tables_two_sheets() {
 
 #[test]
 fn structure_sh002_two_tables_two_sheets() {
-    let pages = table_pages("SH002-TwoTablesTwoSheets.xlsx");
+    let pages = sheet_pages("SH002-TwoTablesTwoSheets.xlsx");
     assert!(pages.len() >= 2, "should have >= 2 sheets");
     let names = sheet_names(&pages);
     let unique: std::collections::HashSet<_> = names.iter().collect();
@@ -202,7 +202,7 @@ fn smoke_sh106_formatted() {
 
 #[test]
 fn structure_sh106_formatted() {
-    let pages = table_pages("SH106-Formatted.xlsx");
+    let pages = sheet_pages("SH106-Formatted.xlsx");
     assert!(
         has_formatted_text(&pages),
         "should have formatted text (bold/italic/color)"
@@ -220,7 +220,7 @@ fn smoke_sh109_cell_with_border() {
 
 #[test]
 fn structure_sh109_cell_with_border() {
-    let pages = table_pages("SH109-CellWithBorder.xlsx");
+    let pages = sheet_pages("SH109-CellWithBorder.xlsx");
     assert!(has_cell_border(&pages), "should have cells with borders");
 }
 
@@ -235,7 +235,7 @@ fn smoke_temperature() {
 
 #[test]
 fn structure_temperature() {
-    let pages = table_pages("temperature.xlsx");
+    let pages = sheet_pages("temperature.xlsx");
     assert!(!pages.is_empty(), "should have at least one sheet");
     assert!(total_rows(&pages) > 0, "should have data rows");
 }

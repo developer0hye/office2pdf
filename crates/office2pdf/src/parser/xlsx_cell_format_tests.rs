@@ -26,7 +26,7 @@ fn test_merge_colspan_basic() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(
         tp.table.rows[0].cells.len(),
         1,
@@ -43,7 +43,7 @@ fn test_merge_rowspan_basic() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows[0].cells.len(), 1);
     assert_eq!(tp.table.rows[0].cells[0].row_span, 2);
     assert_eq!(tp.table.rows[0].cells[0].col_span, 1);
@@ -61,7 +61,7 @@ fn test_merge_colspan_and_rowspan() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows[0].cells.len(), 2);
     assert_eq!(tp.table.rows[0].cells[0].col_span, 2);
     assert_eq!(tp.table.rows[0].cells[0].row_span, 2);
@@ -81,7 +81,7 @@ fn test_merge_content_in_top_left_only() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows[0].cells.len(), 1);
     assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "TopLeft");
 }
@@ -96,7 +96,7 @@ fn test_merge_multiple_ranges() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows[0].cells.len(), 1);
     assert_eq!(tp.table.rows[0].cells[0].col_span, 2);
     assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Wide");
@@ -114,7 +114,7 @@ fn test_merge_no_merges_unchanged() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows[0].cells.len(), 2);
     for cell in &tp.table.rows[0].cells {
         assert_eq!(cell.col_span, 1);
@@ -128,7 +128,7 @@ fn test_merge_wide_colspan() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.rows[0].cells.len(), 1);
     assert_eq!(tp.table.rows[0].cells[0].col_span, 4);
     assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "Title");
@@ -159,7 +159,7 @@ fn test_cell_bold_text() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let style = first_run_style(&tp.table.rows[0].cells[0]);
     assert_eq!(style.bold, Some(true));
 }
@@ -174,7 +174,7 @@ fn test_cell_italic_text() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let style = first_run_style(&tp.table.rows[0].cells[0]);
     assert_eq!(style.italic, Some(true));
 }
@@ -192,7 +192,7 @@ fn test_cell_font_color() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let style = first_run_style(&tp.table.rows[0].cells[0]);
     assert_eq!(style.color, Some(Color::new(255, 0, 0)));
 }
@@ -209,7 +209,7 @@ fn test_cell_font_name_and_size() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let style = first_run_style(&tp.table.rows[0].cells[0]);
     assert_eq!(style.font_family.as_deref(), Some("Arial"));
     assert_eq!(style.font_size, Some(14.0));
@@ -225,7 +225,7 @@ fn test_cell_background_fill() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let cell = &tp.table.rows[0].cells[0];
     assert_eq!(cell.background, Some(Color::new(255, 255, 0)));
 }
@@ -251,7 +251,7 @@ fn test_cell_borders() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let cell = &tp.table.rows[0].cells[0];
     let border = cell.border.as_ref().expect("Expected border");
     let bottom = border.bottom.as_ref().expect("Expected bottom border");
@@ -291,7 +291,7 @@ fn test_cell_border_styles() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let cell = &tp.table.rows[0].cells[0];
     let border = cell.border.as_ref().expect("Expected border");
 
@@ -334,7 +334,7 @@ fn test_cell_border_medium_dashed() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let cell = &tp.table.rows[0].cells[0];
     let border = cell.border.as_ref().expect("Expected border");
     let top = border.top.as_ref().expect("Expected top border");
@@ -351,7 +351,7 @@ fn test_row_height() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let row = &tp.table.rows[0];
     assert_eq!(row.height, Some(30.0));
 }
@@ -362,7 +362,7 @@ fn test_cell_no_formatting_defaults() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let cell = &tp.table.rows[0].cells[0];
     let style = first_run_style(cell);
     assert!(style.bold.is_none() || style.bold == Some(false));
@@ -385,7 +385,7 @@ fn test_number_format_currency() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let text = cell_text(&tp.table.rows[0].cells[0]);
     assert!(
         text.contains('$') && text.contains("1,234.56"),
@@ -405,7 +405,7 @@ fn test_number_format_percentage() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let text = cell_text(&tp.table.rows[0].cells[0]);
     assert!(
         text.contains('%'),
@@ -425,7 +425,7 @@ fn test_number_format_percentage_with_decimals() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let text = cell_text(&tp.table.rows[0].cells[0]);
     assert!(
         text.contains('%') && text.contains("50.00"),
@@ -445,7 +445,7 @@ fn test_number_format_date() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let text = cell_text(&tp.table.rows[0].cells[0]);
     assert!(
         text.contains('-') && !text.contains("45306"),
@@ -465,7 +465,7 @@ fn test_number_format_thousands_separator() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let text = cell_text(&tp.table.rows[0].cells[0]);
     assert_eq!(text, "1,234,567", "Expected thousands separator formatting");
 }
@@ -479,7 +479,7 @@ fn test_number_format_general_unchanged() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(cell_text(&tp.table.rows[0].cells[0]), "42");
     assert_eq!(cell_text(&tp.table.rows[0].cells[1]), "3.14");
 }
@@ -496,7 +496,7 @@ fn test_number_format_builtin_id() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let text = cell_text(&tp.table.rows[0].cells[0]);
     assert!(
         text.contains("1,234") && text.contains("50"),
@@ -516,7 +516,7 @@ fn test_number_format_custom_format_string() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let text = cell_text(&tp.table.rows[0].cells[0]);
     assert_eq!(text, "3.142", "Expected 3 decimal places formatting");
 }
@@ -542,7 +542,7 @@ fn test_cell_combined_formatting() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     let cell = &tp.table.rows[0].cells[0];
     let style = first_run_style(cell);
     assert_eq!(style.bold, Some(true));

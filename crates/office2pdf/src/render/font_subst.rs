@@ -307,7 +307,7 @@ fn collect_document_font_families(doc: &Document) -> BTreeSet<String> {
                     }
                 }
             }
-            Page::Table(page) => {
+            Page::Sheet(page) => {
                 if let Some(header) = &page.header {
                     collect_header_footer_fonts(header, &mut fonts);
                 }
@@ -344,7 +344,7 @@ pub(crate) fn document_requests_font_families(doc: &Document) -> bool {
             | FixedElementKind::SmartArt(_)
             | FixedElementKind::Chart(_) => false,
         }),
-        Page::Table(page) => {
+        Page::Sheet(page) => {
             page.header
                 .as_ref()
                 .is_some_and(header_footer_requests_font_family)

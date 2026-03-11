@@ -362,7 +362,7 @@ fn test_footnote_with_special_chars() {
 
 #[test]
 fn test_table_page_with_header() {
-    let page = Page::Table(TablePage {
+    let page = Page::Sheet(SheetPage {
         name: "Sheet1".to_string(),
         size: PageSize::default(),
         margins: Margins::default(),
@@ -392,7 +392,7 @@ fn test_table_page_with_header() {
 
 #[test]
 fn test_table_page_with_page_number_footer() {
-    let page = Page::Table(TablePage {
+    let page = Page::Sheet(SheetPage {
         name: "Sheet1".to_string(),
         size: PageSize::default(),
         margins: Margins::default(),
@@ -433,7 +433,7 @@ fn test_table_page_with_page_number_footer() {
 
 #[test]
 fn test_table_page_no_header_footer() {
-    let page = Page::Table(TablePage {
+    let page = Page::Sheet(SheetPage {
         name: "Sheet1".to_string(),
         size: PageSize::default(),
         margins: Margins::default(),
@@ -462,7 +462,7 @@ fn test_table_page_with_chart_at_row() {
         }],
     };
 
-    let page = Page::Table(TablePage {
+    let page = Page::Sheet(SheetPage {
         name: "Sheet1".to_string(),
         size: PageSize::default(),
         margins: Margins::default(),
@@ -500,7 +500,7 @@ fn test_table_page_with_chart_at_end() {
         }],
     };
 
-    let page = Page::Table(TablePage {
+    let page = Page::Sheet(SheetPage {
         name: "Sheet1".to_string(),
         size: PageSize::default(),
         margins: Margins::default(),

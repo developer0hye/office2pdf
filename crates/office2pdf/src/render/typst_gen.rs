@@ -10,9 +10,9 @@ use crate::ir::{
     Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
     FloatingTextBox, FlowPage, GradientFill, HFInline, HeaderFooter, ImageCrop, ImageData,
     ImageFormat, Insets, LineSpacing, List, ListKind, Margins, MathEquation, Metadata, Page,
-    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, TabAlignment,
-    TabLeader, TabStop, Table, TableCell, TablePage, TableRow, TextBoxData, TextBoxVerticalAlign,
-    TextDirection, TextStyle, VerticalTextAlign, WrapMode,
+    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt,
+    TabAlignment, TabLeader, TabStop, Table, TableCell, TableRow, TextBoxData,
+    TextBoxVerticalAlign, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
 };
 
 use self::diagrams::{generate_chart, generate_smartart};
@@ -272,8 +272,8 @@ pub(crate) fn generate_typst_with_options_and_font_context(
             match page {
                 Page::Flow(flow) => generate_flow_page(&mut out, flow, &mut ctx, options)?,
                 Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx, options)?,
-                Page::Table(table_page) => {
-                    generate_table_page(&mut out, table_page, &mut ctx, options)?;
+                Page::Sheet(sheet_page) => {
+                    generate_table_page(&mut out, sheet_page, &mut ctx, options)?;
                 }
             }
         }
@@ -411,7 +411,7 @@ fn generate_fixed_page(
 
 fn generate_table_page(
     out: &mut String,
-    page: &TablePage,
+    page: &SheetPage,
     ctx: &mut GenCtx,
     options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
@@ -924,8 +924,8 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize) {
     out.push_str(")\n");
 }
 
-/// Write the full page setup for a TablePage, including optional header/footer.
-fn write_table_page_setup(out: &mut String, page: &TablePage, size: &PageSize) {
+/// Write the full page setup for a SheetPage, including optional header/footer.
+fn write_table_page_setup(out: &mut String, page: &SheetPage, size: &PageSize) {
     if page.header.is_none() && page.footer.is_none() {
         write_page_setup(out, size, &page.margins);
         return;

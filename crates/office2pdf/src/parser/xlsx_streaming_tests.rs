@@ -30,16 +30,16 @@ fn test_parse_streaming_creates_chunks() {
         "5 rows with chunk_size=2 should yield 3 chunks"
     );
 
-    let tp0 = get_table_page(&chunks[0], 0);
+    let tp0 = get_sheet_page(&chunks[0], 0);
     assert_eq!(tp0.table.rows.len(), 2);
     assert_eq!(cell_text(&tp0.table.rows[0].cells[0]), "R1C1");
     assert_eq!(cell_text(&tp0.table.rows[1].cells[0]), "R2C1");
 
-    let tp1 = get_table_page(&chunks[1], 0);
+    let tp1 = get_sheet_page(&chunks[1], 0);
     assert_eq!(tp1.table.rows.len(), 2);
     assert_eq!(cell_text(&tp1.table.rows[0].cells[0]), "R3C1");
 
-    let tp2 = get_table_page(&chunks[2], 0);
+    let tp2 = get_sheet_page(&chunks[2], 0);
     assert_eq!(tp2.table.rows.len(), 1);
     assert_eq!(cell_text(&tp2.table.rows[0].cells[0]), "R5C1");
 }
@@ -57,7 +57,7 @@ fn test_parse_streaming_single_chunk_for_small_sheet() {
         1,
         "3 rows with chunk_size=10 should yield 1 chunk"
     );
-    let tp = get_table_page(&chunks[0], 0);
+    let tp = get_sheet_page(&chunks[0], 0);
     assert_eq!(tp.table.rows.len(), 3);
 }
 
@@ -69,8 +69,8 @@ fn test_parse_streaming_preserves_column_widths() {
         .parse_streaming(&data, &ConvertOptions::default(), 2)
         .unwrap();
 
-    let tp0 = get_table_page(&chunks[0], 0);
-    let tp1 = get_table_page(&chunks[1], 0);
+    let tp0 = get_sheet_page(&chunks[0], 0);
+    let tp1 = get_sheet_page(&chunks[1], 0);
     assert_eq!(tp0.table.column_widths.len(), tp1.table.column_widths.len());
     assert_eq!(tp0.table.column_widths, tp1.table.column_widths);
 }
@@ -89,7 +89,7 @@ fn test_parse_streaming_respects_sheet_filter() {
     let (chunks, _warnings) = parser.parse_streaming(&data, &opts, 10).unwrap();
 
     assert_eq!(chunks.len(), 1, "Only Sheet2 should be included");
-    let tp = get_table_page(&chunks[0], 0);
+    let tp = get_sheet_page(&chunks[0], 0);
     assert_eq!(tp.name, "Sheet2");
 }
 

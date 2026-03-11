@@ -156,11 +156,11 @@ mod fixed_page_tests;
 #[path = "typst_gen_fixed_page_textbox_tests.rs"]
 mod fixed_page_textbox_tests;
 
-// ── TablePage codegen tests ──────────────────────────────────────────
+// ── SheetPage codegen tests ──────────────────────────────────────────
 
-/// Helper to create a TablePage.
-fn make_table_page(name: &str, width: f64, height: f64, margins: Margins, table: Table) -> Page {
-    Page::Table(crate::ir::TablePage {
+/// Helper to create a SheetPage.
+fn make_sheet_page(name: &str, width: f64, height: f64, margins: Margins, table: Table) -> Page {
+    Page::Sheet(crate::ir::SheetPage {
         name: name.to_string(),
         size: PageSize { width, height },
         margins,

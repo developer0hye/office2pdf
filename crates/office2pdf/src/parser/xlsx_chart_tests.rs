@@ -74,9 +74,9 @@ fn test_xlsx_with_chart_embeds_in_table_page() {
         1,
         "Expected 1 page (chart embedded in table)"
     );
-    assert!(matches!(&doc.pages[0], Page::Table(_)));
+    assert!(matches!(&doc.pages[0], Page::Sheet(_)));
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert!(!tp.charts.is_empty(), "Expected charts in table page");
 
     let chart = &tp.charts[0].1;
@@ -93,7 +93,7 @@ fn test_xlsx_without_chart_no_extra_pages() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     assert_eq!(doc.pages.len(), 1);
-    assert!(matches!(&doc.pages[0], Page::Table(_)));
+    assert!(matches!(&doc.pages[0], Page::Sheet(_)));
 }
 
 #[test]
@@ -127,7 +127,7 @@ fn test_xlsx_chart_data_is_correct() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert!(!tp.charts.is_empty(), "Expected a chart in the table page");
     let chart = &tp.charts[0].1;
     assert_eq!(chart.chart_type, ChartType::Pie);
@@ -273,7 +273,7 @@ fn test_xlsx_chart_anchored_at_row_5() {
         "Chart with anchor should be embedded in table page, not separate"
     );
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.charts.len(), 1, "Expected 1 anchored chart");
     assert_eq!(tp.charts[0].0, 5, "Chart should be anchored at row 5");
     assert_eq!(tp.charts[0].1.chart_type, ChartType::Bar);
@@ -286,7 +286,7 @@ fn test_xlsx_chart_without_anchor_falls_back_to_end() {
     let parser = XlsxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
-    let tp = get_table_page(&doc, 0);
+    let tp = get_sheet_page(&doc, 0);
     assert!(
         !tp.charts.is_empty(),
         "Unanchored chart should still be embedded in table page"
