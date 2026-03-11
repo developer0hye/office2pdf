@@ -161,7 +161,11 @@ fn extract_vml_style_length(style: Option<&str>, key: &str) -> Option<f64> {
         return raw.trim().parse::<f64>().ok();
     }
     if let Some(raw) = value.strip_suffix("px") {
-        return raw.trim().parse::<f64>().ok().map(|px| px * 72.0 / 96.0);
+        return raw
+            .trim()
+            .parse::<f64>()
+            .ok()
+            .map(|px| px * crate::defaults::POINTS_PER_INCH / crate::defaults::PIXELS_PER_INCH);
     }
 
     None
@@ -182,7 +186,9 @@ fn extract_vml_style_dimension(style: Option<&str>, key: &str) -> Option<f64> {
             return raw.trim().parse::<f64>().ok();
         }
         if let Some(raw) = value.strip_suffix("px") {
-            return raw.trim().parse::<f64>().ok().map(|px| px * 72.0 / 96.0);
+            return raw.trim().parse::<f64>().ok().map(|px| {
+                px * crate::defaults::POINTS_PER_INCH / crate::defaults::PIXELS_PER_INCH
+            });
         }
         if let Ok(points) = value.parse::<f64>() {
             return Some(points);
