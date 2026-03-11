@@ -119,6 +119,88 @@ pub struct TextStyle {
     pub letter_spacing: Option<f64>,
 }
 
+impl TextStyle {
+    /// Merge fields from `other` into `self`. For each field, if `other` has
+    /// `Some(value)`, it overwrites `self`'s value. Fields that are `None` in
+    /// `other` are left unchanged.
+    pub fn merge_from(&mut self, other: &TextStyle) {
+        if other.font_family.is_some() {
+            self.font_family = other.font_family.clone();
+        }
+        if other.font_size.is_some() {
+            self.font_size = other.font_size;
+        }
+        if other.bold.is_some() {
+            self.bold = other.bold;
+        }
+        if other.italic.is_some() {
+            self.italic = other.italic;
+        }
+        if other.underline.is_some() {
+            self.underline = other.underline;
+        }
+        if other.strikethrough.is_some() {
+            self.strikethrough = other.strikethrough;
+        }
+        if other.color.is_some() {
+            self.color = other.color;
+        }
+        if other.highlight.is_some() {
+            self.highlight = other.highlight;
+        }
+        if other.vertical_align.is_some() {
+            self.vertical_align = other.vertical_align;
+        }
+        if other.all_caps.is_some() {
+            self.all_caps = other.all_caps;
+        }
+        if other.small_caps.is_some() {
+            self.small_caps = other.small_caps;
+        }
+        if other.letter_spacing.is_some() {
+            self.letter_spacing = other.letter_spacing;
+        }
+    }
+}
+
+impl ParagraphStyle {
+    /// Merge fields from `other` into `self`. For each field, if `other` has
+    /// `Some(value)`, it overwrites `self`'s value. Fields that are `None` in
+    /// `other` are left unchanged.
+    pub fn merge_from(&mut self, other: &ParagraphStyle) {
+        if other.alignment.is_some() {
+            self.alignment = other.alignment;
+        }
+        if other.indent_left.is_some() {
+            self.indent_left = other.indent_left;
+        }
+        if other.indent_right.is_some() {
+            self.indent_right = other.indent_right;
+        }
+        if other.indent_first_line.is_some() {
+            self.indent_first_line = other.indent_first_line;
+        }
+        if other.line_spacing.is_some() {
+            self.line_spacing = other.line_spacing;
+        }
+        if other.space_before.is_some() {
+            self.space_before = other.space_before;
+        }
+        if other.space_after.is_some() {
+            self.space_after = other.space_after;
+        }
+        if other.heading_level.is_some() {
+            self.heading_level = other.heading_level;
+        }
+        if other.direction.is_some() {
+            self.direction = other.direction;
+        }
+        if other.tab_stops.is_some() {
+            self.tab_stops = other.tab_stops.clone();
+        }
+    }
+}
+
 /// RGB color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Color {

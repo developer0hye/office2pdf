@@ -328,23 +328,23 @@ struct PptxTextBodyStyleDefaults {
 
 impl PptxTextBodyStyleDefaults {
     fn paragraph_style_for_level(&self, level: u32) -> ParagraphStyle {
-        let mut style = self.default_paragraph.clone();
+        let mut style: ParagraphStyle = self.default_paragraph.clone();
         if let Some(level_style) = self.levels.get(&level) {
-            merge_paragraph_style(&mut style, &level_style.paragraph);
+            style.merge_from(&level_style.paragraph);
         }
         style
     }
 
     fn run_style_for_level(&self, level: u32) -> TextStyle {
-        let mut style = self.default_run.clone();
+        let mut style: TextStyle = self.default_run.clone();
         if let Some(level_style) = self.levels.get(&level) {
-            merge_text_style(&mut style, &level_style.run);
+            style.merge_from(&level_style.run);
         }
         style
     }
 
     fn bullet_for_level(&self, level: u32) -> PptxBulletDefinition {
-        let mut bullet = self.default_bullet.clone();
+        let mut bullet: PptxBulletDefinition = self.default_bullet.clone();
         if let Some(level_style) = self.levels.get(&level) {
             merge_pptx_bullet_definition(&mut bullet, &level_style.bullet);
         }
@@ -352,14 +352,15 @@ impl PptxTextBodyStyleDefaults {
     }
 
     fn merge_from(&mut self, overlay: &PptxTextBodyStyleDefaults) {
-        merge_paragraph_style(&mut self.default_paragraph, &overlay.default_paragraph);
-        merge_text_style(&mut self.default_run, &overlay.default_run);
+        self.default_paragraph
+            .merge_from(&overlay.default_paragraph);
+        self.default_run.merge_from(&overlay.default_run);
         merge_pptx_bullet_definition(&mut self.default_bullet, &overlay.default_bullet);
 
         for (level, overlay_style) in &overlay.levels {
-            let target = self.levels.entry(*level).or_default();
-            merge_paragraph_style(&mut target.paragraph, &overlay_style.paragraph);
-            merge_text_style(&mut target.run, &overlay_style.run);
+            let target: &mut PptxTextLevelStyle = self.levels.entry(*level).or_default();
+            target.paragraph.merge_from(&overlay_style.paragraph);
+            target.run.merge_from(&overlay_style.run);
             merge_pptx_bullet_definition(&mut target.bullet, &overlay_style.bullet);
         }
     }

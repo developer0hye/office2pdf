@@ -2,6 +2,7 @@ use super::*;
 
 /// Overwrite each `Option` field in `target` with `source` when the source is `Some`.
 /// Fields that require `.clone()` must be listed after a `;` separator.
+/// Kept only for PPTX-specific types that don't live in the IR layer.
 macro_rules! merge_option_fields {
     ($target:expr, $source:expr, $($copy_field:ident),* $(; $($clone_field:ident),*)?) => {
         $(
@@ -15,24 +16,6 @@ macro_rules! merge_option_fields {
             }
         )*)?
     };
-}
-
-pub(super) fn merge_paragraph_style(target: &mut ParagraphStyle, source: &ParagraphStyle) {
-    merge_option_fields!(
-        target, source,
-        alignment, indent_left, indent_right, indent_first_line,
-        line_spacing, space_before, space_after, heading_level, direction;
-        tab_stops
-    );
-}
-
-pub(super) fn merge_text_style(target: &mut TextStyle, source: &TextStyle) {
-    merge_option_fields!(
-        target, source,
-        font_size, bold, italic, underline, strikethrough,
-        color, highlight, vertical_align, all_caps, small_caps, letter_spacing;
-        font_family
-    );
 }
 
 pub(super) fn merge_pptx_bullet_definition(
