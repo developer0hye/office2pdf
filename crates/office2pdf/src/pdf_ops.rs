@@ -54,15 +54,11 @@ impl PageRange {
 
 /// Load a PDF document from raw bytes, mapping errors to `ConvertError`.
 fn load_pdf_document(input: &[u8], context: &str) -> Result<Document, ConvertError> {
-    Document::load_mem(input)
-        .map_err(|e| ConvertError::Parse(format!("invalid PDF{context}: {e}")))
+    Document::load_mem(input).map_err(|e| ConvertError::Parse(format!("invalid PDF{context}: {e}")))
 }
 
 /// Validate that all page ranges fall within the document's page count.
-fn validate_page_ranges(
-    ranges: &[PageRange],
-    total_pages: u32,
-) -> Result<(), ConvertError> {
+fn validate_page_ranges(ranges: &[PageRange], total_pages: u32) -> Result<(), ConvertError> {
     for range in ranges {
         if range.start > total_pages || range.end > total_pages {
             return Err(ConvertError::Parse(format!(
