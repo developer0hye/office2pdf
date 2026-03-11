@@ -118,6 +118,17 @@ pub fn substitutes(font_family: &str) -> Option<&'static [&'static str]> {
             "Arial",
             "Liberation Sans",
         ]),
+        "microsoft yahei" | "microsoft yahei ui" | "微软雅黑" | "微软雅黑ui" | "微软雅黑 ui" => {
+            Some(&[
+                "Microsoft YaHei",
+                "Microsoft YaHei UI",
+                "SIL Hei",
+                "Heiti SC",
+                "Hiragino Sans GB",
+                "Arial Unicode MS",
+                "Noto Sans CJK SC",
+            ])
+        }
         _ => None,
     }
 }
@@ -561,6 +572,14 @@ mod tests {
         assert_eq!(subs[0], "Apple SD Gothic Neo");
         assert!(subs.contains(&"Noto Sans CJK KR"));
         assert!(subs.contains(&"Malgun Gothic"));
+    }
+
+    #[test]
+    fn test_microsoft_yahei_substitutes() {
+        let subs = substitutes("微软雅黑").expect("微软雅黑 should have substitutes");
+        assert_eq!(subs[0], "Microsoft YaHei");
+        assert!(subs.contains(&"Hiragino Sans GB"));
+        assert!(subs.contains(&"Heiti SC"));
     }
 
     // --- font_with_fallbacks() tests ---

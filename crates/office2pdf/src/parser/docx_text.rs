@@ -26,6 +26,7 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         space_after,
         heading_level: None,
         direction: None,
+        east_asian_line_break: None,
         tab_stops,
         container: None,
     }

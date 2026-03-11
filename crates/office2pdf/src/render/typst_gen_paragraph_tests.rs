@@ -751,3 +751,27 @@ fn test_generate_paragraph_container_block_with_indent_padding() {
         "Expected paragraph inset in: {result}"
     );
 }
+
+#[test]
+fn test_generate_line_spacing_exact_uses_line_gap_when_font_size_known() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            line_spacing: Some(LineSpacing::Exact(18.0)),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Exact spaced".to_string(),
+            style: TextStyle {
+                font_size: Some(12.0),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains("leading: 6pt"),
+        "Expected exact line spacing to emit line gap (18pt - 12pt) in: {result}"
+    );
+}

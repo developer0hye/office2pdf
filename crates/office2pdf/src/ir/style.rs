@@ -30,6 +30,8 @@ pub struct ParagraphStyle {
     pub heading_level: Option<u8>,
     /// Text direction for bidirectional rendering (RTL for Arabic/Hebrew).
     pub direction: Option<TextDirection>,
+    /// Whether East Asian line breaking is enabled (DrawingML `eaLnBrk`).
+    pub east_asian_line_break: Option<bool>,
     /// Custom tab stop positions for this paragraph.
     pub tab_stops: Option<Vec<TabStop>>,
     /// Visual container styling such as borders/backgrounds used by callouts and code blocks.

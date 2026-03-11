@@ -11,11 +11,14 @@ use super::*;
 /// Word's default tab stop interval (0.5 inch = 36pt).
 const DEFAULT_TAB_WIDTH_PT: f64 = 36.0;
 const PPTX_SOFT_LINE_BREAK_CHAR: char = '\u{000B}';
+// `eaLnBrk="0"` disables East Asian auto-breaking between adjacent glyphs.
+const WORD_JOINER_CHAR: char = '\u{2060}';
 // Empirical Word baseline-to-baseline height for single line spacing is ~1.2em.
 const WORD_SINGLE_LINE_HEIGHT_EM: f64 = 1.2;
 
 pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
     let style = &para.style;
+    let disable_east_asian_breaks: bool = matches!(style.east_asian_line_break, Some(false));
     let has_para_style = needs_block_wrapper(style);
     let has_outer_pad = write_container_indent_wrapper_start(out, style);
     let needs_inline_justify: bool =
@@ -55,10 +58,20 @@ pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(
 
     if let Some(level) = style.heading_level {
         let _ = write!(out, "#heading(level: {level})[");
-        generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
+        generate_runs_with_tabs(
+            out,
+            &para.runs,
+            style.tab_stops.as_deref(),
+            disable_east_asian_breaks,
+        );
         out.push(']');
     } else {
-        generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
+        generate_runs_with_tabs(
+            out,
+            &para.runs,
+            style.tab_stops.as_deref(),
+            disable_east_asian_breaks,
+        );
     }
 
     if use_align {
@@ -242,9 +255,10 @@ pub(super) fn generate_runs_with_tabs(
     out: &mut String,
     runs: &[Run],
     tab_stops: Option<&[TabStop]>,
+    disable_east_asian_breaks: bool,
 ) {
     if !paragraph_contains_tabs(runs) {
-        generate_runs(out, runs);
+        generate_runs(out, runs, disable_east_asian_breaks);
         return;
     }
 
@@ -253,7 +267,7 @@ pub(super) fn generate_runs_with_tabs(
 
     for (index, segment) in segments.iter().enumerate() {
         let _ = write!(out, "  let tab_segment_{index} = [");
-        generate_runs(out, segment);
+        generate_runs(out, segment, disable_east_asian_breaks);
         out.push_str("]\n");
 
         if index == 0 {
@@ -273,7 +287,7 @@ pub(super) fn generate_runs_with_tabs(
 
         if let Some(anchor_runs) = extract_decimal_anchor_runs(segment) {
             let _ = write!(out, "  let tab_decimal_anchor_{index} = [");
-            generate_runs(out, &anchor_runs);
+            generate_runs(out, &anchor_runs, disable_east_asian_breaks);
             out.push_str("]\n");
             let _ = writeln!(
                 out,
@@ -311,10 +325,61 @@ fn paragraph_contains_tabs(runs: &[Run]) -> bool {
     runs.iter().any(|run| run.text.contains('\t'))
 }
 
-pub(super) fn generate_runs(out: &mut String, runs: &[Run]) {
+pub(super) fn generate_runs(out: &mut String, runs: &[Run], disable_east_asian_breaks: bool) {
+    let mut previous_tail: Option<char> = None;
+
     for run in runs {
-        generate_run(out, run);
+        if disable_east_asian_breaks
+            && run.footnote.is_none()
+            && previous_tail.is_some_and(is_east_asian_word_char)
+            && first_layout_char(&run.text).is_some_and(is_east_asian_word_char)
+        {
+            out.push(WORD_JOINER_CHAR);
+        }
+
+        generate_run(out, run, disable_east_asian_breaks);
+
+        previous_tail = if disable_east_asian_breaks && run.footnote.is_none() {
+            last_layout_char(&run.text)
+        } else {
+            None
+        };
     }
+}
+
+fn first_layout_char(text: &str) -> Option<char> {
+    text.chars().next()
+}
+
+fn last_layout_char(text: &str) -> Option<char> {
+    text.chars().next_back()
+}
+
+fn is_east_asian_word_char(ch: char) -> bool {
+    matches!(
+        ch as u32,
+        0x3040..=0x30FF
+            | 0x3400..=0x4DBF
+            | 0x4E00..=0x9FFF
+            | 0xAC00..=0xD7AF
+            | 0xF900..=0xFAFF
+            | 0x20000..=0x2EBEF
+    )
+}
+
+fn suppress_east_asian_breaks(text: &str) -> String {
+    let mut output = String::with_capacity(text.len() + 8);
+    let mut previous: Option<char> = None;
+
+    for current in text.chars() {
+        if previous.is_some_and(is_east_asian_word_char) && is_east_asian_word_char(current) {
+            output.push(WORD_JOINER_CHAR);
+        }
+        output.push(current);
+        previous = Some(current);
+    }
+
+    output
 }
 
 fn split_runs_on_tabs(runs: &[Run]) -> Vec<Vec<Run>> {
@@ -551,7 +616,7 @@ fn tab_alignment_offset_expr(
     }
 }
 
-pub(super) fn generate_run(out: &mut String, run: &Run) {
+pub(super) fn generate_run(out: &mut String, run: &Run, disable_east_asian_breaks: bool) {
     if let Some(ref content) = run.footnote {
         let escaped_content = escape_typst(content);
         let _ = write!(out, "#footnote[{escaped_content}]");
@@ -559,11 +624,11 @@ pub(super) fn generate_run(out: &mut String, run: &Run) {
     }
 
     if run_contains_line_break(&run.text) {
-        write_run_with_line_breaks(out, run);
+        write_run_with_line_breaks(out, run, disable_east_asian_breaks);
         return;
     }
 
-    write_run_segment(out, run, &run.text, true);
+    write_run_segment(out, run, &run.text, true, disable_east_asian_breaks);
 }
 
 fn run_contains_line_break(text: &str) -> bool {
@@ -575,7 +640,7 @@ fn is_inline_line_break(character: char) -> bool {
     character == PPTX_SOFT_LINE_BREAK_CHAR || character == '\n' || character == '\r'
 }
 
-fn write_run_with_line_breaks(out: &mut String, run: &Run) {
+fn write_run_with_line_breaks(out: &mut String, run: &Run, disable_east_asian_breaks: bool) {
     let mut segment_start: usize = 0;
     let mut chars = run.text.char_indices().peekable();
 
@@ -585,7 +650,13 @@ fn write_run_with_line_breaks(out: &mut String, run: &Run) {
         }
 
         if segment_start < offset {
-            write_run_segment(out, run, &run.text[segment_start..offset], true);
+            write_run_segment(
+                out,
+                run,
+                &run.text[segment_start..offset],
+                true,
+                disable_east_asian_breaks,
+            );
         }
         out.push_str("#linebreak()");
 
@@ -602,7 +673,13 @@ fn write_run_with_line_breaks(out: &mut String, run: &Run) {
     }
 
     if segment_start < run.text.len() {
-        write_run_segment(out, run, &run.text[segment_start..], true);
+        write_run_segment(
+            out,
+            run,
+            &run.text[segment_start..],
+            true,
+            disable_east_asian_breaks,
+        );
     }
 }
 
@@ -621,14 +698,25 @@ fn preserve_line_segment_leading_spaces(text: &str) -> Cow<'_, str> {
     Cow::Owned(normalized)
 }
 
-fn write_run_segment(out: &mut String, run: &Run, text: &str, preserve_leading_spaces: bool) {
+fn write_run_segment(
+    out: &mut String,
+    run: &Run,
+    text: &str,
+    preserve_leading_spaces: bool,
+    disable_east_asian_breaks: bool,
+) {
     let normalized_text: Cow<'_, str> = if preserve_leading_spaces {
         preserve_line_segment_leading_spaces(text)
     } else {
         Cow::Borrowed(text)
     };
     let style: TextStyle = effective_text_style_for_content(&run.style, normalized_text.as_ref());
-    let escaped = escape_typst(normalized_text.as_ref());
+    let layout_text: Cow<'_, str> = if disable_east_asian_breaks {
+        Cow::Owned(suppress_east_asian_breaks(normalized_text.as_ref()))
+    } else {
+        Cow::Borrowed(normalized_text.as_ref())
+    };
+    let escaped = escape_typst(layout_text.as_ref());
 
     let has_text_props = has_text_properties(&style);
     let needs_underline = matches!(style.underline, Some(true));
@@ -641,7 +729,7 @@ fn write_run_segment(out: &mut String, run: &Run, text: &str, preserve_leading_s
     let needs_all_caps = matches!(style.all_caps, Some(true));
 
     let escaped: String = if needs_all_caps {
-        escape_typst(&normalized_text.to_uppercase())
+        escape_typst(&layout_text.to_uppercase())
     } else {
         escaped
     };

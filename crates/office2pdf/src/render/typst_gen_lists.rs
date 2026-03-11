@@ -356,6 +356,7 @@ fn fixed_text_list_item_inset(style: &ParagraphStyle) -> Insets {
 }
 
 fn write_fixed_text_list_item_paragraph(out: &mut String, style: &ParagraphStyle, runs: &[Run]) {
+    let disable_east_asian_breaks: bool = matches!(style.east_asian_line_break, Some(false));
     write_common_text_settings(out, runs, "");
     write_fixed_text_default_par_settings(out, style, runs, "");
     let hanging_indent_pt: Option<f64> = fixed_text_list_hanging_indent_pt(style);
@@ -376,7 +377,7 @@ fn write_fixed_text_list_item_paragraph(out: &mut String, style: &ParagraphStyle
         out.push_str("#par[");
     }
 
-    generate_runs_with_tabs(out, runs, tab_stops.as_deref());
+    generate_runs_with_tabs(out, runs, tab_stops.as_deref(), disable_east_asian_breaks);
     out.push(']');
 }
 
@@ -783,6 +784,7 @@ fn generate_list_item_paragraphs(out: &mut String, paragraphs: &[Paragraph]) {
 
 fn generate_list_item_paragraph(out: &mut String, paragraph: &Paragraph) {
     let style = &paragraph.style;
+    let disable_east_asian_breaks: bool = matches!(style.east_asian_line_break, Some(false));
     let has_para_style = needs_block_wrapper(style);
     let has_outer_pad = write_container_indent_wrapper_start(out, style);
     let needs_inline_justify: bool =
@@ -837,7 +839,12 @@ fn generate_list_item_paragraph(out: &mut String, paragraph: &Paragraph) {
     } else {
         out.push_str("#par[");
     }
-    generate_runs_with_tabs(out, &paragraph.runs, tab_stops.as_deref());
+    generate_runs_with_tabs(
+        out,
+        &paragraph.runs,
+        tab_stops.as_deref(),
+        disable_east_asian_breaks,
+    );
     out.push(']');
 
     if use_align {

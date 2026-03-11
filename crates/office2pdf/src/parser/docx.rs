@@ -778,6 +778,7 @@ fn extract_doc_default_paragraph_style(styles: &docx_rs::Styles) -> ParagraphSty
             .get("bidirectional")
             .and_then(json_bool_or_val)
             .and_then(|is_rtl| is_rtl.then_some(TextDirection::Rtl)),
+        east_asian_line_break: None,
         tab_stops: None,
         container: None,
     }

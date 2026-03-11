@@ -252,3 +252,92 @@ fn test_paragraph_alignment_center() {
     };
     assert_eq!(para.style.alignment, Some(Alignment::Center));
 }
+
+#[test]
+fn test_text_box_body_pr_empty_element_padding_and_bottom_anchor_extracted() {
+    let shape = make_text_box_with_body_pr(
+        0,
+        0,
+        1_000_000,
+        500_000,
+        r#"<a:bodyPr lIns="0" rIns="0" tIns="0" bIns="0" anchor="b"/>"#,
+        "Bottom",
+    );
+    let slide = make_slide_xml(&[shape]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let text_box = text_box_data(&page.elements[0]);
+    assert_eq!(text_box.padding.left, 0.0);
+    assert_eq!(text_box.padding.right, 0.0);
+    assert_eq!(text_box.padding.top, 0.0);
+    assert_eq!(text_box.padding.bottom, 0.0);
+    assert_eq!(
+        text_box.vertical_align,
+        crate::ir::TextBoxVerticalAlign::Bottom
+    );
+}
+
+#[test]
+fn test_text_box_paragraph_tab_stop_extracted() {
+    let paragraphs_xml = r#"<a:p><a:pPr><a:tabLst><a:tab pos="293370" algn="l"/></a:tabLst></a:pPr><a:r><a:t>&#x9;TabText</a:t></a:r></a:p>"#;
+    let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+    let slide = make_slide_xml(&[shape]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let blocks = text_box_blocks(&page.elements[0]);
+    let paragraph = match &blocks[0] {
+        Block::Paragraph(paragraph) => paragraph,
+        other => panic!("Expected Paragraph block, got {other:?}"),
+    };
+    let tab_stops = paragraph
+        .style
+        .tab_stops
+        .as_ref()
+        .expect("Expected paragraph tab stop");
+    assert_eq!(tab_stops.len(), 1);
+    assert!((tab_stops[0].position - 23.1).abs() < 0.05);
+    assert_eq!(tab_stops[0].alignment, crate::ir::TabAlignment::Left);
+}
+
+#[test]
+fn test_text_box_paragraph_east_asian_line_break_flag_extracted() {
+    let paragraphs_xml = r#"<a:p><a:pPr eaLnBrk="0"/><a:r><a:t>行业背景及意义</a:t></a:r></a:p>"#;
+    let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+    let slide = make_slide_xml(&[shape]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let blocks = text_box_blocks(&page.elements[0]);
+    let paragraph = match &blocks[0] {
+        Block::Paragraph(paragraph) => paragraph,
+        other => panic!("Expected Paragraph block, got {other:?}"),
+    };
+    assert_eq!(paragraph.style.east_asian_line_break, Some(false));
+}
+
+#[test]
+fn test_text_box_letter_spacing_from_spc() {
+    // DrawingML run spacing is in 1/100 pt; -100 => -1.0pt tracking.
+    let runs_xml = r#"<a:r><a:rPr sz="2000" spc="-100"/><a:t>AB</a:t></a:r>"#;
+    let shape = make_formatted_text_box(0, 0, 1_000_000, 500_000, runs_xml);
+    let slide = make_slide_xml(&[shape]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let blocks = text_box_blocks(&page.elements[0]);
+    let para = match &blocks[0] {
+        Block::Paragraph(p) => p,
+        _ => panic!("Expected Paragraph"),
+    };
+    assert_eq!(para.runs[0].style.letter_spacing, Some(-1.0));
+}

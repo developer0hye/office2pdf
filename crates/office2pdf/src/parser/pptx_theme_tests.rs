@@ -608,3 +608,67 @@ fn test_layout_shape_uses_master_color_map_with_luminance_offset() {
     let shape = get_shape(&page.elements[0]);
     assert_eq!(shape.fill, Some(Color::new(0x80, 0x80, 0x80)));
 }
+
+#[test]
+fn test_run_typeface_overrides_empty_theme_list_style_font_reference() {
+    // Real-world decks can define empty major/minor theme fonts while list
+    // defaults still reference +mn-lt/+mj-lt.
+    let shape = String::from(
+        r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="TextBox"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2000000" cy="500000"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:lstStyle><a:lvl1pPr><a:defRPr><a:latin typeface="+mn-lt"/></a:defRPr></a:lvl1pPr></a:lstStyle><a:p><a:r><a:rPr><a:latin typeface="微软雅黑"/></a:rPr><a:t>示例</a:t></a:r></a:p></p:txBody></p:sp>"#,
+    );
+    let slide = make_slide_xml(&[shape]);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "", "");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let blocks = text_box_blocks(&page.elements[0]);
+    let para = match &blocks[0] {
+        Block::Paragraph(p) => p,
+        _ => panic!("Expected Paragraph"),
+    };
+    assert_eq!(para.runs[0].style.font_family, Some("微软雅黑".to_string()));
+}
+
+#[test]
+fn test_unresolved_theme_font_reference_does_not_emit_literal_token() {
+    let runs_xml = r#"<a:r><a:rPr><a:latin typeface="+mn-lt"/></a:rPr><a:t>Body text</a:t></a:r>"#;
+    let shape = make_formatted_text_box(0, 0, 2_000_000, 500_000, runs_xml);
+    let slide = make_slide_xml(&[shape]);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "", "");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let blocks = text_box_blocks(&page.elements[0]);
+    let para = match &blocks[0] {
+        Block::Paragraph(p) => p,
+        _ => panic!("Expected Paragraph"),
+    };
+    assert_eq!(para.runs[0].style.font_family, None);
+}
+
+#[test]
+fn test_run_typeface_overrides_inherited_theme_token_font() {
+    let shape = String::from(
+        r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="TextBox"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2000000" cy="500000"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:lstStyle><a:lvl1pPr><a:defRPr><a:ea typeface="+mn-ea"/></a:defRPr></a:lvl1pPr></a:lstStyle><a:p><a:r><a:rPr><a:latin typeface="微软雅黑"/></a:rPr><a:t>示例</a:t></a:r></a:p></p:txBody></p:sp>"#,
+    );
+    let slide = make_slide_xml(&[shape]);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let blocks = text_box_blocks(&page.elements[0]);
+    let para = match &blocks[0] {
+        Block::Paragraph(p) => p,
+        _ => panic!("Expected Paragraph"),
+    };
+    assert_eq!(para.runs[0].style.font_family, Some("微软雅黑".to_string()));
+}

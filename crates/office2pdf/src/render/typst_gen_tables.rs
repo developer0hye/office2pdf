@@ -314,5 +314,11 @@ fn generate_cell_content(
 }
 
 fn generate_cell_paragraph(out: &mut String, para: &Paragraph) {
-    generate_runs_with_tabs(out, &para.runs, para.style.tab_stops.as_deref());
+    let disable_east_asian_breaks: bool = matches!(para.style.east_asian_line_break, Some(false));
+    generate_runs_with_tabs(
+        out,
+        &para.runs,
+        para.style.tab_stops.as_deref(),
+        disable_east_asian_breaks,
+    );
 }
