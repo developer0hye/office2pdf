@@ -426,6 +426,649 @@ fn apply_solid_fill_color(
     }
 }
 
+// ── SlideXmlParser state machine ────────────────────────────────────────
+
+/// Bundles the 20+ mutable state variables of the slide XML event loop
+/// into a single struct, with methods for each event type.
+///
+/// The XML reader is passed to each handler rather than stored, because
+/// several sub-parsers (`parse_pptx_table`, `parse_group_shape`, etc.)
+/// need `&mut Reader` to consume nested elements.
+struct SlideXmlParser<'a> {
+    // ── Context references (immutable for the parse lifetime) ────────
+    xml: &'a str,
+    images: &'a SlideImageMap,
+    theme: &'a ThemeData,
+    color_map: &'a ColorMapData,
+    warning_context: &'a str,
+    inherited_text_body_defaults: &'a PptxTextBodyStyleDefaults,
+
+    // ── Output accumulators ─────────────────────────────────────────
+    elements: Vec<FixedElement>,
+    warnings: Vec<ConvertWarning>,
+
+    // ── Shape state (`<p:sp>`) ──────────────────────────────────────
+    in_shape: bool,
+    shape: ShapeState,
+
+    // ── Text body state (`<p:txBody>`) ──────────────────────────────
+    in_txbody: bool,
+    paragraphs: Vec<PptxParagraphEntry>,
+    text_box_padding: Insets,
+    text_box_vertical_align: TextBoxVerticalAlign,
+    text_body_style_defaults: PptxTextBodyStyleDefaults,
+
+    // ── Paragraph state (`<a:p>`) ───────────────────────────────────
+    in_para: bool,
+    para_style: ParagraphStyle,
+    para_level: u32,
+    para_default_run_style: TextStyle,
+    para_end_run_style: TextStyle,
+    para_bullet_definition: PptxBulletDefinition,
+    in_ln_spc: bool,
+    runs: Vec<Run>,
+
+    // ── Run state (`<a:r>`) ─────────────────────────────────────────
+    in_run: bool,
+    run_style: TextStyle,
+    run_text: String,
+
+    // ── Inline tracking flags ───────────────────────────────────────
+    in_text: bool,
+    in_rpr: bool,
+    in_end_para_rpr: bool,
+    solid_fill_ctx: SolidFillCtx,
+
+    // ── Picture state (`<p:pic>`) ───────────────────────────────────
+    in_pic: bool,
+    pic: PictureState,
+
+    // ── Graphic frame state (`<p:graphicFrame>`) ────────────────────
+    in_graphic_frame: bool,
+    gf: GraphicFrameState,
+}
+
+impl<'a> SlideXmlParser<'a> {
+    fn new(
+        xml: &'a str,
+        images: &'a SlideImageMap,
+        theme: &'a ThemeData,
+        color_map: &'a ColorMapData,
+        warning_context: &'a str,
+        inherited_text_body_defaults: &'a PptxTextBodyStyleDefaults,
+    ) -> Self {
+        Self {
+            xml,
+            images,
+            theme,
+            color_map,
+            warning_context,
+            inherited_text_body_defaults,
+
+            elements: Vec::new(),
+            warnings: Vec::new(),
+
+            in_shape: false,
+            shape: ShapeState::default(),
+
+            in_txbody: false,
+            paragraphs: Vec::new(),
+            text_box_padding: default_pptx_text_box_padding(),
+            text_box_vertical_align: TextBoxVerticalAlign::Top,
+            text_body_style_defaults: PptxTextBodyStyleDefaults::default(),
+
+            in_para: false,
+            para_style: ParagraphStyle::default(),
+            para_level: 0,
+            para_default_run_style: TextStyle::default(),
+            para_end_run_style: TextStyle::default(),
+            para_bullet_definition: PptxBulletDefinition::default(),
+            in_ln_spc: false,
+            runs: Vec::new(),
+
+            in_run: false,
+            run_style: TextStyle::default(),
+            run_text: String::new(),
+
+            in_text: false,
+            in_rpr: false,
+            in_end_para_rpr: false,
+            solid_fill_ctx: SolidFillCtx::None,
+
+            in_pic: false,
+            pic: PictureState::default(),
+
+            in_graphic_frame: false,
+            gf: GraphicFrameState::default(),
+        }
+    }
+
+    /// Handle an `Event::Start` element.
+    fn handle_start(&mut self, reader: &mut Reader<&[u8]>, e: &BytesStart<'_>) {
+        let local = e.local_name();
+        match local.as_ref() {
+            b"graphicFrame" if !self.in_shape && !self.in_pic && !self.in_graphic_frame => {
+                self.in_graphic_frame = true;
+                self.gf.reset();
+            }
+            b"xfrm" if self.in_graphic_frame && !self.in_shape => {
+                self.gf.in_xfrm = true;
+            }
+            b"tbl" if self.in_graphic_frame => {
+                if let Ok(mut table) = parse_pptx_table(reader, self.theme, self.color_map) {
+                    scale_pptx_table_geometry_to_frame(
+                        &mut table,
+                        emu_to_pt(self.gf.cx),
+                        emu_to_pt(self.gf.cy),
+                    );
+                    self.elements.push(FixedElement {
+                        x: emu_to_pt(self.gf.x),
+                        y: emu_to_pt(self.gf.y),
+                        width: emu_to_pt(self.gf.cx),
+                        height: emu_to_pt(self.gf.cy),
+                        kind: FixedElementKind::Table(table),
+                    });
+                }
+            }
+            b"grpSp" if !self.in_shape && !self.in_pic && !self.in_graphic_frame => {
+                if let Ok((group_elems, group_warnings)) = parse_group_shape(
+                    reader,
+                    self.xml,
+                    self.images,
+                    self.theme,
+                    self.color_map,
+                    self.warning_context,
+                    self.inherited_text_body_defaults,
+                ) {
+                    self.elements.extend(group_elems);
+                    self.warnings.extend(group_warnings);
+                }
+            }
+            b"sp" if !self.in_shape && !self.in_pic => {
+                self.in_shape = true;
+                self.shape.reset();
+                self.shape.depth = 1;
+                self.in_txbody = false;
+                self.paragraphs.clear();
+                self.text_box_padding = default_pptx_text_box_padding();
+                self.text_box_vertical_align = TextBoxVerticalAlign::Top;
+            }
+            b"sp" if self.in_shape => {
+                self.shape.depth += 1;
+            }
+            b"spPr" if self.in_shape && !self.in_txbody => {
+                self.shape.in_sp_pr = true;
+            }
+            b"xfrm" if self.in_shape && self.shape.in_sp_pr => {
+                self.shape.in_xfrm = true;
+                if let Some(rot) = get_attr_i64(e, b"rot") {
+                    self.shape.rotation_deg = Some(rot as f64 / 60_000.0);
+                }
+            }
+            b"prstGeom" if self.shape.in_sp_pr => {
+                if let Some(prst) = get_attr_str(e, b"prst") {
+                    self.shape.prst_geom = Some(prst);
+                }
+            }
+            b"solidFill" if self.shape.in_sp_pr && !self.shape.in_ln && !self.in_rpr => {
+                self.solid_fill_ctx = SolidFillCtx::ShapeFill;
+            }
+            b"gradFill" if self.shape.in_sp_pr && !self.shape.in_ln && !self.in_rpr => {
+                self.shape.gradient_fill =
+                    parse_shape_gradient_fill(reader, self.theme, self.color_map);
+                if let Some(ref gradient_fill) = self.shape.gradient_fill
+                    && self.shape.fill.is_none()
+                {
+                    self.shape.fill = gradient_fill.stops.first().map(|stop| stop.color);
+                }
+            }
+            b"effectLst" if self.shape.in_sp_pr && !self.shape.in_ln => {
+                self.shape.shadow = parse_effect_list(reader, self.theme, self.color_map);
+            }
+            b"ln" if self.shape.in_sp_pr => {
+                self.shape.in_ln = true;
+                self.shape.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+                self.shape.ln_dash_style = BorderLineStyle::Solid;
+            }
+            b"prstDash" if self.shape.in_ln => {
+                self.shape.ln_dash_style = get_attr_str(e, b"val")
+                    .as_deref()
+                    .map(pptx_dash_to_border_style)
+                    .unwrap_or(BorderLineStyle::Solid);
+            }
+            b"solidFill" if self.shape.in_ln => {
+                self.solid_fill_ctx = SolidFillCtx::LineFill;
+            }
+            b"ph" if self.in_shape => {
+                self.shape.has_placeholder = true;
+            }
+            b"txBody" if self.in_shape => {
+                self.in_txbody = true;
+                self.text_body_style_defaults = if self.shape.has_placeholder {
+                    PptxTextBodyStyleDefaults::default()
+                } else {
+                    self.inherited_text_body_defaults.clone()
+                };
+            }
+            b"bodyPr" if self.in_shape && self.in_txbody => {
+                extract_pptx_text_box_body_props(
+                    e,
+                    &mut self.text_box_padding,
+                    &mut self.text_box_vertical_align,
+                );
+            }
+            b"lstStyle" if self.in_shape && self.in_txbody => {
+                let local_defaults = parse_pptx_list_style(reader, self.theme, self.color_map);
+                self.text_body_style_defaults.merge_from(&local_defaults);
+            }
+            b"p" if self.in_txbody => {
+                self.in_para = true;
+                self.para_level = 0;
+                self.para_style = self
+                    .text_body_style_defaults
+                    .paragraph_style_for_level(self.para_level);
+                self.para_default_run_style = self
+                    .text_body_style_defaults
+                    .run_style_for_level(self.para_level);
+                self.para_end_run_style = self.para_default_run_style.clone();
+                self.para_bullet_definition = self
+                    .text_body_style_defaults
+                    .bullet_for_level(self.para_level);
+                self.in_ln_spc = false;
+                self.runs.clear();
+            }
+            b"pPr" if self.in_para && !self.in_run => {
+                self.para_level = extract_paragraph_level(e);
+                self.para_style = self
+                    .text_body_style_defaults
+                    .paragraph_style_for_level(self.para_level);
+                self.para_default_run_style = self
+                    .text_body_style_defaults
+                    .run_style_for_level(self.para_level);
+                self.para_end_run_style = self.para_default_run_style.clone();
+                self.para_bullet_definition = self
+                    .text_body_style_defaults
+                    .bullet_for_level(self.para_level);
+                extract_paragraph_props(e, &mut self.para_style);
+            }
+            b"lnSpc" if self.in_para && !self.in_run => {
+                self.in_ln_spc = true;
+            }
+            b"spcPct" if self.in_ln_spc => {
+                extract_pptx_line_spacing_pct(e, &mut self.para_style);
+            }
+            b"spcPts" if self.in_ln_spc => {
+                extract_pptx_line_spacing_pts(e, &mut self.para_style);
+            }
+            b"buAutoNum" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.kind = Some(PptxBulletKind::AutoNumber(
+                    parse_pptx_auto_numbering(e, self.para_level),
+                ));
+            }
+            b"buChar" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.kind = parse_pptx_bullet_marker(e, self.para_level);
+            }
+            b"buNone" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.kind = Some(PptxBulletKind::None);
+            }
+            b"buFontTx" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.font = Some(PptxBulletFontSource::FollowText);
+            }
+            b"buFont" if self.in_para && !self.in_run => {
+                if let Some(typeface) = get_attr_str(e, b"typeface") {
+                    self.para_bullet_definition.font = Some(PptxBulletFontSource::Explicit(
+                        resolve_theme_font(&typeface, self.theme),
+                    ));
+                }
+            }
+            b"buClrTx" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.color = Some(PptxBulletColorSource::FollowText);
+            }
+            b"buClr" if self.in_para && !self.in_run => {
+                self.solid_fill_ctx = SolidFillCtx::BulletFill;
+            }
+            b"buSzTx" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.size = Some(PptxBulletSizeSource::FollowText);
+            }
+            b"buSzPct" if self.in_para && !self.in_run => {
+                if let Some(val) = get_attr_i64(e, b"val") {
+                    self.para_bullet_definition.size =
+                        Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
+                }
+            }
+            b"buSzPts" if self.in_para && !self.in_run => {
+                if let Some(val) = get_attr_i64(e, b"val") {
+                    self.para_bullet_definition.size =
+                        Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
+                }
+            }
+            b"br" if self.in_para && !self.in_run => {
+                push_pptx_soft_line_break(&mut self.runs, &self.para_default_run_style);
+            }
+            b"r" if self.in_para => {
+                self.in_run = true;
+                self.run_style = self.para_default_run_style.clone();
+                self.run_text.clear();
+            }
+            b"rPr" if self.in_run => {
+                self.in_rpr = true;
+                extract_rpr_attributes(e, &mut self.run_style);
+            }
+            b"endParaRPr" if self.in_para && !self.in_run => {
+                self.in_end_para_rpr = true;
+                self.para_end_run_style = self.para_default_run_style.clone();
+                extract_rpr_attributes(e, &mut self.para_end_run_style);
+            }
+            b"solidFill" if self.in_rpr => {
+                self.solid_fill_ctx = SolidFillCtx::RunFill;
+            }
+            b"solidFill" if self.in_end_para_rpr => {
+                self.solid_fill_ctx = SolidFillCtx::EndParaFill;
+            }
+            b"srgbClr" | b"schemeClr" | b"sysClr" if self.solid_fill_ctx != SolidFillCtx::None => {
+                let parsed = parse_color_from_start(reader, e, self.theme, self.color_map);
+                apply_solid_fill_color(
+                    self.solid_fill_ctx,
+                    &parsed,
+                    &mut self.shape,
+                    &mut self.run_style,
+                    &mut self.para_end_run_style,
+                    &mut self.para_bullet_definition,
+                );
+            }
+            b"t" if self.in_run => {
+                self.in_text = true;
+            }
+            b"pic" if !self.in_shape && !self.in_pic => {
+                self.in_pic = true;
+                self.pic.reset();
+            }
+            b"spPr" if self.in_pic => {}
+            b"xfrm" if self.in_pic => {
+                self.pic.in_xfrm = true;
+            }
+            b"blipFill" if self.in_pic => {}
+            b"blip" if self.in_pic => {
+                self.pic.blip_embed = get_attr_str(e, b"r:embed");
+            }
+            b"svgBlip" if self.in_pic => {
+                self.pic.svg_blip_embed = get_attr_str(e, b"r:embed");
+            }
+            b"imgLayer" if self.in_pic => {
+                if let Some(rid) = get_attr_str(e, b"r:embed") {
+                    self.pic.img_layer_embeds.push(rid);
+                }
+            }
+            b"srcRect" if self.in_pic => {
+                self.pic.crop = parse_src_rect(e);
+            }
+            _ => {}
+        }
+    }
+
+    /// Handle an `Event::Empty` element.
+    fn handle_empty(&mut self, e: &BytesStart<'_>) {
+        let local = e.local_name();
+        match local.as_ref() {
+            b"off" if self.shape.in_xfrm => {
+                self.shape.x = get_attr_i64(e, b"x").unwrap_or(0);
+                self.shape.y = get_attr_i64(e, b"y").unwrap_or(0);
+            }
+            b"ext" if self.shape.in_xfrm => {
+                self.shape.cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                self.shape.cy = get_attr_i64(e, b"cy").unwrap_or(0);
+            }
+            b"off" if self.pic.in_xfrm => {
+                self.pic.x = get_attr_i64(e, b"x").unwrap_or(0);
+                self.pic.y = get_attr_i64(e, b"y").unwrap_or(0);
+            }
+            b"ext" if self.pic.in_xfrm => {
+                self.pic.cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                self.pic.cy = get_attr_i64(e, b"cy").unwrap_or(0);
+            }
+            b"off" if self.gf.in_xfrm => {
+                self.gf.x = get_attr_i64(e, b"x").unwrap_or(0);
+                self.gf.y = get_attr_i64(e, b"y").unwrap_or(0);
+            }
+            b"ext" if self.gf.in_xfrm => {
+                self.gf.cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                self.gf.cy = get_attr_i64(e, b"cy").unwrap_or(0);
+            }
+            b"blip" if self.in_pic => {
+                self.pic.blip_embed = get_attr_str(e, b"r:embed");
+            }
+            b"svgBlip" if self.in_pic => {
+                self.pic.svg_blip_embed = get_attr_str(e, b"r:embed");
+            }
+            b"imgLayer" if self.in_pic => {
+                if let Some(rid) = get_attr_str(e, b"r:embed") {
+                    self.pic.img_layer_embeds.push(rid);
+                }
+            }
+            b"srcRect" if self.in_pic => {
+                self.pic.crop = parse_src_rect(e);
+            }
+            b"prstGeom" if self.shape.in_sp_pr => {
+                if let Some(prst) = get_attr_str(e, b"prst") {
+                    self.shape.prst_geom = Some(prst);
+                }
+            }
+            b"ln" if self.shape.in_sp_pr => {
+                self.shape.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+            }
+            b"prstDash" if self.shape.in_ln => {
+                self.shape.ln_dash_style = get_attr_str(e, b"val")
+                    .as_deref()
+                    .map(pptx_dash_to_border_style)
+                    .unwrap_or(BorderLineStyle::Solid);
+            }
+            b"srgbClr" | b"schemeClr" | b"sysClr" if self.solid_fill_ctx != SolidFillCtx::None => {
+                let parsed = parse_color_from_empty(e, self.theme, self.color_map);
+                apply_solid_fill_color(
+                    self.solid_fill_ctx,
+                    &parsed,
+                    &mut self.shape,
+                    &mut self.run_style,
+                    &mut self.para_end_run_style,
+                    &mut self.para_bullet_definition,
+                );
+            }
+            b"rPr" if self.in_run => {
+                extract_rpr_attributes(e, &mut self.run_style);
+            }
+            b"endParaRPr" if self.in_para && !self.in_run => {
+                self.para_end_run_style = self.para_default_run_style.clone();
+                extract_rpr_attributes(e, &mut self.para_end_run_style);
+            }
+            b"pPr" if self.in_para && !self.in_run => {
+                self.para_level = extract_paragraph_level(e);
+                self.para_style = self
+                    .text_body_style_defaults
+                    .paragraph_style_for_level(self.para_level);
+                self.para_default_run_style = self
+                    .text_body_style_defaults
+                    .run_style_for_level(self.para_level);
+                self.para_end_run_style = self.para_default_run_style.clone();
+                self.para_bullet_definition = self
+                    .text_body_style_defaults
+                    .bullet_for_level(self.para_level);
+                extract_paragraph_props(e, &mut self.para_style);
+            }
+            b"lnSpc" if self.in_para && !self.in_run => {
+                self.in_ln_spc = true;
+            }
+            b"spcPct" if self.in_ln_spc => {
+                extract_pptx_line_spacing_pct(e, &mut self.para_style);
+            }
+            b"spcPts" if self.in_ln_spc => {
+                extract_pptx_line_spacing_pts(e, &mut self.para_style);
+            }
+            b"buAutoNum" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.kind = Some(PptxBulletKind::AutoNumber(
+                    parse_pptx_auto_numbering(e, self.para_level),
+                ));
+            }
+            b"buChar" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.kind = parse_pptx_bullet_marker(e, self.para_level);
+            }
+            b"buNone" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.kind = Some(PptxBulletKind::None);
+            }
+            b"buFontTx" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.font = Some(PptxBulletFontSource::FollowText);
+            }
+            b"buFont" if self.in_para && !self.in_run => {
+                if let Some(typeface) = get_attr_str(e, b"typeface") {
+                    self.para_bullet_definition.font = Some(PptxBulletFontSource::Explicit(
+                        resolve_theme_font(&typeface, self.theme),
+                    ));
+                }
+            }
+            b"buClrTx" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.color = Some(PptxBulletColorSource::FollowText);
+            }
+            b"buClr" if self.in_para && !self.in_run => {
+                self.solid_fill_ctx = SolidFillCtx::BulletFill;
+            }
+            b"buSzTx" if self.in_para && !self.in_run => {
+                self.para_bullet_definition.size = Some(PptxBulletSizeSource::FollowText);
+            }
+            b"buSzPct" if self.in_para && !self.in_run => {
+                if let Some(val) = get_attr_i64(e, b"val") {
+                    self.para_bullet_definition.size =
+                        Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
+                }
+            }
+            b"buSzPts" if self.in_para && !self.in_run => {
+                if let Some(val) = get_attr_i64(e, b"val") {
+                    self.para_bullet_definition.size =
+                        Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
+                }
+            }
+            b"br" if self.in_para && !self.in_run => {
+                push_pptx_soft_line_break(&mut self.runs, &self.para_default_run_style);
+            }
+            b"latin" | b"ea" | b"cs" if self.in_rpr => {
+                apply_typeface_to_style(e, &mut self.run_style, self.theme);
+            }
+            b"latin" | b"ea" | b"cs" if self.in_end_para_rpr => {
+                apply_typeface_to_style(e, &mut self.para_end_run_style, self.theme);
+            }
+            _ => {}
+        }
+    }
+
+    /// Handle an `Event::Text` element.
+    fn handle_text(&mut self, text: &str) {
+        if self.in_text {
+            self.run_text.push_str(text);
+        }
+    }
+
+    /// Handle an `Event::End` element.
+    fn handle_end(&mut self, local_name: &[u8]) {
+        match local_name {
+            b"sp" if self.in_shape => {
+                self.shape.depth -= 1;
+                if self.shape.depth == 0 {
+                    if let Some(element) = finalize_shape(
+                        &mut self.shape,
+                        &mut self.paragraphs,
+                        self.text_box_padding,
+                        self.text_box_vertical_align,
+                    ) {
+                        self.elements.push(element);
+                    }
+                    self.in_shape = false;
+                }
+            }
+            b"spPr" if self.shape.in_sp_pr => {
+                self.shape.in_sp_pr = false;
+            }
+            b"xfrm" if self.shape.in_xfrm => {
+                self.shape.in_xfrm = false;
+            }
+            b"ln" if self.shape.in_ln => {
+                self.shape.in_ln = false;
+            }
+            b"txBody" if self.in_txbody => {
+                self.in_txbody = false;
+            }
+            b"p" if self.in_para => {
+                let resolved_list_marker = resolve_pptx_list_marker(
+                    &self.para_bullet_definition,
+                    self.para_level,
+                    &self.runs,
+                    &self.para_end_run_style,
+                    &self.para_default_run_style,
+                );
+                let paragraph_runs = std::mem::take(&mut self.runs);
+                self.paragraphs.push(PptxParagraphEntry {
+                    paragraph: Paragraph {
+                        style: self.para_style.clone(),
+                        runs: paragraph_runs,
+                    },
+                    list_marker: resolved_list_marker,
+                });
+                self.in_para = false;
+            }
+            b"r" if self.in_run => {
+                if !self.run_text.is_empty() {
+                    push_pptx_run(
+                        &mut self.runs,
+                        Run {
+                            text: std::mem::take(&mut self.run_text),
+                            style: self.run_style.clone(),
+                            href: None,
+                            footnote: None,
+                        },
+                    );
+                }
+                self.in_run = false;
+            }
+            b"rPr" if self.in_rpr => {
+                self.in_rpr = false;
+            }
+            b"endParaRPr" if self.in_end_para_rpr => {
+                self.in_end_para_rpr = false;
+            }
+            b"lnSpc" if self.in_ln_spc => {
+                self.in_ln_spc = false;
+            }
+            b"solidFill" if self.solid_fill_ctx != SolidFillCtx::None => {
+                self.solid_fill_ctx = SolidFillCtx::None;
+            }
+            b"t" if self.in_text => {
+                self.in_text = false;
+            }
+            b"pic" if self.in_pic => {
+                let (element, picture_warnings) =
+                    finalize_picture(&self.pic, self.images, self.warning_context);
+                self.warnings.extend(picture_warnings);
+                if let Some(element) = element {
+                    self.elements.push(element);
+                }
+                self.in_pic = false;
+            }
+            b"xfrm" if self.pic.in_xfrm => {
+                self.pic.in_xfrm = false;
+            }
+            b"graphicFrame" if self.in_graphic_frame => {
+                self.in_graphic_frame = false;
+            }
+            b"xfrm" if self.gf.in_xfrm => {
+                self.gf.in_xfrm = false;
+            }
+            _ => {}
+        }
+    }
+
+    /// Consume the parser and return the accumulated results.
+    fn finish(self) -> (Vec<FixedElement>, Vec<ConvertWarning>) {
+        (self.elements, self.warnings)
+    }
+}
+
 // ── Main parse function ─────────────────────────────────────────────────
 
 /// Parse a slide XML to extract positioned elements (text boxes, shapes, images).
@@ -438,553 +1081,35 @@ pub(super) fn parse_slide_xml(
     inherited_text_body_defaults: &PptxTextBodyStyleDefaults,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
     let mut reader = Reader::from_str(xml);
-    let mut elements = Vec::new();
-    let mut warnings = Vec::new();
-
-    let mut in_shape = false;
-    let mut shape = ShapeState::default();
-
-    let mut in_txbody = false;
-    let mut paragraphs: Vec<PptxParagraphEntry> = Vec::new();
-    let mut text_box_padding: Insets = default_pptx_text_box_padding();
-    let mut text_box_vertical_align: TextBoxVerticalAlign = TextBoxVerticalAlign::Top;
-    let mut text_body_style_defaults = PptxTextBodyStyleDefaults::default();
-
-    let mut in_para = false;
-    let mut para_style = ParagraphStyle::default();
-    let mut para_level: u32 = 0;
-    let mut para_default_run_style = TextStyle::default();
-    let mut para_end_run_style = TextStyle::default();
-    let mut para_bullet_definition = PptxBulletDefinition::default();
-    let mut in_ln_spc = false;
-    let mut runs: Vec<Run> = Vec::new();
-
-    let mut in_run = false;
-    let mut run_style = TextStyle::default();
-    let mut run_text = String::new();
-
-    let mut in_text = false;
-    let mut in_rpr = false;
-    let mut in_end_para_rpr = false;
-    let mut solid_fill_ctx = SolidFillCtx::None;
-
-    let mut in_pic = false;
-    let mut pic = PictureState::default();
-
-    let mut in_graphic_frame = false;
-    let mut gf = GraphicFrameState::default();
+    let mut parser = SlideXmlParser::new(
+        xml,
+        images,
+        theme,
+        color_map,
+        warning_context,
+        inherited_text_body_defaults,
+    );
 
     loop {
         match reader.read_event() {
             Ok(Event::Start(ref e)) => {
-                let local = e.local_name();
-                match local.as_ref() {
-                    b"graphicFrame" if !in_shape && !in_pic && !in_graphic_frame => {
-                        in_graphic_frame = true;
-                        gf.reset();
-                    }
-                    b"xfrm" if in_graphic_frame && !in_shape => {
-                        gf.in_xfrm = true;
-                    }
-                    b"tbl" if in_graphic_frame => {
-                        if let Ok(mut table) = parse_pptx_table(&mut reader, theme, color_map) {
-                            scale_pptx_table_geometry_to_frame(
-                                &mut table,
-                                emu_to_pt(gf.cx),
-                                emu_to_pt(gf.cy),
-                            );
-                            elements.push(FixedElement {
-                                x: emu_to_pt(gf.x),
-                                y: emu_to_pt(gf.y),
-                                width: emu_to_pt(gf.cx),
-                                height: emu_to_pt(gf.cy),
-                                kind: FixedElementKind::Table(table),
-                            });
-                        }
-                    }
-                    b"grpSp" if !in_shape && !in_pic && !in_graphic_frame => {
-                        if let Ok((group_elems, group_warnings)) = parse_group_shape(
-                            &mut reader,
-                            xml,
-                            images,
-                            theme,
-                            color_map,
-                            warning_context,
-                            inherited_text_body_defaults,
-                        ) {
-                            elements.extend(group_elems);
-                            warnings.extend(group_warnings);
-                        }
-                    }
-                    b"sp" if !in_shape && !in_pic => {
-                        in_shape = true;
-                        shape.reset();
-                        shape.depth = 1;
-                        in_txbody = false;
-                        paragraphs.clear();
-                        text_box_padding = default_pptx_text_box_padding();
-                        text_box_vertical_align = TextBoxVerticalAlign::Top;
-                    }
-                    b"sp" if in_shape => {
-                        shape.depth += 1;
-                    }
-                    b"spPr" if in_shape && !in_txbody => {
-                        shape.in_sp_pr = true;
-                    }
-                    b"xfrm" if in_shape && shape.in_sp_pr => {
-                        shape.in_xfrm = true;
-                        if let Some(rot) = get_attr_i64(e, b"rot") {
-                            shape.rotation_deg = Some(rot as f64 / 60_000.0);
-                        }
-                    }
-                    b"prstGeom" if shape.in_sp_pr => {
-                        if let Some(prst) = get_attr_str(e, b"prst") {
-                            shape.prst_geom = Some(prst);
-                        }
-                    }
-                    b"solidFill" if shape.in_sp_pr && !shape.in_ln && !in_rpr => {
-                        solid_fill_ctx = SolidFillCtx::ShapeFill;
-                    }
-                    b"gradFill" if shape.in_sp_pr && !shape.in_ln && !in_rpr => {
-                        shape.gradient_fill =
-                            parse_shape_gradient_fill(&mut reader, theme, color_map);
-                        if let Some(ref gradient_fill) = shape.gradient_fill
-                            && shape.fill.is_none()
-                        {
-                            shape.fill = gradient_fill.stops.first().map(|stop| stop.color);
-                        }
-                    }
-                    b"effectLst" if shape.in_sp_pr && !shape.in_ln => {
-                        shape.shadow = parse_effect_list(&mut reader, theme, color_map);
-                    }
-                    b"ln" if shape.in_sp_pr => {
-                        shape.in_ln = true;
-                        shape.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
-                        shape.ln_dash_style = BorderLineStyle::Solid;
-                    }
-                    b"prstDash" if shape.in_ln => {
-                        shape.ln_dash_style = get_attr_str(e, b"val")
-                            .as_deref()
-                            .map(pptx_dash_to_border_style)
-                            .unwrap_or(BorderLineStyle::Solid);
-                    }
-                    b"solidFill" if shape.in_ln => {
-                        solid_fill_ctx = SolidFillCtx::LineFill;
-                    }
-                    b"ph" if in_shape => {
-                        shape.has_placeholder = true;
-                    }
-                    b"txBody" if in_shape => {
-                        in_txbody = true;
-                        text_body_style_defaults = if shape.has_placeholder {
-                            PptxTextBodyStyleDefaults::default()
-                        } else {
-                            inherited_text_body_defaults.clone()
-                        };
-                    }
-                    b"bodyPr" if in_shape && in_txbody => {
-                        extract_pptx_text_box_body_props(
-                            e,
-                            &mut text_box_padding,
-                            &mut text_box_vertical_align,
-                        );
-                    }
-                    b"lstStyle" if in_shape && in_txbody => {
-                        let local_defaults = parse_pptx_list_style(&mut reader, theme, color_map);
-                        text_body_style_defaults.merge_from(&local_defaults);
-                    }
-                    b"p" if in_txbody => {
-                        in_para = true;
-                        para_level = 0;
-                        para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
-                        para_default_run_style =
-                            text_body_style_defaults.run_style_for_level(para_level);
-                        para_end_run_style = para_default_run_style.clone();
-                        para_bullet_definition =
-                            text_body_style_defaults.bullet_for_level(para_level);
-                        in_ln_spc = false;
-                        runs.clear();
-                    }
-                    b"pPr" if in_para && !in_run => {
-                        para_level = extract_paragraph_level(e);
-                        para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
-                        para_default_run_style =
-                            text_body_style_defaults.run_style_for_level(para_level);
-                        para_end_run_style = para_default_run_style.clone();
-                        para_bullet_definition =
-                            text_body_style_defaults.bullet_for_level(para_level);
-                        extract_paragraph_props(e, &mut para_style);
-                    }
-                    b"lnSpc" if in_para && !in_run => {
-                        in_ln_spc = true;
-                    }
-                    b"spcPct" if in_ln_spc => {
-                        extract_pptx_line_spacing_pct(e, &mut para_style);
-                    }
-                    b"spcPts" if in_ln_spc => {
-                        extract_pptx_line_spacing_pts(e, &mut para_style);
-                    }
-                    b"buAutoNum" if in_para && !in_run => {
-                        para_bullet_definition.kind = Some(PptxBulletKind::AutoNumber(
-                            parse_pptx_auto_numbering(e, para_level),
-                        ));
-                    }
-                    b"buChar" if in_para && !in_run => {
-                        para_bullet_definition.kind = parse_pptx_bullet_marker(e, para_level);
-                    }
-                    b"buNone" if in_para && !in_run => {
-                        para_bullet_definition.kind = Some(PptxBulletKind::None);
-                    }
-                    b"buFontTx" if in_para && !in_run => {
-                        para_bullet_definition.font = Some(PptxBulletFontSource::FollowText);
-                    }
-                    b"buFont" if in_para && !in_run => {
-                        if let Some(typeface) = get_attr_str(e, b"typeface") {
-                            para_bullet_definition.font = Some(PptxBulletFontSource::Explicit(
-                                resolve_theme_font(&typeface, theme),
-                            ));
-                        }
-                    }
-                    b"buClrTx" if in_para && !in_run => {
-                        para_bullet_definition.color = Some(PptxBulletColorSource::FollowText);
-                    }
-                    b"buClr" if in_para && !in_run => {
-                        solid_fill_ctx = SolidFillCtx::BulletFill;
-                    }
-                    b"buSzTx" if in_para && !in_run => {
-                        para_bullet_definition.size = Some(PptxBulletSizeSource::FollowText);
-                    }
-                    b"buSzPct" if in_para && !in_run => {
-                        if let Some(val) = get_attr_i64(e, b"val") {
-                            para_bullet_definition.size =
-                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
-                        }
-                    }
-                    b"buSzPts" if in_para && !in_run => {
-                        if let Some(val) = get_attr_i64(e, b"val") {
-                            para_bullet_definition.size =
-                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
-                        }
-                    }
-                    b"br" if in_para && !in_run => {
-                        push_pptx_soft_line_break(&mut runs, &para_default_run_style);
-                    }
-                    b"r" if in_para => {
-                        in_run = true;
-                        run_style = para_default_run_style.clone();
-                        run_text.clear();
-                    }
-                    b"rPr" if in_run => {
-                        in_rpr = true;
-                        extract_rpr_attributes(e, &mut run_style);
-                    }
-                    b"endParaRPr" if in_para && !in_run => {
-                        in_end_para_rpr = true;
-                        para_end_run_style = para_default_run_style.clone();
-                        extract_rpr_attributes(e, &mut para_end_run_style);
-                    }
-                    b"solidFill" if in_rpr => {
-                        solid_fill_ctx = SolidFillCtx::RunFill;
-                    }
-                    b"solidFill" if in_end_para_rpr => {
-                        solid_fill_ctx = SolidFillCtx::EndParaFill;
-                    }
-                    b"srgbClr" | b"schemeClr" | b"sysClr"
-                        if solid_fill_ctx != SolidFillCtx::None =>
-                    {
-                        let parsed = parse_color_from_start(&mut reader, e, theme, color_map);
-                        apply_solid_fill_color(
-                            solid_fill_ctx,
-                            &parsed,
-                            &mut shape,
-                            &mut run_style,
-                            &mut para_end_run_style,
-                            &mut para_bullet_definition,
-                        );
-                    }
-                    b"t" if in_run => {
-                        in_text = true;
-                    }
-                    b"pic" if !in_shape && !in_pic => {
-                        in_pic = true;
-                        pic.reset();
-                    }
-                    b"spPr" if in_pic => {}
-                    b"xfrm" if in_pic => {
-                        pic.in_xfrm = true;
-                    }
-                    b"blipFill" if in_pic => {}
-                    b"blip" if in_pic => {
-                        pic.blip_embed = get_attr_str(e, b"r:embed");
-                    }
-                    b"svgBlip" if in_pic => {
-                        pic.svg_blip_embed = get_attr_str(e, b"r:embed");
-                    }
-                    b"imgLayer" if in_pic => {
-                        if let Some(rid) = get_attr_str(e, b"r:embed") {
-                            pic.img_layer_embeds.push(rid);
-                        }
-                    }
-                    b"srcRect" if in_pic => {
-                        pic.crop = parse_src_rect(e);
-                    }
-                    _ => {}
-                }
+                parser.handle_start(&mut reader, e);
             }
             Ok(Event::Empty(ref e)) => {
-                let local = e.local_name();
-                match local.as_ref() {
-                    b"off" if shape.in_xfrm => {
-                        shape.x = get_attr_i64(e, b"x").unwrap_or(0);
-                        shape.y = get_attr_i64(e, b"y").unwrap_or(0);
-                    }
-                    b"ext" if shape.in_xfrm => {
-                        shape.cx = get_attr_i64(e, b"cx").unwrap_or(0);
-                        shape.cy = get_attr_i64(e, b"cy").unwrap_or(0);
-                    }
-                    b"off" if pic.in_xfrm => {
-                        pic.x = get_attr_i64(e, b"x").unwrap_or(0);
-                        pic.y = get_attr_i64(e, b"y").unwrap_or(0);
-                    }
-                    b"ext" if pic.in_xfrm => {
-                        pic.cx = get_attr_i64(e, b"cx").unwrap_or(0);
-                        pic.cy = get_attr_i64(e, b"cy").unwrap_or(0);
-                    }
-                    b"off" if gf.in_xfrm => {
-                        gf.x = get_attr_i64(e, b"x").unwrap_or(0);
-                        gf.y = get_attr_i64(e, b"y").unwrap_or(0);
-                    }
-                    b"ext" if gf.in_xfrm => {
-                        gf.cx = get_attr_i64(e, b"cx").unwrap_or(0);
-                        gf.cy = get_attr_i64(e, b"cy").unwrap_or(0);
-                    }
-                    b"blip" if in_pic => {
-                        pic.blip_embed = get_attr_str(e, b"r:embed");
-                    }
-                    b"svgBlip" if in_pic => {
-                        pic.svg_blip_embed = get_attr_str(e, b"r:embed");
-                    }
-                    b"imgLayer" if in_pic => {
-                        if let Some(rid) = get_attr_str(e, b"r:embed") {
-                            pic.img_layer_embeds.push(rid);
-                        }
-                    }
-                    b"srcRect" if in_pic => {
-                        pic.crop = parse_src_rect(e);
-                    }
-                    b"prstGeom" if shape.in_sp_pr => {
-                        if let Some(prst) = get_attr_str(e, b"prst") {
-                            shape.prst_geom = Some(prst);
-                        }
-                    }
-                    b"ln" if shape.in_sp_pr => {
-                        shape.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
-                    }
-                    b"prstDash" if shape.in_ln => {
-                        shape.ln_dash_style = get_attr_str(e, b"val")
-                            .as_deref()
-                            .map(pptx_dash_to_border_style)
-                            .unwrap_or(BorderLineStyle::Solid);
-                    }
-                    b"srgbClr" | b"schemeClr" | b"sysClr"
-                        if solid_fill_ctx != SolidFillCtx::None =>
-                    {
-                        let parsed = parse_color_from_empty(e, theme, color_map);
-                        apply_solid_fill_color(
-                            solid_fill_ctx,
-                            &parsed,
-                            &mut shape,
-                            &mut run_style,
-                            &mut para_end_run_style,
-                            &mut para_bullet_definition,
-                        );
-                    }
-                    b"rPr" if in_run => {
-                        extract_rpr_attributes(e, &mut run_style);
-                    }
-                    b"endParaRPr" if in_para && !in_run => {
-                        para_end_run_style = para_default_run_style.clone();
-                        extract_rpr_attributes(e, &mut para_end_run_style);
-                    }
-                    b"pPr" if in_para && !in_run => {
-                        para_level = extract_paragraph_level(e);
-                        para_style = text_body_style_defaults.paragraph_style_for_level(para_level);
-                        para_default_run_style =
-                            text_body_style_defaults.run_style_for_level(para_level);
-                        para_end_run_style = para_default_run_style.clone();
-                        para_bullet_definition =
-                            text_body_style_defaults.bullet_for_level(para_level);
-                        extract_paragraph_props(e, &mut para_style);
-                    }
-                    b"lnSpc" if in_para && !in_run => {
-                        in_ln_spc = true;
-                    }
-                    b"spcPct" if in_ln_spc => {
-                        extract_pptx_line_spacing_pct(e, &mut para_style);
-                    }
-                    b"spcPts" if in_ln_spc => {
-                        extract_pptx_line_spacing_pts(e, &mut para_style);
-                    }
-                    b"buAutoNum" if in_para && !in_run => {
-                        para_bullet_definition.kind = Some(PptxBulletKind::AutoNumber(
-                            parse_pptx_auto_numbering(e, para_level),
-                        ));
-                    }
-                    b"buChar" if in_para && !in_run => {
-                        para_bullet_definition.kind = parse_pptx_bullet_marker(e, para_level);
-                    }
-                    b"buNone" if in_para && !in_run => {
-                        para_bullet_definition.kind = Some(PptxBulletKind::None);
-                    }
-                    b"buFontTx" if in_para && !in_run => {
-                        para_bullet_definition.font = Some(PptxBulletFontSource::FollowText);
-                    }
-                    b"buFont" if in_para && !in_run => {
-                        if let Some(typeface) = get_attr_str(e, b"typeface") {
-                            para_bullet_definition.font = Some(PptxBulletFontSource::Explicit(
-                                resolve_theme_font(&typeface, theme),
-                            ));
-                        }
-                    }
-                    b"buClrTx" if in_para && !in_run => {
-                        para_bullet_definition.color = Some(PptxBulletColorSource::FollowText);
-                    }
-                    b"buClr" if in_para && !in_run => {
-                        solid_fill_ctx = SolidFillCtx::BulletFill;
-                    }
-                    b"buSzTx" if in_para && !in_run => {
-                        para_bullet_definition.size = Some(PptxBulletSizeSource::FollowText);
-                    }
-                    b"buSzPct" if in_para && !in_run => {
-                        if let Some(val) = get_attr_i64(e, b"val") {
-                            para_bullet_definition.size =
-                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
-                        }
-                    }
-                    b"buSzPts" if in_para && !in_run => {
-                        if let Some(val) = get_attr_i64(e, b"val") {
-                            para_bullet_definition.size =
-                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
-                        }
-                    }
-                    b"br" if in_para && !in_run => {
-                        push_pptx_soft_line_break(&mut runs, &para_default_run_style);
-                    }
-                    b"latin" | b"ea" | b"cs" if in_rpr => {
-                        apply_typeface_to_style(e, &mut run_style, theme);
-                    }
-                    b"latin" | b"ea" | b"cs" if in_end_para_rpr => {
-                        apply_typeface_to_style(e, &mut para_end_run_style, theme);
-                    }
-                    _ => {}
-                }
+                parser.handle_empty(e);
             }
             Ok(Event::Text(ref t)) => {
-                if in_text && let Some(text) = decode_pptx_text_event(t) {
-                    run_text.push_str(&text);
+                if let Some(text) = decode_pptx_text_event(t) {
+                    parser.handle_text(&text);
                 }
             }
             Ok(Event::GeneralRef(ref reference)) => {
-                if in_text && let Some(text) = decode_pptx_general_ref(reference) {
-                    run_text.push_str(&text);
+                if let Some(text) = decode_pptx_general_ref(reference) {
+                    parser.handle_text(&text);
                 }
             }
             Ok(Event::End(ref e)) => {
-                let local = e.local_name();
-                match local.as_ref() {
-                    b"sp" if in_shape => {
-                        shape.depth -= 1;
-                        if shape.depth == 0 {
-                            if let Some(element) = finalize_shape(
-                                &mut shape,
-                                &mut paragraphs,
-                                text_box_padding,
-                                text_box_vertical_align,
-                            ) {
-                                elements.push(element);
-                            }
-                            in_shape = false;
-                        }
-                    }
-                    b"spPr" if shape.in_sp_pr => {
-                        shape.in_sp_pr = false;
-                    }
-                    b"xfrm" if shape.in_xfrm => {
-                        shape.in_xfrm = false;
-                    }
-                    b"ln" if shape.in_ln => {
-                        shape.in_ln = false;
-                    }
-                    b"txBody" if in_txbody => {
-                        in_txbody = false;
-                    }
-                    b"p" if in_para => {
-                        let resolved_list_marker = resolve_pptx_list_marker(
-                            &para_bullet_definition,
-                            para_level,
-                            &runs,
-                            &para_end_run_style,
-                            &para_default_run_style,
-                        );
-                        let paragraph_runs = std::mem::take(&mut runs);
-                        paragraphs.push(PptxParagraphEntry {
-                            paragraph: Paragraph {
-                                style: para_style.clone(),
-                                runs: paragraph_runs,
-                            },
-                            list_marker: resolved_list_marker,
-                        });
-                        in_para = false;
-                    }
-                    b"r" if in_run => {
-                        if !run_text.is_empty() {
-                            push_pptx_run(
-                                &mut runs,
-                                Run {
-                                    text: std::mem::take(&mut run_text),
-                                    style: run_style.clone(),
-                                    href: None,
-                                    footnote: None,
-                                },
-                            );
-                        }
-                        in_run = false;
-                    }
-                    b"rPr" if in_rpr => {
-                        in_rpr = false;
-                    }
-                    b"endParaRPr" if in_end_para_rpr => {
-                        in_end_para_rpr = false;
-                    }
-                    b"lnSpc" if in_ln_spc => {
-                        in_ln_spc = false;
-                    }
-                    b"solidFill" if solid_fill_ctx != SolidFillCtx::None => {
-                        solid_fill_ctx = SolidFillCtx::None;
-                    }
-                    b"t" if in_text => {
-                        in_text = false;
-                    }
-                    b"pic" if in_pic => {
-                        let (element, picture_warnings) =
-                            finalize_picture(&pic, images, warning_context);
-                        warnings.extend(picture_warnings);
-                        if let Some(element) = element {
-                            elements.push(element);
-                        }
-                        in_pic = false;
-                    }
-                    b"xfrm" if pic.in_xfrm => {
-                        pic.in_xfrm = false;
-                    }
-                    b"graphicFrame" if in_graphic_frame => {
-                        in_graphic_frame = false;
-                    }
-                    b"xfrm" if gf.in_xfrm => {
-                        gf.in_xfrm = false;
-                    }
-                    _ => {}
-                }
+                parser.handle_end(e.local_name().as_ref());
             }
             Ok(Event::Eof) => break,
             Err(error) => {
@@ -996,5 +1121,5 @@ pub(super) fn parse_slide_xml(
         }
     }
 
-    Ok((elements, warnings))
+    Ok(parser.finish())
 }
