@@ -3,10 +3,19 @@
 //! Parses OMML XML elements (m:oMath, m:oMathPara) from DOCX documents
 //! and converts them to Typst math notation strings.
 
+mod text;
+mod unicode;
+
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
 use super::xml_util;
+
+use text::map_math_text;
+
+// Re-export for test access via `use super::*`
+#[cfg(test)]
+use unicode::unicode_to_typst;
 
 /// Convert an OMML XML fragment to Typst math notation.
 ///
@@ -410,301 +419,6 @@ fn parse_math_run(reader: &mut Reader<&[u8]>, out: &mut String) {
         if len >= 2 && chars[len - 1].is_alphabetic() && chars[len - 2].is_alphabetic() {
             out.push(' ');
         }
-    }
-}
-
-/// Map Unicode characters in math text to Typst math identifiers.
-///
-/// Converts Greek letters and common math symbols to their Typst equivalents.
-/// Splits consecutive ASCII letters into individual variables (Typst treats
-/// multi-letter sequences as single identifiers), but preserves known math
-/// function names like `cos`, `sin`, `log`.
-fn map_math_text(input: &str) -> String {
-    let mut result = String::new();
-    let mut word_buf = String::new();
-    let mut last_was_name = false;
-
-    let mut non_ascii_buf = String::new();
-
-    for ch in input.chars() {
-        if ch.is_ascii_alphabetic() {
-            // Flush non-ASCII buffer first
-            if !non_ascii_buf.is_empty() {
-                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
-                non_ascii_buf.clear();
-            }
-            word_buf.push(ch);
-            continue;
-        }
-
-        // Flush accumulated word before processing this character
-        if !word_buf.is_empty() {
-            // Flush non-ASCII buffer first
-            if !non_ascii_buf.is_empty() {
-                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
-                non_ascii_buf.clear();
-            }
-            flush_math_word(&mut result, &word_buf, &mut last_was_name);
-            word_buf.clear();
-        }
-
-        if let Some(name) = unicode_to_typst(ch) {
-            if !non_ascii_buf.is_empty() {
-                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
-                non_ascii_buf.clear();
-            }
-            if !result.is_empty()
-                && (last_was_name || result.chars().last().is_some_and(|c| c.is_alphanumeric()))
-            {
-                result.push(' ');
-            }
-            result.push_str(name);
-            last_was_name = true;
-        } else if ch.is_ascii_digit() {
-            if !non_ascii_buf.is_empty() {
-                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
-                non_ascii_buf.clear();
-            }
-            if last_was_name {
-                result.push(' ');
-            }
-            result.push(ch);
-            last_was_name = false;
-        } else if !ch.is_ascii() && ch.is_alphabetic() {
-            // Non-ASCII alphabetic (Cyrillic, CJK, etc.) — accumulate for upright() wrapping
-            non_ascii_buf.push(ch);
-        } else {
-            if !non_ascii_buf.is_empty() {
-                flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
-                non_ascii_buf.clear();
-            }
-            // Parentheses from <m:t> are literal characters, not Typst math
-            // grouping. Quote them to prevent breaking function call syntax
-            // (e.g., `sqrt()` when radicand contains `)` from OMML text).
-            if ch == '(' || ch == ')' {
-                result.push('"');
-                result.push(ch);
-                result.push('"');
-            } else {
-                result.push(ch);
-            }
-            last_was_name = false;
-        }
-    }
-
-    // Flush remaining buffers
-    if !word_buf.is_empty() {
-        flush_math_word(&mut result, &word_buf, &mut last_was_name);
-    }
-    if !non_ascii_buf.is_empty() {
-        flush_non_ascii_text(&mut result, &non_ascii_buf, &mut last_was_name);
-    }
-
-    result
-}
-
-/// Flush accumulated non-ASCII alphabetic text as `upright("text")` for Typst math mode.
-fn flush_non_ascii_text(result: &mut String, text: &str, last_was_name: &mut bool) {
-    if !result.is_empty()
-        && (*last_was_name || result.chars().last().is_some_and(|c| c.is_alphanumeric()))
-    {
-        result.push(' ');
-    }
-    result.push_str("upright(\"");
-    result.push_str(text);
-    result.push_str("\")");
-    *last_was_name = true;
-}
-
-/// Flush an accumulated word of ASCII letters to the result.
-///
-/// Known math function names (cos, sin, etc.) are kept intact.
-/// Unknown multi-letter sequences are split into individual characters
-/// with spaces to prevent Typst from treating them as single identifiers.
-fn flush_math_word(result: &mut String, word: &str, last_was_name: &mut bool) {
-    if is_known_math_name(word) {
-        // Known math name — emit as a single identifier
-        if !result.is_empty()
-            && (*last_was_name || result.chars().last().is_some_and(|c| c.is_alphanumeric()))
-        {
-            result.push(' ');
-        }
-        result.push_str(word);
-        *last_was_name = true;
-    } else if word.len() == 1 {
-        // Single letter — emit as-is
-        if *last_was_name {
-            result.push(' ');
-        }
-        result.push_str(word);
-        *last_was_name = false;
-    } else {
-        // Multiple unknown letters — split into individual characters
-        for (i, c) in word.chars().enumerate() {
-            if i > 0 || *last_was_name {
-                result.push(' ');
-            }
-            result.push(c);
-        }
-        *last_was_name = false;
-    }
-}
-
-/// Check if a word is a known math function name that should not be split.
-fn is_known_math_name(text: &str) -> bool {
-    matches!(
-        text,
-        "sin"
-            | "cos"
-            | "tan"
-            | "cot"
-            | "sec"
-            | "csc"
-            | "arcsin"
-            | "arccos"
-            | "arctan"
-            | "sinh"
-            | "cosh"
-            | "tanh"
-            | "coth"
-            | "ln"
-            | "log"
-            | "lg"
-            | "exp"
-            | "det"
-            | "dim"
-            | "gcd"
-            | "lcm"
-            | "max"
-            | "min"
-            | "sup"
-            | "inf"
-            | "lim"
-            | "arg"
-            | "deg"
-            | "mod"
-    )
-}
-
-/// Map a single Unicode character to its Typst math identifier, if applicable.
-fn unicode_to_typst(ch: char) -> Option<&'static str> {
-    match ch {
-        // Greek lowercase
-        'α' => Some("alpha"),
-        'β' => Some("beta"),
-        'γ' => Some("gamma"),
-        'δ' => Some("delta"),
-        'ε' => Some("epsilon"),
-        'ζ' => Some("zeta"),
-        'η' => Some("eta"),
-        'θ' => Some("theta"),
-        'ι' => Some("iota"),
-        'κ' => Some("kappa"),
-        'λ' => Some("lambda"),
-        'μ' => Some("mu"),
-        'ν' => Some("nu"),
-        'ξ' => Some("xi"),
-        'ο' => Some("omicron"),
-        'π' => Some("pi"),
-        'ρ' => Some("rho"),
-        'σ' | 'ς' => Some("sigma"),
-        'τ' => Some("tau"),
-        'υ' => Some("upsilon"),
-        'φ' => Some("phi"),
-        'χ' => Some("chi"),
-        'ψ' => Some("psi"),
-        'ω' => Some("omega"),
-        // Greek uppercase
-        'Α' => Some("Alpha"),
-        'Β' => Some("Beta"),
-        'Γ' => Some("Gamma"),
-        'Δ' => Some("Delta"),
-        'Ε' => Some("Epsilon"),
-        'Ζ' => Some("Zeta"),
-        'Η' => Some("Eta"),
-        'Θ' => Some("Theta"),
-        'Ι' => Some("Iota"),
-        'Κ' => Some("Kappa"),
-        'Λ' => Some("Lambda"),
-        'Μ' => Some("Mu"),
-        'Ν' => Some("Nu"),
-        'Ξ' => Some("Xi"),
-        'Ο' => Some("Omicron"),
-        'Π' => Some("Pi"),
-        'Ρ' => Some("Rho"),
-        'Σ' => Some("Sigma"),
-        'Τ' => Some("Tau"),
-        'Υ' => Some("Upsilon"),
-        'Φ' => Some("Phi"),
-        'Χ' => Some("Chi"),
-        'Ψ' => Some("Psi"),
-        'Ω' => Some("Omega"),
-        // Math symbols
-        '∞' => Some("infinity"),
-        '∂' => Some("partial"),
-        '∇' => Some("nabla"),
-        '∅' => Some("emptyset"),
-        '±' => Some("plus.minus"),
-        '×' => Some("times"),
-        '÷' => Some("div"),
-        '≤' => Some("lt.eq"),
-        '≥' => Some("gt.eq"),
-        '≠' => Some("eq.not"),
-        '≈' => Some("approx"),
-        '∈' => Some("in"),
-        '∉' => Some("in.not"),
-        '⊂' => Some("subset"),
-        '⊃' => Some("supset"),
-        '∪' => Some("union"),
-        '∩' => Some("sect"),
-        // Additional operators
-        '∠' => Some("angle"),
-        '∧' => Some("and"),
-        '∨' => Some("or"),
-        '∘' => Some("compose"),
-        '⋅' => Some("dot.op"),
-        '∓' => Some("minus.plus"),
-        '¬' => Some("not"),
-        '⊕' => Some("plus.circle"),
-        '⊗' => Some("times.circle"),
-        '⊙' => Some("dot.circle"),
-        '⊢' => Some("tack.r"),
-        '⊣' => Some("tack.l"),
-        '⊤' => Some("top"),
-        '⊥' => Some("perp"),
-        // Arrows
-        '←' => Some("arrow.l"),
-        '↑' => Some("arrow.t"),
-        '→' => Some("arrow.r"),
-        '↓' => Some("arrow.b"),
-        '↔' => Some("arrow.l.r"),
-        '↦' => Some("arrow.r.bar"),
-        '↪' => Some("arrow.r.hook"),
-        '↼' => Some("harpoon.lt"),
-        '⇀' => Some("harpoon.rt"),
-        '⇐' => Some("arrow.l.double"),
-        '⇒' => Some("arrow.r.double"),
-        '⇔' => Some("arrow.l.r.double"),
-        // Extended relations
-        '≡' => Some("equiv"),
-        '∼' => Some("tilde.op"),
-        '≅' => Some("tilde.eq"),
-        '≪' => Some("lt.double"),
-        '≫' => Some("gt.double"),
-        '⊆' => Some("subset.eq"),
-        '⊇' => Some("supset.eq"),
-        '∝' => Some("prop"),
-        '∴' => Some("therefore"),
-        '∵' => Some("because"),
-        // Blackboard bold (double-struck) letters
-        'ℂ' => Some("CC"),
-        'ℍ' => Some("HH"),
-        'ℕ' => Some("NN"),
-        'ℙ' => Some("PP"),
-        'ℚ' => Some("QQ"),
-        'ℝ' => Some("RR"),
-        'ℤ' => Some("ZZ"),
-        _ => None,
     }
 }
 
@@ -1205,5 +919,5 @@ fn capture_element_inner(reader: &mut Reader<&[u8]>, end_tag: &[u8]) -> String {
 }
 
 #[cfg(test)]
-#[path = "omml_tests.rs"]
+#[path = "../omml_tests.rs"]
 mod tests;
