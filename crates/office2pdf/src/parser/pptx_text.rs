@@ -1,93 +1,45 @@
 use super::*;
 
+/// Overwrite each `Option` field in `target` with `source` when the source is `Some`.
+/// Fields that require `.clone()` must be listed after a `;` separator.
+macro_rules! merge_option_fields {
+    ($target:expr, $source:expr, $($copy_field:ident),* $(; $($clone_field:ident),*)?) => {
+        $(
+            if $source.$copy_field.is_some() {
+                $target.$copy_field = $source.$copy_field;
+            }
+        )*
+        $($(
+            if $source.$clone_field.is_some() {
+                $target.$clone_field = $source.$clone_field.clone();
+            }
+        )*)?
+    };
+}
+
 pub(super) fn merge_paragraph_style(target: &mut ParagraphStyle, source: &ParagraphStyle) {
-    if source.alignment.is_some() {
-        target.alignment = source.alignment;
-    }
-    if source.indent_left.is_some() {
-        target.indent_left = source.indent_left;
-    }
-    if source.indent_right.is_some() {
-        target.indent_right = source.indent_right;
-    }
-    if source.indent_first_line.is_some() {
-        target.indent_first_line = source.indent_first_line;
-    }
-    if source.line_spacing.is_some() {
-        target.line_spacing = source.line_spacing;
-    }
-    if source.space_before.is_some() {
-        target.space_before = source.space_before;
-    }
-    if source.space_after.is_some() {
-        target.space_after = source.space_after;
-    }
-    if source.heading_level.is_some() {
-        target.heading_level = source.heading_level;
-    }
-    if source.direction.is_some() {
-        target.direction = source.direction;
-    }
-    if source.tab_stops.is_some() {
-        target.tab_stops = source.tab_stops.clone();
-    }
+    merge_option_fields!(
+        target, source,
+        alignment, indent_left, indent_right, indent_first_line,
+        line_spacing, space_before, space_after, heading_level, direction;
+        tab_stops
+    );
 }
 
 pub(super) fn merge_text_style(target: &mut TextStyle, source: &TextStyle) {
-    if source.font_family.is_some() {
-        target.font_family = source.font_family.clone();
-    }
-    if source.font_size.is_some() {
-        target.font_size = source.font_size;
-    }
-    if source.bold.is_some() {
-        target.bold = source.bold;
-    }
-    if source.italic.is_some() {
-        target.italic = source.italic;
-    }
-    if source.underline.is_some() {
-        target.underline = source.underline;
-    }
-    if source.strikethrough.is_some() {
-        target.strikethrough = source.strikethrough;
-    }
-    if source.color.is_some() {
-        target.color = source.color;
-    }
-    if source.highlight.is_some() {
-        target.highlight = source.highlight;
-    }
-    if source.vertical_align.is_some() {
-        target.vertical_align = source.vertical_align;
-    }
-    if source.all_caps.is_some() {
-        target.all_caps = source.all_caps;
-    }
-    if source.small_caps.is_some() {
-        target.small_caps = source.small_caps;
-    }
-    if source.letter_spacing.is_some() {
-        target.letter_spacing = source.letter_spacing;
-    }
+    merge_option_fields!(
+        target, source,
+        font_size, bold, italic, underline, strikethrough,
+        color, highlight, vertical_align, all_caps, small_caps, letter_spacing;
+        font_family
+    );
 }
 
 pub(super) fn merge_pptx_bullet_definition(
     target: &mut PptxBulletDefinition,
     source: &PptxBulletDefinition,
 ) {
-    if source.kind.is_some() {
-        target.kind = source.kind.clone();
-    }
-    if source.font.is_some() {
-        target.font = source.font.clone();
-    }
-    if source.color.is_some() {
-        target.color = source.color.clone();
-    }
-    if source.size.is_some() {
-        target.size = source.size.clone();
-    }
+    merge_option_fields!(target, source, ; kind, font, color, size);
 }
 
 pub(super) fn parse_pptx_list_style_level(name: &[u8]) -> Option<u32> {
@@ -115,352 +67,399 @@ pub(super) fn apply_typeface_to_style(
     style.font_family = Some(resolve_theme_font(&typeface, theme));
 }
 
+// ── List style parser state machine ──────────────────────────────────
+
+/// Which paragraph-level container the parser is currently inside.
+#[derive(Clone, Copy)]
+enum ParagraphTarget {
+    Default,
+    Level(u32),
+}
+
+impl ParagraphTarget {
+    /// Return the numeric level (0 for `Default`).
+    fn level(self) -> u32 {
+        match self {
+            Self::Default => 0,
+            Self::Level(level) => level,
+        }
+    }
+}
+
+/// Tracks which XML context the parser is currently inside while
+/// walking the children of `<a:lstStyle>` / `<a:otherStyle>`.
+struct ListStyleParseState {
+    defaults: PptxTextBodyStyleDefaults,
+    active_paragraph_target: Option<ParagraphTarget>,
+    active_run_target: Option<ParagraphTarget>,
+    is_in_line_spacing: bool,
+    is_in_run_fill: bool,
+    is_in_bullet_fill: bool,
+}
+
+impl ListStyleParseState {
+    fn new() -> Self {
+        Self {
+            defaults: PptxTextBodyStyleDefaults::default(),
+            active_paragraph_target: None,
+            active_run_target: None,
+            is_in_line_spacing: false,
+            is_in_run_fill: false,
+            is_in_bullet_fill: false,
+        }
+    }
+
+    fn paragraph_style_mut(&mut self, target: ParagraphTarget) -> &mut ParagraphStyle {
+        match target {
+            ParagraphTarget::Default => &mut self.defaults.default_paragraph,
+            ParagraphTarget::Level(level) => {
+                &mut self.defaults.levels.entry(level).or_default().paragraph
+            }
+        }
+    }
+
+    fn run_style_mut(&mut self, target: ParagraphTarget) -> &mut TextStyle {
+        match target {
+            ParagraphTarget::Default => &mut self.defaults.default_run,
+            ParagraphTarget::Level(level) => {
+                &mut self.defaults.levels.entry(level).or_default().run
+            }
+        }
+    }
+
+    fn bullet_style_mut(&mut self, target: ParagraphTarget) -> &mut PptxBulletDefinition {
+        match target {
+            ParagraphTarget::Default => &mut self.defaults.default_bullet,
+            ParagraphTarget::Level(level) => {
+                &mut self.defaults.levels.entry(level).or_default().bullet
+            }
+        }
+    }
+
+    // ── Paragraph-level element handlers ─────────────────────────────
+
+    /// Enter a `<defPPr>` or `<lvlNpPr>` element (Start or Empty).
+    fn enter_paragraph_target(
+        &mut self,
+        target: ParagraphTarget,
+        e: &quick_xml::events::BytesStart,
+    ) {
+        self.active_paragraph_target = Some(target);
+        extract_paragraph_props(e, self.paragraph_style_mut(target));
+    }
+
+    /// Handle `<spcPct>` / `<spcPts>` inside `<lnSpc>`.
+    fn handle_line_spacing_element(&mut self, e: &quick_xml::events::BytesStart, is_pct: bool) {
+        if let Some(target) = self.active_paragraph_target {
+            let style: &mut ParagraphStyle = self.paragraph_style_mut(target);
+            if is_pct {
+                extract_pptx_line_spacing_pct(e, style);
+            } else {
+                extract_pptx_line_spacing_pts(e, style);
+            }
+        }
+    }
+
+    // ── Bullet element handlers ──────────────────────────────────────
+
+    fn handle_bullet_auto_num(&mut self, e: &quick_xml::events::BytesStart) {
+        if let Some(target) = self.active_paragraph_target {
+            let level: u32 = target.level();
+            self.bullet_style_mut(target).kind =
+                Some(PptxBulletKind::AutoNumber(parse_pptx_auto_numbering(e, level)));
+        }
+    }
+
+    fn handle_bullet_char(&mut self, e: &quick_xml::events::BytesStart) {
+        if let Some(target) = self.active_paragraph_target {
+            let level: u32 = target.level();
+            self.bullet_style_mut(target).kind = parse_pptx_bullet_marker(e, level);
+        }
+    }
+
+    fn handle_bullet_none(&mut self) {
+        if let Some(target) = self.active_paragraph_target {
+            self.bullet_style_mut(target).kind = Some(PptxBulletKind::None);
+        }
+    }
+
+    fn handle_bullet_font_follow_text(&mut self) {
+        if let Some(target) = self.active_paragraph_target {
+            self.bullet_style_mut(target).font = Some(PptxBulletFontSource::FollowText);
+        }
+    }
+
+    fn handle_bullet_font_explicit(&mut self, e: &quick_xml::events::BytesStart, theme: &ThemeData) {
+        if let Some(target) = self.active_paragraph_target
+            && let Some(typeface) = get_attr_str(e, b"typeface")
+        {
+            self.bullet_style_mut(target).font =
+                Some(PptxBulletFontSource::Explicit(resolve_theme_font(&typeface, theme)));
+        }
+    }
+
+    fn handle_bullet_color_follow_text(&mut self) {
+        if let Some(target) = self.active_paragraph_target {
+            self.bullet_style_mut(target).color = Some(PptxBulletColorSource::FollowText);
+        }
+    }
+
+    fn handle_bullet_size_follow_text(&mut self) {
+        if let Some(target) = self.active_paragraph_target {
+            self.bullet_style_mut(target).size = Some(PptxBulletSizeSource::FollowText);
+        }
+    }
+
+    fn handle_bullet_size_pct(&mut self, e: &quick_xml::events::BytesStart) {
+        if let Some(target) = self.active_paragraph_target
+            && let Some(val) = get_attr_i64(e, b"val")
+        {
+            self.bullet_style_mut(target).size =
+                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
+        }
+    }
+
+    fn handle_bullet_size_pts(&mut self, e: &quick_xml::events::BytesStart) {
+        if let Some(target) = self.active_paragraph_target
+            && let Some(val) = get_attr_i64(e, b"val")
+        {
+            self.bullet_style_mut(target).size =
+                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
+        }
+    }
+
+    // ── Run-level element handlers ───────────────────────────────────
+
+    /// Enter `<defRPr>` as a Start element (sets `active_run_target`).
+    fn enter_default_run_props(&mut self, e: &quick_xml::events::BytesStart) {
+        self.active_run_target = self.active_paragraph_target;
+        if let Some(target) = self.active_run_target {
+            extract_rpr_attributes(e, self.run_style_mut(target));
+        }
+    }
+
+    /// Handle `<defRPr/>` as an Empty element (no run target activation).
+    fn handle_default_run_props_empty(&mut self, e: &quick_xml::events::BytesStart) {
+        if let Some(target) = self.active_paragraph_target {
+            extract_rpr_attributes(e, self.run_style_mut(target));
+        }
+    }
+
+    fn handle_run_color_start(
+        &mut self,
+        reader: &mut Reader<&[u8]>,
+        e: &quick_xml::events::BytesStart,
+        theme: &ThemeData,
+        color_map: &ColorMapData,
+    ) {
+        let parsed: ParsedColor = parse_color_from_start(reader, e, theme, color_map);
+        if let Some(target) = self.active_run_target {
+            self.run_style_mut(target).color = parsed.color;
+        }
+    }
+
+    fn handle_run_color_empty(
+        &mut self,
+        e: &quick_xml::events::BytesStart,
+        theme: &ThemeData,
+        color_map: &ColorMapData,
+    ) {
+        let parsed: ParsedColor = parse_color_from_empty(e, theme, color_map);
+        if let Some(target) = self.active_run_target {
+            self.run_style_mut(target).color = parsed.color;
+        }
+    }
+
+    fn handle_typeface(&mut self, e: &quick_xml::events::BytesStart, theme: &ThemeData) {
+        if let Some(target) = self.active_run_target {
+            apply_typeface_to_style(e, self.run_style_mut(target), theme);
+        }
+    }
+
+    fn handle_bullet_color_start(
+        &mut self,
+        reader: &mut Reader<&[u8]>,
+        e: &quick_xml::events::BytesStart,
+        theme: &ThemeData,
+        color_map: &ColorMapData,
+    ) {
+        if let Some(target) = self.active_paragraph_target {
+            let parsed: ParsedColor = parse_color_from_start(reader, e, theme, color_map);
+            self.bullet_style_mut(target).color =
+                parsed.color.map(PptxBulletColorSource::Explicit);
+        }
+    }
+
+    fn handle_bullet_color_empty(
+        &mut self,
+        e: &quick_xml::events::BytesStart,
+        theme: &ThemeData,
+        color_map: &ColorMapData,
+    ) {
+        if let Some(target) = self.active_paragraph_target {
+            let parsed: ParsedColor = parse_color_from_empty(e, theme, color_map);
+            self.bullet_style_mut(target).color =
+                parsed.color.map(PptxBulletColorSource::Explicit);
+        }
+    }
+
+    // ── Dispatch: shared bullet/run element handling ─────────────────
+
+    /// Handle elements that appear identically in both `Start` and `Empty`
+    /// contexts for bullet properties. Returns `true` if the element was handled.
+    fn dispatch_bullet_element(
+        &mut self,
+        local_name: &[u8],
+        e: &quick_xml::events::BytesStart,
+        theme: &ThemeData,
+    ) -> bool {
+        if self.active_paragraph_target.is_none() {
+            return false;
+        }
+        match local_name {
+            b"buAutoNum" => self.handle_bullet_auto_num(e),
+            b"buChar" => self.handle_bullet_char(e),
+            b"buNone" => self.handle_bullet_none(),
+            b"buFontTx" => self.handle_bullet_font_follow_text(),
+            b"buFont" => self.handle_bullet_font_explicit(e, theme),
+            b"buClrTx" => self.handle_bullet_color_follow_text(),
+            b"buSzTx" => self.handle_bullet_size_follow_text(),
+            b"buSzPct" => self.handle_bullet_size_pct(e),
+            b"buSzPts" => self.handle_bullet_size_pts(e),
+            _ => return false,
+        }
+        true
+    }
+
+    // ── End-element state transitions ────────────────────────────────
+
+    /// Process an `Event::End` element. Returns `true` when the outer container
+    /// (`lstStyle` / `otherStyle`) is closed and parsing should stop.
+    fn handle_end_element(&mut self, local_name: &[u8]) -> bool {
+        match local_name {
+            b"lstStyle" | b"otherStyle" => return true,
+            b"defPPr" => {
+                self.active_paragraph_target = None;
+                self.is_in_line_spacing = false;
+            }
+            name if parse_pptx_list_style_level(name).is_some() => {
+                self.active_paragraph_target = None;
+                self.is_in_line_spacing = false;
+            }
+            b"defRPr" => {
+                self.active_run_target = None;
+                self.is_in_run_fill = false;
+            }
+            b"solidFill" if self.is_in_run_fill => {
+                self.is_in_run_fill = false;
+            }
+            b"buClr" if self.is_in_bullet_fill => {
+                self.is_in_bullet_fill = false;
+            }
+            b"lnSpc" if self.is_in_line_spacing => {
+                self.is_in_line_spacing = false;
+            }
+            _ => {}
+        }
+        false
+    }
+}
+
 pub(super) fn parse_pptx_list_style(
     reader: &mut Reader<&[u8]>,
     theme: &ThemeData,
     color_map: &ColorMapData,
 ) -> PptxTextBodyStyleDefaults {
-    #[derive(Clone, Copy)]
-    enum ParagraphTarget {
-        Default,
-        Level(u32),
-    }
-
-    let mut defaults = PptxTextBodyStyleDefaults::default();
-    let mut active_paragraph_target: Option<ParagraphTarget> = None;
-    let mut active_run_target: Option<ParagraphTarget> = None;
-    let mut in_ln_spc = false;
-    let mut in_run_fill = false;
-    let mut in_bullet_fill = false;
-
-    fn paragraph_style_mut(
-        defaults: &mut PptxTextBodyStyleDefaults,
-        target: ParagraphTarget,
-    ) -> &mut ParagraphStyle {
-        match target {
-            ParagraphTarget::Default => &mut defaults.default_paragraph,
-            ParagraphTarget::Level(level) => {
-                &mut defaults.levels.entry(level).or_default().paragraph
-            }
-        }
-    }
-
-    fn run_style_mut(
-        defaults: &mut PptxTextBodyStyleDefaults,
-        target: ParagraphTarget,
-    ) -> &mut TextStyle {
-        match target {
-            ParagraphTarget::Default => &mut defaults.default_run,
-            ParagraphTarget::Level(level) => &mut defaults.levels.entry(level).or_default().run,
-        }
-    }
-
-    fn bullet_style_mut(
-        defaults: &mut PptxTextBodyStyleDefaults,
-        target: ParagraphTarget,
-    ) -> &mut PptxBulletDefinition {
-        match target {
-            ParagraphTarget::Default => &mut defaults.default_bullet,
-            ParagraphTarget::Level(level) => &mut defaults.levels.entry(level).or_default().bullet,
-        }
-    }
+    let mut state = ListStyleParseState::new();
 
     loop {
         match reader.read_event() {
             Ok(Event::Start(ref e)) => {
                 let local = e.local_name();
-                match local.as_ref() {
+                let local_name: &[u8] = local.as_ref();
+                match local_name {
                     b"defPPr" => {
-                        active_paragraph_target = Some(ParagraphTarget::Default);
-                        extract_paragraph_props(
-                            e,
-                            paragraph_style_mut(&mut defaults, ParagraphTarget::Default),
-                        );
+                        state.enter_paragraph_target(ParagraphTarget::Default, e);
                     }
                     name if parse_pptx_list_style_level(name).is_some() => {
-                        let level = parse_pptx_list_style_level(name).unwrap();
-                        active_paragraph_target = Some(ParagraphTarget::Level(level));
-                        extract_paragraph_props(
-                            e,
-                            paragraph_style_mut(&mut defaults, ParagraphTarget::Level(level)),
-                        );
+                        let level: u32 = parse_pptx_list_style_level(name).unwrap();
+                        state.enter_paragraph_target(ParagraphTarget::Level(level), e);
                     }
-                    b"lnSpc" if active_paragraph_target.is_some() => {
-                        in_ln_spc = true;
+                    b"lnSpc" if state.active_paragraph_target.is_some() => {
+                        state.is_in_line_spacing = true;
                     }
-                    b"spcPct" if in_ln_spc => {
-                        if let Some(target) = active_paragraph_target {
-                            extract_pptx_line_spacing_pct(
-                                e,
-                                paragraph_style_mut(&mut defaults, target),
-                            );
-                        }
+                    b"spcPct" if state.is_in_line_spacing => {
+                        state.handle_line_spacing_element(e, true);
                     }
-                    b"spcPts" if in_ln_spc => {
-                        if let Some(target) = active_paragraph_target {
-                            extract_pptx_line_spacing_pts(
-                                e,
-                                paragraph_style_mut(&mut defaults, target),
-                            );
-                        }
+                    b"spcPts" if state.is_in_line_spacing => {
+                        state.handle_line_spacing_element(e, false);
                     }
-                    b"buAutoNum" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            let level = match target {
-                                ParagraphTarget::Default => 0,
-                                ParagraphTarget::Level(level) => level,
-                            };
-                            bullet_style_mut(&mut defaults, target).kind = Some(
-                                PptxBulletKind::AutoNumber(parse_pptx_auto_numbering(e, level)),
-                            );
-                        }
+                    b"buClr" if state.active_paragraph_target.is_some() => {
+                        state.is_in_bullet_fill = true;
                     }
-                    b"buChar" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            let level = match target {
-                                ParagraphTarget::Default => 0,
-                                ParagraphTarget::Level(level) => level,
-                            };
-                            bullet_style_mut(&mut defaults, target).kind =
-                                parse_pptx_bullet_marker(e, level);
-                        }
+                    b"defRPr" if state.active_paragraph_target.is_some() => {
+                        state.enter_default_run_props(e);
                     }
-                    b"buNone" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            bullet_style_mut(&mut defaults, target).kind =
-                                Some(PptxBulletKind::None);
-                        }
+                    b"solidFill" if state.active_run_target.is_some() => {
+                        state.is_in_run_fill = true;
                     }
-                    b"buFontTx" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            bullet_style_mut(&mut defaults, target).font =
-                                Some(PptxBulletFontSource::FollowText);
-                        }
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if state.is_in_run_fill => {
+                        state.handle_run_color_start(reader, e, theme, color_map);
                     }
-                    b"buFont" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target
-                            && let Some(typeface) = get_attr_str(e, b"typeface")
-                        {
-                            bullet_style_mut(&mut defaults, target).font =
-                                Some(PptxBulletFontSource::Explicit(resolve_theme_font(
-                                    &typeface, theme,
-                                )));
-                        }
+                    b"latin" | b"ea" | b"cs" if state.active_run_target.is_some() => {
+                        state.handle_typeface(e, theme);
                     }
-                    b"buClrTx" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            bullet_style_mut(&mut defaults, target).color =
-                                Some(PptxBulletColorSource::FollowText);
-                        }
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if state.is_in_bullet_fill => {
+                        state.handle_bullet_color_start(reader, e, theme, color_map);
                     }
-                    b"buClr" if active_paragraph_target.is_some() => {
-                        in_bullet_fill = true;
+                    _ => {
+                        state.dispatch_bullet_element(local_name, e, theme);
                     }
-                    b"buSzTx" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            bullet_style_mut(&mut defaults, target).size =
-                                Some(PptxBulletSizeSource::FollowText);
-                        }
-                    }
-                    b"buSzPct" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target
-                            && let Some(val) = get_attr_i64(e, b"val")
-                        {
-                            bullet_style_mut(&mut defaults, target).size =
-                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
-                        }
-                    }
-                    b"buSzPts" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target
-                            && let Some(val) = get_attr_i64(e, b"val")
-                        {
-                            bullet_style_mut(&mut defaults, target).size =
-                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
-                        }
-                    }
-                    b"defRPr" if active_paragraph_target.is_some() => {
-                        active_run_target = active_paragraph_target;
-                        if let Some(target) = active_run_target {
-                            extract_rpr_attributes(e, run_style_mut(&mut defaults, target));
-                        }
-                    }
-                    b"solidFill" if active_run_target.is_some() => {
-                        in_run_fill = true;
-                    }
-                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_run_fill => {
-                        let parsed = parse_color_from_start(reader, e, theme, color_map);
-                        if let Some(target) = active_run_target {
-                            run_style_mut(&mut defaults, target).color = parsed.color;
-                        }
-                    }
-                    b"latin" | b"ea" | b"cs" if active_run_target.is_some() => {
-                        if let Some(target) = active_run_target {
-                            apply_typeface_to_style(e, run_style_mut(&mut defaults, target), theme);
-                        }
-                    }
-                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_bullet_fill => {
-                        if let Some(target) = active_paragraph_target {
-                            let parsed = parse_color_from_start(reader, e, theme, color_map);
-                            bullet_style_mut(&mut defaults, target).color =
-                                parsed.color.map(PptxBulletColorSource::Explicit);
-                        }
-                    }
-                    _ => {}
                 }
             }
             Ok(Event::Empty(ref e)) => {
                 let local = e.local_name();
-                match local.as_ref() {
+                let local_name: &[u8] = local.as_ref();
+                match local_name {
                     b"defPPr" => {
-                        extract_paragraph_props(e, &mut defaults.default_paragraph);
+                        extract_paragraph_props(e, &mut state.defaults.default_paragraph);
                     }
                     name if parse_pptx_list_style_level(name).is_some() => {
-                        let level = parse_pptx_list_style_level(name).unwrap();
+                        let level: u32 = parse_pptx_list_style_level(name).unwrap();
                         extract_paragraph_props(
                             e,
-                            &mut defaults.levels.entry(level).or_default().paragraph,
+                            &mut state.defaults.levels.entry(level).or_default().paragraph,
                         );
                     }
-                    b"spcPct" if in_ln_spc => {
-                        if let Some(target) = active_paragraph_target {
-                            extract_pptx_line_spacing_pct(
-                                e,
-                                paragraph_style_mut(&mut defaults, target),
-                            );
-                        }
+                    b"spcPct" if state.is_in_line_spacing => {
+                        state.handle_line_spacing_element(e, true);
                     }
-                    b"spcPts" if in_ln_spc => {
-                        if let Some(target) = active_paragraph_target {
-                            extract_pptx_line_spacing_pts(
-                                e,
-                                paragraph_style_mut(&mut defaults, target),
-                            );
-                        }
+                    b"spcPts" if state.is_in_line_spacing => {
+                        state.handle_line_spacing_element(e, false);
                     }
-                    b"buAutoNum" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            let level = match target {
-                                ParagraphTarget::Default => 0,
-                                ParagraphTarget::Level(level) => level,
-                            };
-                            bullet_style_mut(&mut defaults, target).kind = Some(
-                                PptxBulletKind::AutoNumber(parse_pptx_auto_numbering(e, level)),
-                            );
-                        }
+                    b"buClr" if state.active_paragraph_target.is_some() => {
+                        // Empty `<buClr/>` — no color data to extract.
                     }
-                    b"buChar" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            let level = match target {
-                                ParagraphTarget::Default => 0,
-                                ParagraphTarget::Level(level) => level,
-                            };
-                            bullet_style_mut(&mut defaults, target).kind =
-                                parse_pptx_bullet_marker(e, level);
-                        }
+                    b"defRPr" if state.active_paragraph_target.is_some() => {
+                        state.handle_default_run_props_empty(e);
                     }
-                    b"buNone" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            bullet_style_mut(&mut defaults, target).kind =
-                                Some(PptxBulletKind::None);
-                        }
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if state.is_in_run_fill => {
+                        state.handle_run_color_empty(e, theme, color_map);
                     }
-                    b"buFontTx" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            bullet_style_mut(&mut defaults, target).font =
-                                Some(PptxBulletFontSource::FollowText);
-                        }
+                    b"latin" | b"ea" | b"cs" if state.active_run_target.is_some() => {
+                        state.handle_typeface(e, theme);
                     }
-                    b"buFont" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target
-                            && let Some(typeface) = get_attr_str(e, b"typeface")
-                        {
-                            bullet_style_mut(&mut defaults, target).font =
-                                Some(PptxBulletFontSource::Explicit(resolve_theme_font(
-                                    &typeface, theme,
-                                )));
-                        }
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if state.is_in_bullet_fill => {
+                        state.handle_bullet_color_empty(e, theme, color_map);
                     }
-                    b"buClrTx" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            bullet_style_mut(&mut defaults, target).color =
-                                Some(PptxBulletColorSource::FollowText);
-                        }
+                    _ => {
+                        state.dispatch_bullet_element(local_name, e, theme);
                     }
-                    b"buClr" if active_paragraph_target.is_some() => {}
-                    b"buSzTx" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            bullet_style_mut(&mut defaults, target).size =
-                                Some(PptxBulletSizeSource::FollowText);
-                        }
-                    }
-                    b"buSzPct" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target
-                            && let Some(val) = get_attr_i64(e, b"val")
-                        {
-                            bullet_style_mut(&mut defaults, target).size =
-                                Some(PptxBulletSizeSource::Percent(val as f64 / 100_000.0));
-                        }
-                    }
-                    b"buSzPts" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target
-                            && let Some(val) = get_attr_i64(e, b"val")
-                        {
-                            bullet_style_mut(&mut defaults, target).size =
-                                Some(PptxBulletSizeSource::Points(val as f64 / 100.0));
-                        }
-                    }
-                    b"defRPr" if active_paragraph_target.is_some() => {
-                        if let Some(target) = active_paragraph_target {
-                            extract_rpr_attributes(e, run_style_mut(&mut defaults, target));
-                        }
-                    }
-                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_run_fill => {
-                        let parsed = parse_color_from_empty(e, theme, color_map);
-                        if let Some(target) = active_run_target {
-                            run_style_mut(&mut defaults, target).color = parsed.color;
-                        }
-                    }
-                    b"latin" | b"ea" | b"cs" if active_run_target.is_some() => {
-                        if let Some(target) = active_run_target {
-                            apply_typeface_to_style(e, run_style_mut(&mut defaults, target), theme);
-                        }
-                    }
-                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_bullet_fill => {
-                        if let Some(target) = active_paragraph_target {
-                            let parsed = parse_color_from_empty(e, theme, color_map);
-                            bullet_style_mut(&mut defaults, target).color =
-                                parsed.color.map(PptxBulletColorSource::Explicit);
-                        }
-                    }
-                    _ => {}
                 }
             }
             Ok(Event::End(ref e)) => {
-                let local = e.local_name();
-                match local.as_ref() {
-                    b"lstStyle" | b"otherStyle" => break,
-                    b"defPPr" => {
-                        active_paragraph_target = None;
-                        in_ln_spc = false;
-                    }
-                    name if parse_pptx_list_style_level(name).is_some() => {
-                        active_paragraph_target = None;
-                        in_ln_spc = false;
-                    }
-                    b"defRPr" => {
-                        active_run_target = None;
-                        in_run_fill = false;
-                    }
-                    b"solidFill" if in_run_fill => {
-                        in_run_fill = false;
-                    }
-                    b"buClr" if in_bullet_fill => {
-                        in_bullet_fill = false;
-                    }
-                    b"lnSpc" if in_ln_spc => {
-                        in_ln_spc = false;
-                    }
-                    _ => {}
+                if state.handle_end_element(e.local_name().as_ref()) {
+                    break;
                 }
             }
             Ok(Event::Eof) => break,
@@ -469,7 +468,7 @@ pub(super) fn parse_pptx_list_style(
         }
     }
 
-    defaults
+    state.defaults
 }
 
 pub(super) fn extract_paragraph_props(
