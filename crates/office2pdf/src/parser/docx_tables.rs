@@ -4,6 +4,7 @@ use super::{
     HyperlinkMap, ImageMap, Insets, MAX_TABLE_DEPTH, StyleMap, Table, TableCell, TableRow,
     convert_paragraph_blocks, parse_hex_color,
 };
+use crate::parser::units::twips_to_pt;
 
 #[derive(Clone)]
 struct RawCell {
@@ -31,7 +32,7 @@ fn extract_margin_side_points(side_json: &serde_json::Value) -> Option<f64> {
     let value = side_json.get("val").and_then(|v| v.as_f64())?;
 
     match width_type {
-        "dxa" => Some(value / 20.0),
+        "dxa" => Some(twips_to_pt(value)),
         _ => None,
     }
 }
@@ -119,7 +120,7 @@ fn extract_table_cell_width(prop_json: Option<&serde_json::Value>) -> Option<f64
     let width = width_json.get("width").and_then(|v| v.as_f64())?;
 
     match width_type {
-        "dxa" => Some(width / 20.0),
+        "dxa" => Some(twips_to_pt(width)),
         _ => None,
     }
 }
@@ -150,7 +151,7 @@ pub(super) fn convert_table(
     let column_widths: Vec<f64> = if table.grid.is_empty() {
         derive_column_widths_from_cells(&raw_rows).unwrap_or_default()
     } else {
-        table.grid.iter().map(|&w| w as f64 / 20.0).collect()
+        table.grid.iter().map(|&w| twips_to_pt(w as f64)).collect()
     };
 
     let rows = resolve_vmerge_and_build_rows(&raw_rows);

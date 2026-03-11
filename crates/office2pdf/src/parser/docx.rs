@@ -91,12 +91,6 @@ fn build_image_map(docx: &docx_rs::Docx) -> ImageMap {
         .collect()
 }
 
-/// Convert EMU (English Metric Units) to points.
-/// Kept in the parent module because multiple DOCX helper submodules use it.
-fn emu_to_pt(emu: u32) -> f64 {
-    emu as f64 / 12700.0
-}
-
 /// Pre-parsed assets extracted from the DOCX ZIP archive before docx-rs parsing.
 struct ZipPreParseAssets {
     metadata: crate::ir::Metadata,

@@ -37,10 +37,10 @@ fn test_text_box_position_and_size() {
     let page = first_fixed_page(&doc);
     let elem = &page.elements[0];
 
-    let expected_x = x as f64 / 12700.0;
-    let expected_y = y as f64 / 12700.0;
-    let expected_w = cx as f64 / 12700.0;
-    let expected_h = cy as f64 / 12700.0;
+    let expected_x = emu_to_pt(x);
+    let expected_y = emu_to_pt(y);
+    let expected_w = emu_to_pt(cx);
+    let expected_h = emu_to_pt(cy);
 
     assert!(
         (elem.x - expected_x).abs() < 0.1,

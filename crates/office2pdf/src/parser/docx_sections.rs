@@ -12,6 +12,7 @@ use super::{
     extract_paragraph_style, extract_run_style, extract_tab_stop_overrides, group_into_lists,
     merge_paragraph_style, read_zip_text,
 };
+use crate::parser::units::twips_to_pt;
 
 /// Parsed header/footer assets addressed by relationship ID.
 #[derive(Default)]
@@ -433,8 +434,8 @@ pub(super) fn extract_page_size(page_size: &docx_rs::PageSize) -> PageSize {
             .unwrap_or(0.0);
         let orientation = json.get("orient").and_then(|value| value.as_str());
         if width_twips > 0.0 && height_twips > 0.0 {
-            let mut width = width_twips / 20.0;
-            let mut height = height_twips / 20.0;
+            let mut width = twips_to_pt(width_twips);
+            let mut height = twips_to_pt(height_twips);
             if orientation == Some("landscape") && width < height {
                 std::mem::swap(&mut width, &mut height);
             }
@@ -448,9 +449,9 @@ pub(super) fn extract_page_size(page_size: &docx_rs::PageSize) -> PageSize {
 /// PageMargin fields are public i32 values in twips.
 fn extract_margins(page_margin: &docx_rs::PageMargin) -> Margins {
     Margins {
-        top: page_margin.top as f64 / 20.0,
-        bottom: page_margin.bottom as f64 / 20.0,
-        left: page_margin.left as f64 / 20.0,
-        right: page_margin.right as f64 / 20.0,
+        top: twips_to_pt(page_margin.top),
+        bottom: twips_to_pt(page_margin.bottom),
+        left: twips_to_pt(page_margin.left),
+        right: twips_to_pt(page_margin.right),
     }
 }

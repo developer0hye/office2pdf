@@ -345,7 +345,7 @@ fn finalize_shape(
     } else if let Some(ref geom) = shape.prst_geom {
         let kind = prst_to_shape_kind(geom, emu_to_pt(shape.cx), emu_to_pt(shape.cy));
         let stroke = shape.ln_color.map(|color| BorderSide {
-            width: shape.ln_width_emu as f64 / 12700.0,
+            width: emu_to_pt(shape.ln_width_emu),
             color,
             style: shape.ln_dash_style,
         });

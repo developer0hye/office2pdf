@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use super::super::emu_to_pt;
+use crate::parser::units::emu_to_pt;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub(in super::super) struct DrawingTextBoxInfo {

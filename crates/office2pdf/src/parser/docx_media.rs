@@ -4,14 +4,7 @@ use super::{
     ImageFormat, ImageMap, StyleMap, VmlTextBoxInfo, WrapContext, convert_paragraph_blocks,
     convert_table,
 };
-
-fn emu_to_pt(emu: u32) -> f64 {
-    emu as f64 / 12700.0
-}
-
-fn emu_to_pt_signed(emu: i32) -> f64 {
-    emu as f64 / 12700.0
-}
+use crate::parser::units::emu_to_pt;
 
 pub(super) fn extract_drawing_image(
     drawing: &docx_rs::Drawing,
@@ -47,11 +40,11 @@ pub(super) fn extract_drawing_image(
     if pic.position_type == docx_rs::DrawingPositionType::Anchor {
         let wrap_mode = wraps.consume_next();
         let offset_x = match pic.position_h {
-            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt_signed(emu),
+            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt(emu),
             docx_rs::DrawingPosition::Align(_) => 0.0,
         };
         let offset_y = match pic.position_v {
-            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt_signed(emu),
+            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt(emu),
             docx_rs::DrawingPosition::Align(_) => 0.0,
         };
 
@@ -227,11 +220,11 @@ pub(super) fn extract_drawing_text_box_blocks(
     if text_box.position_type == docx_rs::DrawingPositionType::Anchor {
         let wrap_mode = ctx.wraps.consume_next();
         let offset_x = match text_box.position_h {
-            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt_signed(emu),
+            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt(emu),
             docx_rs::DrawingPosition::Align(_) => 0.0,
         };
         let offset_y = match text_box.position_v {
-            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt_signed(emu),
+            docx_rs::DrawingPosition::Offset(emu) => emu_to_pt(emu),
             docx_rs::DrawingPosition::Align(_) => 0.0,
         };
         let (width, height) = resolve_drawing_text_box_size(text_box, layout);

@@ -19,6 +19,7 @@ use crate::ir::{
 };
 use crate::parser::Parser;
 use crate::parser::smartart;
+use crate::parser::units::emu_to_pt;
 
 use self::package::{load_theme, parse_presentation_xml, parse_rels_xml, read_zip_entry};
 #[cfg(test)]
@@ -366,12 +367,6 @@ impl PptxTextBodyStyleDefaults {
 
 /// Parser for PPTX (Office Open XML PowerPoint) presentations.
 pub struct PptxParser;
-
-/// Convert EMU (English Metric Units) to points.
-/// 1 inch = 914400 EMU, 1 inch = 72 points, so 1 pt = 12700 EMU.
-fn emu_to_pt(emu: i64) -> f64 {
-    emu as f64 / 12700.0
-}
 
 impl Parser for PptxParser {
     fn parse(
