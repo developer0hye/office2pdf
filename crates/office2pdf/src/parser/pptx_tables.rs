@@ -525,7 +525,11 @@ pub(super) fn parse_pptx_table(
                 }
             }
             Ok(Event::Eof) => break,
-            Err(error) => return Err(ConvertError::Parse(format!("XML error in table: {error}"))),
+            Err(error) => {
+                return Err(crate::parser::parse_err(format!(
+                    "XML error in table: {error}"
+                )));
+            }
             _ => {}
         }
     }

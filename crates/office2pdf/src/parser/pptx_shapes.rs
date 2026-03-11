@@ -124,7 +124,7 @@ pub(super) fn parse_group_shape(
             },
             Ok(Event::Eof) => return Ok((Vec::new(), Vec::new())),
             Err(error) => {
-                return Err(ConvertError::Parse(format!(
+                return Err(crate::parser::parse_err(format!(
                     "XML error in group shape: {error}"
                 )));
             }
@@ -168,7 +168,7 @@ pub(super) fn parse_group_shape(
             }
             Ok(Event::Eof) => return Ok((Vec::new(), Vec::new())),
             Err(error) => {
-                return Err(ConvertError::Parse(format!(
+                return Err(crate::parser::parse_err(format!(
                     "XML error in group shape: {error}"
                 )));
             }

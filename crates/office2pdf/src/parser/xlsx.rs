@@ -40,7 +40,7 @@ impl XlsxParser {
     ) -> Result<(Vec<Document>, Vec<ConvertWarning>), ConvertError> {
         let cursor = Cursor::new(data);
         let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true).map_err(|e| {
-            ConvertError::Parse(format!("Failed to parse XLSX (umya-spreadsheet): {e}"))
+            crate::parser::parse_err(format!("Failed to parse XLSX (umya-spreadsheet): {e}"))
         })?;
 
         let metadata = extract_xlsx_metadata(&book);
@@ -131,7 +131,7 @@ impl Parser for XlsxParser {
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let cursor = Cursor::new(data);
         let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true).map_err(|e| {
-            ConvertError::Parse(format!("Failed to parse XLSX (umya-spreadsheet): {e}"))
+            crate::parser::parse_err(format!("Failed to parse XLSX (umya-spreadsheet): {e}"))
         })?;
 
         // Extract metadata from umya-spreadsheet properties

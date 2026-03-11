@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
-use std::io::{Cursor, Read};
+#[cfg(test)]
+use std::io::Cursor;
+use std::io::Read;
 
 use quick_xml::Reader;
 use quick_xml::escape::unescape as unescape_xml_text;
@@ -377,9 +379,7 @@ impl Parser for PptxParser {
         data: &[u8],
         options: &ConvertOptions,
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
-        let cursor = Cursor::new(data);
-        let mut archive = ZipArchive::new(cursor)
-            .map_err(|e| ConvertError::Parse(format!("Failed to read PPTX: {e}")))?;
+        let mut archive = crate::parser::open_zip(data)?;
 
         // Extract metadata from docProps/core.xml
         let metadata = crate::parser::metadata::extract_metadata_from_zip(&mut archive);
