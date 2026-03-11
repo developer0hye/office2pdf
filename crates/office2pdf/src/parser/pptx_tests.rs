@@ -195,8 +195,8 @@ fn test_slide_dimensions() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     let page = first_fixed_page(&doc);
-    let expected_w = cx as f64 / 12700.0;
-    let expected_h = cy as f64 / 12700.0;
+    let expected_w = emu_to_pt(cx);
+    let expected_h = emu_to_pt(cy);
     assert!(
         (page.size.width - expected_w).abs() < 0.1,
         "Expected width ~{expected_w}pt, got {}",

@@ -1,4 +1,5 @@
 use crate::ir::ColumnLayout;
+use crate::parser::units::twips_to_pt;
 
 pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayout>> {
     let mut reader = quick_xml::Reader::from_str(xml);
@@ -19,7 +20,7 @@ pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayou
 
             Some(ColumnLayout {
                 num_columns,
-                spacing: spacing_twips / 20.0,
+                spacing: twips_to_pt(spacing_twips),
                 column_widths: if !equal_width && !column_widths.is_empty() {
                     Some(column_widths.to_vec())
                 } else {
@@ -67,7 +68,7 @@ pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayou
                             && let Ok(value) = attribute.unescape_value()
                             && let Ok(parsed) = value.parse::<f64>()
                         {
-                            column_widths.push(parsed / 20.0);
+                            column_widths.push(twips_to_pt(parsed));
                         }
                     }
                 }
@@ -104,7 +105,7 @@ pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayou
                             && let Ok(value) = attribute.unescape_value()
                             && let Ok(parsed) = value.parse::<f64>()
                         {
-                            column_widths.push(parsed / 20.0);
+                            column_widths.push(twips_to_pt(parsed));
                         }
                     }
                 }
@@ -141,7 +142,7 @@ pub(in super::super) fn extract_column_layout_from_section_property(
 
     Some(ColumnLayout {
         num_columns: section_prop.columns as u32,
-        spacing: section_prop.space as f64 / 20.0,
+        spacing: twips_to_pt(section_prop.space as f64),
         column_widths: None,
     })
 }

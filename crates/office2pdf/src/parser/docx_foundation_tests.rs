@@ -1,4 +1,5 @@
 use super::*;
+use crate::parser::units::twips_to_pt;
 
 // ----- Basic parsing tests -----
 
@@ -151,8 +152,8 @@ fn test_custom_page_size_extracted() {
         Page::Flow(p) => p,
         _ => panic!("Expected FlowPage"),
     };
-    let expected_width = width_twips as f64 / 20.0;
-    let expected_height = height_twips as f64 / 20.0;
+    let expected_width = twips_to_pt(width_twips as f64);
+    let expected_height = twips_to_pt(height_twips as f64);
     assert!(
         (page.size.width - expected_width).abs() < 1.0,
         "Expected width ~{expected_width}, got {}",
@@ -183,7 +184,7 @@ fn test_custom_margins_extracted() {
         Page::Flow(p) => p,
         _ => panic!("Expected FlowPage"),
     };
-    let expected_margin = 720.0 / 20.0;
+    let expected_margin = twips_to_pt(720.0);
     assert!(
         (page.margins.top - expected_margin).abs() < 1.0,
         "Expected top margin ~{expected_margin}, got {}",

@@ -5,12 +5,17 @@ pub(crate) mod metadata;
 pub(crate) mod omml;
 pub mod pptx;
 pub(crate) mod smartart;
+pub(crate) mod units;
 pub mod xlsx;
 pub(crate) mod xml_util;
 
 use std::io::Cursor;
 
 use zip::ZipArchive;
+
+#[cfg(test)]
+#[path = "units_tests.rs"]
+mod units_tests;
 
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};

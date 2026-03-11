@@ -2,6 +2,7 @@ use super::{
     Alignment, Color, HyperlinkMap, LineSpacing, ParagraphStyle, TabAlignment, TabLeader, TabStop,
     TabStopOverride, TextStyle, VerticalTextAlign, apply_tab_stop_overrides,
 };
+use crate::parser::units::{half_points_to_pt, twips_to_pt};
 use crate::parser::xml_util;
 
 pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> ParagraphStyle {
@@ -36,11 +37,11 @@ fn extract_indent(indent: &Option<docx_rs::Indent>) -> (Option<f64>, Option<f64>
         return (None, None, None);
     };
 
-    let left = indent.start.map(|v| v as f64 / 20.0);
-    let right = indent.end.map(|v| v as f64 / 20.0);
+    let left = indent.start.map(twips_to_pt);
+    let right = indent.end.map(twips_to_pt);
     let first_line = indent.special_indent.map(|si| match si {
-        docx_rs::SpecialIndentType::FirstLine(v) => v as f64 / 20.0,
-        docx_rs::SpecialIndentType::Hanging(v) => -(v as f64 / 20.0),
+        docx_rs::SpecialIndentType::FirstLine(v) => twips_to_pt(v),
+        docx_rs::SpecialIndentType::Hanging(v) => -twips_to_pt(v),
     });
 
     (left, right, first_line)
@@ -58,17 +59,14 @@ fn extract_line_spacing(
         Err(_) => return (None, None, None),
     };
 
-    let space_before = json
-        .get("before")
-        .and_then(|v| v.as_f64())
-        .map(|v| v / 20.0);
-    let space_after = json.get("after").and_then(|v| v.as_f64()).map(|v| v / 20.0);
+    let space_before = json.get("before").and_then(|v| v.as_f64()).map(twips_to_pt);
+    let space_after = json.get("after").and_then(|v| v.as_f64()).map(twips_to_pt);
 
     let line_spacing = json.get("line").and_then(|line_val| {
         let line = line_val.as_f64()?;
         let rule = json.get("lineRule").and_then(|v| v.as_str());
         match rule {
-            Some("exact") | Some("atLeast") => Some(LineSpacing::Exact(line / 20.0)),
+            Some("exact") | Some("atLeast") => Some(LineSpacing::Exact(twips_to_pt(line))),
             _ => Some(LineSpacing::Proportional(line / 240.0)),
         }
     });
@@ -91,7 +89,7 @@ pub(super) fn extract_tab_stop_overrides(tabs: &[docx_rs::Tab]) -> Option<Vec<Ta
     Some(
         tabs.iter()
             .filter_map(|tab| {
-                let position = tab.pos.map(|pos_twips| pos_twips as f64 / 20.0)?;
+                let position = tab.pos.map(|pos_twips| twips_to_pt(pos_twips as f64))?;
 
                 if matches!(tab.val, Some(docx_rs::TabValueType::Clear)) {
                     return Some(TabStopOverride::Clear(position));
@@ -152,7 +150,7 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
         font_size: rp
             .get("sz")
             .and_then(serde_json::Value::as_f64)
-            .map(|half_points| half_points / 2.0),
+            .map(half_points_to_pt),
         color: rp
             .get("color")
             .and_then(serde_json::Value::as_str)
@@ -176,7 +174,7 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
         letter_spacing: rp
             .get("characterSpacing")
             .and_then(serde_json::Value::as_i64)
-            .map(|twips| twips as f64 / 20.0),
+            .map(|twips| twips_to_pt(twips as f64)),
     }
 }
 

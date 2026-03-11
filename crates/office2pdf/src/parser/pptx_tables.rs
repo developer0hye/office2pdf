@@ -506,7 +506,7 @@ pub(super) fn parse_pptx_table(
                     b"lnL" | b"lnR" | b"lnT" | b"lnB" if in_border_line => {
                         if let Some(color) = border_line_color.take() {
                             let side = BorderSide {
-                                width: border_line_width_emu as f64 / 12700.0,
+                                width: emu_to_pt(border_line_width_emu),
                                 color,
                                 style: border_line_dash_style,
                             };
