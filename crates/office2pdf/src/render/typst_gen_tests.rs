@@ -435,3 +435,74 @@ fn test_table_cell_vertical_align_bottom() {
         "Bottom vertical alignment should emit 'align: bottom'. Got: {result}"
     );
 }
+
+// ── generate_blocks helper tests ─────────────────────────────────────
+
+#[test]
+fn test_generate_blocks_empty_slice_produces_no_output() {
+    let blocks: Vec<Block> = vec![];
+    let mut out = String::new();
+    let mut ctx = GenCtx::new();
+    generate_blocks(&mut out, &blocks, &mut ctx).unwrap();
+    assert!(
+        out.is_empty(),
+        "Empty block slice should produce no output. Got: {out:?}"
+    );
+}
+
+#[test]
+fn test_generate_blocks_single_block_no_leading_newline() {
+    let blocks: Vec<Block> = vec![make_paragraph("Hello")];
+    let mut out = String::new();
+    let mut ctx = GenCtx::new();
+    generate_blocks(&mut out, &blocks, &mut ctx).unwrap();
+    assert!(
+        !out.starts_with('\n'),
+        "Single block should not start with newline. Got: {out:?}"
+    );
+    assert!(
+        out.contains("Hello"),
+        "Output should contain block text. Got: {out:?}"
+    );
+}
+
+#[test]
+fn test_generate_blocks_multiple_blocks_separated_by_newline() {
+    let blocks: Vec<Block> = vec![make_paragraph("First"), make_paragraph("Second")];
+    let mut out = String::new();
+    let mut ctx = GenCtx::new();
+    generate_blocks(&mut out, &blocks, &mut ctx).unwrap();
+    // The output should contain both paragraphs separated by a newline
+    let first_pos: usize = out.find("First").expect("Should contain 'First'");
+    let second_pos: usize = out.find("Second").expect("Should contain 'Second'");
+    assert!(
+        first_pos < second_pos,
+        "First should appear before Second. Got: {out:?}"
+    );
+    // There should be a newline between the two blocks
+    let between: &str = &out[first_pos..second_pos];
+    assert!(
+        between.contains('\n'),
+        "Blocks should be separated by newline. Got between: {between:?}"
+    );
+}
+
+#[test]
+fn test_generate_blocks_three_blocks_have_two_separators() {
+    let blocks: Vec<Block> = vec![
+        make_paragraph("A"),
+        make_paragraph("B"),
+        make_paragraph("C"),
+    ];
+    let mut out = String::new();
+    let mut ctx = GenCtx::new();
+    generate_blocks(&mut out, &blocks, &mut ctx).unwrap();
+    assert!(out.contains("A"), "Should contain A. Got: {out:?}");
+    assert!(out.contains("B"), "Should contain B. Got: {out:?}");
+    assert!(out.contains("C"), "Should contain C. Got: {out:?}");
+    // Verify ordering
+    let pos_a: usize = out.find("A").expect("A");
+    let pos_b: usize = out.find("B").expect("B");
+    let pos_c: usize = out.find("C").expect("C");
+    assert!(pos_a < pos_b && pos_b < pos_c, "Order should be A < B < C");
+}
