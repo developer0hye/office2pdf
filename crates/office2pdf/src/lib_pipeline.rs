@@ -212,7 +212,9 @@ fn convert_bytes_streaming_xlsx(
 ) -> Result<ConvertResult, ConvertError> {
     let total_start: Instant = Instant::now();
     let input_size_bytes = data.len() as u64;
-    let chunk_size = options.streaming_chunk_size.unwrap_or(1000);
+    let chunk_size = options
+        .streaming_chunk_size
+        .unwrap_or(crate::defaults::DEFAULT_STREAMING_CHUNK_SIZE);
 
     let xlsx_parser = parser::xlsx::XlsxParser;
 

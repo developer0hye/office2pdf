@@ -38,6 +38,7 @@
 //! ```
 
 pub mod config;
+pub mod defaults;
 pub mod error;
 pub mod ir;
 pub mod parser;

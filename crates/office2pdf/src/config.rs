@@ -96,10 +96,11 @@ pub enum PaperSize {
 impl PaperSize {
     /// Returns (width, height) in points.
     pub fn dimensions(&self) -> (f64, f64) {
+        use crate::defaults;
         match self {
-            Self::A4 => (595.28, 841.89),
-            Self::Letter => (612.0, 792.0),
-            Self::Legal => (612.0, 1008.0),
+            Self::A4 => (defaults::A4_WIDTH_PT, defaults::A4_HEIGHT_PT),
+            Self::Letter => (defaults::LETTER_WIDTH_PT, defaults::LETTER_HEIGHT_PT),
+            Self::Legal => (defaults::LEGAL_WIDTH_PT, defaults::LEGAL_HEIGHT_PT),
             Self::Custom { width, height } => (*width, *height),
         }
     }

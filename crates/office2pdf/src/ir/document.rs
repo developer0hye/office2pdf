@@ -42,10 +42,9 @@ pub struct PageSize {
 
 impl Default for PageSize {
     fn default() -> Self {
-        // A4 in points
         Self {
-            width: 595.28,
-            height: 841.89,
+            width: crate::defaults::A4_WIDTH_PT,
+            height: crate::defaults::A4_HEIGHT_PT,
         }
     }
 }
@@ -61,12 +60,11 @@ pub struct Margins {
 
 impl Default for Margins {
     fn default() -> Self {
-        // 1 inch = 72 points
         Self {
-            top: 72.0,
-            bottom: 72.0,
-            left: 72.0,
-            right: 72.0,
+            top: crate::defaults::DEFAULT_MARGIN_PT,
+            bottom: crate::defaults::DEFAULT_MARGIN_PT,
+            left: crate::defaults::DEFAULT_MARGIN_PT,
+            right: crate::defaults::DEFAULT_MARGIN_PT,
         }
     }
 }

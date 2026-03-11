@@ -29,9 +29,7 @@ pub(super) type StyleMap = HashMap<String, ResolvedStyle>;
 /// Synthetic style ID used for document-level default text properties.
 pub(super) const DOC_DEFAULT_STYLE_ID: &str = "__office2pdf_doc_defaults";
 
-/// Default font sizes for heading levels (Heading 1-6).
-/// Index 0 = Heading 1 (outline_lvl 0), index 5 = Heading 6 (outline_lvl 5).
-const HEADING_DEFAULT_SIZES: [f64; 6] = [24.0, 20.0, 16.0, 14.0, 12.0, 11.0];
+use crate::defaults::HEADING_FONT_SIZES;
 
 /// Build a map from style ID → resolved formatting by extracting formatting
 /// from each style's run_property and paragraph_property.
@@ -108,7 +106,7 @@ pub(super) fn merge_text_style(explicit: &TextStyle, style: Option<&ResolvedStyl
 
     if let Some(level) = heading_level {
         if merged.font_size.is_none() {
-            merged.font_size = Some(HEADING_DEFAULT_SIZES[level]);
+            merged.font_size = Some(HEADING_FONT_SIZES[level]);
         }
         if merged.bold.is_none() {
             merged.bold = Some(true);
