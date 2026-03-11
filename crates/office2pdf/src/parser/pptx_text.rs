@@ -165,8 +165,9 @@ impl ListStyleParseState {
     fn handle_bullet_auto_num(&mut self, e: &quick_xml::events::BytesStart) {
         if let Some(target) = self.active_paragraph_target {
             let level: u32 = target.level();
-            self.bullet_style_mut(target).kind =
-                Some(PptxBulletKind::AutoNumber(parse_pptx_auto_numbering(e, level)));
+            self.bullet_style_mut(target).kind = Some(PptxBulletKind::AutoNumber(
+                parse_pptx_auto_numbering(e, level),
+            ));
         }
     }
 
@@ -189,12 +190,17 @@ impl ListStyleParseState {
         }
     }
 
-    fn handle_bullet_font_explicit(&mut self, e: &quick_xml::events::BytesStart, theme: &ThemeData) {
+    fn handle_bullet_font_explicit(
+        &mut self,
+        e: &quick_xml::events::BytesStart,
+        theme: &ThemeData,
+    ) {
         if let Some(target) = self.active_paragraph_target
             && let Some(typeface) = get_attr_str(e, b"typeface")
         {
-            self.bullet_style_mut(target).font =
-                Some(PptxBulletFontSource::Explicit(resolve_theme_font(&typeface, theme)));
+            self.bullet_style_mut(target).font = Some(PptxBulletFontSource::Explicit(
+                resolve_theme_font(&typeface, theme),
+            ));
         }
     }
 
@@ -285,8 +291,7 @@ impl ListStyleParseState {
     ) {
         if let Some(target) = self.active_paragraph_target {
             let parsed: ParsedColor = parse_color_from_start(reader, e, theme, color_map);
-            self.bullet_style_mut(target).color =
-                parsed.color.map(PptxBulletColorSource::Explicit);
+            self.bullet_style_mut(target).color = parsed.color.map(PptxBulletColorSource::Explicit);
         }
     }
 
@@ -298,8 +303,7 @@ impl ListStyleParseState {
     ) {
         if let Some(target) = self.active_paragraph_target {
             let parsed: ParsedColor = parse_color_from_empty(e, theme, color_map);
-            self.bullet_style_mut(target).color =
-                parsed.color.map(PptxBulletColorSource::Explicit);
+            self.bullet_style_mut(target).color = parsed.color.map(PptxBulletColorSource::Explicit);
         }
     }
 
