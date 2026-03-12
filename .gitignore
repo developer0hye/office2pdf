@@ -19,3 +19,8 @@ docs/
 
 # Ralph (local-only automation, never push to remote)
 scripts/ralph/
+
+# Local experiment harness local-only data and artifacts (keep skeleton, ignore content)
+project/__pycache__/
+project/report_partial/
+project/results.tsv

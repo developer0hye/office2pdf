@@ -1,0 +1,6 @@
+*
+!.gitignore
+!docx/
+!pptx/
+!docx/.gitkeep
+!pptx/.gitkeep
