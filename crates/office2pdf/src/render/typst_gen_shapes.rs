@@ -155,7 +155,7 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
 }
 
 /// Write stroke parameter for shapes, handling dash patterns.
-fn write_shape_stroke(out: &mut String, stroke: &Option<BorderSide>) {
+pub(super) fn write_shape_stroke(out: &mut String, stroke: &Option<BorderSide>) {
     if let Some(stroke) = stroke {
         match stroke.style {
             BorderLineStyle::Solid | BorderLineStyle::None => {
@@ -179,6 +179,33 @@ fn write_shape_stroke(out: &mut String, stroke: &Option<BorderSide>) {
                     border_line_style_to_typst(stroke.style),
                 );
             }
+        }
+    }
+}
+
+/// Write a border stroke value for image box wrapping (no leading comma).
+pub(super) fn write_image_border_stroke(out: &mut String, stroke: &BorderSide) {
+    match stroke.style {
+        BorderLineStyle::Solid | BorderLineStyle::None => {
+            let _ = write!(
+                out,
+                "{}pt + rgb({}, {}, {})",
+                format_f64(stroke.width),
+                stroke.color.r,
+                stroke.color.g,
+                stroke.color.b,
+            );
+        }
+        _ => {
+            let _ = write!(
+                out,
+                "(paint: rgb({}, {}, {}), thickness: {}pt, dash: \"{}\")",
+                stroke.color.r,
+                stroke.color.g,
+                stroke.color.b,
+                format_f64(stroke.width),
+                border_line_style_to_typst(stroke.style),
+            );
         }
     }
 }

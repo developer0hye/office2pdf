@@ -831,6 +831,15 @@ fn border_line_style_to_typst(style: BorderLineStyle) -> &'static str {
 
 fn generate_image(out: &mut String, img: &ImageData, ctx: &mut GenCtx) {
     let path = ctx.add_image(img);
+    let has_stroke: bool = img.stroke.is_some();
+
+    if has_stroke {
+        out.push_str("#box(stroke: ");
+        // Write the stroke value inline (reuse shape stroke formatting without leading comma)
+        shapes::write_image_border_stroke(out, img.stroke.as_ref().unwrap());
+        out.push_str(")[");
+    }
+
     out.push_str("#image(\"");
     out.push_str(&path);
     out.push('"');
@@ -842,7 +851,13 @@ fn generate_image(out: &mut String, img: &ImageData, ctx: &mut GenCtx) {
         let _ = write!(out, ", height: {}pt", format_f64(h));
     }
 
-    out.push_str(")\n");
+    out.push(')');
+
+    if has_stroke {
+        out.push_str("]\n");
+    } else {
+        out.push('\n');
+    }
 }
 
 /// Generate Typst markup for a floating image.

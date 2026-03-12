@@ -31,6 +31,7 @@ fn make_image(format: ImageFormat, width: Option<f64>, height: Option<f64>) -> B
         width,
         height,
         crop: None,
+        stroke: None,
     })
 }
 
@@ -62,6 +63,7 @@ fn test_image_crop_preprocesses_raster_asset() {
             right: 0.0,
             bottom: 0.0,
         }),
+        stroke: None,
     })])]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -219,4 +221,46 @@ fn test_no_images_produces_empty_assets() {
     let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Just text")])]);
     let output = generate_typst(&doc).unwrap();
     assert!(output.images.is_empty());
+}
+
+#[test]
+fn test_image_with_border_renders_box_stroke() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Image(ImageData {
+        data: MINIMAL_PNG.to_vec(),
+        format: ImageFormat::Png,
+        width: Some(127.0),
+        height: Some(227.0),
+        crop: None,
+        stroke: Some(BorderSide {
+            width: 6.0,
+            color: Color { r: 152, g: 0, b: 0 },
+            style: BorderLineStyle::Solid,
+        }),
+    })])]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("#box(stroke: "),
+        "Expected #box(stroke: ...) wrapper in: {}",
+        output.source
+    );
+    assert!(
+        output.source.contains("#image(\"img-0.png\""),
+        "Expected #image call in: {}",
+        output.source
+    );
+}
+
+#[test]
+fn test_image_without_border_no_box() {
+    let doc = make_doc(vec![make_flow_page(vec![make_image(
+        ImageFormat::Png,
+        Some(100.0),
+        Some(80.0),
+    )])]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        !output.source.contains("#box(stroke:"),
+        "Should NOT have #box wrapper when no stroke: {}",
+        output.source
+    );
 }

@@ -65,6 +65,9 @@ impl GroupTransform {
             if let Some(ref mut h) = img.height {
                 *h *= scale_y;
             }
+            if let Some(ref mut stroke) = img.stroke {
+                stroke.width *= (scale_x + scale_y) / 2.0;
+            }
         }
     }
 }

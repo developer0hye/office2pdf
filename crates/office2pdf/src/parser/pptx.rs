@@ -105,6 +105,8 @@ enum SolidFillCtx {
     EndParaFill,
     /// Bullet marker color (inside `<a:buClr>`).
     BulletFill,
+    /// Picture border color (inside `<p:pic>/<p:spPr>/<a:ln>`).
+    PicLineFill,
 }
 
 #[derive(Debug, Clone)]
