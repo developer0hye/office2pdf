@@ -121,50 +121,62 @@ pub(super) fn generate_runs_with_tabs(
             continue;
         }
 
-        let _ = writeln!(
-            out,
-            "  let tab_prefix_width_{index} = measure(tab_prefix_{}).width",
-            index - 1
-        );
-        let _ = writeln!(
-            out,
-            "  let tab_segment_width_{index} = measure(tab_segment_{index}).width"
-        );
-
-        if let Some(anchor_runs) = extract_decimal_anchor_runs(segment) {
-            let _ = write!(out, "  let tab_decimal_anchor_{index} = [");
-            generate_runs(out, &anchor_runs);
-            out.push_str("]\n");
-            let _ = writeln!(
-                out,
-                "  let tab_decimal_width_{index} = measure(tab_decimal_anchor_{index}).width"
-            );
-        }
-
-        let _ = writeln!(
-            out,
-            "  let tab_default_remainder_{index} = calc.rem-euclid(tab_prefix_width_{index}.abs.pt(), {})",
-            format_f64(DEFAULT_TAB_WIDTH_PT)
-        );
-        let _ = writeln!(
-            out,
-            "  let tab_advance_{index} = {}",
-            build_tab_advance_expr(index, segment, tab_stops)
-        );
-        let _ = writeln!(
-            out,
-            "  let tab_fill_{index} = {}",
-            build_tab_fill_expr(index, tab_stops)
-        );
-        let _ = writeln!(
-            out,
-            "  let tab_prefix_{index} = [#tab_prefix_{}#tab_fill_{index}#tab_segment_{index}]",
-            index - 1
-        );
+        write_tab_segment_bindings(out, index, segment, tab_stops);
     }
 
     let _ = writeln!(out, "  tab_prefix_{}", segments.len() - 1);
     out.push('}');
+}
+
+/// Emits Typst variable bindings for a non-first tab segment: measurement,
+/// decimal anchor (if applicable), default remainder, advance, fill, and
+/// the accumulated prefix content variable.
+fn write_tab_segment_bindings(
+    out: &mut String,
+    index: usize,
+    segment: &[Run],
+    tab_stops: Option<&[TabStop]>,
+) {
+    let _ = writeln!(
+        out,
+        "  let tab_prefix_width_{index} = measure(tab_prefix_{}).width",
+        index - 1
+    );
+    let _ = writeln!(
+        out,
+        "  let tab_segment_width_{index} = measure(tab_segment_{index}).width"
+    );
+
+    if let Some(anchor_runs) = extract_decimal_anchor_runs(segment) {
+        let _ = write!(out, "  let tab_decimal_anchor_{index} = [");
+        generate_runs(out, &anchor_runs);
+        out.push_str("]\n");
+        let _ = writeln!(
+            out,
+            "  let tab_decimal_width_{index} = measure(tab_decimal_anchor_{index}).width"
+        );
+    }
+
+    let _ = writeln!(
+        out,
+        "  let tab_default_remainder_{index} = calc.rem-euclid(tab_prefix_width_{index}.abs.pt(), {})",
+        format_f64(DEFAULT_TAB_WIDTH_PT)
+    );
+    let _ = writeln!(
+        out,
+        "  let tab_advance_{index} = {}",
+        build_tab_advance_expr(index, segment, tab_stops)
+    );
+    let _ = writeln!(
+        out,
+        "  let tab_fill_{index} = {}",
+        build_tab_fill_expr(index, tab_stops)
+    );
+    let _ = writeln!(
+        out,
+        "  let tab_prefix_{index} = [#tab_prefix_{}#tab_fill_{index}#tab_segment_{index}]",
+        index - 1
+    );
 }
 
 fn paragraph_contains_tabs(runs: &[Run]) -> bool {
@@ -219,23 +231,20 @@ fn extract_decimal_anchor_runs(runs: &[Run]) -> Option<Vec<Run>> {
         .filter(|run| run.footnote.is_none())
         .map(|run| run.text.as_str())
         .collect();
-    let separator_offset = find_decimal_separator_offset(&visible_text)?;
+    let separator_offset: usize = find_decimal_separator_offset(&visible_text)?;
 
     let mut anchor_runs: Vec<Run> = Vec::new();
     let mut visible_offset: usize = 0;
 
     for run in runs {
-        if let Some(content) = &run.footnote {
-            anchor_runs.push(Run {
-                text: String::new(),
-                style: run.style.clone(),
-                href: run.href.clone(),
-                footnote: Some(content.clone()),
-            });
+        if run.footnote.is_some() {
+            anchor_runs.push(run.clone());
             continue;
         }
 
-        let run_end = visible_offset + run.text.len();
+        let run_end: usize = visible_offset + run.text.len();
+
+        // Entire run falls before the separator — include it whole.
         if run_end <= separator_offset {
             if !run.text.is_empty() {
                 anchor_runs.push(run.clone());
@@ -244,10 +253,11 @@ fn extract_decimal_anchor_runs(runs: &[Run]) -> Option<Vec<Run>> {
             continue;
         }
 
-        let offset = separator_offset.saturating_sub(visible_offset);
-        if offset > 0 {
+        // This run spans the separator — include only the portion before it.
+        let chars_before_separator: usize = separator_offset.saturating_sub(visible_offset);
+        if chars_before_separator > 0 {
             anchor_runs.push(Run {
-                text: run.text[..offset].to_string(),
+                text: run.text[..chars_before_separator].to_string(),
                 style: run.style.clone(),
                 href: run.href.clone(),
                 footnote: None,
@@ -448,92 +458,86 @@ fn write_run_with_soft_line_breaks(out: &mut String, run: &Run) {
 
 fn write_run_segment(out: &mut String, run: &Run, text: &str) {
     let style = &run.style;
-    let escaped = escape_typst(text);
 
-    let has_text_props = has_text_properties(style);
-    let needs_underline = matches!(style.underline, Some(true));
-    let needs_strike = matches!(style.strikethrough, Some(true));
-    let has_link = run.href.is_some();
-    let needs_highlight = style.highlight.is_some();
-    let needs_super = matches!(style.vertical_align, Some(VerticalTextAlign::Superscript));
-    let needs_sub = matches!(style.vertical_align, Some(VerticalTextAlign::Subscript));
-    let needs_small_caps = matches!(style.small_caps, Some(true));
-    let needs_all_caps = matches!(style.all_caps, Some(true));
-
+    let needs_all_caps: bool = matches!(style.all_caps, Some(true));
     let escaped: String = if needs_all_caps {
         escape_typst(&text.to_uppercase())
     } else {
-        escaped
+        escape_typst(text)
     };
 
-    if let Some(ref href) = run.href {
-        let _ = write!(out, "#link(\"{href}\")[");
+    let wrappers: Vec<String> = collect_formatting_wrappers(run);
+
+    for wrapper in &wrappers {
+        out.push_str(wrapper);
     }
 
+    write_run_content(out, &escaped, style);
+
+    for _ in &wrappers {
+        out.push(']');
+    }
+}
+
+/// Builds the ordered list of `#command[` openers that wrap a run's content.
+/// The order matches the original nesting: link > highlight > strike >
+/// underline > super/sub > smallcaps.
+fn collect_formatting_wrappers(run: &Run) -> Vec<String> {
+    let style: &TextStyle = &run.style;
+    let mut wrappers: Vec<String> = Vec::new();
+
+    if let Some(ref href) = run.href {
+        wrappers.push(format!("#link(\"{href}\")["));
+    }
     if let Some(ref highlight) = style.highlight {
-        let _ = write!(
-            out,
+        wrappers.push(format!(
             "#highlight(fill: rgb({}, {}, {}))[",
             highlight.r, highlight.g, highlight.b
-        );
+        ));
+    }
+    if matches!(style.strikethrough, Some(true)) {
+        wrappers.push("#strike[".to_string());
+    }
+    if matches!(style.underline, Some(true)) {
+        wrappers.push("#underline[".to_string());
+    }
+    if matches!(style.vertical_align, Some(VerticalTextAlign::Superscript)) {
+        wrappers.push("#super[".to_string());
+    }
+    if matches!(style.vertical_align, Some(VerticalTextAlign::Subscript)) {
+        wrappers.push("#sub[".to_string());
+    }
+    if matches!(style.small_caps, Some(true)) {
+        wrappers.push("#smallcaps[".to_string());
     }
 
-    if needs_strike {
-        out.push_str("#strike[");
-    }
-    if needs_underline {
-        out.push_str("#underline[");
-    }
-    if needs_super {
-        out.push_str("#super[");
-    }
-    if needs_sub {
-        out.push_str("#sub[");
-    }
-    if needs_small_caps {
-        out.push_str("#smallcaps[");
-    }
+    wrappers
+}
 
-    if has_text_props {
+/// Writes the innermost content of a run: either `#text(params)[escaped]`
+/// when text properties are present, or the escaped text directly (with a
+/// `#[...]` safety wrapper when needed to prevent Typst syntax ambiguity).
+fn write_run_content(out: &mut String, escaped: &str, style: &TextStyle) {
+    if has_text_properties(style) {
         out.push_str("#text(");
         write_text_params(out, style);
         out.push_str(")[");
-        out.push_str(&escaped);
+        out.push_str(escaped);
         out.push(']');
-    } else {
-        let needs_wrap = !escaped.is_empty()
-            && out.ends_with(']')
-            && !out.ends_with("\\]")
-            && matches!(escaped.as_bytes()[0], b'(' | b'.' | b'[');
-        if needs_wrap {
-            out.push_str("#[");
-            out.push_str(&escaped);
-            out.push(']');
-        } else {
-            out.push_str(&escaped);
-        }
+        return;
     }
 
-    if needs_small_caps {
+    let needs_safety_wrap: bool = !escaped.is_empty()
+        && out.ends_with(']')
+        && !out.ends_with("\\]")
+        && matches!(escaped.as_bytes()[0], b'(' | b'.' | b'[');
+
+    if needs_safety_wrap {
+        out.push_str("#[");
+        out.push_str(escaped);
         out.push(']');
-    }
-    if needs_sub {
-        out.push(']');
-    }
-    if needs_super {
-        out.push(']');
-    }
-    if needs_underline {
-        out.push(']');
-    }
-    if needs_strike {
-        out.push(']');
-    }
-    if needs_highlight {
-        out.push(']');
-    }
-    if has_link {
-        out.push(']');
+    } else {
+        out.push_str(escaped);
     }
 }
 
