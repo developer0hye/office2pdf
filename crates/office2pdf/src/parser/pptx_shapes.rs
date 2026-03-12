@@ -55,6 +55,17 @@ impl GroupTransform {
         elem.y = off_y_pt + (elem.y - ch_off_y_pt) * scale_y;
         elem.width *= scale_x;
         elem.height *= scale_y;
+
+        // Scale inner ImageData dimensions so the rendered image matches
+        // the group-transformed size, not the raw child-space size.
+        if let FixedElementKind::Image(ref mut img) = elem.kind {
+            if let Some(ref mut w) = img.width {
+                *w *= scale_x;
+            }
+            if let Some(ref mut h) = img.height {
+                *h *= scale_y;
+            }
+        }
     }
 }
 

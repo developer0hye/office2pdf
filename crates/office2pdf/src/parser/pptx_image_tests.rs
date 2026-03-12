@@ -4,7 +4,7 @@ use std::io::{Cursor, Write};
 use zip::write::FileOptions;
 
 /// Create a minimal valid BMP (1×1 pixel, red) for test images.
-fn make_test_bmp() -> Vec<u8> {
+pub(super) fn make_test_bmp() -> Vec<u8> {
     let mut bmp = Vec::new();
     // BMP header (14 bytes)
     bmp.extend_from_slice(b"BM");
@@ -34,7 +34,7 @@ fn make_test_svg() -> Vec<u8> {
 }
 
 /// Create a picture XML element referencing an image via relationship ID.
-fn make_pic_xml(x: i64, y: i64, cx: i64, cy: i64, r_embed: &str) -> String {
+pub(super) fn make_pic_xml(x: i64, y: i64, cx: i64, cy: i64, r_embed: &str) -> String {
     make_custom_pic_xml(
         x,
         y,
@@ -52,15 +52,15 @@ fn make_custom_pic_xml(x: i64, y: i64, cx: i64, cy: i64, blip_fill_xml: &str) ->
 }
 
 /// Slide image for the test PPTX builder.
-struct TestSlideImage {
-    rid: String,
-    path: String,
-    data: Vec<u8>,
-    relationship_type: Option<String>,
+pub(super) struct TestSlideImage {
+    pub(super) rid: String,
+    pub(super) path: String,
+    pub(super) data: Vec<u8>,
+    pub(super) relationship_type: Option<String>,
 }
 
 /// Build a PPTX file with slides that have image relationships.
-fn build_test_pptx_with_images(
+pub(super) fn build_test_pptx_with_images(
     slide_cx_emu: i64,
     slide_cy_emu: i64,
     slides: &[(String, Vec<TestSlideImage>)],
@@ -165,7 +165,7 @@ fn build_test_pptx_with_images(
     cursor.into_inner()
 }
 
-fn get_image(elem: &FixedElement) -> &ImageData {
+pub(super) fn get_image(elem: &FixedElement) -> &ImageData {
     match &elem.kind {
         FixedElementKind::Image(img) => img,
         other => panic!("Expected Image, got {other:?}"),

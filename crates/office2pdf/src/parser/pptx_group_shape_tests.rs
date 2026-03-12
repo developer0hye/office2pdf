@@ -1,3 +1,6 @@
+use super::image_tests::{
+    TestSlideImage, build_test_pptx_with_images, get_image, make_pic_xml, make_test_bmp,
+};
 use super::*;
 
 #[allow(clippy::too_many_arguments)]
@@ -191,4 +194,57 @@ fn test_group_shape_with_nonzero_child_offset() {
     assert_eq!(page.elements.len(), 1);
     assert!((page.elements[0].x - emu_to_pt(500_000)).abs() < 0.1);
     assert!((page.elements[0].y - emu_to_pt(500_000)).abs() < 0.1);
+}
+
+#[test]
+fn test_group_shape_scales_image_dimensions() {
+    // Group scales child space by 0.5x, 0.5y:
+    // ext = 2_000_000 x 1_000_000, chExt = 4_000_000 x 2_000_000
+    let bmp_data = make_test_bmp();
+    let pic = make_pic_xml(0, 0, 4_000_000, 2_000_000, "rId3");
+    let group = make_group_shape(
+        0,
+        0,
+        2_000_000,
+        1_000_000,
+        0,
+        0,
+        4_000_000,
+        2_000_000,
+        &[pic],
+    );
+    let slide_xml = make_slide_xml(&[group]);
+    let slide_images = vec![TestSlideImage {
+        rid: "rId3".to_string(),
+        path: "../media/image1.bmp".to_string(),
+        data: bmp_data,
+        relationship_type: None,
+    }];
+    let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    assert_eq!(page.elements.len(), 1);
+
+    let elem = &page.elements[0];
+    let expected_w: f64 = emu_to_pt(2_000_000);
+    let expected_h: f64 = emu_to_pt(1_000_000);
+    // FixedElement dimensions should be scaled
+    assert!((elem.width - expected_w).abs() < 0.1);
+    assert!((elem.height - expected_h).abs() < 0.1);
+
+    // Inner ImageData dimensions must also be scaled by the group transform
+    let img = get_image(elem);
+    let img_w: f64 = img.width.expect("Expected width");
+    let img_h: f64 = img.height.expect("Expected height");
+    assert!(
+        (img_w - expected_w).abs() < 0.1,
+        "ImageData.width should be {expected_w}, got {img_w}"
+    );
+    assert!(
+        (img_h - expected_h).abs() < 0.1,
+        "ImageData.height should be {expected_h}, got {img_h}"
+    );
 }
