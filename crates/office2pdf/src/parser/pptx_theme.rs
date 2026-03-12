@@ -1,5 +1,6 @@
 use super::*;
 use crate::ir::{GradientFill, GradientStop};
+use crate::parser::units;
 
 /// Parsed theme data from ppt/theme/theme1.xml.
 #[derive(Debug, Clone, Default)]
@@ -627,8 +628,8 @@ pub(super) fn parse_effect_list(
                 match local.as_ref() {
                     b"outerShdw" => {
                         in_outer_shdw = true;
-                        shdw_blur = get_attr_i64(e, b"blurRad").unwrap_or(0) as f64 / 12_700.0;
-                        shdw_dist = get_attr_i64(e, b"dist").unwrap_or(0) as f64 / 12_700.0;
+                        shdw_blur = units::emu_to_pt(get_attr_i64(e, b"blurRad").unwrap_or(0));
+                        shdw_dist = units::emu_to_pt(get_attr_i64(e, b"dist").unwrap_or(0));
                         shdw_dir = get_attr_i64(e, b"dir").unwrap_or(0) as f64 / 60_000.0;
                         shdw_color = None;
                         shdw_opacity = 1.0;
@@ -647,8 +648,8 @@ pub(super) fn parse_effect_list(
                 let local = e.local_name();
                 match local.as_ref() {
                     b"outerShdw" => {
-                        let blur = get_attr_i64(e, b"blurRad").unwrap_or(0) as f64 / 12_700.0;
-                        let dist = get_attr_i64(e, b"dist").unwrap_or(0) as f64 / 12_700.0;
+                        let blur = units::emu_to_pt(get_attr_i64(e, b"blurRad").unwrap_or(0));
+                        let dist = units::emu_to_pt(get_attr_i64(e, b"dist").unwrap_or(0));
                         let dir = get_attr_i64(e, b"dir").unwrap_or(0) as f64 / 60_000.0;
                         shadow = Some(Shadow {
                             blur_radius: blur,
