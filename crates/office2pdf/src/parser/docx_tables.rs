@@ -485,6 +485,7 @@ fn extract_cell_content(
                     bidi,
                     small_caps,
                     paragraph_containers,
+                    None,
                 );
             }
             docx_rs::TableCellContent::Table(nested_table) => {

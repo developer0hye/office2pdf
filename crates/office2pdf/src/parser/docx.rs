@@ -37,9 +37,9 @@ use self::sections::{
     HeaderFooterAssets, build_flow_page_from_section, build_header_footer_assets,
 };
 use self::styles::{
-    DOC_DEFAULT_STYLE_ID, ResolvedStyle, StyleMap, TabStopOverride, apply_tab_stop_overrides,
-    build_style_map, get_paragraph_style_id, merge_paragraph_style, merge_text_style,
-    normalize_style_id,
+    DEFAULT_PARAGRAPH_STYLE_ID, DOC_DEFAULT_STYLE_ID, ResolvedStyle, StyleMap, TabStopOverride,
+    apply_tab_stop_overrides, build_style_map, extract_default_paragraph_style_id,
+    get_paragraph_style_id, merge_paragraph_style, merge_text_style, normalize_style_id,
 };
 use self::tables::convert_table;
 use self::text::{
@@ -120,6 +120,7 @@ impl Parser for DocxParser {
             bidi,
             small_caps,
             paragraph_containers,
+            styles_xml,
             header_footer_assets,
         ) = {
             let cursor = std::io::Cursor::new(data);
@@ -142,6 +143,7 @@ impl Parser for DocxParser {
                     let small_caps = SmallCapsContext::from_xml(doc_xml.as_deref());
                     let paragraph_containers =
                         ParagraphContainerContext::from_xml(doc_xml.as_deref());
+                    let styles_xml = read_zip_text(&mut archive, "word/styles.xml");
                     let header_footer_assets = build_header_footer_assets(&mut archive);
                     (
                         metadata,
@@ -156,6 +158,7 @@ impl Parser for DocxParser {
                         bidi,
                         small_caps,
                         paragraph_containers,
+                        styles_xml,
                         header_footer_assets,
                     )
                 }
@@ -175,6 +178,7 @@ impl Parser for DocxParser {
                         BidiContext::from_xml(None),
                         SmallCapsContext::from_xml(None),
                         ParagraphContainerContext::from_xml(None),
+                        None,
                         HeaderFooterAssets::default(),
                     )
                 }
@@ -190,7 +194,10 @@ impl Parser for DocxParser {
         let images = build_image_map(&docx);
         let hyperlinks = build_hyperlink_map(&docx);
         let numberings = build_numbering_map(&docx.numberings);
-        let style_map = build_style_map(&docx.styles);
+        let document_grid_line_pitch =
+            extract_section_doc_grid_line_pitch(&docx.document.section_property);
+        let default_paragraph_style_id = extract_default_paragraph_style_id(styles_xml.as_deref());
+        let style_map = build_style_map(&docx.styles, default_paragraph_style_id.as_deref());
         let mut warnings: Vec<ConvertWarning> = Vec::new();
 
         let mut elements: Vec<TaggedElement> = Vec::new();
@@ -212,6 +219,7 @@ impl Parser for DocxParser {
                         &bidi,
                         &small_caps,
                         &paragraph_containers,
+                        document_grid_line_pitch,
                     )];
                     // Inject math equations for this body child
                     let eqs = math.take(idx);
@@ -255,6 +263,7 @@ impl Parser for DocxParser {
                     &bidi,
                     &small_caps,
                     &paragraph_containers,
+                    document_grid_line_pitch,
                 ),
                 _ => vec![TaggedElement::Plain(vec![])],
             }));
@@ -338,6 +347,7 @@ fn convert_sdt_children(
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
     paragraph_containers: &ParagraphContainerContext,
+    document_grid_line_pitch: Option<f64>,
 ) -> Vec<TaggedElement> {
     let mut result = Vec::new();
     for child in &sdt.children {
@@ -356,6 +366,7 @@ fn convert_sdt_children(
                     bidi,
                     small_caps,
                     paragraph_containers,
+                    document_grid_line_pitch,
                 ));
             }
             docx_rs::StructuredDataTagChild::Table(table) => {
@@ -389,6 +400,7 @@ fn convert_sdt_children(
                     bidi,
                     small_caps,
                     paragraph_containers,
+                    document_grid_line_pitch,
                 ));
             }
             _ => {}
@@ -413,6 +425,7 @@ fn convert_paragraph_element(
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
     paragraph_containers: &ParagraphContainerContext,
+    document_grid_line_pitch: Option<f64>,
 ) -> TaggedElement {
     let num_info = extract_num_info(para);
 
@@ -432,6 +445,7 @@ fn convert_paragraph_element(
         bidi,
         small_caps,
         paragraph_containers,
+        document_grid_line_pitch,
     );
 
     match num_info {
@@ -491,6 +505,7 @@ fn convert_paragraph_blocks(
     bidi: &BidiContext,
     small_caps: &SmallCapsContext,
     paragraph_containers: &ParagraphContainerContext,
+    document_grid_line_pitch: Option<f64>,
 ) {
     // Check bidi direction for this paragraph (must be called once per XML <w:p>)
     let is_rtl = bidi.next_is_bidi();
@@ -507,6 +522,7 @@ fn convert_paragraph_blocks(
             let normalized_id = normalize_style_id(id);
             style_map.get(&normalized_id)
         })
+        .or_else(|| style_map.get(DEFAULT_PARAGRAPH_STYLE_ID))
         .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID));
 
     // Collect text runs and detect inline images
@@ -588,6 +604,7 @@ fn convert_paragraph_blocks(
                             resolved_style,
                             is_rtl,
                             container_style.as_ref(),
+                            document_grid_line_pitch,
                             &mut runs,
                         );
                     } else if !inline_images.is_empty() {
@@ -607,6 +624,7 @@ fn convert_paragraph_blocks(
                             resolved_style,
                             is_rtl,
                             container_style.as_ref(),
+                            document_grid_line_pitch,
                             &mut runs,
                         );
                     }
@@ -682,6 +700,7 @@ fn convert_paragraph_blocks(
             resolved_style,
             is_rtl,
             container_style.as_ref(),
+            document_grid_line_pitch,
             &mut runs,
         );
     }
@@ -693,6 +712,7 @@ fn push_paragraph_from_runs(
     resolved_style: Option<&ResolvedStyle>,
     is_rtl: bool,
     container_style: Option<&crate::ir::ParagraphContainerStyle>,
+    document_grid_line_pitch: Option<f64>,
     runs: &mut Vec<Run>,
 ) {
     let explicit_para_style = extract_paragraph_style(&para.property);
@@ -704,6 +724,9 @@ fn push_paragraph_from_runs(
     );
     if is_rtl {
         style.direction = Some(TextDirection::Rtl);
+    }
+    if style.grid_line_pitch.is_none() {
+        style.grid_line_pitch = document_grid_line_pitch;
     }
     if let Some(container_style) = container_style {
         style.container = Some(container_style.clone());
@@ -771,6 +794,7 @@ fn extract_doc_default_paragraph_style(styles: &docx_rs::Styles) -> ParagraphSty
         indent_right,
         indent_first_line,
         line_spacing,
+        grid_line_pitch: None,
         space_before,
         space_after,
         heading_level: None,
@@ -815,6 +839,14 @@ fn extract_line_spacing_from_json(
         });
 
     (line_spacing, space_before, space_after)
+}
+
+fn extract_section_doc_grid_line_pitch(section_prop: &docx_rs::SectionProperty) -> Option<f64> {
+    let doc_grid = section_prop.doc_grid.as_ref()?;
+    let json = serde_json::to_value(doc_grid).ok()?;
+    json.get("linePitch")
+        .and_then(serde_json::Value::as_f64)
+        .map(|value| value / 20.0)
 }
 
 fn json_bool_or_val(value: &serde_json::Value) -> Option<bool> {

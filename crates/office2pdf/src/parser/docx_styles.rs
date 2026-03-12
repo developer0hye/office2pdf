@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::ir::{ParagraphStyle, TabStop, TextStyle};
+use quick_xml::events::Event;
 
 use super::{
     extract_doc_default_paragraph_style, extract_doc_default_text_style, extract_paragraph_style,
@@ -29,6 +30,8 @@ pub(super) type StyleMap = HashMap<String, ResolvedStyle>;
 
 /// Synthetic style ID used for document-level default text properties.
 pub(super) const DOC_DEFAULT_STYLE_ID: &str = "__office2pdf_doc_defaults";
+/// Synthetic style ID used for the default paragraph style (`w:default="1"`).
+pub(super) const DEFAULT_PARAGRAPH_STYLE_ID: &str = "__office2pdf_default_paragraph_style";
 
 pub(super) fn normalize_style_id(style_id: &str) -> String {
     style_id.to_ascii_lowercase()
@@ -40,7 +43,10 @@ const HEADING_DEFAULT_SIZES: [f64; 6] = [24.0, 20.0, 16.0, 14.0, 12.0, 11.0];
 
 /// Build a map from style ID → resolved formatting by extracting formatting
 /// from each style's run_property and paragraph_property.
-pub(super) fn build_style_map(styles: &docx_rs::Styles) -> StyleMap {
+pub(super) fn build_style_map(
+    styles: &docx_rs::Styles,
+    default_paragraph_style_id: Option<&str>,
+) -> StyleMap {
     let mut map = StyleMap::new();
     let default_text: TextStyle = extract_doc_default_text_style(styles);
     let default_paragraph: ParagraphStyle = extract_doc_default_paragraph_style(styles);
@@ -76,7 +82,50 @@ pub(super) fn build_style_map(styles: &docx_rs::Styles) -> StyleMap {
         );
     }
 
+    if let Some(default_style_id) = default_paragraph_style_id.map(normalize_style_id)
+        && let Some(default_style) = map.get(&default_style_id).cloned()
+    {
+        map.insert(DEFAULT_PARAGRAPH_STYLE_ID.to_string(), default_style);
+    }
+
     map
+}
+
+pub(super) fn extract_default_paragraph_style_id(styles_xml: Option<&str>) -> Option<String> {
+    let styles_xml = styles_xml?;
+    let mut reader = quick_xml::Reader::from_str(styles_xml);
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref element)) | Ok(Event::Empty(ref element))
+                if element.local_name().as_ref() == b"style" =>
+            {
+                let mut style_id: Option<String> = None;
+                let mut style_type: Option<String> = None;
+                let mut is_default = false;
+
+                for attribute in element.attributes().flatten() {
+                    let value = String::from_utf8_lossy(attribute.value.as_ref()).into_owned();
+                    match attribute.key.local_name().as_ref() {
+                        b"styleId" => style_id = Some(value),
+                        b"type" => style_type = Some(value),
+                        b"default" => {
+                            is_default = matches!(value.as_str(), "1" | "true" | "on");
+                        }
+                        _ => {}
+                    }
+                }
+
+                if is_default && matches!(style_type.as_deref(), Some("paragraph")) {
+                    return style_id;
+                }
+            }
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+
+    None
 }
 
 fn resolve_style(
@@ -232,6 +281,9 @@ fn inherit_paragraph_style(
         line_spacing: override_style
             .line_spacing
             .or(base.and_then(|style| style.line_spacing)),
+        grid_line_pitch: override_style
+            .grid_line_pitch
+            .or(base.and_then(|style| style.grid_line_pitch)),
         space_before: override_style
             .space_before
             .or(base.and_then(|style| style.space_before)),
@@ -374,6 +426,9 @@ pub(super) fn merge_paragraph_style(
         line_spacing: explicit
             .line_spacing
             .or(style_paragraph.and_then(|style| style.line_spacing)),
+        grid_line_pitch: explicit
+            .grid_line_pitch
+            .or(style_paragraph.and_then(|style| style.grid_line_pitch)),
         space_before: explicit
             .space_before
             .or(style_paragraph.and_then(|style| style.space_before)),

@@ -206,7 +206,7 @@ pub(super) fn generate_fixed_text_list(
     let style: &ParagraphStyle = &paragraph.style;
     let root_level: u32 = list_root_level(list);
     let effective_style: EffectiveListStyle<'_> = list_style_for_level(list, root_level);
-    let has_para_style: bool = needs_block_wrapper(style);
+    let has_para_style: bool = needs_block_wrapper(style, Some(&paragraph.runs));
     let line_gap_pt: Option<f64> = fixed_text_list_line_gap_pt(style, list);
 
     if has_para_style {
@@ -785,7 +785,7 @@ fn generate_list_item_paragraphs(out: &mut String, paragraphs: &[Paragraph]) {
 fn generate_list_item_paragraph(out: &mut String, paragraph: &Paragraph) {
     let style = &paragraph.style;
     let disable_east_asian_breaks: bool = matches!(style.east_asian_line_break, Some(false));
-    let has_para_style = needs_block_wrapper(style);
+    let has_para_style = needs_block_wrapper(style, Some(&paragraph.runs));
     let has_outer_pad = write_container_indent_wrapper_start(out, style);
     let needs_inline_justify: bool =
         !has_para_style && matches!(style.alignment, Some(Alignment::Justify));

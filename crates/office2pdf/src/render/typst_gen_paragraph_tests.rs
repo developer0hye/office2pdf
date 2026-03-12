@@ -775,3 +775,192 @@ fn test_generate_line_spacing_exact_uses_line_gap_when_font_size_known() {
         "Expected exact line spacing to emit line gap (18pt - 12pt) in: {result}"
     );
 }
+
+#[test]
+fn test_generate_east_asian_default_single_line_emits_word_like_leading() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: "中文正文".to_string(),
+            style: TextStyle {
+                font_size: Some(11.0),
+                font_family_east_asia: Some("HYQiHei-55J".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#block(below: 8.25pt)"),
+        "Expected default Word-like single spacing compensation in: {result}"
+    );
+    assert!(
+        result.contains("leading: 8.25pt"),
+        "Expected East Asian default single-line leading in: {result}"
+    );
+}
+
+#[test]
+fn test_generate_east_asian_single_line_spacing_uses_word_like_leading() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            line_spacing: Some(LineSpacing::Proportional(1.0)),
+            space_after: Some(3.0),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "中文正文".to_string(),
+            style: TextStyle {
+                font_size: Some(11.0),
+                font_family_east_asia: Some("HYQiHei-55J".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#block(below: 11.25pt)"),
+        "Expected East Asian single-line spacing plus paragraph after-space in: {result}"
+    );
+    assert!(
+        result.contains("leading: 8.25pt"),
+        "Expected East Asian proportional single-line leading in: {result}"
+    );
+}
+
+#[test]
+fn test_generate_body_paragraph_uses_document_grid_line_pitch_when_spacing_is_implicit() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            grid_line_pitch: Some(19.35),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "中文正文".to_string(),
+            style: TextStyle {
+                font_size: Some(11.0),
+                font_family_east_asia: Some("HYQiHei-55J".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#block(below: 8.35pt)"),
+        "Expected document-grid block compensation in: {result}"
+    );
+    assert!(
+        result.contains("leading: 8.35pt"),
+        "Expected document-grid line pitch to drive body leading in: {result}"
+    );
+}
+
+#[test]
+fn test_generate_single_auto_spacing_prefers_document_grid_line_pitch_for_body_text() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            line_spacing: Some(LineSpacing::Proportional(1.0)),
+            grid_line_pitch: Some(19.35),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "中文正文".to_string(),
+            style: TextStyle {
+                font_size: Some(11.0),
+                font_family_east_asia: Some("HYQiHei-55J".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("leading: 8.35pt"),
+        "Expected single auto spacing to honor document grid line pitch in: {result}"
+    );
+}
+
+#[test]
+fn test_generate_multi_line_auto_spacing_scales_document_grid_line_pitch() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            line_spacing: Some(LineSpacing::Proportional(1.35)),
+            grid_line_pitch: Some(15.6),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "基金合同正文".to_string(),
+            style: TextStyle {
+                font_size: Some(10.5),
+                font_family_east_asia: Some("宋体".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("leading: 10.56pt"),
+        "Expected proportional auto spacing to scale document grid line pitch in: {result}"
+    );
+}
+
+#[test]
+fn test_generate_multi_line_auto_spacing_avoids_east_asian_over_amplification() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            line_spacing: Some(LineSpacing::Proportional(1.35)),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "基金合同正文".to_string(),
+            style: TextStyle {
+                font_size: Some(10.5),
+                font_family_east_asia: Some("宋体".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("leading: 6.51pt"),
+        "Expected 1.35x auto spacing to use Word auto multiplier without East Asian amplification in: {result}"
+    );
+}
+
+#[test]
+fn test_generate_empty_paragraph_emits_invisible_placeholder_run() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            line_spacing: Some(LineSpacing::Exact(20.0)),
+            ..ParagraphStyle::default()
+        },
+        runs: Vec::new(),
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#text(size: 12pt)[\u{2060}]"),
+        "Expected empty paragraphs to emit an invisible placeholder line box in: {result}"
+    );
+    assert!(
+        result.contains("leading: 8pt"),
+        "Expected exact line spacing to remain active for empty paragraphs in: {result}"
+    );
+}

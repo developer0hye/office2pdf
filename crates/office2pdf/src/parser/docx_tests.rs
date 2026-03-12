@@ -43,6 +43,24 @@ fn build_docx_bytes_with_page_setup(
     cursor.into_inner()
 }
 
+fn build_docx_bytes_with_doc_grid(
+    paragraphs: Vec<docx_rs::Paragraph>,
+    line_pitch: usize,
+) -> Vec<u8> {
+    let mut docx = docx_rs::Docx::new();
+    docx.document = docx
+        .document
+        .clone()
+        .doc_grid(docx_rs::DocGrid::new().line_pitch(line_pitch));
+    for p in paragraphs {
+        docx = docx.add_paragraph(p);
+    }
+    let buf = Vec::new();
+    let mut cursor = Cursor::new(buf);
+    docx.build().pack(&mut cursor).unwrap();
+    cursor.into_inner()
+}
+
 /// Helper: extract the first run from the first paragraph of a parsed document.
 fn first_run(doc: &Document) -> &Run {
     let page = match &doc.pages[0] {

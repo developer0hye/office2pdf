@@ -1,4 +1,37 @@
 use super::*;
+use std::io::{Cursor, Read, Write};
+
+fn mark_default_paragraph_style(mut data: Vec<u8>, style_id: &str) -> Vec<u8> {
+    let mut input = zip::ZipArchive::new(Cursor::new(data)).unwrap();
+    let mut output = Cursor::new(Vec::new());
+    {
+        let mut writer = zip::ZipWriter::new(&mut output);
+        let options = zip::write::FileOptions::default();
+
+        for index in 0..input.len() {
+            let mut file = input.by_index(index).unwrap();
+            let mut bytes = Vec::new();
+            file.read_to_end(&mut bytes).unwrap();
+
+            writer.start_file(file.name(), options).unwrap();
+            if file.name() == "word/styles.xml" {
+                let xml = String::from_utf8(bytes).unwrap();
+                let needle = format!(r#"w:type="paragraph" w:styleId="{style_id}""#);
+                let replacement =
+                    format!(r#"w:type="paragraph" w:default="1" w:styleId="{style_id}""#);
+                let patched = xml.replacen(&needle, &replacement, 1);
+                writer.write_all(patched.as_bytes()).unwrap();
+            } else {
+                writer.write_all(&bytes).unwrap();
+            }
+        }
+
+        writer.finish().unwrap();
+    }
+
+    data = output.into_inner();
+    data
+}
 
 #[test]
 fn test_heading1_style_applies_defaults() {
@@ -338,4 +371,56 @@ fn test_runs_inherit_document_default_font() {
     assert_eq!(para.runs[1].style.font_size, Some(9.0));
     assert_eq!(para.runs[1].style.color, Some(Color::new(17, 85, 204)));
     assert_eq!(para.runs[1].style.underline, Some(true));
+}
+
+#[test]
+fn test_paragraph_without_explicit_pstyle_inherits_default_paragraph_style() {
+    let styles = docx_rs::Styles::new().add_style(
+        docx_rs::Style::new("Normal", docx_rs::StyleType::Paragraph)
+            .name("Normal")
+            .size(22)
+            .fonts(
+                docx_rs::RunFonts::new()
+                    .ascii("Arial")
+                    .east_asia("Microsoft YaHei"),
+            )
+            .align(docx_rs::AlignmentType::Both)
+            .line_spacing(docx_rs::LineSpacing::new().before(60).after(60)),
+    );
+
+    let paragraph = docx_rs::Paragraph::new()
+        .line_spacing(
+            docx_rs::LineSpacing::new()
+                .line_rule(docx_rs::LineSpacingType::Auto)
+                .line(240),
+        )
+        .add_run(docx_rs::Run::new().add_text("Default style body paragraph"));
+    let data = mark_default_paragraph_style(
+        build_docx_bytes_with_stylesheet(vec![paragraph], styles),
+        "Normal",
+    );
+
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let para = first_paragraph(&doc);
+
+    assert_eq!(para.style.alignment, Some(Alignment::Justify));
+    match para.style.line_spacing {
+        Some(LineSpacing::Proportional(factor)) => assert!(
+            (factor - 1.0).abs() < 0.0001,
+            "Expected single line spacing, got {factor}"
+        ),
+        other => panic!("Expected proportional line spacing, got {other:?}"),
+    }
+    assert_eq!(para.style.space_before, Some(3.0));
+    assert_eq!(para.style.space_after, Some(3.0));
+    assert_eq!(para.runs[0].style.font_size, Some(11.0));
+    assert_eq!(
+        para.runs[0].style.font_family_ascii.as_deref(),
+        Some("Arial")
+    );
+    assert_eq!(
+        para.runs[0].style.font_family_east_asia.as_deref(),
+        Some("Microsoft YaHei")
+    );
 }

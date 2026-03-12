@@ -4,10 +4,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use office2pdf::config::{ConvertOptions, Format};
+use office2pdf::parser::Parser;
 use office2pdf::parser::docx::DocxParser;
 use office2pdf::parser::pptx::PptxParser;
 use office2pdf::parser::xlsx::XlsxParser;
-use office2pdf::parser::Parser;
 use office2pdf::render::typst_gen::generate_typst_with_options;
 
 fn usage() -> &'static str {

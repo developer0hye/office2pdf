@@ -134,3 +134,7 @@ Available functions: `convertToPdf(data, format)`, `convertDocxToPdf(data)`, `co
 ## License
 
 Licensed under [Apache License, Version 2.0](LICENSE).
+
+## Project Harness
+
+A portable comparison harness now lives in `project/` with `原文档/`, `standard/`, `target/`, and `report/` folders plus `project/compare_pdfs.py` for PDF diff reports.

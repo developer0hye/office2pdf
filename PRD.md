@@ -215,6 +215,52 @@ office2pdf/
 | `thiserror` | Library errors | |
 | `anyhow` | CLI errors | |
 
+### 5.5 High-Fidelity OOXML -> Typst Conversion Strategy
+
+The primary rendering goal is not semantic conversion alone, but PDF output that looks as close as possible to Office-native export. Exact page and line parity is not always achievable because Word/PowerPoint and Typst use different layout engines, shaping behavior, and line-breaking algorithms. The implementation must therefore optimize for deterministic, testable visual fidelity against native Office PDF output.
+
+#### 5.5.1 Unit and Coordinate Normalization
+
+- Normalize all OOXML lengths into typed internal units before Typst codegen. Avoid repeated ad-hoc conversions during rendering.
+- Required base conversions:
+  - Twips: `1 pt = 20 twips`, `1 in = 1440 twips`
+  - EMUs: `1 in = 914,400 EMUs`, `1 pt = 12,700 EMUs`
+- PPTX and Typst both use a top-left origin for positioned content, so PPTX `a:off` and `a:ext` can be mapped directly to Typst `place`/`box` coordinates after EMU conversion.
+- Unit conversion should live in a single shared module and use explicit domain types where possible to reduce rounding and coordinate drift.
+
+#### 5.5.2 PPTX: Fixed-Canvas Rendering
+
+- Treat each slide as a fixed canvas. Emit `page(width: ..., height: ..., margin: 0pt)` for every slide.
+- Render each textbox, image, table, and shape using absolute coordinates and explicit width/height.
+- Preserve XML element order during rendering because it defines the effective Z-order.
+- Resolve the full inheritance chain in the parser: `Slide Master -> Slide Layout -> Slide`. Codegen should receive flattened, final properties rather than attempting to reproduce PowerPoint inheritance in Typst.
+- Resolve theme colors, theme fonts, placeholder defaults, and inherited text properties before Typst emission.
+
+#### 5.5.3 DOCX: Flow-Layout Rendering
+
+- Flatten the effective style stack in the converter before Typst generation. At minimum, resolve: `document defaults -> table/numbering style -> paragraph style -> character style -> direct formatting`.
+- Convert paragraph spacing and line spacing with Word-specific rules in mind, including single, 1.5x, multiple, and exact line spacing. Expect per-font compensation to be necessary because Typst and Word use different font metrics.
+- Preserve explicit pagination controls such as page breaks and section-level page settings.
+- Font mapping is a fidelity-critical requirement. If the original fonts are not resolved correctly, line wrapping and downstream pagination will diverge quickly.
+- For floating or absolutely positioned DOCX objects, compute final page-relative placement in the converter instead of relying on Typst defaults.
+
+#### 5.5.4 Complex Elements
+
+- Shapes and DrawingML are a high-risk area. Preferred fallback strategy:
+  - Convert supported vector shapes to Typst-native drawing only when the geometry maps cleanly.
+  - Otherwise convert to SVG first, or rasterize to PNG when necessary for fidelity or scope control.
+  - Keep internal text as real Typst text when feasible so text remains selectable and sharp.
+- Tables require an explicit grid model with cell spans, borders, fills, padding, and width resolution. Do not rely on Typst defaults to reproduce Word's table heuristics.
+- Math requires a dedicated pipeline. Preferred path: `OMML -> MathML -> Typst math`, with a direct OMML AST transform as a future optimization.
+- Lists and numbering must resolve `numbering.xml` state, hanging indents, and tab stops. If Typst native list behavior is visually too different, render list items with manual indentation/grid primitives instead.
+
+#### 5.5.5 Typography and Layout Compensation
+
+- Exact font matching and embedding are mandatory for stable visual output.
+- Provide hooks for per-font or per-script compensation, including kerning-sensitive spacing, character spacing, mixed CJK/Latin spacing, and line-height adjustments.
+- Expect small engine differences to create cascading page drift in long documents. Fixes should be data-driven from visual comparison results, not one-off hardcoded document hacks.
+- The validation baseline for high-fidelity work is the PDF exported by Microsoft Office (or the closest native Office renderer available for the source file type).
+
 ---
 
 ## 6. Public API (Library)
@@ -316,5 +362,6 @@ office2pdf --help
 |---|---|---|
 | OOXML spec complexity | Parsing crates may not support all elements | Skip unsupported elements + warning logs |
 | Typst IR conversion limits | Some layouts may not be expressible in Typst | Best approximation within Typst capabilities |
+| Layout engine mismatch | Line breaking and pagination may diverge from Office even with identical content | Exact font resolution, flattened effective styles, and targeted compensation based on visual diffs |
 | Font compatibility | Original fonts may not be available | System font discovery + fallback font mapping |
 | Parsing crate maintenance | Dependency crates may become abandoned | Prepare forks, consider self-implementation for core parsers |

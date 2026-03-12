@@ -141,6 +141,7 @@ fn discover_macos_office_font_paths_from(app_roots: &[PathBuf], home_dir: &Path)
         candidates.push(font_cache_root.join("CloudFonts"));
         candidates.push(font_cache_root.join("PreviewFont"));
     }
+    candidates.extend(wps_app_font_dir_candidates(app_roots));
     canonicalize_existing_dirs(candidates)
 }
 
@@ -157,6 +158,14 @@ fn office_app_font_dir_candidates(app_roots: &[PathBuf]) -> Vec<PathBuf> {
         }
     }
     candidates
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn wps_app_font_dir_candidates(app_roots: &[PathBuf]) -> Vec<PathBuf> {
+    app_roots
+        .iter()
+        .map(|app_root| app_root.join("wpsoffice.app/Contents/Resources/office6/fonts"))
+        .collect()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -252,6 +261,7 @@ mod tests {
         fs::create_dir_all(apps.join("Microsoft PowerPoint.app/Contents/Resources/DFonts"))
             .unwrap();
         fs::create_dir_all(apps.join("Microsoft Word.app/Contents/Resources/DFonts")).unwrap();
+        fs::create_dir_all(apps.join("wpsoffice.app/Contents/Resources/office6/fonts")).unwrap();
         fs::create_dir_all(
             home.join("Library/Group Containers/UBF8T346G9.Office/FontCache/4/CloudFonts"),
         )
@@ -281,6 +291,11 @@ mod tests {
                 fs::canonicalize(temp.path().join(
                     "home/Library/Group Containers/UBF8T346G9.Office/FontCache/4/PreviewFont",
                 ))
+                .unwrap(),
+                fs::canonicalize(
+                    temp.path()
+                        .join("Applications/wpsoffice.app/Contents/Resources/office6/fonts"),
+                )
                 .unwrap(),
             ];
 

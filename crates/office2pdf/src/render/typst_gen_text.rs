@@ -13,13 +13,16 @@ const DEFAULT_TAB_WIDTH_PT: f64 = 36.0;
 const PPTX_SOFT_LINE_BREAK_CHAR: char = '\u{000B}';
 // `eaLnBrk="0"` disables East Asian auto-breaking between adjacent glyphs.
 const WORD_JOINER_CHAR: char = '\u{2060}';
-// Empirical Word baseline-to-baseline height for single line spacing is ~1.2em.
+const EMPTY_PARAGRAPH_PLACEHOLDER_FONT_SIZE_PT: f64 = 12.0;
+// Empirical Word baseline-to-baseline height for Latin single line spacing.
 const WORD_SINGLE_LINE_HEIGHT_EM: f64 = 1.2;
+// East Asian Word/WPS defaults are materially taller than Typst's default metrics.
+const WORD_SINGLE_LINE_HEIGHT_EAST_ASIA_EM: f64 = 1.75;
 
 pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
     let style = &para.style;
     let disable_east_asian_breaks: bool = matches!(style.east_asian_line_break, Some(false));
-    let has_para_style = needs_block_wrapper(style);
+    let has_para_style = needs_block_wrapper(style, Some(&para.runs));
     let has_outer_pad = write_container_indent_wrapper_start(out, style);
     let needs_inline_justify: bool =
         !has_para_style && matches!(style.alignment, Some(Alignment::Justify));
@@ -58,7 +61,7 @@ pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(
 
     if let Some(level) = style.heading_level {
         let _ = write!(out, "#heading(level: {level})[");
-        generate_runs_with_tabs(
+        write_paragraph_runs_or_placeholder(
             out,
             &para.runs,
             style.tab_stops.as_deref(),
@@ -66,7 +69,7 @@ pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(
         );
         out.push(']');
     } else {
-        generate_runs_with_tabs(
+        write_paragraph_runs_or_placeholder(
             out,
             &para.runs,
             style.tab_stops.as_deref(),
@@ -94,10 +97,10 @@ pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(
     Ok(())
 }
 
-pub(super) fn needs_block_wrapper(style: &ParagraphStyle) -> bool {
+pub(super) fn needs_block_wrapper(style: &ParagraphStyle, runs: Option<&[Run]>) -> bool {
     style.space_before.is_some()
         || style.space_after.is_some()
-        || style.line_spacing.is_some()
+        || paragraph_leading_pt(style, runs).is_some_and(|leading| leading > 0.0)
         || style.container.is_some()
 }
 
@@ -215,22 +218,35 @@ pub(super) fn write_par_settings(out: &mut String, style: &ParagraphStyle, runs:
 pub(super) fn paragraph_leading_pt(style: &ParagraphStyle, runs: Option<&[Run]>) -> Option<f64> {
     match style.line_spacing {
         Some(LineSpacing::Proportional(factor)) => {
-            proportional_line_spacing_leading_pt(factor, runs)
+            proportional_line_spacing_leading_pt(style, factor, runs)
         }
         Some(LineSpacing::Exact(line_height_pt)) => {
             exact_line_spacing_leading_pt(line_height_pt, runs)
         }
-        None => None,
+        None => default_single_line_leading_pt(style, runs),
     }
 }
 
-fn proportional_line_spacing_leading_pt(factor: f64, runs: Option<&[Run]>) -> Option<f64> {
+fn proportional_line_spacing_leading_pt(
+    style: &ParagraphStyle,
+    factor: f64,
+    runs: Option<&[Run]>,
+) -> Option<f64> {
     if factor <= 0.0 {
         return None;
     }
 
+    if let Some(line_pitch_pt) = effective_grid_line_pitch_pt(style, runs) {
+        return exact_line_spacing_leading_pt(line_pitch_pt * factor, runs);
+    }
+
     let font_size_pt = paragraph_effective_font_size_pt(runs).unwrap_or(12.0);
-    let leading_pt = font_size_pt * ((factor * WORD_SINGLE_LINE_HEIGHT_EM) - 1.0);
+    let base_em = if factor > 1.0 {
+        WORD_SINGLE_LINE_HEIGHT_EM
+    } else {
+        word_single_line_height_em(runs)
+    };
+    let leading_pt = font_size_pt * ((factor * base_em) - 1.0);
     Some(round_two_decimals(leading_pt.max(0.0)))
 }
 
@@ -239,12 +255,84 @@ fn exact_line_spacing_leading_pt(line_height_pt: f64, runs: Option<&[Run]>) -> O
     Some(round_two_decimals((line_height_pt - font_size_pt).max(0.0)))
 }
 
+fn default_single_line_leading_pt(style: &ParagraphStyle, runs: Option<&[Run]>) -> Option<f64> {
+    if let Some(line_pitch_pt) = effective_grid_line_pitch_pt(style, runs) {
+        return exact_line_spacing_leading_pt(line_pitch_pt, runs);
+    }
+
+    paragraph_uses_east_asian_metrics(runs).then(|| {
+        let font_size_pt = paragraph_effective_font_size_pt(runs).unwrap_or(12.0);
+        round_two_decimals((font_size_pt * (word_single_line_height_em(runs) - 1.0)).max(0.0))
+    })
+}
+
+fn effective_grid_line_pitch_pt(style: &ParagraphStyle, runs: Option<&[Run]>) -> Option<f64> {
+    let font_size_pt = paragraph_effective_font_size_pt(runs).unwrap_or(12.0);
+    (font_size_pt <= 12.5 && style.heading_level.is_none())
+        .then_some(style.grid_line_pitch)
+        .flatten()
+}
+
 fn paragraph_effective_font_size_pt(runs: Option<&[Run]>) -> Option<f64> {
     runs.and_then(|runs| {
         runs.iter()
             .filter_map(|run| run.style.font_size)
             .max_by(f64::total_cmp)
     })
+}
+
+fn word_single_line_height_em(runs: Option<&[Run]>) -> f64 {
+    if paragraph_uses_east_asian_metrics(runs) {
+        WORD_SINGLE_LINE_HEIGHT_EAST_ASIA_EM
+    } else {
+        WORD_SINGLE_LINE_HEIGHT_EM
+    }
+}
+
+fn paragraph_uses_east_asian_metrics(runs: Option<&[Run]>) -> bool {
+    runs.is_some_and(|runs| runs.iter().any(run_uses_east_asian_metrics))
+}
+
+fn run_uses_east_asian_metrics(run: &Run) -> bool {
+    run.style.font_family_east_asia.is_some()
+        || run
+            .style
+            .font_family
+            .as_deref()
+            .is_some_and(is_known_east_asian_font_family)
+        || run.text.chars().any(is_east_asian_character)
+}
+
+fn is_known_east_asian_font_family(font_family: &str) -> bool {
+    let lower = font_family.trim().to_ascii_lowercase();
+    lower.contains("hei")
+        || lower.contains("song")
+        || lower.contains("kai")
+        || lower.contains("fang")
+        || lower.contains("yahei")
+        || font_family.contains("黑")
+        || font_family.contains("宋")
+        || font_family.contains("楷")
+        || font_family.contains("仿")
+        || font_family.contains("微软雅黑")
+}
+
+fn is_east_asian_character(ch: char) -> bool {
+    matches!(
+        ch as u32,
+        0x1100..=0x11FF
+            | 0x2E80..=0x2EFF
+            | 0x2F00..=0x2FDF
+            | 0x3040..=0x30FF
+            | 0x3130..=0x318F
+            | 0x31A0..=0x31BF
+            | 0x3400..=0x4DBF
+            | 0x4E00..=0x9FFF
+            | 0xAC00..=0xD7AF
+            | 0xF900..=0xFAFF
+            | 0xFF00..=0xFFEF
+            | 0x20000..=0x2FA1F
+    )
 }
 
 fn round_two_decimals(value: f64) -> f64 {
@@ -319,6 +407,25 @@ pub(super) fn generate_runs_with_tabs(
 
     let _ = writeln!(out, "  tab_prefix_{}", segments.len() - 1);
     out.push('}');
+}
+
+pub(super) fn write_paragraph_runs_or_placeholder(
+    out: &mut String,
+    runs: &[Run],
+    tab_stops: Option<&[TabStop]>,
+    disable_east_asian_breaks: bool,
+) {
+    if runs.is_empty() {
+        let _ = write!(
+            out,
+            "#text(size: {}pt)[{}]",
+            format_f64(EMPTY_PARAGRAPH_PLACEHOLDER_FONT_SIZE_PT),
+            WORD_JOINER_CHAR
+        );
+        return;
+    }
+
+    generate_runs_with_tabs(out, runs, tab_stops, disable_east_asian_breaks);
 }
 
 fn paragraph_contains_tabs(runs: &[Run]) -> bool {

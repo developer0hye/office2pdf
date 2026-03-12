@@ -113,6 +113,19 @@ fn test_parse_empty_paragraph() {
     }
 }
 
+#[test]
+fn test_parse_paragraph_captures_document_grid_line_pitch() {
+    let data = build_docx_bytes_with_doc_grid(
+        vec![docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("正文"))],
+        387,
+    );
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let para = first_paragraph(&doc);
+    assert_eq!(para.style.grid_line_pitch, Some(19.35));
+}
+
 // ----- Page setup tests -----
 
 #[test]

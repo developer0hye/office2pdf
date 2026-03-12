@@ -563,7 +563,9 @@ fn test_generate_paragraph_with_newline_emits_linebreak() {
         output.source
     );
     assert!(
-        output.source.contains("\u{00A0}\u{00A0}\u{00A0}\u{00A0}line two"),
+        output
+            .source
+            .contains("\u{00A0}\u{00A0}\u{00A0}\u{00A0}line two"),
         "Expected leading indentation after linebreak to be preserved in: {}",
         output.source
     );

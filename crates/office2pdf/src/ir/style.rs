@@ -23,6 +23,8 @@ pub struct ParagraphStyle {
     pub indent_right: Option<f64>,
     pub indent_first_line: Option<f64>,
     pub line_spacing: Option<LineSpacing>,
+    /// Section-level document grid line pitch in points.
+    pub grid_line_pitch: Option<f64>,
     pub space_before: Option<f64>,
     pub space_after: Option<f64>,
     /// Heading level (1 = H1, 2 = H2, ..., 6 = H6). When set, the paragraph

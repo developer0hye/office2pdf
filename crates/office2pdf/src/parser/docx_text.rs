@@ -22,6 +22,7 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         indent_right,
         indent_first_line,
         line_spacing,
+        grid_line_pitch: None,
         space_before,
         space_after,
         heading_level: None,

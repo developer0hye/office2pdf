@@ -122,6 +122,8 @@ pub fn substitutes(font_family: &str) -> Option<&'static [&'static str]> {
             Some(&[
                 "Microsoft YaHei",
                 "Microsoft YaHei UI",
+                "HYQiHei-55J",
+                "HYZhongJianHeiJ",
                 "SIL Hei",
                 "Heiti SC",
                 "Hiragino Sans GB",
@@ -661,6 +663,27 @@ mod tests {
         assert!(
             malgun_index < apple_index,
             "office-resolved font should outrank static substitute order: {result}"
+        );
+    }
+
+    #[test]
+    fn test_font_with_fallbacks_prefers_wps_chinese_font_for_microsoft_yahei() {
+        let context = FontSearchContext::for_test(
+            Vec::new(),
+            &["HYQiHei-55J", "Heiti SC"],
+            &["HYQiHei-55J"],
+            &[],
+        );
+        let result = with_font_search_context(Some(&context), || font_with_fallbacks("微软雅黑"));
+        let wps_index = result
+            .find("\"HYQiHei-55J\"")
+            .expect("WPS Chinese font should appear in fallback list");
+        let heiti_index = result
+            .find("\"Heiti SC\"")
+            .expect("Heiti SC should appear in fallback list");
+        assert!(
+            wps_index < heiti_index,
+            "WPS font should outrank generic macOS fallback for 微软雅黑: {result}"
         );
     }
 

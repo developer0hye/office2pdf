@@ -229,6 +229,7 @@ pub(super) fn extract_drawing_text_box_blocks(
                 bidi,
                 small_caps,
                 paragraph_containers,
+                None,
             ),
             docx_rs::TextBoxContentChild::Table(table) => {
                 blocks.push(Block::Table(convert_table(

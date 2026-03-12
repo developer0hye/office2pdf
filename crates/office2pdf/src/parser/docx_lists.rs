@@ -124,13 +124,19 @@ fn build_typst_numbering_pattern(
 
 fn extract_raw_level(level: &docx_rs::Level) -> RawListLevel {
     let indent = level.paragraph_property.indent.as_ref();
-    let indent_left = indent.and_then(|value| value.start).map(|value| value as f64 / 20.0);
-    let indent_right = indent.and_then(|value| value.end).map(|value| value as f64 / 20.0);
+    let indent_left = indent
+        .and_then(|value| value.start)
+        .map(|value| value as f64 / 20.0);
+    let indent_right = indent
+        .and_then(|value| value.end)
+        .map(|value| value as f64 / 20.0);
     let indent_first_line = indent.and_then(|value| {
-        value.special_indent.map(|special_indent| match special_indent {
-            docx_rs::SpecialIndentType::FirstLine(amount) => amount as f64 / 20.0,
-            docx_rs::SpecialIndentType::Hanging(amount) => -(amount as f64 / 20.0),
-        })
+        value
+            .special_indent
+            .map(|special_indent| match special_indent {
+                docx_rs::SpecialIndentType::FirstLine(amount) => amount as f64 / 20.0,
+                docx_rs::SpecialIndentType::Hanging(amount) => -(amount as f64 / 20.0),
+            })
     });
 
     RawListLevel {
@@ -344,7 +350,8 @@ fn finalize_list(pending: PendingList, numberings: &NumberingMap) -> List {
             resolved_list_level(numberings, item.num_id, item.level)
                 .map(|resolved| resolved.style.clone())
                 .or_else(|| {
-                    resolved_level_kind(numberings, item.num_id, item.level).map(fallback_level_style)
+                    resolved_level_kind(numberings, item.num_id, item.level)
+                        .map(fallback_level_style)
                 })
                 .unwrap_or_else(|| fallback_level_style(root_kind))
         });
@@ -364,9 +371,7 @@ fn finalize_list(pending: PendingList, numberings: &NumberingMap) -> List {
             .map(|style| style.kind)
             .unwrap_or(root_kind);
         let resolved_level = resolved_list_level(numberings, num_id, level);
-        let start_value: u32 = resolved_level
-            .map(|resolved| resolved.start)
-            .unwrap_or(1);
+        let start_value: u32 = resolved_level.map(|resolved| resolved.start).unwrap_or(1);
 
         if let Some(resolved_level) = resolved_level {
             if paragraph.style.indent_left.is_none() {
