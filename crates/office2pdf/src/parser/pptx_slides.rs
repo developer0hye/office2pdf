@@ -4,9 +4,188 @@ use super::package::{
 };
 use super::*;
 
+// ── Slide inheritance chain ─────────────────────────────────────────────
+
+/// Resolved XML content and color maps for the master -> layout -> slide chain.
+struct SlideInheritanceChain {
+    slide_xml: String,
+    slide_color_map: ColorMapData,
+    layout_path: Option<String>,
+    layout_xml: Option<String>,
+    layout_color_map: Option<ColorMapData>,
+    master_path: Option<String>,
+    master_xml: Option<String>,
+    master_color_map: ColorMapData,
+    master_text_style_defaults: PptxTextBodyStyleDefaults,
+}
+
+/// Build the full inheritance chain by reading master/layout/slide XML and
+/// resolving each layer's effective color map from a single master base.
+fn resolve_inheritance_chain<R: Read + std::io::Seek>(
+    slide_path: &str,
+    theme: &ThemeData,
+    archive: &mut ZipArchive<R>,
+) -> Result<SlideInheritanceChain, ConvertError> {
+    let slide_xml: String = read_zip_entry(archive, slide_path)?;
+    let (layout_path, master_path) = resolve_layout_master_paths(slide_path, archive);
+
+    let master_xml: Option<String> = master_path
+        .as_ref()
+        .and_then(|path| read_zip_entry(archive, path).ok());
+    let layout_xml: Option<String> = layout_path
+        .as_ref()
+        .and_then(|path| read_zip_entry(archive, path).ok());
+
+    let master_color_map: ColorMapData = master_xml
+        .as_deref()
+        .map(parse_master_color_map)
+        .unwrap_or_else(default_color_map);
+    let master_text_style_defaults: PptxTextBodyStyleDefaults = master_xml
+        .as_deref()
+        .map(|xml| parse_master_other_style(xml, theme, &master_color_map))
+        .unwrap_or_default();
+
+    let slide_color_map: ColorMapData = resolve_effective_color_map(&slide_xml, &master_color_map);
+    let layout_color_map: Option<ColorMapData> = layout_xml
+        .as_deref()
+        .map(|xml| resolve_effective_color_map(xml, &master_color_map));
+
+    Ok(SlideInheritanceChain {
+        slide_xml,
+        slide_color_map,
+        layout_path,
+        layout_xml,
+        layout_color_map,
+        master_path,
+        master_xml,
+        master_color_map,
+        master_text_style_defaults,
+    })
+}
+
+/// Parse elements from a single inheritance layer (master or layout).
+/// Broken layers are non-fatal and silently return empty results.
+fn parse_layer_elements<R: Read + std::io::Seek>(
+    layer_path: &str,
+    layer_xml: &str,
+    color_map: &ColorMapData,
+    theme: &ThemeData,
+    label: &str,
+    text_style_defaults: &PptxTextBodyStyleDefaults,
+    archive: &mut ZipArchive<R>,
+) -> (Vec<FixedElement>, Vec<ConvertWarning>) {
+    let images: SlideImageMap = load_slide_images(layer_path, archive);
+    parse_slide_xml(
+        layer_xml,
+        &images,
+        theme,
+        color_map,
+        label,
+        text_style_defaults,
+    )
+    .unwrap_or_default()
+}
+
+// ── Embedded object helpers ─────────────────────────────────────────────
+
+/// Collect SmartArt elements referenced by the slide XML.
+fn collect_smartart_elements<R: Read + std::io::Seek>(
+    slide_xml: &str,
+    slide_path: &str,
+    archive: &mut ZipArchive<R>,
+) -> Vec<FixedElement> {
+    let smartart_refs = smartart::scan_smartart_refs(slide_xml);
+    if smartart_refs.is_empty() {
+        return Vec::new();
+    }
+
+    let smartart_data = load_smartart_data(slide_path, archive);
+    smartart_refs
+        .iter()
+        .filter_map(|sa_ref| {
+            smartart_data
+                .get(&sa_ref.data_rid)
+                .map(|items| FixedElement {
+                    x: emu_to_pt(sa_ref.x),
+                    y: emu_to_pt(sa_ref.y),
+                    width: emu_to_pt(sa_ref.cx),
+                    height: emu_to_pt(sa_ref.cy),
+                    kind: FixedElementKind::SmartArt(SmartArt {
+                        items: items.clone(),
+                    }),
+                })
+        })
+        .collect()
+}
+
+/// Collect Chart elements referenced by the slide XML.
+fn collect_chart_elements<R: Read + std::io::Seek>(
+    slide_xml: &str,
+    slide_path: &str,
+    archive: &mut ZipArchive<R>,
+) -> Vec<FixedElement> {
+    let chart_refs = scan_chart_refs(slide_xml);
+    if chart_refs.is_empty() {
+        return Vec::new();
+    }
+
+    let chart_data = load_chart_data(slide_path, archive);
+    chart_refs
+        .iter()
+        .filter_map(|c_ref| {
+            chart_data.get(&c_ref.chart_rid).map(|chart| FixedElement {
+                x: emu_to_pt(c_ref.x),
+                y: emu_to_pt(c_ref.y),
+                width: emu_to_pt(c_ref.cx),
+                height: emu_to_pt(c_ref.cy),
+                kind: FixedElementKind::Chart(chart.clone()),
+            })
+        })
+        .collect()
+}
+
+// ── Background resolution ───────────────────────────────────────────────
+
+/// Resolve the slide background by checking slide -> layout -> master in order.
+/// If a gradient is found on the slide, its first stop color is used as the
+/// solid fallback; otherwise the first solid color found in the chain wins.
+fn resolve_slide_background(
+    chain: &SlideInheritanceChain,
+    theme: &ThemeData,
+) -> (Option<Color>, Option<GradientFill>) {
+    let gradient = parse_background_gradient(&chain.slide_xml, theme, &chain.slide_color_map);
+
+    if gradient.is_some() {
+        let fallback_color = gradient
+            .as_ref()
+            .and_then(|g| g.stops.first().map(|s| s.color));
+        return (fallback_color, gradient);
+    }
+
+    let solid_color = parse_background_color(&chain.slide_xml, theme, &chain.slide_color_map)
+        .or_else(|| {
+            chain.layout_xml.as_deref().and_then(|xml| {
+                chain
+                    .layout_color_map
+                    .as_ref()
+                    .and_then(|map| parse_background_color(xml, theme, map))
+            })
+        })
+        .or_else(|| {
+            chain
+                .master_xml
+                .as_deref()
+                .and_then(|xml| parse_background_color(xml, theme, &chain.master_color_map))
+        });
+
+    (solid_color, None)
+}
+
+// ── Public entry point ──────────────────────────────────────────────────
+
 /// Parse a single slide from the archive, returning a Page or an error.
 ///
-/// Resolves the inheritance chain (slide → layout → master) and
+/// Resolves the inheritance chain (slide -> layout -> master) and
 /// prepends master/layout elements behind slide elements.
 pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
     slide_path: &str,
@@ -15,134 +194,76 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
     theme: &ThemeData,
     archive: &mut ZipArchive<R>,
 ) -> Result<(Page, Vec<ConvertWarning>), ConvertError> {
-    let slide_xml = read_zip_entry(archive, slide_path)?;
-    let (layout_path, master_path) = resolve_layout_master_paths(slide_path, archive);
-    let master_xml = master_path
-        .as_ref()
-        .and_then(|path| read_zip_entry(archive, path).ok());
-    let layout_xml = layout_path
-        .as_ref()
-        .and_then(|path| read_zip_entry(archive, path).ok());
-    let master_color_map = master_xml
-        .as_deref()
-        .map(parse_master_color_map)
-        .unwrap_or_else(default_color_map);
-    let master_text_style_defaults = master_xml
-        .as_deref()
-        .map(|xml| parse_master_other_style(xml, theme, &master_color_map))
-        .unwrap_or_default();
-    let slide_color_map = resolve_effective_color_map(&slide_xml, &master_color_map);
-    let layout_color_map = layout_xml
-        .as_deref()
-        .map(|xml| resolve_effective_color_map(xml, &master_color_map));
+    let chain: SlideInheritanceChain = resolve_inheritance_chain(slide_path, theme, archive)?;
 
-    let slide_images = load_slide_images(slide_path, archive);
-    let mut warnings = Vec::new();
+    let slide_images: SlideImageMap = load_slide_images(slide_path, archive);
+    let mut warnings: Vec<ConvertWarning> = Vec::new();
+
     let (slide_elements, slide_warnings) = parse_slide_xml(
-        &slide_xml,
+        &chain.slide_xml,
         &slide_images,
         theme,
-        &slide_color_map,
+        &chain.slide_color_map,
         slide_label,
-        &master_text_style_defaults,
+        &chain.master_text_style_defaults,
     )?;
     warnings.extend(slide_warnings);
 
-    let mut elements = Vec::new();
+    let mut elements: Vec<FixedElement> = Vec::new();
 
-    if let Some(ref path) = master_path
-        && let Some(xml) = master_xml.as_deref()
+    // Master layer (bottom)
+    if let Some(ref path) = chain.master_path
+        && let Some(ref xml) = chain.master_xml
     {
-        let master_images = load_slide_images(path, archive);
-        let master_label = format!("{slide_label} master");
-        if let Ok((master_elements, master_warnings)) = parse_slide_xml(
+        let master_label: String = format!("{slide_label} master");
+        let (master_elems, master_warnings) = parse_layer_elements(
+            path,
             xml,
-            &master_images,
+            &chain.master_color_map,
             theme,
-            &master_color_map,
             &master_label,
-            &master_text_style_defaults,
-        ) {
-            elements.extend(master_elements);
-            warnings.extend(master_warnings);
-        }
+            &chain.master_text_style_defaults,
+            archive,
+        );
+        elements.extend(master_elems);
+        warnings.extend(master_warnings);
     }
 
-    if let Some(ref path) = layout_path
-        && let Some(xml) = layout_xml.as_deref()
-        && let Some(color_map) = layout_color_map.as_ref()
+    // Layout layer (middle)
+    if let Some(ref path) = chain.layout_path
+        && let Some(ref xml) = chain.layout_xml
+        && let Some(ref color_map) = chain.layout_color_map
     {
-        let layout_images = load_slide_images(path, archive);
-        let layout_label = format!("{slide_label} layout");
-        if let Ok((layout_elements, layout_warnings)) = parse_slide_xml(
+        let layout_label: String = format!("{slide_label} layout");
+        let (layout_elems, layout_warnings) = parse_layer_elements(
+            path,
             xml,
-            &layout_images,
-            theme,
             color_map,
+            theme,
             &layout_label,
-            &master_text_style_defaults,
-        ) {
-            elements.extend(layout_elements);
-            warnings.extend(layout_warnings);
-        }
+            &chain.master_text_style_defaults,
+            archive,
+        );
+        elements.extend(layout_elems);
+        warnings.extend(layout_warnings);
     }
 
+    // Slide layer (top)
     elements.extend(slide_elements);
 
-    let smartart_refs = smartart::scan_smartart_refs(&slide_xml);
-    if !smartart_refs.is_empty() {
-        let smartart_data = load_smartart_data(slide_path, archive);
-        for sa_ref in &smartart_refs {
-            if let Some(items) = smartart_data.get(&sa_ref.data_rid) {
-                elements.push(FixedElement {
-                    x: emu_to_pt(sa_ref.x),
-                    y: emu_to_pt(sa_ref.y),
-                    width: emu_to_pt(sa_ref.cx),
-                    height: emu_to_pt(sa_ref.cy),
-                    kind: FixedElementKind::SmartArt(SmartArt {
-                        items: items.clone(),
-                    }),
-                });
-            }
-        }
-    }
+    // Embedded objects
+    elements.extend(collect_smartart_elements(
+        &chain.slide_xml,
+        slide_path,
+        archive,
+    ));
+    elements.extend(collect_chart_elements(
+        &chain.slide_xml,
+        slide_path,
+        archive,
+    ));
 
-    let chart_refs = scan_chart_refs(&slide_xml);
-    if !chart_refs.is_empty() {
-        let chart_data = load_chart_data(slide_path, archive);
-        for c_ref in &chart_refs {
-            if let Some(chart) = chart_data.get(&c_ref.chart_rid) {
-                elements.push(FixedElement {
-                    x: emu_to_pt(c_ref.x),
-                    y: emu_to_pt(c_ref.y),
-                    width: emu_to_pt(c_ref.cx),
-                    height: emu_to_pt(c_ref.cy),
-                    kind: FixedElementKind::Chart(chart.clone()),
-                });
-            }
-        }
-    }
-
-    let background_gradient = parse_background_gradient(&slide_xml, theme, &slide_color_map);
-    let background_color = if background_gradient.is_some() {
-        background_gradient
-            .as_ref()
-            .and_then(|g| g.stops.first().map(|s| s.color))
-    } else {
-        parse_background_color(&slide_xml, theme, &slide_color_map)
-            .or_else(|| {
-                layout_xml.as_deref().and_then(|xml| {
-                    layout_color_map
-                        .as_ref()
-                        .and_then(|map| parse_background_color(xml, theme, map))
-                })
-            })
-            .or_else(|| {
-                master_xml
-                    .as_deref()
-                    .and_then(|xml| parse_background_color(xml, theme, &master_color_map))
-            })
-    };
+    let (background_color, background_gradient) = resolve_slide_background(&chain, theme);
 
     Ok((
         Page::Fixed(FixedPage {
