@@ -64,7 +64,7 @@ fn is_ole2(data: &[u8]) -> bool {
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 fn should_resolve_font_context(doc: &ir::Document, options: &ConvertOptions) -> bool {
-    pipeline::should_resolve_font_context(doc, options)
+    pipeline::should_resolve_font_context(doc, options, false)
 }
 
 /// Convert a file at the given path to PDF bytes with warnings.
