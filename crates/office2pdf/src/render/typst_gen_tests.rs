@@ -513,3 +513,103 @@ fn test_generate_blocks_three_blocks_have_two_separators() {
     let pos_c: usize = out.find("C").expect("C");
     assert!(pos_a < pos_b && pos_b < pos_c, "Order should be A < B < C");
 }
+
+// ── Font weight inference with fallback tests ────────────────────────
+
+#[test]
+fn test_inferred_weight_not_emitted_when_font_unavailable() {
+    use crate::render::font_context::FontSearchContext;
+    // When "Pretendard ExtraBold" is not available (no font context has it),
+    // `weight: "extrabold"` should NOT appear — it blocks fallback fonts.
+    let context = FontSearchContext::for_test(Vec::new(), &["Arial"], &[], &[]);
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: "Title".to_string(),
+            style: TextStyle {
+                font_family: Some("Pretendard ExtraBold".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst_with_options_and_font_context(
+        &doc,
+        &ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+    assert!(
+        !result.contains("weight: \"extrabold\""),
+        "Should NOT emit extrabold weight when font is unavailable. Got: {result}"
+    );
+}
+
+#[test]
+fn test_inferred_weight_emitted_when_font_available_via_alias() {
+    use crate::render::font_context::FontSearchContext;
+    // When "Pretendard" family is available, "Pretendard ExtraBold" should
+    // emit weight: "extrabold" so Typst picks the correct variant.
+    let context = FontSearchContext::for_test(Vec::new(), &["Pretendard"], &[], &[]);
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: "Title".to_string(),
+            style: TextStyle {
+                font_family: Some("Pretendard ExtraBold".to_string()),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst_with_options_and_font_context(
+        &doc,
+        &ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+    assert!(
+        result.contains("weight: \"extrabold\""),
+        "Should emit extrabold weight when font is available. Got: {result}"
+    );
+}
+
+#[test]
+fn test_explicit_bold_still_emitted_when_font_unavailable() {
+    use crate::render::font_context::FontSearchContext;
+    // Explicit bold from PPTX attributes should still be emitted even when
+    // the font is unavailable — bold (weight 700) exists in most fonts.
+    let context = FontSearchContext::for_test(Vec::new(), &["Arial"], &[], &[]);
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: "Bold text".to_string(),
+            style: TextStyle {
+                font_family: Some("Pretendard ExtraBold".to_string()),
+                bold: Some(true),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst_with_options_and_font_context(
+        &doc,
+        &ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+    assert!(
+        result.contains("weight: \"bold\""),
+        "Explicit bold should still be emitted. Got: {result}"
+    );
+    assert!(
+        !result.contains("weight: \"extrabold\""),
+        "Should use bold, not extrabold (from unavailable font name). Got: {result}"
+    );
+}

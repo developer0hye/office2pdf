@@ -19,20 +19,59 @@ thread_local! {
 }
 
 fn normalized_lookup_key(font_family: &str) -> String {
-    let lower = font_family.trim().to_ascii_lowercase();
+    let trimmed = font_family.trim();
+    let lower = trimmed.to_ascii_lowercase();
     if lower.starts_with("pretendard") {
-        "pretendard".to_string()
-    } else {
-        lower
+        return "pretendard".to_string();
+    }
+    // Map Korean font names to their English equivalents for lookup.
+    // OOXML files often use localized names (e.g., "맑은 고딕" instead of
+    // "Malgun Gothic") which Typst doesn't recognise by default.
+    match trimmed {
+        "맑은 고딕" => "malgun gothic".to_string(),
+        "굴림" => "gulim".to_string(),
+        "돋움" => "dotum".to_string(),
+        "바탕" => "batang".to_string(),
+        "궁서" => "gungsuh".to_string(),
+        "나눔고딕" | "나눔 고딕" => "nanum gothic".to_string(),
+        "나눔명조" | "나눔 명조" => "nanum myeongjo".to_string(),
+        "MS 고딕" => "ms gothic".to_string(),
+        "MS 명조" => "ms mincho".to_string(),
+        "メイリオ" => "meiryo".to_string(),
+        "MS ゴシック" => "ms gothic".to_string(),
+        "MS 明朝" => "ms mincho".to_string(),
+        "游ゴシック" => "yu gothic".to_string(),
+        "微软雅黑" => "microsoft yahei".to_string(),
+        "宋体" | "宋體" => "simsun".to_string(),
+        _ => lower,
     }
 }
 
 fn alias_family(font_family: &str) -> Option<&'static str> {
-    let lower = font_family.trim().to_ascii_lowercase();
+    let trimmed = font_family.trim();
+    let lower = trimmed.to_ascii_lowercase();
     if lower.starts_with("pretendard") && lower != "pretendard" {
-        Some("Pretendard")
-    } else {
-        None
+        return Some("Pretendard");
+    }
+    // Map localized CJK font names to their English names so Typst can
+    // find them when the system registers fonts under English names.
+    match trimmed {
+        "맑은 고딕" => Some("Malgun Gothic"),
+        "굴림" => Some("Gulim"),
+        "돋움" => Some("Dotum"),
+        "바탕" => Some("Batang"),
+        "궁서" => Some("Gungsuh"),
+        "나눔고딕" | "나눔 고딕" => Some("Nanum Gothic"),
+        "나눔명조" | "나눔 명조" => Some("Nanum Myeongjo"),
+        "MS 고딕" => Some("MS Gothic"),
+        "MS 명조" => Some("MS Mincho"),
+        "メイリオ" => Some("Meiryo"),
+        "MS ゴシック" => Some("MS Gothic"),
+        "MS 明朝" => Some("MS Mincho"),
+        "游ゴシック" => Some("Yu Gothic"),
+        "微软雅黑" => Some("Microsoft YaHei"),
+        "宋体" | "宋體" => Some("SimSun"),
+        _ => None,
     }
 }
 
@@ -118,8 +157,87 @@ pub fn substitutes(font_family: &str) -> Option<&'static [&'static str]> {
             "Arial",
             "Liberation Sans",
         ]),
+        // Korean font names → English equivalents + fallbacks
+        "malgun gothic" => Some(&[
+            "Malgun Gothic",
+            "Apple SD Gothic Neo",
+            "Noto Sans CJK KR",
+            "Arial Unicode MS",
+        ]),
+        "gulim" => Some(&[
+            "Gulim",
+            "Apple SD Gothic Neo",
+            "Noto Sans CJK KR",
+            "Malgun Gothic",
+            "Arial Unicode MS",
+        ]),
+        "dotum" => Some(&[
+            "Dotum",
+            "Apple SD Gothic Neo",
+            "Noto Sans CJK KR",
+            "Malgun Gothic",
+            "Arial Unicode MS",
+        ]),
+        "batang" => Some(&[
+            "Batang",
+            "Noto Serif CJK KR",
+            "Apple Myungjo",
+            "Arial Unicode MS",
+        ]),
+        "gungsuh" => Some(&[
+            "Gungsuh",
+            "Noto Serif CJK KR",
+            "Apple Myungjo",
+            "Arial Unicode MS",
+        ]),
+        "nanum gothic" => Some(&[
+            "Nanum Gothic",
+            "Apple SD Gothic Neo",
+            "Noto Sans CJK KR",
+            "Malgun Gothic",
+            "Arial Unicode MS",
+        ]),
+        "nanum myeongjo" => Some(&[
+            "Nanum Myeongjo",
+            "Noto Serif CJK KR",
+            "Apple Myungjo",
+            "Batang",
+            "Arial Unicode MS",
+        ]),
+        // Japanese font names → English equivalents + fallbacks
+        "ms gothic" => Some(&["MS Gothic", "Noto Sans CJK JP", "Hiragino Sans"]),
+        "ms mincho" => Some(&["MS Mincho", "Noto Serif CJK JP", "Hiragino Mincho ProN"]),
+        "meiryo" => Some(&["Meiryo", "Noto Sans CJK JP", "Hiragino Sans"]),
+        "yu gothic" => Some(&["Yu Gothic", "Noto Sans CJK JP", "Hiragino Sans"]),
+        // Chinese font names → English equivalents + fallbacks
+        "microsoft yahei" => Some(&[
+            "Microsoft YaHei",
+            "Noto Sans CJK SC",
+            "PingFang SC",
+            "Arial Unicode MS",
+        ]),
+        "simsun" => Some(&["SimSun", "Noto Serif CJK SC", "STSong", "Arial Unicode MS"]),
         _ => None,
     }
+}
+
+/// Check whether the given font family (or its alias) is available in the
+/// current font context.  Returns `true` when no context is active (e.g. on
+/// WASM) to preserve existing behaviour.
+pub fn is_primary_font_available(font_family: &str) -> bool {
+    ACTIVE_FONT_CONTEXT.with(|cell| {
+        let guard = cell.borrow();
+        let Some(ctx) = guard.as_ref() else {
+            return true;
+        };
+        if ctx.has_family(font_family) {
+            return true;
+        }
+        if let Some(alias) = alias_family(font_family) {
+            return ctx.has_family(alias);
+        }
+        false
+    })
 }
 
 /// Build a Typst font fallback list string for the given font family.

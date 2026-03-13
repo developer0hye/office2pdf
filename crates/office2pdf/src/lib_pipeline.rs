@@ -51,17 +51,35 @@ pub(super) fn is_ole2(data: &[u8]) -> bool {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(super) fn should_resolve_font_context(doc: &ir::Document, options: &ConvertOptions) -> bool {
-    !options.font_paths.is_empty() || render::font_subst::document_requests_font_families(doc)
+pub(super) fn should_resolve_font_context(
+    doc: &ir::Document,
+    options: &ConvertOptions,
+    has_embedded_fonts: bool,
+) -> bool {
+    has_embedded_fonts
+        || !options.font_paths.is_empty()
+        || render::font_subst::document_requests_font_families(doc)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn resolve_font_context_if_needed(
+fn resolve_font_context_with_embedded(
     doc: &ir::Document,
     options: &ConvertOptions,
+    embedded_font_dir: Option<&parser::embedded_fonts::EmbeddedFontDir>,
 ) -> Option<render::font_context::FontSearchContext> {
-    should_resolve_font_context(doc, options)
-        .then(|| render::font_context::resolve_font_search_context(&options.font_paths))
+    let has_embedded = embedded_font_dir.is_some_and(|d| !d.is_empty());
+    if !should_resolve_font_context(doc, options, has_embedded) {
+        return None;
+    }
+    let mut all_paths: Vec<std::path::PathBuf> = options.font_paths.clone();
+    if let Some(dir) = embedded_font_dir
+        && !dir.is_empty()
+    {
+        all_paths.push(dir.path().to_path_buf());
+    }
+    Some(render::font_context::resolve_font_search_context(
+        &all_paths,
+    ))
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -104,6 +122,12 @@ pub(super) fn convert_bytes(
     let total_start: Instant = Instant::now();
     let input_size_bytes = data.len() as u64;
 
+    // Extract embedded fonts before parsing (PPTX/DOCX only).
+    // The EmbeddedFontDir must live until after PDF compilation so Typst can
+    // discover the fonts via its search paths.
+    #[cfg(not(target_arch = "wasm32"))]
+    let embedded_font_dir = parser::embedded_fonts::extract_embedded_fonts(data, format);
+
     let parser: Box<dyn Parser> = match format {
         Format::Docx => Box::new(parser::docx::DocxParser),
         Format::Pptx => Box::new(parser::pptx::PptxParser),
@@ -126,7 +150,8 @@ pub(super) fn convert_bytes(
     let page_count = doc.pages.len() as u32;
 
     #[cfg(not(target_arch = "wasm32"))]
-    let font_context = resolve_font_context_if_needed(&doc, options);
+    let font_context =
+        resolve_font_context_with_embedded(&doc, options, embedded_font_dir.as_ref());
 
     #[cfg(not(target_arch = "wasm32"))]
     if let Some(font_context) = font_context.as_ref() {
@@ -240,7 +265,7 @@ fn convert_bytes_streaming_xlsx(
             styles: ir::StyleSheet::default(),
         };
         #[cfg(not(target_arch = "wasm32"))]
-        let font_context = resolve_font_context_if_needed(&empty_doc, options);
+        let font_context = resolve_font_context_with_embedded(&empty_doc, options, None);
         #[cfg(not(target_arch = "wasm32"))]
         let output = render::typst_gen::generate_typst_with_options_and_font_context(
             &empty_doc,
@@ -373,7 +398,7 @@ pub(super) fn render_document(doc: &ir::Document) -> Result<Vec<u8>, ConvertErro
     #[cfg(not(target_arch = "wasm32"))]
     {
         let options = ConvertOptions::default();
-        let font_context = resolve_font_context_if_needed(doc, &options);
+        let font_context = resolve_font_context_with_embedded(doc, &options, None);
         let output = render::typst_gen::generate_typst_with_options_and_font_context(
             doc,
             &options,
