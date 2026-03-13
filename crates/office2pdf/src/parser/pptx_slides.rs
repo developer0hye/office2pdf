@@ -410,6 +410,12 @@ struct ShapeState {
     ln_width_emu: i64,
     ln_color: Option<Color>,
     ln_dash_style: BorderLineStyle,
+    /// Arrowhead at line start.
+    head_end: ArrowHead,
+    /// Arrowhead at line end.
+    tail_end: ArrowHead,
+    /// Adjustment values from `<a:avLst><a:gd>` for connector bend points.
+    adj_values: Vec<f64>,
     /// Fallback line color from `<p:style><a:lnRef>` scheme reference.
     style_ln_color: Option<Color>,
 }
@@ -437,6 +443,9 @@ impl Default for ShapeState {
             ln_width_emu: 0,
             ln_color: None,
             ln_dash_style: BorderLineStyle::Solid,
+            head_end: ArrowHead::None,
+            tail_end: ArrowHead::None,
+            adj_values: Vec::new(),
             style_ln_color: None,
         }
     }
@@ -486,8 +495,16 @@ fn finalize_shape(
     } else if let Some(ref geom) = shape.prst_geom {
         let width: f64 = emu_to_pt(shape.cx);
         let height: f64 = emu_to_pt(shape.cy);
-        let kind: ShapeKind =
-            prst_to_shape_kind(geom, width, height, shape.flip_h, shape.flip_v);
+        let kind: ShapeKind = prst_to_shape_kind(
+            geom,
+            width,
+            height,
+            shape.flip_h,
+            shape.flip_v,
+            shape.head_end,
+            shape.tail_end,
+            &shape.adj_values,
+        );
         // Use explicit line color, falling back to style-based color from <p:style><a:lnRef>.
         let effective_ln_color: Option<Color> = shape.ln_color.or(shape.style_ln_color);
         let stroke: Option<BorderSide> = effective_ln_color.map(|color| BorderSide {
@@ -797,6 +814,14 @@ impl<'a> SlideXmlParser<'a> {
                     .map(pptx_dash_to_border_style)
                     .unwrap_or(BorderLineStyle::Solid);
             }
+            b"tailEnd" if self.shape.in_ln => {
+                self.shape.tail_end =
+                    parse_arrow_head(get_attr_str(e, b"type").as_deref());
+            }
+            b"headEnd" if self.shape.in_ln => {
+                self.shape.head_end =
+                    parse_arrow_head(get_attr_str(e, b"type").as_deref());
+            }
             b"solidFill" if self.shape.in_ln => {
                 self.solid_fill_ctx = SolidFillCtx::LineFill;
             }
@@ -1049,6 +1074,24 @@ impl<'a> SlideXmlParser<'a> {
                     .as_deref()
                     .map(pptx_dash_to_border_style)
                     .unwrap_or(BorderLineStyle::Solid);
+            }
+            b"tailEnd" if self.shape.in_ln => {
+                self.shape.tail_end =
+                    parse_arrow_head(get_attr_str(e, b"type").as_deref());
+            }
+            b"headEnd" if self.shape.in_ln => {
+                self.shape.head_end =
+                    parse_arrow_head(get_attr_str(e, b"type").as_deref());
+            }
+            // Adjustment values for connector bend points (inside <a:avLst>).
+            b"gd" if self.in_shape && self.shape.in_sp_pr => {
+                if let Some(fmla) = get_attr_str(e, b"fmla") {
+                    if let Some(val_str) = fmla.strip_prefix("val ") {
+                        if let Ok(val) = val_str.parse::<f64>() {
+                            self.shape.adj_values.push(val);
+                        }
+                    }
+                }
             }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_ln_ref => {
                 let parsed = parse_color_from_empty(e, self.theme, self.color_map);

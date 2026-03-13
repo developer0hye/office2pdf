@@ -11,11 +11,12 @@ use zip::ZipArchive;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart, Color,
-    Document, FixedElement, FixedElementKind, FixedPage, GradientFill, ImageCrop, ImageData,
-    ImageFormat, Insets, LineSpacing, List, ListItem, ListKind, ListLevelStyle, Page, PageSize,
-    Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, SmartArtNode, StyleSheet,
-    Table, TableCell, TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection, TextStyle,
+    Alignment, ArrowHead, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign,
+    Chart, Color, Document, FixedElement, FixedElementKind, FixedPage, GradientFill, ImageCrop,
+    ImageData, ImageFormat, Insets, LineSpacing, List, ListItem, ListKind, ListLevelStyle, Page,
+    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, SmartArtNode,
+    StyleSheet, Table, TableCell, TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection,
+    TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::smartart;
@@ -25,7 +26,8 @@ use self::package::{load_theme, parse_presentation_xml, parse_rels_xml, read_zip
 #[cfg(test)]
 use self::package::{resolve_relative_path, scan_chart_refs};
 use self::shapes::{
-    parse_group_shape, parse_src_rect, pptx_dash_to_border_style, prst_to_shape_kind,
+    parse_arrow_head, parse_group_shape, parse_src_rect, pptx_dash_to_border_style,
+    prst_to_shape_kind,
 };
 use self::slides::{parse_single_slide, parse_slide_xml};
 use self::tables::{parse_pptx_table, scale_pptx_table_geometry_to_frame};

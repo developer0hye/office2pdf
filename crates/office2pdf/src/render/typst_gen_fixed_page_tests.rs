@@ -77,7 +77,7 @@ fn test_fixed_page_line_shape() {
             0.0,
             300.0,
             0.0,
-            ShapeKind::Line { x2: 300.0, y2: 0.0 },
+            ShapeKind::Line { x1: 0.0, y1: 0.0, x2: 300.0, y2: 0.0, head_end: ArrowHead::None, tail_end: ArrowHead::None },
             None,
             Some(BorderSide {
                 width: 2.0,

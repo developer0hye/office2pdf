@@ -330,7 +330,7 @@ fn test_generate_shape_shadow_all_kinds() {
     let shape_kinds = vec![
         ShapeKind::Rectangle,
         ShapeKind::Ellipse,
-        ShapeKind::Line { x2: 100.0, y2: 0.0 },
+        ShapeKind::Line { x1: 0.0, y1: 0.0, x2: 100.0, y2: 0.0, head_end: ArrowHead::None, tail_end: ArrowHead::None },
         ShapeKind::RoundedRectangle {
             radius_fraction: 0.1,
         },

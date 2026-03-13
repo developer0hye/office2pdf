@@ -362,7 +362,7 @@ fn test_shape_line() {
     let page = first_fixed_page(&doc);
     let s = get_shape(&page.elements[0]);
     match &s.kind {
-        ShapeKind::Line { x2, y2 } => {
+        ShapeKind::Line { x2, y2, .. } => {
             assert!((*x2 - emu_to_pt(4_000_000)).abs() < 0.1);
             assert!((*y2 - 0.0).abs() < 0.1);
         }

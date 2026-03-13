@@ -6,11 +6,11 @@ use image::{GenericImageView, ImageFormat as RasterImageFormat};
 use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart, ChartType,
-    Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
-    FloatingTextBox, FlowPage, GradientFill, HFInline, HeaderFooter, ImageCrop, ImageData,
-    ImageFormat, Insets, LineSpacing, List, ListKind, Margins, MathEquation, Metadata, Page,
-    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt,
+    Alignment, ArrowHead, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart,
+    ChartType, Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage,
+    FloatingImage, FloatingTextBox, FlowPage, GradientFill, HFInline, HeaderFooter, ImageCrop,
+    ImageData, ImageFormat, Insets, LineSpacing, List, ListKind, Margins, MathEquation, Metadata,
+    Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt,
     TabAlignment, TabLeader, TabStop, Table, TableCell, TableRow, TextBoxData,
     TextBoxVerticalAlign, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
 };
