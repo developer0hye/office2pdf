@@ -541,3 +541,59 @@ fn test_text_box_lst_style_overrides_master_other_style_run_defaults() {
         Some("Pretendard SemiBold")
     );
 }
+
+#[test]
+fn test_text_box_auto_numbered_list_continues_when_run_has_explicit_default_attrs() {
+    // Reproduces a bug where three consecutive `arabicParenR` paragraphs
+    // were split into two lists (1,2 then 1) because the third paragraph's
+    // text runs had explicit default attributes (b="0", i="0", solidFill
+    // black, etc.) that made the resolved marker style differ structurally
+    // from the first two paragraphs even though the visual appearance was
+    // identical.
+    let paragraphs_xml = concat!(
+        // Paragraph 1: simple run properties
+        r#"<a:p><a:pPr marL="457200" indent="-457200">"#,
+        r#"<a:buAutoNum type="arabicParenR"/>"#,
+        r#"</a:pPr>"#,
+        r#"<a:r><a:rPr lang="ko-KR" sz="2000"><a:latin typeface="Pretendard Medium"/></a:rPr><a:t>First</a:t></a:r>"#,
+        r#"</a:p>"#,
+        // Paragraph 2: simple run properties
+        r#"<a:p><a:pPr marL="457200" indent="-457200">"#,
+        r#"<a:buAutoNum type="arabicParenR"/>"#,
+        r#"</a:pPr>"#,
+        r#"<a:r><a:rPr lang="ko-KR" sz="2000"><a:latin typeface="Pretendard Medium"/></a:rPr><a:t>Second</a:t></a:r>"#,
+        r#"</a:p>"#,
+        // Paragraph 3: explicit default attributes (b="0", i="0", solidFill black, etc.)
+        r#"<a:p><a:pPr marL="457200" indent="-457200">"#,
+        r#"<a:buAutoNum type="arabicParenR"/>"#,
+        r#"</a:pPr>"#,
+        r#"<a:r><a:rPr lang="en-US" sz="2000" b="0" i="0" u="none" strike="noStrike">"#,
+        r#"<a:solidFill><a:prstClr val="black"/></a:solidFill>"#,
+        r#"<a:latin typeface="Pretendard Medium"/>"#,
+        r#"</a:rPr><a:t>Third</a:t></a:r>"#,
+        r#"</a:p>"#,
+    );
+    let shape = make_multi_para_text_box(0, 0, 5_000_000, 3_000_000, paragraphs_xml);
+    let slide = make_slide_xml(&[shape]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let blocks = text_box_blocks(&page.elements[0]);
+    assert_eq!(
+        blocks.len(),
+        1,
+        "All three paragraphs should be grouped into a single list block, got {blocks:?}"
+    );
+
+    let list = match &blocks[0] {
+        Block::List(list) => list,
+        other => panic!("Expected List block, got {other:?}"),
+    };
+    assert_eq!(list.kind, crate::ir::ListKind::Ordered);
+    assert_eq!(list.items.len(), 3, "List should have 3 items");
+    assert_eq!(list.items[0].content[0].runs[0].text, "First");
+    assert_eq!(list.items[1].content[0].runs[0].text, "Second");
+    assert_eq!(list.items[2].content[0].runs[0].text, "Third");
+}
