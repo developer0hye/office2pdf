@@ -15,6 +15,7 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 - **PPTX** — slides, text boxes, shapes, images, slide masters, speaker notes, gradient backgrounds, shadow/reflection effects
 - **XLSX** — sheets, cell formatting, merged cells, column widths, row heights, conditional formatting (DataBar, IconSet)
 - **PDF/A-2b** — archival-compliant output via `--pdf-a`
+- **Embedded font extraction** — fonts embedded in PPTX/DOCX are automatically extracted, deobfuscated, and used during conversion
 - **macOS Office font auto-discovery** — PowerPoint/Word/Excel bundled fonts and Office cloud font caches are searched automatically
 - **WASM** — runs in browsers and Node.js via WebAssembly (optional `wasm` feature)
 - **Zero external dependencies** — runs as a standalone executable
