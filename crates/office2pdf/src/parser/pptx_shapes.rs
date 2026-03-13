@@ -237,8 +237,7 @@ pub(super) fn prst_to_shape_kind(
         }
         // Bent connectors: L-shaped or Z-shaped paths
         "bentConnector2" => {
-            let points: Vec<(f64, f64)> =
-                bent_connector2_points(width, height, flip_h, flip_v);
+            let points: Vec<(f64, f64)> = bent_connector2_points(width, height, flip_h, flip_v);
             ShapeKind::Polyline {
                 points,
                 head_end,
@@ -391,12 +390,7 @@ fn line_endpoints(width: f64, height: f64, flip_h: bool, flip_v: bool) -> (f64, 
 /// bentConnector2: simple L-shape (one bend).
 ///
 /// Without flip: right then down → (0,0) → (w,0) → (w,h).
-fn bent_connector2_points(
-    width: f64,
-    height: f64,
-    flip_h: bool,
-    flip_v: bool,
-) -> Vec<(f64, f64)> {
+fn bent_connector2_points(width: f64, height: f64, flip_h: bool, flip_v: bool) -> Vec<(f64, f64)> {
     let (x1, y1, x2, y2) = line_endpoints(width, height, flip_h, flip_v);
     vec![(x1, y1), (x2, y1), (x2, y2)]
 }
