@@ -778,10 +778,10 @@ impl<'a> SlideXmlParser<'a> {
                 if let Some(rot) = get_attr_i64(e, b"rot") {
                     self.shape.rotation_deg = Some(rot as f64 / 60_000.0);
                 }
-                self.shape.flip_h = get_attr_str(e, b"flipH")
-                    .is_some_and(|v| v == "1" || v == "true");
-                self.shape.flip_v = get_attr_str(e, b"flipV")
-                    .is_some_and(|v| v == "1" || v == "true");
+                self.shape.flip_h =
+                    get_attr_str(e, b"flipH").is_some_and(|v| v == "1" || v == "true");
+                self.shape.flip_v =
+                    get_attr_str(e, b"flipV").is_some_and(|v| v == "1" || v == "true");
             }
             b"prstGeom" if self.shape.in_sp_pr => {
                 if let Some(prst) = get_attr_str(e, b"prst") {
@@ -815,12 +815,10 @@ impl<'a> SlideXmlParser<'a> {
                     .unwrap_or(BorderLineStyle::Solid);
             }
             b"tailEnd" if self.shape.in_ln => {
-                self.shape.tail_end =
-                    parse_arrow_head(get_attr_str(e, b"type").as_deref());
+                self.shape.tail_end = parse_arrow_head(get_attr_str(e, b"type").as_deref());
             }
             b"headEnd" if self.shape.in_ln => {
-                self.shape.head_end =
-                    parse_arrow_head(get_attr_str(e, b"type").as_deref());
+                self.shape.head_end = parse_arrow_head(get_attr_str(e, b"type").as_deref());
             }
             b"solidFill" if self.shape.in_ln => {
                 self.solid_fill_ctx = SolidFillCtx::LineFill;
@@ -1076,21 +1074,19 @@ impl<'a> SlideXmlParser<'a> {
                     .unwrap_or(BorderLineStyle::Solid);
             }
             b"tailEnd" if self.shape.in_ln => {
-                self.shape.tail_end =
-                    parse_arrow_head(get_attr_str(e, b"type").as_deref());
+                self.shape.tail_end = parse_arrow_head(get_attr_str(e, b"type").as_deref());
             }
             b"headEnd" if self.shape.in_ln => {
-                self.shape.head_end =
-                    parse_arrow_head(get_attr_str(e, b"type").as_deref());
+                self.shape.head_end = parse_arrow_head(get_attr_str(e, b"type").as_deref());
             }
             // Adjustment values for connector bend points (inside <a:avLst>).
             b"gd" if self.in_shape && self.shape.in_sp_pr => {
-                if let Some(fmla) = get_attr_str(e, b"fmla") {
-                    if let Some(val_str) = fmla.strip_prefix("val ") {
-                        if let Ok(val) = val_str.parse::<f64>() {
-                            self.shape.adj_values.push(val);
-                        }
-                    }
+                if let Some(val) = get_attr_str(e, b"fmla")
+                    .as_deref()
+                    .and_then(|f| f.strip_prefix("val "))
+                    .and_then(|s| s.parse::<f64>().ok())
+                {
+                    self.shape.adj_values.push(val);
                 }
             }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_ln_ref => {

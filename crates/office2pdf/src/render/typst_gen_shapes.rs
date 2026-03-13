@@ -32,8 +32,7 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
             head_end,
             tail_end,
         } => {
-            let has_arrowheads: bool =
-                *tail_end != ArrowHead::None || *head_end != ArrowHead::None;
+            let has_arrowheads: bool = *tail_end != ArrowHead::None || *head_end != ArrowHead::None;
             // When arrowheads follow the line, wrap everything in #place()
             // so that Typst overlays them at the same origin instead of
             // stacking sequentially.

@@ -16,7 +16,20 @@ fn make_connector(
     flip_h: bool,
     flip_v: bool,
 ) -> String {
-    make_connector_full(x, y, cx, cy, prst, border_hex, border_width_emu, dash, flip_h, flip_v, "", "")
+    make_connector_full(
+        x,
+        y,
+        cx,
+        cy,
+        prst,
+        border_hex,
+        border_width_emu,
+        dash,
+        flip_h,
+        flip_v,
+        "",
+        "",
+    )
 }
 
 /// Create a connector with arrowhead attributes.
@@ -39,7 +52,20 @@ fn make_connector_with_arrows(
     } else {
         format!(r#"<a:tailEnd type="{tail_type}"/>"#)
     };
-    make_connector_full(x, y, cx, cy, prst, border_hex, border_width_emu, dash, flip_h, flip_v, "", &tail_xml)
+    make_connector_full(
+        x,
+        y,
+        cx,
+        cy,
+        prst,
+        border_hex,
+        border_width_emu,
+        dash,
+        flip_h,
+        flip_v,
+        "",
+        &tail_xml,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -88,6 +114,7 @@ fn make_connector_full(
 }
 
 /// Create a connector with a `<p:style>` section for theme-based line color.
+#[allow(clippy::too_many_arguments)]
 fn make_connector_with_style(
     x: i64,
     y: i64,
@@ -120,9 +147,16 @@ fn make_connector_with_style(
 #[test]
 fn test_straight_connector_parsed_as_line() {
     let connector = make_connector(
-        500_000, 1_000_000, 3_000_000, 0,
-        "straightConnector1", Some("0F6CFE"), Some(12700), Some("solid"),
-        false, false,
+        500_000,
+        1_000_000,
+        3_000_000,
+        0,
+        "straightConnector1",
+        Some("0F6CFE"),
+        Some(12700),
+        Some("solid"),
+        false,
+        false,
     );
     let slide = make_slide_xml(&[connector]);
     let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
@@ -154,9 +188,16 @@ fn test_straight_connector_parsed_as_line() {
 #[test]
 fn test_connector_with_line_preset() {
     let connector = make_connector(
-        0, 0, 5_000_000, 2_000,
-        "line", Some("FF0000"), Some(25400), Some("dash"),
-        false, false,
+        0,
+        0,
+        5_000_000,
+        2_000,
+        "line",
+        Some("FF0000"),
+        Some(25400),
+        Some("dash"),
+        false,
+        false,
     );
     let slide = make_slide_xml(&[connector]);
     let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
@@ -176,9 +217,16 @@ fn test_connector_with_line_preset() {
 #[test]
 fn test_connector_flip_h_reverses_line_direction() {
     let connector = make_connector(
-        1_000_000, 2_000_000, 4_000_000, 2_000_000,
-        "straightConnector1", Some("0000FF"), Some(12700), None,
-        true, false,  // flipH only
+        1_000_000,
+        2_000_000,
+        4_000_000,
+        2_000_000,
+        "straightConnector1",
+        Some("0000FF"),
+        Some(12700),
+        None,
+        true,
+        false, // flipH only
     );
     let slide = make_slide_xml(&[connector]);
     let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
@@ -193,10 +241,16 @@ fn test_connector_flip_h_reverses_line_direction() {
     // flipH: start at (width, 0), end at (0, height)
     match &shape.kind {
         ShapeKind::Line { x1, y1, x2, y2, .. } => {
-            assert!((*x1 - width).abs() < 0.1, "flipH: x1 should be {width}, got {x1}");
+            assert!(
+                (*x1 - width).abs() < 0.1,
+                "flipH: x1 should be {width}, got {x1}"
+            );
             assert!((*y1).abs() < 0.1, "flipH: y1 should be 0, got {y1}");
             assert!((*x2).abs() < 0.1, "flipH: x2 should be 0, got {x2}");
-            assert!((*y2 - height).abs() < 0.1, "flipH: y2 should be {height}, got {y2}");
+            assert!(
+                (*y2 - height).abs() < 0.1,
+                "flipH: y2 should be {height}, got {y2}"
+            );
         }
         _ => panic!("Expected Line shape"),
     }
@@ -205,9 +259,16 @@ fn test_connector_flip_h_reverses_line_direction() {
 #[test]
 fn test_connector_flip_v_reverses_line_direction() {
     let connector = make_connector(
-        0, 0, 3_000_000, 2_000_000,
-        "straightConnector1", Some("0000FF"), Some(12700), None,
-        false, true,  // flipV only
+        0,
+        0,
+        3_000_000,
+        2_000_000,
+        "straightConnector1",
+        Some("0000FF"),
+        Some(12700),
+        None,
+        false,
+        true, // flipV only
     );
     let slide = make_slide_xml(&[connector]);
     let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
@@ -223,8 +284,14 @@ fn test_connector_flip_v_reverses_line_direction() {
     match &shape.kind {
         ShapeKind::Line { x1, y1, x2, y2, .. } => {
             assert!((*x1).abs() < 0.1, "flipV: x1 should be 0, got {x1}");
-            assert!((*y1 - height).abs() < 0.1, "flipV: y1 should be {height}, got {y1}");
-            assert!((*x2 - width).abs() < 0.1, "flipV: x2 should be {width}, got {x2}");
+            assert!(
+                (*y1 - height).abs() < 0.1,
+                "flipV: y1 should be {height}, got {y1}"
+            );
+            assert!(
+                (*x2 - width).abs() < 0.1,
+                "flipV: x2 should be {width}, got {x2}"
+            );
             assert!((*y2).abs() < 0.1, "flipV: y2 should be 0, got {y2}");
         }
         _ => panic!("Expected Line shape"),
@@ -234,9 +301,16 @@ fn test_connector_flip_v_reverses_line_direction() {
 #[test]
 fn test_connector_flip_h_and_v() {
     let connector = make_connector(
-        0, 0, 3_000_000, 2_000_000,
-        "straightConnector1", Some("0000FF"), Some(12700), None,
-        true, true,  // both flips
+        0,
+        0,
+        3_000_000,
+        2_000_000,
+        "straightConnector1",
+        Some("0000FF"),
+        Some(12700),
+        None,
+        true,
+        true, // both flips
     );
     let slide = make_slide_xml(&[connector]);
     let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
@@ -252,7 +326,10 @@ fn test_connector_flip_h_and_v() {
     match &shape.kind {
         ShapeKind::Line { x1, y1, x2, y2, .. } => {
             assert!((*x1 - width).abs() < 0.1, "x1 should be {width}, got {x1}");
-            assert!((*y1 - height).abs() < 0.1, "y1 should be {height}, got {y1}");
+            assert!(
+                (*y1 - height).abs() < 0.1,
+                "y1 should be {height}, got {y1}"
+            );
             assert!((*x2).abs() < 0.1, "x2 should be 0, got {x2}");
             assert!((*y2).abs() < 0.1, "y2 should be 0, got {y2}");
         }
@@ -262,11 +339,27 @@ fn test_connector_flip_h_and_v() {
 
 #[test]
 fn test_connector_mixed_with_regular_shapes() {
-    let rect = make_shape(0, 0, 1_000_000, 1_000_000, "rect", Some("FF0000"), None, None);
+    let rect = make_shape(
+        0,
+        0,
+        1_000_000,
+        1_000_000,
+        "rect",
+        Some("FF0000"),
+        None,
+        None,
+    );
     let connector = make_connector(
-        1_000_000, 500_000, 2_000_000, 0,
-        "straightConnector1", Some("0000FF"), Some(12700), None,
-        false, false,
+        1_000_000,
+        500_000,
+        2_000_000,
+        0,
+        "straightConnector1",
+        Some("0000FF"),
+        Some(12700),
+        None,
+        false,
+        false,
     );
     let slide = make_slide_xml(&[rect, connector]);
     let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
@@ -275,24 +368,44 @@ fn test_connector_mixed_with_regular_shapes() {
 
     let page = first_fixed_page(&doc);
     assert_eq!(page.elements.len(), 2, "Should have rect + connector");
-    assert!(matches!(get_shape(&page.elements[0]).kind, ShapeKind::Rectangle));
-    assert!(matches!(get_shape(&page.elements[1]).kind, ShapeKind::Line { .. }));
+    assert!(matches!(
+        get_shape(&page.elements[0]).kind,
+        ShapeKind::Rectangle
+    ));
+    assert!(matches!(
+        get_shape(&page.elements[1]).kind,
+        ShapeKind::Line { .. }
+    ));
 }
 
 #[test]
 fn test_connector_with_style_based_line_color() {
     let connector = make_connector_with_style(
-        0, 0, 3_000_000, 0,
-        "straightConnector1", "accent1", Some("dash"),
-        false, false,
+        0,
+        0,
+        3_000_000,
+        0,
+        "straightConnector1",
+        "accent1",
+        Some("dash"),
+        false,
+        false,
     );
     let slide = make_slide_xml(&[connector]);
     let theme_xml = make_theme_xml(
         &[
-            ("dk1", "000000"), ("lt1", "FFFFFF"), ("dk2", "44546A"), ("lt2", "E7E6E6"),
-            ("accent1", "4472C4"), ("accent2", "ED7D31"), ("accent3", "A5A5A5"),
-            ("accent4", "FFC000"), ("accent5", "5B9BD5"), ("accent6", "70AD47"),
-            ("hlink", "0563C1"), ("folHlink", "954F72"),
+            ("dk1", "000000"),
+            ("lt1", "FFFFFF"),
+            ("dk2", "44546A"),
+            ("lt2", "E7E6E6"),
+            ("accent1", "4472C4"),
+            ("accent2", "ED7D31"),
+            ("accent3", "A5A5A5"),
+            ("accent4", "FFC000"),
+            ("accent5", "5B9BD5"),
+            ("accent6", "70AD47"),
+            ("hlink", "0563C1"),
+            ("folHlink", "954F72"),
         ],
         "Calibri",
         "맑은 고딕",
@@ -312,9 +425,16 @@ fn test_connector_with_style_based_line_color() {
 #[test]
 fn test_bent_connector3_parsed_as_polyline() {
     let connector = make_connector(
-        1_000_000, 2_000_000, 500_000, 300_000,
-        "bentConnector3", Some("FF0000"), Some(12700), None,
-        false, false,
+        1_000_000,
+        2_000_000,
+        500_000,
+        300_000,
+        "bentConnector3",
+        Some("FF0000"),
+        Some(12700),
+        None,
+        false,
+        false,
     );
     let slide = make_slide_xml(&[connector]);
     let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
@@ -322,7 +442,11 @@ fn test_bent_connector3_parsed_as_polyline() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     let page = first_fixed_page(&doc);
-    assert_eq!(page.elements.len(), 1, "bentConnector3 should produce 1 element");
+    assert_eq!(
+        page.elements.len(),
+        1,
+        "bentConnector3 should produce 1 element"
+    );
 
     let shape = get_shape(&page.elements[0]);
     // Bent connectors are rendered as polylines (Z-shaped paths)
@@ -338,9 +462,16 @@ fn test_bent_connector3_parsed_as_polyline() {
 #[test]
 fn test_connector_tail_end_triangle() {
     let connector = make_connector_with_arrows(
-        0, 0, 3_000_000, 0,
-        "straightConnector1", Some("0000FF"), Some(12700), None,
-        false, false,
+        0,
+        0,
+        3_000_000,
+        0,
+        "straightConnector1",
+        Some("0000FF"),
+        Some(12700),
+        None,
+        false,
+        false,
         "triangle",
     );
     let slide = make_slide_xml(&[connector]);
@@ -351,7 +482,9 @@ fn test_connector_tail_end_triangle() {
     let page = first_fixed_page(&doc);
     let shape = get_shape(&page.elements[0]);
     match &shape.kind {
-        ShapeKind::Line { tail_end, head_end, .. } => {
+        ShapeKind::Line {
+            tail_end, head_end, ..
+        } => {
             assert_eq!(*tail_end, ArrowHead::Triangle, "tail should be Triangle");
             assert_eq!(*head_end, ArrowHead::None, "head should be None");
         }
@@ -364,10 +497,18 @@ fn test_bent_connector3_with_adj_value() {
     // bentConnector3 with adj1=74340 (74.34% of width for the bend point)
     let adj_xml = r#"<a:gd name="adj1" fmla="val 74340"/>"#;
     let connector = make_connector_full(
-        0, 0, 1_000_000, 500_000,
-        "bentConnector3", Some("FF0000"), Some(12700), None,
-        false, false,
-        adj_xml, "",
+        0,
+        0,
+        1_000_000,
+        500_000,
+        "bentConnector3",
+        Some("FF0000"),
+        Some(12700),
+        None,
+        false,
+        false,
+        adj_xml,
+        "",
     );
     let slide = make_slide_xml(&[connector]);
     let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
@@ -385,7 +526,10 @@ fn test_bent_connector3_with_adj_value() {
             assert_eq!(points.len(), 4, "bentConnector3 should have 4 points");
             let mid_x: f64 = width * 0.7434;
             assert!((points[0].0).abs() < 0.1, "start x should be 0");
-            assert!((points[1].0 - mid_x).abs() < 0.5, "bend x should be at adj point");
+            assert!(
+                (points[1].0 - mid_x).abs() < 0.5,
+                "bend x should be at adj point"
+            );
             assert!((points[2].0 - mid_x).abs() < 0.5, "bend x should match");
             assert!((points[3].0 - width).abs() < 0.1, "end x should be width");
             assert!((points[3].1 - height).abs() < 0.1, "end y should be height");

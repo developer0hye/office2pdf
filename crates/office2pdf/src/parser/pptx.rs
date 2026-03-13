@@ -11,12 +11,11 @@ use zip::ZipArchive;
 use crate::config::ConvertOptions;
 use crate::error::{ConvertError, ConvertWarning};
 use crate::ir::{
-    Alignment, ArrowHead, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign,
-    Chart, Color, Document, FixedElement, FixedElementKind, FixedPage, GradientFill, ImageCrop,
-    ImageData, ImageFormat, Insets, LineSpacing, List, ListItem, ListKind, ListLevelStyle, Page,
-    PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, SmartArtNode,
-    StyleSheet, Table, TableCell, TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection,
-    TextStyle,
+    Alignment, ArrowHead, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart,
+    Color, Document, FixedElement, FixedElementKind, FixedPage, GradientFill, ImageCrop, ImageData,
+    ImageFormat, Insets, LineSpacing, List, ListItem, ListKind, ListLevelStyle, Page, PageSize,
+    Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SmartArt, SmartArtNode, StyleSheet,
+    Table, TableCell, TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection, TextStyle,
 };
 use crate::parser::Parser;
 use crate::parser::smartart;
