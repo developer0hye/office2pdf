@@ -268,7 +268,6 @@ impl PendingPptxList {
                 .get(&auto_numbering.level)
                 .is_none_or(|style| {
                     style.numbering_pattern == auto_numbering.numbering_pattern
-                        && style.marker_style.as_ref() == marker.marker_style()
                 });
         }
 
