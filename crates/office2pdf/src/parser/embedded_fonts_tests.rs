@@ -302,8 +302,7 @@ mod integration {
         let options = FileOptions::default();
 
         // presentation.xml with embedded font list
-        let pres_xml = format!(
-            r#"<?xml version="1.0" encoding="UTF-8"?>
+        let pres_xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
                 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:embeddedFontLst>
@@ -312,8 +311,7 @@ mod integration {
       <p:regular r:id="rId5"/>
     </p:embeddedFont>
   </p:embeddedFontLst>
-</p:presentation>"#
-        );
+</p:presentation>"#;
         zip.start_file("ppt/presentation.xml", options).unwrap();
         zip.write_all(pres_xml.as_bytes()).unwrap();
 
@@ -391,8 +389,8 @@ mod integration {
         data[2] = 0x00;
         data[3] = 0x00;
         // Fill rest with recognizable pattern
-        for i in 4..size {
-            data[i] = (i & 0xFF) as u8;
+        for (i, byte) in data[4..size].iter_mut().enumerate() {
+            *byte = ((i + 4) & 0xFF) as u8;
         }
         data
     }
