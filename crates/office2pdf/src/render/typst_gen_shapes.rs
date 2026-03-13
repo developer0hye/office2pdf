@@ -24,16 +24,60 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
             write_shape_params(out, shape, width, height);
             out.push_str(")\n");
         }
-        ShapeKind::Line { x2, y2 } => {
+        ShapeKind::Line {
+            x1,
+            y1,
+            x2,
+            y2,
+            head_end,
+            tail_end,
+        } => {
+            let has_arrowheads: bool = *tail_end != ArrowHead::None || *head_end != ArrowHead::None;
+            // When arrowheads follow the line, wrap everything in #place()
+            // so that Typst overlays them at the same origin instead of
+            // stacking sequentially.
+            if has_arrowheads {
+                out.push_str("#place(top + left)[");
+            }
             out.push_str("#line(");
             let _ = write!(
                 out,
-                "start: (0pt, 0pt), end: ({}pt, {}pt)",
+                "start: ({}pt, {}pt), end: ({}pt, {}pt)",
+                format_f64(*x1),
+                format_f64(*y1),
                 format_f64(*x2),
                 format_f64(*y2),
             );
             write_shape_stroke(out, &shape.stroke);
             out.push_str(")\n");
+            if has_arrowheads {
+                out.push_str("]\n");
+            }
+            if *tail_end != ArrowHead::None {
+                write_arrowhead_at(out, &shape.stroke, (*x1, *y1), (*x2, *y2));
+            }
+            if *head_end != ArrowHead::None {
+                write_arrowhead_at(out, &shape.stroke, (*x2, *y2), (*x1, *y1));
+            }
+        }
+        ShapeKind::Polyline {
+            points,
+            head_end,
+            tail_end,
+        } => {
+            write_polyline(out, &shape.stroke, points);
+            if points.len() >= 2 {
+                if *tail_end != ArrowHead::None {
+                    let last = points[points.len() - 1];
+                    let second_last = points[points.len() - 2];
+                    write_arrowhead_at(out, &shape.stroke, second_last, last);
+                }
+                if *head_end != ArrowHead::None {
+                    let first = points[0];
+                    let second = points[1];
+                    write_arrowhead_at(out, &shape.stroke, second, first);
+                }
+            }
         }
         ShapeKind::RoundedRectangle { radius_fraction } => {
             let radius = radius_fraction * width.min(height);
@@ -292,4 +336,75 @@ pub(super) fn write_gradient_fill(out: &mut String, gradient: &GradientFill) {
         let _ = write!(out, ", angle: {}deg", format_f64(gradient.angle));
     }
     out.push(')');
+}
+
+// ── Polyline & arrowhead rendering ──────────────────────────────────
+
+/// Render a multi-segment polyline as consecutive `#line()` calls,
+/// each wrapped in `#place(top + left)` so they overlay at the same origin.
+fn write_polyline(out: &mut String, stroke: &Option<BorderSide>, points: &[(f64, f64)]) {
+    for segment in points.windows(2) {
+        let (x1, y1) = segment[0];
+        let (x2, y2) = segment[1];
+        out.push_str("#place(top + left)[#line(");
+        let _ = write!(
+            out,
+            "start: ({}pt, {}pt), end: ({}pt, {}pt)",
+            format_f64(x1),
+            format_f64(y1),
+            format_f64(x2),
+            format_f64(y2),
+        );
+        write_shape_stroke(out, stroke);
+        out.push_str(")]\n");
+    }
+}
+
+/// Draw a triangle arrowhead at `tip`, pointing in the direction from `from` → `tip`.
+fn write_arrowhead_at(
+    out: &mut String,
+    stroke: &Option<BorderSide>,
+    from: (f64, f64),
+    tip: (f64, f64),
+) {
+    let Some(stroke) = stroke else { return };
+    let dx: f64 = tip.0 - from.0;
+    let dy: f64 = tip.1 - from.1;
+    let len: f64 = (dx * dx + dy * dy).sqrt();
+    if len < 0.001 {
+        return;
+    }
+    // Arrow size proportional to stroke width, with min/max bounds.
+    let arrow_len: f64 = (stroke.width * 4.0).clamp(3.0, 12.0);
+    let arrow_half_w: f64 = arrow_len * 0.45;
+
+    // Unit direction vector from `from` toward `tip`.
+    let ux: f64 = dx / len;
+    let uy: f64 = dy / len;
+    // Perpendicular vector.
+    let px: f64 = -uy;
+    let py: f64 = ux;
+
+    // Three vertices: tip, and two base corners.
+    let base_x: f64 = tip.0 - ux * arrow_len;
+    let base_y: f64 = tip.1 - uy * arrow_len;
+    let v1 = (tip.0, tip.1);
+    let v2 = (base_x + px * arrow_half_w, base_y + py * arrow_half_w);
+    let v3 = (base_x - px * arrow_half_w, base_y - py * arrow_half_w);
+
+    out.push_str("#place(top + left)[#polygon(");
+    let _ = write!(
+        out,
+        "({}pt, {}pt), ({}pt, {}pt), ({}pt, {}pt), fill: rgb({}, {}, {})",
+        format_f64(v1.0),
+        format_f64(v1.1),
+        format_f64(v2.0),
+        format_f64(v2.1),
+        format_f64(v3.0),
+        format_f64(v3.1),
+        stroke.color.r,
+        stroke.color.g,
+        stroke.color.b,
+    );
+    out.push_str(")]\n");
 }

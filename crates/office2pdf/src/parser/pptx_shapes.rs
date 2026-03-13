@@ -208,13 +208,75 @@ pub(super) fn parse_src_rect(e: &quick_xml::events::BytesStart) -> Option<ImageC
 }
 
 /// Map a PPTX preset geometry name to an IR ShapeKind.
-pub(super) fn prst_to_shape_kind(prst: &str, width: f64, height: f64) -> ShapeKind {
+///
+/// `flip_h`/`flip_v` from `<a:xfrm>` reverse the line endpoint direction,
+/// which matters for connectors drawn right-to-left or bottom-to-top.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn prst_to_shape_kind(
+    prst: &str,
+    width: f64,
+    height: f64,
+    flip_h: bool,
+    flip_v: bool,
+    head_end: ArrowHead,
+    tail_end: ArrowHead,
+    adj_values: &[f64],
+) -> ShapeKind {
     match prst {
         "ellipse" => ShapeKind::Ellipse,
-        "line" | "straightConnector1" => ShapeKind::Line {
-            x2: width,
-            y2: height,
-        },
+        "line" | "straightConnector1" => {
+            let (x1, y1, x2, y2) = line_endpoints(width, height, flip_h, flip_v);
+            ShapeKind::Line {
+                x1,
+                y1,
+                x2,
+                y2,
+                head_end,
+                tail_end,
+            }
+        }
+        // Bent connectors: L-shaped or Z-shaped paths
+        "bentConnector2" => {
+            let points: Vec<(f64, f64)> = bent_connector2_points(width, height, flip_h, flip_v);
+            ShapeKind::Polyline {
+                points,
+                head_end,
+                tail_end,
+            }
+        }
+        "bentConnector3" => {
+            let adj: f64 = adj_values.first().copied().unwrap_or(50_000.0) / 100_000.0;
+            let points: Vec<(f64, f64)> =
+                bent_connector3_points(width, height, flip_h, flip_v, adj);
+            ShapeKind::Polyline {
+                points,
+                head_end,
+                tail_end,
+            }
+        }
+        "bentConnector4" | "bentConnector5" => {
+            let adj1: f64 = adj_values.first().copied().unwrap_or(50_000.0) / 100_000.0;
+            let adj2: f64 = adj_values.get(1).copied().unwrap_or(50_000.0) / 100_000.0;
+            let points: Vec<(f64, f64)> =
+                bent_connector4_points(width, height, flip_h, flip_v, adj1, adj2);
+            ShapeKind::Polyline {
+                points,
+                head_end,
+                tail_end,
+            }
+        }
+        // Curved connectors: approximated as bent for now
+        "curvedConnector2" | "curvedConnector3" | "curvedConnector4" | "curvedConnector5" => {
+            let (x1, y1, x2, y2) = line_endpoints(width, height, flip_h, flip_v);
+            ShapeKind::Line {
+                x1,
+                y1,
+                x2,
+                y2,
+                head_end,
+                tail_end,
+            }
+        }
         "roundRect" => ShapeKind::RoundedRectangle {
             radius_fraction: 0.1,
         },
@@ -311,4 +373,63 @@ fn star_vertices(n: usize) -> Vec<(f64, f64)> {
         vertices.push((x, y));
     }
     vertices
+}
+
+// ── Connector geometry helpers ──────────────────────────────────────
+
+/// Compute line start/end points within the bounding box, accounting for flips.
+///
+/// Without flip: (0,0) → (w,h).  With flipH: (w,0) → (0,h).
+/// With flipV: (0,h) → (w,0).  Both: (w,h) → (0,0).
+fn line_endpoints(width: f64, height: f64, flip_h: bool, flip_v: bool) -> (f64, f64, f64, f64) {
+    let (x1, x2): (f64, f64) = if flip_h { (width, 0.0) } else { (0.0, width) };
+    let (y1, y2): (f64, f64) = if flip_v { (height, 0.0) } else { (0.0, height) };
+    (x1, y1, x2, y2)
+}
+
+/// bentConnector2: simple L-shape (one bend).
+///
+/// Without flip: right then down → (0,0) → (w,0) → (w,h).
+fn bent_connector2_points(width: f64, height: f64, flip_h: bool, flip_v: bool) -> Vec<(f64, f64)> {
+    let (x1, y1, x2, y2) = line_endpoints(width, height, flip_h, flip_v);
+    vec![(x1, y1), (x2, y1), (x2, y2)]
+}
+
+/// bentConnector3: Z-shape with one adjustable midpoint.
+///
+/// `adj` is the fraction (0.0–1.0) along the primary axis where the bend occurs.
+/// Without flip: right to adj%, then vertical, then right to end.
+fn bent_connector3_points(
+    width: f64,
+    height: f64,
+    flip_h: bool,
+    flip_v: bool,
+    adj: f64,
+) -> Vec<(f64, f64)> {
+    let (x1, y1, x2, y2) = line_endpoints(width, height, flip_h, flip_v);
+    let mid_x: f64 = x1 + (x2 - x1) * adj;
+    vec![(x1, y1), (mid_x, y1), (mid_x, y2), (x2, y2)]
+}
+
+/// bentConnector4: S-shape with two adjustable midpoints.
+fn bent_connector4_points(
+    width: f64,
+    height: f64,
+    flip_h: bool,
+    flip_v: bool,
+    adj1: f64,
+    adj2: f64,
+) -> Vec<(f64, f64)> {
+    let (x1, y1, x2, y2) = line_endpoints(width, height, flip_h, flip_v);
+    let mid_x: f64 = x1 + (x2 - x1) * adj1;
+    let mid_y: f64 = y1 + (y2 - y1) * adj2;
+    vec![(x1, y1), (mid_x, y1), (mid_x, mid_y), (x2, mid_y), (x2, y2)]
+}
+
+/// Parse OOXML arrowhead type attribute to IR ArrowHead.
+pub(super) fn parse_arrow_head(type_val: Option<&str>) -> ArrowHead {
+    match type_val {
+        Some("triangle" | "stealth" | "arrow" | "diamond" | "oval") => ArrowHead::Triangle,
+        _ => ArrowHead::None,
+    }
 }

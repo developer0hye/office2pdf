@@ -388,7 +388,7 @@ impl GraphicFrameState {
     }
 }
 
-/// Accumulated state for a `<p:sp>` (shape) element and its nested properties.
+/// Accumulated state for a `<p:sp>` or `<p:cxnSp>` element and its nested properties.
 struct ShapeState {
     depth: usize,
     x: i64,
@@ -397,6 +397,8 @@ struct ShapeState {
     cy: i64,
     has_placeholder: bool,
     rotation_deg: Option<f64>,
+    flip_h: bool,
+    flip_v: bool,
     opacity: Option<f64>,
     shadow: Option<Shadow>,
     in_sp_pr: bool,
@@ -408,6 +410,14 @@ struct ShapeState {
     ln_width_emu: i64,
     ln_color: Option<Color>,
     ln_dash_style: BorderLineStyle,
+    /// Arrowhead at line start.
+    head_end: ArrowHead,
+    /// Arrowhead at line end.
+    tail_end: ArrowHead,
+    /// Adjustment values from `<a:avLst><a:gd>` for connector bend points.
+    adj_values: Vec<f64>,
+    /// Fallback line color from `<p:style><a:lnRef>` scheme reference.
+    style_ln_color: Option<Color>,
 }
 
 impl Default for ShapeState {
@@ -420,6 +430,8 @@ impl Default for ShapeState {
             cy: 0,
             has_placeholder: false,
             rotation_deg: None,
+            flip_h: false,
+            flip_v: false,
             opacity: None,
             shadow: None,
             in_sp_pr: false,
@@ -431,6 +443,10 @@ impl Default for ShapeState {
             ln_width_emu: 0,
             ln_color: None,
             ln_dash_style: BorderLineStyle::Solid,
+            head_end: ArrowHead::None,
+            tail_end: ArrowHead::None,
+            adj_values: Vec::new(),
+            style_ln_color: None,
         }
     }
 }
@@ -477,8 +493,21 @@ fn finalize_shape(
             }),
         })
     } else if let Some(ref geom) = shape.prst_geom {
-        let kind = prst_to_shape_kind(geom, emu_to_pt(shape.cx), emu_to_pt(shape.cy));
-        let stroke = shape.ln_color.map(|color| BorderSide {
+        let width: f64 = emu_to_pt(shape.cx);
+        let height: f64 = emu_to_pt(shape.cy);
+        let kind: ShapeKind = prst_to_shape_kind(
+            geom,
+            width,
+            height,
+            shape.flip_h,
+            shape.flip_v,
+            shape.head_end,
+            shape.tail_end,
+            &shape.adj_values,
+        );
+        // Use explicit line color, falling back to style-based color from <p:style><a:lnRef>.
+        let effective_ln_color: Option<Color> = shape.ln_color.or(shape.style_ln_color);
+        let stroke: Option<BorderSide> = effective_ln_color.map(|color| BorderSide {
             width: emu_to_pt(shape.ln_width_emu),
             color,
             style: shape.ln_dash_style,
@@ -486,8 +515,8 @@ fn finalize_shape(
         Some(FixedElement {
             x: emu_to_pt(shape.x),
             y: emu_to_pt(shape.y),
-            width: emu_to_pt(shape.cx),
-            height: emu_to_pt(shape.cy),
+            width,
+            height,
             kind: FixedElementKind::Shape(Shape {
                 kind,
                 fill: shape.fill,
@@ -620,6 +649,8 @@ struct SlideXmlParser<'a> {
     in_rpr: bool,
     in_end_para_rpr: bool,
     solid_fill_ctx: SolidFillCtx,
+    /// Inside `<a:lnRef>` within `<p:style>` — for resolving fallback line color.
+    in_style_ln_ref: bool,
 
     // ── Picture state (`<p:pic>`) ───────────────────────────────────
     in_pic: bool,
@@ -676,6 +707,7 @@ impl<'a> SlideXmlParser<'a> {
             in_rpr: false,
             in_end_para_rpr: false,
             solid_fill_ctx: SolidFillCtx::None,
+            in_style_ln_ref: false,
 
             in_pic: false,
             pic: PictureState::default(),
@@ -726,7 +758,7 @@ impl<'a> SlideXmlParser<'a> {
                     self.warnings.extend(group_warnings);
                 }
             }
-            b"sp" if !self.in_shape && !self.in_pic => {
+            b"sp" | b"cxnSp" if !self.in_shape && !self.in_pic => {
                 self.in_shape = true;
                 self.shape.reset();
                 self.shape.depth = 1;
@@ -735,7 +767,7 @@ impl<'a> SlideXmlParser<'a> {
                 self.text_box_padding = default_pptx_text_box_padding();
                 self.text_box_vertical_align = TextBoxVerticalAlign::Top;
             }
-            b"sp" if self.in_shape => {
+            b"sp" | b"cxnSp" if self.in_shape => {
                 self.shape.depth += 1;
             }
             b"spPr" if self.in_shape && !self.in_txbody => {
@@ -746,6 +778,10 @@ impl<'a> SlideXmlParser<'a> {
                 if let Some(rot) = get_attr_i64(e, b"rot") {
                     self.shape.rotation_deg = Some(rot as f64 / 60_000.0);
                 }
+                self.shape.flip_h =
+                    get_attr_str(e, b"flipH").is_some_and(|v| v == "1" || v == "true");
+                self.shape.flip_v =
+                    get_attr_str(e, b"flipV").is_some_and(|v| v == "1" || v == "true");
             }
             b"prstGeom" if self.shape.in_sp_pr => {
                 if let Some(prst) = get_attr_str(e, b"prst") {
@@ -777,6 +813,12 @@ impl<'a> SlideXmlParser<'a> {
                     .as_deref()
                     .map(pptx_dash_to_border_style)
                     .unwrap_or(BorderLineStyle::Solid);
+            }
+            b"tailEnd" if self.shape.in_ln => {
+                self.shape.tail_end = parse_arrow_head(get_attr_str(e, b"type").as_deref());
+            }
+            b"headEnd" if self.shape.in_ln => {
+                self.shape.head_end = parse_arrow_head(get_attr_str(e, b"type").as_deref());
             }
             b"solidFill" if self.shape.in_ln => {
                 self.solid_fill_ctx = SolidFillCtx::LineFill;
@@ -919,6 +961,10 @@ impl<'a> SlideXmlParser<'a> {
                     &mut self.pic,
                 );
             }
+            // `<a:lnRef>` inside `<p:style>` provides fallback line color.
+            b"lnRef" if self.in_shape && !self.shape.in_sp_pr && !self.in_txbody => {
+                self.in_style_ln_ref = true;
+            }
             b"t" if self.in_run => {
                 self.in_text = true;
             }
@@ -1027,6 +1073,26 @@ impl<'a> SlideXmlParser<'a> {
                     .map(pptx_dash_to_border_style)
                     .unwrap_or(BorderLineStyle::Solid);
             }
+            b"tailEnd" if self.shape.in_ln => {
+                self.shape.tail_end = parse_arrow_head(get_attr_str(e, b"type").as_deref());
+            }
+            b"headEnd" if self.shape.in_ln => {
+                self.shape.head_end = parse_arrow_head(get_attr_str(e, b"type").as_deref());
+            }
+            // Adjustment values for connector bend points (inside <a:avLst>).
+            b"gd" if self.in_shape && self.shape.in_sp_pr => {
+                if let Some(val) = get_attr_str(e, b"fmla")
+                    .as_deref()
+                    .and_then(|f| f.strip_prefix("val "))
+                    .and_then(|s| s.parse::<f64>().ok())
+                {
+                    self.shape.adj_values.push(val);
+                }
+            }
+            b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_ln_ref => {
+                let parsed = parse_color_from_empty(e, self.theme, self.color_map);
+                self.shape.style_ln_color = parsed.color;
+            }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.solid_fill_ctx != SolidFillCtx::None => {
                 let parsed = parse_color_from_empty(e, self.theme, self.color_map);
                 apply_solid_fill_color(
@@ -1134,7 +1200,7 @@ impl<'a> SlideXmlParser<'a> {
     /// Handle an `Event::End` element.
     fn handle_end(&mut self, local_name: &[u8]) {
         match local_name {
-            b"sp" if self.in_shape => {
+            b"sp" | b"cxnSp" if self.in_shape => {
                 self.shape.depth -= 1;
                 if self.shape.depth == 0 {
                     if let Some(element) = finalize_shape(
@@ -1203,6 +1269,9 @@ impl<'a> SlideXmlParser<'a> {
             }
             b"solidFill" if self.solid_fill_ctx != SolidFillCtx::None => {
                 self.solid_fill_ctx = SolidFillCtx::None;
+            }
+            b"lnRef" if self.in_style_ln_ref => {
+                self.in_style_ln_ref = false;
             }
             b"t" if self.in_text => {
                 self.in_text = false;

@@ -77,7 +77,14 @@ fn test_fixed_page_line_shape() {
             0.0,
             300.0,
             0.0,
-            ShapeKind::Line { x2: 300.0, y2: 0.0 },
+            ShapeKind::Line {
+                x1: 0.0,
+                y1: 0.0,
+                x2: 300.0,
+                y2: 0.0,
+                head_end: ArrowHead::None,
+                tail_end: ArrowHead::None,
+            },
             None,
             Some(BorderSide {
                 width: 2.0,
@@ -236,6 +243,94 @@ fn test_fixed_page_mixed_elements() {
     assert!(output.source.contains("#image("));
     assert!(output.source.contains("Footer text"));
     assert_eq!(output.images.len(), 1);
+}
+
+#[test]
+fn test_line_arrowhead_uses_place_overlay() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 10.0,
+            y: 20.0,
+            width: 200.0,
+            height: 0.0,
+            kind: FixedElementKind::Shape(Shape {
+                kind: ShapeKind::Line {
+                    x1: 0.0,
+                    y1: 0.0,
+                    x2: 200.0,
+                    y2: 0.0,
+                    head_end: ArrowHead::None,
+                    tail_end: ArrowHead::Triangle,
+                },
+                fill: None,
+                gradient_fill: None,
+                stroke: Some(BorderSide {
+                    width: 2.0,
+                    color: Color::black(),
+                    style: BorderLineStyle::Solid,
+                }),
+                rotation_deg: None,
+                opacity: None,
+                shadow: None,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    // Arrowhead polygon must be inside #place(top + left) so it overlays
+    // on the line rather than stacking below it in the layout.
+    assert!(
+        output.source.contains("#place(top + left)[#polygon("),
+        "Arrowhead polygon must use #place overlay, got: {}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_polyline_segments_use_place_overlay() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 10.0,
+            y: 20.0,
+            width: 200.0,
+            height: 100.0,
+            kind: FixedElementKind::Shape(Shape {
+                kind: ShapeKind::Polyline {
+                    points: vec![(0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (200.0, 100.0)],
+                    head_end: ArrowHead::None,
+                    tail_end: ArrowHead::Triangle,
+                },
+                fill: None,
+                gradient_fill: None,
+                stroke: Some(BorderSide {
+                    width: 1.5,
+                    color: Color::new(0, 0, 255),
+                    style: BorderLineStyle::Solid,
+                }),
+                rotation_deg: None,
+                opacity: None,
+                shadow: None,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    // Each polyline segment must use #place overlay for correct positioning.
+    let segment_count = output.source.matches("#place(top + left)[#line(").count();
+    assert!(
+        segment_count >= 3,
+        "Expected 3 polyline segments with #place overlay, found {}: {}",
+        segment_count,
+        output.source,
+    );
+    // Arrowhead must also use #place overlay.
+    assert!(
+        output.source.contains("#place(top + left)[#polygon("),
+        "Arrowhead polygon must use #place overlay, got: {}",
+        output.source,
+    );
 }
 
 #[test]

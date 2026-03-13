@@ -446,9 +446,20 @@ pub struct Shape {
 pub enum ShapeKind {
     Rectangle,
     Ellipse,
+    /// Straight line from `(x1,y1)` to `(x2,y2)` in points, relative to element's top-left.
     Line {
+        x1: f64,
+        y1: f64,
         x2: f64,
         y2: f64,
+        head_end: ArrowHead,
+        tail_end: ArrowHead,
+    },
+    /// Multi-segment polyline in points, relative to element's top-left.
+    Polyline {
+        points: Vec<(f64, f64)>,
+        head_end: ArrowHead,
+        tail_end: ArrowHead,
     },
     /// Rectangle with rounded corners. `radius_fraction` is relative to `min(width, height)`.
     RoundedRectangle {
@@ -458,6 +469,14 @@ pub enum ShapeKind {
     Polygon {
         vertices: Vec<(f64, f64)>,
     },
+}
+
+/// Arrowhead decoration on a line endpoint.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ArrowHead {
+    #[default]
+    None,
+    Triangle,
 }
 
 #[cfg(test)]
