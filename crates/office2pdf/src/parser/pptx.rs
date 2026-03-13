@@ -21,7 +21,9 @@ use crate::parser::Parser;
 use crate::parser::smartart;
 use crate::parser::units::emu_to_pt;
 
-use self::package::{load_theme, parse_presentation_xml, parse_rels_xml, read_zip_entry};
+use self::package::{
+    load_table_styles, load_theme, parse_presentation_xml, parse_rels_xml, read_zip_entry,
+};
 #[cfg(test)]
 use self::package::{resolve_relative_path, scan_chart_refs};
 use self::shapes::{
@@ -393,6 +395,11 @@ impl Parser for PptxParser {
         // Load theme data (if available)
         let theme = load_theme(&rel_map, &mut archive);
 
+        // Load table styles (uses theme colors for scheme color resolution)
+        let master_color_map: ColorMapData = default_color_map();
+        let table_styles: table_styles::TableStyleMap =
+            load_table_styles(&mut archive, &theme, &master_color_map);
+
         let mut warnings = Vec::new();
 
         // Parse each slide in order, skipping broken slides with warnings
@@ -419,6 +426,7 @@ impl Parser for PptxParser {
                     &slide_label,
                     slide_size,
                     &theme,
+                    &table_styles,
                     &mut archive,
                 ) {
                     Ok((page, slide_warnings)) => {
