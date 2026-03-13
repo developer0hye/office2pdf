@@ -140,6 +140,12 @@ pub struct TextBoxData {
     pub content: Vec<Block>,
     pub padding: Insets,
     pub vertical_align: TextBoxVerticalAlign,
+    /// Background fill color for the text box.
+    pub fill: Option<Color>,
+    /// Opacity from 0.0 (fully transparent) to 1.0 (fully opaque).
+    pub opacity: Option<f64>,
+    /// Border stroke for the text box.
+    pub stroke: Option<BorderSide>,
 }
 
 /// The kind of list: ordered (numbered) or unordered (bulleted).
