@@ -533,7 +533,8 @@ fn test_no_theme_scheme_color_ignored() {
 }
 
 #[test]
-fn test_scheme_color_as_start_element() {
+fn test_scheme_color_tint_blends_toward_white() {
+    // accent3=#A5A5A5 with tint 50% → each channel: 255 - (255-165)*0.5 = 210 = 0xD2
     let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent3"><a:tint val="50000"/></a:schemeClr></a:solidFill></p:spPr></p:sp>"#;
     let slide = make_slide_xml(&[shape_xml.to_string()]);
     let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
@@ -544,7 +545,25 @@ fn test_scheme_color_as_start_element() {
 
     let page = first_fixed_page(&doc);
     let shape = get_shape(&page.elements[0]);
-    assert_eq!(shape.fill, Some(Color::new(0xA5, 0xA5, 0xA5)));
+    assert_eq!(shape.fill, Some(Color::new(0xD2, 0xD2, 0xD2)));
+}
+
+#[test]
+fn test_scheme_color_shade_blends_toward_black() {
+    // accent1=#4472C4 with shade 50% → each channel * 0.5 → (34, 57, 98)
+    let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent1"><a:shade val="50000"/></a:schemeClr></a:solidFill></p:spPr></p:sp>"#;
+    let slide = make_slide_xml(&[shape_xml.to_string()]);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let shape = get_shape(&page.elements[0]);
+    // accent1 = (0x44, 0x72, 0xC4) = (68, 114, 196)
+    // shade 50%: (34, 57, 98) = (0x22, 0x39, 0x62)
+    assert_eq!(shape.fill, Some(Color::new(0x22, 0x39, 0x62)));
 }
 
 #[test]
