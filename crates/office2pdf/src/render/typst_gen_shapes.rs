@@ -32,6 +32,14 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
             head_end,
             tail_end,
         } => {
+            let has_arrowheads: bool =
+                *tail_end != ArrowHead::None || *head_end != ArrowHead::None;
+            // When arrowheads follow the line, wrap everything in #place()
+            // so that Typst overlays them at the same origin instead of
+            // stacking sequentially.
+            if has_arrowheads {
+                out.push_str("#place(top + left)[");
+            }
             out.push_str("#line(");
             let _ = write!(
                 out,
@@ -43,6 +51,9 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
             );
             write_shape_stroke(out, &shape.stroke);
             out.push_str(")\n");
+            if has_arrowheads {
+                out.push_str("]\n");
+            }
             if *tail_end != ArrowHead::None {
                 write_arrowhead_at(out, &shape.stroke, (*x1, *y1), (*x2, *y2));
             }
@@ -330,12 +341,13 @@ pub(super) fn write_gradient_fill(out: &mut String, gradient: &GradientFill) {
 
 // ── Polyline & arrowhead rendering ──────────────────────────────────
 
-/// Render a multi-segment polyline as consecutive `#line()` calls.
+/// Render a multi-segment polyline as consecutive `#line()` calls,
+/// each wrapped in `#place(top + left)` so they overlay at the same origin.
 fn write_polyline(out: &mut String, stroke: &Option<BorderSide>, points: &[(f64, f64)]) {
     for segment in points.windows(2) {
         let (x1, y1) = segment[0];
         let (x2, y2) = segment[1];
-        out.push_str("#line(");
+        out.push_str("#place(top + left)[#line(");
         let _ = write!(
             out,
             "start: ({}pt, {}pt), end: ({}pt, {}pt)",
@@ -345,7 +357,7 @@ fn write_polyline(out: &mut String, stroke: &Option<BorderSide>, points: &[(f64,
             format_f64(y2),
         );
         write_shape_stroke(out, stroke);
-        out.push_str(")\n");
+        out.push_str(")]\n");
     }
 }
 
@@ -381,7 +393,7 @@ fn write_arrowhead_at(
     let v2 = (base_x + px * arrow_half_w, base_y + py * arrow_half_w);
     let v3 = (base_x - px * arrow_half_w, base_y - py * arrow_half_w);
 
-    out.push_str("#polygon(");
+    out.push_str("#place(top + left)[#polygon(");
     let _ = write!(
         out,
         "({}pt, {}pt), ({}pt, {}pt), ({}pt, {}pt), fill: rgb({}, {}, {})",
@@ -395,5 +407,5 @@ fn write_arrowhead_at(
         stroke.color.g,
         stroke.color.b,
     );
-    out.push_str(")\n");
+    out.push_str(")]\n");
 }
