@@ -525,6 +525,24 @@ fn generate_fixed_element(
         FixedElementKind::TextBox(text_box) => generate_fixed_text_box(out, elem, text_box, ctx)?,
         FixedElementKind::Image(img) => {
             generate_image(out, img, ctx);
+            // Render image border as a separate overlay so that #image()
+            // dimensions are not affected by Typst's #box(stroke:) sizing.
+            if let Some(ref stroke) = img.stroke {
+                let _ = write!(
+                    out,
+                    "]\n#place(top + left, dx: {}pt, dy: {}pt)[\n",
+                    format_f64(elem.x),
+                    format_f64(elem.y),
+                );
+                let _ = write!(
+                    out,
+                    "#rect(width: {}pt, height: {}pt, fill: none, stroke: ",
+                    format_f64(elem.width),
+                    format_f64(elem.height),
+                );
+                shapes::write_image_border_stroke(out, stroke);
+                out.push_str(")\n");
+            }
         }
         FixedElementKind::Shape(shape) => {
             generate_shape(out, shape, elem.width, elem.height);
@@ -771,7 +789,15 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
         }
         Block::Table(table) => generate_table(out, table, ctx),
         Block::Image(img) => {
-            generate_image(out, img, ctx);
+            if let Some(ref stroke) = img.stroke {
+                out.push_str("#box(stroke: ");
+                shapes::write_image_border_stroke(out, stroke);
+                out.push_str(")[");
+                generate_image(out, img, ctx);
+                out.push_str("]\n");
+            } else {
+                generate_image(out, img, ctx);
+            }
             Ok(())
         }
         Block::FloatingImage(fi) => {
@@ -831,14 +857,6 @@ fn border_line_style_to_typst(style: BorderLineStyle) -> &'static str {
 
 fn generate_image(out: &mut String, img: &ImageData, ctx: &mut GenCtx) {
     let path = ctx.add_image(img);
-    let has_stroke: bool = img.stroke.is_some();
-
-    if has_stroke {
-        out.push_str("#box(stroke: ");
-        // Write the stroke value inline (reuse shape stroke formatting without leading comma)
-        shapes::write_image_border_stroke(out, img.stroke.as_ref().unwrap());
-        out.push_str(")[");
-    }
 
     out.push_str("#image(\"");
     out.push_str(&path);
@@ -851,13 +869,16 @@ fn generate_image(out: &mut String, img: &ImageData, ctx: &mut GenCtx) {
         let _ = write!(out, ", height: {}pt", format_f64(h));
     }
 
-    out.push(')');
-
-    if has_stroke {
-        out.push_str("]\n");
-    } else {
-        out.push('\n');
+    // Typst defaults to fit: "cover" which preserves the image's native
+    // aspect ratio.  When both width and height are specified (common for
+    // PPTX slides), the image must fill its bounding box exactly — e.g.
+    // after a non-uniform group transform the AR may differ from the
+    // pixel data.  "stretch" ensures the rendered size matches.
+    if img.width.is_some() && img.height.is_some() {
+        out.push_str(", fit: \"stretch\"");
     }
+
+    out.push_str(")\n");
 }
 
 /// Generate Typst markup for a floating image.
