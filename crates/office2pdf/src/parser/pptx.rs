@@ -44,6 +44,8 @@ mod package;
 mod shapes;
 #[path = "pptx_slides.rs"]
 mod slides;
+#[path = "pptx_table_styles.rs"]
+mod table_styles;
 #[path = "pptx_tables.rs"]
 mod tables;
 #[path = "pptx_text.rs"]

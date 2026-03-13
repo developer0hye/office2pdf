@@ -489,6 +489,9 @@ use self::theme_tests::{
 #[path = "pptx_table_tests.rs"]
 mod table_tests;
 
+#[path = "pptx_table_style_tests.rs"]
+mod table_style_tests;
+
 #[path = "pptx_slide_feature_tests.rs"]
 mod slide_feature_tests;
 
