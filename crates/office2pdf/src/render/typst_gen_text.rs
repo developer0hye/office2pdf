@@ -578,7 +578,17 @@ fn font_weight_rank(weight: &str) -> u8 {
 }
 
 fn effective_font_weight(style: &TextStyle) -> Option<&'static str> {
-    let inferred = style.font_family.as_deref().and_then(inferred_font_weight);
+    // Only infer weight from font family name when the font (or its alias)
+    // is actually available.  When using fallback fonts, uncommonly heavy
+    // weights (e.g. "extrabold" = 800) may not exist in the substitute,
+    // causing Typst to fall back to its built-in serif font instead.
+    let inferred = style.font_family.as_deref().and_then(|family| {
+        if font_subst::is_primary_font_available(family) {
+            inferred_font_weight(family)
+        } else {
+            None
+        }
+    });
     let explicit = matches!(style.bold, Some(true)).then_some("bold");
     match (explicit, inferred) {
         (Some(explicit), Some(inferred)) => {

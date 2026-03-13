@@ -325,3 +325,80 @@ fn test_document_requests_font_families_true_when_any_run_sets_family() {
 
     assert!(document_requests_font_families(&doc));
 }
+
+// --- Korean / CJK font name tests ---
+
+#[test]
+fn test_korean_malgun_gothic_name_has_substitutes() {
+    let subs = substitutes("맑은 고딕").expect("Korean Malgun Gothic name should have substitutes");
+    assert!(
+        subs.contains(&"Malgun Gothic"),
+        "Should include English name as fallback: {subs:?}"
+    );
+}
+
+#[test]
+fn test_korean_gulim_name_has_substitutes() {
+    let subs = substitutes("굴림").expect("Korean Gulim name should have substitutes");
+    assert!(subs.contains(&"Gulim"));
+}
+
+#[test]
+fn test_font_with_fallbacks_korean_malgun_gothic_includes_english_name() {
+    let result = font_with_fallbacks("맑은 고딕");
+    assert!(
+        result.contains("\"Malgun Gothic\""),
+        "Should include English name in fallback list: {result}"
+    );
+    assert!(
+        result.starts_with("(\"맑은 고딕\""),
+        "Original name should be preserved first: {result}"
+    );
+}
+
+#[test]
+fn test_japanese_font_name_has_substitutes() {
+    let subs = substitutes("メイリオ").expect("Japanese Meiryo name should have substitutes");
+    assert!(subs.contains(&"Meiryo"));
+}
+
+#[test]
+fn test_chinese_font_name_has_substitutes() {
+    let subs = substitutes("微软雅黑").expect("Chinese YaHei name should have substitutes");
+    assert!(subs.contains(&"Microsoft YaHei"));
+}
+
+// --- is_primary_font_available() tests ---
+
+#[test]
+fn test_is_primary_font_available_returns_true_when_no_context() {
+    // When no font context is active (e.g. WASM), assume available.
+    assert!(is_primary_font_available("Anything"));
+}
+
+#[test]
+fn test_is_primary_font_available_returns_true_when_font_exists() {
+    let context = FontSearchContext::for_test(Vec::new(), &["Pretendard"], &[], &[]);
+    let result =
+        with_font_search_context(Some(&context), || is_primary_font_available("Pretendard"));
+    assert!(result);
+}
+
+#[test]
+fn test_is_primary_font_available_returns_true_via_alias() {
+    // "Pretendard ExtraBold" → alias "Pretendard" → available
+    let context = FontSearchContext::for_test(Vec::new(), &["Pretendard"], &[], &[]);
+    let result = with_font_search_context(Some(&context), || {
+        is_primary_font_available("Pretendard ExtraBold")
+    });
+    assert!(result);
+}
+
+#[test]
+fn test_is_primary_font_available_returns_false_when_missing() {
+    let context = FontSearchContext::for_test(Vec::new(), &["Arial"], &[], &[]);
+    let result = with_font_search_context(Some(&context), || {
+        is_primary_font_available("Pretendard ExtraBold")
+    });
+    assert!(!result);
+}
