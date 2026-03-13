@@ -29,6 +29,13 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 office2pdf = "0.3"
 ```
 
+For `OOXML -> IR -> Typst` (without PDF compilation), use the workspace crate:
+
+```toml
+[dependencies]
+office2typst = { path = "crates/office2typst" }
+```
+
 ### CLI
 
 ```sh
@@ -64,6 +71,22 @@ let result = office2pdf::convert_bytes(
     &ConvertOptions::default(),
 ).unwrap();
 std::fs::write("report.pdf", &result.pdf).unwrap();
+```
+
+### OOXML to Typst (no PDF compile)
+
+```rust
+use office2typst::config::{ConvertOptions, Format};
+
+let bytes = std::fs::read("report.docx").unwrap();
+let result = office2typst::convert_bytes(&bytes, Format::Docx, &ConvertOptions::default()).unwrap();
+
+// Parsed IR document
+let _doc = result.document;
+
+// Typst source string
+let typst_source = result.typst.source;
+println!("{}", typst_source);
 ```
 
 ### CLI
