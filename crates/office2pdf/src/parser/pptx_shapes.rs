@@ -208,13 +208,26 @@ pub(super) fn parse_src_rect(e: &quick_xml::events::BytesStart) -> Option<ImageC
 }
 
 /// Map a PPTX preset geometry name to an IR ShapeKind.
-pub(super) fn prst_to_shape_kind(prst: &str, width: f64, height: f64) -> ShapeKind {
+///
+/// `flip_h`/`flip_v` from `<a:xfrm>` reverse the line endpoint direction,
+/// which matters for connectors drawn right-to-left or bottom-to-top.
+pub(super) fn prst_to_shape_kind(
+    prst: &str,
+    width: f64,
+    height: f64,
+    flip_h: bool,
+    flip_v: bool,
+) -> ShapeKind {
     match prst {
         "ellipse" => ShapeKind::Ellipse,
-        "line" | "straightConnector1" => ShapeKind::Line {
-            x2: width,
-            y2: height,
-        },
+        // Straight lines and connectors (including bent connectors approximated as straight lines)
+        "line" | "straightConnector1" | "bentConnector2" | "bentConnector3" | "bentConnector4"
+        | "bentConnector5" | "curvedConnector2" | "curvedConnector3" | "curvedConnector4"
+        | "curvedConnector5" => {
+            let x2: f64 = if flip_h { -width } else { width };
+            let y2: f64 = if flip_v { -height } else { height };
+            ShapeKind::Line { x2, y2 }
+        }
         "roundRect" => ShapeKind::RoundedRectangle {
             radius_fraction: 0.1,
         },

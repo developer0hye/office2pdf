@@ -512,3 +512,6 @@ mod metadata_tests;
 
 #[path = "pptx_preset_shape_tests.rs"]
 mod preset_shape_tests;
+
+#[path = "pptx_connector_tests.rs"]
+mod connector_tests;
