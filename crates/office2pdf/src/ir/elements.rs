@@ -336,6 +336,8 @@ pub struct ImageData {
     pub width: Option<f64>,
     pub height: Option<f64>,
     pub crop: Option<ImageCrop>,
+    /// Optional border stroke around the image.
+    pub stroke: Option<BorderSide>,
 }
 
 /// Supported image formats.

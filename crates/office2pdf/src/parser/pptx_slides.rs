@@ -359,6 +359,11 @@ struct PictureState {
     img_layer_embeds: Vec<String>,
     crop: Option<ImageCrop>,
     in_xfrm: bool,
+    in_sp_pr: bool,
+    in_ln: bool,
+    ln_width_emu: i64,
+    ln_color: Option<Color>,
+    ln_dash_style: BorderLineStyle,
 }
 
 impl PictureState {
@@ -503,6 +508,11 @@ fn finalize_picture(
         pic.svg_blip_embed.as_deref(),
         &pic.img_layer_embeds,
     );
+    let stroke: Option<BorderSide> = pic.ln_color.map(|color| BorderSide {
+        width: emu_to_pt(pic.ln_width_emu),
+        color,
+        style: pic.ln_dash_style,
+    });
     let element = selected_asset.and_then(|asset| {
         asset.format().map(|format| FixedElement {
             x: emu_to_pt(pic.x),
@@ -515,6 +525,7 @@ fn finalize_picture(
                 width: Some(emu_to_pt(pic.cx)),
                 height: Some(emu_to_pt(pic.cy)),
                 crop: pic.crop,
+                stroke: stroke.clone(),
             }),
         })
     });
@@ -529,6 +540,7 @@ fn apply_solid_fill_color(
     run_style: &mut TextStyle,
     end_run_style: &mut TextStyle,
     bullet_def: &mut PptxBulletDefinition,
+    pic: &mut PictureState,
 ) {
     match ctx {
         SolidFillCtx::ShapeFill => {
@@ -543,6 +555,7 @@ fn apply_solid_fill_color(
         SolidFillCtx::BulletFill => {
             bullet_def.color = parsed.color.map(PptxBulletColorSource::Explicit);
         }
+        SolidFillCtx::PicLineFill => pic.ln_color = parsed.color,
         SolidFillCtx::None => {}
     }
 }
@@ -895,6 +908,7 @@ impl<'a> SlideXmlParser<'a> {
                     &mut self.run_style,
                     &mut self.para_end_run_style,
                     &mut self.para_bullet_definition,
+                    &mut self.pic,
                 );
             }
             b"t" if self.in_run => {
@@ -904,9 +918,25 @@ impl<'a> SlideXmlParser<'a> {
                 self.in_pic = true;
                 self.pic.reset();
             }
-            b"spPr" if self.in_pic => {}
-            b"xfrm" if self.in_pic => {
+            b"spPr" if self.in_pic => {
+                self.pic.in_sp_pr = true;
+            }
+            b"xfrm" if self.in_pic && self.pic.in_sp_pr => {
                 self.pic.in_xfrm = true;
+            }
+            b"ln" if self.in_pic && self.pic.in_sp_pr => {
+                self.pic.in_ln = true;
+                self.pic.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
+                self.pic.ln_dash_style = BorderLineStyle::Solid;
+            }
+            b"solidFill" if self.in_pic && self.pic.in_ln => {
+                self.solid_fill_ctx = SolidFillCtx::PicLineFill;
+            }
+            b"prstDash" if self.in_pic && self.pic.in_ln => {
+                self.pic.ln_dash_style = get_attr_str(e, b"val")
+                    .as_deref()
+                    .map(pptx_dash_to_border_style)
+                    .unwrap_or(BorderLineStyle::Solid);
             }
             b"blipFill" if self.in_pic => {}
             b"blip" if self.in_pic => {
@@ -969,6 +999,12 @@ impl<'a> SlideXmlParser<'a> {
             b"srcRect" if self.in_pic => {
                 self.pic.crop = parse_src_rect(e);
             }
+            b"prstDash" if self.in_pic && self.pic.in_ln => {
+                self.pic.ln_dash_style = get_attr_str(e, b"val")
+                    .as_deref()
+                    .map(pptx_dash_to_border_style)
+                    .unwrap_or(BorderLineStyle::Solid);
+            }
             b"prstGeom" if self.shape.in_sp_pr => {
                 if let Some(prst) = get_attr_str(e, b"prst") {
                     self.shape.prst_geom = Some(prst);
@@ -992,6 +1028,7 @@ impl<'a> SlideXmlParser<'a> {
                     &mut self.run_style,
                     &mut self.para_end_run_style,
                     &mut self.para_bullet_definition,
+                    &mut self.pic,
                 );
             }
             b"rPr" if self.in_run => {
@@ -1170,6 +1207,12 @@ impl<'a> SlideXmlParser<'a> {
                     self.elements.push(element);
                 }
                 self.in_pic = false;
+            }
+            b"spPr" if self.in_pic && self.pic.in_sp_pr => {
+                self.pic.in_sp_pr = false;
+            }
+            b"ln" if self.in_pic && self.pic.in_ln => {
+                self.pic.in_ln = false;
             }
             b"xfrm" if self.pic.in_xfrm => {
                 self.pic.in_xfrm = false;

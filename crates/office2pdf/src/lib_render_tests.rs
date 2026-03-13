@@ -200,6 +200,7 @@ fn test_render_document_with_image() {
                 width: Some(100.0),
                 height: Some(80.0),
                 crop: None,
+                stroke: None,
             })],
             header: None,
             footer: None,
@@ -235,6 +236,7 @@ fn test_render_document_image_mixed_with_text() {
                     width: Some(200.0),
                     height: None,
                     crop: None,
+                    stroke: None,
                 }),
                 Block::Paragraph(Paragraph {
                     style: ParagraphStyle::default(),

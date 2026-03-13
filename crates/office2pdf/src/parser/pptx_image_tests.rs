@@ -4,7 +4,7 @@ use std::io::{Cursor, Write};
 use zip::write::FileOptions;
 
 /// Create a minimal valid BMP (1×1 pixel, red) for test images.
-fn make_test_bmp() -> Vec<u8> {
+pub(super) fn make_test_bmp() -> Vec<u8> {
     let mut bmp = Vec::new();
     // BMP header (14 bytes)
     bmp.extend_from_slice(b"BM");
@@ -34,7 +34,7 @@ fn make_test_svg() -> Vec<u8> {
 }
 
 /// Create a picture XML element referencing an image via relationship ID.
-fn make_pic_xml(x: i64, y: i64, cx: i64, cy: i64, r_embed: &str) -> String {
+pub(super) fn make_pic_xml(x: i64, y: i64, cx: i64, cy: i64, r_embed: &str) -> String {
     make_custom_pic_xml(
         x,
         y,
@@ -52,15 +52,15 @@ fn make_custom_pic_xml(x: i64, y: i64, cx: i64, cy: i64, blip_fill_xml: &str) ->
 }
 
 /// Slide image for the test PPTX builder.
-struct TestSlideImage {
-    rid: String,
-    path: String,
-    data: Vec<u8>,
-    relationship_type: Option<String>,
+pub(super) struct TestSlideImage {
+    pub(super) rid: String,
+    pub(super) path: String,
+    pub(super) data: Vec<u8>,
+    pub(super) relationship_type: Option<String>,
 }
 
 /// Build a PPTX file with slides that have image relationships.
-fn build_test_pptx_with_images(
+pub(super) fn build_test_pptx_with_images(
     slide_cx_emu: i64,
     slide_cy_emu: i64,
     slides: &[(String, Vec<TestSlideImage>)],
@@ -165,7 +165,7 @@ fn build_test_pptx_with_images(
     cursor.into_inner()
 }
 
-fn get_image(elem: &FixedElement) -> &ImageData {
+pub(super) fn get_image(elem: &FixedElement) -> &ImageData {
     match &elem.kind {
         FixedElementKind::Image(img) => img,
         other => panic!("Expected Image, got {other:?}"),
@@ -526,4 +526,114 @@ fn test_multiple_images_on_slide() {
     assert_eq!(page.elements.len(), 2, "Expected 2 image elements");
     assert!(matches!(&page.elements[0].kind, FixedElementKind::Image(_)));
     assert!(matches!(&page.elements[1].kind, FixedElementKind::Image(_)));
+}
+
+/// Create a picture XML with custom `<p:spPr>` inner content.
+fn make_pic_xml_with_sp_pr(
+    x: i64,
+    y: i64,
+    cx: i64,
+    cy: i64,
+    r_embed: &str,
+    extra_sp_pr: &str,
+) -> String {
+    format!(
+        r#"<p:pic><p:nvPicPr><p:cNvPr id="5" name="Picture"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="{r_embed}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>{extra_sp_pr}</p:spPr></p:pic>"#
+    )
+}
+
+#[test]
+fn test_picture_border_solid() {
+    let bmp_data = make_test_bmp();
+    // 19050 EMU = 1.5pt line width, color = 980000 (dark red)
+    let pic = make_pic_xml_with_sp_pr(
+        0,
+        0,
+        2_000_000,
+        1_000_000,
+        "rId3",
+        r#"<a:ln w="19050"><a:solidFill><a:srgbClr val="980000"/></a:solidFill></a:ln>"#,
+    );
+    let slide_xml = make_slide_xml(&[pic]);
+    let slide_images = vec![TestSlideImage {
+        rid: "rId3".to_string(),
+        path: "../media/image1.bmp".to_string(),
+        data: bmp_data,
+        relationship_type: None,
+    }];
+    let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    assert_eq!(page.elements.len(), 1);
+
+    let img = get_image(&page.elements[0]);
+    let stroke = img.stroke.as_ref().expect("Expected border stroke");
+    assert!(
+        (stroke.width - 1.5).abs() < 0.01,
+        "Expected 1.5pt, got {}",
+        stroke.width
+    );
+    assert_eq!(stroke.color.r, 0x98);
+    assert_eq!(stroke.color.g, 0x00);
+    assert_eq!(stroke.color.b, 0x00);
+    assert_eq!(stroke.style, BorderLineStyle::Solid);
+}
+
+#[test]
+fn test_picture_no_border() {
+    let bmp_data = make_test_bmp();
+    let pic = make_pic_xml(0, 0, 1_000_000, 1_000_000, "rId3");
+    let slide_xml = make_slide_xml(&[pic]);
+    let slide_images = vec![TestSlideImage {
+        rid: "rId3".to_string(),
+        path: "../media/image1.bmp".to_string(),
+        data: bmp_data,
+        relationship_type: None,
+    }];
+    let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let img = get_image(&page.elements[0]);
+    assert!(
+        img.stroke.is_none(),
+        "Expected no stroke for picture without <a:ln>"
+    );
+}
+
+#[test]
+fn test_picture_border_dashed() {
+    let bmp_data = make_test_bmp();
+    let pic = make_pic_xml_with_sp_pr(
+        0,
+        0,
+        1_000_000,
+        1_000_000,
+        "rId3",
+        r#"<a:ln w="25400"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill><a:prstDash val="dash"/></a:ln>"#,
+    );
+    let slide_xml = make_slide_xml(&[pic]);
+    let slide_images = vec![TestSlideImage {
+        rid: "rId3".to_string(),
+        path: "../media/image1.bmp".to_string(),
+        data: bmp_data,
+        relationship_type: None,
+    }];
+    let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let img = get_image(&page.elements[0]);
+    let stroke = img.stroke.as_ref().expect("Expected dashed border");
+    assert!(
+        (stroke.width - 2.0).abs() < 0.01,
+        "Expected 2.0pt, got {}",
+        stroke.width
+    );
+    assert_eq!(stroke.color.b, 0xFF);
+    assert_eq!(stroke.style, BorderLineStyle::Dashed);
 }

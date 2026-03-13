@@ -31,6 +31,7 @@ fn make_image(format: ImageFormat, width: Option<f64>, height: Option<f64>) -> B
         width,
         height,
         crop: None,
+        stroke: None,
     })
 }
 
@@ -62,12 +63,13 @@ fn test_image_crop_preprocesses_raster_asset() {
             right: 0.0,
             bottom: 0.0,
         }),
+        stroke: None,
     })])]);
     let output = generate_typst(&doc).unwrap();
     assert!(
         output
             .source
-            .contains("#image(\"img-0.png\", width: 20pt, height: 20pt)"),
+            .contains("#image(\"img-0.png\", width: 20pt, height: 20pt, fit: \"stretch\")"),
         "Expected original display size in: {}",
         output.source
     );
@@ -126,8 +128,8 @@ fn test_image_with_both_dimensions() {
     assert!(
         output
             .source
-            .contains("#image(\"img-0.png\", width: 200pt, height: 150pt)"),
-        "Expected both dimensions in: {}",
+            .contains("#image(\"img-0.png\", width: 200pt, height: 150pt, fit: \"stretch\")"),
+        "Expected both dimensions with fit stretch in: {}",
         output.source
     );
 }
@@ -219,4 +221,95 @@ fn test_no_images_produces_empty_assets() {
     let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Just text")])]);
     let output = generate_typst(&doc).unwrap();
     assert!(output.images.is_empty());
+}
+
+#[test]
+fn test_image_with_border_renders_box_stroke() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Image(ImageData {
+        data: MINIMAL_PNG.to_vec(),
+        format: ImageFormat::Png,
+        width: Some(127.0),
+        height: Some(227.0),
+        crop: None,
+        stroke: Some(BorderSide {
+            width: 6.0,
+            color: Color { r: 152, g: 0, b: 0 },
+            style: BorderLineStyle::Solid,
+        }),
+    })])]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("#box(stroke: "),
+        "Expected #box(stroke: ...) wrapper in: {}",
+        output.source
+    );
+    assert!(
+        output.source.contains("#image(\"img-0.png\""),
+        "Expected #image call in: {}",
+        output.source
+    );
+}
+
+#[test]
+fn test_fixed_image_with_border_uses_rect_overlay() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 841.6,
+            y: 257.1,
+            width: 96.9,
+            height: 226.2,
+            kind: FixedElementKind::Image(ImageData {
+                data: MINIMAL_PNG.to_vec(),
+                format: ImageFormat::Png,
+                width: Some(96.9),
+                height: Some(226.2),
+                crop: None,
+                stroke: Some(BorderSide {
+                    width: 5.87,
+                    color: Color {
+                        r: 0,
+                        g: 176,
+                        b: 80,
+                    },
+                    style: BorderLineStyle::Solid,
+                }),
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    // The image should be placed without #box wrapper
+    assert!(
+        !output.source.contains("#box(stroke:"),
+        "Fixed-page image should NOT use #box(stroke:) wrapper: {}",
+        output.source
+    );
+    // Should have a separate #rect overlay for the border
+    assert!(
+        output.source.contains("#rect("),
+        "Expected #rect() border overlay in: {}",
+        output.source
+    );
+    // Image should have correct dimensions
+    assert!(
+        output.source.contains("width: 96.9pt"),
+        "Expected width: 96.9pt in: {}",
+        output.source
+    );
+}
+
+#[test]
+fn test_image_without_border_no_box() {
+    let doc = make_doc(vec![make_flow_page(vec![make_image(
+        ImageFormat::Png,
+        Some(100.0),
+        Some(80.0),
+    )])]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        !output.source.contains("#box(stroke:"),
+        "Should NOT have #box wrapper when no stroke: {}",
+        output.source
+    );
 }

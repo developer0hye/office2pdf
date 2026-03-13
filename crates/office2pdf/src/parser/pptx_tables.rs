@@ -720,7 +720,7 @@ impl<'a> PptxTableParser<'a> {
             SolidFillCtx::BulletFill => {
                 self.paragraph_bullet_definition.color = color.map(PptxBulletColorSource::Explicit);
             }
-            SolidFillCtx::None => {}
+            SolidFillCtx::PicLineFill | SolidFillCtx::None => {}
         }
     }
 }
