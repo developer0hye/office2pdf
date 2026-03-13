@@ -92,6 +92,9 @@ fn test_fixed_page_text_box_multiple_paragraphs_preserve_breaks() {
                 ],
                 padding: Insets::default(),
                 vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
             }),
         }],
     )]);
@@ -169,6 +172,9 @@ fn test_fixed_page_text_box_ordered_list_preserves_textbox_styling() {
                 })],
                 padding: Insets::default(),
                 vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
             }),
         }],
     )]);
@@ -251,6 +257,9 @@ fn test_fixed_page_text_box_compact_list_items_use_full_width_blocks() {
                 })],
                 padding: Insets::default(),
                 vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
             }),
         }],
     )]);
@@ -307,6 +316,9 @@ fn test_fixed_page_text_box_compact_list_preserves_hanging_indent() {
                 })],
                 padding: Insets::default(),
                 vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
             }),
         }],
     )]);
@@ -370,6 +382,9 @@ fn test_fixed_page_text_box_compact_list_preserves_marker_origin_offset() {
                 })],
                 padding: Insets::default(),
                 vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
             }),
         }],
     )]);
@@ -436,6 +451,9 @@ fn test_fixed_page_text_box_compact_bulleted_list_uses_custom_marker_style() {
                 })],
                 padding: Insets::default(),
                 vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
             }),
         }],
     )]);
@@ -528,6 +546,9 @@ fn test_fixed_page_text_box_dash_bullets_use_generic_list_path() {
                 })],
                 padding: Insets::default(),
                 vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
             }),
         }],
     )]);
@@ -581,6 +602,9 @@ fn test_fixed_page_text_box_compact_list_preserves_soft_line_breaks() {
                 })],
                 padding: Insets::default(),
                 vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
             }),
         }],
     )]);
@@ -601,6 +625,155 @@ fn test_fixed_page_text_box_with_width_height() {
     let output = generate_typst(&doc).unwrap();
     assert!(output.source.contains("400pt"));
     assert!(output.source.contains("100pt"));
+}
+
+#[test]
+fn test_fixed_page_text_box_with_solid_fill() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 200.0,
+            width: 300.0,
+            height: 50.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "White BG".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: Some(Color {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                }),
+                opacity: None,
+                stroke: None,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("fill: rgb(255, 255, 255)"),
+        "Expected white fill in output, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_with_fill_and_stroke() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 50.0,
+            y: 80.0,
+            width: 200.0,
+            height: 40.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Bordered".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: Some(Color {
+                    r: 200,
+                    g: 220,
+                    b: 240,
+                }),
+                opacity: None,
+                stroke: Some(BorderSide {
+                    width: 1.0,
+                    color: Color { r: 0, g: 0, b: 0 },
+                    style: BorderLineStyle::Solid,
+                }),
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("fill: rgb(200, 220, 240)"),
+        "Expected fill color in output, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("stroke: 1pt + rgb(0, 0, 0)"),
+        "Expected stroke in output, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_with_fill_and_opacity() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 10.0,
+            y: 20.0,
+            width: 150.0,
+            height: 30.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Semi-transparent".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: Some(Color {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                }),
+                opacity: Some(0.5),
+                stroke: None,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("fill: rgb(255, 255, 255, 128)"),
+        "Expected fill with alpha in output, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_no_fill_no_stroke() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![make_text_box(10.0, 20.0, 150.0, 30.0, "Plain")],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        !output.source.contains("fill:"),
+        "Expected no fill in output, got:\n{}",
+        output.source,
+    );
+    assert!(
+        !output.source.contains("stroke:"),
+        "Expected no stroke in output, got:\n{}",
+        output.source,
+    );
 }
 
 #[test]

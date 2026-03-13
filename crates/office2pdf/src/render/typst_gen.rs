@@ -20,7 +20,7 @@ use self::lists::{
     can_render_fixed_text_list_inline, common_text_style, generate_fixed_text_list, generate_list,
     write_common_text_settings, write_fixed_text_default_par_settings,
 };
-use self::shapes::{generate_shape, write_gradient_fill};
+use self::shapes::{generate_shape, write_fill_color, write_gradient_fill, write_shape_stroke};
 use self::tables::generate_table;
 use self::text::*;
 use super::font_context::FontSearchContext;
@@ -576,13 +576,18 @@ fn generate_fixed_text_box(
         (outer_height_pt - text_box.padding.top - text_box.padding.bottom).max(0.0);
     let text_box_id: usize = ctx.next_text_box_id();
 
-    let _ = writeln!(
+    let _ = write!(
         out,
-        "#block(width: {}pt, height: {}pt, inset: {})[",
+        "#block(width: {}pt, height: {}pt, inset: {}",
         format_f64(outer_width_pt),
         format_f64(outer_height_pt),
         format_insets(&text_box.padding),
     );
+    if let Some(fill) = &text_box.fill {
+        write_fill_color(out, fill, text_box.opacity);
+    }
+    write_shape_stroke(out, &text_box.stroke);
+    out.push_str(")[\n");
     let _ = writeln!(
         out,
         "  #let text_box_content_{text_box_id} = block(width: {}pt)[",

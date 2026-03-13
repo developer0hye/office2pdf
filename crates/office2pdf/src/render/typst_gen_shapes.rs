@@ -125,7 +125,7 @@ fn write_shadow_shape(out: &mut String, shape: &Shape, width: f64, height: f64, 
 }
 
 /// Write fill color, using rgb with 4 args when opacity is set, rgb with 3 args otherwise.
-fn write_fill_color(out: &mut String, fill: &Color, opacity: Option<f64>) {
+pub(super) fn write_fill_color(out: &mut String, fill: &Color, opacity: Option<f64>) {
     if let Some(op) = opacity {
         let alpha = (op * 255.0).round() as u8;
         let _ = write!(

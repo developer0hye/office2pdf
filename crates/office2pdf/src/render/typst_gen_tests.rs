@@ -80,6 +80,9 @@ fn make_text_box(x: f64, y: f64, w: f64, h: f64, text: &str) -> FixedElement {
             })],
             padding: Insets::default(),
             vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+            fill: None,
+            opacity: None,
+            stroke: None,
         }),
     }
 }
@@ -129,6 +132,9 @@ fn make_fixed_text_box(
             content,
             padding,
             vertical_align,
+            fill: None,
+            opacity: None,
+            stroke: None,
         }),
     }
 }

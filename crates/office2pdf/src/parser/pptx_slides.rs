@@ -457,6 +457,11 @@ fn finalize_shape(
 
     if has_text {
         let blocks: Vec<Block> = group_pptx_text_blocks(std::mem::take(paragraphs));
+        let stroke: Option<BorderSide> = shape.ln_color.map(|color| BorderSide {
+            width: emu_to_pt(shape.ln_width_emu),
+            color,
+            style: shape.ln_dash_style,
+        });
         Some(FixedElement {
             x: emu_to_pt(shape.x),
             y: emu_to_pt(shape.y),
@@ -466,6 +471,9 @@ fn finalize_shape(
                 content: blocks,
                 padding: text_box_padding,
                 vertical_align: text_box_vertical_align,
+                fill: shape.fill,
+                opacity: shape.opacity,
+                stroke,
             }),
         })
     } else if let Some(ref geom) = shape.prst_geom {
