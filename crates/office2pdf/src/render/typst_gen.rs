@@ -1096,7 +1096,7 @@ fn generate_fixed_text_box_block(
 fn generate_fixed_text_paragraph(
     out: &mut String,
     para: &Paragraph,
-    no_wrap: bool,
+    _no_wrap: bool,
 ) -> Result<(), ConvertError> {
     let style: &ParagraphStyle = &para.style;
     let needs_text_scope: bool = common_text_style(&para.runs).is_some();
@@ -1126,7 +1126,7 @@ fn generate_fixed_text_paragraph(
             Some(Alignment::Right) => "right",
             _ => "left",
         };
-        let _ = write!(out, "#block(width: 100%)[#set align({align_str})\n");
+        let _ = writeln!(out, "#block(width: 100%)[#set align({align_str})");
     }
 
     generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());

@@ -1506,6 +1506,7 @@ pub(super) fn parse_slide_xml(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn parse_slide_xml_inner(
     xml: &str,
     images: &SlideImageMap,

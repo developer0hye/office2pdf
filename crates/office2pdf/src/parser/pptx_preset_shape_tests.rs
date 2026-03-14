@@ -351,16 +351,7 @@ fn test_shape_home_plate() {
 #[test]
 fn test_shape_home_plate_square() {
     // Square bounding box: the notch should be at x = 0.5
-    let shape = make_shape(
-        0,
-        0,
-        1_000_000,
-        1_000_000,
-        "homePlate",
-        None,
-        None,
-        None,
-    );
+    let shape = make_shape(0, 0, 1_000_000, 1_000_000, "homePlate", None, None, None);
     let slide = make_slide_xml(&[shape]);
     let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
     let parser = PptxParser;

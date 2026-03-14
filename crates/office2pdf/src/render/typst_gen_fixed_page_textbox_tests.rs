@@ -96,7 +96,7 @@ fn test_fixed_page_text_box_multiple_paragraphs_preserve_breaks() {
                 opacity: None,
                 stroke: None,
                 shape_kind: None,
-                    no_wrap: false,
+                no_wrap: false,
             }),
         }],
     )]);
@@ -178,7 +178,7 @@ fn test_fixed_page_text_box_ordered_list_preserves_textbox_styling() {
                 opacity: None,
                 stroke: None,
                 shape_kind: None,
-                    no_wrap: false,
+                no_wrap: false,
             }),
         }],
     )]);
@@ -465,7 +465,7 @@ fn test_fixed_page_text_box_compact_bulleted_list_uses_custom_marker_style() {
                 opacity: None,
                 stroke: None,
                 shape_kind: None,
-                    no_wrap: false,
+                no_wrap: false,
             }),
         }],
     )]);
@@ -562,7 +562,7 @@ fn test_fixed_page_text_box_dash_bullets_use_generic_list_path() {
                 opacity: None,
                 stroke: None,
                 shape_kind: None,
-                    no_wrap: false,
+                no_wrap: false,
             }),
         }],
     )]);
@@ -620,7 +620,7 @@ fn test_fixed_page_text_box_compact_list_preserves_soft_line_breaks() {
                 opacity: None,
                 stroke: None,
                 shape_kind: None,
-                    no_wrap: false,
+                no_wrap: false,
             }),
         }],
     )]);
@@ -673,7 +673,7 @@ fn test_fixed_page_text_box_with_solid_fill() {
                 opacity: None,
                 stroke: None,
                 shape_kind: None,
-                    no_wrap: false,
+                no_wrap: false,
             }),
         }],
     )]);
@@ -719,7 +719,7 @@ fn test_fixed_page_text_box_with_fill_and_stroke() {
                     style: BorderLineStyle::Solid,
                 }),
                 shape_kind: None,
-                    no_wrap: false,
+                no_wrap: false,
             }),
         }],
     )]);
@@ -766,7 +766,7 @@ fn test_fixed_page_text_box_with_fill_and_opacity() {
                 opacity: Some(0.5),
                 stroke: None,
                 shape_kind: None,
-                    no_wrap: false,
+                no_wrap: false,
             }),
         }],
     )]);
@@ -805,17 +805,15 @@ fn test_fixed_page_text_box_with_polygon_shape_kind() {
                     left: 7.2,
                 },
                 vertical_align: crate::ir::TextBoxVerticalAlign::Center,
-                fill: Some(Color { r: 0, g: 37, b: 154 }),
+                fill: Some(Color {
+                    r: 0,
+                    g: 37,
+                    b: 154,
+                }),
                 opacity: None,
                 stroke: None,
                 shape_kind: Some(ShapeKind::Polygon {
-                    vertices: vec![
-                        (0.0, 0.0),
-                        (0.85, 0.0),
-                        (1.0, 0.5),
-                        (0.85, 1.0),
-                        (0.0, 1.0),
-                    ],
+                    vertices: vec![(0.0, 0.0), (0.85, 0.0), (1.0, 0.5), (0.85, 1.0), (0.0, 1.0)],
                 }),
                 no_wrap: false,
             }),
