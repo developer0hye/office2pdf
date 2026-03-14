@@ -933,6 +933,12 @@ impl<'a> SlideXmlParser<'a> {
             b"effectLst" if self.shape.in_sp_pr && !self.shape.in_ln => {
                 self.shape.shadow = parse_effect_list(reader, self.theme, self.color_map);
             }
+            b"extLst" if self.shape.in_sp_pr && !self.in_txbody => {
+                // Office extension payloads such as a16:hiddenLine are not visible shape
+                // styling. If we parse nested fills here, they can overwrite the actual
+                // shape fill, as seen on grouped icon ellipses that should stay white.
+                crate::parser::xml_util::skip_element(reader, b"extLst");
+            }
             b"ln" if self.shape.in_sp_pr => {
                 self.shape.in_ln = true;
                 self.shape.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);

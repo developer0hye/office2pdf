@@ -523,6 +523,27 @@ fn test_shape_no_fill_overrides_fill_ref() {
 }
 
 #[test]
+fn test_shape_extension_hidden_line_does_not_override_visible_fill() {
+    let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Ellipse"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="lt1"/></a:solidFill><a:ln><a:noFill/></a:ln><a:effectLst><a:outerShdw blurRad="63500" sx="102000" sy="102000" algn="ctr" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="39999"/></a:srgbClr></a:outerShdw></a:effectLst><a:extLst><a:ext uri="{91240B29-F687-4F45-9708-019B960494DF}"><a16:hiddenLine xmlns:a16="http://schemas.microsoft.com/office/drawing/2010/main" w="25400"><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:round/><a:headEnd/><a:tailEnd/></a16:hiddenLine></a:ext></a:extLst></p:spPr></p:sp>"#.to_string();
+    let slide_xml = make_slide_xml(&[shape_xml]);
+
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri", "Calibri");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide_xml], &theme_xml);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let shape = get_shape(&page.elements[0]);
+    assert_eq!(
+        shape.fill,
+        Some(Color::new(0xFF, 0xFF, 0xFF)),
+        "Vendor extension hiddenLine should not override the visible shape fill"
+    );
+    let shadow = shape.shadow.as_ref().expect("Expected shadow");
+    assert_eq!(shadow.color, Color::new(0, 0, 0));
+}
+
+#[test]
 fn test_textbox_fill_from_style_fill_ref() {
     // TextBox with roundRect (non-rectangular shape) and text gets split into
     // two elements: Shape background (with fill) + transparent TextBox overlay.
