@@ -1172,6 +1172,14 @@ impl<'a> SlideXmlParser<'a> {
                     .map(pptx_dash_to_border_style)
                     .unwrap_or(BorderLineStyle::Solid);
             }
+            // Handle self-closing <a:bodyPr anchor="ctr"/> (no child elements).
+            b"bodyPr" if self.in_shape && self.in_txbody => {
+                extract_pptx_text_box_body_props(
+                    e,
+                    &mut self.text_box_padding,
+                    &mut self.text_box_vertical_align,
+                );
+            }
             b"prstGeom" if self.shape.in_sp_pr => {
                 if let Some(prst) = get_attr_str(e, b"prst") {
                     self.shape.prst_geom = Some(prst);

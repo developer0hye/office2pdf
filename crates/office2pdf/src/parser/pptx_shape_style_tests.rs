@@ -468,3 +468,47 @@ fn test_textbox_fill_from_style_fill_ref() {
     let tb = text_box_data(&page.elements[1]);
     assert_eq!(tb.fill, None, "Text overlay should have no fill");
 }
+
+#[test]
+fn test_split_textbox_preserves_alignment() {
+    // roundRect with centered text, solidFill, and bodyPr anchor="ctr".
+    let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1696720" cy="650158"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="003481"/></a:solidFill></p:spPr><p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="en-US"/><a:t>Random Sample</a:t></a:r></a:p></p:txBody></p:sp>"#.to_string();
+    let slide_xml = make_slide_xml(&[shape_xml]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    // Should be split into Shape + TextBox
+    assert_eq!(page.elements.len(), 2, "Expected Shape + TextBox pair");
+
+    // TextBox overlay should preserve vertical and horizontal alignment
+    let tb = text_box_data(&page.elements[1]);
+    assert_eq!(
+        tb.vertical_align,
+        TextBoxVerticalAlign::Center,
+        "Vertical align should be Center"
+    );
+    // Check paragraph alignment
+    let para = match &tb.content[0] {
+        Block::Paragraph(p) => p,
+        _ => panic!("Expected Paragraph"),
+    };
+    assert_eq!(
+        para.style.alignment,
+        Some(Alignment::Center),
+        "Paragraph alignment should be Center"
+    );
+    assert_eq!(
+        para.runs[0].text, "Random Sample",
+        "Text content should be preserved"
+    );
+
+    // Verify Typst output contains #align(center)
+    let typst_output = crate::render::typst_gen::generate_typst(&doc).unwrap();
+    assert!(
+        typst_output.source.contains("#align(center)"),
+        "Typst output should contain #align(center) for centered paragraph, got:\n{}",
+        typst_output.source,
+    );
+}
