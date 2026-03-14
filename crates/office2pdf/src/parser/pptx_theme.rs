@@ -27,6 +27,8 @@ pub(super) struct ParsedColor {
 
 #[derive(Debug, Clone, Copy)]
 enum ColorTransform {
+    Tint(f64),
+    Shade(f64),
     LumMod(f64),
     LumOff(f64),
 }
@@ -176,6 +178,8 @@ fn parse_base_color(
 fn parse_color_transform(element: &BytesStart<'_>) -> Option<ColorTransform> {
     let val = get_attr_i64(element, b"val")? as f64 / 100_000.0;
     match element.local_name().as_ref() {
+        b"tint" => Some(ColorTransform::Tint(val)),
+        b"shade" => Some(ColorTransform::Shade(val)),
         b"lumMod" => Some(ColorTransform::LumMod(val)),
         b"lumOff" => Some(ColorTransform::LumOff(val)),
         _ => None,
@@ -183,7 +187,43 @@ fn parse_color_transform(element: &BytesStart<'_>) -> Option<ColorTransform> {
 }
 
 fn apply_color_transforms(color: Color, transforms: &[ColorTransform]) -> Color {
-    let (mut hue, mut saturation, mut lightness) = rgb_to_hsl(color);
+    // Apply tint/shade in RGB space first (OOXML spec: blend toward white/black).
+    let mut r: f64 = color.r as f64;
+    let mut g: f64 = color.g as f64;
+    let mut b: f64 = color.b as f64;
+
+    for transform in transforms {
+        match transform {
+            ColorTransform::Tint(t) => {
+                r = 255.0 - (255.0 - r) * t;
+                g = 255.0 - (255.0 - g) * t;
+                b = 255.0 - (255.0 - b) * t;
+            }
+            ColorTransform::Shade(s) => {
+                r *= s;
+                g *= s;
+                b *= s;
+            }
+            _ => {}
+        }
+    }
+
+    let tinted = Color::new(
+        r.round().clamp(0.0, 255.0) as u8,
+        g.round().clamp(0.0, 255.0) as u8,
+        b.round().clamp(0.0, 255.0) as u8,
+    );
+
+    // Then apply luminance transforms in HSL space.
+    let has_lum_transforms: bool = transforms
+        .iter()
+        .any(|t| matches!(t, ColorTransform::LumMod(_) | ColorTransform::LumOff(_)));
+
+    if !has_lum_transforms {
+        return tinted;
+    }
+
+    let (mut hue, mut saturation, mut lightness) = rgb_to_hsl(tinted);
 
     for transform in transforms {
         match transform {
@@ -193,6 +233,7 @@ fn apply_color_transforms(color: Color, transforms: &[ColorTransform]) -> Color 
             ColorTransform::LumOff(value) => {
                 lightness = (lightness + value).clamp(0.0, 1.0);
             }
+            _ => {}
         }
     }
 

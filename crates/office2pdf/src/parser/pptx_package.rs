@@ -380,6 +380,19 @@ pub(super) fn load_theme<R: Read + std::io::Seek>(
     parse_theme_xml(&theme_xml)
 }
 
+/// Load and parse `ppt/tableStyles.xml` from the archive.
+/// Returns an empty map if the file is missing.
+pub(super) fn load_table_styles<R: Read + std::io::Seek>(
+    archive: &mut ZipArchive<R>,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+) -> table_styles::TableStyleMap {
+    let Ok(xml) = read_zip_entry(archive, "ppt/tableStyles.xml") else {
+        return table_styles::TableStyleMap::new();
+    };
+    table_styles::parse_table_styles_xml(&xml, theme, color_map)
+}
+
 pub(super) fn resolve_relative_path(base_dir: &str, relative: &str) -> String {
     crate::parser::xml_util::resolve_relative_path(base_dir, relative)
 }

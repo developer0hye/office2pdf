@@ -20,10 +20,14 @@ struct PptxTableParser<'a> {
     // External context (immutable references)
     theme: &'a ThemeData,
     color_map: &'a ColorMapData,
+    table_styles: &'a table_styles::TableStyleMap,
 
     // ── Table-level state ───────────────────────────────────────────
     column_widths: Vec<f64>,
     rows: Vec<TableRow>,
+    table_props: table_styles::PptxTableProps,
+    is_in_tbl_pr: bool,
+    is_in_table_style_id: bool,
 
     // ── Row-level state ─────────────────────────────────────────────
     is_in_row: bool,
@@ -80,13 +84,21 @@ struct PptxTableParser<'a> {
 }
 
 impl<'a> PptxTableParser<'a> {
-    fn new(theme: &'a ThemeData, color_map: &'a ColorMapData) -> Self {
+    fn new(
+        theme: &'a ThemeData,
+        color_map: &'a ColorMapData,
+        table_styles: &'a table_styles::TableStyleMap,
+    ) -> Self {
         Self {
             theme,
             color_map,
+            table_styles,
 
             column_widths: Vec::new(),
             rows: Vec::new(),
+            table_props: table_styles::PptxTableProps::default(),
+            is_in_tbl_pr: false,
+            is_in_table_style_id: false,
 
             is_in_row: false,
             row_height_emu: 0,
@@ -145,6 +157,13 @@ impl<'a> PptxTableParser<'a> {
     ) -> Result<(), ConvertError> {
         let local = e.local_name();
         match local.as_ref() {
+            b"tblPr" => {
+                self.is_in_tbl_pr = true;
+                self.parse_tbl_pr_attrs(e);
+            }
+            b"tableStyleId" if self.is_in_tbl_pr => {
+                self.is_in_table_style_id = true;
+            }
             b"gridCol" => {
                 if let Some(width) = get_attr_i64(e, b"w") {
                     self.column_widths.push(emu_to_pt(width));
@@ -236,6 +255,9 @@ impl<'a> PptxTableParser<'a> {
     fn handle_empty(&mut self, e: &BytesStart) {
         let local = e.local_name();
         match local.as_ref() {
+            b"tblPr" => {
+                self.parse_tbl_pr_attrs(e);
+            }
             b"gridCol" => {
                 if let Some(width) = get_attr_i64(e, b"w") {
                     self.column_widths.push(emu_to_pt(width));
@@ -296,7 +318,11 @@ impl<'a> PptxTableParser<'a> {
     // ── Text / GeneralRef events ────────────────────────────────────
 
     fn handle_text(&mut self, text: &quick_xml::events::BytesText<'_>) {
-        if self.is_in_text
+        if self.is_in_table_style_id {
+            if let Some(decoded) = decode_pptx_text_event(text) {
+                self.table_props.style_id = Some(decoded);
+            }
+        } else if self.is_in_text
             && let Some(decoded) = decode_pptx_text_event(text)
         {
             self.run_text.push_str(&decoded);
@@ -318,6 +344,12 @@ impl<'a> PptxTableParser<'a> {
         let local = e.local_name();
         match local.as_ref() {
             b"tbl" => return true,
+            b"tblPr" if self.is_in_tbl_pr => {
+                self.is_in_tbl_pr = false;
+            }
+            b"tableStyleId" if self.is_in_table_style_id => {
+                self.is_in_table_style_id = false;
+            }
             b"tr" if self.is_in_row => {
                 self.finish_row();
             }
@@ -362,14 +394,27 @@ impl<'a> PptxTableParser<'a> {
     // ── Consume accumulated state into the final Table ──────────────
 
     fn finish(self) -> Table {
-        Table {
+        let header_row_count: usize = if self.table_props.first_row { 1 } else { 0 };
+        let mut table = Table {
             rows: self.rows,
             column_widths: self.column_widths,
-            header_row_count: 0,
+            header_row_count,
             alignment: None,
             default_cell_padding: Some(default_pptx_table_cell_padding()),
             use_content_driven_row_heights: true,
-        }
+        };
+        table_styles::apply_table_style(&mut table, &self.table_props, self.table_styles);
+        table
+    }
+
+    /// Extract tblPr attributes (firstRow, bandRow, etc.)
+    fn parse_tbl_pr_attrs(&mut self, e: &BytesStart) {
+        self.table_props.first_row = get_attr_str(e, b"firstRow").as_deref() == Some("1");
+        self.table_props.last_row = get_attr_str(e, b"lastRow").as_deref() == Some("1");
+        self.table_props.first_col = get_attr_str(e, b"firstCol").as_deref() == Some("1");
+        self.table_props.last_col = get_attr_str(e, b"lastCol").as_deref() == Some("1");
+        self.table_props.band_row = get_attr_str(e, b"bandRow").as_deref() == Some("1");
+        self.table_props.band_col = get_attr_str(e, b"bandCol").as_deref() == Some("1");
     }
 
     // ── Private helpers: cell lifecycle ──────────────────────────────
@@ -735,8 +780,9 @@ pub(super) fn parse_pptx_table(
     reader: &mut Reader<&[u8]>,
     theme: &ThemeData,
     color_map: &ColorMapData,
+    table_styles: &table_styles::TableStyleMap,
 ) -> Result<Table, ConvertError> {
-    let mut state = PptxTableParser::new(theme, color_map);
+    let mut state = PptxTableParser::new(theme, color_map, table_styles);
 
     loop {
         match reader.read_event() {

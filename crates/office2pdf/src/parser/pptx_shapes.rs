@@ -86,6 +86,7 @@ pub(super) fn parse_group_shape(
     color_map: &ColorMapData,
     warning_context: &str,
     inherited_text_body_defaults: &PptxTextBodyStyleDefaults,
+    table_styles: &table_styles::TableStyleMap,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
     let mut transform = GroupTransform::default();
     let mut in_xfrm = false;
@@ -173,6 +174,7 @@ pub(super) fn parse_group_shape(
                         color_map,
                         warning_context,
                         inherited_text_body_defaults,
+                        table_styles,
                     )?;
                     for element in &mut child_elements {
                         transform.apply(element);

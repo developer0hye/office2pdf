@@ -75,6 +75,7 @@ fn parse_layer_elements<R: Read + std::io::Seek>(
     archive: &mut ZipArchive<R>,
 ) -> (Vec<FixedElement>, Vec<ConvertWarning>) {
     let images: SlideImageMap = load_slide_images(layer_path, archive);
+    let empty_table_styles: table_styles::TableStyleMap = table_styles::TableStyleMap::new();
     parse_slide_xml(
         layer_xml,
         &images,
@@ -82,6 +83,7 @@ fn parse_layer_elements<R: Read + std::io::Seek>(
         color_map,
         label,
         text_style_defaults,
+        &empty_table_styles,
     )
     .unwrap_or_default()
 }
@@ -192,6 +194,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
     slide_label: &str,
     slide_size: PageSize,
     theme: &ThemeData,
+    table_styles: &table_styles::TableStyleMap,
     archive: &mut ZipArchive<R>,
 ) -> Result<(Page, Vec<ConvertWarning>), ConvertError> {
     let chain: SlideInheritanceChain = resolve_inheritance_chain(slide_path, theme, archive)?;
@@ -206,6 +209,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
         &chain.slide_color_map,
         slide_label,
         &chain.master_text_style_defaults,
+        table_styles,
     )?;
     warnings.extend(slide_warnings);
 
@@ -613,6 +617,7 @@ struct SlideXmlParser<'a> {
     color_map: &'a ColorMapData,
     warning_context: &'a str,
     inherited_text_body_defaults: &'a PptxTextBodyStyleDefaults,
+    table_styles: &'a table_styles::TableStyleMap,
 
     // ── Output accumulators ─────────────────────────────────────────
     elements: Vec<FixedElement>,
@@ -669,6 +674,7 @@ impl<'a> SlideXmlParser<'a> {
         color_map: &'a ColorMapData,
         warning_context: &'a str,
         inherited_text_body_defaults: &'a PptxTextBodyStyleDefaults,
+        table_styles: &'a table_styles::TableStyleMap,
     ) -> Self {
         Self {
             xml,
@@ -677,6 +683,7 @@ impl<'a> SlideXmlParser<'a> {
             color_map,
             warning_context,
             inherited_text_body_defaults,
+            table_styles,
 
             elements: Vec::new(),
             warnings: Vec::new(),
@@ -729,7 +736,9 @@ impl<'a> SlideXmlParser<'a> {
                 self.gf.in_xfrm = true;
             }
             b"tbl" if self.in_graphic_frame => {
-                if let Ok(mut table) = parse_pptx_table(reader, self.theme, self.color_map) {
+                if let Ok(mut table) =
+                    parse_pptx_table(reader, self.theme, self.color_map, self.table_styles)
+                {
                     scale_pptx_table_geometry_to_frame(
                         &mut table,
                         emu_to_pt(self.gf.cx),
@@ -753,6 +762,7 @@ impl<'a> SlideXmlParser<'a> {
                     self.color_map,
                     self.warning_context,
                     self.inherited_text_body_defaults,
+                    self.table_styles,
                 ) {
                     self.elements.extend(group_elems);
                     self.warnings.extend(group_warnings);
@@ -1320,6 +1330,7 @@ pub(super) fn parse_slide_xml(
     color_map: &ColorMapData,
     warning_context: &str,
     inherited_text_body_defaults: &PptxTextBodyStyleDefaults,
+    table_styles: &table_styles::TableStyleMap,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
     let mut reader = Reader::from_str(xml);
     let mut parser = SlideXmlParser::new(
@@ -1329,6 +1340,7 @@ pub(super) fn parse_slide_xml(
         color_map,
         warning_context,
         inherited_text_body_defaults,
+        table_styles,
     );
 
     loop {
