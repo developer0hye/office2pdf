@@ -332,13 +332,13 @@ fn test_fixed_page_text_box_compact_list_preserves_hanging_indent() {
     )]);
     let output = generate_typst(&doc).unwrap();
 
-    assert!(output.source.contains("hanging-indent: 36pt"));
     assert!(
-        output
-            .source
-            .contains("tab_advance_1 = if tab_prefix_width_1 < 36pt")
+        output.source.contains("#grid(columns: (36pt, 1fr), gutter: 0pt,"),
+        "Expected ordered hanging-indent list to use a marker/body grid, got:\n{}",
+        output.source,
     );
-    assert!(!output.source.contains("first-line-indent"));
+    assert!(!output.source.contains("hanging-indent: 36pt"));
+    assert!(!output.source.contains("tab_advance_1"));
 }
 
 #[test]
@@ -405,7 +405,7 @@ fn test_fixed_page_text_box_compact_list_preserves_marker_origin_offset() {
             .source
             .contains("inset: (top: 0pt, right: 0pt, bottom: 0pt, left: 18pt)")
     );
-    assert!(output.source.contains("hanging-indent: 36pt"));
+    assert!(output.source.contains("#grid(columns: (36pt, 1fr), gutter: 0pt,"));
 }
 
 #[test]
@@ -873,4 +873,186 @@ fn test_fixed_page_uses_place_for_positioning() {
     )]);
     let output = generate_typst(&doc).unwrap();
     assert!(output.source.contains("place("));
+}
+
+#[test]
+fn test_fixed_page_text_box_no_wrap_centered_text_uses_inline_box() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 120.0,
+            width: 220.0,
+            height: 40.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "Centered Title".to_string(),
+                        style: TextStyle {
+                            font_size: Some(28.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: true,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("clip: false"),
+        "Expected clip: false for no-wrap text box, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("#set align(center)"),
+        "Expected centered alignment in output, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("#box["),
+        "Expected inline no-wrap box in output, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_no_wrap_inserts_word_joiners_for_cjk_titles() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 120.0,
+            width: 180.0,
+            height: 40.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "제안개요".to_string(),
+                        style: TextStyle {
+                            font_size: Some(28.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: true,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("제\u{2060}안\u{2060}개\u{2060}요"),
+        "Expected no-wrap word joiners in output, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_ordered_grid_normalizes_marker_spacing() {
+    use crate::ir::List;
+
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 200.0,
+            width: 320.0,
+            height: 140.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::List(List {
+                    kind: ListKind::Ordered,
+                    items: vec![
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle {
+                                    indent_left: Some(36.0),
+                                    indent_first_line: Some(-36.0),
+                                    ..ParagraphStyle::default()
+                                },
+                                runs: vec![Run {
+                                    text: " Alpha".to_string(),
+                                    style: TextStyle {
+                                        font_size: Some(20.0),
+                                        ..TextStyle::default()
+                                    },
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: Some(1),
+                        },
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle {
+                                    indent_left: Some(36.0),
+                                    indent_first_line: Some(-36.0),
+                                    ..ParagraphStyle::default()
+                                },
+                                runs: vec![Run {
+                                    text: "Beta".to_string(),
+                                    style: TextStyle {
+                                        font_size: Some(20.0),
+                                        ..TextStyle::default()
+                                    },
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: None,
+                        },
+                    ],
+                    level_styles: BTreeMap::from([(
+                        0,
+                        ListLevelStyle {
+                            kind: ListKind::Ordered,
+                            numbering_pattern: Some("1.".to_string()),
+                            full_numbering: false,
+                            marker_text: None,
+                            marker_style: None,
+                        },
+                    )]),
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: false,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(output.source.contains("#text(size: 20pt)[1. ]"));
+    assert!(output.source.contains("#text(size: 20pt)[2. ]"));
+    assert!(!output.source.contains("#text(size: 20pt)[ Alpha]"));
 }

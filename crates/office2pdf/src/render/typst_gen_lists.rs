@@ -258,17 +258,18 @@ pub(super) fn generate_fixed_text_list(
             current_number,
             &item_paragraph.runs,
         );
-        let runs: Vec<Run> = prepend_fixed_text_list_marker_run(
-            &item_paragraph.style,
-            &effective_style,
-            &item_paragraph.runs,
-            marker_text,
-        );
 
         if use_stack {
             out.push('[');
         }
-        write_fixed_text_list_item(out, item_paragraph, &runs, align_str, available_width_pt);
+        write_fixed_text_list_item(
+            out,
+            item_paragraph,
+            &effective_style,
+            &marker_text,
+            align_str,
+            available_width_pt,
+        );
         if use_stack {
             out.push(']');
         } else {
@@ -301,12 +302,16 @@ fn fixed_text_list_alignment(alignment: Option<Alignment>) -> Option<&'static st
 fn write_fixed_text_list_item(
     out: &mut String,
     paragraph: &Paragraph,
-    runs: &[Run],
+    list_style: &EffectiveListStyle<'_>,
+    marker_text: &str,
     align_str: Option<&str>,
     available_width_pt: Option<f64>,
 ) {
     let inset: Insets = fixed_text_list_item_inset(&paragraph.style);
     let has_inset: bool = inset.left > 0.0 || inset.right > 0.0;
+    let hanging_indent_pt: Option<f64> = fixed_text_list_hanging_indent_pt(&paragraph.style);
+    let use_marker_grid: bool =
+        list_style.kind == ListKind::Ordered && hanging_indent_pt.is_some();
 
     out.push_str("#block(width: ");
     if let Some(width_pt) = available_width_pt {
@@ -323,12 +328,99 @@ fn write_fixed_text_list_item(
         let _ = write!(out, "#align({align})[");
     }
 
-    write_fixed_text_list_item_paragraph(out, &paragraph.style, runs);
+    if use_marker_grid {
+        write_fixed_text_ordered_marker_grid(
+            out,
+            paragraph,
+            list_style,
+            marker_text,
+            hanging_indent_pt.unwrap_or(0.0),
+        );
+    } else {
+        let runs: Vec<Run> = prepend_fixed_text_list_marker_run(
+            &paragraph.style,
+            list_style,
+            &paragraph.runs,
+            marker_text.to_string(),
+        );
+        write_fixed_text_list_item_paragraph(out, &paragraph.style, &runs);
+    }
 
     if align_str.is_some() {
         out.push(']');
     }
     out.push(']');
+}
+
+fn write_fixed_text_ordered_marker_grid(
+    out: &mut String,
+    paragraph: &Paragraph,
+    list_style: &EffectiveListStyle<'_>,
+    marker_text: &str,
+    hanging_indent_pt: f64,
+) {
+    let normalized_marker_text: String = normalize_fixed_text_ordered_grid_marker(marker_text);
+    let marker_run: Run =
+        fixed_text_list_marker_run(list_style, &paragraph.runs, normalized_marker_text);
+    let mut body_style: ParagraphStyle = paragraph.style.clone();
+    body_style.indent_left = None;
+    body_style.indent_first_line = None;
+    let trimmed_runs: Vec<Run> = trim_fixed_text_list_body_runs(&paragraph.runs);
+
+    let _ = writeln!(
+        out,
+        "#grid(columns: ({}pt, 1fr), gutter: 0pt,",
+        format_f64(hanging_indent_pt),
+    );
+    out.push('[');
+    let _ = write!(
+        out,
+        "#box(width: {}pt)[#align(right)[",
+        format_f64(hanging_indent_pt),
+    );
+    generate_run(out, &marker_run);
+    out.push_str("]]");
+    out.push_str("],\n");
+    out.push('[');
+    write_fixed_text_list_item_paragraph(out, &body_style, &trimmed_runs);
+    out.push_str("],\n)");
+}
+
+fn normalize_fixed_text_ordered_grid_marker(marker_text: &str) -> String {
+    format!("{} ", marker_text.trim_end())
+}
+
+fn trim_fixed_text_list_body_runs(runs: &[Run]) -> Vec<Run> {
+    let mut trimmed_runs: Vec<Run> = Vec::with_capacity(runs.len());
+    let mut is_trimming_leading_whitespace: bool = true;
+
+    for run in runs {
+        if run.footnote.is_some() {
+            trimmed_runs.push(run.clone());
+            continue;
+        }
+
+        if !is_trimming_leading_whitespace {
+            trimmed_runs.push(run.clone());
+            continue;
+        }
+
+        let trimmed_text: String = run.text.trim_start_matches(char::is_whitespace).to_string();
+        if trimmed_text.is_empty() {
+            continue;
+        }
+
+        let mut trimmed_run: Run = run.clone();
+        trimmed_run.text = trimmed_text;
+        trimmed_runs.push(trimmed_run);
+        is_trimming_leading_whitespace = false;
+    }
+
+    if trimmed_runs.is_empty() {
+        runs.to_vec()
+    } else {
+        trimmed_runs
+    }
 }
 
 fn fixed_text_list_item_inset(style: &ParagraphStyle) -> Insets {
@@ -591,7 +683,37 @@ fn prepend_fixed_text_list_marker_run(
         );
     }
 
-    prepend_marker_run(runs, marker_text, normalized_marker_style.as_ref())
+    let marker_run: Run = fixed_text_list_marker_run(list_style, runs, marker_text);
+    let mut combined_runs: Vec<Run> = Vec::with_capacity(runs.len() + 1);
+    combined_runs.push(marker_run);
+    combined_runs.extend_from_slice(runs);
+    combined_runs
+}
+
+fn fixed_text_list_marker_run(
+    list_style: &EffectiveListStyle<'_>,
+    runs: &[Run],
+    marker_text: String,
+) -> Run {
+    let normalized_marker_style: Option<TextStyle> = if list_style.kind == ListKind::Unordered {
+        renderable_unordered_marker(
+            list_style.marker_text.unwrap_or("•"),
+            list_style.marker_style,
+        )
+        .1
+    } else {
+        list_style.marker_style.cloned()
+    };
+    let marker_style: TextStyle = normalized_marker_style
+        .or_else(|| runs.first().map(|run| run.style.clone()))
+        .unwrap_or_default();
+
+    Run {
+        text: marker_text,
+        style: marker_style,
+        href: None,
+        footnote: None,
+    }
 }
 
 fn first_visible_char_is_whitespace(runs: &[Run]) -> bool {

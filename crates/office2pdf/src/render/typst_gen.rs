@@ -615,42 +615,19 @@ fn generate_fixed_text_box(
             &text_box.stroke,
         );
     }
-    if text_box.no_wrap {
-        // For wrap="none" text boxes: measure the natural content width first,
-        // then use the larger of (measured width, original width) so that text
-        // with slightly wider substitute fonts does not wrap.
-        let _ = writeln!(out, "  #let text_box_content_{text_box_id} = context {{");
-        let _ = writeln!(out, "    let _nowrap_draft = [");
-        for (index, block) in text_box.content.iter().enumerate() {
-            if index > 0 {
-                out.push('\n');
-            }
-            out.push_str("    ");
-            generate_fixed_text_box_block(out, block, ctx, Some(inner_width_pt), false)?;
+    let _ = writeln!(
+        out,
+        "  #let text_box_content_{text_box_id} = block(width: {}pt)[",
+        format_f64(inner_width_pt),
+    );
+    for (index, block) in text_box.content.iter().enumerate() {
+        if index > 0 {
+            out.push('\n');
         }
-        let _ = writeln!(out, "    ]");
-        let _ = writeln!(
-            out,
-            "    let _nowrap_w = calc.max(measure(_nowrap_draft).width, {}pt)",
-            format_f64(inner_width_pt),
-        );
-        let _ = writeln!(out, "    block(width: _nowrap_w, _nowrap_draft)");
-        let _ = writeln!(out, "  }}");
-    } else {
-        let _ = writeln!(
-            out,
-            "  #let text_box_content_{text_box_id} = block(width: {}pt)[",
-            format_f64(inner_width_pt),
-        );
-        for (index, block) in text_box.content.iter().enumerate() {
-            if index > 0 {
-                out.push('\n');
-            }
-            out.push_str("  ");
-            generate_fixed_text_box_block(out, block, ctx, Some(inner_width_pt), false)?;
-        }
-        out.push_str("  ]\n");
+        out.push_str("  ");
+        generate_fixed_text_box_block(out, block, ctx, Some(inner_width_pt), text_box.no_wrap)?;
     }
+    out.push_str("  ]\n");
 
     match text_box.vertical_align {
         TextBoxVerticalAlign::Top => {
@@ -1096,7 +1073,7 @@ fn generate_fixed_text_box_block(
 fn generate_fixed_text_paragraph(
     out: &mut String,
     para: &Paragraph,
-    _no_wrap: bool,
+    no_wrap: bool,
 ) -> Result<(), ConvertError> {
     let style: &ParagraphStyle = &para.style;
     let needs_text_scope: bool = common_text_style(&para.runs).is_some();
@@ -1129,7 +1106,15 @@ fn generate_fixed_text_paragraph(
         let _ = writeln!(out, "#block(width: 100%)[#set align({align_str})");
     }
 
-    generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
+    if no_wrap {
+        out.push_str("#box[");
+        generate_runs_with_tabs_no_wrap(out, &para.runs, style.tab_stops.as_deref());
+    } else {
+        generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());
+    }
+    if no_wrap {
+        out.push(']');
+    }
 
     if use_align {
         out.push(']');

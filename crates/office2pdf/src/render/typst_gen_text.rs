@@ -128,6 +128,25 @@ pub(super) fn generate_runs_with_tabs(
     out.push('}');
 }
 
+pub(super) fn generate_runs_with_tabs_no_wrap(
+    out: &mut String,
+    runs: &[Run],
+    tab_stops: Option<&[TabStop]>,
+) {
+    let transformed_runs: Vec<Run> = runs
+        .iter()
+        .map(|run| {
+            let mut transformed_run: Run = run.clone();
+            if transformed_run.footnote.is_none() {
+                transformed_run.text = no_wrap_text(&transformed_run.text);
+            }
+            transformed_run
+        })
+        .collect();
+
+    generate_runs_with_tabs(out, &transformed_runs, tab_stops);
+}
+
 /// Emits Typst variable bindings for a non-first tab segment: measurement,
 /// decimal anchor (if applicable), default remainder, advance, fill, and
 /// the accumulated prefix content variable.
@@ -187,6 +206,32 @@ pub(super) fn generate_runs(out: &mut String, runs: &[Run]) {
     for run in runs {
         generate_run(out, run);
     }
+}
+
+fn no_wrap_text(text: &str) -> String {
+    let mut out: String = String::new();
+    let mut has_visible_char: bool = false;
+
+    for ch in text.chars() {
+        if matches!(ch, '\t' | PPTX_SOFT_LINE_BREAK_CHAR) {
+            out.push(ch);
+            has_visible_char = false;
+            continue;
+        }
+
+        if has_visible_char {
+            out.push('\u{2060}');
+        }
+
+        if ch == ' ' {
+            out.push('\u{00A0}');
+        } else {
+            out.push(ch);
+        }
+        has_visible_char = true;
+    }
+
+    out
 }
 
 fn split_runs_on_tabs(runs: &[Run]) -> Vec<Vec<Run>> {
