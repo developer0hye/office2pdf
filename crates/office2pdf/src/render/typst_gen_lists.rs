@@ -310,8 +310,7 @@ fn write_fixed_text_list_item(
     let inset: Insets = fixed_text_list_item_inset(&paragraph.style);
     let has_inset: bool = inset.left > 0.0 || inset.right > 0.0;
     let hanging_indent_pt: Option<f64> = fixed_text_list_hanging_indent_pt(&paragraph.style);
-    let use_marker_grid: bool =
-        list_style.kind == ListKind::Ordered && hanging_indent_pt.is_some();
+    let use_marker_grid: bool = list_style.kind == ListKind::Ordered && hanging_indent_pt.is_some();
 
     out.push_str("#block(width: ");
     if let Some(width_pt) = available_width_pt {

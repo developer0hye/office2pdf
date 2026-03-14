@@ -9,7 +9,10 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
     }
 
     let use_typst_rotation = shape.rotation_deg.is_some()
-        && !matches!(shape.kind, ShapeKind::Line { .. } | ShapeKind::Polyline { .. });
+        && !matches!(
+            shape.kind,
+            ShapeKind::Line { .. } | ShapeKind::Polyline { .. }
+        );
     if let Some(deg) = shape.rotation_deg.filter(|_| use_typst_rotation) {
         let _ = write!(out, "#rotate({}deg)[", format_f64(deg));
     }
@@ -33,15 +36,8 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
             head_end,
             tail_end,
         } => {
-            let ((start_x, start_y), (end_x, end_y)) = rotated_line_points(
-                *x1,
-                *y1,
-                *x2,
-                *y2,
-                width,
-                height,
-                shape.rotation_deg,
-            );
+            let ((start_x, start_y), (end_x, end_y)) =
+                rotated_line_points(*x1, *y1, *x2, *y2, width, height, shape.rotation_deg);
             let has_arrowheads: bool = *tail_end != ArrowHead::None || *head_end != ArrowHead::None;
             // When arrowheads follow the line, wrap everything in #place()
             // so that Typst overlays them at the same origin instead of

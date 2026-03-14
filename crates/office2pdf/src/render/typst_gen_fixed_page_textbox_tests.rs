@@ -47,11 +47,7 @@ fn test_fixed_page_text_box_uses_padding_and_center_vertical_align() {
             .source
             .contains("inset: (top: 3.6pt, right: 7.2pt, bottom: 3.6pt, left: 7.2pt)")
     );
-    assert!(
-        output
-            .source
-            .contains("width: 285.6pt")
-    );
+    assert!(output.source.contains("width: 285.6pt"));
     assert!(output.source.contains(
         "#context {\n    let text_box_slack_0 = calc.max(42.8pt - measure(text_box_content_0).height, 0pt)"
     ));
@@ -337,7 +333,9 @@ fn test_fixed_page_text_box_compact_list_preserves_hanging_indent() {
     let output = generate_typst(&doc).unwrap();
 
     assert!(
-        output.source.contains("#grid(columns: (36pt, 1fr), gutter: 0pt,"),
+        output
+            .source
+            .contains("#grid(columns: (36pt, 1fr), gutter: 0pt,"),
         "Expected ordered hanging-indent list to use a marker/body grid, got:\n{}",
         output.source,
     );
@@ -410,7 +408,11 @@ fn test_fixed_page_text_box_compact_list_preserves_marker_origin_offset() {
             .source
             .contains("inset: (top: 0pt, right: 0pt, bottom: 0pt, left: 18pt)")
     );
-    assert!(output.source.contains("#grid(columns: (36pt, 1fr), gutter: 0pt,"));
+    assert!(
+        output
+            .source
+            .contains("#grid(columns: (36pt, 1fr), gutter: 0pt,")
+    );
 }
 
 #[test]
@@ -988,6 +990,56 @@ fn test_fixed_page_text_box_no_wrap_inserts_word_joiners_for_cjk_titles() {
 }
 
 #[test]
+fn test_fixed_page_text_box_no_wrap_keeps_latin_text_extractable() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 120.0,
+            width: 180.0,
+            height: 40.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "Test text".to_string(),
+                        style: TextStyle {
+                            font_size: Some(28.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: true,
+                auto_fit: false,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("Test text"),
+        "Expected plain Latin no-wrap text to remain extractable, got:\n{}",
+        output.source,
+    );
+    assert!(
+        !output.source.contains('\u{2060}') && !output.source.contains('\u{00A0}'),
+        "Expected no invisible joiners or non-breaking spaces for Latin no-wrap text, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
 fn test_fixed_page_text_box_auto_fit_short_text_uses_scale_to_fit() {
     let doc = make_doc(vec![make_fixed_page(
         960.0,
@@ -1031,7 +1083,9 @@ fn test_fixed_page_text_box_auto_fit_short_text_uses_scale_to_fit() {
         output.source,
     );
     assert!(
-        output.source.contains("let text_box_scale_height_0 = (12pt / 21.599999999999998pt) * 100%"),
+        output
+            .source
+            .contains("let text_box_scale_height_0 = (12pt / 21.599999999999998pt) * 100%"),
         "Expected estimated line-height scale calculation, got:\n{}",
         output.source,
     );
@@ -1041,9 +1095,9 @@ fn test_fixed_page_text_box_auto_fit_short_text_uses_scale_to_fit() {
         output.source,
     );
     assert!(
-        output
-            .source
-            .contains("#scale(x: text_box_scale_0, y: text_box_scale_0, origin: top + left, reflow: true)["),
+        output.source.contains(
+            "#scale(x: text_box_scale_0, y: text_box_scale_0, origin: top + left, reflow: true)["
+        ),
         "Expected scale-to-fit wrapper, got:\n{}",
         output.source,
     );
@@ -1106,9 +1160,9 @@ fn test_fixed_page_text_box_mixed_font_header_uses_scale_to_fit() {
         output.source,
     );
     assert!(
-        output
-            .source
-            .contains("#scale(x: text_box_scale_0, y: text_box_scale_0, origin: top + left, reflow: true)["),
+        output.source.contains(
+            "#scale(x: text_box_scale_0, y: text_box_scale_0, origin: top + left, reflow: true)["
+        ),
         "Expected mixed-font header to use scale-to-fit, got:\n{}",
         output.source,
     );

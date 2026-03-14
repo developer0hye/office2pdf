@@ -380,9 +380,18 @@ fn test_render_document_fixed_textbox_ordered_list_keeps_all_numbers() {
         text.contains("3."),
         "Expected third marker in PDF text, got:\n{text}",
     );
-    assert!(text.contains("Alpha"), "Expected first item text, got:\n{text}");
-    assert!(text.contains("Beta"), "Expected second item text, got:\n{text}");
-    assert!(text.contains("Gamma"), "Expected third item text, got:\n{text}");
+    assert!(
+        text.contains("Alpha"),
+        "Expected first item text, got:\n{text}"
+    );
+    assert!(
+        text.contains("Beta"),
+        "Expected second item text, got:\n{text}"
+    );
+    assert!(
+        text.contains("Gamma"),
+        "Expected third item text, got:\n{text}"
+    );
 }
 
 #[test]

@@ -210,28 +210,44 @@ pub(super) fn generate_runs(out: &mut String, runs: &[Run]) {
 
 fn no_wrap_text(text: &str) -> String {
     let mut out: String = String::new();
-    let mut has_visible_char: bool = false;
+    let mut previous_visible_char: Option<char> = None;
 
     for ch in text.chars() {
         if matches!(ch, '\t' | PPTX_SOFT_LINE_BREAK_CHAR) {
             out.push(ch);
-            has_visible_char = false;
+            previous_visible_char = None;
             continue;
         }
 
-        if has_visible_char {
+        if previous_visible_char.is_some_and(|prev| needs_cjk_no_wrap_joiner(prev, ch)) {
             out.push('\u{2060}');
         }
-
-        if ch == ' ' {
-            out.push('\u{00A0}');
-        } else {
-            out.push(ch);
-        }
-        has_visible_char = true;
+        out.push(ch);
+        previous_visible_char = (!ch.is_whitespace()).then_some(ch);
     }
 
     out
+}
+
+fn needs_cjk_no_wrap_joiner(previous: char, current: char) -> bool {
+    is_cjk_like(previous) && is_cjk_like(current)
+}
+
+fn is_cjk_like(ch: char) -> bool {
+    matches!(
+        ch as u32,
+        0x1100..=0x11FF
+            | 0x2E80..=0x2FFF
+            | 0x3000..=0x303F
+            | 0x3040..=0x30FF
+            | 0x3130..=0x318F
+            | 0x31F0..=0x31FF
+            | 0x3400..=0x4DBF
+            | 0x4E00..=0x9FFF
+            | 0xAC00..=0xD7AF
+            | 0xF900..=0xFAFF
+            | 0xFF00..=0xFFEF
+    )
 }
 
 fn split_runs_on_tabs(runs: &[Run]) -> Vec<Vec<Run>> {

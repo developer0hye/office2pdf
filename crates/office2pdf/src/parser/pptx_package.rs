@@ -415,10 +415,7 @@ fn image_format_from_ext(path: &str) -> Option<ImageFormat> {
     }
 }
 
-fn normalize_slide_image_asset(
-    target: &str,
-    data: Vec<u8>,
-) -> (Vec<u8>, SlideImageSource) {
+fn normalize_slide_image_asset(target: &str, data: Vec<u8>) -> (Vec<u8>, SlideImageSource) {
     if let Some(format) = image_format_from_ext(target) {
         return (data, SlideImageSource::Supported(format));
     }

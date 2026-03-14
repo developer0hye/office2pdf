@@ -50,9 +50,10 @@ enum PenStyle {
     Null,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 enum FillRule {
     EvenOdd,
+    #[default]
     NonZero,
 }
 
@@ -147,12 +148,6 @@ struct EmfSvgConverter {
     elements: Vec<SvgPathElement>,
 }
 
-impl Default for FillRule {
-    fn default() -> Self {
-        Self::NonZero
-    }
-}
-
 impl EmfSvgConverter {
     fn convert(data: &[u8]) -> Option<Vec<u8>> {
         let mut converter = Self {
@@ -196,7 +191,8 @@ impl EmfSvgConverter {
 
     fn handle_record(&mut self, record_type: u32, body: &[u8]) -> Option<()> {
         match record_type {
-            EMR_SETWINDOWEXTEX | EMR_SETWINDOWORGEX | EMR_SETVIEWPORTEXTEX | EMR_SETVIEWPORTORGEX => {
+            EMR_SETWINDOWEXTEX | EMR_SETWINDOWORGEX | EMR_SETVIEWPORTEXTEX
+            | EMR_SETVIEWPORTORGEX => {
                 // The converter derives its SVG viewBox from actual drawn geometry instead
                 // of these logical extents because many Office EMFs use a wider drawing space.
             }
@@ -319,7 +315,8 @@ impl EmfSvgConverter {
                 " C {} {} {} {} {} {}",
                 control1.x, control1.y, control2.x, control2.y, end_point.x, end_point.y
             );
-            self.current_path_points.extend_from_slice(&[control1, control2, end_point]);
+            self.current_path_points
+                .extend_from_slice(&[control1, control2, end_point]);
             self.current_point = Some(end_point);
             chunk_start += 3;
         }
@@ -367,7 +364,11 @@ impl EmfSvgConverter {
             return;
         }
 
-        let fill: Option<RgbColor> = if close_path { self.current_fill() } else { None };
+        let fill: Option<RgbColor> = if close_path {
+            self.current_fill()
+        } else {
+            None
+        };
         let stroke: Option<RgbColor> = self.current_stroke_color();
         let stroke_width: Option<i32> = self.current_stroke_width();
         if fill.is_none() && stroke.is_none() {
@@ -403,7 +404,11 @@ impl EmfSvgConverter {
             return;
         }
 
-        let fill: Option<RgbColor> = if stroke_only { None } else { self.current_fill() };
+        let fill: Option<RgbColor> = if stroke_only {
+            None
+        } else {
+            self.current_fill()
+        };
         let stroke: Option<RgbColor> = if stroke_only {
             self.current_stroke_color()
         } else {
@@ -481,7 +486,11 @@ impl EmfSvgConverter {
             }
             if let Some(stroke) = element.stroke {
                 let _ = write!(svg, " stroke=\"{}\"", stroke.as_svg_hex());
-                let _ = write!(svg, " stroke-width=\"{}\"", element.stroke_width.unwrap_or(1));
+                let _ = write!(
+                    svg,
+                    " stroke-width=\"{}\"",
+                    element.stroke_width.unwrap_or(1)
+                );
             }
             svg.push_str("/>\n");
         }

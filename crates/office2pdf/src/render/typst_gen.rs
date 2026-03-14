@@ -643,11 +643,7 @@ fn generate_fixed_text_box(
             out,
             "    let text_box_scale_{text_box_id} = calc.min(100%, calc.min(text_box_scale_width_{text_box_id}, text_box_scale_height_{text_box_id}))",
         );
-        let _ = writeln!(
-            out,
-            "    box(width: {}pt)[",
-            format_f64(inner_width_pt),
-        );
+        let _ = writeln!(out, "    box(width: {}pt)[", format_f64(inner_width_pt),);
         if let Some(align_str) = fixed_text_box_alignment_name(paragraph.style.alignment) {
             let _ = writeln!(out, "      #align({align_str})[");
         }
@@ -678,11 +674,7 @@ fn generate_fixed_text_box(
             "    let text_box_scale_{text_box_id} = calc.min(100%, ({}pt / calc.max(measure(text_box_raw_{text_box_id}).height, 1pt)) * 100%)",
             format_f64(inner_height_pt),
         );
-        let _ = writeln!(
-            out,
-            "    box(width: {}pt)[",
-            format_f64(inner_width_pt),
-        );
+        let _ = writeln!(out, "    box(width: {}pt)[", format_f64(inner_width_pt),);
         let _ = writeln!(
             out,
             "      #scale(x: text_box_scale_{text_box_id}, y: text_box_scale_{text_box_id}, origin: top + left, reflow: true)["
@@ -1132,10 +1124,7 @@ fn generate_floating_text_box_content(
     Ok(())
 }
 
-fn single_line_fit_paragraph<'a>(
-    text_box: &'a TextBoxData,
-    inner_height_pt: f64,
-) -> Option<&'a Paragraph> {
+fn single_line_fit_paragraph(text_box: &TextBoxData, inner_height_pt: f64) -> Option<&Paragraph> {
     if text_box.no_wrap {
         return None;
     }
@@ -1172,7 +1161,7 @@ fn single_line_fit_paragraph<'a>(
     needs_single_line_fit.then_some(paragraph)
 }
 
-fn wrapped_fit_paragraph<'a>(text_box: &'a TextBoxData) -> Option<&'a Paragraph> {
+fn wrapped_fit_paragraph(text_box: &TextBoxData) -> Option<&Paragraph> {
     if text_box.no_wrap || matches!(text_box.vertical_align, TextBoxVerticalAlign::Top) {
         return None;
     }
