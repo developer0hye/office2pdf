@@ -482,6 +482,7 @@ fn finalize_shape(
     text_box_padding: Insets,
     text_box_vertical_align: TextBoxVerticalAlign,
     text_box_no_wrap: bool,
+    text_box_auto_fit: bool,
 ) -> Vec<FixedElement> {
     // Resolve effective fill: explicit > noFill > style fallback.
     let effective_fill: Option<Color> = if shape.fill.is_some() {
@@ -559,6 +560,7 @@ fn finalize_shape(
                     stroke: None,
                     shape_kind: None,
                     no_wrap: text_box_no_wrap,
+                    auto_fit: text_box_auto_fit,
                 }),
             });
         } else {
@@ -577,6 +579,7 @@ fn finalize_shape(
                     stroke,
                     shape_kind: None,
                     no_wrap: text_box_no_wrap,
+                    auto_fit: text_box_auto_fit,
                 }),
             });
         }
@@ -724,6 +727,7 @@ struct SlideXmlParser<'a> {
     text_box_padding: Insets,
     text_box_vertical_align: TextBoxVerticalAlign,
     text_box_no_wrap: bool,
+    text_box_auto_fit: bool,
     text_body_style_defaults: PptxTextBodyStyleDefaults,
 
     // ── Paragraph state (`<a:p>`) ───────────────────────────────────
@@ -745,6 +749,7 @@ struct SlideXmlParser<'a> {
     in_text: bool,
     in_rpr: bool,
     in_end_para_rpr: bool,
+    in_text_line: bool,
     solid_fill_ctx: SolidFillCtx,
     /// Inside `<a:lnRef>` within `<p:style>` — for resolving fallback line color.
     in_style_ln_ref: bool,
@@ -794,6 +799,7 @@ impl<'a> SlideXmlParser<'a> {
             text_box_padding: default_pptx_text_box_padding(),
             text_box_vertical_align: TextBoxVerticalAlign::Top,
             text_box_no_wrap: false,
+            text_box_auto_fit: false,
             text_body_style_defaults: PptxTextBodyStyleDefaults::default(),
 
             in_para: false,
@@ -812,6 +818,7 @@ impl<'a> SlideXmlParser<'a> {
             in_text: false,
             in_rpr: false,
             in_end_para_rpr: false,
+            in_text_line: false,
             solid_fill_ctx: SolidFillCtx::None,
             in_style_ln_ref: false,
             in_style_fill_ref: false,
@@ -845,6 +852,9 @@ impl<'a> SlideXmlParser<'a> {
                         emu_to_pt(self.gf.cx),
                         emu_to_pt(self.gf.cy),
                     );
+                    // Fixed-position PPT tables have explicit row geometry from the slide frame.
+                    // Keeping Typst in content-driven mode compresses side panels like slide 30.
+                    table.use_content_driven_row_heights = false;
                     self.elements.push(FixedElement {
                         x: emu_to_pt(self.gf.x),
                         y: emu_to_pt(self.gf.y),
@@ -878,6 +888,7 @@ impl<'a> SlideXmlParser<'a> {
                 self.text_box_padding = default_pptx_text_box_padding();
                 self.text_box_vertical_align = TextBoxVerticalAlign::Top;
                 self.text_box_no_wrap = false;
+                self.text_box_auto_fit = false;
             }
             b"sp" | b"cxnSp" if self.in_shape => {
                 self.shape.depth += 1;
@@ -922,6 +933,12 @@ impl<'a> SlideXmlParser<'a> {
             b"effectLst" if self.shape.in_sp_pr && !self.shape.in_ln => {
                 self.shape.shadow = parse_effect_list(reader, self.theme, self.color_map);
             }
+            b"extLst" if self.shape.in_sp_pr && !self.in_txbody => {
+                // Office extension payloads such as a16:hiddenLine are not visible shape
+                // styling. If we parse nested fills here, they can overwrite the actual
+                // shape fill, as seen on grouped icon ellipses that should stay white.
+                crate::parser::xml_util::skip_element(reader, b"extLst");
+            }
             b"ln" if self.shape.in_sp_pr => {
                 self.shape.in_ln = true;
                 self.shape.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
@@ -965,6 +982,9 @@ impl<'a> SlideXmlParser<'a> {
                     &mut self.text_box_vertical_align,
                     &mut self.text_box_no_wrap,
                 );
+            }
+            b"spAutoFit" | b"normAutofit" if self.in_shape && self.in_txbody => {
+                self.text_box_auto_fit = true;
             }
             b"lstStyle" if self.in_shape && self.in_txbody => {
                 let local_defaults = parse_pptx_list_style(reader, self.theme, self.color_map);
@@ -1068,10 +1088,13 @@ impl<'a> SlideXmlParser<'a> {
                 self.para_end_run_style = self.para_default_run_style.clone();
                 extract_rpr_attributes(e, &mut self.para_end_run_style);
             }
-            b"solidFill" if self.in_rpr => {
+            b"ln" if self.in_rpr || self.in_end_para_rpr => {
+                self.in_text_line = true;
+            }
+            b"solidFill" if self.in_rpr && !self.in_text_line => {
                 self.solid_fill_ctx = SolidFillCtx::RunFill;
             }
-            b"solidFill" if self.in_end_para_rpr => {
+            b"solidFill" if self.in_end_para_rpr && !self.in_text_line => {
                 self.solid_fill_ctx = SolidFillCtx::EndParaFill;
             }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.solid_fill_ctx != SolidFillCtx::None => {
@@ -1205,6 +1228,9 @@ impl<'a> SlideXmlParser<'a> {
                     &mut self.text_box_no_wrap,
                 );
             }
+            b"spAutoFit" | b"normAutofit" if self.in_shape && self.in_txbody => {
+                self.text_box_auto_fit = true;
+            }
             b"prstGeom" if self.shape.in_sp_pr => {
                 if let Some(prst) = get_attr_str(e, b"prst") {
                     self.shape.prst_geom = Some(prst);
@@ -1272,6 +1298,9 @@ impl<'a> SlideXmlParser<'a> {
             b"endParaRPr" if self.in_para && !self.in_run => {
                 self.para_end_run_style = self.para_default_run_style.clone();
                 extract_rpr_attributes(e, &mut self.para_end_run_style);
+            }
+            b"ln" if self.in_rpr || self.in_end_para_rpr => {
+                self.in_text_line = true;
             }
             b"pPr" if self.in_para && !self.in_run => {
                 self.para_level = extract_paragraph_level(e);
@@ -1375,6 +1404,7 @@ impl<'a> SlideXmlParser<'a> {
                             self.text_box_padding,
                             self.text_box_vertical_align,
                             self.text_box_no_wrap,
+                            self.text_box_auto_fit,
                         ));
                     }
                     self.in_shape = false;
@@ -1429,6 +1459,9 @@ impl<'a> SlideXmlParser<'a> {
             }
             b"endParaRPr" if self.in_end_para_rpr => {
                 self.in_end_para_rpr = false;
+            }
+            b"ln" if self.in_text_line => {
+                self.in_text_line = false;
             }
             b"lnSpc" if self.in_ln_spc => {
                 self.in_ln_spc = false;

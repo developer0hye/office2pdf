@@ -334,6 +334,60 @@ fn test_polyline_segments_use_place_overlay() {
 }
 
 #[test]
+fn test_rotated_polyline_pre_rotates_points_without_typst_rotate_wrapper() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 10.0,
+            y: 20.0,
+            width: 120.0,
+            height: 160.0,
+            kind: FixedElementKind::Shape(Shape {
+                kind: ShapeKind::Polyline {
+                    points: vec![(120.0, 0.0), (20.0, 0.0), (20.0, 160.0), (0.0, 160.0)],
+                    head_end: ArrowHead::None,
+                    tail_end: ArrowHead::None,
+                },
+                fill: None,
+                gradient_fill: None,
+                stroke: Some(BorderSide {
+                    width: 1.0,
+                    color: Color::new(67, 113, 187),
+                    style: BorderLineStyle::Solid,
+                }),
+                rotation_deg: Some(270.0),
+                opacity: None,
+                shadow: None,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+
+    assert!(
+        !output.source.contains("#rotate(270deg)"),
+        "Rotated polylines should emit transformed points directly: {}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("start: (-20.000000000000014pt, 20.000000000000014pt), end: (-19.999999999999993pt, 120.00000000000001pt)")
+            || output
+                .source
+                .contains("start: (-20pt, 20pt), end: (-20pt, 120pt)"),
+        "Expected rotated first segment coordinates, got: {}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("start: (-19.999999999999993pt, 120.00000000000001pt), end: (140pt, 119.99999999999999pt)")
+            || output
+                .source
+                .contains("start: (-20pt, 120pt), end: (140pt, 120pt)"),
+        "Expected rotated second segment coordinates, got: {}",
+        output.source,
+    );
+}
+
+#[test]
 fn test_fixed_page_multiple_text_boxes() {
     let doc = make_doc(vec![make_fixed_page(
         960.0,

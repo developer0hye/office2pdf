@@ -128,6 +128,25 @@ pub(super) fn generate_runs_with_tabs(
     out.push('}');
 }
 
+pub(super) fn generate_runs_with_tabs_no_wrap(
+    out: &mut String,
+    runs: &[Run],
+    tab_stops: Option<&[TabStop]>,
+) {
+    let transformed_runs: Vec<Run> = runs
+        .iter()
+        .map(|run| {
+            let mut transformed_run: Run = run.clone();
+            if transformed_run.footnote.is_none() {
+                transformed_run.text = no_wrap_text(&transformed_run.text);
+            }
+            transformed_run
+        })
+        .collect();
+
+    generate_runs_with_tabs(out, &transformed_runs, tab_stops);
+}
+
 /// Emits Typst variable bindings for a non-first tab segment: measurement,
 /// decimal anchor (if applicable), default remainder, advance, fill, and
 /// the accumulated prefix content variable.
@@ -187,6 +206,48 @@ pub(super) fn generate_runs(out: &mut String, runs: &[Run]) {
     for run in runs {
         generate_run(out, run);
     }
+}
+
+fn no_wrap_text(text: &str) -> String {
+    let mut out: String = String::new();
+    let mut previous_visible_char: Option<char> = None;
+
+    for ch in text.chars() {
+        if matches!(ch, '\t' | PPTX_SOFT_LINE_BREAK_CHAR) {
+            out.push(ch);
+            previous_visible_char = None;
+            continue;
+        }
+
+        if previous_visible_char.is_some_and(|prev| needs_cjk_no_wrap_joiner(prev, ch)) {
+            out.push('\u{2060}');
+        }
+        out.push(ch);
+        previous_visible_char = (!ch.is_whitespace()).then_some(ch);
+    }
+
+    out
+}
+
+fn needs_cjk_no_wrap_joiner(previous: char, current: char) -> bool {
+    is_cjk_like(previous) && is_cjk_like(current)
+}
+
+fn is_cjk_like(ch: char) -> bool {
+    matches!(
+        ch as u32,
+        0x1100..=0x11FF
+            | 0x2E80..=0x2FFF
+            | 0x3000..=0x303F
+            | 0x3040..=0x30FF
+            | 0x3130..=0x318F
+            | 0x31F0..=0x31FF
+            | 0x3400..=0x4DBF
+            | 0x4E00..=0x9FFF
+            | 0xAC00..=0xD7AF
+            | 0xF900..=0xFAFF
+            | 0xFF00..=0xFFEF
+    )
 }
 
 fn split_runs_on_tabs(runs: &[Run]) -> Vec<Vec<Run>> {

@@ -300,7 +300,7 @@ fn generate_cell_content(
             Block::FloatingTextBox(ftb) => generate_floating_text_box(out, ftb, ctx)?,
             Block::List(list) => {
                 if can_render_fixed_text_list_inline(list) {
-                    generate_fixed_text_list(out, list, false, None)?;
+                    generate_fixed_text_list(out, list, true, None)?;
                 } else {
                     generate_list(out, list)?;
                 }

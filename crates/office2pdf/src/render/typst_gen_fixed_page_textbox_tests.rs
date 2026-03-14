@@ -47,11 +47,7 @@ fn test_fixed_page_text_box_uses_padding_and_center_vertical_align() {
             .source
             .contains("inset: (top: 3.6pt, right: 7.2pt, bottom: 3.6pt, left: 7.2pt)")
     );
-    assert!(
-        output
-            .source
-            .contains("#let text_box_content_0 = block(width: 285.6pt)[")
-    );
+    assert!(output.source.contains("width: 285.6pt"));
     assert!(output.source.contains(
         "#context {\n    let text_box_slack_0 = calc.max(42.8pt - measure(text_box_content_0).height, 0pt)"
     ));
@@ -97,6 +93,7 @@ fn test_fixed_page_text_box_multiple_paragraphs_preserve_breaks() {
                 stroke: None,
                 shape_kind: None,
                 no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -179,6 +176,7 @@ fn test_fixed_page_text_box_ordered_list_preserves_textbox_styling() {
                 stroke: None,
                 shape_kind: None,
                 no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -266,6 +264,7 @@ fn test_fixed_page_text_box_compact_list_items_use_full_width_blocks() {
                 stroke: None,
                 shape_kind: None,
                     no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -327,18 +326,21 @@ fn test_fixed_page_text_box_compact_list_preserves_hanging_indent() {
                 stroke: None,
                 shape_kind: None,
                     no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
     let output = generate_typst(&doc).unwrap();
 
-    assert!(output.source.contains("hanging-indent: 36pt"));
     assert!(
         output
             .source
-            .contains("tab_advance_1 = if tab_prefix_width_1 < 36pt")
+            .contains("#grid(columns: (36pt, 1fr), gutter: 0pt,"),
+        "Expected ordered hanging-indent list to use a marker/body grid, got:\n{}",
+        output.source,
     );
-    assert!(!output.source.contains("first-line-indent"));
+    assert!(!output.source.contains("hanging-indent: 36pt"));
+    assert!(!output.source.contains("tab_advance_1"));
 }
 
 #[test]
@@ -395,6 +397,7 @@ fn test_fixed_page_text_box_compact_list_preserves_marker_origin_offset() {
                 stroke: None,
                 shape_kind: None,
                     no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -405,7 +408,11 @@ fn test_fixed_page_text_box_compact_list_preserves_marker_origin_offset() {
             .source
             .contains("inset: (top: 0pt, right: 0pt, bottom: 0pt, left: 18pt)")
     );
-    assert!(output.source.contains("hanging-indent: 36pt"));
+    assert!(
+        output
+            .source
+            .contains("#grid(columns: (36pt, 1fr), gutter: 0pt,")
+    );
 }
 
 #[test]
@@ -466,6 +473,7 @@ fn test_fixed_page_text_box_compact_bulleted_list_uses_custom_marker_style() {
                 stroke: None,
                 shape_kind: None,
                 no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -563,6 +571,7 @@ fn test_fixed_page_text_box_dash_bullets_use_generic_list_path() {
                 stroke: None,
                 shape_kind: None,
                 no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -621,6 +630,7 @@ fn test_fixed_page_text_box_compact_list_preserves_soft_line_breaks() {
                 stroke: None,
                 shape_kind: None,
                 no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -674,6 +684,7 @@ fn test_fixed_page_text_box_with_solid_fill() {
                 stroke: None,
                 shape_kind: None,
                 no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -720,6 +731,7 @@ fn test_fixed_page_text_box_with_fill_and_stroke() {
                 }),
                 shape_kind: None,
                 no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -767,6 +779,7 @@ fn test_fixed_page_text_box_with_fill_and_opacity() {
                 stroke: None,
                 shape_kind: None,
                 no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -816,6 +829,7 @@ fn test_fixed_page_text_box_with_polygon_shape_kind() {
                     vertices: vec![(0.0, 0.0), (0.85, 0.0), (1.0, 0.5), (0.85, 1.0), (0.0, 1.0)],
                 }),
                 no_wrap: false,
+                auto_fit: false,
             }),
         }],
     )]);
@@ -873,4 +887,507 @@ fn test_fixed_page_uses_place_for_positioning() {
     )]);
     let output = generate_typst(&doc).unwrap();
     assert!(output.source.contains("place("));
+}
+
+#[test]
+fn test_fixed_page_text_box_no_wrap_centered_text_uses_inline_box() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 120.0,
+            width: 220.0,
+            height: 40.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "Centered Title".to_string(),
+                        style: TextStyle {
+                            font_size: Some(28.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: true,
+                auto_fit: false,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("clip: false"),
+        "Expected clip: false for no-wrap text box, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("#set align(center)"),
+        "Expected centered alignment in output, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("#box["),
+        "Expected inline no-wrap box in output, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_no_wrap_inserts_word_joiners_for_cjk_titles() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 120.0,
+            width: 180.0,
+            height: 40.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "제안개요".to_string(),
+                        style: TextStyle {
+                            font_size: Some(28.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: true,
+                auto_fit: false,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("제\u{2060}안\u{2060}개\u{2060}요"),
+        "Expected no-wrap word joiners in output, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_no_wrap_keeps_latin_text_extractable() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 120.0,
+            width: 180.0,
+            height: 40.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "Test text".to_string(),
+                        style: TextStyle {
+                            font_size: Some(28.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: true,
+                auto_fit: false,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("Test text"),
+        "Expected plain Latin no-wrap text to remain extractable, got:\n{}",
+        output.source,
+    );
+    assert!(
+        !output.source.contains('\u{2060}') && !output.source.contains('\u{00A0}'),
+        "Expected no invisible joiners or non-breaking spaces for Latin no-wrap text, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_auto_fit_short_text_uses_scale_to_fit() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 120.0,
+            width: 145.0,
+            height: 12.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: "Server(Cloud VM)".to_string(),
+                        style: TextStyle {
+                            font_size: Some(18.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: false,
+                auto_fit: true,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("let text_box_scale_width_0 = (145pt / calc.max(measure(text_box_raw_0).width, 1pt)) * 100%"),
+        "Expected width scale calculation, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output
+            .source
+            .contains("let text_box_scale_height_0 = (12pt / 21.599999999999998pt) * 100%"),
+        "Expected estimated line-height scale calculation, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("let text_box_scale_0 = calc.min(100%, calc.min(text_box_scale_width_0, text_box_scale_height_0))"),
+        "Expected combined width/height scale clamp, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains(
+            "#scale(x: text_box_scale_0, y: text_box_scale_0, origin: top + left, reflow: true)["
+        ),
+        "Expected scale-to-fit wrapper, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("#align(center)["),
+        "Expected center alignment wrapper, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_mixed_font_header_uses_scale_to_fit() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 0.0,
+            y: 2.4,
+            width: 474.5,
+            height: 57.9,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![
+                        Run {
+                            text: "3. 시스템 연동 방안".to_string(),
+                            style: TextStyle {
+                                font_size: Some(25.0),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        },
+                        Run {
+                            text: "| 클라우드 기반 업무 시스템 연동".to_string(),
+                            style: TextStyle {
+                                font_size: Some(16.0),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        },
+                    ],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Center,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: false,
+                auto_fit: false,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("#let text_box_raw_0 = ["),
+        "Expected raw single-line content wrapper, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains(
+            "#scale(x: text_box_scale_0, y: text_box_scale_0, origin: top + left, reflow: true)["
+        ),
+        "Expected mixed-font header to use scale-to-fit, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_mixed_font_header_with_tight_leading_uses_scale_to_fit() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 0.0,
+            y: 2.4,
+            width: 474.5,
+            height: 57.9,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        line_spacing: Some(LineSpacing::Proportional(0.585)),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![
+                        Run {
+                            text: "3. 시스템 연동 방안".to_string(),
+                            style: TextStyle {
+                                font_size: Some(24.99),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        },
+                        Run {
+                            text: "|  클라우드 기반 업무 시스템 연동".to_string(),
+                            style: TextStyle {
+                                font_size: Some(16.0),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        },
+                    ],
+                })],
+                padding: Insets {
+                    top: 3.6,
+                    right: 7.2,
+                    bottom: 3.6,
+                    left: 7.2,
+                },
+                vertical_align: crate::ir::TextBoxVerticalAlign::Center,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: false,
+                auto_fit: false,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("#let text_box_raw_0 = ["),
+        "Expected mixed-font header to use raw single-line measurement, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output
+            .source
+            .contains("let text_box_scale_0 = calc.min(100%, calc.min(text_box_scale_width_0, text_box_scale_height_0))"),
+        "Expected mixed-font header to use combined scale-to-fit, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_wrapped_centered_paragraph_scales_to_fit_height() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 368.9,
+            y: 376.8,
+            width: 139.0,
+            height: 58.5,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "업무 시스템의 URL 기준으로 문서의 암/복호화 지원".to_string(),
+                        style: TextStyle {
+                            font_size: Some(18.0),
+                            color: Some(Color {
+                                r: 255,
+                                g: 255,
+                                b: 255,
+                            }),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets {
+                    top: 3.6,
+                    right: 7.2,
+                    bottom: 3.6,
+                    left: 7.2,
+                },
+                vertical_align: crate::ir::TextBoxVerticalAlign::Center,
+                fill: Some(Color {
+                    r: 0,
+                    g: 120,
+                    b: 185,
+                }),
+                opacity: None,
+                stroke: Some(BorderSide {
+                    color: Color {
+                        r: 0,
+                        g: 120,
+                        b: 185,
+                    },
+                    width: 1.0,
+                    style: BorderLineStyle::Solid,
+                }),
+                shape_kind: None,
+                no_wrap: false,
+                auto_fit: false,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output
+            .source
+            .contains("#let text_box_raw_0 = block(width: 124.60000000000001pt)["),
+        "Expected wrapped paragraph measurement block, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("let text_box_scale_0 = calc.min(100%, (51.3pt / calc.max(measure(text_box_raw_0).height, 1pt)) * 100%)"),
+        "Expected height-based wrapped paragraph scale clamp, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_ordered_grid_normalizes_marker_spacing() {
+    use crate::ir::List;
+
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 100.0,
+            y: 200.0,
+            width: 320.0,
+            height: 140.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::List(List {
+                    kind: ListKind::Ordered,
+                    items: vec![
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle {
+                                    indent_left: Some(36.0),
+                                    indent_first_line: Some(-36.0),
+                                    ..ParagraphStyle::default()
+                                },
+                                runs: vec![Run {
+                                    text: " Alpha".to_string(),
+                                    style: TextStyle {
+                                        font_size: Some(20.0),
+                                        ..TextStyle::default()
+                                    },
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: Some(1),
+                        },
+                        ListItem {
+                            content: vec![Paragraph {
+                                style: ParagraphStyle {
+                                    indent_left: Some(36.0),
+                                    indent_first_line: Some(-36.0),
+                                    ..ParagraphStyle::default()
+                                },
+                                runs: vec![Run {
+                                    text: "Beta".to_string(),
+                                    style: TextStyle {
+                                        font_size: Some(20.0),
+                                        ..TextStyle::default()
+                                    },
+                                    href: None,
+                                    footnote: None,
+                                }],
+                            }],
+                            level: 0,
+                            start_at: None,
+                        },
+                    ],
+                    level_styles: BTreeMap::from([(
+                        0,
+                        ListLevelStyle {
+                            kind: ListKind::Ordered,
+                            numbering_pattern: Some("1.".to_string()),
+                            full_numbering: false,
+                            marker_text: None,
+                            marker_style: None,
+                        },
+                    )]),
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: false,
+                auto_fit: false,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(output.source.contains("#text(size: 20pt)[1. ]"));
+    assert!(output.source.contains("#text(size: 20pt)[2. ]"));
+    assert!(!output.source.contains("#text(size: 20pt)[ Alpha]"));
 }

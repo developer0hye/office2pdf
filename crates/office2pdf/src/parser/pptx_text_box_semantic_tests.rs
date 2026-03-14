@@ -190,6 +190,11 @@ fn test_text_box_body_pr_defaults_and_center_anchor_extracted() {
         text_box.vertical_align,
         crate::ir::TextBoxVerticalAlign::Center
     );
+    assert!(
+        text_box.auto_fit,
+        "spAutoFit text boxes should preserve the autofit hint in the IR"
+    );
+    assert!(!text_box.no_wrap);
 }
 
 #[test]
@@ -463,6 +468,47 @@ fn test_text_box_lst_style_default_run_props_are_applied_to_runs() {
     assert_eq!(run.style.font_size, Some(14.0));
     assert_eq!(run.style.bold, Some(true));
     assert_eq!(run.style.color, Some(Color::new(0x03, 0x25, 0x43)));
+}
+
+#[test]
+fn test_text_box_font_ref_default_color_is_not_overridden_by_run_line_fill() {
+    let slide_shape = concat!(
+        r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="OrgBox"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>"#,
+        r#"<p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2000000" cy="900000"/></a:xfrm>"#,
+        r#"<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:ln><a:noFill/></a:ln></p:spPr>"#,
+        r#"<p:style>"#,
+        r#"<a:lnRef idx="2"><a:schemeClr val="accent1"/></a:lnRef>"#,
+        r#"<a:fillRef idx="1"><a:schemeClr val="lt1"/></a:fillRef>"#,
+        r#"<a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef>"#,
+        r#"<a:fontRef idx="minor"><a:schemeClr val="dk1"/></a:fontRef>"#,
+        r#"</p:style>"#,
+        r#"<p:txBody><a:bodyPr/><a:lstStyle/>"#,
+        r#"<a:p><a:pPr algn="ctr"/>"#,
+        r#"<a:r><a:rPr lang="ko-KR">"#,
+        r#"<a:ln><a:solidFill><a:sysClr val="window" lastClr="FFFFFF"><a:alpha val="0"/></a:sysClr></a:solidFill></a:ln>"#,
+        r#"<a:latin typeface="Pretendard"/><a:ea typeface="Pretendard"/></a:rPr><a:t>이동욱 이사</a:t></a:r>"#,
+        r#"</a:p></p:txBody></p:sp>"#,
+    );
+    let slide_xml = make_slide_xml(&[slide_shape.to_string()]);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Pretendard", "Pretendard");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide_xml], &theme_xml);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let blocks = text_box_blocks(&page.elements[0]);
+    let paragraph = match &blocks[0] {
+        Block::Paragraph(paragraph) => paragraph,
+        other => panic!("Expected Paragraph block, got {other:?}"),
+    };
+    assert_eq!(paragraph.runs.len(), 1);
+    assert_eq!(paragraph.runs[0].text, "이동욱 이사");
+    assert_eq!(
+        paragraph.runs[0].style.color,
+        Some(Color::new(0x00, 0x00, 0x00)),
+        "Run line fill should not overwrite the fontRef default text color"
+    );
 }
 
 #[test]

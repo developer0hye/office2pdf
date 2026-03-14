@@ -40,6 +40,8 @@ use self::theme::{
     resolve_effective_color_map, resolve_theme_font,
 };
 
+#[path = "pptx_emf.rs"]
+mod emf;
 #[path = "pptx_package.rs"]
 mod package;
 #[path = "pptx_shapes.rs"]

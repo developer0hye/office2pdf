@@ -101,9 +101,8 @@ pub(super) fn load_slide_images<R: Read + std::io::Seek>(
         if let Ok(mut file) = archive.by_name(&image_path) {
             let mut data = Vec::new();
             if file.read_to_end(&mut data).is_ok() {
-                let source: SlideImageSource = image_format_from_ext(&rel.target)
-                    .map(SlideImageSource::Supported)
-                    .unwrap_or(SlideImageSource::Unsupported);
+                let (data, source): (Vec<u8>, SlideImageSource) =
+                    normalize_slide_image_asset(&rel.target, data);
                 images.insert(
                     id,
                     SlideImageAsset {
@@ -416,8 +415,23 @@ fn image_format_from_ext(path: &str) -> Option<ImageFormat> {
     }
 }
 
+fn normalize_slide_image_asset(target: &str, data: Vec<u8>) -> (Vec<u8>, SlideImageSource) {
+    if let Some(format) = image_format_from_ext(target) {
+        return (data, SlideImageSource::Supported(format));
+    }
+
+    if target.to_ascii_lowercase().ends_with(".emf")
+        && let Some(svg) = super::emf::convert_emf_to_svg(&data)
+    {
+        return (svg, SlideImageSource::Supported(ImageFormat::Svg));
+    }
+
+    (data, SlideImageSource::Unsupported)
+}
+
 fn is_image_relationship(rel_type: Option<&str>, target: &str) -> bool {
-    image_format_from_ext(target).is_some()
+    target.to_ascii_lowercase().ends_with(".emf")
+        || image_format_from_ext(target).is_some()
         || rel_type.is_some_and(|rel_type| {
             let lower: String = rel_type.to_ascii_lowercase();
             lower.contains("/image") || lower.contains("hdphoto")

@@ -169,7 +169,7 @@ fn test_table_cell_simple_list_treats_default_and_explicit_left_as_same_style() 
 }
 
 #[test]
-fn test_table_cell_compact_list_uses_leading_without_extra_item_spacing() {
+fn test_table_cell_compact_list_adds_inter_item_spacing_from_line_spacing() {
     let list = List {
         kind: ListKind::Unordered,
         items: vec![
@@ -234,7 +234,7 @@ fn test_table_cell_compact_list_uses_leading_without_extra_item_spacing() {
         "Expected paragraph leading derived from PPT line spacing in: {result}"
     );
     assert!(
-        !result.contains("#stack(dir: ttb, spacing: 12pt"),
-        "Compact table-cell lists should not add extra inter-item spacing in: {result}"
+        result.contains("#stack(dir: ttb, spacing: 12pt"),
+        "Compact table-cell lists should add inter-item spacing derived from PPT line spacing in: {result}"
     );
 }

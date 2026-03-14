@@ -1,6 +1,7 @@
 use super::test_support::{make_simple_document, make_test_png};
 use super::*;
 use crate::ir::*;
+use std::collections::BTreeMap;
 
 #[test]
 fn test_render_document_empty_document() {
@@ -257,6 +258,140 @@ fn test_render_document_image_mixed_with_text() {
     let pdf = render_document(&doc).unwrap();
     assert!(!pdf.is_empty());
     assert!(pdf.starts_with(b"%PDF"));
+}
+
+#[test]
+fn test_render_document_fixed_textbox_ordered_list_keeps_all_numbers() {
+    let doc = Document {
+        metadata: Metadata::default(),
+        pages: vec![Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 780.0,
+                height: 540.0,
+            },
+            elements: vec![FixedElement {
+                x: 300.0,
+                y: 200.0,
+                width: 260.0,
+                height: 160.0,
+                kind: FixedElementKind::TextBox(TextBoxData {
+                    content: vec![Block::List(List {
+                        kind: ListKind::Ordered,
+                        items: vec![
+                            ListItem {
+                                content: vec![Paragraph {
+                                    style: ParagraphStyle {
+                                        indent_left: Some(36.0),
+                                        indent_first_line: Some(-36.0),
+                                        ..ParagraphStyle::default()
+                                    },
+                                    runs: vec![Run {
+                                        text: "Alpha".to_string(),
+                                        style: TextStyle {
+                                            font_size: Some(20.0),
+                                            ..TextStyle::default()
+                                        },
+                                        href: None,
+                                        footnote: None,
+                                    }],
+                                }],
+                                level: 0,
+                                start_at: Some(1),
+                            },
+                            ListItem {
+                                content: vec![Paragraph {
+                                    style: ParagraphStyle {
+                                        indent_left: Some(36.0),
+                                        indent_first_line: Some(-36.0),
+                                        ..ParagraphStyle::default()
+                                    },
+                                    runs: vec![Run {
+                                        text: "Beta".to_string(),
+                                        style: TextStyle {
+                                            font_size: Some(20.0),
+                                            ..TextStyle::default()
+                                        },
+                                        href: None,
+                                        footnote: None,
+                                    }],
+                                }],
+                                level: 0,
+                                start_at: None,
+                            },
+                            ListItem {
+                                content: vec![Paragraph {
+                                    style: ParagraphStyle {
+                                        indent_left: Some(36.0),
+                                        indent_first_line: Some(-36.0),
+                                        ..ParagraphStyle::default()
+                                    },
+                                    runs: vec![Run {
+                                        text: "Gamma".to_string(),
+                                        style: TextStyle {
+                                            font_size: Some(20.0),
+                                            ..TextStyle::default()
+                                        },
+                                        href: None,
+                                        footnote: None,
+                                    }],
+                                }],
+                                level: 0,
+                                start_at: None,
+                            },
+                        ],
+                        level_styles: BTreeMap::from([(
+                            0,
+                            ListLevelStyle {
+                                kind: ListKind::Ordered,
+                                numbering_pattern: Some("1.".to_string()),
+                                full_numbering: false,
+                                marker_text: None,
+                                marker_style: None,
+                            },
+                        )]),
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: TextBoxVerticalAlign::Top,
+                    fill: None,
+                    opacity: None,
+                    stroke: None,
+                    shape_kind: None,
+                    no_wrap: false,
+                    auto_fit: false,
+                }),
+            }],
+            background_color: None,
+            background_gradient: None,
+        })],
+        styles: StyleSheet::default(),
+    };
+
+    let pdf = render_document(&doc).unwrap();
+    let text = pdf_extract::extract_text_from_mem(&pdf).unwrap();
+    assert!(
+        text.contains("1."),
+        "Expected first marker in PDF text, got:\n{text}",
+    );
+    assert!(
+        text.contains("2."),
+        "Expected second marker in PDF text, got:\n{text}",
+    );
+    assert!(
+        text.contains("3."),
+        "Expected third marker in PDF text, got:\n{text}",
+    );
+    assert!(
+        text.contains("Alpha"),
+        "Expected first item text, got:\n{text}"
+    );
+    assert!(
+        text.contains("Beta"),
+        "Expected second item text, got:\n{text}"
+    );
+    assert!(
+        text.contains("Gamma"),
+        "Expected third item text, got:\n{text}"
+    );
 }
 
 #[test]
@@ -585,6 +720,7 @@ fn test_render_pptx_style_document_size() {
                     stroke: None,
                     shape_kind: None,
                     no_wrap: false,
+                    auto_fit: false,
                 }),
             }],
         }));
@@ -644,6 +780,7 @@ fn test_render_document_with_centered_fixed_text_box() {
                     stroke: None,
                     shape_kind: None,
                     no_wrap: false,
+                    auto_fit: false,
                 }),
             }],
         })],
@@ -654,5 +791,71 @@ fn test_render_document_with_centered_fixed_text_box() {
     assert!(
         pdf.starts_with(b"%PDF"),
         "Centered fixed text box should compile to a valid PDF"
+    );
+}
+
+#[test]
+fn test_render_document_with_auto_fit_fixed_text_box() {
+    let doc = Document {
+        metadata: Metadata::default(),
+        pages: vec![Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 300.0,
+                height: 200.0,
+            },
+            background_color: None,
+            background_gradient: None,
+            elements: vec![FixedElement {
+                x: 20.0,
+                y: 20.0,
+                width: 150.0,
+                height: 22.0,
+                kind: FixedElementKind::TextBox(TextBoxData {
+                    content: vec![Block::Paragraph(Paragraph {
+                        style: ParagraphStyle {
+                            alignment: Some(Alignment::Right),
+                            ..ParagraphStyle::default()
+                        },
+                        runs: vec![
+                            Run {
+                                text: "3. 시스템 연동 방안 ".to_string(),
+                                style: TextStyle {
+                                    font_size: Some(28.0),
+                                    bold: Some(true),
+                                    ..TextStyle::default()
+                                },
+                                href: None,
+                                footnote: None,
+                            },
+                            Run {
+                                text: "클라우드 기반 업무 시스템 연동".to_string(),
+                                style: TextStyle {
+                                    font_size: Some(16.0),
+                                    bold: Some(true),
+                                    ..TextStyle::default()
+                                },
+                                href: None,
+                                footnote: None,
+                            },
+                        ],
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: TextBoxVerticalAlign::Top,
+                    fill: None,
+                    opacity: None,
+                    stroke: None,
+                    shape_kind: None,
+                    no_wrap: false,
+                    auto_fit: true,
+                }),
+            }],
+        })],
+        styles: StyleSheet::default(),
+    };
+
+    let pdf = render_document(&doc).unwrap();
+    assert!(
+        pdf.starts_with(b"%PDF"),
+        "Auto-fit fixed text box should compile to a valid PDF"
     );
 }
