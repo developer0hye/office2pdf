@@ -588,6 +588,9 @@ fn generate_fixed_text_box(
         format_f64(outer_height_pt),
         format_insets(&text_box.padding),
     );
+    if text_box.no_wrap {
+        out.push_str(", clip: false");
+    }
     // For non-rectangular shapes, render fill/stroke as a placed background shape.
     if has_custom_shape {
         // Transparent outer block — shape background is placed inside.
@@ -612,19 +615,42 @@ fn generate_fixed_text_box(
             &text_box.stroke,
         );
     }
-    let _ = writeln!(
-        out,
-        "  #let text_box_content_{text_box_id} = block(width: {}pt)[",
-        format_f64(inner_width_pt),
-    );
-    for (index, block) in text_box.content.iter().enumerate() {
-        if index > 0 {
-            out.push('\n');
+    if text_box.no_wrap {
+        // For wrap="none" text boxes: measure the natural content width first,
+        // then use the larger of (measured width, original width) so that text
+        // with slightly wider substitute fonts does not wrap.
+        let _ = writeln!(out, "  #let text_box_content_{text_box_id} = context {{");
+        let _ = writeln!(out, "    let _nowrap_draft = [");
+        for (index, block) in text_box.content.iter().enumerate() {
+            if index > 0 {
+                out.push('\n');
+            }
+            out.push_str("    ");
+            generate_fixed_text_box_block(out, block, ctx, Some(inner_width_pt), false)?;
         }
-        out.push_str("  ");
-        generate_fixed_text_box_block(out, block, ctx, Some(inner_width_pt))?;
+        let _ = writeln!(out, "    ]");
+        let _ = writeln!(
+            out,
+            "    let _nowrap_w = calc.max(measure(_nowrap_draft).width, {}pt)",
+            format_f64(inner_width_pt),
+        );
+        let _ = writeln!(out, "    block(width: _nowrap_w, _nowrap_draft)");
+        let _ = writeln!(out, "  }}");
+    } else {
+        let _ = writeln!(
+            out,
+            "  #let text_box_content_{text_box_id} = block(width: {}pt)[",
+            format_f64(inner_width_pt),
+        );
+        for (index, block) in text_box.content.iter().enumerate() {
+            if index > 0 {
+                out.push('\n');
+            }
+            out.push_str("  ");
+            generate_fixed_text_box_block(out, block, ctx, Some(inner_width_pt), false)?;
+        }
+        out.push_str("  ]\n");
     }
-    out.push_str("  ]\n");
 
     match text_box.vertical_align {
         TextBoxVerticalAlign::Top => {
@@ -1045,7 +1071,7 @@ fn generate_floating_text_box_content(
         if index > 0 {
             out.push('\n');
         }
-        generate_fixed_text_box_block(out, block, ctx, Some(ftb.width))?;
+        generate_fixed_text_box_block(out, block, ctx, Some(ftb.width), false)?;
     }
     out.push_str("]\n");
     Ok(())
@@ -1056,17 +1082,22 @@ fn generate_fixed_text_box_block(
     block: &Block,
     ctx: &mut GenCtx,
     available_width_pt: Option<f64>,
+    no_wrap: bool,
 ) -> Result<(), ConvertError> {
     match block {
         Block::List(list) if can_render_fixed_text_list_inline(list) => {
             generate_fixed_text_list(out, list, true, available_width_pt)
         }
-        Block::Paragraph(para) => generate_fixed_text_paragraph(out, para),
+        Block::Paragraph(para) => generate_fixed_text_paragraph(out, para, no_wrap),
         _ => generate_block(out, block, ctx),
     }
 }
 
-fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(), ConvertError> {
+fn generate_fixed_text_paragraph(
+    out: &mut String,
+    para: &Paragraph,
+    no_wrap: bool,
+) -> Result<(), ConvertError> {
     let style: &ParagraphStyle = &para.style;
     let needs_text_scope: bool = common_text_style(&para.runs).is_some();
     let has_para_style: bool = needs_block_wrapper(style) || needs_text_scope;

@@ -76,7 +76,7 @@ fn parse_layer_elements<R: Read + std::io::Seek>(
 ) -> (Vec<FixedElement>, Vec<ConvertWarning>) {
     let images: SlideImageMap = load_slide_images(layer_path, archive);
     let empty_table_styles: table_styles::TableStyleMap = table_styles::TableStyleMap::new();
-    parse_slide_xml(
+    parse_slide_xml_inner(
         layer_xml,
         &images,
         theme,
@@ -84,6 +84,7 @@ fn parse_layer_elements<R: Read + std::io::Seek>(
         label,
         text_style_defaults,
         &empty_table_styles,
+        true, // skip placeholder shapes in master/layout layers
     )
     .unwrap_or_default()
 }
@@ -480,6 +481,7 @@ fn finalize_shape(
     paragraphs: &mut Vec<PptxParagraphEntry>,
     text_box_padding: Insets,
     text_box_vertical_align: TextBoxVerticalAlign,
+    text_box_no_wrap: bool,
 ) -> Vec<FixedElement> {
     // Resolve effective fill: explicit > noFill > style fallback.
     let effective_fill: Option<Color> = if shape.fill.is_some() {
@@ -556,6 +558,7 @@ fn finalize_shape(
                     opacity: None,
                     stroke: None,
                     shape_kind: None,
+                    no_wrap: text_box_no_wrap,
                 }),
             });
         } else {
@@ -573,6 +576,7 @@ fn finalize_shape(
                     opacity: shape.opacity,
                     stroke,
                     shape_kind: None,
+                    no_wrap: text_box_no_wrap,
                 }),
             });
         }
@@ -700,6 +704,12 @@ struct SlideXmlParser<'a> {
     inherited_text_body_defaults: &'a PptxTextBodyStyleDefaults,
     table_styles: &'a table_styles::TableStyleMap,
 
+    // ── Options ─────────────────────────────────────────────────────
+    /// When true, shapes with `<p:ph>` (placeholder) are skipped.
+    /// Used when parsing master/layout layers whose placeholder content
+    /// should not render unless the slide overrides it.
+    skip_placeholders: bool,
+
     // ── Output accumulators ─────────────────────────────────────────
     elements: Vec<FixedElement>,
     warnings: Vec<ConvertWarning>,
@@ -713,6 +723,7 @@ struct SlideXmlParser<'a> {
     paragraphs: Vec<PptxParagraphEntry>,
     text_box_padding: Insets,
     text_box_vertical_align: TextBoxVerticalAlign,
+    text_box_no_wrap: bool,
     text_body_style_defaults: PptxTextBodyStyleDefaults,
 
     // ── Paragraph state (`<a:p>`) ───────────────────────────────────
@@ -770,6 +781,8 @@ impl<'a> SlideXmlParser<'a> {
             inherited_text_body_defaults,
             table_styles,
 
+            skip_placeholders: false,
+
             elements: Vec::new(),
             warnings: Vec::new(),
 
@@ -780,6 +793,7 @@ impl<'a> SlideXmlParser<'a> {
             paragraphs: Vec::new(),
             text_box_padding: default_pptx_text_box_padding(),
             text_box_vertical_align: TextBoxVerticalAlign::Top,
+            text_box_no_wrap: false,
             text_body_style_defaults: PptxTextBodyStyleDefaults::default(),
 
             in_para: false,
@@ -863,6 +877,7 @@ impl<'a> SlideXmlParser<'a> {
                 self.paragraphs.clear();
                 self.text_box_padding = default_pptx_text_box_padding();
                 self.text_box_vertical_align = TextBoxVerticalAlign::Top;
+                self.text_box_no_wrap = false;
             }
             b"sp" | b"cxnSp" if self.in_shape => {
                 self.shape.depth += 1;
@@ -884,6 +899,10 @@ impl<'a> SlideXmlParser<'a> {
                 if let Some(prst) = get_attr_str(e, b"prst") {
                     self.shape.prst_geom = Some(prst);
                 }
+            }
+            // Treat custom geometry as a rectangle fallback so the fill renders.
+            b"custGeom" if self.shape.in_sp_pr && self.shape.prst_geom.is_none() => {
+                self.shape.prst_geom = Some("rect".to_string());
             }
             b"noFill" if self.shape.in_sp_pr && !self.shape.in_ln && !self.in_rpr => {
                 self.shape.explicit_no_fill = true;
@@ -944,6 +963,7 @@ impl<'a> SlideXmlParser<'a> {
                     e,
                     &mut self.text_box_padding,
                     &mut self.text_box_vertical_align,
+                    &mut self.text_box_no_wrap,
                 );
             }
             b"lstStyle" if self.in_shape && self.in_txbody => {
@@ -1172,18 +1192,26 @@ impl<'a> SlideXmlParser<'a> {
                     .map(pptx_dash_to_border_style)
                     .unwrap_or(BorderLineStyle::Solid);
             }
+            // Handle self-closing <p:ph type="..."/> (placeholder marker).
+            b"ph" if self.in_shape => {
+                self.shape.has_placeholder = true;
+            }
             // Handle self-closing <a:bodyPr anchor="ctr"/> (no child elements).
             b"bodyPr" if self.in_shape && self.in_txbody => {
                 extract_pptx_text_box_body_props(
                     e,
                     &mut self.text_box_padding,
                     &mut self.text_box_vertical_align,
+                    &mut self.text_box_no_wrap,
                 );
             }
             b"prstGeom" if self.shape.in_sp_pr => {
                 if let Some(prst) = get_attr_str(e, b"prst") {
                     self.shape.prst_geom = Some(prst);
                 }
+            }
+            b"custGeom" if self.shape.in_sp_pr && self.shape.prst_geom.is_none() => {
+                self.shape.prst_geom = Some("rect".to_string());
             }
             b"ln" if self.shape.in_sp_pr => {
                 self.shape.ln_width_emu = get_attr_i64(e, b"w").unwrap_or(12700);
@@ -1336,12 +1364,19 @@ impl<'a> SlideXmlParser<'a> {
             b"sp" | b"cxnSp" if self.in_shape => {
                 self.shape.depth -= 1;
                 if self.shape.depth == 0 {
-                    self.elements.extend(finalize_shape(
-                        &mut self.shape,
-                        &mut self.paragraphs,
-                        self.text_box_padding,
-                        self.text_box_vertical_align,
-                    ));
+                    // Skip placeholder shapes when parsing master/layout layers.
+                    // Placeholder content is only visible when the slide itself
+                    // overrides it; master/layout placeholder text (e.g.
+                    // "마스터 제목 스타일 편집") should never be rendered.
+                    if !(self.skip_placeholders && self.shape.has_placeholder) {
+                        self.elements.extend(finalize_shape(
+                            &mut self.shape,
+                            &mut self.paragraphs,
+                            self.text_box_padding,
+                            self.text_box_vertical_align,
+                            self.text_box_no_wrap,
+                        ));
+                    }
                     self.in_shape = false;
                 }
             }
@@ -1459,6 +1494,28 @@ pub(super) fn parse_slide_xml(
     inherited_text_body_defaults: &PptxTextBodyStyleDefaults,
     table_styles: &table_styles::TableStyleMap,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
+    parse_slide_xml_inner(
+        xml,
+        images,
+        theme,
+        color_map,
+        warning_context,
+        inherited_text_body_defaults,
+        table_styles,
+        false,
+    )
+}
+
+fn parse_slide_xml_inner(
+    xml: &str,
+    images: &SlideImageMap,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+    warning_context: &str,
+    inherited_text_body_defaults: &PptxTextBodyStyleDefaults,
+    table_styles: &table_styles::TableStyleMap,
+    skip_placeholders: bool,
+) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
     let mut reader = Reader::from_str(xml);
     let mut parser = SlideXmlParser::new(
         xml,
@@ -1469,6 +1526,7 @@ pub(super) fn parse_slide_xml(
         inherited_text_body_defaults,
         table_styles,
     );
+    parser.skip_placeholders = skip_placeholders;
 
     loop {
         match reader.read_event() {
