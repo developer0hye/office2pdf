@@ -78,6 +78,7 @@ impl GroupTransform {
 /// Reads through the group's header sections (`nvGrpSpPr`, `grpSpPr`),
 /// extracts the coordinate transform, then slices the original XML to
 /// get the child shapes, and recursively parses them via `parse_slide_xml`.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn parse_group_shape(
     reader: &mut Reader<&[u8]>,
     xml: &str,
