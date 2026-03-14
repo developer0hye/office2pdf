@@ -8,8 +8,9 @@ Cargo.lock
 *.swp
 *.swo
 
-# Claude local settings (machine-specific, not shared)
+# Claude local settings and memory (machine-specific, not shared)
 .claude/settings.local.json
+.claude/memory/
 
 # Classified fixtures (confidential, never upload)
 tests/classified_fixtures/
