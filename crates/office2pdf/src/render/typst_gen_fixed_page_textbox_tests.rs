@@ -1216,6 +1216,85 @@ fn test_fixed_page_text_box_auto_fit_short_text_uses_scale_to_fit() {
 }
 
 #[test]
+fn test_fixed_page_text_box_no_wrap_auto_fit_uses_scale_to_fit() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 295.0,
+            y: 78.0,
+            width: 143.16,
+            height: 58.15,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![
+                        Run {
+                            text: "- ".to_string(),
+                            style: TextStyle {
+                                font_size: Some(41.99),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        },
+                        Run {
+                            text: "목 차 ".to_string(),
+                            style: TextStyle {
+                                font_size: Some(41.99),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        },
+                        Run {
+                            text: "-".to_string(),
+                            style: TextStyle {
+                                font_size: Some(41.99),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                        },
+                    ],
+                })],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: true,
+                auto_fit: true,
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output.source.contains("#let text_box_raw_0 = ["),
+        "Expected no-wrap auto-fit title to use raw single-line measurement, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("let text_box_scale_width_0 ="),
+        "Expected no-wrap auto-fit title to compute width scale, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("let text_box_scale_height_0 ="),
+        "Expected no-wrap auto-fit title to compute height scale, got:\n{}",
+        output.source,
+    );
+    assert!(
+        output.source.contains(
+            "#scale(x: text_box_scale_0, y: text_box_scale_0, origin: top + left, reflow: true)["
+        ),
+        "Expected no-wrap auto-fit title to use scale-to-fit, got:\n{}",
+        output.source,
+    );
+}
+
+#[test]
 fn test_fixed_page_text_box_mixed_font_header_uses_scale_to_fit() {
     let doc = make_doc(vec![make_fixed_page(
         960.0,

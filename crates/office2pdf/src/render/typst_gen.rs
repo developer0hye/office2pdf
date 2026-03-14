@@ -1125,7 +1125,7 @@ fn generate_floating_text_box_content(
 }
 
 fn single_line_fit_paragraph(text_box: &TextBoxData, inner_height_pt: f64) -> Option<&Paragraph> {
-    if text_box.no_wrap {
+    if text_box.no_wrap && !text_box.auto_fit {
         return None;
     }
     let [Block::Paragraph(paragraph)] = text_box.content.as_slice() else {
