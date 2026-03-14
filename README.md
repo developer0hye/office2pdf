@@ -26,7 +26,7 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 
 ```toml
 [dependencies]
-office2pdf = "0.3"
+office2pdf = "0.4"
 ```
 
 ### CLI
