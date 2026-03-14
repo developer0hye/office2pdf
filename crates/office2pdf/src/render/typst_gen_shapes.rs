@@ -8,8 +8,9 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
         write_shadow_shape(out, shape, width, height, shadow);
     }
 
-    let has_rotation = shape.rotation_deg.is_some();
-    if let Some(deg) = shape.rotation_deg {
+    let use_typst_rotation = shape.rotation_deg.is_some()
+        && !matches!(shape.kind, ShapeKind::Line { .. } | ShapeKind::Polyline { .. });
+    if let Some(deg) = shape.rotation_deg.filter(|_| use_typst_rotation) {
         let _ = write!(out, "#rotate({}deg)[", format_f64(deg));
     }
 
@@ -32,6 +33,15 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
             head_end,
             tail_end,
         } => {
+            let ((start_x, start_y), (end_x, end_y)) = rotated_line_points(
+                *x1,
+                *y1,
+                *x2,
+                *y2,
+                width,
+                height,
+                shape.rotation_deg,
+            );
             let has_arrowheads: bool = *tail_end != ArrowHead::None || *head_end != ArrowHead::None;
             // When arrowheads follow the line, wrap everything in #place()
             // so that Typst overlays them at the same origin instead of
@@ -43,10 +53,10 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
             let _ = write!(
                 out,
                 "start: ({}pt, {}pt), end: ({}pt, {}pt)",
-                format_f64(*x1),
-                format_f64(*y1),
-                format_f64(*x2),
-                format_f64(*y2),
+                format_f64(start_x),
+                format_f64(start_y),
+                format_f64(end_x),
+                format_f64(end_y),
             );
             write_shape_stroke(out, &shape.stroke);
             out.push_str(")\n");
@@ -54,10 +64,10 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
                 out.push_str("]\n");
             }
             if *tail_end != ArrowHead::None {
-                write_arrowhead_at(out, &shape.stroke, (*x1, *y1), (*x2, *y2));
+                write_arrowhead_at(out, &shape.stroke, (start_x, start_y), (end_x, end_y));
             }
             if *head_end != ArrowHead::None {
-                write_arrowhead_at(out, &shape.stroke, (*x2, *y2), (*x1, *y1));
+                write_arrowhead_at(out, &shape.stroke, (end_x, end_y), (start_x, start_y));
             }
         }
         ShapeKind::Polyline {
@@ -65,16 +75,18 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
             head_end,
             tail_end,
         } => {
-            write_polyline(out, &shape.stroke, points);
-            if points.len() >= 2 {
+            let rotated_points: Vec<(f64, f64)> =
+                rotate_points(points, width, height, shape.rotation_deg);
+            write_polyline(out, &shape.stroke, &rotated_points);
+            if rotated_points.len() >= 2 {
                 if *tail_end != ArrowHead::None {
-                    let last = points[points.len() - 1];
-                    let second_last = points[points.len() - 2];
+                    let last = rotated_points[rotated_points.len() - 1];
+                    let second_last = rotated_points[rotated_points.len() - 2];
                     write_arrowhead_at(out, &shape.stroke, second_last, last);
                 }
                 if *head_end != ArrowHead::None {
-                    let first = points[0];
-                    let second = points[1];
+                    let first = rotated_points[0];
+                    let second = rotated_points[1];
                     write_arrowhead_at(out, &shape.stroke, second, first);
                 }
             }
@@ -91,9 +103,65 @@ pub(super) fn generate_shape(out: &mut String, shape: &Shape, width: f64, height
         }
     }
 
-    if has_rotation {
+    if use_typst_rotation {
         out.push_str("]\n");
     }
+}
+
+fn rotated_line_points(
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+    width: f64,
+    height: f64,
+    rotation_deg: Option<f64>,
+) -> ((f64, f64), (f64, f64)) {
+    (
+        rotate_point((x1, y1), width, height, rotation_deg),
+        rotate_point((x2, y2), width, height, rotation_deg),
+    )
+}
+
+fn rotate_points(
+    points: &[(f64, f64)],
+    width: f64,
+    height: f64,
+    rotation_deg: Option<f64>,
+) -> Vec<(f64, f64)> {
+    points
+        .iter()
+        .copied()
+        .map(|point| rotate_point(point, width, height, rotation_deg))
+        .collect()
+}
+
+fn rotate_point(
+    point: (f64, f64),
+    width: f64,
+    height: f64,
+    rotation_deg: Option<f64>,
+) -> (f64, f64) {
+    let Some(rotation_deg) = rotation_deg else {
+        return point;
+    };
+
+    if rotation_deg.abs() < 0.001 {
+        return point;
+    }
+
+    let angle_rad = rotation_deg.to_radians();
+    let cos_theta = angle_rad.cos();
+    let sin_theta = angle_rad.sin();
+    let center_x = width / 2.0;
+    let center_y = height / 2.0;
+    let delta_x = point.0 - center_x;
+    let delta_y = point.1 - center_y;
+
+    (
+        center_x + delta_x * cos_theta - delta_y * sin_theta,
+        center_y + delta_x * sin_theta + delta_y * cos_theta,
+    )
 }
 
 /// Render a shadow approximation as an offset duplicate shape with reduced opacity.

@@ -615,19 +615,97 @@ fn generate_fixed_text_box(
             &text_box.stroke,
         );
     }
-    let _ = writeln!(
-        out,
-        "  #let text_box_content_{text_box_id} = block(width: {}pt)[",
-        format_f64(inner_width_pt),
-    );
-    for (index, block) in text_box.content.iter().enumerate() {
-        if index > 0 {
-            out.push('\n');
-        }
+    if let Some(paragraph) = single_line_fit_paragraph(text_box, inner_height_pt) {
+        let mut raw_paragraph: Paragraph = paragraph.clone();
+        raw_paragraph.style.alignment = None;
+        let estimated_line_height_pt: f64 = estimate_single_line_height_pt(paragraph);
+
+        let _ = writeln!(out, "  #let text_box_raw_{text_box_id} = [");
         out.push_str("  ");
-        generate_fixed_text_box_block(out, block, ctx, Some(inner_width_pt), text_box.no_wrap)?;
+        // The measured raw paragraph must stay unbreakable through Typst layout,
+        // otherwise mixed-font headers can reflow again inside the scaled box.
+        generate_fixed_text_paragraph(out, &raw_paragraph, true)?;
+        out.push_str("  ]\n");
+
+        let _ = writeln!(out, "  #let text_box_content_{text_box_id} = context {{");
+        let _ = writeln!(
+            out,
+            "    let text_box_scale_width_{text_box_id} = ({}pt / calc.max(measure(text_box_raw_{text_box_id}).width, 1pt)) * 100%",
+            format_f64(inner_width_pt),
+        );
+        let _ = writeln!(
+            out,
+            "    let text_box_scale_height_{text_box_id} = ({}pt / {}pt) * 100%",
+            format_f64(inner_height_pt),
+            format_f64(estimated_line_height_pt.max(1.0)),
+        );
+        let _ = writeln!(
+            out,
+            "    let text_box_scale_{text_box_id} = calc.min(100%, calc.min(text_box_scale_width_{text_box_id}, text_box_scale_height_{text_box_id}))",
+        );
+        let _ = writeln!(
+            out,
+            "    box(width: {}pt)[",
+            format_f64(inner_width_pt),
+        );
+        if let Some(align_str) = fixed_text_box_alignment_name(paragraph.style.alignment) {
+            let _ = writeln!(out, "      #align({align_str})[");
+        }
+        let _ = writeln!(
+            out,
+            "        #scale(x: text_box_scale_{text_box_id}, y: text_box_scale_{text_box_id}, origin: top + left, reflow: true)["
+        );
+        let _ = writeln!(out, "          #text_box_raw_{text_box_id}");
+        out.push_str("        ]\n");
+        if fixed_text_box_alignment_name(paragraph.style.alignment).is_some() {
+            out.push_str("      ]\n");
+        }
+        out.push_str("    ]\n");
+        out.push_str("  }\n");
+    } else if let Some(paragraph) = wrapped_fit_paragraph(text_box) {
+        let _ = writeln!(
+            out,
+            "  #let text_box_raw_{text_box_id} = block(width: {}pt)[",
+            format_f64(inner_width_pt),
+        );
+        out.push_str("  ");
+        generate_fixed_text_paragraph(out, paragraph, false)?;
+        out.push_str("  ]\n");
+
+        let _ = writeln!(out, "  #let text_box_content_{text_box_id} = context {{");
+        let _ = writeln!(
+            out,
+            "    let text_box_scale_{text_box_id} = calc.min(100%, ({}pt / calc.max(measure(text_box_raw_{text_box_id}).height, 1pt)) * 100%)",
+            format_f64(inner_height_pt),
+        );
+        let _ = writeln!(
+            out,
+            "    box(width: {}pt)[",
+            format_f64(inner_width_pt),
+        );
+        let _ = writeln!(
+            out,
+            "      #scale(x: text_box_scale_{text_box_id}, y: text_box_scale_{text_box_id}, origin: top + left, reflow: true)["
+        );
+        let _ = writeln!(out, "        #text_box_raw_{text_box_id}");
+        out.push_str("      ]\n");
+        out.push_str("    ]\n");
+        out.push_str("  }\n");
+    } else {
+        let _ = writeln!(
+            out,
+            "  #let text_box_content_{text_box_id} = block(width: {}pt)[",
+            format_f64(inner_width_pt),
+        );
+        for (index, block) in text_box.content.iter().enumerate() {
+            if index > 0 {
+                out.push('\n');
+            }
+            out.push_str("  ");
+            generate_fixed_text_box_block(out, block, ctx, Some(inner_width_pt), text_box.no_wrap)?;
+        }
+        out.push_str("  ]\n");
     }
-    out.push_str("  ]\n");
 
     match text_box.vertical_align {
         TextBoxVerticalAlign::Top => {
@@ -1052,6 +1130,110 @@ fn generate_floating_text_box_content(
     }
     out.push_str("]\n");
     Ok(())
+}
+
+fn single_line_fit_paragraph<'a>(
+    text_box: &'a TextBoxData,
+    inner_height_pt: f64,
+) -> Option<&'a Paragraph> {
+    if text_box.no_wrap {
+        return None;
+    }
+    let [Block::Paragraph(paragraph)] = text_box.content.as_slice() else {
+        return None;
+    };
+    if paragraph.runs.is_empty() || paragraph_has_forced_breaks(paragraph) {
+        return None;
+    }
+
+    let max_font_size_pt: f64 = paragraph_max_font_size_pt(paragraph);
+    if max_font_size_pt <= 0.0 || inner_height_pt <= 0.0 {
+        return None;
+    }
+
+    let has_mixed_font_sizes: bool = paragraph_has_mixed_font_sizes(paragraph);
+    if has_mixed_font_sizes && inner_height_pt <= max_font_size_pt * 2.5 {
+        return Some(paragraph);
+    }
+
+    let estimated_line_height_pt: f64 = estimate_single_line_height_pt(paragraph);
+    if estimated_line_height_pt <= 0.0 {
+        return None;
+    }
+
+    let is_short_box: bool = inner_height_pt <= estimated_line_height_pt * 2.0;
+    if !is_short_box {
+        return None;
+    }
+
+    let needs_single_line_fit: bool =
+        text_box.auto_fit || inner_height_pt <= estimated_line_height_pt * 1.2;
+
+    needs_single_line_fit.then_some(paragraph)
+}
+
+fn wrapped_fit_paragraph<'a>(text_box: &'a TextBoxData) -> Option<&'a Paragraph> {
+    if text_box.no_wrap || matches!(text_box.vertical_align, TextBoxVerticalAlign::Top) {
+        return None;
+    }
+
+    let [Block::Paragraph(paragraph)] = text_box.content.as_slice() else {
+        return None;
+    };
+
+    (!paragraph.runs.is_empty() && !paragraph_has_forced_breaks(paragraph)).then_some(paragraph)
+}
+
+fn paragraph_has_forced_breaks(paragraph: &Paragraph) -> bool {
+    paragraph.runs.iter().any(|run| {
+        run.text
+            .chars()
+            .any(|ch| matches!(ch, '\n' | '\r' | '\u{000B}'))
+    })
+}
+
+fn paragraph_has_mixed_font_sizes(paragraph: &Paragraph) -> bool {
+    let mut first_size: Option<i64> = None;
+    for run in &paragraph.runs {
+        let size_pt: f64 = run.style.font_size.unwrap_or(12.0);
+        let size_key: i64 = (size_pt * 100.0).round() as i64;
+        match first_size {
+            Some(first) if first != size_key => return true,
+            None => first_size = Some(size_key),
+            _ => {}
+        }
+    }
+    false
+}
+
+fn estimate_single_line_height_pt(paragraph: &Paragraph) -> f64 {
+    let max_font_size_pt: f64 = paragraph_max_font_size_pt(paragraph);
+    let default_line_height_pt: f64 = max_font_size_pt * 1.2;
+
+    match paragraph.style.line_spacing {
+        Some(LineSpacing::Exact(points)) => default_line_height_pt.max(points),
+        Some(LineSpacing::Proportional(factor)) => {
+            default_line_height_pt.max(max_font_size_pt * factor)
+        }
+        None => default_line_height_pt,
+    }
+}
+
+fn paragraph_max_font_size_pt(paragraph: &Paragraph) -> f64 {
+    paragraph
+        .runs
+        .iter()
+        .filter_map(|run| run.style.font_size)
+        .fold(12.0, f64::max)
+}
+
+fn fixed_text_box_alignment_name(alignment: Option<Alignment>) -> Option<&'static str> {
+    match alignment {
+        Some(Alignment::Center) => Some("center"),
+        Some(Alignment::Right) => Some("right"),
+        Some(Alignment::Left) => Some("left"),
+        _ => None,
+    }
 }
 
 fn generate_fixed_text_box_block(

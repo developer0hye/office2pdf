@@ -357,6 +357,7 @@ fn test_render_document_fixed_textbox_ordered_list_keeps_all_numbers() {
                     stroke: None,
                     shape_kind: None,
                     no_wrap: false,
+                    auto_fit: false,
                 }),
             }],
             background_color: None,
@@ -710,6 +711,7 @@ fn test_render_pptx_style_document_size() {
                     stroke: None,
                     shape_kind: None,
                     no_wrap: false,
+                    auto_fit: false,
                 }),
             }],
         }));
@@ -769,6 +771,7 @@ fn test_render_document_with_centered_fixed_text_box() {
                     stroke: None,
                     shape_kind: None,
                     no_wrap: false,
+                    auto_fit: false,
                 }),
             }],
         })],
@@ -779,5 +782,71 @@ fn test_render_document_with_centered_fixed_text_box() {
     assert!(
         pdf.starts_with(b"%PDF"),
         "Centered fixed text box should compile to a valid PDF"
+    );
+}
+
+#[test]
+fn test_render_document_with_auto_fit_fixed_text_box() {
+    let doc = Document {
+        metadata: Metadata::default(),
+        pages: vec![Page::Fixed(FixedPage {
+            size: PageSize {
+                width: 300.0,
+                height: 200.0,
+            },
+            background_color: None,
+            background_gradient: None,
+            elements: vec![FixedElement {
+                x: 20.0,
+                y: 20.0,
+                width: 150.0,
+                height: 22.0,
+                kind: FixedElementKind::TextBox(TextBoxData {
+                    content: vec![Block::Paragraph(Paragraph {
+                        style: ParagraphStyle {
+                            alignment: Some(Alignment::Right),
+                            ..ParagraphStyle::default()
+                        },
+                        runs: vec![
+                            Run {
+                                text: "3. 시스템 연동 방안 ".to_string(),
+                                style: TextStyle {
+                                    font_size: Some(28.0),
+                                    bold: Some(true),
+                                    ..TextStyle::default()
+                                },
+                                href: None,
+                                footnote: None,
+                            },
+                            Run {
+                                text: "클라우드 기반 업무 시스템 연동".to_string(),
+                                style: TextStyle {
+                                    font_size: Some(16.0),
+                                    bold: Some(true),
+                                    ..TextStyle::default()
+                                },
+                                href: None,
+                                footnote: None,
+                            },
+                        ],
+                    })],
+                    padding: Insets::default(),
+                    vertical_align: TextBoxVerticalAlign::Top,
+                    fill: None,
+                    opacity: None,
+                    stroke: None,
+                    shape_kind: None,
+                    no_wrap: false,
+                    auto_fit: true,
+                }),
+            }],
+        })],
+        styles: StyleSheet::default(),
+    };
+
+    let pdf = render_document(&doc).unwrap();
+    assert!(
+        pdf.starts_with(b"%PDF"),
+        "Auto-fit fixed text box should compile to a valid PDF"
     );
 }

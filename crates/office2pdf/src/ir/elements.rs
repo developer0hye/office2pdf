@@ -152,6 +152,8 @@ pub struct TextBoxData {
     /// When true, text should not wrap — the content width is unconstrained.
     /// Corresponds to `<a:bodyPr wrap="none"/>` in OOXML.
     pub no_wrap: bool,
+    /// Whether the source requested PowerPoint autofit behavior for this box.
+    pub auto_fit: bool,
 }
 
 /// The kind of list: ordered (numbered) or unordered (bulleted).

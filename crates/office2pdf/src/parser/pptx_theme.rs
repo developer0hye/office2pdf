@@ -599,6 +599,8 @@ pub(super) fn parse_shape_gradient_fill(
                                 color,
                             });
                         }
+                        // `parse_color_from_start` consumes the matching end tag too.
+                        depth = depth.saturating_sub(1);
                     }
                     _ => {}
                 }
@@ -681,6 +683,8 @@ pub(super) fn parse_effect_list(
                         if let Some(alpha) = parsed.alpha {
                             shdw_opacity = alpha;
                         }
+                        // `parse_color_from_start` consumes the matching end tag too.
+                        depth = depth.saturating_sub(1);
                     }
                     _ => {}
                 }

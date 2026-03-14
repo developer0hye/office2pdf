@@ -204,6 +204,86 @@ fn test_gradient_background_with_scheme_colors() {
 }
 
 #[test]
+fn test_gradient_filled_shape_keeps_following_siblings() {
+    let before = make_text_box(0, 0, 2_000_000, 600_000, "Before");
+    let gradient_shape = concat!(
+        r#"<p:sp><p:nvSpPr><p:cNvPr id="30" name="GradientShape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>"#,
+        r#"<p:spPr><a:xfrm><a:off x="0" y="800000"/><a:ext cx="3000000" cy="1200000"/></a:xfrm>"#,
+        r#"<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>"#,
+        r#"<a:gradFill flip="none" rotWithShape="1"><a:gsLst>"#,
+        r#"<a:gs pos="0"><a:srgbClr val="367482"/></a:gs>"#,
+        r#"<a:gs pos="100000"><a:srgbClr val="306572"/></a:gs>"#,
+        r#"</a:gsLst><a:lin ang="5400000" scaled="1"/><a:tileRect/></a:gradFill>"#,
+        r#"</p:spPr></p:sp>"#
+    )
+    .to_string();
+    let after = make_text_box(0, 2_400_000, 2_500_000, 600_000, "After");
+    let slide = make_slide_xml(&[before, gradient_shape, after]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    assert_eq!(
+        page.elements.len(),
+        3,
+        "Gradient-filled shapes must not consume later siblings: {:#?}",
+        page.elements
+    );
+
+    let last_text = match &page.elements[2].kind {
+        FixedElementKind::TextBox(text_box) => match &text_box.content[0] {
+            Block::Paragraph(paragraph) => paragraph.runs[0].text.clone(),
+            other => panic!("Expected paragraph block, got {other:?}"),
+        },
+        other => panic!("Expected final sibling text box, got {other:?}"),
+    };
+    assert_eq!(last_text, "After");
+}
+
+#[test]
+fn test_gradient_text_shape_with_style_keeps_following_siblings() {
+    let before = make_text_box(0, 0, 2_000_000, 600_000, "Before");
+    let gradient_text_shape = concat!(
+        r#"<p:sp><p:nvSpPr><p:cNvPr id="31" name="StyledGradientShape"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>"#,
+        r#"<p:spPr><a:xfrm flipV="1"><a:off x="0" y="800000"/><a:ext cx="3000000" cy="200000"/></a:xfrm>"#,
+        r#"<a:prstGeom prst="trapezoid"><a:avLst/></a:prstGeom>"#,
+        r#"<a:gradFill flip="none" rotWithShape="1"><a:gsLst>"#,
+        r#"<a:gs pos="0"><a:srgbClr val="FFFFFF"><a:alpha val="70000"/></a:srgbClr></a:gs>"#,
+        r#"<a:gs pos="76000"><a:srgbClr val="FFFFFF"><a:alpha val="29000"/></a:srgbClr></a:gs>"#,
+        r#"<a:gs pos="92000"><a:srgbClr val="FFFFFF"><a:alpha val="0"/></a:srgbClr></a:gs>"#,
+        r#"</a:gsLst><a:lin ang="16200000" scaled="1"/><a:tileRect/></a:gradFill><a:ln><a:noFill/></a:ln></p:spPr>"#,
+        r#"<p:style><a:lnRef idx="2"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style>"#,
+        r#"<p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="en-US"/></a:p></p:txBody></p:sp>"#
+    )
+    .to_string();
+    let after = make_text_box(0, 1_400_000, 2_500_000, 600_000, "After");
+    let slide = make_slide_xml(&[before, gradient_text_shape, after]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    assert_eq!(
+        page.elements.len(),
+        3,
+        "Styled gradient text shapes must not consume later siblings: {:#?}",
+        page.elements
+    );
+
+    let last_text = match &page.elements[2].kind {
+        FixedElementKind::TextBox(text_box) => match &text_box.content[0] {
+            Block::Paragraph(paragraph) => paragraph.runs[0].text.clone(),
+            other => panic!("Expected paragraph block, got {other:?}"),
+        },
+        other => panic!("Expected final sibling text box, got {other:?}"),
+    };
+    assert_eq!(last_text, "After");
+}
+
+#[test]
 fn test_solid_background_no_gradient() {
     let bg_xml =
         r#"<p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFCC00"/></a:solidFill></p:bgPr></p:bg>"#;
