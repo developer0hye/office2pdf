@@ -133,18 +133,35 @@ pub(super) fn generate_runs_with_tabs_no_wrap(
     runs: &[Run],
     tab_stops: Option<&[TabStop]>,
 ) {
+    let preserve_cjk_no_wrap: bool = runs
+        .iter()
+        .filter(|run| run.footnote.is_none())
+        .any(|run| run.text.chars().any(is_cjk_like));
+    let mut no_wrap_state: NoWrapState = NoWrapState::default();
     let transformed_runs: Vec<Run> = runs
         .iter()
         .map(|run| {
             let mut transformed_run: Run = run.clone();
             if transformed_run.footnote.is_none() {
-                transformed_run.text = no_wrap_text(&transformed_run.text);
+                transformed_run.text = no_wrap_text(
+                    &transformed_run.text,
+                    preserve_cjk_no_wrap,
+                    &mut no_wrap_state,
+                );
+            } else {
+                no_wrap_state = NoWrapState::default();
             }
             transformed_run
         })
         .collect();
 
     generate_runs_with_tabs(out, &transformed_runs, tab_stops);
+}
+
+#[derive(Clone, Copy, Default)]
+struct NoWrapState {
+    previous_visible_char: Option<char>,
+    previous_non_breaking_space: bool,
 }
 
 /// Emits Typst variable bindings for a non-first tab segment: measurement,
@@ -208,29 +225,44 @@ pub(super) fn generate_runs(out: &mut String, runs: &[Run]) {
     }
 }
 
-fn no_wrap_text(text: &str) -> String {
+fn no_wrap_text(text: &str, preserve_cjk_no_wrap: bool, state: &mut NoWrapState) -> String {
+    if !preserve_cjk_no_wrap {
+        return text.to_string();
+    }
+
     let mut out: String = String::new();
-    let mut previous_visible_char: Option<char> = None;
 
     for ch in text.chars() {
         if matches!(ch, '\t' | PPTX_SOFT_LINE_BREAK_CHAR) {
             out.push(ch);
-            previous_visible_char = None;
+            *state = NoWrapState::default();
             continue;
         }
 
-        if previous_visible_char.is_some_and(|prev| needs_cjk_no_wrap_joiner(prev, ch)) {
+        if ch == ' ' {
+            out.push('\u{00A0}');
+            state.previous_visible_char = None;
+            state.previous_non_breaking_space = true;
+            continue;
+        }
+
+        if state.previous_non_breaking_space
+            || state
+                .previous_visible_char
+                .is_some_and(|prev| needs_no_wrap_joiner(prev, ch))
+        {
             out.push('\u{2060}');
         }
         out.push(ch);
-        previous_visible_char = (!ch.is_whitespace()).then_some(ch);
+        state.previous_visible_char = Some(ch);
+        state.previous_non_breaking_space = false;
     }
 
     out
 }
 
-fn needs_cjk_no_wrap_joiner(previous: char, current: char) -> bool {
-    is_cjk_like(previous) && is_cjk_like(current)
+fn needs_no_wrap_joiner(previous: char, current: char) -> bool {
+    !previous.is_whitespace() && !current.is_whitespace()
 }
 
 fn is_cjk_like(ch: char) -> bool {
