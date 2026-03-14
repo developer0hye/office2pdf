@@ -1086,6 +1086,8 @@ fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(
         Some(Alignment::Center) | Some(Alignment::Right) | Some(Alignment::Left)
     );
 
+    // Use #block(width: 100%)[#set align(...); content] to ensure alignment
+    // works reliably inside #context + measure() vertical centering.
     if use_align {
         let align_str = match alignment {
             Some(Alignment::Left) => "left",
@@ -1093,7 +1095,7 @@ fn generate_fixed_text_paragraph(out: &mut String, para: &Paragraph) -> Result<(
             Some(Alignment::Right) => "right",
             _ => "left",
         };
-        let _ = write!(out, "#align({align_str})[");
+        let _ = write!(out, "#block(width: 100%)[#set align({align_str})\n");
     }
 
     generate_runs_with_tabs(out, &para.runs, style.tab_stops.as_deref());

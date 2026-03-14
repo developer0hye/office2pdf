@@ -507,8 +507,8 @@ fn test_split_textbox_preserves_alignment() {
     // Verify Typst output contains #align(center)
     let typst_output = crate::render::typst_gen::generate_typst(&doc).unwrap();
     assert!(
-        typst_output.source.contains("#align(center)"),
-        "Typst output should contain #align(center) for centered paragraph, got:\n{}",
+        typst_output.source.contains("#set align(center)"),
+        "Typst output should contain #set align(center) for centered paragraph, got:\n{}",
         typst_output.source,
     );
 }
