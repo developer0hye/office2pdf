@@ -119,6 +119,36 @@ fn test_slide_table_scales_geometry_to_graphic_frame_extent() {
 }
 
 #[test]
+fn test_slide_table_preserves_row_heights_for_fixed_page_rendering() {
+    let rows_xml = format!(
+        "{}{}",
+        make_table_row(&["A1", "B1"]),
+        make_table_row(&["A2", "B2"]),
+    );
+    let table_frame = make_table_graphic_frame(
+        914400,
+        914400,
+        3_657_600,
+        1_483_360,
+        &[914_400, 914_400],
+        &rows_xml,
+    );
+    let slide = make_slide_xml(&[table_frame]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let table = table_element(&page.elements[0]);
+
+    assert!(
+        !table.use_content_driven_row_heights,
+        "Fixed-page PPT tables should preserve source row heights",
+    );
+}
+
+#[test]
 fn test_slide_table_reads_column_widths_from_gridcol_with_extensions() {
     let rows_xml = make_table_row(&["A1", "B1"]);
     let table_frame = r#"<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Table"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="0" y="0"/><a:ext cx="1828800" cy="370840"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr/><a:tblGrid><a:gridCol w="914400"><a:extLst><a:ext uri="{9D8B030D-6E8A-4147-A177-3AD203B41FA5}"><a16:colId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" val="1"/></a:ext></a:extLst></a:gridCol><a:gridCol w="914400"><a:extLst><a:ext uri="{9D8B030D-6E8A-4147-A177-3AD203B41FA5}"><a16:colId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" val="2"/></a:ext></a:extLst></a:gridCol></a:tblGrid>"#.to_string()
@@ -222,7 +252,7 @@ fn test_slide_table_uses_powerpoint_default_cell_padding() {
         })
     );
     assert_eq!(table.rows[0].cells[0].padding, None);
-    assert!(table.use_content_driven_row_heights);
+    assert!(!table.use_content_driven_row_heights);
 }
 
 #[test]

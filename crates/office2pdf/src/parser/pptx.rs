@@ -42,6 +42,8 @@ use self::theme::{
 
 #[path = "pptx_package.rs"]
 mod package;
+#[path = "pptx_emf.rs"]
+mod emf;
 #[path = "pptx_shapes.rs"]
 mod shapes;
 #[path = "pptx_slides.rs"]

@@ -33,6 +33,206 @@ fn make_test_svg() -> Vec<u8> {
     br##"<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" fill="#ff0000"/></svg>"##.to_vec()
 }
 
+fn append_u32(out: &mut Vec<u8>, value: u32) {
+    out.extend_from_slice(&value.to_le_bytes());
+}
+
+fn append_i32(out: &mut Vec<u8>, value: i32) {
+    out.extend_from_slice(&value.to_le_bytes());
+}
+
+fn append_i16(out: &mut Vec<u8>, value: i16) {
+    out.extend_from_slice(&value.to_le_bytes());
+}
+
+fn push_emf_record(out: &mut Vec<u8>, record_type: u32, body: &[u8]) {
+    append_u32(out, record_type);
+    append_u32(out, (body.len() + 8) as u32);
+    out.extend_from_slice(body);
+}
+
+fn make_test_emf_polybezier_fill() -> Vec<u8> {
+    let mut emf = Vec::new();
+
+    push_emf_record(&mut emf, 1, &[]);
+
+    let mut window_org = Vec::new();
+    append_i32(&mut window_org, 0);
+    append_i32(&mut window_org, 0);
+    push_emf_record(&mut emf, 10, &window_org);
+    push_emf_record(&mut emf, 12, &window_org);
+
+    let mut window_ext = Vec::new();
+    append_i32(&mut window_ext, 100);
+    append_i32(&mut window_ext, 100);
+    push_emf_record(&mut emf, 9, &window_ext);
+    push_emf_record(&mut emf, 11, &window_ext);
+
+    let mut polyfill = Vec::new();
+    append_u32(&mut polyfill, 2);
+    push_emf_record(&mut emf, 19, &polyfill);
+
+    let mut brush = Vec::new();
+    append_u32(&mut brush, 1);
+    append_u32(&mut brush, 0);
+    append_u32(&mut brush, 0x0000FF);
+    append_u32(&mut brush, 0);
+    push_emf_record(&mut emf, 39, &brush);
+
+    let mut select_brush = Vec::new();
+    append_u32(&mut select_brush, 1);
+    push_emf_record(&mut emf, 37, &select_brush);
+
+    let mut pen = Vec::new();
+    append_u32(&mut pen, 2);
+    append_u32(&mut pen, 44);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 44);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 5);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 0);
+    push_emf_record(&mut emf, 95, &pen);
+
+    let mut select_pen = Vec::new();
+    append_u32(&mut select_pen, 2);
+    push_emf_record(&mut emf, 37, &select_pen);
+
+    push_emf_record(&mut emf, 59, &[]);
+
+    let mut move_to = Vec::new();
+    append_i32(&mut move_to, 10);
+    append_i32(&mut move_to, 10);
+    push_emf_record(&mut emf, 27, &move_to);
+
+    let mut bezier = Vec::new();
+    append_i32(&mut bezier, 10);
+    append_i32(&mut bezier, 10);
+    append_i32(&mut bezier, 90);
+    append_i32(&mut bezier, 90);
+    append_u32(&mut bezier, 12);
+    for (x, y) in [
+        (10, 10),
+        (90, 10),
+        (90, 10),
+        (90, 10),
+        (90, 90),
+        (90, 90),
+        (90, 90),
+        (10, 90),
+        (10, 90),
+        (10, 90),
+        (10, 10),
+        (10, 10),
+    ] {
+        append_i16(&mut bezier, x);
+        append_i16(&mut bezier, y);
+    }
+    push_emf_record(&mut emf, 88, &bezier);
+
+    push_emf_record(&mut emf, 61, &[]);
+    push_emf_record(&mut emf, 60, &[]);
+
+    let mut fill_path = Vec::new();
+    append_i32(&mut fill_path, 10);
+    append_i32(&mut fill_path, 10);
+    append_i32(&mut fill_path, 90);
+    append_i32(&mut fill_path, 90);
+    push_emf_record(&mut emf, 62, &fill_path);
+
+    let mut delete_brush = Vec::new();
+    append_u32(&mut delete_brush, 1);
+    push_emf_record(&mut emf, 40, &delete_brush);
+
+    let mut delete_pen = Vec::new();
+    append_u32(&mut delete_pen, 2);
+    push_emf_record(&mut emf, 40, &delete_pen);
+
+    let mut eof = Vec::new();
+    append_u32(&mut eof, 0);
+    append_u32(&mut eof, 0);
+    append_u32(&mut eof, 0);
+    push_emf_record(&mut emf, 14, &eof);
+
+    emf
+}
+
+fn make_test_emf_polypolygon_fill() -> Vec<u8> {
+    let mut emf = Vec::new();
+
+    push_emf_record(&mut emf, 1, &[]);
+
+    let mut window_org = Vec::new();
+    append_i32(&mut window_org, 0);
+    append_i32(&mut window_org, 0);
+    push_emf_record(&mut emf, 10, &window_org);
+    push_emf_record(&mut emf, 12, &window_org);
+
+    let mut window_ext = Vec::new();
+    append_i32(&mut window_ext, 100);
+    append_i32(&mut window_ext, 100);
+    push_emf_record(&mut emf, 9, &window_ext);
+    push_emf_record(&mut emf, 11, &window_ext);
+
+    let mut polyfill = Vec::new();
+    append_u32(&mut polyfill, 1);
+    push_emf_record(&mut emf, 19, &polyfill);
+
+    let mut brush = Vec::new();
+    append_u32(&mut brush, 1);
+    append_u32(&mut brush, 0);
+    append_u32(&mut brush, 0x00FF00);
+    append_u32(&mut brush, 0);
+    push_emf_record(&mut emf, 39, &brush);
+
+    let mut select_brush = Vec::new();
+    append_u32(&mut select_brush, 1);
+    push_emf_record(&mut emf, 37, &select_brush);
+
+    let mut pen = Vec::new();
+    append_u32(&mut pen, 2);
+    append_u32(&mut pen, 44);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 44);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 5);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 0);
+    append_u32(&mut pen, 0);
+    push_emf_record(&mut emf, 95, &pen);
+
+    let mut select_pen = Vec::new();
+    append_u32(&mut select_pen, 2);
+    push_emf_record(&mut emf, 37, &select_pen);
+
+    let mut poly_polygon = Vec::new();
+    append_i32(&mut poly_polygon, 10);
+    append_i32(&mut poly_polygon, 10);
+    append_i32(&mut poly_polygon, 90);
+    append_i32(&mut poly_polygon, 90);
+    append_u32(&mut poly_polygon, 1);
+    append_u32(&mut poly_polygon, 4);
+    append_u32(&mut poly_polygon, 4);
+    for (x, y) in [(10, 10), (90, 10), (90, 90), (10, 90)] {
+        append_i16(&mut poly_polygon, x);
+        append_i16(&mut poly_polygon, y);
+    }
+    push_emf_record(&mut emf, 91, &poly_polygon);
+
+    let mut eof = Vec::new();
+    append_u32(&mut eof, 0);
+    append_u32(&mut eof, 0);
+    append_u32(&mut eof, 0);
+    push_emf_record(&mut emf, 14, &eof);
+
+    emf
+}
+
 /// Create a picture XML element referencing an image via relationship ID.
 pub(super) fn make_pic_xml(x: i64, y: i64, cx: i64, cy: i64, r_embed: &str) -> String {
     make_custom_pic_xml(
@@ -219,6 +419,64 @@ fn test_image_format_detection() {
     let page = first_fixed_page(&doc);
     let img = get_image(&page.elements[0]);
     assert_eq!(img.format, ImageFormat::Bmp);
+}
+
+#[test]
+fn test_emf_polybezier_image_is_converted_to_svg() {
+    let emf_data = make_test_emf_polybezier_fill();
+    let pic = make_pic_xml(0, 0, 1_000_000, 1_000_000, "rId3");
+    let slide_xml = make_slide_xml(&[pic]);
+    let slide_images = vec![TestSlideImage {
+        rid: "rId3".to_string(),
+        path: "../media/image1.emf".to_string(),
+        data: emf_data,
+        relationship_type: None,
+    }];
+    let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
+    let parser = PptxParser;
+    let (doc, warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert!(
+        warnings.is_empty(),
+        "Expected EMF image to convert without warnings, got: {warnings:?}"
+    );
+
+    let page = first_fixed_page(&doc);
+    let img = get_image(&page.elements[0]);
+    assert_eq!(img.format, ImageFormat::Svg);
+    let svg = String::from_utf8_lossy(&img.data);
+    assert!(svg.contains("<svg"));
+    assert!(svg.contains("<path"));
+    assert!(svg.contains("fill=\"#ff0000\""));
+}
+
+#[test]
+fn test_emf_polypolygon_image_is_converted_to_svg() {
+    let emf_data = make_test_emf_polypolygon_fill();
+    let pic = make_pic_xml(0, 0, 1_000_000, 1_000_000, "rId3");
+    let slide_xml = make_slide_xml(&[pic]);
+    let slide_images = vec![TestSlideImage {
+        rid: "rId3".to_string(),
+        path: "../media/image1.emf".to_string(),
+        data: emf_data,
+        relationship_type: None,
+    }];
+    let data = build_test_pptx_with_images(SLIDE_CX, SLIDE_CY, &[(slide_xml, slide_images)]);
+    let parser = PptxParser;
+    let (doc, warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert!(
+        warnings.is_empty(),
+        "Expected EMF image to convert without warnings, got: {warnings:?}"
+    );
+
+    let page = first_fixed_page(&doc);
+    let img = get_image(&page.elements[0]);
+    assert_eq!(img.format, ImageFormat::Svg);
+    let svg = String::from_utf8_lossy(&img.data);
+    assert!(svg.contains("<svg"));
+    assert!(svg.contains("<path"));
+    assert!(svg.contains("fill=\"#00ff00\""));
 }
 
 #[test]

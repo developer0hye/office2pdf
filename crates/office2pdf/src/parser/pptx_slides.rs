@@ -852,6 +852,9 @@ impl<'a> SlideXmlParser<'a> {
                         emu_to_pt(self.gf.cx),
                         emu_to_pt(self.gf.cy),
                     );
+                    // Fixed-position PPT tables have explicit row geometry from the slide frame.
+                    // Keeping Typst in content-driven mode compresses side panels like slide 30.
+                    table.use_content_driven_row_heights = false;
                     self.elements.push(FixedElement {
                         x: emu_to_pt(self.gf.x),
                         y: emu_to_pt(self.gf.y),
