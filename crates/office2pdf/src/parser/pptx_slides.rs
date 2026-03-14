@@ -422,6 +422,12 @@ struct ShapeState {
     adj_values: Vec<f64>,
     /// Fallback line color from `<p:style><a:lnRef>` scheme reference.
     style_ln_color: Option<Color>,
+    /// Fallback fill color from `<p:style><a:fillRef>` scheme reference.
+    style_fill_color: Option<Color>,
+    /// Fallback text color from `<p:style><a:fontRef>` scheme reference.
+    style_font_color: Option<Color>,
+    /// True when `<a:noFill/>` is explicitly set in `<p:spPr>`, preventing style fallback.
+    explicit_no_fill: bool,
 }
 
 impl Default for ShapeState {
@@ -451,6 +457,9 @@ impl Default for ShapeState {
             tail_end: ArrowHead::None,
             adj_values: Vec::new(),
             style_ln_color: None,
+            style_fill_color: None,
+            style_font_color: None,
+            explicit_no_fill: false,
         }
     }
 }
@@ -464,38 +473,110 @@ impl ShapeState {
 // ── Finalization helpers ────────────────────────────────────────────────
 
 /// Finalize a shape element when `</p:sp>` is reached.
-/// Returns either a TextBox (if the shape has text) or a Shape geometry element.
+/// Returns elements to add: for shapes with text AND non-rectangular geometry,
+/// returns two elements (shape background + transparent text overlay).
 fn finalize_shape(
     shape: &mut ShapeState,
     paragraphs: &mut Vec<PptxParagraphEntry>,
     text_box_padding: Insets,
     text_box_vertical_align: TextBoxVerticalAlign,
-) -> Option<FixedElement> {
+) -> Vec<FixedElement> {
+    // Resolve effective fill: explicit > noFill > style fallback.
+    let effective_fill: Option<Color> = if shape.fill.is_some() {
+        shape.fill
+    } else if shape.explicit_no_fill {
+        None
+    } else {
+        shape.style_fill_color
+    };
+
     let has_text = paragraphs
         .iter()
         .any(|entry| !entry.paragraph.runs.is_empty());
 
     if has_text {
         let blocks: Vec<Block> = group_pptx_text_blocks(std::mem::take(paragraphs));
-        let stroke: Option<BorderSide> = shape.ln_color.map(|color| BorderSide {
+        // Use explicit line color, falling back to style-based color from <p:style><a:lnRef>.
+        let effective_ln_color: Option<Color> = shape.ln_color.or(shape.style_ln_color);
+        let stroke: Option<BorderSide> = effective_ln_color.map(|color| BorderSide {
             width: emu_to_pt(shape.ln_width_emu),
             color,
             style: shape.ln_dash_style,
         });
-        Some(FixedElement {
-            x: emu_to_pt(shape.x),
-            y: emu_to_pt(shape.y),
-            width: emu_to_pt(shape.cx),
-            height: emu_to_pt(shape.cy),
-            kind: FixedElementKind::TextBox(TextBoxData {
-                content: blocks,
-                padding: text_box_padding,
-                vertical_align: text_box_vertical_align,
-                fill: shape.fill,
-                opacity: shape.opacity,
-                stroke,
-            }),
-        })
+        // For non-rectangular shapes with text, emit the shape background first,
+        // then overlay a transparent text box. This ensures the geometry is rendered
+        // by the proven shape renderer.
+        let text_shape_kind: Option<ShapeKind> = shape.prst_geom.as_deref().and_then(|geom| {
+            let width: f64 = emu_to_pt(shape.cx);
+            let height: f64 = emu_to_pt(shape.cy);
+            let kind: ShapeKind = prst_to_shape_kind(
+                geom,
+                width,
+                height,
+                shape.flip_h,
+                shape.flip_v,
+                shape.head_end,
+                shape.tail_end,
+                &shape.adj_values,
+            );
+            match kind {
+                ShapeKind::Rectangle => None,
+                other => Some(other),
+            }
+        });
+        let mut elements: Vec<FixedElement> = Vec::new();
+        if let Some(kind) = text_shape_kind {
+            // Shape background element (fill + stroke + geometry)
+            elements.push(FixedElement {
+                x: emu_to_pt(shape.x),
+                y: emu_to_pt(shape.y),
+                width: emu_to_pt(shape.cx),
+                height: emu_to_pt(shape.cy),
+                kind: FixedElementKind::Shape(Shape {
+                    kind,
+                    fill: effective_fill,
+                    gradient_fill: shape.gradient_fill.take(),
+                    stroke: stroke.clone(),
+                    rotation_deg: shape.rotation_deg,
+                    opacity: shape.opacity,
+                    shadow: shape.shadow.take(),
+                }),
+            });
+            // Transparent text overlay (no fill, no stroke)
+            elements.push(FixedElement {
+                x: emu_to_pt(shape.x),
+                y: emu_to_pt(shape.y),
+                width: emu_to_pt(shape.cx),
+                height: emu_to_pt(shape.cy),
+                kind: FixedElementKind::TextBox(TextBoxData {
+                    content: blocks,
+                    padding: text_box_padding,
+                    vertical_align: text_box_vertical_align,
+                    fill: None,
+                    opacity: None,
+                    stroke: None,
+                    shape_kind: None,
+                }),
+            });
+        } else {
+            // Simple rectangular text box with fill/stroke directly on the block.
+            elements.push(FixedElement {
+                x: emu_to_pt(shape.x),
+                y: emu_to_pt(shape.y),
+                width: emu_to_pt(shape.cx),
+                height: emu_to_pt(shape.cy),
+                kind: FixedElementKind::TextBox(TextBoxData {
+                    content: blocks,
+                    padding: text_box_padding,
+                    vertical_align: text_box_vertical_align,
+                    fill: effective_fill,
+                    opacity: shape.opacity,
+                    stroke,
+                    shape_kind: None,
+                }),
+            });
+        }
+        elements
     } else if let Some(ref geom) = shape.prst_geom {
         let width: f64 = emu_to_pt(shape.cx);
         let height: f64 = emu_to_pt(shape.cy);
@@ -516,23 +597,23 @@ fn finalize_shape(
             color,
             style: shape.ln_dash_style,
         });
-        Some(FixedElement {
+        vec![FixedElement {
             x: emu_to_pt(shape.x),
             y: emu_to_pt(shape.y),
             width,
             height,
             kind: FixedElementKind::Shape(Shape {
                 kind,
-                fill: shape.fill,
+                fill: effective_fill,
                 gradient_fill: shape.gradient_fill.take(),
                 stroke,
                 rotation_deg: shape.rotation_deg,
                 opacity: shape.opacity,
                 shadow: shape.shadow.take(),
             }),
-        })
+        }]
     } else {
-        None
+        Vec::new()
     }
 }
 
@@ -656,6 +737,10 @@ struct SlideXmlParser<'a> {
     solid_fill_ctx: SolidFillCtx,
     /// Inside `<a:lnRef>` within `<p:style>` — for resolving fallback line color.
     in_style_ln_ref: bool,
+    /// Inside `<a:fillRef>` within `<p:style>` — for resolving fallback fill color.
+    in_style_fill_ref: bool,
+    /// Inside `<a:fontRef>` within `<p:style>` — for resolving fallback text color.
+    in_style_font_ref: bool,
 
     // ── Picture state (`<p:pic>`) ───────────────────────────────────
     in_pic: bool,
@@ -715,6 +800,8 @@ impl<'a> SlideXmlParser<'a> {
             in_end_para_rpr: false,
             solid_fill_ctx: SolidFillCtx::None,
             in_style_ln_ref: false,
+            in_style_fill_ref: false,
+            in_style_font_ref: false,
 
             in_pic: false,
             pic: PictureState::default(),
@@ -798,6 +885,9 @@ impl<'a> SlideXmlParser<'a> {
                     self.shape.prst_geom = Some(prst);
                 }
             }
+            b"noFill" if self.shape.in_sp_pr && !self.shape.in_ln && !self.in_rpr => {
+                self.shape.explicit_no_fill = true;
+            }
             b"solidFill" if self.shape.in_sp_pr && !self.shape.in_ln && !self.in_rpr => {
                 self.solid_fill_ctx = SolidFillCtx::ShapeFill;
             }
@@ -843,6 +933,11 @@ impl<'a> SlideXmlParser<'a> {
                 } else {
                     self.inherited_text_body_defaults.clone()
                 };
+                // Apply fontRef default text color from <p:style> to all text levels,
+                // overriding inherited layout/master defaults.
+                if let Some(color) = self.shape.style_font_color {
+                    self.text_body_style_defaults.apply_default_color(color);
+                }
             }
             b"bodyPr" if self.in_shape && self.in_txbody => {
                 extract_pptx_text_box_body_props(
@@ -975,6 +1070,14 @@ impl<'a> SlideXmlParser<'a> {
             b"lnRef" if self.in_shape && !self.shape.in_sp_pr && !self.in_txbody => {
                 self.in_style_ln_ref = true;
             }
+            // `<a:fillRef>` inside `<p:style>` provides fallback fill color.
+            b"fillRef" if self.in_shape && !self.shape.in_sp_pr && !self.in_txbody => {
+                self.in_style_fill_ref = true;
+            }
+            // `<a:fontRef>` inside `<p:style>` provides fallback text color.
+            b"fontRef" if self.in_shape && !self.shape.in_sp_pr && !self.in_txbody => {
+                self.in_style_font_ref = true;
+            }
             b"t" if self.in_run => {
                 self.in_text = true;
             }
@@ -1099,6 +1202,18 @@ impl<'a> SlideXmlParser<'a> {
                     self.shape.adj_values.push(val);
                 }
             }
+            // `<a:noFill/>` inside `<p:spPr>` (not inside `<a:ln>`) explicitly disables fill.
+            b"noFill" if self.shape.in_sp_pr && !self.shape.in_ln => {
+                self.shape.explicit_no_fill = true;
+            }
+            b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_font_ref => {
+                let parsed = parse_color_from_empty(e, self.theme, self.color_map);
+                self.shape.style_font_color = parsed.color;
+            }
+            b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_fill_ref => {
+                let parsed = parse_color_from_empty(e, self.theme, self.color_map);
+                self.shape.style_fill_color = parsed.color;
+            }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_ln_ref => {
                 let parsed = parse_color_from_empty(e, self.theme, self.color_map);
                 self.shape.style_ln_color = parsed.color;
@@ -1213,14 +1328,12 @@ impl<'a> SlideXmlParser<'a> {
             b"sp" | b"cxnSp" if self.in_shape => {
                 self.shape.depth -= 1;
                 if self.shape.depth == 0 {
-                    if let Some(element) = finalize_shape(
+                    self.elements.extend(finalize_shape(
                         &mut self.shape,
                         &mut self.paragraphs,
                         self.text_box_padding,
                         self.text_box_vertical_align,
-                    ) {
-                        self.elements.push(element);
-                    }
+                    ));
                     self.in_shape = false;
                 }
             }
@@ -1282,6 +1395,12 @@ impl<'a> SlideXmlParser<'a> {
             }
             b"lnRef" if self.in_style_ln_ref => {
                 self.in_style_ln_ref = false;
+            }
+            b"fillRef" if self.in_style_fill_ref => {
+                self.in_style_fill_ref = false;
+            }
+            b"fontRef" if self.in_style_font_ref => {
+                self.in_style_font_ref = false;
             }
             b"t" if self.in_text => {
                 self.in_text = false;

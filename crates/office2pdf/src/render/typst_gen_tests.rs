@@ -83,6 +83,7 @@ fn make_text_box(x: f64, y: f64, w: f64, h: f64, text: &str) -> FixedElement {
             fill: None,
             opacity: None,
             stroke: None,
+            shape_kind: None,
         }),
     }
 }
@@ -135,6 +136,7 @@ fn make_fixed_text_box(
             fill: None,
             opacity: None,
             stroke: None,
+            shape_kind: None,
         }),
     }
 }

@@ -146,6 +146,9 @@ pub struct TextBoxData {
     pub opacity: Option<f64>,
     /// Border stroke for the text box.
     pub stroke: Option<BorderSide>,
+    /// Shape geometry when the text box originates from a non-rectangular shape
+    /// (e.g., `roundRect`, `homePlate`). `None` means default rectangle.
+    pub shape_kind: Option<ShapeKind>,
 }
 
 /// The kind of list: ordered (numbered) or unordered (bulleted).

@@ -282,6 +282,22 @@ pub(super) fn prst_to_shape_kind(
         "roundRect" => ShapeKind::RoundedRectangle {
             radius_fraction: 0.1,
         },
+        // homePlate: pentagon arrow tab (rect with pointed right edge)
+        "homePlate" => {
+            let adj: f64 = adj_values.first().copied().unwrap_or(50_000.0);
+            let ss: f64 = width.min(height);
+            let dx: f64 = (adj / 100_000.0 * ss).min(width);
+            let notch_x: f64 = (width - dx) / width;
+            ShapeKind::Polygon {
+                vertices: vec![
+                    (0.0, 0.0),
+                    (notch_x, 0.0),
+                    (1.0, 0.5),
+                    (notch_x, 1.0),
+                    (0.0, 1.0),
+                ],
+            }
+        }
         "triangle" => ShapeKind::Polygon {
             vertices: vec![(0.5, 0.0), (1.0, 1.0), (0.0, 1.0)],
         },

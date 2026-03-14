@@ -95,6 +95,7 @@ fn test_fixed_page_text_box_multiple_paragraphs_preserve_breaks() {
                 fill: None,
                 opacity: None,
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -175,6 +176,7 @@ fn test_fixed_page_text_box_ordered_list_preserves_textbox_styling() {
                 fill: None,
                 opacity: None,
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -260,6 +262,7 @@ fn test_fixed_page_text_box_compact_list_items_use_full_width_blocks() {
                 fill: None,
                 opacity: None,
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -319,6 +322,7 @@ fn test_fixed_page_text_box_compact_list_preserves_hanging_indent() {
                 fill: None,
                 opacity: None,
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -385,6 +389,7 @@ fn test_fixed_page_text_box_compact_list_preserves_marker_origin_offset() {
                 fill: None,
                 opacity: None,
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -454,6 +459,7 @@ fn test_fixed_page_text_box_compact_bulleted_list_uses_custom_marker_style() {
                 fill: None,
                 opacity: None,
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -549,6 +555,7 @@ fn test_fixed_page_text_box_dash_bullets_use_generic_list_path() {
                 fill: None,
                 opacity: None,
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -605,6 +612,7 @@ fn test_fixed_page_text_box_compact_list_preserves_soft_line_breaks() {
                 fill: None,
                 opacity: None,
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -656,6 +664,7 @@ fn test_fixed_page_text_box_with_solid_fill() {
                 }),
                 opacity: None,
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -700,6 +709,7 @@ fn test_fixed_page_text_box_with_fill_and_stroke() {
                     color: Color { r: 0, g: 0, b: 0 },
                     style: BorderLineStyle::Solid,
                 }),
+                shape_kind: None,
             }),
         }],
     )]);
@@ -745,6 +755,7 @@ fn test_fixed_page_text_box_with_fill_and_opacity() {
                 }),
                 opacity: Some(0.5),
                 stroke: None,
+                shape_kind: None,
             }),
         }],
     )]);
@@ -753,6 +764,73 @@ fn test_fixed_page_text_box_with_fill_and_opacity() {
         output.source.contains("fill: rgb(255, 255, 255, 128)"),
         "Expected fill with alpha in output, got:\n{}",
         output.source,
+    );
+}
+
+#[test]
+fn test_fixed_page_text_box_with_polygon_shape_kind() {
+    let doc = make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 50.0,
+            y: 80.0,
+            width: 200.0,
+            height: 60.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Arrow Tab".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                    }],
+                })],
+                padding: Insets {
+                    top: 3.6,
+                    right: 7.2,
+                    bottom: 3.6,
+                    left: 7.2,
+                },
+                vertical_align: crate::ir::TextBoxVerticalAlign::Center,
+                fill: Some(Color { r: 0, g: 37, b: 154 }),
+                opacity: None,
+                stroke: None,
+                shape_kind: Some(ShapeKind::Polygon {
+                    vertices: vec![
+                        (0.0, 0.0),
+                        (0.85, 0.0),
+                        (1.0, 0.5),
+                        (0.85, 1.0),
+                        (0.0, 1.0),
+                    ],
+                }),
+            }),
+        }],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    // Should contain #polygon for the shape background
+    assert!(
+        output.source.contains("#polygon("),
+        "Expected polygon in output for non-rectangular text box, got:\n{}",
+        output.source,
+    );
+    // The fill should be on the polygon, not the block
+    assert!(
+        output.source.contains("fill: rgb(0, 37, 154)"),
+        "Expected fill color on polygon, got:\n{}",
+        output.source,
+    );
+    // Should NOT have fill on the block itself
+    let block_line = output
+        .source
+        .lines()
+        .find(|l| l.contains("#block("))
+        .expect("Expected #block line");
+    assert!(
+        !block_line.contains("fill:"),
+        "Block should not have fill when shape_kind is set, got:\n{block_line}",
     );
 }
 

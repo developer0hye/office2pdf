@@ -583,6 +583,7 @@ fn test_render_pptx_style_document_size() {
                     fill: None,
                     opacity: None,
                     stroke: None,
+                    shape_kind: None,
                 }),
             }],
         }));
@@ -640,6 +641,7 @@ fn test_render_document_with_centered_fixed_text_box() {
                     fill: None,
                     opacity: None,
                     stroke: None,
+                    shape_kind: None,
                 }),
             }],
         })],

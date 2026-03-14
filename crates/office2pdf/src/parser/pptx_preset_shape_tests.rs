@@ -307,6 +307,78 @@ fn test_shape_star6() {
 }
 
 #[test]
+fn test_shape_home_plate() {
+    // homePlate: pentagon arrow shape (rect with pointed right edge)
+    // Wide shape: cx=1980000 (wider than tall), cy=584391
+    let shape = make_shape(
+        0,
+        0,
+        1_980_000,
+        584_391,
+        "homePlate",
+        Some("00259A"),
+        None,
+        None,
+    );
+    let slide = make_slide_xml(&[shape]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let shape = get_shape(&page.elements[0]);
+    match &shape.kind {
+        ShapeKind::Polygon { vertices } => {
+            assert_eq!(vertices.len(), 5, "homePlate should have 5 vertices");
+            // First vertex is top-left (0, 0)
+            assert!(vertices[0].0.abs() < 0.01);
+            assert!(vertices[0].1.abs() < 0.01);
+            // Last vertex is bottom-left (0, 1)
+            assert!(vertices[4].0.abs() < 0.01);
+            assert!((vertices[4].1 - 1.0).abs() < 0.01);
+            // Middle vertex is the rightmost point at (1.0, 0.5)
+            assert!((vertices[2].0 - 1.0).abs() < 0.01);
+            assert!((vertices[2].1 - 0.5).abs() < 0.01);
+            // Arrow notch vertices should be between 0 and 1 on x
+            assert!(vertices[1].0 > 0.5 && vertices[1].0 < 1.0);
+            assert!(vertices[3].0 > 0.5 && vertices[3].0 < 1.0);
+        }
+        other => panic!("Expected Polygon for homePlate, got {other:?}"),
+    }
+    assert_eq!(shape.fill, Some(Color::new(0, 37, 154)));
+}
+
+#[test]
+fn test_shape_home_plate_square() {
+    // Square bounding box: the notch should be at x = 0.5
+    let shape = make_shape(
+        0,
+        0,
+        1_000_000,
+        1_000_000,
+        "homePlate",
+        None,
+        None,
+        None,
+    );
+    let slide = make_slide_xml(&[shape]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let shape = get_shape(&page.elements[0]);
+    match &shape.kind {
+        ShapeKind::Polygon { vertices } => {
+            assert_eq!(vertices.len(), 5);
+            // For square with default adj=50000: notch_x = 1.0 - 0.5 = 0.5
+            assert!((vertices[1].0 - 0.5).abs() < 0.01);
+        }
+        other => panic!("Expected Polygon for homePlate square, got {other:?}"),
+    }
+}
+
+#[test]
 fn test_unsupported_preset_falls_back_to_rectangle() {
     let shape = make_shape(
         0,

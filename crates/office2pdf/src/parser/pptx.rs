@@ -355,6 +355,16 @@ impl PptxTextBodyStyleDefaults {
         bullet
     }
 
+    /// Apply a default text color from `<p:style><a:fontRef>`.
+    /// This overrides inherited layout/master defaults because `fontRef` is
+    /// a shape-level style with higher precedence.
+    fn apply_default_color(&mut self, color: Color) {
+        self.default_run.color = Some(color);
+        for level_style in self.levels.values_mut() {
+            level_style.run.color = Some(color);
+        }
+    }
+
     fn merge_from(&mut self, overlay: &PptxTextBodyStyleDefaults) {
         self.default_paragraph
             .merge_from(&overlay.default_paragraph);

@@ -376,3 +376,95 @@ fn test_shape_shadow_default_opacity() {
         shadow.opacity
     );
 }
+
+// ── fillRef style fallback tests ─────────────────────────────────
+
+#[test]
+fn test_shape_fill_from_style_fill_ref() {
+    // Shape with no explicit fill, but <p:style><a:fillRef> referencing accent1.
+    // accent1 = #4472C4 in standard theme.
+    let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:ln><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></p:spPr><p:style><a:lnRef idx="2"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style></p:sp>"#.to_string();
+    let slide_xml = make_slide_xml(&[shape_xml]);
+
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri", "Calibri");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide_xml], &theme_xml);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let shape = get_shape(&page.elements[0]);
+    // accent1 = #4472C4
+    assert_eq!(
+        shape.fill,
+        Some(Color::new(0x44, 0x72, 0xC4)),
+        "Shape should get fill from fillRef accent1"
+    );
+}
+
+#[test]
+fn test_shape_explicit_fill_overrides_fill_ref() {
+    // Shape with explicit solidFill AND <p:style><a:fillRef>.
+    // Explicit fill should win.
+    let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></p:spPr><p:style><a:lnRef idx="2"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style></p:sp>"#.to_string();
+    let slide_xml = make_slide_xml(&[shape_xml]);
+
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri", "Calibri");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide_xml], &theme_xml);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let shape = get_shape(&page.elements[0]);
+    assert_eq!(
+        shape.fill,
+        Some(Color::new(255, 0, 0)),
+        "Explicit solidFill should override fillRef"
+    );
+}
+
+#[test]
+fn test_shape_no_fill_overrides_fill_ref() {
+    // Shape with explicit <a:noFill/> AND <p:style><a:fillRef>.
+    // noFill should prevent style fallback.
+    let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rect"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:style><a:lnRef idx="2"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style></p:sp>"#.to_string();
+    let slide_xml = make_slide_xml(&[shape_xml]);
+
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri", "Calibri");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide_xml], &theme_xml);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let shape = get_shape(&page.elements[0]);
+    assert_eq!(
+        shape.fill, None,
+        "noFill should prevent style fillRef fallback"
+    );
+}
+
+#[test]
+fn test_textbox_fill_from_style_fill_ref() {
+    // TextBox with roundRect (non-rectangular shape) and text gets split into
+    // two elements: Shape background (with fill) + transparent TextBox overlay.
+    let shape_xml = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="TextBox"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:ln><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></p:spPr><p:style><a:lnRef idx="2"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp>"#.to_string();
+    let slide_xml = make_slide_xml(&[shape_xml]);
+
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri", "Calibri");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide_xml], &theme_xml);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    // First element: Shape background with geometry and fill
+    assert_eq!(page.elements.len(), 2, "Expected Shape + TextBox pair");
+    let shape = get_shape(&page.elements[0]);
+    assert_eq!(
+        shape.fill,
+        Some(Color::new(0x44, 0x72, 0xC4)),
+        "Shape background should get fill from fillRef accent1"
+    );
+    assert!(matches!(shape.kind, ShapeKind::RoundedRectangle { .. }));
+    // Second element: Transparent text overlay
+    let tb = text_box_data(&page.elements[1]);
+    assert_eq!(tb.fill, None, "Text overlay should have no fill");
+}

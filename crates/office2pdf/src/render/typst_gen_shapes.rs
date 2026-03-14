@@ -408,3 +408,82 @@ fn write_arrowhead_at(
     );
     out.push_str(")]\n");
 }
+
+/// Render a non-rectangular shape background for a text box.
+///
+/// Emits a `#place(top + left)` overlay with the shape geometry, offset by
+/// negative insets so it covers the full bounding box (the text box block's
+/// coordinate origin is inside the inset).
+#[allow(clippy::too_many_arguments)]
+pub(super) fn write_text_box_shape_background(
+    out: &mut String,
+    shape_kind: &ShapeKind,
+    width: f64,
+    height: f64,
+    padding: &Insets,
+    fill: Option<&Color>,
+    opacity: Option<f64>,
+    stroke: &Option<BorderSide>,
+) {
+    // Offset the placed shape to compensate for the block's inset.
+    let _ = write!(
+        out,
+        "  #place(top + left, dx: -{}pt, dy: -{}pt)[",
+        format_f64(padding.left),
+        format_f64(padding.top),
+    );
+    match shape_kind {
+        ShapeKind::RoundedRectangle { radius_fraction } => {
+            let radius: f64 = radius_fraction * width.min(height);
+            let _ = write!(
+                out,
+                "#rect(width: {}pt, height: {}pt, radius: {}pt",
+                format_f64(width),
+                format_f64(height),
+                format_f64(radius),
+            );
+            if let Some(c) = fill {
+                write_fill_color(out, c, opacity);
+            }
+            write_shape_stroke(out, stroke);
+            out.push_str(")");
+        }
+        ShapeKind::Polygon { vertices } => {
+            out.push_str("#polygon(");
+            write_polygon_vertices(out, width, height, vertices);
+            if let Some(c) = fill {
+                write_fill_color(out, c, opacity);
+            }
+            write_shape_stroke(out, stroke);
+            out.push_str(")");
+        }
+        ShapeKind::Ellipse => {
+            let _ = write!(
+                out,
+                "#ellipse(width: {}pt, height: {}pt",
+                format_f64(width),
+                format_f64(height),
+            );
+            if let Some(c) = fill {
+                write_fill_color(out, c, opacity);
+            }
+            write_shape_stroke(out, stroke);
+            out.push_str(")");
+        }
+        // Rectangle or line/polyline — shouldn't reach here, but handle gracefully.
+        _ => {
+            let _ = write!(
+                out,
+                "#rect(width: {}pt, height: {}pt",
+                format_f64(width),
+                format_f64(height),
+            );
+            if let Some(c) = fill {
+                write_fill_color(out, c, opacity);
+            }
+            write_shape_stroke(out, stroke);
+            out.push_str(")");
+        }
+    }
+    out.push_str("]\n");
+}
