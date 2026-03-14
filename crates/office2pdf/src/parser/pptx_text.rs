@@ -509,6 +509,7 @@ pub(super) fn extract_pptx_text_box_body_props(
     e: &quick_xml::events::BytesStart,
     padding: &mut Insets,
     vertical_align: &mut TextBoxVerticalAlign,
+    no_wrap: &mut bool,
 ) {
     if let Some(value) = get_attr_i64(e, b"lIns") {
         padding.left = emu_to_pt(value);
@@ -528,6 +529,9 @@ pub(super) fn extract_pptx_text_box_body_props(
             "b" => TextBoxVerticalAlign::Bottom,
             _ => TextBoxVerticalAlign::Top,
         };
+    }
+    if get_attr_str(e, b"wrap").as_deref() == Some("none") {
+        *no_wrap = true;
     }
 }
 

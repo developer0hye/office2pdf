@@ -149,6 +149,9 @@ pub struct TextBoxData {
     /// Shape geometry when the text box originates from a non-rectangular shape
     /// (e.g., `roundRect`, `homePlate`). `None` means default rectangle.
     pub shape_kind: Option<ShapeKind>,
+    /// When true, text should not wrap — the content width is unconstrained.
+    /// Corresponds to `<a:bodyPr wrap="none"/>` in OOXML.
+    pub no_wrap: bool,
 }
 
 /// The kind of list: ordered (numbered) or unordered (bulleted).

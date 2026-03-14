@@ -76,7 +76,7 @@ fn write_list_open(
 
 fn write_ordered_list_numbering_function(out: &mut String, style: &EffectiveListStyle<'_>) {
     let pattern: &str = style.numbering_pattern.unwrap_or("1.");
-    out.push_str("numbering: nums => [");
+    out.push_str("numbering: (..nums) => [");
     if let Some(marker_style) = style
         .marker_style
         .filter(|style| has_text_properties(style))

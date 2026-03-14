@@ -446,7 +446,7 @@ pub(super) fn write_text_box_shape_background(
                 write_fill_color(out, c, opacity);
             }
             write_shape_stroke(out, stroke);
-            out.push_str(")");
+            out.push(')');
         }
         ShapeKind::Polygon { vertices } => {
             out.push_str("#polygon(");
@@ -455,7 +455,7 @@ pub(super) fn write_text_box_shape_background(
                 write_fill_color(out, c, opacity);
             }
             write_shape_stroke(out, stroke);
-            out.push_str(")");
+            out.push(')');
         }
         ShapeKind::Ellipse => {
             let _ = write!(
@@ -468,7 +468,7 @@ pub(super) fn write_text_box_shape_background(
                 write_fill_color(out, c, opacity);
             }
             write_shape_stroke(out, stroke);
-            out.push_str(")");
+            out.push(')');
         }
         // Rectangle or line/polyline — shouldn't reach here, but handle gracefully.
         _ => {
@@ -482,7 +482,7 @@ pub(super) fn write_text_box_shape_background(
                 write_fill_color(out, c, opacity);
             }
             write_shape_stroke(out, stroke);
-            out.push_str(")");
+            out.push(')');
         }
     }
     out.push_str("]\n");
