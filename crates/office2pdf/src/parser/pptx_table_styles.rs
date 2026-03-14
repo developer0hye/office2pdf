@@ -59,8 +59,12 @@ pub(super) fn parse_table_styles_xml(
                     current_def = PptxTableStyleDef::default();
                 }
                 b"wholeTbl" if current_style_id.is_some() => {
-                    current_def.whole_table =
-                        Some(parse_region_style(&mut reader, b"wholeTbl", theme, color_map));
+                    current_def.whole_table = Some(parse_region_style(
+                        &mut reader,
+                        b"wholeTbl",
+                        theme,
+                        color_map,
+                    ));
                 }
                 b"band1H" if current_style_id.is_some() => {
                     current_def.band1_h =
@@ -71,20 +75,36 @@ pub(super) fn parse_table_styles_xml(
                         Some(parse_region_style(&mut reader, b"band2H", theme, color_map));
                 }
                 b"firstRow" if current_style_id.is_some() => {
-                    current_def.first_row =
-                        Some(parse_region_style(&mut reader, b"firstRow", theme, color_map));
+                    current_def.first_row = Some(parse_region_style(
+                        &mut reader,
+                        b"firstRow",
+                        theme,
+                        color_map,
+                    ));
                 }
                 b"lastRow" if current_style_id.is_some() => {
-                    current_def.last_row =
-                        Some(parse_region_style(&mut reader, b"lastRow", theme, color_map));
+                    current_def.last_row = Some(parse_region_style(
+                        &mut reader,
+                        b"lastRow",
+                        theme,
+                        color_map,
+                    ));
                 }
                 b"firstCol" if current_style_id.is_some() => {
-                    current_def.first_col =
-                        Some(parse_region_style(&mut reader, b"firstCol", theme, color_map));
+                    current_def.first_col = Some(parse_region_style(
+                        &mut reader,
+                        b"firstCol",
+                        theme,
+                        color_map,
+                    ));
                 }
                 b"lastCol" if current_style_id.is_some() => {
-                    current_def.last_col =
-                        Some(parse_region_style(&mut reader, b"lastCol", theme, color_map));
+                    current_def.last_col = Some(parse_region_style(
+                        &mut reader,
+                        b"lastCol",
+                        theme,
+                        color_map,
+                    ));
                 }
                 _ => {}
             },
@@ -130,13 +150,11 @@ fn parse_region_style(
                 b"solidFill" if in_fill || in_tc_style => in_solid_fill = true,
                 b"fontRef" if in_tc_tx_style => in_font_ref = true,
                 b"srgbClr" | b"schemeClr" | b"sysClr" if in_solid_fill => {
-                    let parsed: ParsedColor =
-                        parse_color_from_start(reader, e, theme, color_map);
+                    let parsed: ParsedColor = parse_color_from_start(reader, e, theme, color_map);
                     style.fill = parsed.color;
                 }
                 b"srgbClr" | b"schemeClr" | b"sysClr" if in_font_ref => {
-                    let parsed: ParsedColor =
-                        parse_color_from_start(reader, e, theme, color_map);
+                    let parsed: ParsedColor = parse_color_from_start(reader, e, theme, color_map);
                     style.text_color = parsed.color;
                 }
                 _ => {}
@@ -185,11 +203,7 @@ fn parse_region_style(
 /// Apply table style colors/formatting to cells that don't have explicit overrides.
 ///
 /// Priority (highest wins): cell-level explicit → firstRow/lastRow/firstCol/lastCol → band → wholeTbl
-pub(super) fn apply_table_style(
-    table: &mut Table,
-    props: &PptxTableProps,
-    styles: &TableStyleMap,
-) {
+pub(super) fn apply_table_style(table: &mut Table, props: &PptxTableProps, styles: &TableStyleMap) {
     let style_id: &str = match props.style_id.as_deref() {
         Some(id) => id,
         None => return,
@@ -206,7 +220,8 @@ pub(super) fn apply_table_style(
 
     for (row_idx, row) in table.rows.iter_mut().enumerate() {
         let is_first_row: bool = props.first_row && row_idx < header_rows;
-        let is_last_row: bool = props.last_row && total_rows > header_rows && row_idx == total_rows - 1;
+        let is_last_row: bool =
+            props.last_row && total_rows > header_rows && row_idx == total_rows - 1;
 
         // Data row index for banding (excludes first/last special rows)
         let data_row_idx: Option<usize> = if !is_first_row && !is_last_row {
@@ -271,10 +286,10 @@ fn apply_region_to_cell(cell: &mut TableCell, region: &TableCellRegionStyle) {
                     if region.text_color.is_some() && run.style.color.is_none() {
                         run.style.color = region.text_color;
                     }
-                    if let Some(bold) = region.text_bold {
-                        if run.style.bold.is_none() {
-                            run.style.bold = Some(bold);
-                        }
+                    if let Some(bold) = region.text_bold
+                        && run.style.bold.is_none()
+                    {
+                        run.style.bold = Some(bold);
                     }
                 }
             }

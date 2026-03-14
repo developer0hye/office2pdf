@@ -70,8 +70,7 @@ fn test_parse_table_style_with_whole_table_fill() {
     let theme: ThemeData = test_theme();
     let color_map: ColorMapData = test_color_map();
 
-    let styles: TableStyleMap =
-        table_styles::parse_table_styles_xml(&xml, &theme, &color_map);
+    let styles: TableStyleMap = table_styles::parse_table_styles_xml(&xml, &theme, &color_map);
 
     let style: &PptxTableStyleDef = styles
         .get("{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}")
@@ -93,8 +92,7 @@ fn test_parse_table_style_with_first_row_scheme_color() {
     let theme: ThemeData = test_theme();
     let color_map: ColorMapData = test_color_map();
 
-    let styles: TableStyleMap =
-        table_styles::parse_table_styles_xml(&xml, &theme, &color_map);
+    let styles: TableStyleMap = table_styles::parse_table_styles_xml(&xml, &theme, &color_map);
 
     let style: &PptxTableStyleDef = styles.get("style1").expect("style not found");
     let first_row = style.first_row.as_ref().expect("firstRow missing");
@@ -113,8 +111,7 @@ fn test_parse_table_style_banded_rows() {
     let theme: ThemeData = test_theme();
     let color_map: ColorMapData = test_color_map();
 
-    let styles: TableStyleMap =
-        table_styles::parse_table_styles_xml(&xml, &theme, &color_map);
+    let styles: TableStyleMap = table_styles::parse_table_styles_xml(&xml, &theme, &color_map);
 
     let style: &PptxTableStyleDef = styles.get("bandtest").expect("style not found");
     assert_eq!(
@@ -135,8 +132,7 @@ fn test_parse_table_style_with_color_transforms() {
     let theme: ThemeData = test_theme();
     let color_map: ColorMapData = test_color_map();
 
-    let styles: TableStyleMap =
-        table_styles::parse_table_styles_xml(&xml, &theme, &color_map);
+    let styles: TableStyleMap = table_styles::parse_table_styles_xml(&xml, &theme, &color_map);
 
     let style: &PptxTableStyleDef = styles.get("tinttest").expect("style not found");
     let band = style.band1_h.as_ref().expect("band1H missing");
@@ -288,7 +284,12 @@ fn test_apply_table_style_banded_rows_skip_first_row() {
     };
 
     let mut table = Table {
-        rows: vec![make_row("Header"), make_row("Row1"), make_row("Row2"), make_row("Row3")],
+        rows: vec![
+            make_row("Header"),
+            make_row("Row1"),
+            make_row("Row2"),
+            make_row("Row3"),
+        ],
         column_widths: vec![200.0],
         header_row_count: 1,
         alignment: None,
@@ -591,8 +592,7 @@ fn test_pptx_table_without_table_styles_xml_still_works() {
         make_table_row(&["A1", "B1"]),
         make_table_row(&["A2", "B2"]),
     );
-    let table_frame =
-        make_table_graphic_frame(0, 0, 3657600, 1828800, &[1828800, 1828800], &rows);
+    let table_frame = make_table_graphic_frame(0, 0, 3657600, 1828800, &[1828800, 1828800], &rows);
     let slide = make_slide_xml(&[table_frame]);
     let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri Light", "Calibri");
     let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
