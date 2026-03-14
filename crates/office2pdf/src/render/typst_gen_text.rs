@@ -225,11 +225,7 @@ pub(super) fn generate_runs(out: &mut String, runs: &[Run]) {
     }
 }
 
-fn no_wrap_text(
-    text: &str,
-    preserve_cjk_no_wrap: bool,
-    state: &mut NoWrapState,
-) -> String {
+fn no_wrap_text(text: &str, preserve_cjk_no_wrap: bool, state: &mut NoWrapState) -> String {
     if !preserve_cjk_no_wrap {
         return text.to_string();
     }
