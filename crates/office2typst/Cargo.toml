@@ -1,0 +1,17 @@
+[package]
+name = "office2typst"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Convert DOCX, XLSX, and PPTX to Typst via Office OOXML parsing"
+readme = "../../README.md"
+keywords = ["typst", "docx", "xlsx", "pptx", "converter"]
+categories = ["text-processing"]
+
+[dependencies]
+office2pdf = { path = "../office2pdf" }
+
+[dev-dependencies]
+docx-rs = "0.4"
