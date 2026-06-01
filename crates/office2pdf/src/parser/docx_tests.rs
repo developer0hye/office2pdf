@@ -591,6 +591,59 @@ fn test_merges_adjacent_lists_with_different_num_ids() {
     );
 }
 
+#[test]
+fn test_preserves_empty_paragraph_after_drawing_only_anchor() {
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+ xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+ xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+ xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+ xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+<w:body>
+<w:p><w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing>
+<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="1" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">
+<wp:simplePos x="0" y="0"/>
+<wp:positionH relativeFrom="column"><wp:posOffset>366395</wp:posOffset></wp:positionH>
+<wp:positionV relativeFrom="paragraph"><wp:posOffset>141605</wp:posOffset></wp:positionV>
+<wp:extent cx="1590675" cy="733425"/>
+<wp:wrapNone/>
+<wp:docPr id="1" name="Shape 1"/>
+<a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+<wps:wsp><wps:spPr>
+<a:xfrm><a:off x="0" y="0"/><a:ext cx="1590840" cy="733320"/></a:xfrm>
+<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+<a:solidFill><a:srgbClr val="729fcf"/></a:solidFill>
+<a:ln w="0"><a:solidFill><a:srgbClr val="3465a4"/></a:solidFill></a:ln>
+</wps:spPr></wps:wsp>
+</a:graphicData></a:graphic>
+</wp:anchor></w:drawing></mc:Choice></mc:AlternateContent></w:r></w:p>
+<w:p><w:r><w:t>After drawing</w:t></w:r></w:p>
+<w:sectPr/>
+</w:body></w:document>"#;
+
+    let parser = DocxParser;
+    let (doc, _warnings) = parser
+        .parse(
+            &build_docx_with_math(document_xml),
+            &ConvertOptions::default(),
+        )
+        .unwrap();
+    let blocks = all_blocks(&doc);
+
+    assert!(
+        matches!(blocks[0], Block::FloatingShape(_)),
+        "drawing-only paragraph should emit the floating shape first"
+    );
+    assert!(
+        matches!(&blocks[1], Block::Paragraph(paragraph) if paragraph.runs.is_empty()),
+        "drawing-only paragraph mark must remain as an empty paragraph spacer"
+    );
+    assert!(
+        matches!(&blocks[2], Block::Paragraph(paragraph) if paragraph.runs[0].text == "After drawing"),
+        "following content should stay after the preserved paragraph mark"
+    );
+}
+
 #[path = "docx_page_feature_tests.rs"]
 mod page_feature_tests;
 

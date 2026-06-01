@@ -8,6 +8,20 @@ fn test_generate_plain_paragraph() {
 }
 
 #[test]
+fn test_generate_empty_paragraph_reserves_line_height() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: Vec::new(),
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#v(12pt)"),
+        "empty DOCX paragraph marks should reserve vertical flow space: {result}"
+    );
+}
+
+#[test]
 fn test_generate_page_setup() {
     let doc = make_doc(vec![Page::Flow(FlowPage {
         size: PageSize {

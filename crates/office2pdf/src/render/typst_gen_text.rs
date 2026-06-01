@@ -29,6 +29,15 @@ pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(
         write_par_settings(out, style);
     }
 
+    if para.runs.is_empty() {
+        out.push_str("#v(12pt)");
+        if has_para_style {
+            out.push_str("\n]");
+        }
+        out.push('\n');
+        return Ok(());
+    }
+
     let alignment = style.alignment;
     let use_align = matches!(
         alignment,
