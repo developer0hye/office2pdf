@@ -77,29 +77,22 @@ jobs:
           set -euo pipefail
 
           version="${RELEASE_TAG#v}"
-          if cargo search office2pdf --limit 1 | grep -F "office2pdf = \"${version}\"" > /dev/null; then
+          set +e
+          output="$(cargo publish -p office2pdf 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "${output}"
+
+          if [[ "${status}" -eq 0 ]]; then
+            exit 0
+          fi
+
+          if grep -F "already exists on crates.io index" <<<"${output}" > /dev/null; then
             echo "office2pdf ${version} is already published"
             exit 0
           fi
 
-          cargo publish -p office2pdf --token "${CARGO_REGISTRY_TOKEN}"
-
-      - name: Wait for office2pdf index update
-        run: |
-          set -euo pipefail
-
-          version="${RELEASE_TAG#v}"
-          for attempt in {1..30}; do
-            if cargo search office2pdf --limit 1 | grep -F "office2pdf = \"${version}\"" > /dev/null; then
-              exit 0
-            fi
-
-            echo "office2pdf ${version} is not visible in the crates.io index yet; retry ${attempt}/30"
-            sleep 10
-          done
-
-          echo "::error::office2pdf ${version} did not appear in the crates.io index"
-          exit 1
+          exit "${status}"
 
       - name: Publish office2pdf-cli
         env:
@@ -108,9 +101,30 @@ jobs:
           set -euo pipefail
 
           version="${RELEASE_TAG#v}"
-          if cargo search office2pdf-cli --limit 1 | grep -F "office2pdf-cli = \"${version}\"" > /dev/null; then
-            echo "office2pdf-cli ${version} is already published"
-            exit 0
-          fi
+          for attempt in {1..30}; do
+            set +e
+            output="$(cargo publish -p office2pdf-cli 2>&1)"
+            status=$?
+            set -e
+            printf '%s\n' "${output}"
 
-          cargo publish -p office2pdf-cli --token "${CARGO_REGISTRY_TOKEN}"
+            if [[ "${status}" -eq 0 ]]; then
+              exit 0
+            fi
+
+            if grep -F "already exists on crates.io index" <<<"${output}" > /dev/null; then
+              echo "office2pdf-cli ${version} is already published"
+              exit 0
+            fi
+
+            if grep -E "failed to select a version for the requirement .office2pdf|no matching package named .office2pdf" <<<"${output}" > /dev/null; then
+              echo "office2pdf ${version} is not visible to cargo publish yet; retry ${attempt}/30"
+              sleep 20
+              continue
+            fi
+
+            exit "${status}"
+          done
+
+          echo "::error::office2pdf-cli ${version} could not be published after waiting for office2pdf ${version}"
+          exit 1
