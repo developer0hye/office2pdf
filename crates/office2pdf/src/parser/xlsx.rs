@@ -80,6 +80,9 @@ impl XlsxParser {
             }
             sheet_charts.sort_by_key(|(row, _)| *row);
 
+            let sheet_size = extract_sheet_page_size(sheet);
+            let sheet_margins = extract_sheet_margins(sheet);
+
             // Process rows in chunks
             let mut chunk_start = row_start;
             let mut first_chunk = true;
@@ -92,8 +95,8 @@ impl XlsxParser {
                     metadata: metadata.clone(),
                     pages: vec![Page::Sheet(SheetPage {
                         name: sheet_name.clone(),
-                        size: PageSize::default(),
-                        margins: Margins::default(),
+                        size: sheet_size,
+                        margins: sheet_margins,
                         table: Table {
                             rows,
                             column_widths: ctx.column_widths.clone(),
@@ -180,12 +183,15 @@ impl Parser for XlsxParser {
             // Sort by anchor row
             sheet_charts.sort_by_key(|(row, _)| *row);
 
+            let sheet_size = extract_sheet_page_size(sheet);
+            let sheet_margins = extract_sheet_margins(sheet);
+
             if row_breaks.is_empty() {
                 // No page breaks — single page
                 pages.push(Page::Sheet(SheetPage {
                     name: sheet_name,
-                    size: PageSize::default(),
-                    margins: Margins::default(),
+                    size: sheet_size,
+                    margins: sheet_margins,
                     table: Table {
                         rows,
                         column_widths: ctx.column_widths,
@@ -225,8 +231,8 @@ impl Parser for XlsxParser {
                 for segment in segments {
                     pages.push(Page::Sheet(SheetPage {
                         name: sheet_name.clone(),
-                        size: PageSize::default(),
-                        margins: Margins::default(),
+                        size: sheet_size,
+                        margins: sheet_margins,
                         table: Table {
                             rows: segment,
                             column_widths: ctx.column_widths.clone(),
@@ -256,6 +262,55 @@ impl Parser for XlsxParser {
             },
             warnings,
         ))
+    }
+}
+
+/// Map an Excel paper-size code to (width_pt, height_pt).
+/// Falls back to A4 for unknown codes.
+fn paper_size_pts(code: u32) -> (f64, f64) {
+    // Codes per OOXML spec §20.3.1.14 (ST_PaperSize)
+    match code {
+        1 | 2 | 19 => (612.0, 792.0),   // Letter / Letter Small / Note  (8.5×11 in)
+        3          => (792.0, 1224.0),  // Tabloid (11×17 in)
+        4          => (1224.0, 792.0),  // Ledger (17×11 in)
+        5          => (612.0, 1008.0),  // Legal (8.5×14 in)
+        6          => (522.0, 756.0),   // Statement (7.25×10.5 in)
+        7          => (720.0, 1008.0),  // Executive (10×14 in)
+        8          => (841.89, 1190.55),// A3
+        9          => (595.28, 841.89), // A4
+        10         => (595.28, 841.89), // A4 Small
+        11         => (419.53, 595.28), // A5
+        12         => (728.50, 1031.81),// B4 (JIS)
+        13         => (515.91, 728.50), // B5 (JIS)
+        _          => (595.28, 841.89), // default to A4
+    }
+}
+
+/// Read page margins from the sheet; converts from inches to points.
+fn extract_sheet_margins(sheet: &umya_spreadsheet::Worksheet) -> Margins {
+    let pm = sheet.get_page_margins();
+    const IN_TO_PT: f64 = 72.0;
+    Margins {
+        top:    *pm.get_top()    * IN_TO_PT,
+        bottom: *pm.get_bottom() * IN_TO_PT,
+        left:   *pm.get_left()   * IN_TO_PT,
+        right:  *pm.get_right()  * IN_TO_PT,
+    }
+}
+
+/// Read page size from the sheet's page setup, applying landscape orientation.
+fn extract_sheet_page_size(sheet: &umya_spreadsheet::Worksheet) -> PageSize {
+    let ps = sheet.get_page_setup();
+    let (w, h) = paper_size_pts(*ps.get_paper_size());
+    // Swap dimensions for landscape orientation
+    let landscape = matches!(
+        ps.get_orientation(),
+        umya_spreadsheet::structs::OrientationValues::Landscape
+    );
+    if landscape {
+        PageSize { width: h, height: w }
+    } else {
+        PageSize { width: w, height: h }
     }
 }
 

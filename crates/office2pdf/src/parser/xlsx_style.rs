@@ -1,4 +1,4 @@
-use crate::ir::{BorderLineStyle, BorderSide, CellBorder, Color, TextStyle};
+use crate::ir::{BorderLineStyle, BorderSide, CellBorder, CellHorizontalAlign, CellVerticalAlign, Color, TextStyle};
 use crate::parser::xml_util::parse_argb_color;
 
 /// Map Excel border style name to width in points.
@@ -72,7 +72,31 @@ pub(super) fn extract_cell_text_style(cell: &umya_spreadsheet::Cell) -> TextStyl
         letter_spacing: None,
     }
 }
+pub(super) fn extract_cell_alignment(cell: &umya_spreadsheet::Cell)
+    -> (Option<CellHorizontalAlign>, Option<CellVerticalAlign>, bool)
+{
+    let Some(alignment) = cell.get_style().get_alignment() else {
+        return (None, None, false);
+    };
 
+    let horizontal = match alignment.get_horizontal() {
+        umya_spreadsheet::structs::HorizontalAlignmentValues::Left   => Some(CellHorizontalAlign::Left),
+        umya_spreadsheet::structs::HorizontalAlignmentValues::Center => Some(CellHorizontalAlign::Center),
+        umya_spreadsheet::structs::HorizontalAlignmentValues::Right  => Some(CellHorizontalAlign::Right),
+        _ => None,
+    };
+
+    let vertical = match alignment.get_vertical() {
+        umya_spreadsheet::structs::VerticalAlignmentValues::Top    => Some(CellVerticalAlign::Top),
+        umya_spreadsheet::structs::VerticalAlignmentValues::Center => Some(CellVerticalAlign::Center),
+        umya_spreadsheet::structs::VerticalAlignmentValues::Bottom => Some(CellVerticalAlign::Bottom),
+        _ => None::<CellVerticalAlign>,
+    };
+
+    let wrap_text = *alignment.get_wrap_text();
+
+    (horizontal, vertical, wrap_text)
+}
 /// Extract background color from a cell's style.
 pub(super) fn extract_cell_background(cell: &umya_spreadsheet::Cell) -> Option<Color> {
     let bg = cell.get_style().get_background_color()?;

@@ -468,6 +468,8 @@ impl<'a> PptxTableParser<'a> {
             data_bar: None,
             icon_text: None,
             vertical_align: self.cell_vertical_align.take(),
+            horizontal_align: None,
+            wrap_text: false,
             padding: self.cell_padding.take(),
         });
         self.is_in_cell = false;

@@ -6,7 +6,7 @@ use image::{GenericImageView, ImageFormat as RasterImageFormat};
 use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, ArrowHead, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart,
+    Alignment, ArrowHead, Block, BorderLineStyle, BorderSide, CellBorder, CellHorizontalAlign, CellVerticalAlign, Chart,
     ChartType, Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage,
     FloatingImage, FloatingShape, FloatingTextBox, FlowPage, GradientFill, HFInline, HeaderFooter,
     ImageCrop, ImageData, ImageFormat, Insets, LineSpacing, List, ListKind, Margins, MathEquation,
@@ -1009,7 +1009,7 @@ fn border_line_style_to_typst(style: BorderLineStyle) -> &'static str {
         BorderLineStyle::Dotted => "dotted",
         BorderLineStyle::DashDot => "dash-dotted",
         BorderLineStyle::DashDotDot => "dash-dotted",
-        BorderLineStyle::Double => "dashed",
+        BorderLineStyle::Double => "solid",
         BorderLineStyle::None => "solid",
     }
 }

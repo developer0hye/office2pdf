@@ -1,9 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::{Block, Paragraph, ParagraphStyle, Run, TableRow};
+use crate::ir::{Block, CellHorizontalAlign, Paragraph, ParagraphStyle, Run, TableRow};
 use crate::parser::cond_fmt::build_cond_fmt_overrides;
 
-use super::xlsx_style::{extract_cell_background, extract_cell_borders, extract_cell_text_style};
+use super::xlsx_style::{extract_cell_alignment, extract_cell_background, extract_cell_borders, extract_cell_text_style};
 use crate::ir::TableCell;
 
 /// A cell range within a sheet (1-indexed, inclusive).
@@ -187,7 +187,7 @@ pub(super) fn build_rows_for_range(
             // umya-spreadsheet tuple is (column, row), both 1-indexed
             let umya_cell = sheet.get_cell((col_idx, row_idx));
             let value = umya_cell
-                .map(|cell| cell.get_formatted_value())
+                .map(|cell| { let v = cell.get_formatted_value(); if v.is_empty() { cell.get_value().into_owned() } else { v } })
                 .unwrap_or_default();
 
             // Extract formatting from the cell
@@ -212,6 +212,7 @@ pub(super) fn build_rows_for_range(
                 icon_text = ovr.icon_text.clone();
             }
 
+            let is_numeric = !value.is_empty() && value.parse::<f64>().is_ok();
             let content = if value.is_empty() {
                 Vec::new()
             } else {
@@ -231,6 +232,12 @@ pub(super) fn build_rows_for_range(
             } else {
                 (1, 1)
             };
+            let (mut horizontal_align, vertical_align, wrap_text) = umya_cell
+                .map(extract_cell_alignment)
+                .unwrap_or((None, None, false));
+            if horizontal_align.is_none() && is_numeric {
+                horizontal_align = Some(CellHorizontalAlign::Right);
+            }
 
             cells.push(TableCell {
                 content,
@@ -240,7 +247,9 @@ pub(super) fn build_rows_for_range(
                 background,
                 data_bar,
                 icon_text,
-                vertical_align: None,
+                vertical_align,
+                horizontal_align,
+                wrap_text,
                 padding: None,
             });
         }

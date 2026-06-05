@@ -197,16 +197,32 @@ pub(super) fn build_numbering_map(numberings: &docx_rs::Numberings) -> Numbering
 }
 
 /// Extract numbering info from a paragraph, if it has numPr.
-pub(super) fn extract_num_info(para: &docx_rs::Paragraph) -> Option<NumInfo> {
-    if !para.has_numbering {
-        return None;
+///
+/// Falls back to the style definition when the paragraph carries no inline
+/// `<w:numPr>` — this handles Word built-in list styles such as "List Bullet"
+/// and "List Number" whose numbering is defined on the style, not the paragraph.
+pub(super) fn extract_num_info(
+    para: &docx_rs::Paragraph,
+    styles: &docx_rs::Styles,
+) -> Option<NumInfo> {
+    // Try paragraph-level numPr first.
+    if para.has_numbering {
+        if let Some(np) = para.property.numbering_property.as_ref() {
+            let num_id = np.id.as_ref()?.id;
+            let level = np.level.as_ref().map_or(0, |l| l.val as u32);
+            if num_id != 0 {
+                return Some(NumInfo { num_id, level });
+            }
+        }
     }
-    let numbering_property = para.property.numbering_property.as_ref()?;
-    let num_id = numbering_property.id.as_ref()?.id;
-    let level = numbering_property
-        .level
-        .as_ref()
-        .map_or(0, |level| level.val as u32);
+
+    // Fall back to the style definition (e.g. "List Bullet", "List Number").
+    // Word stores numPr on the style when no inline numPr is present.
+    let style_id = para.property.style.as_ref().map(|s| s.val.as_str())?;
+    let style = styles.styles.iter().find(|s| s.style_id == style_id)?;
+    let np = style.paragraph_property.numbering_property.as_ref()?;
+    let num_id = np.id.as_ref()?.id;
+    let level = np.level.as_ref().map_or(0, |l| l.val as u32);
     if num_id == 0 {
         return None;
     }
