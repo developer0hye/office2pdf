@@ -182,10 +182,7 @@ fn test_border_line_style_to_typst_mapping() {
         border_line_style_to_typst(BorderLineStyle::DashDotDot),
         "dash-dotted"
     );
-    assert_eq!(
-        border_line_style_to_typst(BorderLineStyle::Double),
-        "dashed"
-    );
+    assert_eq!(border_line_style_to_typst(BorderLineStyle::Double), "solid");
     assert_eq!(border_line_style_to_typst(BorderLineStyle::None), "solid");
 }
 
@@ -230,5 +227,50 @@ fn test_solid_border_no_dash_param() {
     assert!(
         result.contains("1pt + rgb(0, 0, 0)"),
         "Expected simple solid format in: {result}"
+    );
+}
+
+#[test]
+fn test_double_border_uses_2_5x_thickness() {
+    let cell = TableCell {
+        content: vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Double".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })],
+        border: Some(CellBorder {
+            top: Some(BorderSide {
+                width: 2.0,
+                color: Color::black(),
+                style: BorderLineStyle::Double,
+            }),
+            bottom: None,
+            left: None,
+            right: None,
+        }),
+        ..TableCell::default()
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            cells: vec![cell],
+            height: None,
+        }],
+        column_widths: vec![100.0],
+        ..Table::default()
+    };
+    let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+    let result = generate_typst(&doc).unwrap().source;
+    // Double borders render as solid strokes at 2.5× the specified width.
+    assert!(
+        result.contains("5pt"),
+        "Double border should render at 2.5x width (2.0 * 2.5 = 5pt) in: {result}"
+    );
+    assert!(
+        result.contains("thickness:"),
+        "Double border should use thickness parameter in: {result}"
     );
 }
