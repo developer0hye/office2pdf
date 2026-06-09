@@ -867,8 +867,8 @@ fn test_fixed_page_text_box_no_fill_no_stroke() {
     )]);
     let output = generate_typst(&doc).unwrap();
     assert!(
-        !output.source.contains("fill:"),
-        "Expected no fill in output, got:\n{}",
+        output.source.contains("fill: white"),
+        "Expected fill: white for no-background slide, got:\n{}",
         output.source,
     );
     assert!(

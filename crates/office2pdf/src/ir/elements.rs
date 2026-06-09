@@ -14,6 +14,14 @@ pub struct HeaderFooterParagraph {
     pub style: ParagraphStyle,
     pub elements: Vec<HFInline>,
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CellHorizontalAlign {
+    Left,
+    Center,
+    Right,
+    /// Justify alignment (also used for Distributed, which approximates justify).
+    Justify,
+}
 
 /// An inline element within a header or footer paragraph.
 #[derive(Debug, Clone)]
@@ -298,6 +306,8 @@ pub struct TableCell {
     pub vertical_align: Option<CellVerticalAlign>,
     /// Optional cell padding override in points.
     pub padding: Option<Insets>,
+    /// Horizontal alignment of cell content.
+    pub horizontal_align: Option<CellHorizontalAlign>,
 }
 
 impl Default for TableCell {
@@ -312,6 +322,7 @@ impl Default for TableCell {
             icon_text: None,
             vertical_align: None,
             padding: None,
+            horizontal_align: None,
         }
     }
 }

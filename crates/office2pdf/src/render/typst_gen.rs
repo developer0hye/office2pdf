@@ -6,13 +6,14 @@ use image::{GenericImageView, ImageFormat as RasterImageFormat};
 use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
-    Alignment, ArrowHead, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart,
-    ChartType, Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage,
-    FloatingImage, FloatingShape, FloatingTextBox, FlowPage, GradientFill, HFInline, HeaderFooter,
-    ImageCrop, ImageData, ImageFormat, Insets, LineSpacing, List, ListKind, Margins, MathEquation,
-    Metadata, Page, PageSize, Paragraph, ParagraphStyle, Run, Shadow, Shape, ShapeKind, SheetPage,
-    SmartArt, TabAlignment, TabLeader, TabStop, Table, TableCell, TableRow, TextBoxData,
-    TextBoxVerticalAlign, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
+    Alignment, ArrowHead, Block, BorderLineStyle, BorderSide, CellBorder, CellHorizontalAlign,
+    CellVerticalAlign, Chart, ChartType, Color, ColumnLayout, Document, FixedElement,
+    FixedElementKind, FixedPage, FloatingImage, FloatingShape, FloatingTextBox, FlowPage,
+    GradientFill, HFInline, HeaderFooter, ImageCrop, ImageData, ImageFormat, Insets, LineSpacing,
+    List, ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle,
+    Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, TabAlignment, TabLeader, TabStop, Table,
+    TableCell, TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection, TextStyle,
+    VerticalTextAlign, WrapMode,
 };
 
 use self::diagrams::{generate_chart, generate_smartart};
@@ -404,7 +405,7 @@ fn generate_fixed_page(
     } else {
         let _ = writeln!(
             out,
-            "#set page(width: {}pt, height: {}pt, margin: 0pt)",
+            "#set page(width: {}pt, height: {}pt, margin: 0pt, fill: white)",
             format_f64(size.width),
             format_f64(size.height),
         );
@@ -1009,7 +1010,7 @@ fn border_line_style_to_typst(style: BorderLineStyle) -> &'static str {
         BorderLineStyle::Dotted => "dotted",
         BorderLineStyle::DashDot => "dash-dotted",
         BorderLineStyle::DashDotDot => "dash-dotted",
-        BorderLineStyle::Double => "dashed",
+        BorderLineStyle::Double => "solid",
         BorderLineStyle::None => "solid",
     }
 }

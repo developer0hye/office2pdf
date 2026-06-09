@@ -1,9 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::{Block, Paragraph, ParagraphStyle, Run, TableRow};
+use crate::ir::{Block, CellHorizontalAlign, Paragraph, ParagraphStyle, Run, TableRow};
 use crate::parser::cond_fmt::build_cond_fmt_overrides;
 
-use super::xlsx_style::{extract_cell_background, extract_cell_borders, extract_cell_text_style};
+use super::xlsx_style::{
+    extract_cell_alignment, extract_cell_background, extract_cell_borders, extract_cell_text_style,
+};
 use crate::ir::TableCell;
 
 /// A cell range within a sheet (1-indexed, inclusive).
@@ -28,10 +30,15 @@ pub(super) struct MergeInfo {
 pub(super) const DEFAULT_COLUMN_WIDTH: f64 = 8.43;
 
 /// Convert Excel column width (character units) to points.
-/// Excel character width ≈ 7 pixels at 96 DPI, 1 point = 96/72 pixels.
-/// Empirically: width_pt ≈ char_width * 7.0 (approximate, close to Excel's rendering).
+///
+/// OOXML stores column width as "number of characters" using the maximum digit
+/// width (MDW) of the Normal style font. For Calibri 11pt (Excel default),
+/// MDW ≈ 7px. Excel also adds 5px of padding per column.
+///
+/// Formula: pt = (char_width * MDW + padding) * (72 / 96)
+///           pt = (char_width * 7.0 + 5.0) * 0.75
 pub(super) fn column_width_to_pt(char_width: f64) -> f64 {
-    char_width * 7.0
+    (char_width * 7.0 + 5.0) * 0.75
 }
 
 /// Parse an Excel column letter string (e.g., "A", "B", "AA") into a 1-indexed column number.
@@ -212,6 +219,7 @@ pub(super) fn build_rows_for_range(
                 icon_text = ovr.icon_text.clone();
             }
 
+            let is_numeric = umya_cell.and_then(|c| c.get_value_number()).is_some();
             let content = if value.is_empty() {
                 Vec::new()
             } else {
@@ -231,6 +239,16 @@ pub(super) fn build_rows_for_range(
             } else {
                 (1, 1)
             };
+            // TODO(vertical-align): umya returns Bottom (the OOXML default) whenever
+            // an alignment element exists, even if the vertical attribute was not specified.
+            // This causes mixed alignment within rows. Excel's default for all cells is
+            // bottom; consider applying that uniformly as a follow-up fix.
+            let (mut horizontal_align, vertical_align) = umya_cell
+                .map(extract_cell_alignment)
+                .unwrap_or((None, None));
+            if horizontal_align.is_none() && is_numeric {
+                horizontal_align = Some(CellHorizontalAlign::Right);
+            }
 
             cells.push(TableCell {
                 content,
@@ -240,7 +258,8 @@ pub(super) fn build_rows_for_range(
                 background,
                 data_bar,
                 icon_text,
-                vertical_align: None,
+                vertical_align,
+                horizontal_align,
                 padding: None,
             });
         }

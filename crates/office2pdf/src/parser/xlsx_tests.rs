@@ -187,11 +187,11 @@ fn test_column_widths_default() {
 
     let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.column_widths.len(), 2);
-    // Default column width is ~8.43 chars * 7.0 ≈ 59 pt
-    // umya-spreadsheet may use a slightly different default; allow 1pt tolerance
+    // Default column width ~8.43 chars: (8.43*7+5)*0.75 ≈ 47.7pt
+    // Allow range for different umya defaults
     for w in &tp.table.column_widths {
         assert!(
-            *w > 50.0 && *w < 70.0,
+            *w > 40.0 && *w < 70.0,
             "Expected default width in 50-70pt range, got {w}"
         );
     }

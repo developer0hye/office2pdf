@@ -186,6 +186,7 @@ fn generate_table_cell(
         || cell.border.is_some()
         || cell.background.is_some()
         || cell.vertical_align.is_some()
+        || cell.horizontal_align.is_some()
         || cell.padding.is_some();
 
     if needs_cell_fn {
@@ -215,6 +216,7 @@ fn generate_table_cell(
     }
 
     generate_cell_content(out, &cell.content, ctx)?;
+
     out.push_str("],\n");
     Ok(())
 }
@@ -244,13 +246,42 @@ fn write_cell_params(out: &mut String, cell: &TableCell, clamped_colspan: u32) {
             write_param(out, &mut first, &stroke);
         }
     }
-    if let Some(ref va) = cell.vertical_align {
-        let align_str: &str = match va {
-            CellVerticalAlign::Top => "top",
-            CellVerticalAlign::Center => "horizon",
-            CellVerticalAlign::Bottom => "bottom",
-        };
-        write_param(out, &mut first, &format!("align: {align_str}"));
+    let align_str: Option<String> = match (&cell.vertical_align, &cell.horizontal_align) {
+        (Some(va), Some(ha)) => {
+            let v = match va {
+                CellVerticalAlign::Top => "top",
+                CellVerticalAlign::Center => "horizon",
+                CellVerticalAlign::Bottom => "bottom",
+            };
+            let h = match ha {
+                CellHorizontalAlign::Left => "left",
+                CellHorizontalAlign::Center => "center",
+                CellHorizontalAlign::Right => "right",
+                CellHorizontalAlign::Justify => "left",
+            };
+            Some(format!("align: {h} + {v}"))
+        }
+        (Some(va), None) => {
+            let v = match va {
+                CellVerticalAlign::Top => "top",
+                CellVerticalAlign::Center => "horizon",
+                CellVerticalAlign::Bottom => "bottom",
+            };
+            Some(format!("align: {v}"))
+        }
+        (None, Some(ha)) => {
+            let h = match ha {
+                CellHorizontalAlign::Left => "left",
+                CellHorizontalAlign::Center => "center",
+                CellHorizontalAlign::Right => "right",
+                CellHorizontalAlign::Justify => "left",
+            };
+            Some(format!("align: {h}"))
+        }
+        (None, None) => None,
+    };
+    if let Some(ref a) = align_str {
+        write_param(out, &mut first, a);
     }
 }
 
@@ -287,6 +318,13 @@ fn format_border_side(side: &BorderSide) -> String {
     );
     match side.style {
         BorderLineStyle::Solid | BorderLineStyle::None => base,
+        BorderLineStyle::Double => format!(
+            "(paint: rgb({}, {}, {}), thickness: {}pt)",
+            side.color.r,
+            side.color.g,
+            side.color.b,
+            format_f64(side.width * 2.5),
+        ),
         _ => format!(
             "(paint: rgb({}, {}, {}), thickness: {}pt, dash: \"{}\")",
             side.color.r,

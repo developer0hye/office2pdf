@@ -156,7 +156,22 @@ fn resolve_slide_background(
     chain: &SlideInheritanceChain,
     theme: &ThemeData,
 ) -> (Option<Color>, Option<GradientFill>) {
-    let gradient = parse_background_gradient(&chain.slide_xml, theme, &chain.slide_color_map);
+    // Check slide -> layout -> master for gradient background.
+    let gradient = parse_background_gradient(&chain.slide_xml, theme, &chain.slide_color_map)
+        .or_else(|| {
+            chain.layout_xml.as_deref().and_then(|xml| {
+                chain
+                    .layout_color_map
+                    .as_ref()
+                    .and_then(|map| parse_background_gradient(xml, theme, map))
+            })
+        })
+        .or_else(|| {
+            chain
+                .master_xml
+                .as_deref()
+                .and_then(|xml| parse_background_gradient(xml, theme, &chain.master_color_map))
+        });
 
     if gradient.is_some() {
         let fallback_color = gradient

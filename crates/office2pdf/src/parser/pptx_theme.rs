@@ -437,6 +437,7 @@ pub(super) fn parse_background_color(
     let mut in_bg = false;
     let mut in_bg_pr = false;
     let mut in_solid_fill = false;
+    let mut in_bg_ref = false;
 
     loop {
         match reader.read_event() {
@@ -445,8 +446,9 @@ pub(super) fn parse_background_color(
                 match local.as_ref() {
                     b"bg" => in_bg = true,
                     b"bgPr" if in_bg => in_bg_pr = true,
+                    b"bgRef" if in_bg => in_bg_ref = true,
                     b"solidFill" if in_bg_pr => in_solid_fill = true,
-                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_solid_fill => {
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_solid_fill || in_bg_ref => {
                         return parse_color_from_start(&mut reader, e, theme, color_map).color;
                     }
                     _ => {}
@@ -455,7 +457,7 @@ pub(super) fn parse_background_color(
             Ok(Event::Empty(ref e)) => {
                 let local = e.local_name();
                 match local.as_ref() {
-                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_solid_fill => {
+                    b"srgbClr" | b"schemeClr" | b"sysClr" if in_solid_fill || in_bg_ref => {
                         return parse_color_from_empty(e, theme, color_map).color;
                     }
                     _ => {}
@@ -466,6 +468,7 @@ pub(super) fn parse_background_color(
                 match local.as_ref() {
                     b"bg" => return None,
                     b"bgPr" => in_bg_pr = false,
+                    b"bgRef" => in_bg_ref = false,
                     b"solidFill" => in_solid_fill = false,
                     _ => {}
                 }
