@@ -1,14 +1,16 @@
 use std::collections::HashMap;
-use std::io::{Read, Seek};
+use std::io::{Cursor, Read, Seek};
 
 use crate::error::ConvertWarning;
 use crate::ir::{
     Block, ColumnLayout, FlowPage, HFInline, HeaderFooter, HeaderFooterParagraph, Margins,
-    PageSize, Run, TextStyle,
+    PageSize, Run, TextDirection, TextStyle,
 };
 
+use super::contexts::WrapContext;
+use super::media::extract_drawing_image;
 use super::{
-    NumberingMap, TaggedElement, extract_column_layout_from_section_property,
+    ImageMap, NumberingMap, TaggedElement, extract_column_layout_from_section_property,
     extract_paragraph_style, extract_run_style, extract_tab_stop_overrides, group_into_lists,
     merge_paragraph_style, read_zip_text,
 };
@@ -102,10 +104,11 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         let Some(xml) = read_zip_text(archive, &path) else {
             continue;
         };
+        let images = build_part_image_map(archive, &path);
         let Ok(header) = <docx_rs::Header as docx_rs::FromXML>::from_xml(xml.as_bytes()) else {
             continue;
         };
-        if let Some(converted) = convert_docx_header(&header) {
+        if let Some(converted) = convert_docx_header(&header, &images) {
             assets.headers.insert(relationship_id, converted);
         }
     }
@@ -114,15 +117,131 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         let Some(xml) = read_zip_text(archive, &path) else {
             continue;
         };
+        let images = build_part_image_map(archive, &path);
+        let bidi_paragraphs = scan_bidi_paragraphs(&xml);
         let Ok(footer) = <docx_rs::Footer as docx_rs::FromXML>::from_xml(xml.as_bytes()) else {
             continue;
         };
-        if let Some(converted) = convert_docx_footer(&footer) {
+        if let Some(converted) = convert_docx_footer(&footer, &images, &bidi_paragraphs) {
             assets.footers.insert(relationship_id, converted);
         }
     }
 
     assets
+}
+
+fn scan_bidi_paragraphs(xml: &str) -> Vec<bool> {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    let mut paragraphs: Vec<bool> = Vec::new();
+    let mut paragraph_depth: usize = 0;
+    let mut is_bidi: bool = false;
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref element)) => match element.local_name().as_ref()
+            {
+                b"p" => {
+                    paragraph_depth += 1;
+                    if paragraph_depth == 1 {
+                        is_bidi = false;
+                    }
+                }
+                b"bidi" if paragraph_depth == 1 => is_bidi = true,
+                _ => {}
+            },
+            Ok(quick_xml::events::Event::Empty(ref element))
+                if paragraph_depth == 1 && element.local_name().as_ref() == b"bidi" =>
+            {
+                is_bidi = true;
+            }
+            Ok(quick_xml::events::Event::End(ref element))
+                if element.local_name().as_ref() == b"p" && paragraph_depth > 0 =>
+            {
+                if paragraph_depth == 1 {
+                    paragraphs.push(is_bidi);
+                }
+                paragraph_depth -= 1;
+            }
+            Ok(quick_xml::events::Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+    paragraphs
+}
+
+fn build_part_image_map<R: Read + Seek>(
+    archive: &mut zip::ZipArchive<R>,
+    part_path: &str,
+) -> ImageMap {
+    let Some((directory, filename)) = part_path.rsplit_once('/') else {
+        return ImageMap::new();
+    };
+    let relationships_path = format!("{directory}/_rels/{filename}.rels");
+    let Some(relationships_xml) = read_zip_text(archive, &relationships_path) else {
+        return ImageMap::new();
+    };
+    let mut relationships: Vec<(String, String)> = Vec::new();
+    let mut reader = quick_xml::Reader::from_str(&relationships_xml);
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref element))
+            | Ok(quick_xml::events::Event::Empty(ref element))
+                if element.local_name().as_ref() == b"Relationship" =>
+            {
+                let mut id: Option<String> = None;
+                let mut target: Option<String> = None;
+                let mut is_image: bool = false;
+                for attribute in element.attributes().flatten() {
+                    let Ok(value) = attribute.unescape_value() else {
+                        continue;
+                    };
+                    match attribute.key.local_name().as_ref() {
+                        b"Id" => id = Some(value.to_string()),
+                        b"Target" => target = Some(value.to_string()),
+                        b"Type" => is_image = value.ends_with("/image"),
+                        _ => {}
+                    }
+                }
+                if is_image && let (Some(id), Some(target)) = (id, target) {
+                    relationships.push((id, resolve_part_target(directory, &target)));
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+
+    relationships
+        .into_iter()
+        .filter_map(|(id, path)| {
+            let mut bytes: Vec<u8> = Vec::new();
+            archive.by_name(&path).ok()?.read_to_end(&mut bytes).ok()?;
+            let image = image::load_from_memory(&bytes).ok()?;
+            let mut png = Cursor::new(Vec::new());
+            image.write_to(&mut png, image::ImageFormat::Png).ok()?;
+            Some((id, png.into_inner()))
+        })
+        .collect()
+}
+
+fn resolve_part_target(directory: &str, target: &str) -> String {
+    let mut parts: Vec<&str> = if target.starts_with('/') {
+        Vec::new()
+    } else {
+        directory
+            .split('/')
+            .filter(|part| !part.is_empty())
+            .collect()
+    };
+    for part in target.trim_start_matches('/').split('/') {
+        match part {
+            "" | "." => {}
+            ".." => {
+                parts.pop();
+            }
+            _ => parts.push(part),
+        }
+    }
+    parts.join("/")
 }
 
 pub(super) fn build_flow_page_from_section(
@@ -198,12 +317,14 @@ pub(super) fn build_flow_page_from_section(
     }
 }
 
-fn convert_docx_header(header: &docx_rs::Header) -> Option<HeaderFooter> {
+fn convert_docx_header(header: &docx_rs::Header, images: &ImageMap) -> Option<HeaderFooter> {
     let paragraphs = header
         .children
         .iter()
         .filter_map(|child| match child {
-            docx_rs::HeaderChild::Paragraph(paragraph) => Some(convert_hf_paragraph(paragraph)),
+            docx_rs::HeaderChild::Paragraph(paragraph) => {
+                Some(convert_hf_paragraph(paragraph, images, false))
+            }
             _ => None,
         })
         .collect::<Vec<_>>();
@@ -213,13 +334,25 @@ fn convert_docx_header(header: &docx_rs::Header) -> Option<HeaderFooter> {
     Some(HeaderFooter { paragraphs })
 }
 
-fn convert_docx_footer(footer: &docx_rs::Footer) -> Option<HeaderFooter> {
+fn convert_docx_footer(
+    footer: &docx_rs::Footer,
+    images: &ImageMap,
+    bidi_paragraphs: &[bool],
+) -> Option<HeaderFooter> {
     let paragraphs = footer
         .children
         .iter()
         .filter_map(|child| match child {
-            docx_rs::FooterChild::Paragraph(paragraph) => Some(convert_hf_paragraph(paragraph)),
+            docx_rs::FooterChild::Paragraph(paragraph) => Some(paragraph),
             _ => None,
+        })
+        .enumerate()
+        .map(|(index, paragraph)| {
+            convert_hf_paragraph(
+                paragraph,
+                images,
+                bidi_paragraphs.get(index).copied().unwrap_or(false),
+            )
         })
         .collect::<Vec<_>>();
     if paragraphs.is_empty() {
@@ -235,20 +368,16 @@ fn extract_docx_header(
     assets: &HeaderFooterAssets,
 ) -> Option<HeaderFooter> {
     section_prop
-        .header
+        .header_reference
         .as_ref()
-        .and_then(|(_relationship_id, header)| convert_docx_header(header))
+        .and_then(|reference| assets.headers.get(&reference.id).cloned())
         .or_else(|| {
             section_prop
-                .header_reference
+                .header
                 .as_ref()
-                .and_then(|reference| assets.headers.get(&reference.id).cloned())
-        })
-        .or_else(|| {
-            section_prop
-                .first_header
-                .as_ref()
-                .and_then(|(_relationship_id, header)| convert_docx_header(header))
+                .and_then(|(_relationship_id, header)| {
+                    convert_docx_header(header, &ImageMap::new())
+                })
         })
         .or_else(|| {
             section_prop
@@ -258,15 +387,25 @@ fn extract_docx_header(
         })
         .or_else(|| {
             section_prop
-                .even_header
+                .first_header
                 .as_ref()
-                .and_then(|(_relationship_id, header)| convert_docx_header(header))
+                .and_then(|(_relationship_id, header)| {
+                    convert_docx_header(header, &ImageMap::new())
+                })
         })
         .or_else(|| {
             section_prop
                 .even_header_reference
                 .as_ref()
                 .and_then(|reference| assets.headers.get(&reference.id).cloned())
+        })
+        .or_else(|| {
+            section_prop
+                .even_header
+                .as_ref()
+                .and_then(|(_relationship_id, header)| {
+                    convert_docx_header(header, &ImageMap::new())
+                })
         })
 }
 
@@ -277,20 +416,16 @@ fn extract_docx_footer(
     assets: &HeaderFooterAssets,
 ) -> Option<HeaderFooter> {
     section_prop
-        .footer
+        .footer_reference
         .as_ref()
-        .and_then(|(_relationship_id, footer)| convert_docx_footer(footer))
+        .and_then(|reference| assets.footers.get(&reference.id).cloned())
         .or_else(|| {
             section_prop
-                .footer_reference
+                .footer
                 .as_ref()
-                .and_then(|reference| assets.footers.get(&reference.id).cloned())
-        })
-        .or_else(|| {
-            section_prop
-                .first_footer
-                .as_ref()
-                .and_then(|(_relationship_id, footer)| convert_docx_footer(footer))
+                .and_then(|(_relationship_id, footer)| {
+                    convert_docx_footer(footer, &ImageMap::new(), &[])
+                })
         })
         .or_else(|| {
             section_prop
@@ -300,9 +435,11 @@ fn extract_docx_footer(
         })
         .or_else(|| {
             section_prop
-                .even_footer
+                .first_footer
                 .as_ref()
-                .and_then(|(_relationship_id, footer)| convert_docx_footer(footer))
+                .and_then(|(_relationship_id, footer)| {
+                    convert_docx_footer(footer, &ImageMap::new(), &[])
+                })
         })
         .or_else(|| {
             section_prop
@@ -310,20 +447,49 @@ fn extract_docx_footer(
                 .as_ref()
                 .and_then(|reference| assets.footers.get(&reference.id).cloned())
         })
+        .or_else(|| {
+            section_prop
+                .even_footer
+                .as_ref()
+                .and_then(|(_relationship_id, footer)| {
+                    convert_docx_footer(footer, &ImageMap::new(), &[])
+                })
+        })
 }
 
 /// Convert a docx-rs Paragraph into a HeaderFooterParagraph.
 /// Detects PAGE/NUMPAGES field codes within runs and emits page counter inlines.
-fn convert_hf_paragraph(paragraph: &docx_rs::Paragraph) -> HeaderFooterParagraph {
+fn convert_hf_paragraph(
+    paragraph: &docx_rs::Paragraph,
+    images: &ImageMap,
+    is_bidi: bool,
+) -> HeaderFooterParagraph {
     let explicit_style = extract_paragraph_style(&paragraph.property);
     let explicit_tab_overrides = extract_tab_stop_overrides(&paragraph.property.tabs);
-    let style = merge_paragraph_style(&explicit_style, explicit_tab_overrides.as_deref(), None);
+    let mut style = merge_paragraph_style(&explicit_style, explicit_tab_overrides.as_deref(), None);
+    if is_bidi || paragraph.property.bidi == Some(true) {
+        style.direction = Some(TextDirection::Rtl);
+    }
     let mut elements: Vec<HFInline> = Vec::new();
 
     for child in &paragraph.children {
         if let docx_rs::ParagraphChild::Run(run) = child {
             let run_style = extract_run_style(&run.run_property);
             extract_hf_run_elements(&run.children, &run_style, &mut elements);
+            for run_child in &run.children {
+                if let docx_rs::RunChild::Drawing(drawing) = run_child
+                    && let Some(block) =
+                        extract_drawing_image(drawing, images, &WrapContext::empty())
+                {
+                    match block {
+                        Block::Image(image) => elements.push(HFInline::Image(image)),
+                        Block::FloatingImage(image) => {
+                            elements.push(HFInline::Image(image.image));
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
     }
 

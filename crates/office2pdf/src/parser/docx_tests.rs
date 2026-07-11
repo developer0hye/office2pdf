@@ -843,3 +843,60 @@ fn build_docx_with_columns(document_xml: &str) -> Vec<u8> {
 mod layout_rtl_tests;
 #[path = "docx_math_chart_metadata_tests.rs"]
 mod math_chart_metadata_tests;
+
+#[test]
+fn issue_189_footer_preserves_inline_image_and_rtl_text() {
+    let data = include_bytes!("../../../../tests/fixtures/docx/issue_189_footer_image_rtl.docx");
+    let parser = DocxParser;
+    let (document, warnings) = parser
+        .parse(data, &ConvertOptions::default())
+        .expect("issue #189 fixture should parse");
+
+    assert!(warnings.is_empty(), "unexpected warnings: {warnings:?}");
+    let Page::Flow(page) = &document.pages[0] else {
+        panic!("expected flow page");
+    };
+    let footer = page.footer.as_ref().expect("default footer");
+
+    assert_eq!(footer.paragraphs.len(), 3);
+    assert_eq!(footer.paragraphs[0].elements.len(), 1, "footer image");
+    assert_eq!(footer.paragraphs[1].elements.len(), 1, "French footer text");
+    assert_eq!(
+        footer.paragraphs[2].style.direction,
+        Some(TextDirection::Rtl),
+        "Arabic footer paragraph direction"
+    );
+    let footer_text: String = footer
+        .paragraphs
+        .iter()
+        .flat_map(|paragraph| &paragraph.elements)
+        .filter_map(|element| match element {
+            HFInline::Run(run) => Some(run.text.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert!(footer_text.contains("Généré par m3llm.cafe"));
+    assert!(footer_text.contains("صنع بواسطة m3llm.cafe"));
+
+    let typst = crate::render::typst_gen::generate_typst(&document)
+        .expect("issue #189 fixture should generate Typst");
+    assert_eq!(typst.images.len(), 1, "footer image asset");
+    assert!(typst.source.contains("#image(\"img-0.png\""));
+    assert!(typst.source.contains("#text(dir: rtl)["));
+    assert!(typst.source.contains("footer_content = block(width: 100%)"));
+    assert!(typst.source.contains("-measure(footer_content).height / 2"));
+    assert!(typst.source.contains("Généré par m3llm.cafe"));
+    assert!(typst.source.contains("صنع بواسطة m3llm.cafe"));
+
+    let result = crate::convert_bytes(data, crate::Format::Docx, &ConvertOptions::default())
+        .expect("issue #189 fixture should convert to PDF");
+    let pdf_text = pdf_extract::extract_text_from_mem(&result.pdf)
+        .expect("issue #189 PDF text should extract");
+    assert!(pdf_text.contains("Généré par m3llm.cafe"));
+    // PDF text extraction exposes RTL glyphs in visual order with layout spacing.
+    assert!(pdf_text.contains("عنص"), "extracted PDF text: {pdf_text:?}");
+    assert!(
+        pdf_text.contains("ةطساوب"),
+        "extracted PDF text: {pdf_text:?}"
+    );
+}

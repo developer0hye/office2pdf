@@ -299,7 +299,7 @@ fn generate_flow_page(
     options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
     let size = resolve_page_size(&page.size, options);
-    write_flow_page_setup(out, page, &size);
+    write_flow_page_setup(out, page, &size, ctx);
     out.push('\n');
 
     if let Some(ref cols) = page.columns {
@@ -424,7 +424,7 @@ fn generate_table_page(
     options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
     let size = resolve_page_size(&page.size, options);
-    write_table_page_setup(out, page, &size);
+    write_table_page_setup(out, page, &size, ctx);
     out.push('\n');
 
     if page.charts.is_empty() {
@@ -744,7 +744,7 @@ fn write_page_setup(out: &mut String, size: &PageSize, margins: &Margins) {
 }
 
 /// Write the full page setup for a FlowPage, including optional header/footer.
-fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize) {
+fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize, ctx: &mut GenCtx) {
     if page.header.is_none() && page.footer.is_none() {
         write_page_setup(out, size, &page.margins);
         return;
@@ -767,25 +767,31 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize) {
         } else {
             out.push_str(", header: [");
         }
-        generate_hf_content(out, header);
+        generate_hf_content(out, header, ctx);
         out.push(']');
     }
 
     if let Some(footer) = &page.footer {
-        if hf_needs_context(footer) {
+        if hf_needs_stack_offset(footer) {
+            out.push_str(", footer: context { let footer_content = block(width: 100%)[");
+            generate_hf_content(out, footer, ctx);
+            out.push_str("]; move(dy: -measure(footer_content).height / 2)[#footer_content] }");
+        } else if hf_needs_context(footer) {
             out.push_str(", footer: context [");
+            generate_hf_content(out, footer, ctx);
+            out.push(']');
         } else {
             out.push_str(", footer: [");
+            generate_hf_content(out, footer, ctx);
+            out.push(']');
         }
-        generate_hf_content(out, footer);
-        out.push(']');
     }
 
     out.push_str(")\n");
 }
 
 /// Write the full page setup for a SheetPage, including optional header/footer.
-fn write_table_page_setup(out: &mut String, page: &SheetPage, size: &PageSize) {
+fn write_table_page_setup(out: &mut String, page: &SheetPage, size: &PageSize, ctx: &mut GenCtx) {
     if page.header.is_none() && page.footer.is_none() {
         write_page_setup(out, size, &page.margins);
         return;
@@ -808,18 +814,24 @@ fn write_table_page_setup(out: &mut String, page: &SheetPage, size: &PageSize) {
         } else {
             out.push_str(", header: [");
         }
-        generate_hf_content(out, header);
+        generate_hf_content(out, header, ctx);
         out.push(']');
     }
 
     if let Some(footer) = &page.footer {
-        if hf_needs_context(footer) {
+        if hf_needs_stack_offset(footer) {
+            out.push_str(", footer: context { let footer_content = block(width: 100%)[");
+            generate_hf_content(out, footer, ctx);
+            out.push_str("]; move(dy: -measure(footer_content).height / 2)[#footer_content] }");
+        } else if hf_needs_context(footer) {
             out.push_str(", footer: context [");
+            generate_hf_content(out, footer, ctx);
+            out.push(']');
         } else {
             out.push_str(", footer: [");
+            generate_hf_content(out, footer, ctx);
+            out.push(']');
         }
-        generate_hf_content(out, footer);
-        out.push(']');
     }
 
     out.push_str(")\n");
@@ -834,8 +846,17 @@ fn hf_needs_context(hf: &HeaderFooter) -> bool {
     })
 }
 
+fn hf_needs_stack_offset(hf: &HeaderFooter) -> bool {
+    hf.paragraphs.len() > 1
+        || hf
+            .paragraphs
+            .iter()
+            .flat_map(|paragraph| &paragraph.elements)
+            .any(|element| matches!(element, HFInline::Image(_)))
+}
+
 /// Generate inline content for a header or footer.
-fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
+fn generate_hf_content(out: &mut String, hf: &HeaderFooter, ctx: &mut GenCtx) {
     for (i, para) in hf.paragraphs.iter().enumerate() {
         if i > 0 {
             out.push_str("\\\n");
@@ -850,10 +871,16 @@ fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
             };
             let _ = write!(out, "#align({align_str})[");
         }
+        if para.style.direction == Some(TextDirection::Rtl) {
+            out.push_str("#text(dir: rtl)[");
+        }
         for elem in &para.elements {
             match elem {
                 HFInline::Run(run) => {
                     generate_run(out, run);
+                }
+                HFInline::Image(image) => {
+                    generate_image(out, image, ctx);
                 }
                 HFInline::PageNumber => {
                     out.push_str("#counter(page).display()");
@@ -862,6 +889,9 @@ fn generate_hf_content(out: &mut String, hf: &HeaderFooter) {
                     out.push_str("#counter(page).final().first()");
                 }
             }
+        }
+        if para.style.direction == Some(TextDirection::Rtl) {
+            out.push(']');
         }
         if para.style.alignment.is_some() {
             out.push(']');

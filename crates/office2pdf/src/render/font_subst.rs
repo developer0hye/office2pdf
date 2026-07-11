@@ -356,7 +356,7 @@ fn visit_header_footer_fonts(
                 .map(str::trim)
                 .filter(|f| !f.is_empty())
                 .is_none_or(&mut *visitor),
-            HFInline::PageNumber | HFInline::TotalPages => true,
+            HFInline::Image(_) | HFInline::PageNumber | HFInline::TotalPages => true,
         })
     })
 }

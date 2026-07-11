@@ -20,6 +20,8 @@ pub struct HeaderFooterParagraph {
 pub enum HFInline {
     /// A text run with styling.
     Run(Run),
+    /// An inline image embedded in the header or footer part.
+    Image(ImageData),
     /// Current page number field.
     PageNumber,
     /// Total page count field.
