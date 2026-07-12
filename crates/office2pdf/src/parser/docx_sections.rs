@@ -32,6 +32,7 @@ enum SimpleFieldKind {
 #[derive(Clone, Copy)]
 struct SimpleFieldMarker {
     preceding_runs: usize,
+    cached_runs: usize,
     kind: SimpleFieldKind,
 }
 
@@ -169,6 +170,7 @@ fn scan_simple_fields(xml: &str) -> Vec<Vec<SimpleFieldMarker>> {
                         if let Some(kind) = simple_field_kind(element) {
                             fields.push(SimpleFieldMarker {
                                 preceding_runs: direct_run_count,
+                                cached_runs: 0,
                                 kind,
                             });
                         }
@@ -176,6 +178,11 @@ fn scan_simple_fields(xml: &str) -> Vec<Vec<SimpleFieldMarker>> {
                     }
                     b"r" if paragraph_depth == 1 && simple_field_depth == 0 => {
                         direct_run_count += 1;
+                    }
+                    b"r" if paragraph_depth == 1 && simple_field_depth > 0 => {
+                        if let Some(field) = fields.last_mut() {
+                            field.cached_runs += 1;
+                        }
                     }
                     _ => {}
                 }
@@ -187,6 +194,7 @@ fn scan_simple_fields(xml: &str) -> Vec<Vec<SimpleFieldMarker>> {
                 {
                     fields.push(SimpleFieldMarker {
                         preceding_runs: direct_run_count,
+                        cached_runs: 0,
                         kind,
                     });
                 }
@@ -585,10 +593,15 @@ fn convert_hf_paragraph(
     let mut elements: Vec<HFInline> = Vec::new();
 
     let mut processed_runs: usize = 0;
-    append_simple_fields(&mut elements, simple_fields, processed_runs);
+    let mut cached_runs_to_skip: usize =
+        append_simple_fields(&mut elements, simple_fields, processed_runs);
     for child in &paragraph.children {
         match child {
             docx_rs::ParagraphChild::Run(run) => {
+                if cached_runs_to_skip > 0 {
+                    cached_runs_to_skip -= 1;
+                    continue;
+                }
                 let run_style = extract_run_style(&run.run_property);
                 extract_hf_run_elements(&run.children, &run_style, &mut elements);
                 for run_child in &run.children {
@@ -606,7 +619,8 @@ fn convert_hf_paragraph(
                     }
                 }
                 processed_runs += 1;
-                append_simple_fields(&mut elements, simple_fields, processed_runs);
+                cached_runs_to_skip +=
+                    append_simple_fields(&mut elements, simple_fields, processed_runs);
             }
             docx_rs::ParagraphChild::PageNum(_) => elements.push(HFInline::PageNumber),
             docx_rs::ParagraphChild::NumPages(_) => elements.push(HFInline::TotalPages),
@@ -621,16 +635,18 @@ fn append_simple_fields(
     elements: &mut Vec<HFInline>,
     simple_fields: &[SimpleFieldMarker],
     processed_runs: usize,
-) {
-    for field in simple_fields
+) -> usize {
+    simple_fields
         .iter()
         .filter(|field| field.preceding_runs == processed_runs)
-    {
-        elements.push(match field.kind {
-            SimpleFieldKind::PageNumber => HFInline::PageNumber,
-            SimpleFieldKind::TotalPages => HFInline::TotalPages,
-        });
-    }
+        .map(|field| {
+            elements.push(match field.kind {
+                SimpleFieldKind::PageNumber => HFInline::PageNumber,
+                SimpleFieldKind::TotalPages => HFInline::TotalPages,
+            });
+            field.cached_runs
+        })
+        .sum()
 }
 
 /// Extract inline elements from a run's children for header/footer use.

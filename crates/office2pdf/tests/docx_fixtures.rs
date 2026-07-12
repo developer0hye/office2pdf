@@ -778,6 +778,12 @@ fn structure_fancy_foot_preserves_text_and_simple_page_field() {
     assert!(text.contains("This is a fancy alphabet footer, with page number and everything"));
     assert!(text.contains("Page "));
     assert!(
+        !elements
+            .iter()
+            .any(|element| matches!(element, HFInline::Run(run) if run.text.trim() == "2")),
+        "the cached fldSimple result must not follow the dynamic page number"
+    );
+    assert!(
         elements
             .iter()
             .any(|element| matches!(element, HFInline::PageNumber)),
