@@ -3,6 +3,7 @@ use std::cell::Cell;
 #[derive(Debug, Clone, Copy, Default)]
 pub(in super::super) struct TableHeaderInfo {
     pub(in super::super) repeat_rows: usize,
+    pub(in super::super) is_visual_rtl: bool,
 }
 
 pub(in super::super) struct TableHeaderContext {
@@ -31,6 +32,8 @@ struct TableHeaderScanState {
     in_row: bool,
     current_row_is_header: bool,
     saw_body_row: bool,
+    in_table_properties: bool,
+    is_visual_rtl: bool,
 }
 
 #[cfg(test)]
@@ -61,7 +64,14 @@ fn scan_table_headers_impl(xml: &str) -> Vec<TableHeaderInfo> {
                         in_row: false,
                         current_row_is_header: false,
                         saw_body_row: false,
+                        in_table_properties: false,
+                        is_visual_rtl: false,
                     });
+                }
+                b"tblPr" => {
+                    if let Some(state) = stack.last_mut() {
+                        state.in_table_properties = true;
+                    }
                 }
                 b"tr" => {
                     if let Some(state) = stack.last_mut() {
@@ -75,6 +85,14 @@ fn scan_table_headers_impl(xml: &str) -> Vec<TableHeaderInfo> {
                         && on_off_element_is_enabled(element)
                     {
                         state.current_row_is_header = true;
+                    }
+                }
+                b"bidiVisual" => {
+                    if let Some(state) = stack.last_mut()
+                        && state.in_table_properties
+                        && on_off_element_is_enabled(element)
+                    {
+                        state.is_visual_rtl = true;
                     }
                 }
                 _ => {}
@@ -97,6 +115,14 @@ fn scan_table_headers_impl(xml: &str) -> Vec<TableHeaderInfo> {
                         state.current_row_is_header = true;
                     }
                 }
+                b"bidiVisual" => {
+                    if let Some(state) = stack.last_mut()
+                        && state.in_table_properties
+                        && on_off_element_is_enabled(element)
+                    {
+                        state.is_visual_rtl = true;
+                    }
+                }
                 _ => {}
             },
             Ok(quick_xml::events::Event::End(ref element)) => match element.local_name().as_ref() {
@@ -105,9 +131,15 @@ fn scan_table_headers_impl(xml: &str) -> Vec<TableHeaderInfo> {
                         finalize_table_header_row(state);
                     }
                 }
+                b"tblPr" => {
+                    if let Some(state) = stack.last_mut() {
+                        state.in_table_properties = false;
+                    }
+                }
                 b"tbl" => {
                     if let Some(state) = stack.pop() {
                         headers[state.table_index].repeat_rows = state.repeat_rows;
+                        headers[state.table_index].is_visual_rtl = state.is_visual_rtl;
                     }
                 }
                 _ => {}

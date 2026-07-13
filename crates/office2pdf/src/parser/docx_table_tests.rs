@@ -181,6 +181,68 @@ fn test_scan_table_headers_counts_only_leading_rows() {
 }
 
 #[test]
+fn test_scan_table_headers_tracks_visual_rtl_per_table() {
+    let document_xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+            <w:tbl><w:tblPr><w:bidiVisual/></w:tblPr></w:tbl>
+            <w:tbl><w:tblPr><w:bidiVisual w:val="0"/></w:tblPr></w:tbl>
+            <w:tbl><w:tblPr/></w:tbl>
+        </w:body>
+    </w:document>"#;
+
+    let tables = scan_table_headers(document_xml);
+
+    assert_eq!(tables.len(), 3);
+    assert!(tables[0].is_visual_rtl);
+    assert!(!tables[1].is_visual_rtl);
+    assert!(!tables[2].is_visual_rtl);
+}
+
+#[test]
+fn test_visual_rtl_reverses_unequal_widths_and_preserves_colspan() {
+    let document_xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+            <w:tbl>
+                <w:tblPr><w:bidiVisual/></w:tblPr>
+                <w:tblGrid>
+                    <w:gridCol w:w="1000"/><w:gridCol w:w="2000"/><w:gridCol w:w="3000"/>
+                </w:tblGrid>
+                <w:tr>
+                    <w:tc><w:tcPr><w:gridSpan w:val="2"/></w:tcPr><w:p><w:r><w:t>Wide</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Narrow</w:t></w:r></w:p></w:tc>
+                </w:tr>
+            </w:tbl>
+            <w:sectPr/>
+        </w:body>
+    </w:document>"#;
+    let data = build_docx_with_columns(document_xml);
+    let (document, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let table = first_table(&document);
+    let cell_text = |index: usize| -> String {
+        table.rows[0].cells[index]
+            .content
+            .iter()
+            .filter_map(|block| match block {
+                Block::Paragraph(paragraph) => Some(
+                    paragraph
+                        .runs
+                        .iter()
+                        .map(|run| run.text.as_str())
+                        .collect::<String>(),
+                ),
+                _ => None,
+            })
+            .collect()
+    };
+
+    assert_eq!(cell_text(0), "Narrow");
+    assert_eq!(table.rows[0].cells[0].col_span, 1);
+    assert_eq!(cell_text(1), "Wide");
+    assert_eq!(table.rows[0].cells[1].col_span, 2);
+    assert_eq!(table.column_widths, vec![150.0, 100.0, 50.0]);
+}
+
+#[test]
 fn test_table_header_rows_from_raw_docx_xml() {
     let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">

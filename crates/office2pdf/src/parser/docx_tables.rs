@@ -138,7 +138,7 @@ pub(super) fn convert_table(
     let alignment = extract_table_alignment(table_prop_json.as_ref());
     let default_cell_padding = extract_table_default_cell_padding(table_prop_json.as_ref());
 
-    let raw_rows = extract_raw_rows(
+    let mut raw_rows = extract_raw_rows(
         table,
         images,
         hyperlinks,
@@ -148,11 +148,17 @@ pub(super) fn convert_table(
         default_cell_padding,
     );
 
-    let column_widths: Vec<f64> = if table.grid.is_empty() {
+    let mut column_widths: Vec<f64> = if table.grid.is_empty() {
         derive_column_widths_from_cells(&raw_rows).unwrap_or_default()
     } else {
         table.grid.iter().map(|&w| twips_to_pt(w as f64)).collect()
     };
+
+    if header_info.is_visual_rtl {
+        let column_count: usize = raw_table_column_count(&raw_rows).max(column_widths.len());
+        reverse_raw_rows_for_visual_rtl(&mut raw_rows, column_count);
+        column_widths.reverse();
+    }
 
     let rows = resolve_vmerge_and_build_rows(&raw_rows);
 
@@ -163,6 +169,22 @@ pub(super) fn convert_table(
         alignment,
         default_cell_padding,
         use_content_driven_row_heights: false,
+    }
+}
+
+fn reverse_raw_rows_for_visual_rtl(raw_rows: &mut [RawRow], column_count: usize) {
+    for row in raw_rows {
+        for cell in &mut row.cells {
+            let cell_end: usize = cell.col_index + cell.col_span as usize;
+            cell.col_index = column_count.saturating_sub(cell_end);
+            if let Some(border) = &mut cell.border {
+                std::mem::swap(&mut border.left, &mut border.right);
+            }
+            if let Some(padding) = &mut cell.padding {
+                std::mem::swap(&mut padding.left, &mut padding.right);
+            }
+        }
+        row.cells.reverse();
     }
 }
 
@@ -247,15 +269,7 @@ fn extract_raw_rows(
 }
 
 fn derive_column_widths_from_cells(raw_rows: &[RawRow]) -> Option<Vec<f64>> {
-    let num_cols = raw_rows
-        .iter()
-        .flat_map(|row| {
-            row.cells
-                .iter()
-                .map(|cell| cell.col_index + cell.col_span as usize)
-        })
-        .max()
-        .unwrap_or(0);
+    let num_cols: usize = raw_table_column_count(raw_rows);
 
     if num_cols == 0 {
         return None;
@@ -286,6 +300,18 @@ fn derive_column_widths_from_cells(raw_rows: &[RawRow]) -> Option<Vec<f64>> {
     }
 
     saw_width.then_some(widths)
+}
+
+fn raw_table_column_count(raw_rows: &[RawRow]) -> usize {
+    raw_rows
+        .iter()
+        .flat_map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.col_index + cell.col_span as usize)
+        })
+        .max()
+        .unwrap_or_default()
 }
 
 fn resolve_vmerge_and_build_rows(raw_rows: &[RawRow]) -> Vec<TableRow> {

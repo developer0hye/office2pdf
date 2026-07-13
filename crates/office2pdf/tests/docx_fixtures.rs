@@ -931,6 +931,32 @@ docx_fixture_tests!(tdf111550, "libreoffice/tdf111550.docx");
 docx_fixture_tests!(tdf111964, "libreoffice/tdf111964.docx");
 docx_fixture_tests!(tdf124670, "libreoffice/tdf124670.docx");
 docx_fixture_tests!(tdf129659, "libreoffice/tdf129659.docx");
+docx_fixture_tests!(table_rtl, "libreoffice/table-rtl.docx");
+
+#[test]
+fn structure_table_rtl_uses_visual_right_to_left_cell_order() {
+    let pages = flow_pages("libreoffice/table-rtl.docx");
+    let blocks = all_blocks(&pages);
+    let table = blocks
+        .iter()
+        .find_map(|block| match block {
+            Block::Table(table) => Some(table),
+            _ => None,
+        })
+        .expect("the RTL fixture should contain a table");
+    let row_texts: Vec<Vec<String>> = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.cells
+                .iter()
+                .map(|cell| cell.content.iter().map(block_text).collect::<String>())
+                .collect()
+        })
+        .collect();
+
+    assert_eq!(row_texts, vec![vec!["B1", "A1"], vec!["B2", "A2"]]);
+}
 docx_fixture_tests!(cloud, "libreoffice/cloud.docx");
 docx_fixture_tests!(xml_space, "libreoffice/xml_space.docx");
 docx_fixture_tests!(
