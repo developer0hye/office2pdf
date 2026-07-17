@@ -39,14 +39,20 @@ pub fn validate_pdf_with_qpdf(pdf_bytes: &[u8]) -> bool {
         }
     }
 
-    // Write PDF bytes to a temp file
+    // Write PDF bytes to a temp file. Tests run in parallel threads within
+    // one process, so a timestamp alone can collide — two tests would then
+    // overwrite each other's file and qpdf would see a damaged PDF. A
+    // process-wide counter makes each name unique.
+    static TEMP_FILE_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let unique_id: u64 = TEMP_FILE_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let temp_path = std::env::temp_dir().join(format!(
-        "office2pdf_test_{}_{}.pdf",
+        "office2pdf_test_{}_{}_{}.pdf",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_nanos()
+            .as_nanos(),
+        unique_id
     ));
 
     std::fs::write(&temp_path, pdf_bytes).expect("should write temp PDF file");
