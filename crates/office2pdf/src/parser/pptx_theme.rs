@@ -507,6 +507,39 @@ fn extract_fill_style_entries(xml: &str, list_tag: &[u8]) -> Vec<String> {
     entries
 }
 
+/// Parse the image relationship id of a `<p:bg><p:bgPr><a:blipFill>` picture
+/// background from a slide/layout/master XML.
+pub(super) fn parse_background_image_rid(xml: &str) -> Option<String> {
+    let mut reader = Reader::from_str(xml);
+    let mut in_bg = false;
+    let mut in_bg_pr = false;
+    let mut in_blip_fill = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => match e.local_name().as_ref() {
+                b"bg" => in_bg = true,
+                b"bgPr" if in_bg => in_bg_pr = true,
+                b"blipFill" if in_bg_pr => in_blip_fill = true,
+                b"blip" if in_blip_fill => {
+                    return get_attr_str(e, b"r:embed");
+                }
+                _ => {}
+            },
+            Ok(Event::End(ref e)) => match e.local_name().as_ref() {
+                b"bg" => return None,
+                b"bgPr" => in_bg_pr = false,
+                b"blipFill" => in_blip_fill = false,
+                _ => {}
+            },
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+
+    None
+}
+
 /// Resolve a `<p:bg><p:bgRef idx="N">` background reference against the
 /// theme's fill style lists (ECMA-376 §19.3.1.2: idx 1-999 → fillStyleLst,
 /// idx ≥ 1001 → bgFillStyleLst; the entry's `phClr` takes the bgRef child

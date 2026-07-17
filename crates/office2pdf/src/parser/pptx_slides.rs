@@ -151,42 +151,108 @@ fn collect_chart_elements<R: Read + std::io::Seek>(
 
 // ── Background resolution ───────────────────────────────────────────────
 
+/// Resolved slide background: an optional solid color and gradient, plus an
+/// optional picture fill given as (owning layer part path, image rel id).
+struct ResolvedBackground {
+    color: Option<Color>,
+    gradient: Option<GradientFill>,
+    image: Option<(String, String)>,
+}
+
 /// Resolve the slide background by checking slide -> layout -> master in
-/// order. Within a layer, a `<p:bgPr>` gradient wins over a solid fill, and
-/// `<p:bgRef>` theme references resolve through the theme fill style lists.
-/// The first layer with a resolvable background wins.
+/// order. Within a layer, a `<p:bgPr>` gradient wins over a solid fill, then
+/// a picture fill, then `<p:bgRef>` theme references resolved through the
+/// theme fill style lists. The first layer with a resolvable background wins.
 fn resolve_slide_background(
     chain: &SlideInheritanceChain,
+    slide_path: &str,
     theme: &ThemeData,
-) -> (Option<Color>, Option<GradientFill>) {
-    let layers: [(Option<&str>, &ColorMapData); 3] = [
-        (Some(chain.slide_xml.as_str()), &chain.slide_color_map),
+) -> ResolvedBackground {
+    let layers: [(Option<&str>, &str, &ColorMapData); 3] = [
+        (
+            Some(chain.slide_xml.as_str()),
+            slide_path,
+            &chain.slide_color_map,
+        ),
         (
             chain.layout_xml.as_deref(),
+            chain.layout_path.as_deref().unwrap_or(""),
             chain
                 .layout_color_map
                 .as_ref()
                 .unwrap_or(&chain.master_color_map),
         ),
-        (chain.master_xml.as_deref(), &chain.master_color_map),
+        (
+            chain.master_xml.as_deref(),
+            chain.master_path.as_deref().unwrap_or(""),
+            &chain.master_color_map,
+        ),
     ];
 
-    for (layer_xml, color_map) in layers {
+    for (layer_xml, layer_path, color_map) in layers {
         let Some(xml) = layer_xml else { continue };
 
         if let Some(gradient) = parse_background_gradient(xml, theme, color_map) {
-            let fallback_color = gradient.stops.first().map(|s| s.color);
-            return (fallback_color, Some(gradient));
+            return ResolvedBackground {
+                color: gradient.stops.first().map(|s| s.color),
+                gradient: Some(gradient),
+                image: None,
+            };
         }
         if let Some(color) = parse_background_color(xml, theme, color_map) {
-            return (Some(color), None);
+            return ResolvedBackground {
+                color: Some(color),
+                gradient: None,
+                image: None,
+            };
+        }
+        if let Some(rid) = parse_background_image_rid(xml) {
+            return ResolvedBackground {
+                color: None,
+                gradient: None,
+                image: Some((layer_path.to_string(), rid)),
+            };
         }
         if let Some((color, gradient)) = parse_background_ref(xml, theme, color_map) {
-            return (color, gradient);
+            return ResolvedBackground {
+                color,
+                gradient,
+                image: None,
+            };
         }
     }
 
-    (None, None)
+    ResolvedBackground {
+        color: None,
+        gradient: None,
+        image: None,
+    }
+}
+
+/// Build a full-page image element for a picture-fill background.
+fn build_background_image_element<R: Read + std::io::Seek>(
+    layer_path: &str,
+    rid: &str,
+    slide_size: PageSize,
+    archive: &mut ZipArchive<R>,
+) -> Option<FixedElement> {
+    let images: SlideImageMap = load_slide_images(layer_path, archive);
+    let asset = images.get(rid)?;
+    let format = asset.format()?;
+    Some(FixedElement {
+        x: 0.0,
+        y: 0.0,
+        width: slide_size.width,
+        height: slide_size.height,
+        kind: FixedElementKind::Image(ImageData {
+            data: asset.data.clone(),
+            format,
+            width: Some(slide_size.width),
+            height: Some(slide_size.height),
+            crop: None,
+            stroke: None,
+        }),
+    })
 }
 
 // ── Public entry point ──────────────────────────────────────────────────
@@ -309,14 +375,21 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
         archive,
     ));
 
-    let (background_color, background_gradient) = resolve_slide_background(&chain, theme);
+    let background: ResolvedBackground = resolve_slide_background(&chain, slide_path, theme);
+    if let Some((layer_path, rid)) = &background.image
+        && let Some(element) = build_background_image_element(layer_path, rid, slide_size, archive)
+    {
+        // Picture-fill backgrounds render as a full-page image behind
+        // everything else on the slide.
+        elements.insert(0, element);
+    }
 
     Ok(Some((
         Page::Fixed(FixedPage {
             size: slide_size,
             elements,
-            background_color,
-            background_gradient,
+            background_color: background.color,
+            background_gradient: background.gradient,
         }),
         warnings,
     )))
