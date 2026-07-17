@@ -3,7 +3,9 @@ use std::collections::{HashMap, HashSet};
 use crate::ir::{Block, Paragraph, ParagraphStyle, Run, TableRow};
 use crate::parser::cond_fmt::build_cond_fmt_overrides;
 
-use super::xlsx_style::{extract_cell_background, extract_cell_borders, extract_cell_text_style};
+use super::xlsx_style::{
+    extract_cell_alignment, extract_cell_background, extract_cell_borders, extract_cell_text_style,
+};
 use crate::ir::TableCell;
 
 /// A cell range within a sheet (1-indexed, inclusive).
@@ -192,6 +194,9 @@ pub(super) fn build_rows_for_range(
 
             // Extract formatting from the cell
             let mut text_style = umya_cell.map(extract_cell_text_style).unwrap_or_default();
+            let (cell_alignment, cell_vertical_align) = umya_cell
+                .map(extract_cell_alignment)
+                .unwrap_or((None, None));
             let mut background = umya_cell.and_then(extract_cell_background);
             let border = umya_cell.and_then(extract_cell_borders);
 
@@ -216,7 +221,10 @@ pub(super) fn build_rows_for_range(
                 Vec::new()
             } else {
                 vec![Block::Paragraph(Paragraph {
-                    style: ParagraphStyle::default(),
+                    style: ParagraphStyle {
+                        alignment: cell_alignment,
+                        ..ParagraphStyle::default()
+                    },
                     runs: vec![Run {
                         text: value,
                         style: text_style,
@@ -240,7 +248,7 @@ pub(super) fn build_rows_for_range(
                 background,
                 data_bar,
                 icon_text,
-                vertical_align: None,
+                vertical_align: cell_vertical_align,
                 padding: None,
             });
         }

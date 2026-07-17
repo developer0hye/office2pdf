@@ -124,3 +124,32 @@ pub(super) fn extract_cell_borders(cell: &umya_spreadsheet::Cell) -> Option<Cell
         right,
     })
 }
+
+/// Extract explicit cell alignment into IR values: (horizontal, vertical).
+/// Excel's "general" horizontal default maps to None (renderer default).
+pub(super) fn extract_cell_alignment(
+    cell: &umya_spreadsheet::Cell,
+) -> (
+    Option<crate::ir::Alignment>,
+    Option<crate::ir::CellVerticalAlign>,
+) {
+    let Some(alignment) = cell.get_style().get_alignment() else {
+        return (None, None);
+    };
+
+    use umya_spreadsheet::{HorizontalAlignmentValues as H, VerticalAlignmentValues as V};
+    let horizontal = match alignment.get_horizontal() {
+        H::Center | H::CenterContinuous => Some(crate::ir::Alignment::Center),
+        H::Right => Some(crate::ir::Alignment::Right),
+        H::Left => Some(crate::ir::Alignment::Left),
+        H::Justify => Some(crate::ir::Alignment::Justify),
+        _ => None,
+    };
+    let vertical = match alignment.get_vertical() {
+        V::Center => Some(crate::ir::CellVerticalAlign::Center),
+        V::Top => Some(crate::ir::CellVerticalAlign::Top),
+        // "bottom" is Excel's default; leave None so the renderer default applies.
+        _ => None,
+    };
+    (horizontal, vertical)
+}

@@ -602,3 +602,77 @@ fn test_cell_underline_none_is_not_underlined() {
     let style = first_run_style(&tp.table.rows[0].cells[0]);
     assert_eq!(style.underline, None);
 }
+
+#[test]
+fn test_cell_horizontal_center_alignment_applied() {
+    let data = build_xlsx_formatted(|sheet| {
+        let cell = sheet.get_cell_mut("A1");
+        cell.set_value("Centered");
+        cell.get_style_mut()
+            .get_alignment_mut()
+            .set_horizontal(umya_spreadsheet::HorizontalAlignmentValues::Center);
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let tp = get_sheet_page(&doc, 0);
+    let cell = &tp.table.rows[0].cells[0];
+    let Block::Paragraph(paragraph) = &cell.content[0] else {
+        panic!("expected paragraph");
+    };
+    assert_eq!(paragraph.style.alignment, Some(Alignment::Center));
+}
+
+#[test]
+fn test_cell_horizontal_right_alignment_applied() {
+    let data = build_xlsx_formatted(|sheet| {
+        let cell = sheet.get_cell_mut("A1");
+        cell.set_value("Right");
+        cell.get_style_mut()
+            .get_alignment_mut()
+            .set_horizontal(umya_spreadsheet::HorizontalAlignmentValues::Right);
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let tp = get_sheet_page(&doc, 0);
+    let Block::Paragraph(paragraph) = &tp.table.rows[0].cells[0].content[0] else {
+        panic!("expected paragraph");
+    };
+    assert_eq!(paragraph.style.alignment, Some(Alignment::Right));
+}
+
+#[test]
+fn test_cell_vertical_center_alignment_applied() {
+    let data = build_xlsx_formatted(|sheet| {
+        let cell = sheet.get_cell_mut("A1");
+        cell.set_value("Middle");
+        cell.get_style_mut()
+            .get_alignment_mut()
+            .set_vertical(umya_spreadsheet::VerticalAlignmentValues::Center);
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let tp = get_sheet_page(&doc, 0);
+    assert_eq!(
+        tp.table.rows[0].cells[0].vertical_align,
+        Some(CellVerticalAlign::Center)
+    );
+}
+
+#[test]
+fn test_cell_without_alignment_keeps_default() {
+    let data = build_xlsx_formatted(|sheet| {
+        sheet.get_cell_mut("A1").set_value("Plain");
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let tp = get_sheet_page(&doc, 0);
+    let Block::Paragraph(paragraph) = &tp.table.rows[0].cells[0].content[0] else {
+        panic!("expected paragraph");
+    };
+    assert_eq!(paragraph.style.alignment, None);
+    assert_eq!(tp.table.rows[0].cells[0].vertical_align, None);
+}
