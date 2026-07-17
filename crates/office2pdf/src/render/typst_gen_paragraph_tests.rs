@@ -577,3 +577,34 @@ fn test_generate_special_characters_escaped() {
         "Expected escaped or present text in: {result}"
     );
 }
+
+#[test]
+fn test_centered_paragraph_with_spacing_keeps_full_width_block() {
+    // A paragraph with spacing gets a #block wrapper; without width: 100%
+    // the block shrinks to its content and the inner #align(center) has no
+    // visible effect (Word: <w:spacing w:after> + <w:jc w:val="center">).
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            alignment: Some(Alignment::Center),
+            space_after: Some(6.0),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Centered title".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains("align(center"),
+        "Expected center alignment in: {result}"
+    );
+    let block_start = result.find("#block(").expect("expected block wrapper");
+    let block_params = &result[block_start..block_start + 60];
+    assert!(
+        block_params.contains("width: 100%"),
+        "Block wrapper must span the full width for alignment to apply: {block_params}"
+    );
+}

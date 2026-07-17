@@ -23,8 +23,10 @@ pub(super) fn generate_paragraph(out: &mut String, para: &Paragraph) -> Result<(
     let has_para_style = needs_block_wrapper(style);
 
     if has_para_style {
-        out.push_str("#block(");
-        write_block_params(out, style);
+        // The wrapper must span the full line width: Typst blocks shrink to
+        // their content by default, which would defeat the inner #align.
+        out.push_str("#block(width: 100%");
+        write_block_params_continuation(out, style);
         out.push_str(")[\n");
         write_par_settings(out, style);
     }
@@ -84,6 +86,17 @@ pub(super) fn write_block_params(out: &mut String, style: &ParagraphStyle) {
     }
     if let Some(below) = style.space_after {
         write_param(out, &mut first, &format!("below: {}pt", format_f64(below)));
+    }
+}
+
+/// Like `write_block_params`, but for a parameter list that already has a
+/// first entry (every parameter is prefixed with a comma).
+fn write_block_params_continuation(out: &mut String, style: &ParagraphStyle) {
+    if let Some(above) = style.space_before {
+        let _ = write!(out, ", above: {}pt", format_f64(above));
+    }
+    if let Some(below) = style.space_after {
+        let _ = write!(out, ", below: {}pt", format_f64(below));
     }
 }
 

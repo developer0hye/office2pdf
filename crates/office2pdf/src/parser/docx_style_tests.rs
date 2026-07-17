@@ -281,3 +281,22 @@ fn test_runs_inherit_document_default_font() {
     assert_eq!(para.runs[1].style.color, Some(Color::new(17, 85, 204)));
     assert_eq!(para.runs[1].style.underline, Some(true));
 }
+
+#[test]
+fn test_direct_jc_center_applied_to_paragraph() {
+    // Direct <w:jc w:val="center"/> in the paragraph's own pPr (no style).
+    let data = build_docx_bytes_with_styles(
+        vec![
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Centered directly"))
+                .align(docx_rs::AlignmentType::Center),
+        ],
+        vec![],
+    );
+
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let para = first_paragraph(&doc);
+
+    assert_eq!(para.style.alignment, Some(Alignment::Center));
+}
