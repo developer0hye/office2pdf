@@ -32,6 +32,7 @@ fn make_image(format: ImageFormat, width: Option<f64>, height: Option<f64>) -> B
         height,
         crop: None,
         stroke: None,
+        alignment: None,
     })
 }
 
@@ -64,6 +65,7 @@ fn test_image_crop_preprocesses_raster_asset() {
             bottom: 0.0,
         }),
         stroke: None,
+        alignment: None,
     })])]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -236,6 +238,7 @@ fn test_image_with_border_renders_box_stroke() {
             color: Color { r: 152, g: 0, b: 0 },
             style: BorderLineStyle::Solid,
         }),
+        alignment: None,
     })])]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -275,6 +278,7 @@ fn test_fixed_image_with_border_uses_rect_overlay() {
                     },
                     style: BorderLineStyle::Solid,
                 }),
+                alignment: None,
             }),
         }],
     )]);

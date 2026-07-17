@@ -425,6 +425,9 @@ pub struct ImageData {
     pub crop: Option<ImageCrop>,
     /// Optional border stroke around the image.
     pub stroke: Option<BorderSide>,
+    /// Horizontal placement inherited from the containing paragraph
+    /// (flow documents); None renders at the flow default (left).
+    pub alignment: Option<Alignment>,
 }
 
 /// Supported image formats.

@@ -340,6 +340,7 @@ fn test_edge_image_only_docx() {
                 height: Some(100.0),
                 crop: None,
                 stroke: None,
+                alignment: None,
             })],
             header: None,
             footer: None,

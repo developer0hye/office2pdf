@@ -202,6 +202,7 @@ fn test_render_document_with_image() {
                 height: Some(80.0),
                 crop: None,
                 stroke: None,
+                alignment: None,
             })],
             header: None,
             footer: None,
@@ -238,6 +239,7 @@ fn test_render_document_image_mixed_with_text() {
                     height: None,
                     crop: None,
                     stroke: None,
+                    alignment: None,
                 }),
                 Block::Paragraph(Paragraph {
                     style: ParagraphStyle::default(),

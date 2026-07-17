@@ -1181,15 +1181,27 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
         }
         Block::Table(table) => generate_table(out, table, ctx),
         Block::Image(img) => {
+            let align_str: Option<&str> = match img.alignment {
+                Some(Alignment::Center) => Some("center"),
+                Some(Alignment::Right) => Some("right"),
+                _ => None,
+            };
+            if let Some(align_str) = align_str {
+                let _ = write!(out, "#align({align_str})[");
+            }
             if let Some(ref stroke) = img.stroke {
                 out.push_str("#box(stroke: ");
                 shapes::write_image_border_stroke(out, stroke);
                 out.push_str(")[");
                 generate_image(out, img, ctx);
-                out.push_str("]\n");
+                out.push(']');
             } else {
                 generate_image(out, img, ctx);
             }
+            if align_str.is_some() {
+                out.push(']');
+            }
+            out.push('\n');
             Ok(())
         }
         Block::InlineImages(images) => {

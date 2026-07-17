@@ -768,11 +768,11 @@ fn convert_paragraph_blocks(
                         matches!(block, Block::FloatingShape(_) | Block::FloatingTextBox(_))
                     });
                     if !runs.is_empty() {
-                        push_inline_images(out, &mut inline_images);
+                        push_inline_images(out, &mut inline_images, paragraph_alignment(para));
                         push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
                         emitted_paragraph = true;
                     } else if !inline_images.is_empty() {
-                        push_inline_images(out, &mut inline_images);
+                        push_inline_images(out, &mut inline_images, paragraph_alignment(para));
                     }
                     out.extend(media.text_box_blocks);
                 }
@@ -780,7 +780,7 @@ fn convert_paragraph_blocks(
                 if media.has_page_break || media.has_column_break {
                     // Flush current runs as a paragraph before the layout break.
                     if !runs.is_empty() {
-                        push_inline_images(out, &mut inline_images);
+                        push_inline_images(out, &mut inline_images, paragraph_alignment(para));
                         push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
                         emitted_paragraph = true;
                     }
@@ -830,7 +830,7 @@ fn convert_paragraph_blocks(
         }
     }
 
-    push_inline_images(out, &mut inline_images);
+    push_inline_images(out, &mut inline_images, paragraph_alignment(para));
 
     if !runs.is_empty() || !emitted_media_blocks || (emitted_floating_anchor && !emitted_paragraph)
     {
@@ -841,12 +841,22 @@ fn convert_paragraph_blocks(
     }
 }
 
-fn push_inline_images(out: &mut Vec<Block>, inline_images: &mut Vec<Block>) {
+fn push_inline_images(
+    out: &mut Vec<Block>,
+    inline_images: &mut Vec<Block>,
+    alignment: Option<Alignment>,
+) {
     let mut grouped: Vec<ImageData> = Vec::new();
 
     for block in inline_images.drain(..) {
         match block {
-            Block::Image(image) => grouped.push(image),
+            Block::Image(mut image) => {
+                // Inline images inherit the containing paragraph's alignment.
+                if image.alignment.is_none() {
+                    image.alignment = alignment;
+                }
+                grouped.push(image)
+            }
             other => {
                 flush_inline_image_group(out, &mut grouped);
                 out.push(other);
@@ -862,6 +872,11 @@ fn flush_inline_image_group(out: &mut Vec<Block>, grouped: &mut Vec<ImageData>) 
         1 => out.push(Block::Image(grouped.pop().expect("one inline image"))),
         _ => out.push(Block::InlineImages(std::mem::take(grouped))),
     }
+}
+
+/// The paragraph's explicit horizontal alignment, if any.
+fn paragraph_alignment(para: &docx_rs::Paragraph) -> Option<Alignment> {
+    extract_paragraph_style(&para.property).alignment
 }
 
 fn push_paragraph_from_runs(

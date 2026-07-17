@@ -251,6 +251,7 @@ fn build_background_image_element<R: Read + std::io::Seek>(
             height: Some(slide_size.height),
             crop: None,
             stroke: None,
+            alignment: None,
         }),
     })
 }
@@ -783,6 +784,7 @@ fn finalize_picture(
                 height: Some(emu_to_pt(pic.cy)),
                 crop: pic.crop,
                 stroke: stroke.clone(),
+                alignment: None,
             }),
         })
     });

@@ -427,3 +427,35 @@ fn patch_docx_behind_doc(data: &[u8]) -> Vec<u8> {
 
     new_zip.finish().unwrap().into_inner()
 }
+
+#[test]
+fn test_inline_image_inherits_paragraph_center_alignment() {
+    // Word centers an inline image via the paragraph's <w:jc w:val="center"/>.
+    let bmp_data = make_test_bmp();
+    let pic = docx_rs::Pic::new(&bmp_data).size(100 * 9525, 50 * 9525);
+    let paragraph = docx_rs::Paragraph::new()
+        .add_run(docx_rs::Run::new().add_image(pic))
+        .align(docx_rs::AlignmentType::Center);
+    let docx = docx_rs::Docx::new().add_paragraph(paragraph);
+    let mut cursor = Cursor::new(Vec::new());
+    docx.build().pack(&mut cursor).unwrap();
+
+    let parser = DocxParser;
+    let (doc, _warnings) = parser
+        .parse(&cursor.into_inner(), &ConvertOptions::default())
+        .unwrap();
+
+    let page = match &doc.pages[0] {
+        Page::Flow(p) => p,
+        _ => panic!("Expected FlowPage"),
+    };
+    let image = page
+        .content
+        .iter()
+        .find_map(|block| match block {
+            Block::Image(image) => Some(image),
+            _ => None,
+        })
+        .expect("expected an inline image block");
+    assert_eq!(image.alignment, Some(Alignment::Center));
+}
