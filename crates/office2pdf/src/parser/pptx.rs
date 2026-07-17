@@ -441,7 +441,9 @@ impl Parser for PptxParser {
                     &table_styles,
                     &mut archive,
                 ) {
-                    Ok((page, slide_warnings)) => {
+                    // Hidden slide (show="0"): PowerPoint omits it from PDF export.
+                    Ok(None) => {}
+                    Ok(Some((page, slide_warnings))) => {
                         warnings.extend(slide_warnings);
                         // Emit structured warnings for fallback-rendered elements
                         if let Page::Fixed(ref fp) = page {

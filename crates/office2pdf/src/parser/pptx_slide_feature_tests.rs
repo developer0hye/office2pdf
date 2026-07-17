@@ -362,3 +362,98 @@ fn test_slide_filter_range_beyond_total() {
         "Range beyond total slides should produce empty document"
     );
 }
+
+// ── Hidden slide tests ───────────────────────────────────────────────
+
+/// Slide XML whose root `<p:sld>` carries a `show` attribute.
+fn make_slide_xml_with_show(show: &str, shapes: &[String]) -> String {
+    let mut xml = format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" show="{show}"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>"#
+    );
+    for shape in shapes {
+        xml.push_str(shape);
+    }
+    xml.push_str("</p:spTree></p:cSld></p:sld>");
+    xml
+}
+
+fn page_texts(doc: &Document) -> Vec<String> {
+    doc.pages
+        .iter()
+        .map(|page| {
+            let Page::Fixed(fixed) = page else {
+                panic!("Expected FixedPage");
+            };
+            fixed
+                .elements
+                .iter()
+                .filter_map(|element| match &element.kind {
+                    FixedElementKind::TextBox(text_box) => Some(
+                        text_box
+                            .content
+                            .iter()
+                            .filter_map(|block| match block {
+                                Block::Paragraph(paragraph) => Some(
+                                    paragraph
+                                        .runs
+                                        .iter()
+                                        .map(|run| run.text.clone())
+                                        .collect::<String>(),
+                                ),
+                                _ => None,
+                            })
+                            .collect::<String>(),
+                    ),
+                    _ => None,
+                })
+                .collect::<String>()
+        })
+        .collect()
+}
+
+#[test]
+fn test_hidden_slide_is_skipped() {
+    // PowerPoint omits hidden slides (show="0") from PDF export.
+    let slides = vec![
+        make_slide_xml(&[make_text_box(0, 0, 5_000_000, 500_000, "First")]),
+        make_slide_xml_with_show("0", &[make_text_box(0, 0, 5_000_000, 500_000, "Hidden")]),
+        make_slide_xml(&[make_text_box(0, 0, 5_000_000, 500_000, "Third")]),
+    ];
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &slides);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(page_texts(&doc), vec!["First", "Third"]);
+}
+
+#[test]
+fn test_hidden_slide_with_false_literal_is_skipped() {
+    let slides = vec![
+        make_slide_xml(&[make_text_box(0, 0, 5_000_000, 500_000, "First")]),
+        make_slide_xml_with_show(
+            "false",
+            &[make_text_box(0, 0, 5_000_000, 500_000, "Hidden")],
+        ),
+    ];
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &slides);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(page_texts(&doc), vec!["First"]);
+}
+
+#[test]
+fn test_visible_show_attribute_keeps_slide() {
+    let slides = vec![make_slide_xml_with_show(
+        "1",
+        &[make_text_box(0, 0, 5_000_000, 500_000, "Visible")],
+    )];
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &slides);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(page_texts(&doc), vec!["Visible"]);
+}

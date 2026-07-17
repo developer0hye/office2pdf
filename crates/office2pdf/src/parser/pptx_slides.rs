@@ -188,7 +188,25 @@ fn resolve_slide_background(
 
 // ── Public entry point ──────────────────────────────────────────────────
 
+/// True when the slide's root `<p:sld>` element carries `show="0"` or
+/// `show="false"` — PowerPoint omits such hidden slides from PDF export.
+fn is_hidden_slide(slide_xml: &str) -> bool {
+    let mut reader: Reader<&[u8]> = Reader::from_str(slide_xml);
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
+                return e.local_name().as_ref() == b"sld"
+                    && get_attr_str(e, b"show").is_some_and(|v| v == "0" || v == "false");
+            }
+            Ok(Event::Eof) | Err(_) => return false,
+            _ => {}
+        }
+    }
+}
+
 /// Parse a single slide from the archive, returning a Page or an error.
+/// Returns `Ok(None)` for hidden slides, which PowerPoint excludes from
+/// PDF export.
 ///
 /// Resolves the inheritance chain (slide -> layout -> master) and
 /// prepends master/layout elements behind slide elements.
@@ -199,8 +217,13 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
     theme: &ThemeData,
     table_styles: &table_styles::TableStyleMap,
     archive: &mut ZipArchive<R>,
-) -> Result<(Page, Vec<ConvertWarning>), ConvertError> {
+) -> Result<Option<(Page, Vec<ConvertWarning>)>, ConvertError> {
     let chain: SlideInheritanceChain = resolve_inheritance_chain(slide_path, theme, archive)?;
+
+    if is_hidden_slide(&chain.slide_xml) {
+        tracing::debug!(slide = slide_label, "skipping hidden slide");
+        return Ok(None);
+    }
 
     let slide_images: SlideImageMap = load_slide_images(slide_path, archive);
     let mut warnings: Vec<ConvertWarning> = Vec::new();
@@ -276,7 +299,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
 
     let (background_color, background_gradient) = resolve_slide_background(&chain, theme);
 
-    Ok((
+    Ok(Some((
         Page::Fixed(FixedPage {
             size: slide_size,
             elements,
@@ -284,7 +307,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
             background_gradient,
         }),
         warnings,
-    ))
+    )))
 }
 
 fn describe_assets(assets: impl IntoIterator<Item = String>) -> String {
