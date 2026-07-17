@@ -245,3 +245,22 @@ fn test_non_placeholder_text_box_ignores_title_style() {
     let runs = collect_runs(&doc);
     assert_ne!(run_for(&runs, "Plain box").1.font_size, Some(44.0));
 }
+
+#[test]
+fn test_run_typeface_overrides_inherited_default_font() {
+    // A run's own <a:latin> must beat the family inherited from the master
+    // otherStyle; the old first-wins guard kept the inherited font and
+    // dropped explicit run fonts (CJK runs then lost their bold variants).
+    let other_style = r#"<p:otherStyle><a:defPPr/><a:lvl1pPr><a:defRPr><a:latin typeface="Calibri"/></a:defRPr></a:lvl1pPr></p:otherStyle>"#;
+    let text_box = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="TextBox"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="100000" y="100000"/><a:ext cx="5000000" cy="500000"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US" b="1"><a:latin typeface="Malgun Gothic"/><a:ea typeface="Malgun Gothic"/></a:rPr><a:t>Own font</a:t></a:r></a:p></p:txBody></p:sp>"#;
+    let slide = make_slide(&[text_box.to_string()]);
+    let layout = make_layout(&[]);
+    let master = make_master_with_tx_styles(other_style);
+    let data = build_test_pptx_with_layout_master(SLIDE_CX, SLIDE_CY, &slide, &layout, &master);
+
+    let doc = parse_document(&data);
+    let runs = collect_runs(&doc);
+    let (_, style, _) = run_for(&runs, "Own font");
+    assert_eq!(style.font_family.as_deref(), Some("Malgun Gothic"));
+    assert_eq!(style.bold, Some(true));
+}

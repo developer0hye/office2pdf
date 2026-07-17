@@ -881,6 +881,9 @@ struct SlideXmlParser<'a> {
     // ── Inline tracking flags ───────────────────────────────────────
     in_text: bool,
     in_rpr: bool,
+    /// True once the current rPr/endParaRPr applied its own typeface, so a
+    /// later <a:ea>/<a:cs> in the same rPr does not override <a:latin>.
+    rpr_applied_typeface: bool,
     in_end_para_rpr: bool,
     in_text_line: bool,
     solid_fill_ctx: SolidFillCtx,
@@ -951,6 +954,7 @@ impl<'a> SlideXmlParser<'a> {
 
             in_text: false,
             in_rpr: false,
+            rpr_applied_typeface: false,
             in_end_para_rpr: false,
             in_text_line: false,
             solid_fill_ctx: SolidFillCtx::None,
@@ -1232,10 +1236,12 @@ impl<'a> SlideXmlParser<'a> {
             }
             b"rPr" if self.in_run => {
                 self.in_rpr = true;
+                self.rpr_applied_typeface = false;
                 extract_rpr_attributes(e, &mut self.run_style);
             }
             b"endParaRPr" if self.in_para && !self.in_run => {
                 self.in_end_para_rpr = true;
+                self.rpr_applied_typeface = false;
                 self.para_end_run_style = self.para_default_run_style.clone();
                 extract_rpr_attributes(e, &mut self.para_end_run_style);
             }
@@ -1530,10 +1536,21 @@ impl<'a> SlideXmlParser<'a> {
                 push_pptx_soft_line_break(&mut self.runs, &self.para_default_run_style);
             }
             b"latin" | b"ea" | b"cs" if self.in_rpr => {
+                // The rPr's own first typeface must beat the family inherited
+                // from layout/master defaults (only later ea/cs in the same
+                // rPr keep first-wins semantics).
+                if !self.rpr_applied_typeface {
+                    self.run_style.font_family = None;
+                }
                 apply_typeface_to_style(e, &mut self.run_style, self.theme);
+                self.rpr_applied_typeface |= self.run_style.font_family.is_some();
             }
             b"latin" | b"ea" | b"cs" if self.in_end_para_rpr => {
+                if !self.rpr_applied_typeface {
+                    self.para_end_run_style.font_family = None;
+                }
                 apply_typeface_to_style(e, &mut self.para_end_run_style, self.theme);
+                self.rpr_applied_typeface |= self.para_end_run_style.font_family.is_some();
             }
             _ => {}
         }
