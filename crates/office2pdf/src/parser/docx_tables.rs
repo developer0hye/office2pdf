@@ -293,7 +293,11 @@ fn apply_conditional_table_style(raw_rows: &mut [RawRow], table_style: &Resolved
             if !cell.has_explicit_background {
                 cell.background = style.background;
             }
-            apply_table_text_style(&mut cell.content, style);
+            // Explicit tcBorders on the cell win over the style's borders.
+            if cell.border.is_none() {
+                cell.border = style.border.clone();
+            }
+            apply_table_text_style(&mut cell.content, &style);
         }
     }
 }
