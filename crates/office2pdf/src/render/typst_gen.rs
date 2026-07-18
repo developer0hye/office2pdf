@@ -1026,6 +1026,39 @@ fn hf_needs_stack_offset(hf: &HeaderFooter) -> bool {
 
 /// Generate inline content for a header or footer.
 fn generate_hf_content(out: &mut String, hf: &HeaderFooter, ctx: &mut GenCtx) {
+    // Excel's left/center/right header sections share one line; stacking
+    // them as separate lines pushed sections onto extra rows.
+    let alignments: Vec<Option<Alignment>> =
+        hf.paragraphs.iter().map(|p| p.style.alignment).collect();
+    let is_single_line_sections = hf.paragraphs.len() > 1
+        && hf.paragraphs.len() <= 3
+        && alignments.iter().all(|a| {
+            matches!(
+                a,
+                Some(Alignment::Left) | Some(Alignment::Center) | Some(Alignment::Right)
+            )
+        })
+        && {
+            let mut seen = alignments.clone();
+            seen.dedup();
+            seen.len() == alignments.len()
+        };
+    if is_single_line_sections {
+        out.push_str("#grid(columns: (1fr, 1fr, 1fr), ");
+        for slot in [Alignment::Left, Alignment::Center, Alignment::Right] {
+            let _ = write!(out, "[");
+            if let Some(para) = hf
+                .paragraphs
+                .iter()
+                .find(|p| p.style.alignment == Some(slot))
+            {
+                generate_hf_styled_paragraph(out, para, ctx);
+            }
+            out.push_str("], ");
+        }
+        out.push(')');
+        return;
+    }
     for (i, para) in hf.paragraphs.iter().enumerate() {
         if i > 0 {
             out.push_str("\\\n");

@@ -66,6 +66,17 @@ pub(super) fn parse_hf_format_string(format_str: &str) -> Option<HeaderFooter> {
                         i += 1;
                     }
                 }
+                'K' => {
+                    // Font color: &KRRGGBB (or &KTTSNN theme form) — skip the
+                    // six code characters; leaving them printed literal hex
+                    // prefixes like "000000top center".
+                    i += 2;
+                    let mut consumed = 0;
+                    while i < chars.len() && consumed < 6 && chars[i].is_ascii_alphanumeric() {
+                        i += 1;
+                        consumed += 1;
+                    }
+                }
                 _ => {
                     // Unknown code — skip it
                     i += 2;

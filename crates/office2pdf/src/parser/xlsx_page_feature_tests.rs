@@ -463,3 +463,27 @@ fn test_parse_xlsx_without_metadata_no_crash() {
 
     let _ = doc.metadata;
 }
+
+#[test]
+fn test_hf_font_color_code_is_stripped() {
+    // Excel emits &KRRGGBB for header colors; the six hex digits must not
+    // leak into the text ("000000top center").
+    let hf = parse_hf_format_string(
+        r#"&L&"Calibri,Regular"&K000000top left&C&"Calibri,Regular"&K000000top center&R&"Calibri,Regular"&K000000top right"#,
+    )
+    .expect("header parsed");
+    let texts: Vec<String> = hf
+        .paragraphs
+        .iter()
+        .map(|p| {
+            p.elements
+                .iter()
+                .filter_map(|e| match e {
+                    HFInline::Run(run) => Some(run.text.clone()),
+                    _ => None,
+                })
+                .collect::<String>()
+        })
+        .collect();
+    assert_eq!(texts, vec!["top left", "top center", "top right"]);
+}
