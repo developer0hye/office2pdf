@@ -35,6 +35,10 @@ office2pdf = "0.4"
 cargo install office2pdf-cli
 ```
 
+Prebuilt binaries for Linux (x86_64 gnu/musl, aarch64), macOS (Apple Silicon
+and Intel), and Windows are attached to each
+[GitHub release](https://github.com/developer0hye/office2pdf/releases).
+
 ## Quick Start
 
 ### As a library

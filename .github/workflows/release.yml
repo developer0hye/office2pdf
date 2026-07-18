@@ -128,3 +128,74 @@ jobs:
 
           echo "::error::office2pdf-cli ${version} could not be published after waiting for office2pdf ${version}"
           exit 1
+
+  binaries:
+    name: Build release binaries (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            archive: tar.gz
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          - os: macos-13
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Build
+        run: cargo build --release -p office2pdf-cli --target ${{ matrix.target }}
+
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          set -euo pipefail
+          staging="office2pdf-${RELEASE_TAG}-${{ matrix.target }}"
+          mkdir "${staging}"
+          cp "target/${{ matrix.target }}/release/office2pdf" "${staging}/"
+          cp README.md LICENSE "${staging}/"
+          tar czf "${staging}.tar.gz" "${staging}"
+          echo "ASSET=${staging}.tar.gz" >> "${GITHUB_ENV}"
+
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $staging = "office2pdf-$env:RELEASE_TAG-${{ matrix.target }}"
+          New-Item -ItemType Directory -Path $staging | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/office2pdf.exe" $staging
+          Copy-Item README.md $staging
+          Compress-Archive -Path $staging -DestinationPath "$staging.zip"
+          Add-Content -Path $env:GITHUB_ENV -Value "ASSET=$staging.zip"
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh release upload "${RELEASE_TAG}" "${ASSET}" --clobber
