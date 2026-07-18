@@ -919,3 +919,36 @@ fn test_merged_cell_clips_at_merge_edge_instead_of_wrapping() {
         "clip width should equal the merged width {merged_width}pt, got {spill_width}pt"
     );
 }
+
+// ----- Explicit print margins (issue #300) -----
+
+#[test]
+fn test_explicit_page_margins_are_used() {
+    let data = build_xlsx_formatted(|sheet| {
+        sheet.get_cell_mut("A1").set_value("여백 테스트");
+        let margins = sheet.get_page_margins_mut();
+        margins.set_top(1.0);
+        margins.set_bottom(1.0);
+        margins.set_left(0.75);
+        margins.set_right(0.75);
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let tp = get_sheet_page(&doc, 0);
+    assert_eq!(tp.margins.top, 72.0, "1in top margin must be honored");
+    assert_eq!(tp.margins.bottom, 72.0);
+    assert_eq!(tp.margins.left, 54.0);
+    assert_eq!(tp.margins.right, 54.0);
+}
+
+#[test]
+fn test_absent_page_margins_fall_back_to_excel_defaults() {
+    let data = build_xlsx_formatted(|sheet| {
+        sheet.get_cell_mut("A1").set_value("기본 여백");
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let tp = get_sheet_page(&doc, 0);
+    assert_eq!(tp.margins.top, 54.0, "Excel default 0.75in top");
+    assert_eq!(tp.margins.left, 50.4, "Excel default 0.7in left");
+}

@@ -26,13 +26,24 @@ use self::xlsx_hf::*;
 pub(crate) use self::xlsx_cells::{CellPos, CellRange, parse_cell_ref};
 
 /// Parser for XLSX (Office Open XML Excel) spreadsheets.
-/// Excel's default print margins: 0.7" left/right, 0.75" top/bottom.
-fn excel_default_margins() -> Margins {
+/// Print margins for a sheet: the worksheet's explicit `<pageMargins>` when
+/// present, otherwise Excel's defaults (0.7" left/right, 0.75" top/bottom).
+/// umya leaves absent margin attributes at 0.0, which is not a value Excel
+/// ever writes, so ≤0 means "not specified".
+fn sheet_print_margins(sheet: &umya_spreadsheet::Worksheet) -> Margins {
+    let page_margins = sheet.get_page_margins();
+    let inches_to_pt = |inches: f64, default_pt: f64| -> f64 {
+        if inches > 0.0 {
+            inches * 72.0
+        } else {
+            default_pt
+        }
+    };
     Margins {
-        top: 54.0,
-        bottom: 54.0,
-        left: 50.4,
-        right: 50.4,
+        top: inches_to_pt(*page_margins.get_top(), 54.0),
+        bottom: inches_to_pt(*page_margins.get_bottom(), 54.0),
+        left: inches_to_pt(*page_margins.get_left(), 50.4),
+        right: inches_to_pt(*page_margins.get_right(), 50.4),
     }
 }
 
@@ -105,7 +116,7 @@ impl XlsxParser {
                     pages: xlsx_pagination::split_sheet_page_by_width(SheetPage {
                         name: sheet_name.clone(),
                         size: PageSize::default(),
-                        margins: excel_default_margins(),
+                        margins: sheet_print_margins(sheet),
                         table: Table {
                             rows,
                             column_widths: ctx.column_widths.clone(),
@@ -201,7 +212,7 @@ impl Parser for XlsxParser {
                     xlsx_pagination::split_sheet_page_by_width(SheetPage {
                         name: sheet_name,
                         size: PageSize::default(),
-                        margins: excel_default_margins(),
+                        margins: sheet_print_margins(sheet),
                         table: Table {
                             rows,
                             column_widths: ctx.column_widths,
@@ -246,7 +257,7 @@ impl Parser for XlsxParser {
                         xlsx_pagination::split_sheet_page_by_width(SheetPage {
                             name: sheet_name.clone(),
                             size: PageSize::default(),
-                            margins: excel_default_margins(),
+                            margins: sheet_print_margins(sheet),
                             table: Table {
                                 rows: segment,
                                 column_widths: ctx.column_widths.clone(),
