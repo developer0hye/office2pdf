@@ -14,23 +14,25 @@ fn test_codegen_chart_bar_visual_bars() {
 
     let output = generate_typst(&doc).unwrap();
     assert!(
-        output.source.contains("stroke:"),
-        "Expected bordered box, got:\n{}",
-        output.source
-    );
-    assert!(
         output.source.contains("Sales Report"),
-        "Expected chart title in header, got:\n{}",
+        "Expected chart title, got:\n{}",
+        output.source
+    );
+    // Axis-scaled bar chart: series-name area title, rect bars, tick labels,
+    // and gridlines (no raw "Bar Chart" placeholder or bordered box).
+    assert!(
+        output.source.contains("Revenue"),
+        "Expected series-name area title, got:\n{}",
         output.source
     );
     assert!(
-        output.source.contains("Bar Chart"),
-        "Expected chart type label, got:\n{}",
+        output.source.contains("rect(width:"),
+        "Expected axis-scaled bar rects, got:\n{}",
         output.source
     );
     assert!(
-        output.source.contains("box(") || output.source.contains("#box("),
-        "Expected visual bar boxes for bar chart, got:\n{}",
+        output.source.contains("line(end:"),
+        "Expected axis gridlines, got:\n{}",
         output.source
     );
     assert!(
@@ -38,6 +40,36 @@ fn test_codegen_chart_bar_visual_bars() {
         "Expected category label, got:\n{}",
         output.source
     );
+}
+
+#[test]
+fn test_codegen_chart_axis_ticks_and_no_raw_floats() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Chart(Chart {
+        chart_type: ChartType::Bar,
+        title: Some("My Bar Chart".to_string()),
+        categories: vec!["1st Qtr".to_string(), "2nd Qtr".to_string()],
+        series: vec![ChartSeries {
+            name: Some("Sales".to_string()),
+            values: vec![8.200000000000001, 3.2],
+        }],
+    })])]);
+
+    let output = generate_typst(&doc).unwrap();
+    // Bars carry no in-plot value labels (like PowerPoint), so the raw float
+    // never reaches the output.
+    assert!(
+        !output.source.contains("8.200000000000001"),
+        "raw float must not leak; got:\n{}",
+        output.source
+    );
+    // Nice axis for max 8.2 → ticks 0,2,4,6,8,10.
+    for tick in ["[0]", "[2]", "[10]"] {
+        assert!(
+            output.source.contains(tick),
+            "expected axis tick {tick}; got:\n{}",
+            output.source
+        );
+    }
 }
 
 #[test]
