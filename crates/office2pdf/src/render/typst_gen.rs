@@ -671,6 +671,25 @@ fn generate_fixed_text_box(
     {
         let mut inner: TextBoxData = text_box.clone();
         inner.text_rotation_deg = None;
+        // Remap the insets into the rotated coordinate system: the side a
+        // padding lands on after rotation must carry the original value
+        // (e.g. for 270° the original top inset becomes the inner left).
+        let padding = &text_box.padding;
+        inner.padding = if (rotation - 270.0).abs() < 1.0 {
+            crate::ir::Insets {
+                left: padding.top,
+                top: padding.right,
+                right: padding.bottom,
+                bottom: padding.left,
+            }
+        } else {
+            crate::ir::Insets {
+                left: padding.bottom,
+                top: padding.left,
+                right: padding.top,
+                bottom: padding.right,
+            }
+        };
         let swapped_elem = FixedElement {
             x: elem.x,
             y: elem.y,

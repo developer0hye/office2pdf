@@ -683,7 +683,16 @@ fn finalize_shape(
                     shadow: shape.shadow.take(),
                 }),
             });
-            // Transparent text overlay (no fill, no stroke)
+            // Transparent text overlay (no fill, no stroke).
+            // Preset geometries confine text to an inset text rectangle we
+            // don't model; for rotated (vert) text, edge-anchoring the
+            // column lands it on the shape's sloped boundary where
+            // PowerPoint keeps it near the middle — center it instead.
+            let overlay_vertical_align = if text_box_text_rotation_deg.is_some() {
+                TextBoxVerticalAlign::Center
+            } else {
+                text_box_vertical_align
+            };
             elements.push(FixedElement {
                 x: emu_to_pt(shape.x),
                 y: emu_to_pt(shape.y),
@@ -692,7 +701,7 @@ fn finalize_shape(
                 kind: FixedElementKind::TextBox(TextBoxData {
                     content: blocks,
                     padding: text_box_padding,
-                    vertical_align: text_box_vertical_align,
+                    vertical_align: overlay_vertical_align,
                     fill: None,
                     opacity: None,
                     stroke: None,

@@ -278,3 +278,49 @@ fn test_body_pr_vert270_sets_reverse_rotation() {
     let text_box = text_box_data(&page.elements[0]);
     assert_eq!(text_box.text_rotation_deg, Some(90.0));
 }
+
+#[test]
+fn test_vert_text_in_preset_shape_centers_column() {
+    // Preset geometries confine text to an inset text rect we don't model;
+    // vert text anchored at the box edge would land on the shape's sloped
+    // boundary (issue #286) — the overlay centers it instead.
+    let shape = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="P"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1417740" cy="1317072"/></a:xfrm><a:prstGeom prst="pentagon"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr vert="vert" anchor="t"/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="en-US"/><a:t>text</a:t></a:r></a:p></p:txBody></p:sp>"#;
+    let slide = make_slide_xml(&[shape.to_string()]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page = first_fixed_page(&doc);
+    // Shape background + transparent text overlay.
+    let text_box = page
+        .elements
+        .iter()
+        .find_map(|elem| match &elem.kind {
+            FixedElementKind::TextBox(tb) => Some(tb),
+            _ => None,
+        })
+        .expect("text overlay present");
+    assert_eq!(text_box.text_rotation_deg, Some(270.0));
+    assert_eq!(
+        text_box.vertical_align,
+        TextBoxVerticalAlign::Center,
+        "vert text inside a preset shape must center its column"
+    );
+}
+
+#[test]
+fn test_vert_text_in_plain_rect_keeps_anchor() {
+    let shape = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="V"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="2743200"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr vert="vert" anchor="t"/><a:p><a:r><a:rPr lang="en-US"/><a:t>Up</a:t></a:r></a:p></p:txBody></p:sp>"#;
+    let slide = make_slide_xml(&[shape.to_string()]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page = first_fixed_page(&doc);
+    let text_box = text_box_data(&page.elements[0]);
+    assert_eq!(
+        text_box.vertical_align,
+        TextBoxVerticalAlign::Top,
+        "plain rectangles keep their bodyPr anchor"
+    );
+}

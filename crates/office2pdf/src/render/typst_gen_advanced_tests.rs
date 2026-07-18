@@ -919,3 +919,54 @@ fn test_table_default_vertical_align_codegen() {
         output.source,
     );
 }
+
+#[test]
+fn test_vert_text_box_remaps_insets() {
+    let text_box = TextBoxData {
+        content: vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "세로".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })],
+        padding: Insets {
+            left: 7.2,
+            right: 7.2,
+            top: 3.6,
+            bottom: 3.6,
+        },
+        vertical_align: TextBoxVerticalAlign::Top,
+        fill: None,
+        opacity: None,
+        stroke: None,
+        shape_kind: None,
+        no_wrap: false,
+        auto_fit: false,
+        text_rotation_deg: Some(270.0),
+    };
+    let elem = FixedElement {
+        x: 0.0,
+        y: 0.0,
+        width: 100.0,
+        height: 50.0,
+        kind: FixedElementKind::TextBox(text_box),
+    };
+    let page = Page::Fixed(FixedPage {
+        size: PageSize::default(),
+        elements: vec![elem],
+        background_color: None,
+        background_gradient: None,
+    });
+    let doc = make_doc(vec![page]);
+    let output = generate_typst(&doc).unwrap();
+    assert!(
+        output
+            .source
+            .contains("inset: (top: 7.2pt, right: 3.6pt, bottom: 7.2pt, left: 3.6pt)"),
+        "270° rotation must remap the bodyPr insets. Got: {}",
+        output.source,
+    );
+}
