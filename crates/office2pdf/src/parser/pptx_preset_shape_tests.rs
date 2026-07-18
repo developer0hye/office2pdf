@@ -390,3 +390,36 @@ fn test_unsupported_preset_falls_back_to_rectangle() {
     let shape = get_shape(&page.elements[0]);
     assert!(matches!(shape.kind, ShapeKind::Rectangle));
 }
+
+#[test]
+fn test_regular_polygons_fill_their_bounding_box() {
+    // Preset geometries span the full shape box (issue #319): an inscribed
+    // pentagon leaves ~10% slack at the bottom, printing the shape short.
+    for prst in ["pentagon", "hexagon", "octagon"] {
+        let kind = prst_to_shape_kind(
+            prst,
+            100.0,
+            100.0,
+            false,
+            false,
+            ArrowHead::None,
+            ArrowHead::None,
+            &[],
+        );
+        let ShapeKind::Polygon { vertices } = kind else {
+            panic!("{prst} should be a polygon");
+        };
+        let min_x = vertices.iter().map(|v| v.0).fold(f64::MAX, f64::min);
+        let max_x = vertices.iter().map(|v| v.0).fold(f64::MIN, f64::max);
+        let min_y = vertices.iter().map(|v| v.1).fold(f64::MAX, f64::min);
+        let max_y = vertices.iter().map(|v| v.1).fold(f64::MIN, f64::max);
+        assert!(
+            min_x.abs() < 1e-9 && (max_x - 1.0).abs() < 1e-9,
+            "{prst} x span {min_x}..{max_x}"
+        );
+        assert!(
+            min_y.abs() < 1e-9 && (max_y - 1.0).abs() < 1e-9,
+            "{prst} y span {min_y}..{max_y}"
+        );
+    }
+}

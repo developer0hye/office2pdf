@@ -407,7 +407,19 @@ fn regular_polygon_vertices(n: usize) -> Vec<(f64, f64)> {
         let y = 0.5 + 0.5 * angle.sin();
         vertices.push((x, y));
     }
+    // Preset geometries fill the whole shape box; the inscribed-circle
+    // vertices leave slack on the flat sides (a pentagon only reaches ~90%
+    // height), printing the shape smaller than PowerPoint (issue #319).
+    let min_x = vertices.iter().map(|v| v.0).fold(f64::MAX, f64::min);
+    let max_x = vertices.iter().map(|v| v.0).fold(f64::MIN, f64::max);
+    let min_y = vertices.iter().map(|v| v.1).fold(f64::MAX, f64::min);
+    let max_y = vertices.iter().map(|v| v.1).fold(f64::MIN, f64::max);
+    let span_x = (max_x - min_x).max(f64::EPSILON);
+    let span_y = (max_y - min_y).max(f64::EPSILON);
     vertices
+        .into_iter()
+        .map(|(x, y)| ((x - min_x) / span_x, (y - min_y) / span_y))
+        .collect()
 }
 
 /// Generate arrow polygon vertices (7-point arrow) in normalized coordinates.
