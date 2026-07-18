@@ -321,9 +321,27 @@ fn apply_data_bar_rule(
         .unwrap_or(Color::new(0x63, 0x8E, 0xC6)); // default blue
 
     let numeric_vals: Vec<f64> = collect_numeric_values_in_ranges(sheet, ranges);
-    let Some((min_val, _max_val, val_range)) = compute_min_max(&numeric_vals) else {
+    let Some((range_min, range_max, _)) = compute_min_max(&numeric_vals) else {
         return;
     };
+
+    // Resolve the bar axis from the cfvo pair; fixed axes (num/percent) are
+    // independent of the observed values, exactly like Excel.
+    let cfvos = db.get_cfvo_collection();
+    let axis_min: f64 = cfvos
+        .first()
+        .and_then(|cfvo| resolve_data_bar_cfvo(cfvo, range_min, range_max))
+        .unwrap_or(range_min);
+    let axis_max: f64 = cfvos
+        .get(1)
+        .and_then(|cfvo| resolve_data_bar_cfvo(cfvo, range_min, range_max))
+        .unwrap_or(range_max);
+    let axis_range: f64 = axis_max - axis_min;
+
+    // Excel maps the axis onto [minLength, maxLength] percent of the cell
+    // width (spec defaults 10/90), so the minimum still shows a short bar.
+    let min_length: f64 = f64::from(db.get_min_length());
+    let max_length: f64 = f64::from(db.get_max_length());
 
     for range in ranges {
         for row in range.start_row..=range.end_row {
@@ -331,11 +349,12 @@ fn apply_data_bar_rule(
                 if let Some(cell) = sheet.get_cell((col, row))
                     && let Some(val) = cell_numeric_value(cell)
                 {
-                    let pct: f64 = if val_range.abs() < f64::EPSILON {
-                        50.0
+                    let fraction: f64 = if axis_range.abs() < f64::EPSILON {
+                        0.5
                     } else {
-                        ((val - min_val) / val_range) * 100.0
+                        ((val - axis_min) / axis_range).clamp(0.0, 1.0)
                     };
+                    let pct: f64 = min_length + (max_length - min_length) * fraction;
                     let entry = overrides.entry((col, row)).or_default();
                     entry.data_bar = Some(DataBarInfo {
                         color: bar_color,
@@ -344,6 +363,24 @@ fn apply_data_bar_rule(
                 }
             }
         }
+    }
+}
+
+/// Resolve a dataBar cfvo to an absolute axis value. Returns None for types
+/// that fall back to the observed range bounds (min/max/formula).
+fn resolve_data_bar_cfvo(
+    cfvo: &umya_spreadsheet::ConditionalFormatValueObject,
+    range_min: f64,
+    range_max: f64,
+) -> Option<f64> {
+    use umya_spreadsheet::ConditionalFormatValueObjectValues as CfvoType;
+    match cfvo.get_type() {
+        CfvoType::Number => cfvo.get_val().parse().ok(),
+        CfvoType::Percent => {
+            let pct: f64 = cfvo.get_val().parse().ok()?;
+            Some(range_min + (range_max - range_min) * (pct / 100.0))
+        }
+        _ => None,
     }
 }
 

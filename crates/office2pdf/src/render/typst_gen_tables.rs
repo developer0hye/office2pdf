@@ -185,11 +185,17 @@ fn generate_table_cell(
     }
 
     if let Some(ref db) = cell.data_bar {
+        // Excel draws the bar behind the value on the same line (no track),
+        // with a horizontal fade of the bar color; #place keeps it out of
+        // layout so the value renders on top at its normal position.
         let pct = db.fill_pct.clamp(0.0, 100.0);
         let _ = write!(
             out,
-            "#box(width: 100%, height: 0.8em, fill: rgb(240, 240, 240))[#box(width: {}%, height: 100%, fill: rgb({}, {}, {}))]",
+            "#place(left + horizon, box(width: {}%, height: 100%, fill: gradient.linear(rgb({}, {}, {}), rgb({}, {}, {}).lighten(70%))))",
             format_f64(pct),
+            db.color.r,
+            db.color.g,
+            db.color.b,
             db.color.r,
             db.color.g,
             db.color.b,

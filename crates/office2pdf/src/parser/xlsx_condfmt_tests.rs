@@ -330,13 +330,16 @@ fn test_cond_fmt_data_bar() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
     let tp = get_sheet_page(&doc, 0);
 
+    // Excel maps the cfvo range onto [minLength, maxLength] percent of the
+    // cell width — spec defaults 10 and 90 — so the minimum value still shows
+    // a short bar, exactly as Excel prints it.
     let db1 = tp.table.rows[0].cells[0]
         .data_bar
         .as_ref()
         .expect("A1 should have data_bar");
     assert!(
-        db1.fill_pct < 0.01,
-        "Min value should have ~0% fill, got {}",
+        (db1.fill_pct - 10.0).abs() < 0.01,
+        "Min value should fill minLength (10%), got {}",
         db1.fill_pct
     );
 
@@ -344,9 +347,10 @@ fn test_cond_fmt_data_bar() {
         .data_bar
         .as_ref()
         .expect("A2 should have data_bar");
+    let expected_mid: f64 = 10.0 + 80.0 * (50.0 - 10.0) / (100.0 - 10.0);
     assert!(
-        (db2.fill_pct - 100.0 * (50.0 - 10.0) / (100.0 - 10.0)).abs() < 1.0,
-        "Mid value should have ~44% fill, got {}",
+        (db2.fill_pct - expected_mid).abs() < 1.0,
+        "Mid value should fill ~{expected_mid}%, got {}",
         db2.fill_pct
     );
 
@@ -355,12 +359,66 @@ fn test_cond_fmt_data_bar() {
         .as_ref()
         .expect("A3 should have data_bar");
     assert!(
-        (db3.fill_pct - 100.0).abs() < 0.01,
-        "Max value should have 100% fill, got {}",
+        (db3.fill_pct - 90.0).abs() < 0.01,
+        "Max value should fill maxLength (90%), got {}",
         db3.fill_pct
     );
 
     assert_eq!(db1.color, Color::new(0x63, 0x8E, 0xC6));
+}
+
+#[test]
+fn test_cond_fmt_data_bar_fixed_num_cfvos_and_lengths() {
+    // Mirrors the classified workbook: explicit num cfvos 0..140000 with
+    // minLength=10 maxLength=90 — values scale against the fixed axis, not
+    // the observed min/max of the range.
+    let data = build_xlsx_with_cond_fmt(|sheet| {
+        sheet.get_cell_mut("A1").set_value_number(103125.0);
+        sheet.get_cell_mut("A2").set_value_number(129600.0);
+        sheet.get_cell_mut("A3").set_value_number(17850.0);
+
+        let mut rule = umya_spreadsheet::ConditionalFormattingRule::default();
+        rule.set_type(umya_spreadsheet::ConditionalFormatValues::DataBar);
+        rule.set_priority(1);
+
+        let mut db = umya_spreadsheet::DataBar::default();
+        db.set_min_length(10);
+        db.set_max_length(90);
+        let mut cfvo_min = umya_spreadsheet::ConditionalFormatValueObject::default();
+        cfvo_min.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Number);
+        cfvo_min.set_val("0");
+        let mut cfvo_max = umya_spreadsheet::ConditionalFormatValueObject::default();
+        cfvo_max.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Number);
+        cfvo_max.set_val("140000");
+        db.add_cfvo_collection(cfvo_min);
+        db.add_cfvo_collection(cfvo_max);
+        let mut bar_color = umya_spreadsheet::Color::default();
+        bar_color.set_argb("FF638EC6");
+        db.add_color_collection(bar_color);
+        rule.set_data_bar(db);
+
+        let mut seq = umya_spreadsheet::SequenceOfReferences::default();
+        seq.set_sqref("A1:A3");
+        let mut cf = umya_spreadsheet::ConditionalFormatting::default();
+        cf.set_sequence_of_references(seq);
+        cf.add_conditional_collection(rule);
+        sheet.set_conditional_formatting_collection(vec![cf]);
+    });
+
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let tp = get_sheet_page(&doc, 0);
+
+    let pct = |row: usize| {
+        tp.table.rows[row].cells[0]
+            .data_bar
+            .as_ref()
+            .expect("cell should have data_bar")
+            .fill_pct
+    };
+    assert!((pct(0) - (10.0 + 80.0 * 103125.0 / 140000.0)).abs() < 0.5);
+    assert!((pct(1) - (10.0 + 80.0 * 129600.0 / 140000.0)).abs() < 0.5);
+    assert!((pct(2) - (10.0 + 80.0 * 17850.0 / 140000.0)).abs() < 0.5);
 }
 
 #[test]

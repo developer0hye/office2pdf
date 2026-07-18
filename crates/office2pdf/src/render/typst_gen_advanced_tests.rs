@@ -42,13 +42,23 @@ fn test_data_bar_codegen() {
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();
     assert!(
-        output.source.contains("fill: rgb(99, 142, 198)"),
-        "DataBar should contain bar color fill. Got: {}",
+        output.source.contains("gradient.linear(rgb(99, 142, 198)"),
+        "DataBar should be a gradient in the bar color. Got: {}",
         output.source,
     );
     assert!(
         output.source.contains("width: 50%"),
         "DataBar should contain 50% width. Got: {}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("#place("),
+        "DataBar must be placed behind the value, not stacked above it. Got: {}",
+        output.source,
+    );
+    assert!(
+        !output.source.contains("rgb(240, 240, 240)"),
+        "Excel draws no gray track behind data bars. Got: {}",
         output.source,
     );
 }
