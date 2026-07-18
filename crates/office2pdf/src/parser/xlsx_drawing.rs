@@ -647,3 +647,390 @@ pub(super) fn parse_drawing_image_anchors(xml: &str) -> Vec<(ImageAnchorGeometry
 
     result
 }
+
+// ── Drawing text boxes ──────────────────────────────────────────────────
+
+/// A text-box shape from a worksheet drawing, in raw drawing coordinates.
+pub(super) struct RawTextBoxAnchor {
+    pub(super) geometry: ImageAnchorGeometry,
+    pub(super) paragraphs: Vec<crate::ir::Paragraph>,
+    pub(super) fill: Option<crate::ir::Color>,
+    pub(super) border: Option<crate::ir::BorderSide>,
+    pub(super) vertical_center: bool,
+}
+
+/// Extract anchored text boxes per sheet from worksheet drawings.
+pub(super) fn extract_text_boxes_with_anchors(
+    data: &[u8],
+) -> HashMap<String, Vec<RawTextBoxAnchor>> {
+    let Ok(mut archive) = crate::parser::open_zip(data) else {
+        return HashMap::new();
+    };
+
+    let workbook_xml = read_zip_entry_string(&mut archive, "xl/workbook.xml");
+    let sheet_rids = parse_workbook_sheet_rids(&workbook_xml);
+    let workbook_rels_xml = read_zip_entry_string(&mut archive, "xl/_rels/workbook.xml.rels");
+    let rid_to_target = parse_rels_targets(&workbook_rels_xml);
+
+    let mut result: HashMap<String, Vec<RawTextBoxAnchor>> = HashMap::new();
+
+    for (sheet_name, sheet_rid) in &sheet_rids {
+        let Some(sheet_target) = rid_to_target.get(sheet_rid) else {
+            continue;
+        };
+        let sheet_full_path = format!("xl/{sheet_target}");
+        let sheet_filename = sheet_full_path.rsplit('/').next().unwrap_or(sheet_target);
+        let sheet_rels_path = format!("xl/worksheets/_rels/{sheet_filename}.rels");
+        let sheet_rels_xml = read_zip_entry_string(&mut archive, &sheet_rels_path);
+        if sheet_rels_xml.is_empty() {
+            continue;
+        }
+
+        for drawing_target in &parse_rels_by_type(&sheet_rels_xml, "drawing") {
+            let drawing_path = resolve_relative_xl_path("xl/worksheets", drawing_target);
+            let drawing_xml = read_zip_entry_string(&mut archive, &drawing_path);
+            if drawing_xml.is_empty() {
+                continue;
+            }
+            let boxes = parse_drawing_text_boxes(&drawing_xml);
+            if !boxes.is_empty() {
+                result.entry(sheet_name.clone()).or_default().extend(boxes);
+            }
+        }
+    }
+
+    result
+}
+
+/// Resolve a drawing color element to RGB. Scheme colors fall back to the
+/// standard light/dark mapping (worksheet drawings rarely restyle them).
+fn drawing_color(name: &[u8], val: &str) -> Option<crate::ir::Color> {
+    use crate::ir::Color;
+    match name {
+        b"srgbClr" => {
+            let v = u32::from_str_radix(val, 16).ok()?;
+            Some(Color::new(
+                ((v >> 16) & 0xFF) as u8,
+                ((v >> 8) & 0xFF) as u8,
+                (v & 0xFF) as u8,
+            ))
+        }
+        b"schemeClr" => match val {
+            "lt1" | "bg1" | "lt2" | "bg2" => Some(Color::new(0xFF, 0xFF, 0xFF)),
+            "dk1" | "tx1" | "dk2" | "tx2" => Some(Color::new(0, 0, 0)),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// Parse `<xdr:sp>` text boxes from a worksheet drawing.
+pub(super) fn parse_drawing_text_boxes(xml: &str) -> Vec<RawTextBoxAnchor> {
+    use crate::ir::{
+        Alignment, BorderLineStyle, BorderSide, Paragraph, ParagraphStyle, Run, TextStyle,
+    };
+
+    #[derive(Default, Clone, Copy)]
+    struct Corner {
+        col: u32,
+        col_off: i64,
+        row: u32,
+        row_off: i64,
+    }
+
+    let mut result: Vec<RawTextBoxAnchor> = Vec::new();
+    let mut reader = quick_xml::Reader::from_str(xml);
+
+    let mut in_anchor = false;
+    let mut in_sp = false;
+    let mut in_tx_body = false;
+    let mut in_sp_fill = false;
+    let mut in_line = false;
+    let mut corner_target: Option<bool> = None;
+    let mut current_field: Option<&'static str> = None;
+    let mut from = Corner::default();
+    let mut to: Option<Corner> = None;
+    let mut ext_emu: Option<(i64, i64)> = None;
+
+    let mut paragraphs: Vec<Paragraph> = Vec::new();
+    let mut current_para: Option<Paragraph> = None;
+    let mut current_style = TextStyle::default();
+    let mut in_run = false;
+    let mut in_text = false;
+    let mut fill: Option<crate::ir::Color> = None;
+    let mut border_color: Option<crate::ir::Color> = None;
+    let mut border_width: f64 = 0.75;
+    let mut vertical_center = false;
+    // Color element opened with children (e.g. <a:schemeClr><a:shade/>...):
+    // committed on its End event after transforms apply.
+    let mut pending_color: Option<crate::ir::Color> = None;
+
+    loop {
+        match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"twoCellAnchor" | b"oneCellAnchor" | b"absoluteAnchor" => {
+                        in_anchor = true;
+                        in_sp = false;
+                        from = Corner::default();
+                        to = None;
+                        ext_emu = None;
+                        paragraphs.clear();
+                        fill = None;
+                        border_color = None;
+                        border_width = 0.75;
+                        vertical_center = false;
+                    }
+                    b"from" if in_anchor => corner_target = Some(true),
+                    b"to" if in_anchor => {
+                        corner_target = Some(false);
+                        to = Some(Corner::default());
+                    }
+                    b"col" if corner_target.is_some() => current_field = Some("col"),
+                    b"colOff" if corner_target.is_some() => current_field = Some("colOff"),
+                    b"row" if corner_target.is_some() => current_field = Some("row"),
+                    b"rowOff" if corner_target.is_some() => current_field = Some("rowOff"),
+                    b"sp" if in_anchor => in_sp = true,
+                    b"txBody" if in_sp => in_tx_body = true,
+                    b"solidFill" if in_sp && !in_tx_body && !in_line => in_sp_fill = true,
+                    b"ln" if in_sp && !in_tx_body => {
+                        in_line = true;
+                        for attr in e.attributes().flatten() {
+                            if attr.key.local_name().as_ref() == b"w"
+                                && let Ok(v) = attr.unescape_value()
+                                && let Ok(w) = v.parse::<f64>()
+                            {
+                                border_width = w / 12_700.0;
+                            }
+                        }
+                    }
+                    b"p" if in_tx_body => {
+                        current_para = Some(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: Vec::new(),
+                        });
+                    }
+                    b"r" if current_para.is_some() => {
+                        in_run = true;
+                        current_style = TextStyle::default();
+                    }
+                    b"rPr" if in_run => {
+                        for attr in e.attributes().flatten() {
+                            match attr.key.local_name().as_ref() {
+                                b"sz" => {
+                                    if let Ok(v) = attr.unescape_value()
+                                        && let Ok(sz) = v.parse::<f64>()
+                                    {
+                                        current_style.font_size = Some(sz / 100.0);
+                                    }
+                                }
+                                b"b" if attr.unescape_value().ok().as_deref() == Some("1") => {
+                                    current_style.bold = Some(true);
+                                }
+                                b"i" if attr.unescape_value().ok().as_deref() == Some("1") => {
+                                    current_style.italic = Some(true);
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    b"t" if in_run => in_text = true,
+                    b"srgbClr" | b"schemeClr" => {
+                        let mut val = String::new();
+                        for attr in e.attributes().flatten() {
+                            if attr.key.local_name().as_ref() == b"val"
+                                && let Ok(v) = attr.unescape_value()
+                            {
+                                val = v.to_string();
+                            }
+                        }
+                        pending_color = drawing_color(local.as_ref(), &val);
+                    }
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::Empty(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"bodyPr" if in_tx_body || in_sp => {
+                        for attr in e.attributes().flatten() {
+                            if attr.key.local_name().as_ref() == b"anchor"
+                                && attr.unescape_value().ok().as_deref() == Some("ctr")
+                            {
+                                vertical_center = true;
+                            }
+                        }
+                    }
+                    b"pPr" if current_para.is_some() => {
+                        for attr in e.attributes().flatten() {
+                            if attr.key.local_name().as_ref() == b"algn"
+                                && let Ok(v) = attr.unescape_value()
+                                && let Some(para) = current_para.as_mut()
+                            {
+                                para.style.alignment = match v.as_ref() {
+                                    "ctr" => Some(Alignment::Center),
+                                    "r" => Some(Alignment::Right),
+                                    "just" => Some(Alignment::Justify),
+                                    _ => None,
+                                };
+                            }
+                        }
+                    }
+                    b"shade" => {
+                        if let Some(color) = pending_color.as_mut()
+                            && let Some(factor) = e.attributes().flatten().find_map(|attr| {
+                                (attr.key.local_name().as_ref() == b"val")
+                                    .then(|| attr.unescape_value().ok())
+                                    .flatten()
+                                    .and_then(|v| v.parse::<f64>().ok())
+                            })
+                        {
+                            let shade = |channel: u8| -> u8 {
+                                (channel as f64 * factor / 100_000.0)
+                                    .round()
+                                    .clamp(0.0, 255.0) as u8
+                            };
+                            *color = crate::ir::Color::new(
+                                shade(color.r),
+                                shade(color.g),
+                                shade(color.b),
+                            );
+                        }
+                    }
+                    b"srgbClr" | b"schemeClr" => {
+                        let mut val = String::new();
+                        for attr in e.attributes().flatten() {
+                            if attr.key.local_name().as_ref() == b"val"
+                                && let Ok(v) = attr.unescape_value()
+                            {
+                                val = v.to_string();
+                            }
+                        }
+                        let color = drawing_color(local.as_ref(), &val);
+                        if in_run {
+                            if current_style.color.is_none() {
+                                current_style.color = color;
+                            }
+                        } else if in_line {
+                            if border_color.is_none() {
+                                border_color = color;
+                            }
+                        } else if in_sp_fill && fill.is_none() {
+                            fill = color;
+                        }
+                    }
+                    b"ext" if in_anchor && !in_sp && to.is_none() => {
+                        let mut cx: i64 = 0;
+                        let mut cy: i64 = 0;
+                        for attr in e.attributes().flatten() {
+                            let value: i64 = attr
+                                .unescape_value()
+                                .ok()
+                                .and_then(|v| v.parse().ok())
+                                .unwrap_or(0);
+                            match attr.key.local_name().as_ref() {
+                                b"cx" => cx = value,
+                                b"cy" => cy = value,
+                                _ => {}
+                            }
+                        }
+                        ext_emu = Some((cx, cy));
+                    }
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::Text(ref t)) => {
+                if in_text && let Ok(text) = t.xml_content() {
+                    if let Some(para) = current_para.as_mut() {
+                        para.runs.push(Run {
+                            text: text.to_string(),
+                            style: current_style.clone(),
+                            href: None,
+                            footnote: None,
+                        });
+                    }
+                } else if let (Some(is_from), Some(field)) = (corner_target, current_field)
+                    && let Ok(text) = t.xml_content()
+                    && let Ok(number) = text.trim().parse::<i64>()
+                {
+                    let corner: &mut Corner = if is_from {
+                        &mut from
+                    } else {
+                        to.as_mut().expect("to corner initialized on <to>")
+                    };
+                    match field {
+                        "col" => corner.col = number as u32,
+                        "colOff" => corner.col_off = number,
+                        "row" => corner.row = number as u32,
+                        "rowOff" => corner.row_off = number,
+                        _ => {}
+                    }
+                }
+            }
+            Ok(quick_xml::events::Event::End(ref e)) => {
+                let local = e.local_name();
+                match local.as_ref() {
+                    b"twoCellAnchor" | b"oneCellAnchor" | b"absoluteAnchor" => {
+                        if in_sp && !paragraphs.is_empty() {
+                            result.push(RawTextBoxAnchor {
+                                geometry: ImageAnchorGeometry {
+                                    from_row: from.row,
+                                    from_col: from.col,
+                                    from_col_off_emu: from.col_off,
+                                    from_row_off_emu: from.row_off,
+                                    to: to.map(|c| (c.col, c.col_off, c.row, c.row_off)),
+                                    ext_emu,
+                                },
+                                paragraphs: std::mem::take(&mut paragraphs),
+                                fill,
+                                border: border_color.map(|color| BorderSide {
+                                    width: border_width,
+                                    color,
+                                    style: BorderLineStyle::Solid,
+                                }),
+                                vertical_center,
+                            });
+                        }
+                        in_anchor = false;
+                        in_sp = false;
+                        corner_target = None;
+                    }
+                    b"from" | b"to" => corner_target = None,
+                    b"col" | b"colOff" | b"row" | b"rowOff" => current_field = None,
+                    b"srgbClr" | b"schemeClr" => {
+                        if let Some(color) = pending_color.take() {
+                            if in_run {
+                                if current_style.color.is_none() {
+                                    current_style.color = Some(color);
+                                }
+                            } else if in_line {
+                                if border_color.is_none() {
+                                    border_color = Some(color);
+                                }
+                            } else if in_sp_fill && fill.is_none() {
+                                fill = Some(color);
+                            }
+                        }
+                    }
+                    b"txBody" => in_tx_body = false,
+                    b"solidFill" => in_sp_fill = false,
+                    b"ln" => in_line = false,
+                    b"p" => {
+                        if let Some(para) = current_para.take() {
+                            paragraphs.push(para);
+                        }
+                    }
+                    b"r" => in_run = false,
+                    b"t" => in_text = false,
+                    _ => {}
+                }
+            }
+            Ok(quick_xml::events::Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    result
+}

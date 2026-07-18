@@ -432,10 +432,17 @@ fn generate_table_page(
     write_table_page_setup(out, page, &size, ctx);
     out.push('\n');
 
-    if page.charts.is_empty() && page.images.is_empty() {
+    if page.charts.is_empty() && page.images.is_empty() && page.text_boxes.is_empty() {
         generate_table(out, &page.table, ctx)?;
     } else {
-        generate_table_with_anchors(out, &page.table, &page.charts, &page.images, ctx)?;
+        generate_table_with_anchors(
+            out,
+            &page.table,
+            &page.charts,
+            &page.images,
+            &page.text_boxes,
+            ctx,
+        )?;
     }
     Ok(())
 }
@@ -444,6 +451,7 @@ fn generate_table_page(
 enum SheetAnchor<'a> {
     Chart(&'a Chart),
     Image(&'a crate::ir::SheetImage),
+    TextBox(&'a crate::ir::SheetTextBox),
 }
 
 /// Render a table interleaved with charts/images at their anchor positions.
@@ -454,6 +462,7 @@ fn generate_table_with_anchors(
     table: &Table,
     charts: &[(u32, Chart)],
     images: &[crate::ir::SheetImage],
+    text_boxes: &[crate::ir::SheetTextBox],
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     use crate::ir::Table;
@@ -465,6 +474,11 @@ fn generate_table_with_anchors(
             images
                 .iter()
                 .map(|sheet_image| (sheet_image.anchor_row, SheetAnchor::Image(sheet_image))),
+        )
+        .chain(
+            text_boxes
+                .iter()
+                .map(|text_box| (text_box.anchor_row, SheetAnchor::TextBox(text_box))),
         )
         .collect();
     sorted_charts.sort_by_key(|(row, _)| *row);
@@ -537,6 +551,40 @@ fn generate_table_with_anchors(
 fn generate_sheet_anchor(out: &mut String, anchor: &SheetAnchor, ctx: &mut GenCtx) {
     match anchor {
         SheetAnchor::Chart(chart) => generate_chart(out, chart),
+        SheetAnchor::TextBox(text_box) => {
+            let _ = write!(
+                out,
+                "#box(width: 100%, height: {}pt)[#place(top + left, dx: {}pt)[#box(width: {}pt, height: {}pt",
+                format_f64(text_box.height),
+                format_f64(text_box.x_offset_pt),
+                format_f64(text_box.width),
+                format_f64(text_box.height),
+            );
+            if let Some(fill) = text_box.fill {
+                let _ = write!(out, ", fill: rgb({}, {}, {})", fill.r, fill.g, fill.b);
+            }
+            if let Some(ref border) = text_box.border {
+                let _ = write!(
+                    out,
+                    ", stroke: {}pt + rgb({}, {}, {})",
+                    format_f64(border.width),
+                    border.color.r,
+                    border.color.g,
+                    border.color.b,
+                );
+            }
+            out.push_str(", inset: 4pt)[");
+            if text_box.vertical_center {
+                out.push_str("#align(horizon)[");
+            }
+            for paragraph in &text_box.paragraphs {
+                let _ = generate_block(out, &Block::Paragraph(paragraph.clone()), ctx);
+            }
+            if text_box.vertical_center {
+                out.push(']');
+            }
+            out.push_str("]]]\n");
+        }
         SheetAnchor::Image(sheet_image) => {
             // Keep the anchor's horizontal position: reserve the image height
             // in the flow and place the image at its column offset.

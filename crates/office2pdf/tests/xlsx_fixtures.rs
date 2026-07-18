@@ -536,3 +536,50 @@ fn with_drawing_renders_anchored_images() {
         first.image.width
     );
 }
+
+// ---------------------------------------------------------------------------
+// Worksheet text boxes (issue #240)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn with_text_box_renders_anchored_text() {
+    use office2pdf::ir::{Alignment, Color};
+
+    let pages = sheet_pages("poi/WithTextBox.xlsx");
+    let boxes: Vec<_> = pages.iter().flat_map(|sp| sp.text_boxes.iter()).collect();
+    assert_eq!(boxes.len(), 1, "the drawing holds one text box");
+
+    let text_box = boxes[0];
+    assert_eq!(text_box.paragraphs.len(), 3);
+    assert!(
+        text_box.width > 50.0,
+        "anchor width, got {}",
+        text_box.width
+    );
+
+    let para = &text_box.paragraphs[0];
+    assert_eq!(para.runs[0].text, "Line 1");
+    assert_eq!(para.style.alignment, None, "algn=l maps to default/left");
+    assert_eq!(para.runs[0].style.color, Some(Color::new(0xFF, 0, 0)));
+
+    assert_eq!(
+        text_box.paragraphs[1].style.alignment,
+        Some(Alignment::Center)
+    );
+    assert_eq!(
+        text_box.paragraphs[1]
+            .runs
+            .iter()
+            .map(|r| r.text.as_str())
+            .collect::<String>(),
+        "Line 2"
+    );
+    assert_eq!(
+        text_box.paragraphs[2].style.alignment,
+        Some(Alignment::Right)
+    );
+    assert_eq!(
+        text_box.paragraphs[2].runs[0].style.color,
+        Some(Color::new(0, 0, 0xFF))
+    );
+}

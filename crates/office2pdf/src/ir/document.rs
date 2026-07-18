@@ -146,6 +146,26 @@ pub struct SheetPage {
     pub charts: Vec<(u32, super::elements::Chart)>,
     /// Drawing images anchored within this sheet.
     pub images: Vec<SheetImage>,
+    /// Drawing text boxes anchored within this sheet.
+    pub text_boxes: Vec<SheetTextBox>,
+}
+
+/// A worksheet text box anchored to a sheet row.
+#[derive(Debug, Clone)]
+pub struct SheetTextBox {
+    /// 1-indexed row number after which the box is rendered (like charts).
+    pub anchor_row: u32,
+    /// Horizontal offset of the anchor from the sheet's left edge, points.
+    pub x_offset_pt: f64,
+    pub width: f64,
+    pub height: f64,
+    pub paragraphs: Vec<super::elements::Paragraph>,
+    /// Box fill color.
+    pub fill: Option<super::style::Color>,
+    /// Box outline.
+    pub border: Option<super::elements::BorderSide>,
+    /// bodyPr anchor="ctr": center text vertically inside the box.
+    pub vertical_center: bool,
 }
 
 /// A worksheet drawing image anchored to a sheet row.

@@ -288,6 +288,7 @@ fn test_generate_table_page_empty_rows() {
         footer: None,
         charts: vec![],
         images: Vec::new(),
+        text_boxes: Vec::new(),
     })]);
     let output = generate_typst(&doc).unwrap();
     assert!(!output.source.is_empty());

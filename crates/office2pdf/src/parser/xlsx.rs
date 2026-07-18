@@ -140,6 +140,38 @@ fn empty_sheet_context() -> SheetContext {
     }
 }
 
+/// Convert a raw text-box anchor into a render-ready box, sized like images.
+fn anchored_text_box(
+    anchor: xlsx_drawing::RawTextBoxAnchor,
+    sheet: &umya_spreadsheet::Worksheet,
+    ctx: &SheetContext,
+) -> crate::ir::SheetTextBox {
+    let placed = anchored_image(
+        xlsx_drawing::RawImageAnchor {
+            from_row: anchor.geometry.from_row,
+            from_col: anchor.geometry.from_col,
+            from_col_off_emu: anchor.geometry.from_col_off_emu,
+            from_row_off_emu: anchor.geometry.from_row_off_emu,
+            to: anchor.geometry.to,
+            ext_emu: anchor.geometry.ext_emu,
+            data: Vec::new(),
+            format: crate::ir::ImageFormat::Png,
+        },
+        sheet,
+        ctx,
+    );
+    crate::ir::SheetTextBox {
+        anchor_row: placed.anchor_row,
+        x_offset_pt: placed.x_offset_pt,
+        width: placed.image.width.unwrap_or(100.0),
+        height: placed.image.height.unwrap_or(50.0),
+        paragraphs: anchor.paragraphs,
+        fill: anchor.fill,
+        border: anchor.border,
+        vertical_center: anchor.vertical_center,
+    }
+}
+
 pub struct XlsxParser;
 
 impl XlsxParser {
@@ -162,6 +194,7 @@ impl XlsxParser {
         let metadata = extract_xlsx_metadata(&book);
         let mut chart_map = extract_charts_with_anchors(data);
         let mut image_map = extract_images_with_anchors(data);
+        let mut text_box_map = extract_text_boxes_with_anchors(data);
 
         let mut chunks = Vec::new();
         let mut warnings = Vec::new();
@@ -178,13 +211,21 @@ impl XlsxParser {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.
                 let sheet_name = sheet.get_name().to_string();
-                if let Some(raw_images) = image_map.remove(&sheet_name) {
+                let raw_images = image_map.remove(&sheet_name);
+                let raw_text_boxes = text_box_map.remove(&sheet_name);
+                if raw_images.is_some() || raw_text_boxes.is_some() {
                     let stub_ctx = empty_sheet_context();
                     let images: Vec<crate::ir::SheetImage> = raw_images
+                        .unwrap_or_default()
                         .into_iter()
                         .map(|anchor| anchored_image(anchor, sheet, &stub_ctx))
                         .collect();
-                    if !images.is_empty() {
+                    let text_boxes: Vec<crate::ir::SheetTextBox> = raw_text_boxes
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|anchor| anchored_text_box(anchor, sheet, &stub_ctx))
+                        .collect();
+                    if !images.is_empty() || !text_boxes.is_empty() {
                         chunks.push(Document {
                             metadata: metadata.clone(),
                             pages: vec![Page::Sheet(SheetPage {
@@ -196,6 +237,7 @@ impl XlsxParser {
                                 footer: None,
                                 charts: Vec::new(),
                                 images,
+                                text_boxes,
                             })],
                             styles: StyleSheet::default(),
                         });
@@ -229,6 +271,13 @@ impl XlsxParser {
                 .map(|anchor| anchored_image(anchor, sheet, &ctx))
                 .collect();
             sheet_images.sort_by_key(|sheet_image| sheet_image.anchor_row);
+            let mut sheet_text_boxes: Vec<crate::ir::SheetTextBox> = text_box_map
+                .remove(&sheet_name)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|anchor| anchored_text_box(anchor, sheet, &ctx))
+                .collect();
+            sheet_text_boxes.sort_by_key(|text_box| text_box.anchor_row);
 
             let print_titles = find_print_titles(&book, sheet);
             let title_columns: Option<(usize, usize)> = title_column_indices(print_titles, &ctx);
@@ -280,8 +329,13 @@ impl XlsxParser {
                                 vec![]
                             },
                             images: if first_chunk {
-                                first_chunk = false;
                                 std::mem::take(&mut sheet_images)
+                            } else {
+                                vec![]
+                            },
+                            text_boxes: if first_chunk {
+                                first_chunk = false;
+                                std::mem::take(&mut sheet_text_boxes)
                             } else {
                                 vec![]
                             },
@@ -320,6 +374,7 @@ impl Parser for XlsxParser {
         // Extract charts with anchor positions per sheet
         let mut chart_map = extract_charts_with_anchors(data);
         let mut image_map = extract_images_with_anchors(data);
+        let mut text_box_map = extract_text_boxes_with_anchors(data);
 
         let sheet_count = book.get_sheet_collection().len();
         let mut pages = Vec::with_capacity(sheet_count);
@@ -337,13 +392,21 @@ impl Parser for XlsxParser {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.
                 let sheet_name = sheet.get_name().to_string();
-                if let Some(raw_images) = image_map.remove(&sheet_name) {
+                let raw_images = image_map.remove(&sheet_name);
+                let raw_text_boxes = text_box_map.remove(&sheet_name);
+                if raw_images.is_some() || raw_text_boxes.is_some() {
                     let stub_ctx = empty_sheet_context();
                     let images: Vec<crate::ir::SheetImage> = raw_images
+                        .unwrap_or_default()
                         .into_iter()
                         .map(|anchor| anchored_image(anchor, sheet, &stub_ctx))
                         .collect();
-                    if !images.is_empty() {
+                    let text_boxes: Vec<crate::ir::SheetTextBox> = raw_text_boxes
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|anchor| anchored_text_box(anchor, sheet, &stub_ctx))
+                        .collect();
+                    if !images.is_empty() || !text_boxes.is_empty() {
                         pages.push(Page::Sheet(SheetPage {
                             name: sheet_name,
                             size: PageSize::default(),
@@ -353,6 +416,7 @@ impl Parser for XlsxParser {
                             footer: None,
                             charts: Vec::new(),
                             images,
+                            text_boxes,
                         }));
                     }
                 }
@@ -402,6 +466,13 @@ impl Parser for XlsxParser {
                 .map(|anchor| anchored_image(anchor, sheet, &ctx))
                 .collect();
             sheet_images.sort_by_key(|sheet_image| sheet_image.anchor_row);
+            let mut sheet_text_boxes: Vec<crate::ir::SheetTextBox> = text_box_map
+                .remove(&sheet_name)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|anchor| anchored_text_box(anchor, sheet, &ctx))
+                .collect();
+            sheet_text_boxes.sort_by_key(|text_box| text_box.anchor_row);
 
             if row_breaks.is_empty() {
                 // No page breaks — single page
@@ -424,6 +495,7 @@ impl Parser for XlsxParser {
                             footer: sheet_footer.clone(),
                             charts: sheet_charts,
                             images: sheet_images,
+                            text_boxes: sheet_text_boxes,
                         },
                         title_columns,
                     )
@@ -497,8 +569,13 @@ impl Parser for XlsxParser {
                                     vec![]
                                 },
                                 images: if first_segment {
-                                    first_segment = false;
                                     std::mem::take(&mut sheet_images)
+                                } else {
+                                    vec![]
+                                },
+                                text_boxes: if first_segment {
+                                    first_segment = false;
+                                    std::mem::take(&mut sheet_text_boxes)
                                 } else {
                                     vec![]
                                 },

@@ -78,6 +78,11 @@ pub(super) fn split_sheet_page_by_width(
             } else {
                 Vec::new()
             },
+            text_boxes: if index == 0 {
+                page.text_boxes.clone()
+            } else {
+                Vec::new()
+            },
         });
     }
     result
