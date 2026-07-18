@@ -11,8 +11,8 @@ use std::path::PathBuf;
 
 use office2pdf::config::ConvertOptions;
 use office2pdf::ir::{
-    ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline, ListKind, Page,
-    Paragraph, PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind,
+    ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline, Insets, ListKind,
+    Page, Paragraph, PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind,
     TextBoxVerticalAlign,
 };
 use office2pdf::parser::Parser;
@@ -152,6 +152,100 @@ fn block_text(block: &Block) -> String {
         | Block::PageBreak
         | Block::ColumnBreak => String::new(),
     }
+}
+
+// ---------------------------------------------------------------------------
+// PR #187 contributor acceptance fixture
+// ---------------------------------------------------------------------------
+
+const PR_187_FIXTURE: &str = "pr_187_contributor_acceptance.docx";
+
+#[test]
+fn smoke_pr_187_contributor_acceptance_fixture() {
+    assert_produces_valid_pdf(PR_187_FIXTURE);
+}
+
+fn pr_187_table(pages: &[FlowPage]) -> &office2pdf::ir::Table {
+    pages
+        .iter()
+        .flat_map(|page| page.content.iter())
+        .find_map(|block| match block {
+            Block::Table(table) => Some(table),
+            _ => None,
+        })
+        .expect("PR #187 fixture should contain a table")
+}
+
+#[test]
+fn structure_pr_187_contributor_acceptance_supported_behavior() {
+    let pages = flow_pages(PR_187_FIXTURE);
+    let table = pr_187_table(&pages);
+
+    assert_eq!(table.rows.len(), 1);
+    assert_eq!(table.rows[0].cells.len(), 3);
+    assert_eq!(
+        table.default_cell_padding,
+        Some(Insets {
+            top: 5.0,
+            right: 20.0,
+            bottom: 15.0,
+            left: 10.0,
+        })
+    );
+    assert_eq!(
+        table.rows[0].cells[0].padding,
+        Some(Insets {
+            top: 10.0,
+            right: 20.0,
+            bottom: 15.0,
+            left: 15.0,
+        })
+    );
+    assert_eq!(
+        table.rows[0].cells[2].background,
+        Some(Color::new(0x22, 0x22, 0x22)),
+        "a cell without explicit shading should inherit the dark table style"
+    );
+}
+
+#[test]
+#[ignore = "pending PR #187 adaptation: retain explicit white cell shading"]
+fn acceptance_pr_187_contributor_acceptance_explicit_white_shading() {
+    let pages = flow_pages(PR_187_FIXTURE);
+    let table = pr_187_table(&pages);
+
+    assert_eq!(
+        table.rows[0].cells[1].background,
+        Some(Color::new(0xFF, 0xFF, 0xFF))
+    );
+}
+
+#[test]
+#[ignore = "pending PR #187 adaptation: resolve paragraph numbering from its style"]
+fn acceptance_pr_187_contributor_acceptance_style_inherited_numbering() {
+    let pages = flow_pages(PR_187_FIXTURE);
+    let lists = pages
+        .iter()
+        .flat_map(|page| page.content.iter())
+        .filter_map(|block| match block {
+            Block::List(list) => Some(list),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(lists.len(), 2);
+    assert_eq!(lists[0].kind, ListKind::Unordered);
+    assert_eq!(lists[1].kind, ListKind::Ordered);
+    let item_text = lists
+        .iter()
+        .flat_map(|list| list.items.iter())
+        .flat_map(|item| item.content.iter())
+        .map(paragraph_text)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        item_text,
+        vec!["Bullet alpha", "Bullet beta", "Number one", "Number two"]
+    );
 }
 
 fn has_hyperlink_runs(runs: &[&Run]) -> bool {
