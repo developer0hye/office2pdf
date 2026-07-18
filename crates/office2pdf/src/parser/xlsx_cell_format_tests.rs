@@ -971,3 +971,83 @@ fn test_absent_page_margins_fall_back_to_excel_defaults() {
     assert_eq!(tp.margins.top, 54.0, "Excel default 0.75in top");
     assert_eq!(tp.margins.left, 50.4, "Excel default 0.7in left");
 }
+
+// ----- Row heights without customHeight (issue #303) -----
+
+#[test]
+fn test_row_height_used_even_without_custom_height_flag() {
+    let data = build_xlsx_formatted(|sheet| {
+        sheet.get_cell_mut("A1").set_value("행 높이");
+        let row = sheet.get_row_dimension_mut(&1);
+        row.set_height(20.0);
+        row.set_custom_height(false);
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let tp = get_sheet_page(&doc, 0);
+    assert_eq!(
+        tp.table.rows[0].height,
+        Some(20.0),
+        "recorded ht is the printed row height even when customHeight is false"
+    );
+}
+
+#[test]
+fn test_row_without_dimension_uses_sheet_default_height() {
+    let data = build_xlsx_formatted(|sheet| {
+        sheet.get_cell_mut("A1").set_value("첫째 줄");
+        sheet.get_cell_mut("A2").set_value("둘째 줄");
+        sheet
+            .get_sheet_format_properties_mut()
+            .set_default_row_height(18.0);
+        sheet.get_row_dimension_mut(&1).set_height(24.0);
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let tp = get_sheet_page(&doc, 0);
+    assert_eq!(tp.table.rows[0].height, Some(24.0));
+    assert_eq!(
+        tp.table.rows[1].height,
+        Some(18.0),
+        "rows without their own ht print at the sheet defaultRowHeight"
+    );
+}
+
+#[test]
+fn test_wrapping_row_without_custom_height_stays_auto() {
+    // Excel auto-grows rows containing wrapped cells unless customHeight is
+    // set; our text metrics differ slightly from Excel's, so a fixed height
+    // could clip a line — keep those rows content-driven.
+    let data = build_xlsx_formatted(|sheet| {
+        let cell = sheet.get_cell_mut("A1");
+        cell.set_value("줄바꿈이 있는 긴 텍스트가 이 셀에 들어 있습니다");
+        cell.get_style_mut().get_alignment_mut().set_wrap_text(true);
+        let row = sheet.get_row_dimension_mut(&1);
+        row.set_height(30.0);
+        row.set_custom_height(false);
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let tp = get_sheet_page(&doc, 0);
+    assert_eq!(
+        tp.table.rows[0].height,
+        None,
+        "auto-sized wrapping rows stay content-driven"
+    );
+}
+
+#[test]
+fn test_wrapping_row_with_custom_height_stays_fixed() {
+    let data = build_xlsx_formatted(|sheet| {
+        let cell = sheet.get_cell_mut("A1");
+        cell.set_value("줄바꿈이 있는 긴 텍스트가 이 셀에 들어 있습니다");
+        cell.get_style_mut().get_alignment_mut().set_wrap_text(true);
+        let row = sheet.get_row_dimension_mut(&1);
+        row.set_height(30.0);
+        row.set_custom_height(true);
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let tp = get_sheet_page(&doc, 0);
+    assert_eq!(tp.table.rows[0].height, Some(30.0));
+}

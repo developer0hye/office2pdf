@@ -277,6 +277,39 @@ fn compute_spill_width(
     has_empty_neighbor.then_some(total_width)
 }
 
+/// Excel's fallback row height when the sheet declares none (Calibri 11).
+const EXCEL_DEFAULT_ROW_HEIGHT_PT: f64 = 15.0;
+
+/// The height a row prints at. A recorded `ht` is the actual current height
+/// even when `customHeight` is false; rows without one use the sheet's
+/// defaultRowHeight. Exception: auto-sized rows (customHeight=false) that
+/// contain wrapped cells stay content-driven — our text metrics differ
+/// slightly from Excel's and a fixed height could clip a wrapped line.
+fn printed_row_height(
+    sheet: &umya_spreadsheet::Worksheet,
+    row_idx: u32,
+    row_has_wrapping_cell: &dyn Fn() -> bool,
+) -> Option<f64> {
+    let row_dimension = sheet.get_row_dimension(&row_idx);
+    let is_custom_height: bool = row_dimension
+        .map(|row| *row.get_custom_height())
+        .unwrap_or(false);
+    if !is_custom_height && row_has_wrapping_cell() {
+        return None;
+    }
+    let declared_height: Option<f64> = row_dimension
+        .map(|row| *row.get_height())
+        .filter(|height| *height > 0.0);
+    declared_height.or_else(|| {
+        let sheet_default: f64 = *sheet.get_sheet_format_properties().get_default_row_height();
+        if sheet_default > 0.0 {
+            Some(sheet_default)
+        } else {
+            Some(EXCEL_DEFAULT_ROW_HEIGHT_PT)
+        }
+    })
+}
+
 /// Build TableRows for a range of rows in a sheet.
 pub(super) fn build_rows_for_range(
     sheet: &umya_spreadsheet::Worksheet,
@@ -402,11 +435,16 @@ pub(super) fn build_rows_for_range(
             });
         }
 
-        // Extract row height if custom
-        let height = sheet
-            .get_row_dimension(&row_idx)
-            .filter(|r| *r.get_custom_height())
-            .map(|r| *r.get_height());
+        let row_has_wrapping_cell = || {
+            (ctx.col_start..=ctx.col_end).any(|col| {
+                sheet
+                    .get_cell((col, row_idx))
+                    .and_then(|cell| cell.get_style().get_alignment().cloned())
+                    .map(|alignment| *alignment.get_wrap_text())
+                    .unwrap_or(false)
+            })
+        };
+        let height: Option<f64> = printed_row_height(sheet, row_idx, &row_has_wrapping_cell);
 
         rows.push(TableRow { cells, height });
     }
