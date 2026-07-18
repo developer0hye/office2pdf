@@ -87,6 +87,7 @@ fn make_text_box(x: f64, y: f64, w: f64, h: f64, text: &str) -> FixedElement {
             shape_kind: None,
             no_wrap: false,
             auto_fit: false,
+            text_rotation_deg: None,
         }),
     }
 }
@@ -142,6 +143,7 @@ fn make_fixed_text_box(
             shape_kind: None,
             no_wrap: false,
             auto_fit: false,
+            text_rotation_deg: None,
         }),
     }
 }

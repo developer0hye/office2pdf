@@ -227,6 +227,9 @@ pub struct TextBoxData {
     pub no_wrap: bool,
     /// Whether the source requested PowerPoint autofit behavior for this box.
     pub auto_fit: bool,
+    /// Clockwise text rotation from `<a:bodyPr vert>` ("vert" = 90°,
+    /// "vert270" = 270°); the box geometry itself stays unrotated.
+    pub text_rotation_deg: Option<f64>,
 }
 
 /// The kind of list: ordered (numbered) or unordered (bulleted).

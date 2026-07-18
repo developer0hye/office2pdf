@@ -578,6 +578,36 @@ fn generate_fixed_text_box(
     text_box: &TextBoxData,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
+    // Vertical text (`<a:bodyPr vert>`): lay the content out in a box with
+    // swapped dimensions and rotate it around the element center; the outer
+    // geometry stays unrotated, matching PowerPoint.
+    if let Some(rotation) = text_box.text_rotation_deg
+        && elem.width > 0.0
+        && elem.height > 0.0
+    {
+        let mut inner: TextBoxData = text_box.clone();
+        inner.text_rotation_deg = None;
+        let swapped_elem = FixedElement {
+            x: elem.x,
+            y: elem.y,
+            width: elem.height,
+            height: elem.width,
+            kind: elem.kind.clone(),
+        };
+        // The outer #place pins the top-left of a width x height region;
+        // center the swapped box on that region before rotating in place.
+        let _ = write!(
+            out,
+            "#move(dx: {}pt, dy: {}pt)[#rotate({}deg, origin: center, reflow: false)[",
+            format_f64((elem.width - elem.height) / 2.0),
+            format_f64((elem.height - elem.width) / 2.0),
+            format_f64(rotation)
+        );
+        generate_fixed_text_box(out, &swapped_elem, &inner, ctx)?;
+        out.push_str("]]\n");
+        return Ok(());
+    }
+
     let outer_width_pt: f64 = elem.width.max(0.0);
     let outer_height_pt: f64 = elem.height.max(0.0);
     let inner_width_pt: f64 =

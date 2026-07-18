@@ -510,7 +510,16 @@ pub(super) fn extract_pptx_text_box_body_props(
     padding: &mut Insets,
     vertical_align: &mut TextBoxVerticalAlign,
     no_wrap: &mut bool,
+    text_rotation_deg: &mut Option<f64>,
 ) {
+    if let Some(vert) = get_attr_str(e, b"vert") {
+        // "vert" runs top-to-bottom (90° cw), "vert270" bottom-to-top.
+        *text_rotation_deg = match vert.as_str() {
+            "vert" | "eaVert" | "mongolianVert" => Some(270.0),
+            "vert270" => Some(90.0),
+            _ => None,
+        };
+    }
     if let Some(value) = get_attr_i64(e, b"lIns") {
         padding.left = emu_to_pt(value);
     }

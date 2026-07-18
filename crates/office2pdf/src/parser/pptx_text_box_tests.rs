@@ -252,3 +252,29 @@ fn test_paragraph_alignment_center() {
     };
     assert_eq!(para.style.alignment, Some(Alignment::Center));
 }
+
+#[test]
+fn test_body_pr_vert_sets_text_rotation() {
+    let shape = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="V"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="2743200"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr vert="vert"/><a:p><a:r><a:rPr lang="en-US"/><a:t>Vertical it should be!</a:t></a:r></a:p></p:txBody></p:sp>"#;
+    let slide = make_slide_xml(&[shape.to_string()]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page = first_fixed_page(&doc);
+    let text_box = text_box_data(&page.elements[0]);
+    assert_eq!(text_box.text_rotation_deg, Some(270.0));
+}
+
+#[test]
+fn test_body_pr_vert270_sets_reverse_rotation() {
+    let shape = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="V"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="2743200"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr vert="vert270"/><a:p><a:r><a:rPr lang="en-US"/><a:t>Up</a:t></a:r></a:p></p:txBody></p:sp>"#;
+    let slide = make_slide_xml(&[shape.to_string()]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page = first_fixed_page(&doc);
+    let text_box = text_box_data(&page.elements[0]);
+    assert_eq!(text_box.text_rotation_deg, Some(90.0));
+}
