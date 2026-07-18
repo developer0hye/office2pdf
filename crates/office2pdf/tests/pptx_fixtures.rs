@@ -334,3 +334,25 @@ pptx_fixture_tests!(oxp_pb001_input1, "oxp_PB001-Input1.pptx");
 pptx_fixture_tests!(oxp_pb001_input2, "oxp_PB001-Input2.pptx");
 pptx_fixture_tests!(oxp_pb001_input3, "oxp_PB001-Input3.pptx");
 pptx_fixture_tests!(oxp_videos, "oxp_PP006-Videos.pptx");
+
+#[test]
+fn smart_art_renders_cached_drawing_shapes() {
+    // The SmartArt drawing cache holds five shapes; PowerPoint renders them
+    // as blue blocks, but office2pdf produced a blank slide (issue #223).
+    let pages = fixed_pages("SmartArt.pptx");
+    let shape_count: usize = pages
+        .iter()
+        .flat_map(|p| p.elements.iter())
+        .filter(|e| matches!(e.kind, FixedElementKind::Shape(_)))
+        .count();
+    assert!(
+        shape_count >= 5,
+        "SmartArt drawing cache must render its shapes, got {shape_count}"
+    );
+    // The shapes carry a fill (the accent color), not a blank slide.
+    let filled: bool = pages
+        .iter()
+        .flat_map(|p| p.elements.iter())
+        .any(|e| matches!(&e.kind, FixedElementKind::Shape(s) if s.fill.is_some()));
+    assert!(filled, "SmartArt shapes must carry their fill color");
+}

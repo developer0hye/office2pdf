@@ -5,7 +5,7 @@ use super::*;
 /// Build the .rels path for a given file path.
 ///
 /// e.g., `ppt/slides/slide1.xml` -> `ppt/slides/_rels/slide1.xml.rels`
-fn rels_path_for(path: &str) -> String {
+pub(super) fn rels_path_for(path: &str) -> String {
     if let Some((dir, filename)) = path.rsplit_once('/') {
         format!("{dir}/_rels/{filename}.rels")
     } else {

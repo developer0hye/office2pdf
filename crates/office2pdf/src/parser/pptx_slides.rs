@@ -1,6 +1,6 @@
 use super::package::{
-    load_chart_data, load_slide_images, load_smartart_data, resolve_layout_master_paths,
-    scan_chart_refs,
+    load_chart_data, load_slide_images, load_smartart_data, parse_rels_xml, rels_path_for,
+    resolve_layout_master_paths, resolve_relative_path, scan_chart_refs,
 };
 use super::placeholders::PlaceholderGeometryMap;
 use super::*;
@@ -98,6 +98,8 @@ fn collect_smartart_elements<R: Read + std::io::Seek>(
     slide_xml: &str,
     slide_path: &str,
     archive: &mut ZipArchive<R>,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
 ) -> Vec<FixedElement> {
     let smartart_refs = smartart::scan_smartart_refs(slide_xml);
     if smartart_refs.is_empty() {
@@ -105,22 +107,354 @@ fn collect_smartart_elements<R: Read + std::io::Seek>(
     }
 
     let smartart_data = load_smartart_data(slide_path, archive);
-    smartart_refs
-        .iter()
-        .filter_map(|sa_ref| {
-            smartart_data
-                .get(&sa_ref.data_rid)
-                .map(|items| FixedElement {
-                    x: emu_to_pt(sa_ref.x),
-                    y: emu_to_pt(sa_ref.y),
-                    width: emu_to_pt(sa_ref.cx),
-                    height: emu_to_pt(sa_ref.cy),
-                    kind: FixedElementKind::SmartArt(SmartArt {
-                        items: items.clone(),
-                    }),
+    let mut elements: Vec<FixedElement> = Vec::new();
+    for sa_ref in &smartart_refs {
+        // Prefer the pre-rendered drawing cache (the real shapes PowerPoint
+        // laid out); fall back to a structured node list when absent.
+        let drawing_elems: Vec<FixedElement> =
+            load_smartart_drawing_xml(slide_path, archive, &sa_ref.data_rid)
+                .map(|xml| {
+                    parse_smartart_drawing(
+                        &xml,
+                        theme,
+                        color_map,
+                        emu_to_pt(sa_ref.x),
+                        emu_to_pt(sa_ref.y),
+                    )
                 })
+                .unwrap_or_default();
+        if !drawing_elems.is_empty() {
+            elements.extend(drawing_elems);
+        } else if let Some(items) = smartart_data.get(&sa_ref.data_rid) {
+            elements.push(FixedElement {
+                x: emu_to_pt(sa_ref.x),
+                y: emu_to_pt(sa_ref.y),
+                width: emu_to_pt(sa_ref.cx),
+                height: emu_to_pt(sa_ref.cy),
+                kind: FixedElementKind::SmartArt(SmartArt {
+                    items: items.clone(),
+                }),
+            });
+        }
+    }
+    elements
+}
+
+/// Resolve the SmartArt drawing cache (`diagrams/drawingN.xml`) for a
+/// diagram: slide rels(data_rid) → data XML → dataModelExt relId → slide
+/// rels(drawing_rid) → drawing XML.
+fn load_smartart_drawing_xml<R: Read + std::io::Seek>(
+    slide_path: &str,
+    archive: &mut ZipArchive<R>,
+    data_rid: &str,
+) -> Option<String> {
+    let rels_xml: String = read_zip_entry(archive, &rels_path_for(slide_path)).ok()?;
+    let rels: HashMap<String, String> = parse_rels_xml(&rels_xml);
+    let slide_dir: &str = slide_path
+        .rsplit_once('/')
+        .map(|(dir, _)| dir)
+        .unwrap_or("");
+
+    let data_target: &str = rels.get(data_rid)?;
+    let data_path: String = match data_target.strip_prefix('/') {
+        Some(stripped) => stripped.to_string(),
+        None => resolve_relative_path(slide_dir, data_target),
+    };
+    let data_xml: String = read_zip_entry(archive, &data_path).ok()?;
+
+    // <dsp:dataModelExt relId="rIdN"> names the drawing relationship (in the
+    // slide's rels, not the data part's).
+    let drawing_rid: String = extract_data_model_ext_rel_id(&data_xml)?;
+    let drawing_target: &str = rels.get(&drawing_rid)?;
+    let drawing_path: String = match drawing_target.strip_prefix('/') {
+        Some(stripped) => stripped.to_string(),
+        None => resolve_relative_path(slide_dir, drawing_target),
+    };
+    read_zip_entry(archive, &drawing_path).ok()
+}
+
+fn extract_data_model_ext_rel_id(data_xml: &str) -> Option<String> {
+    let mut reader = Reader::from_str(data_xml);
+    loop {
+        match reader.read_event() {
+            Ok(Event::Empty(ref e)) | Ok(Event::Start(ref e))
+                if e.local_name().as_ref() == b"dataModelExt" =>
+            {
+                return e.attributes().flatten().find_map(|attr| {
+                    (attr.key.local_name().as_ref() == b"relId")
+                        .then(|| attr.unescape_value().ok())
+                        .flatten()
+                        .map(|v| v.to_string())
+                });
+            }
+            Ok(Event::Eof) | Err(_) => return None,
+            _ => {}
+        }
+    }
+}
+
+/// Parse the SmartArt drawing cache's `<dsp:sp>` shapes into fixed elements
+/// (a shape background plus a text overlay), positioned relative to the
+/// diagram frame. The cache uses the same drawingML coordinate space as the
+/// frame extent, so shape offsets add directly to the frame origin.
+fn parse_smartart_drawing(
+    drawing_xml: &str,
+    theme: &ThemeData,
+    color_map: &ColorMapData,
+    frame_x_pt: f64,
+    frame_y_pt: f64,
+) -> Vec<FixedElement> {
+    let mut reader = Reader::from_str(drawing_xml);
+    let mut elements: Vec<FixedElement> = Vec::new();
+
+    #[derive(Default)]
+    struct DrawShape {
+        x: i64,
+        y: i64,
+        cx: i64,
+        cy: i64,
+        preset: Option<String>,
+        fill: Option<Color>,
+        line: Option<Color>,
+        line_w: i64,
+        texts: Vec<String>,
+    }
+
+    let mut current: Option<DrawShape> = None;
+    let mut in_sp_pr = false;
+    let mut in_ln = false;
+    let mut in_fill = false;
+    let mut in_tx_body = false;
+    let mut in_text = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
+                b"sp" => current = Some(DrawShape::default()),
+                b"spPr" => in_sp_pr = true,
+                b"ln" if in_sp_pr => {
+                    in_ln = true;
+                    if let Some(shape) = current.as_mut() {
+                        shape.line_w = get_attr_i64(e, b"w").unwrap_or(0);
+                    }
+                }
+                b"solidFill" if in_sp_pr && !in_ln => in_fill = true,
+                b"txBody" => in_tx_body = true,
+                b"t" if in_tx_body => in_text = true,
+                b"srgbClr" | b"schemeClr" | b"sysClr" if in_fill => {
+                    let parsed =
+                        parse_color_from_start(reader_ref(&mut reader), e, theme, color_map);
+                    if let (Some(shape), Some(color)) = (current.as_mut(), parsed.color) {
+                        shape.fill = Some(color);
+                    }
+                }
+                b"srgbClr" | b"schemeClr" | b"sysClr" if in_ln => {
+                    let parsed =
+                        parse_color_from_start(reader_ref(&mut reader), e, theme, color_map);
+                    if let (Some(shape), Some(color)) = (current.as_mut(), parsed.color) {
+                        shape.line = Some(color);
+                    }
+                }
+                _ => {}
+            },
+            Ok(Event::Empty(ref e)) => match e.local_name().as_ref() {
+                b"off" if in_sp_pr => {
+                    if let Some(shape) = current.as_mut() {
+                        shape.x = get_attr_i64(e, b"x").unwrap_or(0);
+                        shape.y = get_attr_i64(e, b"y").unwrap_or(0);
+                    }
+                }
+                b"ext" if in_sp_pr => {
+                    if let Some(shape) = current.as_mut() {
+                        shape.cx = get_attr_i64(e, b"cx").unwrap_or(0);
+                        shape.cy = get_attr_i64(e, b"cy").unwrap_or(0);
+                    }
+                }
+                b"prstGeom" => {
+                    if let Some(shape) = current.as_mut() {
+                        shape.preset = get_attr_str(e, b"prst");
+                    }
+                }
+                b"srgbClr" | b"schemeClr" | b"sysClr" if in_fill => {
+                    let parsed = parse_color_from_empty(e, theme, color_map);
+                    if let (Some(shape), Some(color)) = (current.as_mut(), parsed.color) {
+                        shape.fill = Some(color);
+                    }
+                }
+                b"srgbClr" | b"schemeClr" | b"sysClr" if in_ln => {
+                    let parsed = parse_color_from_empty(e, theme, color_map);
+                    if let (Some(shape), Some(color)) = (current.as_mut(), parsed.color) {
+                        shape.line = Some(color);
+                    }
+                }
+                _ => {}
+            },
+            Ok(Event::Text(ref t)) => {
+                if in_text
+                    && let Some(text) = decode_pptx_text_event(t)
+                    && let Some(shape) = current.as_mut()
+                {
+                    let trimmed = text.trim();
+                    if !trimmed.is_empty() {
+                        shape.texts.push(trimmed.to_string());
+                    }
+                }
+            }
+            Ok(Event::End(ref e)) => match e.local_name().as_ref() {
+                b"spPr" => in_sp_pr = false,
+                b"ln" => in_ln = false,
+                b"solidFill" => in_fill = false,
+                b"txBody" => in_tx_body = false,
+                b"t" => in_text = false,
+                b"sp" => {
+                    if let Some(shape) = current.take()
+                        && shape.cx > 0
+                        && shape.cy > 0
+                    {
+                        elements.extend(smartart_shape_to_elements(shape_fields(
+                            &shape.preset,
+                            shape.fill,
+                            shape.line,
+                            shape.line_w,
+                            &shape.texts,
+                            frame_x_pt + emu_to_pt(shape.x),
+                            frame_y_pt + emu_to_pt(shape.y),
+                            emu_to_pt(shape.cx),
+                            emu_to_pt(shape.cy),
+                        )));
+                    }
+                }
+                _ => {}
+            },
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+
+    elements
+}
+
+#[allow(clippy::too_many_arguments)]
+fn shape_fields(
+    preset: &Option<String>,
+    fill: Option<Color>,
+    line: Option<Color>,
+    line_w: i64,
+    texts: &[String],
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> SmartArtShapeFields {
+    SmartArtShapeFields {
+        preset: preset.clone(),
+        fill,
+        line,
+        line_w,
+        texts: texts.to_vec(),
+        x,
+        y,
+        width,
+        height,
+    }
+}
+
+struct SmartArtShapeFields {
+    preset: Option<String>,
+    fill: Option<Color>,
+    line: Option<Color>,
+    line_w: i64,
+    texts: Vec<String>,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+fn smartart_shape_to_elements(f: SmartArtShapeFields) -> Vec<FixedElement> {
+    let mut out: Vec<FixedElement> = Vec::new();
+    let kind: ShapeKind = f
+        .preset
+        .as_deref()
+        .map(|prst| {
+            prst_to_shape_kind(
+                prst,
+                f.width,
+                f.height,
+                false,
+                false,
+                ArrowHead::None,
+                ArrowHead::None,
+                &[],
+            )
         })
-        .collect()
+        .unwrap_or(ShapeKind::Rectangle);
+    let stroke: Option<BorderSide> = f.line.map(|color| BorderSide {
+        width: emu_to_pt(f.line_w.max(0)),
+        color,
+        style: BorderLineStyle::Solid,
+    });
+    out.push(FixedElement {
+        x: f.x,
+        y: f.y,
+        width: f.width,
+        height: f.height,
+        kind: FixedElementKind::Shape(Shape {
+            kind,
+            fill: f.fill,
+            gradient_fill: None,
+            stroke,
+            rotation_deg: None,
+            opacity: None,
+            shadow: None,
+        }),
+    });
+    if !f.texts.is_empty() {
+        let runs: Vec<Run> = f
+            .texts
+            .iter()
+            .map(|text| Run {
+                text: text.clone(),
+                style: TextStyle {
+                    color: Some(Color::new(0xFF, 0xFF, 0xFF)),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            })
+            .collect();
+        out.push(FixedElement {
+            x: f.x,
+            y: f.y,
+            width: f.width,
+            height: f.height,
+            kind: FixedElementKind::TextBox(TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        alignment: Some(Alignment::Center),
+                        ..ParagraphStyle::default()
+                    },
+                    runs,
+                })],
+                padding: Insets::default(),
+                vertical_align: TextBoxVerticalAlign::Center,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: false,
+                auto_fit: false,
+                text_rotation_deg: None,
+            }),
+        });
+    }
+    out
+}
+
+/// Borrow helper so `parse_color_from_start` can take the live reader while
+/// we hold a mutable borrow across the match arm.
+fn reader_ref<'a, 'b>(reader: &'a mut Reader<&'b [u8]>) -> &'a mut Reader<&'b [u8]> {
+    reader
 }
 
 /// Collect Chart elements referenced by the slide XML.
@@ -370,6 +704,8 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
         &chain.slide_xml,
         slide_path,
         archive,
+        theme,
+        &chain.slide_color_map,
     ));
     elements.extend(collect_chart_elements(
         &chain.slide_xml,
