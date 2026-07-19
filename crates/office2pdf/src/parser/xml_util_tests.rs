@@ -25,8 +25,22 @@ fn parse_argb_color_valid() {
 }
 
 #[test]
-fn parse_argb_color_too_short() {
+fn parse_argb_color_accepts_six_digit_rgb() {
+    assert_eq!(
+        parse_argb_color("D9EAF7"),
+        Some(Color::new(0xD9, 0xEA, 0xF7))
+    );
+    assert_eq!(
+        parse_argb_color("16324F"),
+        Some(Color::new(0x16, 0x32, 0x4F))
+    );
+}
+
+#[test]
+fn parse_argb_color_rejects_unsupported_lengths() {
     assert!(parse_argb_color("FF00").is_none());
+    assert!(parse_argb_color("1234567").is_none());
+    assert!(parse_argb_color("123456789").is_none());
 }
 
 #[test]

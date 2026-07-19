@@ -10,7 +10,7 @@ mod common;
 use std::path::PathBuf;
 
 use office2pdf::config::ConvertOptions;
-use office2pdf::ir::{Alignment, Block, BorderLineStyle, Page, SheetPage, TableCell};
+use office2pdf::ir::{Alignment, Block, BorderLineStyle, Color, Page, SheetPage, TableCell};
 use office2pdf::parser::Parser;
 use office2pdf::parser::xlsx::XlsxParser;
 use office2pdf::render::typst_gen::generate_typst;
@@ -190,6 +190,28 @@ fn structure_pr_186_contributor_acceptance_supported_behavior() {
     assert!((executive.margins.bottom - 54.0).abs() < 0.01);
     assert!((executive.margins.left - 50.4).abs() < 0.01);
     assert!((executive.margins.right - 50.4).abs() < 0.01);
+}
+
+#[test]
+fn acceptance_pr_186_contributor_acceptance_six_digit_colors() {
+    let pages = sheet_pages(PR_186_FIXTURE);
+    let statement = sheet_page_named(&pages, "Statement Landscape");
+    let header_cell = &statement.table.rows[0].cells[0];
+
+    assert_eq!(
+        header_cell.background,
+        Some(Color::new(0xD9, 0xEA, 0xF7)),
+        "six-digit header fill should survive XLSX parsing"
+    );
+    let paragraph = match &header_cell.content[0] {
+        Block::Paragraph(paragraph) => paragraph,
+        _ => panic!("header cell should contain a paragraph"),
+    };
+    assert_eq!(
+        paragraph.runs[0].style.color,
+        Some(Color::new(0x16, 0x32, 0x4F)),
+        "six-digit header font color should survive XLSX parsing"
+    );
 }
 
 #[test]

@@ -60,16 +60,21 @@ pub(crate) fn parse_hex_color(hex: &str) -> Option<Color> {
     Some(Color::new(r, g, b))
 }
 
-/// Parse an ARGB hex string (e.g. "FFFF0000") into an IR Color.
-/// Returns None if the string is too short or invalid.
+/// Parse an RGB or ARGB hex string into an IR Color.
+///
+/// OOXML producers use both six-digit `RRGGBB` and eight-digit `AARRGGBB`
+/// encodings. Alpha is currently ignored because the IR color is opaque.
 pub(crate) fn parse_argb_color(argb: &str) -> Option<Color> {
-    if argb.len() < 8 {
-        return None;
+    match argb.len() {
+        6 => parse_hex_color(argb),
+        8 => {
+            let r = u8::from_str_radix(&argb[2..4], 16).ok()?;
+            let g = u8::from_str_radix(&argb[4..6], 16).ok()?;
+            let b = u8::from_str_radix(&argb[6..8], 16).ok()?;
+            Some(Color::new(r, g, b))
+        }
+        _ => None,
     }
-    let r = u8::from_str_radix(&argb[2..4], 16).ok()?;
-    let g = u8::from_str_radix(&argb[4..6], 16).ok()?;
-    let b = u8::from_str_radix(&argb[6..8], 16).ok()?;
-    Some(Color::new(r, g, b))
 }
 
 /// Resolve a relative path (like `../drawings/drawing1.xml`) against a base directory.
