@@ -409,7 +409,7 @@ fn generate_fixed_page(
     } else {
         let _ = writeln!(
             out,
-            "#set page(width: {}pt, height: {}pt, margin: 0pt)",
+            "#set page(width: {}pt, height: {}pt, margin: 0pt, fill: white)",
             format_f64(size.width),
             format_f64(size.height),
         );

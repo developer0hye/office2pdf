@@ -274,7 +274,11 @@ fn test_fixed_page_without_background_color() {
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();
-    assert!(!output.source.contains("fill:"));
+    assert!(
+        output.source.contains("fill: white"),
+        "Expected fill: white for no-background slide, got:\n{}",
+        output.source
+    );
 }
 
 #[test]
