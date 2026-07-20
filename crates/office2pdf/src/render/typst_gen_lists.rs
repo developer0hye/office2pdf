@@ -43,14 +43,16 @@ fn write_list_open(
     out: &mut String,
     prefix: &str,
     style: &EffectiveListStyle<'_>,
+    fallback_marker_style: Option<&TextStyle>,
     start_at: Option<u32>,
 ) {
     let (func, _) = list_funcs(style.kind);
     let _ = write!(out, "{prefix}{func}(");
 
     if style.kind == ListKind::Ordered {
-        if style.marker_style.is_some_and(has_text_properties) {
-            write_ordered_list_numbering_function(out, style);
+        let marker_style = merge_marker_style(fallback_marker_style, style.marker_style);
+        if marker_style.as_ref().is_some_and(has_text_properties) {
+            write_ordered_list_numbering_function(out, style, marker_style.as_ref());
             out.push_str(", ");
         } else if let Some(numbering_pattern) = style.numbering_pattern {
             let _ = write!(
@@ -65,22 +67,30 @@ fn write_list_open(
         if style.full_numbering {
             out.push_str("full: true, ");
         }
-    } else if style.marker_text.is_some() || style.marker_style.is_some() {
+    } else if style.marker_text.is_some()
+        || style.marker_style.is_some()
+        || fallback_marker_style.is_some()
+    {
+        let (marker_text, explicit_marker_style) =
+            renderable_unordered_marker(style.marker_text.unwrap_or("•"), style.marker_style);
+        let marker_style =
+            merge_marker_style(fallback_marker_style, explicit_marker_style.as_ref());
         out.push_str("marker: [");
-        write_unordered_list_marker_content(out, style);
+        write_unordered_list_marker_content(out, &marker_text, marker_style.as_ref());
         out.push_str("], ");
     }
 
     out.push('\n');
 }
 
-fn write_ordered_list_numbering_function(out: &mut String, style: &EffectiveListStyle<'_>) {
+fn write_ordered_list_numbering_function(
+    out: &mut String,
+    style: &EffectiveListStyle<'_>,
+    marker_style: Option<&TextStyle>,
+) {
     let pattern: &str = style.numbering_pattern.unwrap_or("1.");
     out.push_str("numbering: (..nums) => [");
-    if let Some(marker_style) = style
-        .marker_style
-        .filter(|style| has_text_properties(style))
-    {
+    if let Some(marker_style) = marker_style.filter(|style| has_text_properties(style)) {
         out.push_str("#text(");
         write_text_params(out, marker_style);
         out.push_str(")[");
@@ -90,28 +100,27 @@ fn write_ordered_list_numbering_function(out: &mut String, style: &EffectiveList
         "#numbering(\"{}\", ..nums)",
         escape_typst_string(pattern)
     );
-    if style.marker_style.is_some_and(has_text_properties) {
+    if marker_style.is_some_and(has_text_properties) {
         out.push(']');
     }
     out.push(']');
 }
 
-fn write_unordered_list_marker_content(out: &mut String, style: &EffectiveListStyle<'_>) {
-    let (marker_text, marker_style) =
-        renderable_unordered_marker(style.marker_text.unwrap_or("•"), style.marker_style);
-    if let Some(marker_style) = marker_style
-        .as_ref()
-        .filter(|style| has_text_properties(style))
-    {
+fn write_unordered_list_marker_content(
+    out: &mut String,
+    marker_text: &str,
+    marker_style: Option<&TextStyle>,
+) {
+    if let Some(marker_style) = marker_style.filter(|style| has_text_properties(style)) {
         out.push_str("#text(");
         write_text_params(out, marker_style);
         out.push_str(")[");
-        out.push_str(&escape_typst(&marker_text));
+        out.push_str(&escape_typst(marker_text));
         out.push(']');
         return;
     }
 
-    out.push_str(&escape_typst(&marker_text));
+    out.push_str(&escape_typst(marker_text));
 }
 
 fn list_root_level(list: &List) -> u32 {
@@ -121,8 +130,9 @@ fn list_root_level(list: &List) -> u32 {
 pub(super) fn generate_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
     let root_level: u32 = list_root_level(list);
     let style = list_style_for_level(list, root_level);
+    let fallback_marker_style = common_list_level_text_style(&list.items, root_level);
     let start_at = list.items.first().and_then(|item| item.start_at);
-    write_list_open(out, "#", &style, start_at);
+    write_list_open(out, "#", &style, fallback_marker_style.as_ref(), start_at);
     generate_list_items(out, list, &list.items, root_level)?;
     out.push_str(")\n");
     Ok(())
@@ -577,6 +587,33 @@ fn intersect_text_style(left: &TextStyle, right: &TextStyle) -> TextStyle {
     }
 }
 
+fn common_list_level_text_style(items: &[crate::ir::ListItem], level: u32) -> Option<TextStyle> {
+    let mut visible_styles = items
+        .iter()
+        .filter(|item| item.level == level)
+        .flat_map(|item| item.content.iter())
+        .flat_map(|paragraph| paragraph.runs.iter())
+        .filter(|run| run.footnote.is_none() && !run.text.is_empty())
+        .map(|run| &run.style);
+    let first_style = visible_styles.next()?.clone();
+    let common_style = visible_styles.fold(first_style, |common, style| {
+        intersect_text_style(&common, style)
+    });
+
+    has_text_properties(&common_style).then_some(common_style)
+}
+
+fn merge_marker_style(
+    fallback: Option<&TextStyle>,
+    explicit: Option<&TextStyle>,
+) -> Option<TextStyle> {
+    let mut merged = fallback.cloned().unwrap_or_default();
+    if let Some(explicit) = explicit {
+        merged.merge_from(explicit);
+    }
+    has_text_properties(&merged).then_some(merged)
+}
+
 fn fixed_text_list_line_gap_pt(style: &ParagraphStyle, list: &List) -> Option<f64> {
     let font_size_pt: f64 = fixed_text_list_font_size_pt(list);
     match style.line_spacing {
@@ -779,6 +816,7 @@ fn map_symbol_font_marker(font_family: &str, marker_text: &str) -> Option<&'stat
         .collect();
 
     match (normalized_family.as_str(), marker_char) {
+        ("symbol", '\u{F0B7}') => Some("•"),
         ("wingdings", '\u{00D8}') => Some("➢"),
         ("wingdings", '\u{00E8}') => Some("➔"),
         ("wingdings", '\u{00FB}') => Some("✖"),
@@ -870,8 +908,16 @@ fn generate_list_items(
 
             if nested_end > nested_start {
                 let nested_style = list_style_for_level(list, base_level + 1);
+                let fallback_marker_style =
+                    common_list_level_text_style(&items[nested_start..nested_end], base_level + 1);
                 let nested_start_at = items[nested_start].start_at;
-                write_list_open(out, " #", &nested_style, nested_start_at);
+                write_list_open(
+                    out,
+                    " #",
+                    &nested_style,
+                    fallback_marker_style.as_ref(),
+                    nested_start_at,
+                );
                 generate_list_items(out, list, &items[nested_start..nested_end], base_level + 1)?;
                 out.push(')');
                 i = nested_end;

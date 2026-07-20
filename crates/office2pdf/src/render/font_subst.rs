@@ -427,15 +427,22 @@ fn visit_header_footer_fonts(
 }
 
 fn block_requests_font_family(block: &Block) -> bool {
-    !visit_block_fonts(block, &mut |_| false)
+    !visit_block_fonts(block, &mut font_family_uses_context_free_fallbacks)
 }
 
 fn table_requests_font_family(table: &Table) -> bool {
-    !visit_table_fonts(table, &mut |_| false)
+    !visit_table_fonts(table, &mut font_family_uses_context_free_fallbacks)
 }
 
 fn header_footer_requests_font_family(header_footer: &HeaderFooter) -> bool {
-    !visit_header_footer_fonts(header_footer, &mut |_| false)
+    !visit_header_footer_fonts(header_footer, &mut font_family_uses_context_free_fallbacks)
+}
+
+fn font_family_uses_context_free_fallbacks(font_family: &str) -> bool {
+    // Arial's static substitution chain is sufficient for Typst to select the
+    // installed face. Avoid the separate availability scan for this ubiquitous
+    // family, including the synthetic DOCX default.
+    font_family.eq_ignore_ascii_case("Arial")
 }
 
 fn collect_block_fonts(block: &Block, fonts: &mut BTreeSet<String>) {

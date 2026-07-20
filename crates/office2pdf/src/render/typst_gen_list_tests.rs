@@ -115,6 +115,92 @@ fn test_generate_numbered_list() {
 }
 
 #[test]
+fn test_generate_numbered_list_marker_inherits_common_text_font() {
+    use crate::ir::List;
+
+    let list = List {
+        kind: ListKind::Ordered,
+        items: vec![ListItem {
+            content: vec![Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Arial item".to_string(),
+                    style: TextStyle {
+                        font_family: Some("Arial".to_string()),
+                        ..TextStyle::default()
+                    },
+                    href: None,
+                    footnote: None,
+                }],
+            }],
+            level: 0,
+            start_at: Some(1),
+        }],
+        level_styles: BTreeMap::from([(
+            0,
+            ListLevelStyle {
+                kind: ListKind::Ordered,
+                numbering_pattern: Some("1.".to_string()),
+                full_numbering: false,
+                marker_text: None,
+                marker_style: None,
+            },
+        )]),
+    };
+    let output = generate_typst(&make_doc(vec![make_flow_page(vec![Block::List(list)])])).unwrap();
+
+    assert!(
+        output
+            .source
+            .contains("numbering: (..nums) => [#text(font: (\"Arial\"")
+    );
+}
+
+#[test]
+fn test_generate_symbol_bullet_uses_unicode_and_inherits_common_text_font() {
+    use crate::ir::List;
+
+    let list = List {
+        kind: ListKind::Unordered,
+        items: vec![ListItem {
+            content: vec![Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Arial item".to_string(),
+                    style: TextStyle {
+                        font_family: Some("Arial".to_string()),
+                        ..TextStyle::default()
+                    },
+                    href: None,
+                    footnote: None,
+                }],
+            }],
+            level: 0,
+            start_at: None,
+        }],
+        level_styles: BTreeMap::from([(
+            0,
+            ListLevelStyle {
+                kind: ListKind::Unordered,
+                numbering_pattern: None,
+                full_numbering: false,
+                marker_text: Some("\u{F0B7}".to_string()),
+                marker_style: Some(TextStyle {
+                    font_family: Some("Symbol".to_string()),
+                    ..TextStyle::default()
+                }),
+            },
+        )]),
+    };
+    let output = generate_typst(&make_doc(vec![make_flow_page(vec![Block::List(list)])])).unwrap();
+
+    assert!(output.source.contains("marker: [#text(font: (\"Arial\""));
+    assert!(output.source.contains("[•]"));
+    assert!(!output.source.contains("Symbol"));
+    assert!(!output.source.contains('\u{F0B7}'));
+}
+
+#[test]
 fn test_generate_numbered_list_emits_mid_list_restart() {
     use crate::ir::List;
 

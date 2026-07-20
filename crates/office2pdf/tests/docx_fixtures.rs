@@ -246,6 +246,20 @@ fn acceptance_pr_187_contributor_acceptance_style_inherited_numbering() {
     );
 }
 
+#[test]
+fn acceptance_pr_187_contributor_acceptance_uses_word_compatible_default_font() {
+    let pages = flow_pages(PR_187_FIXTURE);
+    let blocks = all_blocks(&pages);
+    let runs = all_runs(&blocks);
+
+    assert_eq!(runs.len(), 8, "fixture text inventory should remain stable");
+    assert!(
+        runs.iter()
+            .all(|run| run.style.font_family.as_deref() == Some("Arial")),
+        "all text without an OOXML font should use the DOCX fallback: {runs:#?}"
+    );
+}
+
 fn has_hyperlink_runs(runs: &[&Run]) -> bool {
     runs.iter().any(|r| r.href.is_some())
 }

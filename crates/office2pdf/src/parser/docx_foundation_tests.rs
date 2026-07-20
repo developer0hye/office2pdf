@@ -223,6 +223,17 @@ fn test_parse_error_includes_library_name() {
 // ----- Text style defaults -----
 
 #[test]
+fn test_docx_without_font_uses_word_compatible_sans_default() {
+    let data = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Plain text")),
+    ]);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(first_run(&doc).style.font_family.as_deref(), Some("Arial"));
+}
+
+#[test]
 fn test_parsed_runs_have_default_text_style() {
     let data = build_docx_bytes(vec![
         docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Plain text")),
@@ -393,7 +404,7 @@ fn test_combined_formatting_extracted() {
 }
 
 #[test]
-fn test_plain_text_has_no_formatting() {
+fn test_plain_text_has_only_docx_default_font() {
     let data = build_docx_bytes(vec![
         docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Plain text")),
     ]);
@@ -407,7 +418,7 @@ fn test_plain_text_has_no_formatting() {
     assert!(run.style.font_size.is_none());
     assert!(run.style.letter_spacing.is_none());
     assert!(run.style.color.is_none());
-    assert!(run.style.font_family.is_none());
+    assert_eq!(run.style.font_family.as_deref(), Some("Arial"));
 }
 
 // ----- Paragraph formatting tests (US-005) -----

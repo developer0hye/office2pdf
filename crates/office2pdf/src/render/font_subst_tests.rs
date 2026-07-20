@@ -333,6 +333,36 @@ fn test_document_requests_font_families_false_when_all_runs_use_defaults() {
 }
 
 #[test]
+fn test_document_requests_font_families_false_for_context_free_arial() {
+    let doc = Document {
+        metadata: crate::ir::Metadata::default(),
+        pages: vec![Page::Flow(crate::ir::FlowPage {
+            size: crate::ir::PageSize::default(),
+            margins: crate::ir::Margins::default(),
+            content: vec![Block::Paragraph(Paragraph {
+                style: crate::ir::ParagraphStyle::default(),
+                runs: vec![crate::ir::Run {
+                    text: "DOCX default text".to_string(),
+                    style: crate::ir::TextStyle {
+                        font_family: Some("Arial".to_string()),
+                        ..crate::ir::TextStyle::default()
+                    },
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            header: None,
+            footer: None,
+            columns: None,
+            line_grid_pitch: None,
+        })],
+        styles: crate::ir::StyleSheet::default(),
+    };
+
+    assert!(!document_requests_font_families(&doc));
+}
+
+#[test]
 fn test_document_requests_font_families_true_when_any_run_sets_family() {
     let doc = Document {
         metadata: crate::ir::Metadata::default(),

@@ -5,6 +5,10 @@ use super::{
 use crate::parser::units::{half_points_to_pt, twips_to_pt};
 use crate::parser::xml_util;
 
+// Word supplies an application- and locale-dependent sans face when the
+// package omits one; Arial gives the parser a stable cross-platform baseline.
+const WORD_COMPATIBLE_DEFAULT_FONT: &str = "Arial";
+
 pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> ParagraphStyle {
     let alignment = prop.alignment.as_ref().and_then(|j| match j.val.as_str() {
         "center" => Some(Alignment::Center),
@@ -188,19 +192,19 @@ pub(super) fn extract_doc_default_text_style_with_theme(
     styles: &docx_rs::Styles,
     theme_fonts: &ThemeFonts,
 ) -> TextStyle {
-    let Ok(json) = serde_json::to_value(&styles.doc_defaults) else {
-        return TextStyle::default();
-    };
-    let Some(run_property) = json
-        .get("runPropertyDefault")
-        .and_then(|value| value.get("runProperty"))
-    else {
-        return TextStyle::default();
-    };
-
-    let mut style = extract_run_style_from_json(run_property);
+    let json = serde_json::to_value(&styles.doc_defaults).ok();
+    let run_property = json.as_ref().and_then(|value| {
+        value
+            .get("runPropertyDefault")
+            .and_then(|value| value.get("runProperty"))
+    });
+    let mut style = run_property
+        .map(extract_run_style_from_json)
+        .unwrap_or_default();
     if style.font_family.is_none() {
-        style.font_family = resolve_theme_font_family(run_property, theme_fonts);
+        style.font_family = run_property
+            .and_then(|property| resolve_theme_font_family(property, theme_fonts))
+            .or_else(|| Some(WORD_COMPATIBLE_DEFAULT_FONT.to_string()));
     }
     style
 }
