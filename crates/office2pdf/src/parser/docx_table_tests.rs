@@ -400,13 +400,8 @@ fn test_table_cell_paragraph_uses_word_default_line_box_and_spacing() {
         other => panic!("expected table cell paragraph, got {other:?}"),
     };
 
-    assert_eq!(
-        paragraph(0).style.line_box,
-        Some(LineBox {
-            ascent_em: 1.3125,
-            descent_em: 0.4375,
-        })
-    );
+    // Line height stays unset in the IR (issue #354).
+    assert_eq!(paragraph(0).style.line_box, None);
     assert_eq!(paragraph(0).style.space_after, Some(8.0));
 
     assert_eq!(paragraph(1).style.line_box, None);

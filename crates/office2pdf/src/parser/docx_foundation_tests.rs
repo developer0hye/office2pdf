@@ -586,7 +586,7 @@ fn test_paragraph_line_spacing_exact() {
 }
 
 #[test]
-fn test_paragraph_uses_word_default_line_box_and_spacing_when_unspecified() {
+fn test_paragraph_uses_word_default_spacing_when_unspecified() {
     let data = build_docx_bytes(vec![
         docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Word defaults")),
     ]);
@@ -594,13 +594,9 @@ fn test_paragraph_uses_word_default_line_box_and_spacing_when_unspecified() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
     let paragraph = first_paragraph(&doc);
 
-    assert_eq!(
-        paragraph.style.line_box,
-        Some(LineBox {
-            ascent_em: 1.3125,
-            descent_em: 0.4375,
-        })
-    );
+    // Line height stays unset in the IR: the renderer derives Word's
+    // single-spacing pitch from the actual font metrics (issue #354).
+    assert_eq!(paragraph.style.line_box, None);
     assert_eq!(paragraph.style.space_after, Some(8.0));
 }
 

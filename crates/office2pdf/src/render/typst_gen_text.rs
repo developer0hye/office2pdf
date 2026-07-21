@@ -106,22 +106,38 @@ pub(super) fn word_line_height_settings(
     if style.line_spacing.is_some() || style.line_box.is_some() {
         return None;
     }
-    let pitch: f64 = line_grid_pitch?;
     let family: &str = runs
         .iter()
         .find_map(|run| run.style.font_family.as_deref())?;
-    let (ascender_em, descender_em, _) = crate::render::pdf::font_line_metrics_em(family)?;
+    let (ascender_em, descender_em, word_pitch_em) =
+        crate::render::pdf::font_line_metrics_em(family)?;
     let font_size: f64 = runs
         .iter()
         .filter_map(|run| run.style.font_size)
         .fold(f64::NAN, f64::max);
     let font_size: f64 = if font_size.is_nan() { 11.0 } else { font_size };
     let line_box_pt: f64 = (ascender_em + descender_em) * font_size;
-    if line_box_pt <= 0.0 || pitch <= 0.0 {
+    if line_box_pt <= 0.0 {
         return None;
     }
-    let grid_lines: f64 = (line_box_pt / pitch).ceil().max(1.0);
-    let leading_pt: f64 = grid_lines * pitch - line_box_pt;
+
+    // Word only snaps East Asian text to the document grid: with the
+    // default grid type, Latin-only paragraphs keep their hhea line height
+    // (native Word GT: Arial 10.5 lines are 12pt while Korean lines in the
+    // same document snap to the 18pt grid). Snapping Latin paragraphs
+    // inflated every Western document by 30-50% (issue #354).
+    let has_east_asian_text: bool = runs.iter().any(|run| run.text.chars().any(is_cjk_like));
+
+    let leading_pt: f64 = match line_grid_pitch {
+        Some(pitch) if pitch > 0.0 && has_east_asian_text => {
+            let grid_lines: f64 = (line_box_pt / pitch).ceil().max(1.0);
+            grid_lines * pitch - line_box_pt
+        }
+        // Word's single spacing is the font's full hhea line (ascender +
+        // descender + line gap); Typst's metric edges resolve the typo
+        // values, so the leading bridges the difference.
+        _ => (word_pitch_em * font_size - line_box_pt).max(0.0),
+    };
     Some(format!(
         "#set text(top-edge: \"ascender\", bottom-edge: \"descender\")\n#set par(leading: {}pt)\n",
         format_f64(leading_pt)

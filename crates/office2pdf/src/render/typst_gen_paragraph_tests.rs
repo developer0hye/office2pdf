@@ -658,7 +658,7 @@ fn test_document_grid_pitch_snaps_line_height() {
     let mut page = match make_flow_page(vec![Block::Paragraph(Paragraph {
         style: ParagraphStyle::default(),
         runs: vec![Run {
-            text: "grid snapped".to_string(),
+            text: "그리드 정렬 grid snapped".to_string(),
             style: TextStyle {
                 font_family: Some("Libertinus Serif".to_string()),
                 font_size: Some(10.0),
@@ -687,13 +687,61 @@ fn test_document_grid_pitch_snaps_line_height() {
 }
 
 #[test]
-fn test_no_document_grid_keeps_default_line_height() {
+fn test_latin_paragraph_ignores_document_grid() {
+    // Word leaves Latin-only paragraphs at their metric line height even
+    // when the section carries a document grid; only East Asian text snaps
+    // (issue #354).
+    let mut page = match make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: "latin only body text".to_string(),
+            style: TextStyle {
+                font_family: Some("Libertinus Serif".to_string()),
+                font_size: Some(10.0),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })]) {
+        Page::Flow(flow) => flow,
+        _ => unreachable!(),
+    };
+    page.line_grid_pitch = Some(18.0);
+    let doc = make_doc(vec![Page::Flow(page)]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    // The paragraph keeps Word's metric single-spacing leading; the 18pt
+    // grid top-up (leading = 18 - line box) must not appear.
+    let Some((ascender, descender, word_pitch)) =
+        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
+    else {
+        return;
+    };
+    let box_pt = (ascender + descender) * 10.0;
+    let single_leading = (word_pitch * 10.0 - box_pt).max(0.0);
+    let grid_leading = 18.0 - box_pt;
+    assert!(
+        result.contains(&format!("leading: {}pt", format_f64(single_leading))),
+        "Latin paragraphs keep Word single spacing: {result}"
+    );
+    assert!(
+        !result.contains(&format!("leading: {}pt", format_f64(grid_leading))),
+        "Latin paragraphs must not snap to the grid: {result}"
+    );
+}
+
+#[test]
+fn test_no_document_grid_uses_word_single_spacing() {
+    // Without a document grid, paragraphs still use Word's hhea single-line
+    // pitch instead of Typst's glyph-tight default (issue #354).
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
         style: ParagraphStyle::default(),
         runs: vec![Run {
             text: "plain".to_string(),
             style: TextStyle {
                 font_family: Some("Libertinus Serif".to_string()),
+                font_size: Some(10.0),
                 ..TextStyle::default()
             },
             href: None,
@@ -701,7 +749,20 @@ fn test_no_document_grid_keeps_default_line_height() {
         }],
     })])]);
     let result = generate_typst(&doc).unwrap().source;
-    assert!(!result.contains("top-edge"), "no grid: {result}");
+    let Some((ascender, descender, word_pitch)) =
+        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
+    else {
+        return;
+    };
+    let single_leading = (word_pitch * 10.0 - (ascender + descender) * 10.0).max(0.0);
+    assert!(
+        result.contains("top-edge: \"ascender\""),
+        "metric edges expected: {result}"
+    );
+    assert!(
+        result.contains(&format!("leading: {}pt", format_f64(single_leading))),
+        "Word single-spacing leading expected: {result}"
+    );
 }
 
 #[test]

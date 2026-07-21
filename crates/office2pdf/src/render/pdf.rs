@@ -380,9 +380,12 @@ impl World for MinimalWorld {
 #[path = "pdf_tests.rs"]
 mod tests;
 
-/// hhea line metrics of the best face for `family`, in em units:
-/// (ascender, descender magnitude, line gap). Word bases its "single" line
-/// spacing on their sum, which Typst's glyph-tight line boxes undershoot.
+/// Line metrics of the best face for `family`, in em units:
+/// (Typst-resolved ascender, descender magnitude, Word single-line pitch).
+/// The first two match what the layout engine produces with metric text
+/// edges; the third is the hhea ascender + descender + line gap sum that
+/// Word uses for "single" line spacing, which the typo-based metric edges
+/// undershoot (issue #354).
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
     use std::collections::HashMap;
@@ -413,10 +416,15 @@ pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
             // Use Typst's own resolved metrics so the emitted leading matches
             // exactly what the layout engine will produce with metric edges.
             let metrics = font.metrics();
+            let ttf = font.ttf();
+            let upem = f64::from(ttf.units_per_em()).max(1.0);
+            let hhea_pitch_em = (f64::from(ttf.ascender()) - f64::from(ttf.descender())
+                + f64::from(ttf.line_gap()))
+                / upem;
             (
                 metrics.ascender.get(),
                 -metrics.descender.get(),
-                f64::from(font.ttf().line_gap()) / f64::from(font.ttf().units_per_em()).max(1.0),
+                hhea_pitch_em,
             )
         });
     cache

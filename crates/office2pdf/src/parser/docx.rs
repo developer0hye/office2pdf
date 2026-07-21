@@ -10,8 +10,8 @@ const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Color,
     ColumnLayout, Document, FloatingImage, FloatingTextBox, ImageData, ImageFormat, Insets,
-    LineBox, LineSpacing, Page, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment,
-    TabLeader, TabStop, Table, TableCell, TableRow, TextDirection, TextStyle, VerticalTextAlign,
+    LineSpacing, Page, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment, TabLeader,
+    TabStop, Table, TableCell, TableRow, TextDirection, TextStyle, VerticalTextAlign,
 };
 use crate::parser::Parser;
 
@@ -69,19 +69,13 @@ mod text;
 /// Parser for DOCX (Office Open XML Word) documents.
 pub struct DocxParser;
 
-/// Word supplies these built-in paragraph metrics when neither a paragraph nor
-/// its style hierarchy specifies an override. The 1.75em line box matches the
-/// native Word default's 3:1 ascent/descent split.
+/// Word supplies this built-in paragraph spacing when neither a paragraph
+/// nor its style hierarchy specifies an override. Line height is left to the
+/// renderer, which derives Word's single-spacing pitch from the actual font
+/// metrics (issue #354).
 pub(super) const WORD_COMPATIBLE_PARAGRAPH_SPACE_AFTER_PT: f64 = 8.0;
-pub(super) const WORD_COMPATIBLE_LINE_BOX: LineBox = LineBox {
-    ascent_em: 1.3125,
-    descent_em: 0.4375,
-};
 
 fn apply_word_compatible_paragraph_defaults(style: &mut ParagraphStyle) {
-    if style.line_spacing.is_none() {
-        style.line_box.get_or_insert(WORD_COMPATIBLE_LINE_BOX);
-    }
     style
         .space_after
         .get_or_insert(WORD_COMPATIBLE_PARAGRAPH_SPACE_AFTER_PT);
