@@ -12,6 +12,8 @@ mod drawing;
 mod math;
 #[path = "docx_context_notes.rs"]
 mod notes;
+#[path = "docx_context_paragraph_shading.rs"]
+mod paragraph_shading;
 #[path = "docx_context_small_caps.rs"]
 mod small_caps;
 #[path = "docx_context_table_header.rs"]
@@ -32,6 +34,7 @@ pub(super) use math::{MathContext, build_math_context_from_xml};
 pub(super) use notes::{
     NoteContext, build_note_context_from_xml, is_note_reference_run, read_zip_text,
 };
+pub(super) use paragraph_shading::{ParagraphShadingContext, scan_style_paragraph_shading};
 pub(super) use small_caps::SmallCapsContext;
 pub(super) use table_header::TableHeaderContext;
 #[cfg(test)]
@@ -54,4 +57,5 @@ pub(super) struct DocxConversionContext {
     pub(super) vml_text_boxes: VmlTextBoxContext,
     pub(super) bidi: BidiContext,
     pub(super) small_caps: SmallCapsContext,
+    pub(super) paragraph_shading: ParagraphShadingContext,
 }

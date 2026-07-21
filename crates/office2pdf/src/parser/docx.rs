@@ -19,11 +19,12 @@ use crate::parser::Parser;
 use self::contexts::scan_table_headers;
 use self::contexts::{
     BidiContext, ChartContext, DocxConversionContext, DrawingShapeContext, DrawingTextBoxContext,
-    DrawingTextBoxInfo, MathContext, NoteContext, SmallCapsContext, TableHeaderContext,
-    TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo, WpgDrawingInfo, WrapContext,
-    build_chart_context_from_xml, build_math_context_from_xml, build_note_context_from_xml,
-    build_wrap_context_from_xml, extract_column_layout_from_section_property,
-    is_note_reference_run, read_zip_text, scan_column_layouts,
+    DrawingTextBoxInfo, MathContext, NoteContext, ParagraphShadingContext, SmallCapsContext,
+    TableHeaderContext, TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo, WpgDrawingInfo,
+    WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
+    build_note_context_from_xml, build_wrap_context_from_xml,
+    extract_column_layout_from_section_property, is_note_reference_run, read_zip_text,
+    scan_column_layouts, scan_style_paragraph_shading,
 };
 use self::lists::{
     NumberingMap, TaggedElement, build_numbering_map, extract_num_info, group_into_lists,
@@ -192,6 +193,8 @@ struct ZipPreParseAssets {
     header_footer_assets: HeaderFooterAssets,
     metafile_images: ImageMap,
     theme_fonts: ThemeFonts,
+    default_paragraph_style_id: Option<String>,
+    style_paragraph_backgrounds: HashMap<String, Color>,
 }
 
 /// Build all pre-parse contexts from the DOCX ZIP in a single pass.
@@ -203,6 +206,10 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
             let metadata = crate::parser::metadata::extract_metadata_from_zip(&mut archive);
             let doc_xml = read_zip_text(&mut archive, "word/document.xml");
             let styles_xml = read_zip_text(&mut archive, "word/styles.xml");
+            let default_paragraph_style_id = styles_xml
+                .as_deref()
+                .and_then(styles::scan_default_paragraph_style_id);
+            let style_paragraph_backgrounds = scan_style_paragraph_shading(styles_xml.as_deref());
             let theme_xml = read_zip_text(&mut archive, "word/theme/theme1.xml");
             let notes = build_note_context_from_xml(doc_xml.as_deref(), &mut archive);
             let wraps = build_wrap_context_from_xml(doc_xml.as_deref());
@@ -233,6 +240,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 vml_text_boxes,
                 bidi,
                 small_caps,
+                paragraph_shading: ParagraphShadingContext::from_xml(doc_xml.as_deref()),
             };
             ZipPreParseAssets {
                 metadata,
@@ -246,6 +254,8 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                     .as_deref()
                     .map(parse_theme_fonts)
                     .unwrap_or_default(),
+                default_paragraph_style_id,
+                style_paragraph_backgrounds,
             }
         }
         Err(_) => ZipPreParseAssets {
@@ -260,6 +270,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 vml_text_boxes: VmlTextBoxContext::from_xml(None),
                 bidi: BidiContext::from_xml(None),
                 small_caps: SmallCapsContext::from_xml(None),
+                paragraph_shading: ParagraphShadingContext::from_xml(None),
             },
             math: MathContext::empty(),
             chart_ctx: ChartContext::empty(),
@@ -267,6 +278,8 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
             header_footer_assets: HeaderFooterAssets::default(),
             metafile_images: ImageMap::new(),
             theme_fonts: ThemeFonts::default(),
+            default_paragraph_style_id: None,
+            style_paragraph_backgrounds: HashMap::new(),
         },
     }
 }
@@ -286,6 +299,8 @@ impl Parser for DocxParser {
             header_footer_assets,
             metafile_images,
             theme_fonts,
+            default_paragraph_style_id,
+            style_paragraph_backgrounds,
         } = build_zip_preparse_assets(data);
 
         let docx = docx_rs::read_docx(data).map_err(|e| {
@@ -299,7 +314,12 @@ impl Parser for DocxParser {
         images.extend(metafile_images);
         let hyperlinks = build_hyperlink_map(&docx);
         let numberings = build_numbering_map(&docx.numberings);
-        let style_map = build_style_map(&docx.styles, &theme_fonts);
+        let style_map = build_style_map(
+            &docx.styles,
+            &theme_fonts,
+            default_paragraph_style_id.as_deref(),
+            &style_paragraph_backgrounds,
+        );
         let mut warnings: Vec<ConvertWarning> = Vec::new();
 
         let mut elements: Vec<TaggedElement> = Vec::new();
@@ -742,6 +762,7 @@ fn convert_paragraph_blocks(
 ) {
     // Check bidi direction for this paragraph (must be called once per XML <w:p>)
     let is_rtl = ctx.bidi.next_is_bidi();
+    let paragraph_background = ctx.paragraph_shading.next_background();
 
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
@@ -795,7 +816,14 @@ fn convert_paragraph_blocks(
                     });
                     if !runs.is_empty() {
                         push_inline_images(out, &mut inline_images, paragraph_alignment(para));
-                        push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
+                        push_paragraph_from_runs(
+                            out,
+                            para,
+                            resolved_style,
+                            is_rtl,
+                            paragraph_background,
+                            &mut runs,
+                        );
                         emitted_paragraph = true;
                     } else if !inline_images.is_empty() {
                         push_inline_images(out, &mut inline_images, paragraph_alignment(para));
@@ -807,7 +835,14 @@ fn convert_paragraph_blocks(
                     // Flush current runs as a paragraph before the layout break.
                     if !runs.is_empty() {
                         push_inline_images(out, &mut inline_images, paragraph_alignment(para));
-                        push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
+                        push_paragraph_from_runs(
+                            out,
+                            para,
+                            resolved_style,
+                            is_rtl,
+                            paragraph_background,
+                            &mut runs,
+                        );
                         emitted_paragraph = true;
                     }
                     out.push(if media.has_page_break {
@@ -863,7 +898,14 @@ fn convert_paragraph_blocks(
         // Keep paragraph marks for floating drawing anchors. The drawing itself
         // is positioned by offsets, but the source paragraph still contributes
         // to flow spacing between the drawing cluster and following content.
-        push_paragraph_from_runs(out, para, resolved_style, is_rtl, &mut runs);
+        push_paragraph_from_runs(
+            out,
+            para,
+            resolved_style,
+            is_rtl,
+            paragraph_background,
+            &mut runs,
+        );
     }
 }
 
@@ -910,9 +952,11 @@ fn push_paragraph_from_runs(
     para: &docx_rs::Paragraph,
     resolved_style: Option<&ResolvedStyle>,
     is_rtl: bool,
+    background: Option<Color>,
     runs: &mut Vec<Run>,
 ) {
-    let explicit_para_style = extract_paragraph_style(&para.property);
+    let mut explicit_para_style = extract_paragraph_style(&para.property);
+    explicit_para_style.background = background;
     let explicit_tab_overrides = extract_tab_stop_overrides(&para.property.tabs);
     let mut style = merge_paragraph_style(
         &explicit_para_style,

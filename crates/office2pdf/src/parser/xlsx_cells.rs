@@ -684,6 +684,7 @@ pub(super) fn build_rows_for_range(
 pub(super) fn prepare_sheet_context(
     sheet: &umya_spreadsheet::Worksheet,
     normal_font_mdw: Option<f64>,
+    raw_cond_fmt_hints: Option<&super::cond_fmt_raw::RawCondFmtHints>,
 ) -> Option<(SheetContext, u32, u32)> {
     let (mut max_col, mut max_row) = sheet.get_highest_column_and_row();
     if max_col == 0 || max_row == 0 {
@@ -719,7 +720,7 @@ pub(super) fn prepare_sheet_context(
         .collect();
 
     let (merge_tops, merge_skips) = build_merge_maps(sheet);
-    let cond_fmt_overrides = build_cond_fmt_overrides(sheet);
+    let cond_fmt_overrides = build_cond_fmt_overrides(sheet, raw_cond_fmt_hints);
     let num_cols = (col_end - col_start + 1) as usize;
 
     Some((

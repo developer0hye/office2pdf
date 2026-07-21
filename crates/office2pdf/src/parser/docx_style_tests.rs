@@ -344,6 +344,19 @@ fn test_default_paragraph_style_applies_without_pstyle() {
 }
 
 #[test]
+fn test_scan_default_paragraph_style_id_from_raw_styles_xml() {
+    let xml = r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+      <w:style w:type="character" w:default="1" w:styleId="DefaultCharacter"/>
+      <w:style w:type="paragraph" w:default="1" w:styleId="BodyDefault"/>
+    </w:styles>"#;
+
+    assert_eq!(
+        styles::scan_default_paragraph_style_id(xml).as_deref(),
+        Some("BodyDefault")
+    );
+}
+
+#[test]
 fn test_doc_default_theme_font_resolves_via_theme() {
     // docDefaults referencing asciiTheme="minorHAnsi" must resolve to the
     // theme's minor latin typeface instead of falling back to the renderer
@@ -378,12 +391,17 @@ fn test_doc_default_theme_font_resolves_via_theme() {
 fn test_paragraph_shading_extracted_as_background() {
     // Word paints w:pPr/w:shd behind the whole paragraph (code blocks in
     // the CLI-manual fixture); the fill must reach the IR (issue #351).
-    let mut shaded = docx_rs::Paragraph::new()
-        .add_run(docx_rs::Run::new().add_text("$ cargo install office2pdf-cli"));
-    shaded.property = shaded
-        .property
-        .shading(docx_rs::Shading::new().fill("F4F4F4"));
-    let data = build_docx_bytes(vec![shaded]);
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:pPr><w:shd w:val="clear" w:fill="F4F4F4"/></w:pPr>
+      <w:r><w:t>$ cargo install office2pdf-cli</w:t></w:r>
+    </w:p>
+    <w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>
+  </w:body>
+</w:document>"#;
+    let data = build_docx_with_columns(document_xml);
 
     let parser = DocxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();

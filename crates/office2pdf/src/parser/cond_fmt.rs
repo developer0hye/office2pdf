@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ir::{Color, DataBarInfo};
+use crate::parser::xlsx::cond_fmt_raw::{RawCondFmtHint, RawCondFmtHints};
 use crate::parser::xlsx::{CellPos, CellRange, parse_cell_ref};
 use crate::parser::xml_util;
 
@@ -309,6 +310,7 @@ fn apply_data_bar_rule(
     rule: &umya_spreadsheet::ConditionalFormattingRule,
     ranges: &[CellRange],
     overrides: &mut HashMap<CellPos, CondFmtOverride>,
+    raw_hint: Option<&RawCondFmtHint>,
 ) {
     let Some(db) = rule.get_data_bar() else {
         return;
@@ -340,8 +342,8 @@ fn apply_data_bar_rule(
 
     // Excel maps the axis onto [minLength, maxLength] percent of the cell
     // width (spec defaults 10/90), so the minimum still shows a short bar.
-    let min_length: f64 = f64::from(db.get_min_length());
-    let max_length: f64 = f64::from(db.get_max_length());
+    let min_length: f64 = f64::from(raw_hint.and_then(|hint| hint.min_length).unwrap_or(10));
+    let max_length: f64 = f64::from(raw_hint.and_then(|hint| hint.max_length).unwrap_or(90));
 
     for range in ranges {
         for row in range.start_row..=range.end_row {
@@ -390,6 +392,7 @@ fn apply_icon_set_rule(
     rule: &umya_spreadsheet::ConditionalFormattingRule,
     ranges: &[CellRange],
     overrides: &mut HashMap<CellPos, CondFmtOverride>,
+    raw_hint: Option<&RawCondFmtHint>,
 ) {
     let numeric_vals: Vec<f64> = collect_numeric_values_in_ranges(sheet, ranges);
     let Some((min_val, _max_val, val_range)) = compute_min_max(&numeric_vals) else {
@@ -419,9 +422,8 @@ fn apply_icon_set_rule(
         ]
     };
 
-    let set_type: &str = rule
-        .get_icon_set()
-        .map(|is| is.get_icon_set_type())
+    let set_type: &str = raw_hint
+        .and_then(|hint| hint.icon_set_type.as_deref())
         .unwrap_or("");
     let icons: Vec<(&'static str, Option<Color>)> =
         icon_set_glyphs(set_type, thresholds.len().max(3));
@@ -552,6 +554,7 @@ fn icon_set_glyphs(set_type: &str, band_count: usize) -> Vec<(&'static str, Opti
 /// Build a map of conditional formatting overrides for all cells in the sheet.
 pub(crate) fn build_cond_fmt_overrides(
     sheet: &umya_spreadsheet::Worksheet,
+    raw_hints: Option<&RawCondFmtHints>,
 ) -> HashMap<(u32, u32), CondFmtOverride> {
     let mut overrides: HashMap<CellPos, CondFmtOverride> = HashMap::new();
 
@@ -564,6 +567,7 @@ pub(crate) fn build_cond_fmt_overrides(
 
         for rule in cf.get_conditional_collection() {
             use umya_spreadsheet::ConditionalFormatValues;
+            let raw_hint = raw_hints.and_then(|hints| hints.get(rule.get_priority()));
 
             match rule.get_type() {
                 ConditionalFormatValues::CellIs => {
@@ -579,10 +583,10 @@ pub(crate) fn build_cond_fmt_overrides(
                     apply_color_scale_rule(sheet, rule, &ranges, &mut overrides);
                 }
                 ConditionalFormatValues::DataBar => {
-                    apply_data_bar_rule(sheet, rule, &ranges, &mut overrides);
+                    apply_data_bar_rule(sheet, rule, &ranges, &mut overrides, raw_hint);
                 }
                 ConditionalFormatValues::IconSet => {
-                    apply_icon_set_rule(sheet, rule, &ranges, &mut overrides);
+                    apply_icon_set_rule(sheet, rule, &ranges, &mut overrides, raw_hint);
                 }
                 _ => {}
             }

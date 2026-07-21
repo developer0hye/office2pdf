@@ -8,6 +8,8 @@ use crate::ir::{
 };
 use crate::parser::Parser;
 
+#[path = "xlsx_cond_fmt_raw.rs"]
+pub(crate) mod cond_fmt_raw;
 #[path = "xlsx_cells.rs"]
 mod xlsx_cells;
 #[path = "xlsx_drawing.rs"]
@@ -232,6 +234,7 @@ impl XlsxParser {
         })?;
 
         let metadata = extract_xlsx_metadata(&book);
+        let cond_fmt_hints = cond_fmt_raw::extract_cond_fmt_hints(data);
         // Excel derives every column print metric from the workbook Normal
         // font; cell fonts do not participate (issue #366).
         let normal_font_mdw: Option<f64> = extract_normal_font(data)
@@ -252,7 +255,8 @@ impl XlsxParser {
                 continue;
             }
 
-            let Some((ctx, row_start, row_end)) = prepare_sheet_context(sheet, normal_font_mdw)
+            let Some((ctx, row_start, row_end)) =
+                prepare_sheet_context(sheet, normal_font_mdw, cond_fmt_hints.get(sheet.get_name()))
             else {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.
@@ -418,6 +422,7 @@ impl Parser for XlsxParser {
 
         // Extract metadata from umya-spreadsheet properties
         let metadata = extract_xlsx_metadata(&book);
+        let cond_fmt_hints = cond_fmt_raw::extract_cond_fmt_hints(data);
         // Excel derives every column print metric from the workbook Normal
         // font; cell fonts do not participate (issue #366).
         let normal_font_mdw: Option<f64> = extract_normal_font(data)
@@ -440,7 +445,8 @@ impl Parser for XlsxParser {
                 continue;
             }
 
-            let Some((ctx, row_start, row_end)) = prepare_sheet_context(sheet, normal_font_mdw)
+            let Some((ctx, row_start, row_end)) =
+                prepare_sheet_context(sheet, normal_font_mdw, cond_fmt_hints.get(sheet.get_name()))
             else {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.

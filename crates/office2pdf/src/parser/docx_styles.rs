@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ir::{ParagraphStyle, TabStop, TextStyle};
+use crate::ir::{Color, ParagraphStyle, TabStop, TextStyle};
 
 use super::{
     ThemeFonts, extract_doc_default_text_style_with_theme, extract_paragraph_style,
@@ -29,11 +29,51 @@ pub(super) type StyleMap = HashMap<String, ResolvedStyle>;
 /// Synthetic style ID used for document-level default text properties.
 pub(super) const DOC_DEFAULT_STYLE_ID: &str = "__office2pdf_doc_defaults";
 
+pub(super) fn scan_default_paragraph_style_id(styles_xml: &str) -> Option<String> {
+    use quick_xml::events::Event;
+
+    let mut reader = quick_xml::Reader::from_str(styles_xml);
+    reader.config_mut().trim_text(true);
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(element) | Event::Empty(element))
+                if element.local_name().as_ref() == b"style" =>
+            {
+                let mut style_type = None;
+                let mut is_default = false;
+                let mut style_id = None;
+                for attribute in element.attributes().flatten() {
+                    let value = attribute
+                        .decode_and_unescape_value(reader.decoder())
+                        .ok()
+                        .map(|value| value.into_owned());
+                    match attribute.key.local_name().as_ref() {
+                        b"type" => style_type = value,
+                        b"default" => is_default = matches!(value.as_deref(), Some("1" | "true")),
+                        b"styleId" => style_id = value,
+                        _ => {}
+                    }
+                }
+                if style_type.as_deref() == Some("paragraph") && is_default {
+                    return style_id;
+                }
+            }
+            Ok(Event::Eof) | Err(_) => return None,
+            _ => {}
+        }
+    }
+}
+
 use crate::defaults::HEADING_FONT_SIZES;
 
 /// Build a map from style ID → resolved formatting by extracting formatting
 /// from each style's run_property and paragraph_property.
-pub(super) fn build_style_map(styles: &docx_rs::Styles, theme_fonts: &ThemeFonts) -> StyleMap {
+pub(super) fn build_style_map(
+    styles: &docx_rs::Styles,
+    theme_fonts: &ThemeFonts,
+    default_paragraph_style_id: Option<&str>,
+    paragraph_backgrounds: &HashMap<String, Color>,
+) -> StyleMap {
     let mut map = StyleMap::new();
     let default_text: TextStyle = extract_doc_default_text_style_with_theme(styles, theme_fonts);
 
@@ -58,7 +98,8 @@ pub(super) fn build_style_map(styles: &docx_rs::Styles, theme_fonts: &ThemeFonts
                         resolve_theme_font_family(&run_property_json, theme_fonts);
                 }
                 let text = merge_text_style(&own_text, map.get(DOC_DEFAULT_STYLE_ID));
-                let paragraph = extract_paragraph_style(&style.paragraph_property);
+                let mut paragraph = extract_paragraph_style(&style.paragraph_property);
+                paragraph.background = paragraph_backgrounds.get(&style.style_id).copied();
                 let paragraph_tab_overrides =
                     extract_tab_stop_overrides(&style.paragraph_property.tabs);
                 let heading_level = style
@@ -102,13 +143,8 @@ pub(super) fn build_style_map(styles: &docx_rs::Styles, theme_fonts: &ThemeFonts
     // style (w:default="1", normally "Normal"), not just the bare document
     // defaults — fold it into the synthetic doc-default entry so its spacing,
     // line spacing, and text properties survive the cascade (issue #288).
-    let default_paragraph_style_id: Option<String> = styles
-        .styles
-        .iter()
-        .find(|style| style.default && style.style_type == docx_rs::StyleType::Paragraph)
-        .map(|style| style.style_id.clone());
     if let Some(style_id) = default_paragraph_style_id
-        && let Some(default_style) = map.get(&style_id)
+        && let Some(default_style) = map.get(style_id)
     {
         let merged = ResolvedStyle {
             text: default_style.text.clone(),
