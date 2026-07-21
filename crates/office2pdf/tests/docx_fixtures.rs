@@ -11,8 +11,8 @@ use std::path::PathBuf;
 
 use office2pdf::config::ConvertOptions;
 use office2pdf::ir::{
-    ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline, Insets, LineBox,
-    ListKind, Page, Paragraph, PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind,
+    ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline, Insets, ListKind,
+    Page, Paragraph, PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind,
     TextBoxVerticalAlign,
 };
 use office2pdf::parser::Parser;
