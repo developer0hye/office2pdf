@@ -520,7 +520,7 @@ fn generate_cell_content(
                 if can_render_fixed_text_list_inline(list) {
                     generate_fixed_text_list(out, list, true, None)?;
                 } else {
-                    generate_list(out, list)?;
+                    generate_list(out, list, None)?;
                 }
             }
             Block::MathEquation(math) => generate_math_equation(out, math),

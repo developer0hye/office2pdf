@@ -103,6 +103,23 @@ pub(super) fn word_line_height_settings(
     style: &ParagraphStyle,
     line_grid_pitch: Option<f64>,
 ) -> Option<String> {
+    let leading_pt: f64 = word_line_leading_pt(runs, style, line_grid_pitch)?;
+    Some(format!(
+        "#set text(top-edge: \"ascender\", bottom-edge: \"descender\")\n#set par(leading: {}pt)\n",
+        format_f64(leading_pt)
+    ))
+}
+
+/// The leading that accompanies Word metric text edges: the whitespace
+/// Typst must insert between metric line boxes so consecutive lines land at
+/// Word's single-space advance (or the document grid pitch). `None` when
+/// the paragraph carries explicit line spacing or the font's metrics are
+/// unknown — the metric-edge treatment does not apply then.
+pub(super) fn word_line_leading_pt(
+    runs: &[Run],
+    style: &ParagraphStyle,
+    line_grid_pitch: Option<f64>,
+) -> Option<f64> {
     if style.line_spacing.is_some() || style.line_box.is_some() {
         return None;
     }
@@ -138,10 +155,7 @@ pub(super) fn word_line_height_settings(
         // values, so the leading bridges the difference.
         _ => (word_pitch_em * font_size - line_box_pt).max(0.0),
     };
-    Some(format!(
-        "#set text(top-edge: \"ascender\", bottom-edge: \"descender\")\n#set par(leading: {}pt)\n",
-        format_f64(leading_pt)
-    ))
+    Some(leading_pt)
 }
 
 pub(super) fn write_block_params(out: &mut String, style: &ParagraphStyle) {

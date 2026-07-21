@@ -837,3 +837,66 @@ fn test_generate_list_uses_first_item_level_marker_when_list_starts_nested() {
             .contains("marker: [#text(font: \"맑은 고딕\", size: 14pt, fill: rgb(0, 0, 0))[-]]")
     );
 }
+
+#[test]
+fn test_generate_list_metric_spacing_adds_gap_to_single_space_leading() {
+    // Word adds `w:spacing w:after` directly to the single-space line
+    // advance between list items: next item top = previous line advance +
+    // after. Under metric text edges that whitespace is the single-space
+    // leading plus the paragraph gap; adding a whole line height instead
+    // stretched every list block by ~8pt per item (issue #384).
+    use crate::ir::List;
+
+    let Some((ascender, descender, word_pitch_em)) =
+        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
+    else {
+        return; // no font book available (e.g. exotic CI sandbox)
+    };
+    let font_size: f64 = 10.0;
+    let single_space_leading_pt: f64 =
+        ((word_pitch_em - (ascender + descender)) * font_size).max(0.0);
+
+    let make_item = |text: &str| ListItem {
+        content: vec![Paragraph {
+            style: ParagraphStyle {
+                space_after: Some(4.0),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: text.to_string(),
+                style: TextStyle {
+                    font_family: Some("Libertinus Serif".to_string()),
+                    font_size: Some(font_size),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        }],
+        level: 0,
+        start_at: None,
+    };
+    let list = List {
+        kind: ListKind::Unordered,
+        items: vec![make_item("First"), make_item("Second")],
+        level_styles: BTreeMap::new(),
+    };
+
+    let source = generate_typst(&make_doc(vec![make_flow_page(vec![Block::List(list)])]))
+        .unwrap()
+        .source;
+
+    assert!(
+        source.contains("top-edge: \"ascender\""),
+        "metric edges expected in: {source}"
+    );
+    let expected = format_f64(single_space_leading_pt + 4.0);
+    assert!(
+        source.contains(&format!("spacing: {expected}pt")),
+        "expected inter-item spacing {expected}pt (leading + gap) in: {source}"
+    );
+    assert!(
+        source.contains(&format!("below: {expected}pt")),
+        "expected list below spacing {expected}pt (leading + gap) in: {source}"
+    );
+}
