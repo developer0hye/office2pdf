@@ -63,6 +63,69 @@ fn test_data_bar_codegen() {
         "Excel draws no gray track behind data bars. Got: {}",
         output.source,
     );
+    // Auto-sized rows give the placed box no cell-bounded frame of
+    // reference: a relative height resolves against the page and paints a
+    // page-tall smear over neighboring rows (issue #362).
+    assert!(
+        !output.source.contains("height: 100%"),
+        "DataBar height must not be page-relative in auto-height rows. Got: {}",
+        output.source,
+    );
+}
+
+#[test]
+fn test_data_bar_fixed_row_height_codegen() {
+    use crate::ir::DataBarInfo;
+
+    let cell = TableCell {
+        content: vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "75".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })],
+        data_bar: Some(DataBarInfo {
+            color: Color::new(0x63, 0x8E, 0xC6),
+            fill_pct: 75.0,
+        }),
+        ..TableCell::default()
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            cells: vec![cell],
+            height: Some(24.0),
+        }],
+        column_widths: vec![100.0],
+        ..Table::default()
+    };
+    let page = Page::Sheet(SheetPage {
+        name: "Sheet1".to_string(),
+        size: PageSize::default(),
+        margins: Margins::default(),
+        table,
+        header: None,
+        footer: None,
+        charts: vec![],
+        images: Vec::new(),
+        text_boxes: Vec::new(),
+    });
+    let doc = make_doc(vec![page]);
+    let output = generate_typst(&doc).unwrap();
+    // With a 24pt row and 5pt top/bottom insets, the bar fills the cell's
+    // 14pt content height instead of resolving against the page.
+    assert!(
+        output.source.contains("height: 14pt"),
+        "DataBar in a fixed-height row should fill the cell content height. Got: {}",
+        output.source,
+    );
+    assert!(
+        !output.source.contains("height: 100%"),
+        "DataBar height must never be page-relative. Got: {}",
+        output.source,
+    );
 }
 
 #[test]

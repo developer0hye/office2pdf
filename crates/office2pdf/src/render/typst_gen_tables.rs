@@ -94,6 +94,8 @@ fn generate_table_inner(
         left: 5.0,
     });
 
+    let fixed_row_heights = !table.use_content_driven_row_heights;
+
     if header_row_count > 0 {
         out.push_str("  table.header(\n");
         generate_table_rows(
@@ -103,6 +105,7 @@ fn generate_table_inner(
             &mut rowspan_remaining,
             "    ",
             default_cell_padding,
+            fixed_row_heights,
             ctx,
         )?;
         out.push_str("  ),\n");
@@ -115,6 +118,7 @@ fn generate_table_inner(
         &mut rowspan_remaining,
         "  ",
         default_cell_padding,
+        fixed_row_heights,
         ctx,
     )?;
 
@@ -129,6 +133,7 @@ fn generate_table_rows(
     rowspan_remaining: &mut [usize],
     indent: &str,
     default_cell_padding: Insets,
+    fixed_row_heights: bool,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     for row in rows {
@@ -159,6 +164,7 @@ fn generate_table_rows(
                 clamped_colspan,
                 indent,
                 default_cell_padding,
+                row.height.filter(|_| fixed_row_heights),
                 ctx,
             )?;
 
@@ -191,6 +197,7 @@ fn generate_table_cell(
     clamped_colspan: u32,
     indent: &str,
     default_cell_padding: Insets,
+    row_height: Option<f64>,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     let needs_cell_fn = clamped_colspan > 1
@@ -217,12 +224,26 @@ fn generate_table_cell(
     if let Some(ref db) = cell.data_bar {
         // Excel draws the bar behind the value on the same line (no track),
         // with a horizontal fade of the bar color; #place keeps it out of
-        // layout so the value renders on top at its normal position.
+        // layout so the value renders on top at its normal position. The bar
+        // height must be concrete: in auto-height rows a relative height has
+        // no cell frame to resolve against and blows up to the page height,
+        // smearing over neighboring rows (issue #362).
         let pct = db.fill_pct.clamp(0.0, 100.0);
+        let padding = cell.padding.unwrap_or(default_cell_padding);
+        let bar_height: String = match row_height {
+            Some(height) => {
+                let content_height = (height - padding.top - padding.bottom).max(1.0);
+                format!("{}pt", format_f64(content_height))
+            }
+            // Excel sizes default rows to the font's line box; 1.2em tracks
+            // that for single-line numeric cells.
+            None => "1.2em".to_string(),
+        };
         let _ = write!(
             out,
-            "#place(left + horizon, box(width: {}%, height: 100%, fill: gradient.linear(rgb({}, {}, {}), rgb({}, {}, {}).lighten(70%))))",
+            "#place(left + horizon, box(width: {}%, height: {}, fill: gradient.linear(rgb({}, {}, {}), rgb({}, {}, {}).lighten(70%))))",
             format_f64(pct),
+            bar_height,
             db.color.r,
             db.color.g,
             db.color.b,
