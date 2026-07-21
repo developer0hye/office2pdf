@@ -884,8 +884,13 @@ pub(super) fn escape_typst(text: &str) -> String {
                 // string as a function call (`#"  "(SIB)`).
                 result.push_str("\";");
             }
+            // Quotes and hyphens are Typst markup shorthands: smartquote
+            // curls straight quotes, `--` ligates to an en dash, and a
+            // hyphen before digits becomes a Unicode minus. Word stores the
+            // literal characters the author typed, so all of them must
+            // render verbatim (issue #353).
             '#' | '*' | '_' | '`' | '<' | '>' | '@' | '\\' | '~' | '/' | '$' | '[' | ']' | '{'
-            | '}'
+            | '}' | '"' | '\'' | '-'
                 if !should_escape_list_prefix =>
             {
                 result.push('\\');

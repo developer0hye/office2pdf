@@ -614,3 +614,45 @@ fn test_escape_typst_preserves_spaces_after_hard_linebreak() {
 fn test_escape_typst_single_interior_space_untouched() {
     assert_eq!(escape_typst("a b"), "a b");
 }
+
+// ── Smart-typography escape tests (issue #353) ───────────────────
+
+#[test]
+fn test_escape_typst_keeps_straight_double_quotes() {
+    // Typst smart quotes turned literal "quoted" into curly “quoted”.
+    let result = escape_typst("run \"quoted\" text");
+    assert!(
+        result.contains("\\\"quoted\\\""),
+        "straight double quotes must be escaped so smartquote cannot rewrite them: {result}"
+    );
+}
+
+#[test]
+fn test_escape_typst_keeps_straight_single_quotes() {
+    let result = escape_typst("it's 'fine'");
+    assert!(
+        result.contains("it\\'s \\'fine\\'"),
+        "straight apostrophes must be escaped: {result}"
+    );
+}
+
+#[test]
+fn test_escape_typst_keeps_double_hyphens() {
+    // `--` ligates to an en dash, corrupting CLI flags like --font-path.
+    let result = escape_typst("office2pdf --font-path dir --version");
+    assert!(
+        result.contains("\\-\\-font\\-path") || result.contains("\\-\\-font-path"),
+        "double hyphens must not ligate to an en dash: {result}"
+    );
+    assert!(!result.contains("--"), "no raw double hyphen may remain: {result}");
+}
+
+#[test]
+fn test_escape_typst_keeps_hyphen_before_digits() {
+    // A hyphen before digits becomes a Unicode minus (−18%) in markup.
+    let result = escape_typst("blended CAC, -18%");
+    assert!(
+        result.contains("\\-18"),
+        "hyphen before digits must stay a hyphen-minus: {result}"
+    );
+}

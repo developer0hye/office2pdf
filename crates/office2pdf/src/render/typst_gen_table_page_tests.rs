@@ -60,7 +60,9 @@ fn test_table_page_cell_data_types() {
     assert!(output.source.contains("Date"));
     assert!(output.source.contains("Alice"));
     assert!(output.source.contains("30"));
-    assert!(output.source.contains("2024-01-15"));
+    // Hyphens are escaped so Typst cannot rewrite them (issue #353); the
+    // rendered text is still "2024-01-15".
+    assert!(output.source.contains("2024\\-01\\-15"));
 }
 
 #[test]
