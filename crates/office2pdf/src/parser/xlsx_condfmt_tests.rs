@@ -601,3 +601,106 @@ fn test_cond_fmt_contains_text_background() {
         "non-matching cell must stay unfilled"
     );
 }
+
+/// Rewrites self-closing `<cfvo .../>` and `<color .../>` children of
+/// `<dataBar>` into start/end pairs (`<color ...></color>`), the form
+/// produced by writers such as openpyxl.
+fn rewrite_data_bar_children_as_start_end_tags(xlsx_bytes: &[u8]) -> Vec<u8> {
+    let mut archive =
+        zip::ZipArchive::new(std::io::Cursor::new(xlsx_bytes.to_vec())).expect("read zip");
+    let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).expect("zip entry");
+        let name: String = file.name().to_string();
+        let mut content: Vec<u8> = Vec::new();
+        std::io::Read::read_to_end(&mut file, &mut content).expect("read entry");
+        if name.starts_with("xl/worksheets/") {
+            let xml = String::from_utf8(content).expect("sheet xml utf8");
+            let rewritten = regex_like_expand_self_closing(&xml);
+            content = rewritten.into_bytes();
+        }
+        out.start_file(name, zip::write::FileOptions::default())
+            .expect("start entry");
+        std::io::Write::write_all(&mut out, &content).expect("write entry");
+    }
+    out.finish().expect("finish zip").into_inner()
+}
+
+/// Expands every self-closing `<cfvo .../>` and `<color .../>` into
+/// `<cfvo ...></cfvo>` / `<color ...></color>` without a regex dependency.
+fn regex_like_expand_self_closing(xml: &str) -> String {
+    let mut result = xml.to_string();
+    for tag in ["cfvo", "color"] {
+        let open = format!("<{tag} ");
+        let mut rewritten = String::with_capacity(result.len());
+        let mut rest: &str = &result;
+        while let Some(start) = rest.find(&open) {
+            let after_start = &rest[start..];
+            let end = after_start.find("/>").expect("self-closing tag");
+            rewritten.push_str(&rest[..start]);
+            rewritten.push_str(&after_start[..end]);
+            rewritten.push_str(&format!("></{tag}>"));
+            rest = &after_start[end + 2..];
+        }
+        rewritten.push_str(rest);
+        result = rewritten;
+    }
+    result
+}
+
+#[test]
+fn test_cond_fmt_data_bar_color_from_start_end_tag_children() {
+    // Real-world dashboards (openpyxl output) write the dataBar rule color
+    // as <color rgb="FF1E2761"></color>; the bar must render that navy, not
+    // the default steel blue (issue #371).
+    let data = build_xlsx_with_cond_fmt(|sheet| {
+        sheet.get_cell_mut("A1").set_value_number(0.0);
+        sheet.get_cell_mut("A2").set_value_number(700.0);
+        sheet.get_cell_mut("A3").set_value_number(1400.0);
+
+        let mut rule = umya_spreadsheet::ConditionalFormattingRule::default();
+        rule.set_type(umya_spreadsheet::ConditionalFormatValues::DataBar);
+        rule.set_priority(1);
+
+        let mut db = umya_spreadsheet::DataBar::default();
+        let mut cfvo_min = umya_spreadsheet::ConditionalFormatValueObject::default();
+        cfvo_min.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Number);
+        cfvo_min.set_val("0");
+        let mut cfvo_max = umya_spreadsheet::ConditionalFormatValueObject::default();
+        cfvo_max.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Number);
+        cfvo_max.set_val("1400");
+        db.add_cfvo_collection(cfvo_min);
+        db.add_cfvo_collection(cfvo_max);
+        let mut bar_color = umya_spreadsheet::Color::default();
+        bar_color.set_argb("FF1E2761");
+        db.add_color_collection(bar_color);
+        rule.set_data_bar(db);
+
+        let mut seq = umya_spreadsheet::SequenceOfReferences::default();
+        seq.set_sqref("A1:A3");
+        let mut cf = umya_spreadsheet::ConditionalFormatting::default();
+        cf.set_sequence_of_references(seq);
+        cf.add_conditional_collection(rule);
+        sheet.set_conditional_formatting_collection(vec![cf]);
+    });
+    let data = rewrite_data_bar_children_as_start_end_tags(&data);
+
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let tp = get_sheet_page(&doc, 0);
+
+    let db3 = tp.table.rows[2].cells[0]
+        .data_bar
+        .as_ref()
+        .expect("A3 should have data_bar");
+    assert_eq!(
+        db3.color,
+        Color::new(0x1E, 0x27, 0x61),
+        "bar must use the rule color, not the default blue"
+    );
+    assert!(
+        (db3.fill_pct - 90.0).abs() < 0.01,
+        "max value should fill maxLength (90%), got {}",
+        db3.fill_pct
+    );
+}
