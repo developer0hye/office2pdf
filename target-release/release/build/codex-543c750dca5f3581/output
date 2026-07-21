@@ -1,3 +1,0 @@
-cargo::rerun-if-changed=build.rs
-cargo::rerun-if-changed=src/modules/sym.txt
-cargo::rerun-if-changed=src/modules/emoji.txt

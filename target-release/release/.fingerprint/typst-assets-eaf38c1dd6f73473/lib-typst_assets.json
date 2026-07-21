@@ -1,1 +1,0 @@
-{"rustc":17940977064402226622,"features":"[\"fonts\"]","declared_features":"[\"fonts\"]","target":4508592935055576093,"profile":2040997289075261528,"path":12205259217146069099,"deps":[],"local":[{"CheckDepInfo":{"dep_info":"release/.fingerprint/typst-assets-eaf38c1dd6f73473/dep-lib-typst_assets","checksum":false}}],"rustflags":[],"config":8247474407144887393,"compile_kind":0}
