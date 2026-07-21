@@ -39,9 +39,64 @@ pub(super) fn column_width_to_pt(char_width: f64, max_digit_width_px: f64) -> f6
     char_width * max_digit_width_px * 0.75
 }
 
-/// Infer the Normal-font metric from populated cells. umya resolves each
-/// cell's effective style while reading, so the dominant family is a stable
-/// approximation even though its workbook stylesheet is not public.
+/// Read the workbook's Normal font (the first `<font>` in `xl/styles.xml`)
+/// straight from the archive; umya does not expose the stylesheet. Excel
+/// derives all column print metrics from this font, not from cell fonts.
+pub(super) fn extract_normal_font(data: &[u8]) -> Option<(String, f64)> {
+    use quick_xml::events::Event;
+    use std::io::Read;
+
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data)).ok()?;
+    let mut file = archive.by_name("xl/styles.xml").ok()?;
+    let mut xml = String::new();
+    file.read_to_string(&mut xml).ok()?;
+
+    let mut reader = quick_xml::Reader::from_str(&xml);
+    let mut in_first_font = false;
+    let mut name: Option<String> = None;
+    let mut size: Option<f64> = None;
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) if e.local_name().as_ref() == b"font" => {
+                in_first_font = true;
+            }
+            Ok(Event::End(ref e)) if e.local_name().as_ref() == b"font" => break,
+            Ok(Event::Empty(ref e)) if in_first_font => {
+                let val = e
+                    .try_get_attribute("val")
+                    .ok()
+                    .flatten()
+                    .and_then(|a| String::from_utf8(a.value.into_owned()).ok());
+                match e.local_name().as_ref() {
+                    b"name" => name = val,
+                    b"sz" => size = val.and_then(|v| v.parse::<f64>().ok()),
+                    _ => {}
+                }
+            }
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+    Some((name?, size.unwrap_or(11.0)))
+}
+
+/// Excel pixel-ceils the Normal font's max digit width at 96 DPI to derive
+/// column print metrics. Digit advances: Calibri/Carlito 0.5066 em,
+/// Arial/Helvetica/Liberation Sans 0.556 em, Malgun Gothic ≈0.529 em.
+/// Calibri 11 gives ceil(7.43) = 8 px, which reproduces the native Excel
+/// print pagination of the audit fixtures (issues #330, #366).
+pub(super) fn max_digit_width_px_for_normal_font(family: &str, size_pt: f64) -> f64 {
+    let digit_em: f64 = match family.to_ascii_lowercase().as_str() {
+        "arial" | "helvetica" | "liberation sans" => 0.556,
+        "malgun gothic" | "맑은 고딕" => 0.529,
+        _ => 0.5066,
+    };
+    (digit_em * size_pt * (96.0 / 72.0)).ceil()
+}
+
+/// Fallback when `xl/styles.xml` is unreadable: infer the metric from the
+/// dominant cell font. umya resolves each cell's effective style while
+/// reading, so the dominant family is a stable approximation.
 pub(super) fn sheet_max_digit_width_px(sheet: &umya_spreadsheet::Worksheet) -> f64 {
     let mut family_counts: HashMap<String, usize> = HashMap::new();
     for cell in sheet.get_cell_collection() {
@@ -628,6 +683,7 @@ pub(super) fn build_rows_for_range(
 /// Returns (SheetContext, row_start, row_end) or None if the sheet is empty.
 pub(super) fn prepare_sheet_context(
     sheet: &umya_spreadsheet::Worksheet,
+    normal_font_mdw: Option<f64>,
 ) -> Option<(SheetContext, u32, u32)> {
     let (mut max_col, mut max_row) = sheet.get_highest_column_and_row();
     if max_col == 0 || max_row == 0 {
@@ -652,7 +708,8 @@ pub(super) fn prepare_sheet_context(
         (1, max_col, 1, max_row)
     };
 
-    let max_digit_width_px = sheet_max_digit_width_px(sheet);
+    let max_digit_width_px =
+        normal_font_mdw.unwrap_or_else(|| sheet_max_digit_width_px(sheet));
     let column_widths: Vec<f64> = (col_start..=col_end)
         .map(|col| {
             sheet

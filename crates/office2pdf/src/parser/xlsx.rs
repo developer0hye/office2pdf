@@ -231,6 +231,11 @@ impl XlsxParser {
         })?;
 
         let metadata = extract_xlsx_metadata(&book);
+        // Excel derives every column print metric from the workbook Normal
+        // font; cell fonts do not participate (issue #366).
+        let normal_font_mdw: Option<f64> = extract_normal_font(data)
+            .map(|(family, size)| max_digit_width_px_for_normal_font(&family, size));
+
         let mut chart_map = extract_charts_with_anchors(data);
         let mut image_map = extract_images_with_anchors(data);
         let mut text_box_map = extract_text_boxes_with_anchors(data);
@@ -246,7 +251,7 @@ impl XlsxParser {
                 continue;
             }
 
-            let Some((ctx, row_start, row_end)) = prepare_sheet_context(sheet) else {
+            let Some((ctx, row_start, row_end)) = prepare_sheet_context(sheet, normal_font_mdw) else {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.
                 let sheet_name = sheet.get_name().to_string();
@@ -411,6 +416,11 @@ impl Parser for XlsxParser {
 
         // Extract metadata from umya-spreadsheet properties
         let metadata = extract_xlsx_metadata(&book);
+        // Excel derives every column print metric from the workbook Normal
+        // font; cell fonts do not participate (issue #366).
+        let normal_font_mdw: Option<f64> = extract_normal_font(data)
+            .map(|(family, size)| max_digit_width_px_for_normal_font(&family, size));
+
 
         // Extract charts with anchor positions per sheet
         let mut chart_map = extract_charts_with_anchors(data);
@@ -429,7 +439,7 @@ impl Parser for XlsxParser {
                 continue;
             }
 
-            let Some((ctx, row_start, row_end)) = prepare_sheet_context(sheet) else {
+            let Some((ctx, row_start, row_end)) = prepare_sheet_context(sheet, normal_font_mdw) else {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.
                 let sheet_name = sheet.get_name().to_string();

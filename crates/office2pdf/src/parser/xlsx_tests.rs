@@ -187,12 +187,13 @@ fn test_column_widths_default() {
 
     let tp = get_sheet_page(&doc, 0);
     assert_eq!(tp.table.column_widths.len(), 2);
-    // Print geometry uses the stored character width and the default 7px MDW
-    // without adding screen-only cell padding a second time.
+    // Print geometry uses the stored character width and the Normal font's
+    // 8px MDW (Calibri 11, pixel-ceiled) without adding screen-only cell
+    // padding a second time: 8.43 chars × 8px × 0.75 ≈ 50.6pt.
     for w in &tp.table.column_widths {
         assert!(
-            *w > 43.5 && *w < 44.5,
-            "Expected default print width around 44pt, got {w}"
+            *w > 50.0 && *w < 51.0,
+            "Expected default print width around 50.6pt, got {w}"
         );
     }
 }
@@ -222,6 +223,80 @@ fn test_sheet_uses_dominant_carlito_font_for_column_metrics() {
         .set_name("Carlito");
 
     assert_eq!(sheet_max_digit_width_px(sheet), 8.0);
+}
+
+#[test]
+fn test_normal_font_max_digit_width_pixel_ceils_at_96_dpi() {
+    // Excel pixel-ceils the Normal font's max digit width: Calibri 11 is
+    // 0.5066em × 11pt × 96/72 ≈ 7.43px → 8px, which is what native Excel
+    // print pagination of the audit fixtures requires (issue #366).
+    assert_eq!(max_digit_width_px_for_normal_font("Calibri", 11.0), 8.0);
+    assert_eq!(max_digit_width_px_for_normal_font("Carlito", 11.0), 8.0);
+    assert_eq!(max_digit_width_px_for_normal_font("Arial", 10.0), 8.0);
+    assert_eq!(max_digit_width_px_for_normal_font("Malgun Gothic", 11.0), 8.0);
+    // Smaller Normal fonts shrink the metric.
+    assert_eq!(max_digit_width_px_for_normal_font("Calibri", 8.0), 6.0);
+}
+
+#[test]
+fn test_extract_normal_font_reads_first_styles_font() {
+    let mut book = umya_spreadsheet::new_file();
+    book.get_sheet_mut(&0).unwrap().get_cell_mut("A1").set_value("x");
+    let mut cursor = Cursor::new(Vec::new());
+    umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+    let data = cursor.into_inner();
+
+    let (family, size) = extract_normal_font(&data).expect("styles.xml has a Normal font");
+    assert_eq!(family, "Calibri");
+    assert_eq!(size, 11.0);
+}
+
+#[test]
+fn test_column_overflow_splits_to_second_page_like_excel() {
+    // Quotation-style layout: A4 portrait with 0.75in side margins leaves a
+    // 487pt printable width. Columns of 5+30+16+8+14+16 = 89 chars under the
+    // Calibri-11 Normal font are 534pt at Excel's 8px MDW, so the last
+    // column overflows onto page 2 — exactly how Excel paginates the audit
+    // fixture (issue #366).
+    let mut book = umya_spreadsheet::new_file();
+    {
+        let sheet = book.get_sheet_mut(&0).unwrap();
+        sheet.set_name("Sheet1");
+        for (index, (col, width)) in [
+            ("A", 5.0),
+            ("B", 30.0),
+            ("C", 16.0),
+            ("D", 8.0),
+            ("E", 14.0),
+            ("F", 16.0),
+        ]
+        .iter()
+        .enumerate()
+        {
+            sheet.get_column_dimension_mut(col).set_width(*width);
+            let cell_ref = format!("{}1", col);
+            sheet
+                .get_cell_mut(cell_ref.as_str())
+                .set_value(format!("Col {}", index + 1));
+        }
+        let margins = sheet.get_page_margins_mut();
+        margins.set_left(0.75);
+        margins.set_right(0.75);
+        margins.set_top(1.0);
+        margins.set_bottom(1.0);
+    }
+    let mut cursor = Cursor::new(Vec::new());
+    umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser
+        .parse(&cursor.into_inner(), &ConvertOptions::default())
+        .unwrap();
+    assert_eq!(
+        doc.pages.len(),
+        2,
+        "the sixth column must overflow onto its own page like Excel"
+    );
 }
 
 // ----- Page size and margins defaults -----
@@ -328,3 +403,4 @@ mod chart_tests;
 
 #[path = "xlsx_streaming_tests.rs"]
 mod streaming_tests;
+

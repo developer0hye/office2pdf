@@ -1,0 +1,11 @@
+/Users/yhkwon/Documents/office2pdf-fix-xlsx-mdw/target-release/release/deps/typst_svg-7685a0f564cbc3eb.d: /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/lib.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/image.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/paint.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/shape.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/text.rs
+
+/Users/yhkwon/Documents/office2pdf-fix-xlsx-mdw/target-release/release/deps/libtypst_svg-7685a0f564cbc3eb.rlib: /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/lib.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/image.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/paint.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/shape.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/text.rs
+
+/Users/yhkwon/Documents/office2pdf-fix-xlsx-mdw/target-release/release/deps/libtypst_svg-7685a0f564cbc3eb.rmeta: /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/lib.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/image.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/paint.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/shape.rs /Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/text.rs
+
+/Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/lib.rs:
+/Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/image.rs:
+/Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/paint.rs:
+/Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/shape.rs:
+/Users/yhkwon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/typst-svg-0.14.2/src/text.rs:
