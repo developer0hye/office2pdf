@@ -609,6 +609,52 @@ fn test_table_cell_paragraph_preserves_spacing() {
 }
 
 #[test]
+fn test_table_cell_word_line_box() {
+    let cell = TableCell {
+        content: vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                line_box: Some(LineBox {
+                    ascent_em: 1.3125,
+                    descent_em: 0.4375,
+                }),
+                space_after: Some(8.0),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: "Word line box".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+            }],
+        })],
+        ..TableCell::default()
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            cells: vec![cell],
+            height: None,
+        }],
+        column_widths: vec![100.0],
+        ..Table::default()
+    };
+    let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#set text(top-edge: 1.3125em, bottom-edge: -0.4375em)"),
+        "Expected Word-compatible text edges in: {result}"
+    );
+    assert!(
+        result.contains("#set par(leading: 0pt)"),
+        "Expected Word-compatible line stacking in: {result}"
+    );
+    assert!(
+        result.contains("#v(8pt)"),
+        "Expected space-after in: {result}"
+    );
+}
+
+#[test]
 fn test_table_empty_cells() {
     let empty_cell = TableCell::default();
     let table = Table {

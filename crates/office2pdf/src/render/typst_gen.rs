@@ -9,10 +9,10 @@ use crate::ir::{
     Alignment, ArrowHead, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Chart,
     ChartType, Color, ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage,
     FloatingImage, FloatingShape, FloatingTextBox, FlowPage, FrameAnchor, GradientFill, HFInline,
-    HeaderFooter, HeaderFooterFrame, ImageCrop, ImageData, ImageFormat, Insets, LineSpacing, List,
-    ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph, ParagraphStyle,
-    PositionedTabAlignment, PositionedTabRelativeTo, Run, Shadow, Shape, ShapeKind, SheetPage,
-    SmartArt, TabAlignment, TabLeader, TabStop, Table, TableCell, TableRow, TextBoxData,
+    HeaderFooter, HeaderFooterFrame, ImageCrop, ImageData, ImageFormat, Insets, LineBox,
+    LineSpacing, List, ListKind, Margins, MathEquation, Metadata, Page, PageSize, Paragraph,
+    ParagraphStyle, PositionedTabAlignment, PositionedTabRelativeTo, Run, Shadow, Shape, ShapeKind,
+    SheetPage, SmartArt, TabAlignment, TabLeader, TabStop, Table, TableCell, TableRow, TextBoxData,
     TextBoxVerticalAlign, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
 };
 

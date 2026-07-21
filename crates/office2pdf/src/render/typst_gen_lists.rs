@@ -228,6 +228,10 @@ fn paragraph_line_height(paragraph: &Paragraph) -> f64 {
         .max_by(f64::total_cmp)
         .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT);
 
+    if let Some(line_box) = paragraph.style.line_box {
+        return font_size * (line_box.ascent_em + line_box.descent_em);
+    }
+
     match paragraph.style.line_spacing {
         Some(LineSpacing::Proportional(factor)) => font_size * factor.max(0.0),
         Some(LineSpacing::Exact(points)) => points.max(0.0),
@@ -253,7 +257,11 @@ fn list_boundary_spacing(
     let line_height =
         paragraph_line_height(previous_paragraph).max(paragraph_line_height(next_paragraph));
     let paragraph_gap = paragraph_space_after(previous).max(paragraph_space_before(next));
-    Some(line_height + paragraph_gap)
+    if previous_paragraph.style.line_box.is_some() && next_paragraph.style.line_box.is_some() {
+        Some(paragraph_gap)
+    } else {
+        Some(line_height + paragraph_gap)
+    }
 }
 
 fn common_list_level_spacing(items: &[crate::ir::ListItem], level: u32) -> Option<f64> {
@@ -277,22 +285,44 @@ fn list_edge_spacing(list: &List, level: u32) -> (Option<f64>, Option<f64>) {
     let above = first
         .and_then(|item| item.content.first())
         .and_then(|paragraph| {
-            paragraph
-                .style
-                .space_before
-                .map(|spacing| paragraph_line_height(paragraph) + spacing.max(0.0))
-        })
-        .filter(|spacing| *spacing > 0.0001);
+            if paragraph.style.line_box.is_some() {
+                Some(paragraph.style.space_before.unwrap_or(0.0).max(0.0))
+            } else {
+                paragraph
+                    .style
+                    .space_before
+                    .map(|spacing| paragraph_line_height(paragraph) + spacing.max(0.0))
+                    .filter(|spacing| *spacing > 0.0001)
+            }
+        });
     let below = last
         .and_then(|item| item.content.last())
         .and_then(|paragraph| {
-            paragraph
-                .style
-                .space_after
-                .map(|spacing| paragraph_line_height(paragraph) + spacing.max(0.0))
-        })
-        .filter(|spacing| *spacing > 0.0001);
+            if paragraph.style.line_box.is_some() {
+                Some(paragraph.style.space_after.unwrap_or(0.0).max(0.0))
+            } else {
+                paragraph
+                    .style
+                    .space_after
+                    .map(|spacing| paragraph_line_height(paragraph) + spacing.max(0.0))
+                    .filter(|spacing| *spacing > 0.0001)
+            }
+        });
     (above, below)
+}
+
+fn common_list_line_box(list: &List) -> Option<LineBox> {
+    let root_level = list_root_level(list);
+    let mut line_boxes = list
+        .items
+        .iter()
+        .filter(|item| item.level == root_level)
+        .flat_map(|item| item.content.iter())
+        .map(|paragraph| paragraph.style.line_box);
+    let first = line_boxes.next()??;
+    line_boxes
+        .all(|line_box| line_box.is_some_and(|line_box| line_box == first))
+        .then_some(first)
 }
 
 pub(super) fn generate_list(out: &mut String, list: &List) -> Result<(), ConvertError> {
@@ -302,6 +332,7 @@ pub(super) fn generate_list(out: &mut String, list: &List) -> Result<(), Convert
     let indent = common_list_level_indent(&list.items, root_level);
     let spacing_pt = common_list_level_spacing(&list.items, root_level);
     let (space_before, space_after) = list_edge_spacing(list, root_level);
+    let line_box = common_list_line_box(list);
     let start_at = list.items.first().and_then(|item| item.start_at);
     if space_before.is_some() || space_after.is_some() {
         out.push_str("#block(");
@@ -314,6 +345,7 @@ pub(super) fn generate_list(out: &mut String, list: &List) -> Result<(), Convert
             },
         );
         out.push_str(")[\n");
+        write_line_box_settings(out, line_box);
     }
     write_list_open(
         out,
@@ -363,6 +395,7 @@ fn paragraph_styles_match(left: &ParagraphStyle, right: &ParagraphStyle) -> bool
             f64_approx_eq,
         )
         && both_match(left.line_spacing, right.line_spacing, line_spacing_eq)
+        && left.line_box == right.line_box
         && both_match(left.space_before, right.space_before, f64_approx_eq)
         && both_match(left.space_after, right.space_after, f64_approx_eq)
         && left.heading_level == right.heading_level
@@ -726,7 +759,7 @@ pub(super) fn write_fixed_text_default_par_settings(
     runs: &[Run],
     indent: &str,
 ) {
-    if style.line_spacing.is_some() {
+    if style.line_spacing.is_some() || style.line_box.is_some() {
         return;
     }
 
@@ -835,6 +868,7 @@ fn write_fixed_text_list_par_settings(
     style: &ParagraphStyle,
     line_gap_pt: Option<f64>,
 ) {
+    write_line_box_settings(out, style.line_box);
     if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0) {
         let _ = writeln!(out, "  #set par(leading: {}pt)", format_f64(gap));
     } else {

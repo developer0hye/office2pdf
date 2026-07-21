@@ -226,6 +226,55 @@ fn test_generate_list_preserves_paragraph_spacing_between_items() {
 }
 
 #[test]
+fn test_generate_list_uses_word_line_box_and_boundary_spacing() {
+    use crate::ir::List;
+
+    let make_item = |text: &str| ListItem {
+        content: vec![Paragraph {
+            style: ParagraphStyle {
+                line_box: Some(LineBox {
+                    ascent_em: 1.3125,
+                    descent_em: 0.4375,
+                }),
+                space_after: Some(8.0),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: text.to_string(),
+                style: TextStyle {
+                    font_size: Some(11.0),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        }],
+        level: 0,
+        start_at: None,
+    };
+    let list = List {
+        kind: ListKind::Unordered,
+        items: vec![make_item("First"), make_item("Second")],
+        level_styles: BTreeMap::new(),
+    };
+
+    let source = generate_typst(&make_doc(vec![make_flow_page(vec![Block::List(list)])]))
+        .unwrap()
+        .source;
+
+    assert!(
+        source.contains("#set text(top-edge: 1.3125em, bottom-edge: -0.4375em)"),
+        "{source}"
+    );
+    assert!(source.contains("#set par(leading: 0pt)"), "{source}");
+    assert!(source.contains("spacing: 8pt"), "{source}");
+    assert!(
+        source.contains("#block(above: 0pt, below: 8pt)"),
+        "{source}"
+    );
+}
+
+#[test]
 fn test_generate_list_combines_exact_line_height_with_paragraph_spacing() {
     use crate::ir::List;
 

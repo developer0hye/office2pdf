@@ -11,8 +11,8 @@ use std::path::PathBuf;
 
 use office2pdf::config::ConvertOptions;
 use office2pdf::ir::{
-    ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline, Insets, ListKind,
-    Page, Paragraph, PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind,
+    ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline, Insets, LineBox,
+    ListKind, Page, Paragraph, PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind,
     TextBoxVerticalAlign,
 };
 use office2pdf::parser::Parser;
@@ -201,11 +201,48 @@ fn structure_pr_187_contributor_acceptance_supported_behavior() {
             left: 15.0,
         })
     );
+    for cell in &table.rows[0].cells[1..] {
+        assert_eq!(
+            cell.padding,
+            Some(Insets {
+                top: 10.0,
+                right: 20.0,
+                bottom: 15.0,
+                left: 10.0,
+            }),
+            "Word should align every cell to the row's largest vertical margin"
+        );
+    }
     assert_eq!(
         table.rows[0].cells[2].background,
         Some(Color::new(0x22, 0x22, 0x22)),
         "a cell without explicit shading should inherit the dark table style"
     );
+}
+
+#[test]
+fn acceptance_pr_187_contributor_acceptance_table_row_metrics() {
+    let pages = flow_pages(PR_187_FIXTURE);
+    let table = pr_187_table(&pages);
+
+    for cell in &table.rows[0].cells {
+        let paragraph = cell
+            .content
+            .iter()
+            .find_map(|block| match block {
+                Block::Paragraph(paragraph) => Some(paragraph),
+                _ => None,
+            })
+            .expect("fixture table cells should contain a paragraph");
+        assert_eq!(
+            paragraph.style.line_box,
+            Some(LineBox {
+                ascent_em: 1.3125,
+                descent_em: 0.4375,
+            })
+        );
+        assert_eq!(paragraph.style.space_after, Some(8.0));
+    }
 }
 
 #[test]

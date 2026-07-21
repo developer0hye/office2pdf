@@ -286,6 +286,40 @@ fn test_generate_line_spacing_exact() {
 }
 
 #[test]
+fn test_generate_word_default_line_box() {
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            line_box: Some(LineBox {
+                ascent_em: 1.3125,
+                descent_em: 0.4375,
+            }),
+            space_after: Some(8.0),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Word defaults".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+        }],
+    })])]);
+    let source = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        source.contains("#set text(top-edge: 1.3125em, bottom-edge: -0.4375em)"),
+        "Expected Word-compatible line edges in: {source}"
+    );
+    assert!(
+        source.contains("#set par(leading: 0pt)"),
+        "Expected Word-compatible line stacking in: {source}"
+    );
+    assert!(
+        source.contains("below: 8pt"),
+        "Expected paragraph spacing in: {source}"
+    );
+}
+
+#[test]
 fn test_generate_letter_spacing() {
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
         style: ParagraphStyle::default(),

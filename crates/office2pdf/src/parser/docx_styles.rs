@@ -177,6 +177,9 @@ pub(super) fn merge_paragraph_style(
         line_spacing: explicit
             .line_spacing
             .or(style_paragraph.and_then(|style| style.line_spacing)),
+        line_box: explicit
+            .line_box
+            .or(style_paragraph.and_then(|style| style.line_box)),
         space_before: explicit
             .space_before
             .or(style_paragraph.and_then(|style| style.space_before)),

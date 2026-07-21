@@ -271,10 +271,46 @@ fn extract_raw_rows(
             col_index += grid_span as usize;
         }
 
+        align_top_oriented_cells_to_row_vertical_margins(&mut cells, default_cell_padding);
+
         raw_rows.push(RawRow { cells, height });
     }
 
     raw_rows
+}
+
+fn align_top_oriented_cells_to_row_vertical_margins(
+    cells: &mut [RawCell],
+    default_cell_padding: Option<Insets>,
+) {
+    let Some(default_cell_padding) = default_cell_padding else {
+        return;
+    };
+
+    let top_oriented =
+        |cell: &&RawCell| matches!(cell.vertical_align, None | Some(CellVerticalAlign::Top));
+    let max_top = cells
+        .iter()
+        .filter(top_oriented)
+        .map(|cell| cell.padding.unwrap_or(default_cell_padding).top)
+        .fold(default_cell_padding.top, f64::max);
+    let max_bottom = cells
+        .iter()
+        .filter(top_oriented)
+        .map(|cell| cell.padding.unwrap_or(default_cell_padding).bottom)
+        .fold(default_cell_padding.bottom, f64::max);
+
+    for cell in cells
+        .iter_mut()
+        .filter(|cell| matches!(cell.vertical_align, None | Some(CellVerticalAlign::Top)))
+    {
+        let mut effective_padding = cell.padding.unwrap_or(default_cell_padding);
+        if effective_padding.top != max_top || effective_padding.bottom != max_bottom {
+            effective_padding.top = max_top;
+            effective_padding.bottom = max_bottom;
+            cell.padding = Some(effective_padding);
+        }
+    }
 }
 
 fn apply_conditional_table_style(raw_rows: &mut [RawRow], table_style: &ResolvedTableStyle) {

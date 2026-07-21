@@ -175,6 +175,10 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
         indent_right: Some(5.0),
         indent_first_line: Some(20.0),
         line_spacing: Some(LineSpacing::Proportional(1.5)),
+        line_box: Some(LineBox {
+            ascent_em: 1.0,
+            descent_em: 0.25,
+        }),
         space_before: Some(6.0),
         space_after: Some(12.0),
         heading_level: Some(2),
@@ -194,6 +198,7 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
     assert_eq!(target.indent_left, original.indent_left);
     assert_eq!(target.indent_right, original.indent_right);
     assert_eq!(target.indent_first_line, original.indent_first_line);
+    assert_eq!(target.line_box, original.line_box);
     assert_eq!(target.space_before, original.space_before);
     assert_eq!(target.space_after, original.space_after);
     assert_eq!(target.heading_level, original.heading_level);
@@ -215,6 +220,10 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
         indent_right: Some(15.0),
         indent_first_line: Some(30.0),
         line_spacing: Some(LineSpacing::Exact(14.0)),
+        line_box: Some(LineBox {
+            ascent_em: 1.3125,
+            descent_em: 0.4375,
+        }),
         space_before: Some(8.0),
         space_after: Some(16.0),
         heading_level: Some(1),
@@ -232,6 +241,7 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
     assert_eq!(target.indent_left, Some(20.0));
     assert_eq!(target.indent_right, Some(15.0));
     assert_eq!(target.indent_first_line, Some(30.0));
+    assert_eq!(target.line_box, source.line_box);
     assert_eq!(target.space_before, Some(8.0));
     assert_eq!(target.space_after, Some(16.0));
     assert_eq!(target.heading_level, Some(1));

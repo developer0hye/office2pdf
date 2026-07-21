@@ -21,6 +21,12 @@ pub struct ParagraphStyle {
     pub indent_right: Option<f64>,
     pub indent_first_line: Option<f64>,
     pub line_spacing: Option<LineSpacing>,
+    /// Font-relative top and bottom edges used to size each text line.
+    ///
+    /// This is distinct from line spacing: it describes the line's intrinsic
+    /// ascent/descent, while `line_spacing` controls the distance between
+    /// consecutive lines.
+    pub line_box: Option<LineBox>,
     pub space_before: Option<f64>,
     pub space_after: Option<f64>,
     /// Heading level (1 = H1, 2 = H2, ..., 6 = H6). When set, the paragraph
@@ -88,6 +94,15 @@ pub enum LineSpacing {
     Proportional(f64),
     /// Exact spacing in points.
     Exact(f64),
+}
+
+/// Font-relative line box metrics.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LineBox {
+    /// Distance above the baseline, in em units.
+    pub ascent_em: f64,
+    /// Distance below the baseline, in em units.
+    pub descent_em: f64,
 }
 
 /// Vertical alignment for superscript/subscript text.
@@ -182,6 +197,9 @@ impl ParagraphStyle {
         }
         if other.line_spacing.is_some() {
             self.line_spacing = other.line_spacing;
+        }
+        if other.line_box.is_some() {
+            self.line_box = other.line_box;
         }
         if other.space_before.is_some() {
             self.space_before = other.space_before;

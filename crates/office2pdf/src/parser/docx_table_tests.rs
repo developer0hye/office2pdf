@@ -337,6 +337,87 @@ fn test_table_cell_margins_override_table_defaults() {
 }
 
 #[test]
+fn test_table_row_uses_largest_effective_vertical_cell_margins() {
+    let mut first_cell = docx_rs::TableCell::new()
+        .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("First")));
+    first_cell.property = docx_rs::TableCellProperty::new()
+        .margin_top(200, docx_rs::WidthType::Dxa)
+        .margin_left(300, docx_rs::WidthType::Dxa);
+    let second_cell = docx_rs::TableCell::new()
+        .add_paragraph(docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Second")));
+    let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![first_cell, second_cell])])
+        .margins(docx_rs::TableCellMargins::new().margin(100, 400, 300, 200));
+
+    let data = build_docx_with_table(table);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let table = first_table(&doc);
+
+    assert_eq!(
+        table.rows[0].cells[0].padding,
+        Some(Insets {
+            top: 10.0,
+            right: 20.0,
+            bottom: 15.0,
+            left: 15.0,
+        })
+    );
+    assert_eq!(
+        table.rows[0].cells[1].padding,
+        Some(Insets {
+            top: 10.0,
+            right: 20.0,
+            bottom: 15.0,
+            left: 10.0,
+        }),
+        "Word aligns top-oriented cell content using the row's largest effective vertical margins"
+    );
+}
+
+#[test]
+fn test_table_cell_paragraph_uses_word_default_line_box_and_spacing() {
+    let default_paragraph =
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Default"));
+    let explicit_paragraph = docx_rs::Paragraph::new()
+        .add_run(docx_rs::Run::new().add_text("Explicit"))
+        .line_spacing(
+            docx_rs::LineSpacing::new()
+                .line_rule(docx_rs::LineSpacingType::Exact)
+                .line(360)
+                .after(120),
+        );
+    let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+        docx_rs::TableCell::new().add_paragraph(default_paragraph),
+        docx_rs::TableCell::new().add_paragraph(explicit_paragraph),
+    ])]);
+
+    let data = build_docx_with_table(table);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let table = first_table(&doc);
+    let paragraph = |cell_index: usize| match &table.rows[0].cells[cell_index].content[0] {
+        Block::Paragraph(paragraph) => paragraph,
+        other => panic!("expected table cell paragraph, got {other:?}"),
+    };
+
+    assert_eq!(
+        paragraph(0).style.line_box,
+        Some(LineBox {
+            ascent_em: 1.3125,
+            descent_em: 0.4375,
+        })
+    );
+    assert_eq!(paragraph(0).style.space_after, Some(8.0));
+
+    assert_eq!(paragraph(1).style.line_box, None);
+    assert_eq!(paragraph(1).style.space_after, Some(6.0));
+    assert!(matches!(
+        paragraph(1).style.line_spacing,
+        Some(LineSpacing::Exact(points)) if (points - 18.0).abs() < f64::EPSILON
+    ));
+}
+
+#[test]
 fn test_table_alignment_from_table_property() {
     let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
         docx_rs::TableCell::new().add_paragraph(

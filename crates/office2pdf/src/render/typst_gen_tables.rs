@@ -515,6 +515,7 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph) {
         out.push_str("#block(");
         write_cell_paragraph_block_params(out, align_str.is_some());
         out.push_str(")[\n");
+        write_line_box_settings(out, style.line_box);
         write_par_settings(out, style);
         if let Some(align_str) = align_str {
             let _ = writeln!(out, "  #set align({align_str})");
@@ -538,6 +539,7 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph) {
 
 fn cell_paragraph_needs_block_wrapper(style: &ParagraphStyle) -> bool {
     style.line_spacing.is_some()
+        || style.line_box.is_some()
         || matches!(style.alignment, Some(Alignment::Justify))
         || matches!(style.direction, Some(TextDirection::Rtl))
 }

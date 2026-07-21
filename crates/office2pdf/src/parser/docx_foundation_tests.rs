@@ -586,6 +586,25 @@ fn test_paragraph_line_spacing_exact() {
 }
 
 #[test]
+fn test_paragraph_uses_word_default_line_box_and_spacing_when_unspecified() {
+    let data = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Word defaults")),
+    ]);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let paragraph = first_paragraph(&doc);
+
+    assert_eq!(
+        paragraph.style.line_box,
+        Some(LineBox {
+            ascent_em: 1.3125,
+            descent_em: 0.4375,
+        })
+    );
+    assert_eq!(paragraph.style.space_after, Some(8.0));
+}
+
+#[test]
 fn test_paragraph_space_before_after() {
     let data = build_docx_bytes(vec![
         docx_rs::Paragraph::new()

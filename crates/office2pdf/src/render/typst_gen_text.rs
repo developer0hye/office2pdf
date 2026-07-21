@@ -34,6 +34,7 @@ pub(super) fn generate_paragraph(
         out.push_str("#block(width: 100%");
         write_block_params_continuation(out, style);
         out.push_str(")[\n");
+        write_line_box_settings(out, style.line_box);
         write_par_settings(out, style);
         if let Some(ref settings) = line_height_settings {
             out.push_str(settings);
@@ -83,6 +84,7 @@ pub(super) fn needs_block_wrapper(style: &ParagraphStyle) -> bool {
     style.space_before.is_some()
         || style.space_after.is_some()
         || style.line_spacing.is_some()
+        || style.line_box.is_some()
         || matches!(style.alignment, Some(Alignment::Justify))
         || matches!(style.direction, Some(TextDirection::Rtl))
 }
@@ -98,7 +100,7 @@ pub(super) fn word_line_height_settings(
     style: &ParagraphStyle,
     line_grid_pitch: Option<f64>,
 ) -> Option<String> {
-    if style.line_spacing.is_some() {
+    if style.line_spacing.is_some() || style.line_box.is_some() {
         return None;
     }
     let pitch: f64 = line_grid_pitch?;
@@ -163,6 +165,19 @@ pub(super) fn write_par_settings(out: &mut String, style: &ParagraphStyle) {
     if matches!(style.direction, Some(TextDirection::Rtl)) {
         out.push_str("  #set text(dir: rtl)\n");
     }
+}
+
+pub(super) fn write_line_box_settings(out: &mut String, line_box: Option<LineBox>) {
+    let Some(line_box) = line_box else {
+        return;
+    };
+    let _ = writeln!(
+        out,
+        "#set text(top-edge: {}em, bottom-edge: -{}em)",
+        format_f64(line_box.ascent_em),
+        format_f64(line_box.descent_em),
+    );
+    out.push_str("#set par(leading: 0pt)\n");
 }
 
 pub(super) fn generate_runs_with_tabs(
