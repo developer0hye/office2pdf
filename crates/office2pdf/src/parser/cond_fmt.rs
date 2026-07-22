@@ -395,21 +395,38 @@ fn apply_icon_set_rule(
     raw_hint: Option<&RawCondFmtHint>,
 ) {
     let numeric_vals: Vec<f64> = collect_numeric_values_in_ranges(sheet, ranges);
-    let Some((min_val, _max_val, val_range)) = compute_min_max(&numeric_vals) else {
+    let Some((min_val, max_val, val_range)) = compute_min_max(&numeric_vals) else {
         return;
     };
 
-    // Try to parse thresholds from IconSet cfvos
-    let cfvo_thresholds: Vec<f64> = rule
-        .get_icon_set()
-        .map(|is| is.get_cfvo_collection())
-        .unwrap_or(&[])
-        .iter()
-        .filter_map(|cfvo| {
-            let pct: f64 = cfvo.get_val().parse().ok()?;
-            Some(min_val + val_range * (pct / 100.0))
+    // Prefer the cfvo (type, val) pairs parsed from the raw worksheet XML:
+    // umya-spreadsheet drops cfvos written as start/end tag pairs, and its
+    // values do not carry the cfvo type, so treating every value as a
+    // percentage misplaced the bands (issue #406).
+    let cfvo_thresholds: Vec<f64> = raw_hint
+        .map(|hint| hint.icon_cfvos.as_slice())
+        .filter(|cfvos| !cfvos.is_empty())
+        .map(|cfvos| {
+            cfvos
+                .iter()
+                .filter_map(|(kind, raw_val)| {
+                    icon_cfvo_threshold(kind, raw_val, min_val, max_val, val_range, &numeric_vals)
+                })
+                .collect::<Vec<f64>>()
         })
-        .collect();
+        .filter(|thresholds| thresholds.len() >= 2)
+        .unwrap_or_else(|| {
+            // Legacy fallback: umya's cfvos (no type) treated as percent.
+            rule.get_icon_set()
+                .map(|is| is.get_cfvo_collection())
+                .unwrap_or(&[])
+                .iter()
+                .filter_map(|cfvo| {
+                    let pct: f64 = cfvo.get_val().parse().ok()?;
+                    Some(min_val + val_range * (pct / 100.0))
+                })
+                .collect()
+        });
 
     // Default to 3-icon equal-thirds if no thresholds available
     let thresholds: Vec<f64> = if cfvo_thresholds.len() >= 2 {
@@ -597,6 +614,53 @@ pub(crate) fn build_cond_fmt_overrides(
 }
 
 /// Determine which icon index a value falls into based on thresholds.
+/// Resolve one icon-set `<cfvo>` (type, value) into the numeric threshold a
+/// cell value is compared against. Excel's cfvo types map differently:
+/// `num` is a literal value, `percent` is a fraction of the value range,
+/// `percentile` is the p-th percentile of the values, and `min`/`max` are
+/// the extremes (issue #406). Unsupported types (e.g. `formula`) yield None.
+fn icon_cfvo_threshold(
+    kind: &str,
+    raw_val: &str,
+    min_val: f64,
+    max_val: f64,
+    val_range: f64,
+    values: &[f64],
+) -> Option<f64> {
+    match kind {
+        "min" => Some(min_val),
+        "max" => Some(max_val),
+        "num" => raw_val.parse::<f64>().ok(),
+        "percent" => {
+            let pct: f64 = raw_val.parse().ok()?;
+            Some(min_val + val_range * (pct / 100.0))
+        }
+        "percentile" => {
+            let pct: f64 = raw_val.parse().ok()?;
+            Some(percentile(values, pct))
+        }
+        _ => None,
+    }
+}
+
+/// The `pct`-th percentile (0-100) of `values` using linear interpolation
+/// between closest ranks — Excel's `PERCENTILE.INC` convention.
+fn percentile(values: &[f64], pct: f64) -> f64 {
+    let mut sorted: Vec<f64> = values.to_vec();
+    sorted.sort_by(f64::total_cmp);
+    if sorted.is_empty() {
+        return 0.0;
+    }
+    if sorted.len() == 1 {
+        return sorted[0];
+    }
+    let rank: f64 = (pct / 100.0) * (sorted.len() as f64 - 1.0);
+    let lower: usize = rank.floor() as usize;
+    let upper: usize = rank.ceil() as usize;
+    let weight: f64 = rank - lower as f64;
+    sorted[lower] * (1.0 - weight) + sorted[upper] * weight
+}
+
 fn evaluate_icon_index(val: f64, thresholds: &[f64], num_icons: usize) -> usize {
     if num_icons == 0 {
         return 0;

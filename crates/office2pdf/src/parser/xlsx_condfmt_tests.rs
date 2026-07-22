@@ -704,3 +704,58 @@ fn test_cond_fmt_data_bar_color_from_start_end_tag_children() {
         db3.fill_pct
     );
 }
+
+#[test]
+fn test_cond_fmt_icon_set_num_thresholds_from_start_end_cfvos() {
+    // openpyxl writes iconSet cfvos as <cfvo ...></cfvo> pairs; umya drops
+    // them and office2pdf fell back to equal-thirds, mis-banding cells. With
+    // the raw-XML cfvo (type=num) thresholds [0, 0.9, 1.0], 0.84 is red-down,
+    // 0.93 yellow-side, 1.07 green-up (issue #406).
+    let data = build_xlsx_with_cond_fmt(|sheet| {
+        sheet.get_cell_mut("A1").set_value_number(0.84);
+        sheet.get_cell_mut("A2").set_value_number(0.93);
+        sheet.get_cell_mut("A3").set_value_number(1.07);
+
+        let mut rule = umya_spreadsheet::ConditionalFormattingRule::default();
+        rule.set_type(umya_spreadsheet::ConditionalFormatValues::IconSet);
+        rule.set_priority(1);
+
+        let mut is = umya_spreadsheet::IconSet::default();
+        is.set_icon_set_type("3Arrows");
+        for val in ["0", "0.9", "1"] {
+            let mut cfvo = umya_spreadsheet::ConditionalFormatValueObject::default();
+            cfvo.set_type(umya_spreadsheet::ConditionalFormatValueObjectValues::Number);
+            cfvo.set_val(val);
+            is.add_cfvo_collection(cfvo);
+        }
+        rule.set_icon_set(is);
+
+        let mut seq = umya_spreadsheet::SequenceOfReferences::default();
+        seq.set_sqref("A1:A3");
+        let mut cf = umya_spreadsheet::ConditionalFormatting::default();
+        cf.set_sequence_of_references(seq);
+        cf.add_conditional_collection(rule);
+        sheet.set_conditional_formatting_collection(vec![cf]);
+    });
+    let data = rewrite_data_bar_children_as_start_end_tags(&data);
+
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let tp = get_sheet_page(&doc, 0);
+
+    // 0.84 < 0.9 -> low band (red down)
+    assert_eq!(
+        tp.table.rows[0].cells[0].icon_color,
+        Some(Color::new(214, 85, 50))
+    );
+    // 0.93 in [0.9, 1.0) -> middle band (yellow)
+    assert_eq!(
+        tp.table.rows[1].cells[0].icon_color,
+        Some(Color::new(234, 191, 87))
+    );
+    // 1.07 >= 1.0 -> high band (green up)
+    assert_eq!(
+        tp.table.rows[2].cells[0].icon_color,
+        Some(Color::new(104, 164, 144))
+    );
+}
