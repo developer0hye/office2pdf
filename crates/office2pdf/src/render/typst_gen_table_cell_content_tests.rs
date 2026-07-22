@@ -238,3 +238,109 @@ fn test_table_cell_compact_list_adds_inter_item_spacing_from_line_spacing() {
         "Compact table-cell lists should add inter-item spacing derived from PPT line spacing in: {result}"
     );
 }
+
+#[test]
+fn test_east_asian_table_cell_uses_natural_line_height_not_grid() {
+    // Word does not snap table-cell text to the document grid (measured
+    // Korean cells sit at the font's full line, not a grid multiple), so
+    // cells must use the natural single-spacing line height rather than
+    // Typst's glyph-tight default (issue #385). Uses a Typst-embedded font
+    // so the test is environment-free.
+    let Some((ascender, descender, word_pitch_em)) =
+        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
+    else {
+        return; // no font book available (e.g. exotic CI sandbox)
+    };
+    let font_size: f64 = 10.0;
+    let natural_leading = ((word_pitch_em - (ascender + descender)) * font_size).max(0.0);
+    let grid_leading = 18.0 - (ascender + descender) * font_size;
+    let cell = TableCell {
+        content: vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "회의 안건".to_string(),
+                style: TextStyle {
+                    font_family: Some("Libertinus Serif".to_string()),
+                    font_size: Some(font_size),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })],
+        ..TableCell::default()
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            cells: vec![cell],
+            height: None,
+        }],
+        column_widths: vec![200.0],
+        ..Table::default()
+    };
+    let mut page = match make_flow_page(vec![Block::Table(table)]) {
+        Page::Flow(flow) => flow,
+        _ => unreachable!(),
+    };
+    // A section grid is present, but cells must ignore it.
+    page.line_grid_pitch = Some(18.0);
+    let doc = make_doc(vec![Page::Flow(page)]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("top-edge: \"ascender\""),
+        "Korean cell must use metric edges: {result}"
+    );
+    assert!(
+        result.contains(&format!("leading: {}pt", format_f64(natural_leading))),
+        "Korean cell must use natural single-spacing leading ({natural_leading}pt): {result}"
+    );
+    assert!(
+        !result.contains(&format!("leading: {}pt", format_f64(grid_leading))),
+        "Korean cell must NOT snap to the grid pitch: {result}"
+    );
+}
+
+#[test]
+fn test_latin_table_cell_uses_natural_line_height() {
+    // Latin cells likewise use their metric single-spacing line height
+    // (Word single spacing = hhea line), not Typst's glyph-tight default
+    // (issue #385).
+    let Some((ascender, descender, word_pitch_em)) =
+        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
+    else {
+        return;
+    };
+    let font_size: f64 = 10.0;
+    let natural_leading = ((word_pitch_em - (ascender + descender)) * font_size).max(0.0);
+    let cell = TableCell {
+        content: vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "Agenda".to_string(),
+                style: TextStyle {
+                    font_family: Some("Libertinus Serif".to_string()),
+                    font_size: Some(font_size),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })],
+        ..TableCell::default()
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            cells: vec![cell],
+            height: None,
+        }],
+        column_widths: vec![200.0],
+        ..Table::default()
+    };
+    let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains(&format!("leading: {}pt", format_f64(natural_leading))),
+        "Latin cell must use natural single-spacing leading ({natural_leading}pt): {result}"
+    );
+}
