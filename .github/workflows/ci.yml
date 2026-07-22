@@ -61,6 +61,18 @@ jobs:
             exit 1
           fi
 
+  business-golden-contract:
+    name: Business Golden Contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Poppler
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Test business golden validator
+        run: python3 -m unittest discover -s scripts/tests -p 'test_validate_business_golden_mocks.py'
+      - name: Validate business golden corpus
+        run: python3 scripts/validate_business_golden_mocks.py
+
   visual-pr-contract:
     name: Visual PR Contract
     if: github.event_name == 'pull_request'

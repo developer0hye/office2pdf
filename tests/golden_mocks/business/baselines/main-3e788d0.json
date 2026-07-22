@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "tested_at": "2026-07-22",
+  "repository_commit": "3e788d03f7d9408b2f6da5433df271a4701c0166",
+  "office2pdf_version": "0.6.3",
+  "profile": "dev",
+  "command": "office2pdf <30 sources> --outdir work/golden-qa/converted --metrics -j 4",
+  "summary": {
+    "sources": 30,
+    "succeeded": 30,
+    "failed": 0,
+    "expected_pages": 54,
+    "converted_pages": 54,
+    "page_parity_cases": 30,
+    "cjk_fallback_warning_cases": 4
+  },
+  "cases": [
+    {
+      "id": "docx-invoice-en",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 71622,
+      "output_sha256": "b95bbaedd52fe7d656196dc3847e41a2e8c9f0e864d49a66b672ff8282fc8db5",
+      "warnings": []
+    },
+    {
+      "id": "docx-contract-ko",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 52039,
+      "output_sha256": "df92f563a0ec3586b366d6c942463e901956b9881c77e79c9f6f0d4c2dd8973e",
+      "warnings": []
+    },
+    {
+      "id": "docx-meeting-minutes-ko",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 54908,
+      "output_sha256": "5f51dc535ea27c2b950f7af7b946b93133a50f6783bb2095f2f92252ad7596a8",
+      "warnings": []
+    },
+    {
+      "id": "docx-resume-en",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 60600,
+      "output_sha256": "9c985a7a80755fcd5feb50368096b8b2dae4ae1b578325b6de1bef64d16cfbac",
+      "warnings": []
+    },
+    {
+      "id": "docx-technical-manual-en",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 2,
+      "converted_pages": 2,
+      "page_parity": true,
+      "output_bytes": 37306,
+      "output_sha256": "abfdec049597680851db379cad27f54dbcd1c10b44869c673bf68fd08ccfd0a5",
+      "warnings": []
+    },
+    {
+      "id": "docx-official-letter-ko",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 49106,
+      "output_sha256": "8dd7af12600b2e397b650780bda3e304a10cdce040228c7915d79e3cb43162b7",
+      "warnings": []
+    },
+    {
+      "id": "docx-product-spec-en",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 60336,
+      "output_sha256": "bf7e3c9f02d63e0aeeb33938fd5dae8b900995648793fb5f6d1d72c6fa299799",
+      "warnings": []
+    },
+    {
+      "id": "docx-newsletter-en",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 79129,
+      "output_sha256": "97aea7c7e2118965c2f6d9ccfa6c8ebbb44565045405a22e20379c53f1d3919a",
+      "warnings": []
+    },
+    {
+      "id": "docx-offer-letter-en",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 61457,
+      "output_sha256": "473f66712585438ce65f492b1a71573d4c413412b43586b8c31506a505aada18",
+      "warnings": []
+    },
+    {
+      "id": "docx-research-report-ko",
+      "format": "docx",
+      "status": "succeeded",
+      "expected_pages": 2,
+      "converted_pages": 2,
+      "page_parity": true,
+      "output_bytes": 44668,
+      "output_sha256": "a0dada423edd57b547da41d2ffe5240dbad316b3065b14ce6ae43756a18dec93",
+      "warnings": []
+    },
+    {
+      "id": "pptx-startup-pitch-en",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 3,
+      "converted_pages": 3,
+      "page_parity": true,
+      "output_bytes": 135828,
+      "output_sha256": "52c6146832e9e35a924da652880112951cb47b086e0085eb2a85776a352664c9",
+      "warnings": []
+    },
+    {
+      "id": "pptx-quarterly-review-ko",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 3,
+      "converted_pages": 3,
+      "page_parity": true,
+      "output_bytes": 62446,
+      "output_sha256": "a423a1030137a3767379b1f0729572fed81a20b2d3bc2e6c6a10c46ba7f14c51",
+      "warnings": []
+    },
+    {
+      "id": "pptx-product-launch-en",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 3,
+      "converted_pages": 3,
+      "page_parity": true,
+      "output_bytes": 114316,
+      "output_sha256": "0f5dbb98e97cba2d2bf15e6f600558e1535a21cf246407f17129b2b3ba6c0fa7",
+      "warnings": []
+    },
+    {
+      "id": "pptx-training-deck-ko",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 3,
+      "converted_pages": 3,
+      "page_parity": true,
+      "output_bytes": 46283,
+      "output_sha256": "f66752512e8d2468f47b9f1992f056ced65111e0b51645f5770cc64804b361ec",
+      "warnings": []
+    },
+    {
+      "id": "pptx-company-intro-en",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 3,
+      "converted_pages": 3,
+      "page_parity": true,
+      "output_bytes": 105550,
+      "output_sha256": "2a1635cf67a215517e73213064118b3ad3d73f16c85075d91df4ce86510253b7",
+      "warnings": []
+    },
+    {
+      "id": "pptx-project-status-ko",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 2,
+      "converted_pages": 2,
+      "page_parity": true,
+      "output_bytes": 44822,
+      "output_sha256": "11a5b70c01540532e14c768cc34839fd173d05742e1634e3183923559281fbdd",
+      "warnings": []
+    },
+    {
+      "id": "pptx-conference-talk-en",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 2,
+      "converted_pages": 2,
+      "page_parity": true,
+      "output_bytes": 32638,
+      "output_sha256": "a50c17dfd01df47bc572482fd9042007b151e7a7d3859135e6ab1625ae895795",
+      "warnings": []
+    },
+    {
+      "id": "pptx-marketing-report-en",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 3,
+      "converted_pages": 3,
+      "page_parity": true,
+      "output_bytes": 80511,
+      "output_sha256": "8ee440d75adf7dd8e93e8b209739004f64eb69bdf48a401f09e89a6535b4e7fd",
+      "warnings": []
+    },
+    {
+      "id": "pptx-lecture-ko",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 2,
+      "converted_pages": 2,
+      "page_parity": true,
+      "output_bytes": 40924,
+      "output_sha256": "a03bc626d884c940f2e2c23d9110c23ebf17931f058e5b039f5ffe621a0ef6ce",
+      "warnings": []
+    },
+    {
+      "id": "pptx-sales-proposal-en",
+      "format": "pptx",
+      "status": "succeeded",
+      "expected_pages": 2,
+      "converted_pages": 2,
+      "page_parity": true,
+      "output_bytes": 94459,
+      "output_sha256": "9b509d0e56046424fbe9384ed71f1b6775b8a572cd711de292967ccce79d191f",
+      "warnings": []
+    },
+    {
+      "id": "xlsx-quotation-ko",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 2,
+      "converted_pages": 2,
+      "page_parity": true,
+      "output_bytes": 45773,
+      "output_sha256": "dfcd6f12d357fd2ce1d5f36140a714e09f371e5e2d366910f6ba3a817d934c26",
+      "warnings": [
+        "CJK fallback resolved by font compatibility mapping"
+      ]
+    },
+    {
+      "id": "xlsx-financial-model-en",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 2,
+      "converted_pages": 2,
+      "page_parity": true,
+      "output_bytes": 47236,
+      "output_sha256": "a183b1dc1cc914f6a7da3718fa778acdafaea1b6517b043bfa4f64b0a259fa20",
+      "warnings": []
+    },
+    {
+      "id": "xlsx-inventory-en",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 4,
+      "converted_pages": 4,
+      "page_parity": true,
+      "output_bytes": 65843,
+      "output_sha256": "e2fa3caaf18284efe123794da60a749800c633c950912d5f76cdf426f35abb4a",
+      "warnings": []
+    },
+    {
+      "id": "xlsx-payroll-ko",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 2,
+      "converted_pages": 2,
+      "page_parity": true,
+      "output_bytes": 41445,
+      "output_sha256": "944b9394e5cb272387bd3ec2d1380a0fb76127fb7568d4b3bcada6e71ba6dd25",
+      "warnings": [
+        "CJK fallback resolved by font compatibility mapping"
+      ]
+    },
+    {
+      "id": "xlsx-project-schedule-en",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 46181,
+      "output_sha256": "28c130e6267d1022a6eaa9a1885b3dd935b5a06899e51392f9a1076a20b33c70",
+      "warnings": []
+    },
+    {
+      "id": "xlsx-sales-dashboard-en",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 45784,
+      "output_sha256": "be2f6b3ea3fcc0dac47be6d559b126ccf5525be064aa91898c8e7c58126e84bc",
+      "warnings": []
+    },
+    {
+      "id": "xlsx-attendance-ko",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 32240,
+      "output_sha256": "df924d4cfb4d9515601721eff08cf98e0bdda5b97c6c29b766c17ef911878374",
+      "warnings": [
+        "CJK fallback resolved by font compatibility mapping"
+      ]
+    },
+    {
+      "id": "xlsx-budget-ko",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 38859,
+      "output_sha256": "9cc4dbd5909445e1b7f8c2b17a4430ff83435223043813e0d97dd4f8d6985b7a",
+      "warnings": [
+        "CJK fallback resolved by font compatibility mapping"
+      ]
+    },
+    {
+      "id": "xlsx-expense-report-en",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 45119,
+      "output_sha256": "f1502848df7b260366e1251f712924506f9c99a2226cf103f379526d00173903",
+      "warnings": []
+    },
+    {
+      "id": "xlsx-kpi-tracker-en",
+      "format": "xlsx",
+      "status": "succeeded",
+      "expected_pages": 1,
+      "converted_pages": 1,
+      "page_parity": true,
+      "output_bytes": 44773,
+      "output_sha256": "6794fc2ec140694a5d70ad2b135909699e6480c018355a9c96f650b002d96151",
+      "warnings": []
+    }
+  ]
+}

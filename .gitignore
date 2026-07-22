@@ -2,6 +2,7 @@
 target*/
 Cargo.lock
 *.pdf
+!tests/golden_mocks/business/expected/**/*.pdf
 
 # IDE
 .vscode/
