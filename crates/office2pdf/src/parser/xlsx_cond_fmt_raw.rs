@@ -42,28 +42,7 @@ fn read_zip_text(
 }
 
 fn parse_relationships(xml: &str) -> HashMap<String, String> {
-    let mut relationships = HashMap::new();
-    let mut reader = Reader::from_str(xml);
-    reader.config_mut().trim_text(true);
-
-    loop {
-        match reader.read_event() {
-            Ok(Event::Start(element) | Event::Empty(element))
-                if element.local_name().as_ref() == b"Relationship" =>
-            {
-                if let (Some(id), Some(target)) = (
-                    attr_value(&reader, &element, b"Id"),
-                    attr_value(&reader, &element, b"Target"),
-                ) {
-                    relationships.insert(id, target);
-                }
-            }
-            Ok(Event::Eof) | Err(_) => break,
-            _ => {}
-        }
-    }
-
-    relationships
+    crate::parser::xml_util::parse_rels_id_target(xml)
 }
 
 fn parse_sheet_relationships(xml: &str) -> Vec<(String, String)> {

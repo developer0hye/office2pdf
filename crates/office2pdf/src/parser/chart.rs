@@ -366,58 +366,24 @@ pub(crate) fn scan_chart_references(xml: &str) -> Vec<(usize, String)> {
 ///
 /// Returns a map from relationship ID to chart file path (e.g., "rId4" → "word/charts/chart1.xml").
 pub(crate) fn scan_chart_rels(rels_xml: &str) -> std::collections::HashMap<String, String> {
-    let mut map = std::collections::HashMap::new();
-    let mut reader = Reader::from_str(rels_xml);
-
-    loop {
-        match reader.read_event() {
-            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
-                if e.local_name().as_ref() == b"Relationship" {
-                    let mut id = None;
-                    let mut target = None;
-                    let mut is_chart = false;
-
-                    for attr in e.attributes().flatten() {
-                        match attr.key.local_name().as_ref() {
-                            b"Id" => {
-                                if let Ok(v) = attr.unescape_value() {
-                                    id = Some(v.to_string());
-                                }
-                            }
-                            b"Target" => {
-                                if let Ok(v) = attr.unescape_value() {
-                                    target = Some(v.to_string());
-                                }
-                            }
-                            b"Type" => {
-                                if let Ok(v) = attr.unescape_value()
-                                    && v.contains("chart")
-                                {
-                                    is_chart = true;
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-
-                    if is_chart && let (Some(id), Some(target)) = (id, target) {
-                        // Target is relative to word/ directory
-                        let full_path = if let Some(stripped) = target.strip_prefix('/') {
-                            stripped.to_string()
-                        } else {
-                            format!("word/{target}")
-                        };
-                        map.insert(id, full_path);
-                    }
-                }
-            }
-            Ok(Event::Eof) => break,
-            Err(_) => break,
-            _ => {}
-        }
-    }
-
-    map
+    crate::parser::xml_util::parse_relationships(rels_xml)
+        .into_iter()
+        .filter(|entry| {
+            entry
+                .rel_type
+                .as_deref()
+                .is_some_and(|rel_type| rel_type.contains("chart"))
+        })
+        .map(|entry| {
+            // Target is relative to word/ directory
+            let full_path = if let Some(stripped) = entry.target.strip_prefix('/') {
+                stripped.to_string()
+            } else {
+                format!("word/{}", entry.target)
+            };
+            (entry.id, full_path)
+        })
+        .collect()
 }
 
 #[cfg(test)]

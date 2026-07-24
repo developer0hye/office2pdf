@@ -44,62 +44,22 @@ fn scan_header_footer_relationships(
 ) -> (HashMap<String, String>, HashMap<String, String>) {
     let mut headers: HashMap<String, String> = HashMap::new();
     let mut footers: HashMap<String, String> = HashMap::new();
-    let mut reader = quick_xml::Reader::from_str(rels_xml);
 
-    loop {
-        match reader.read_event() {
-            Ok(quick_xml::events::Event::Start(ref element))
-            | Ok(quick_xml::events::Event::Empty(ref element)) => {
-                if element.local_name().as_ref() != b"Relationship" {
-                    continue;
-                }
+    for entry in crate::parser::xml_util::parse_relationships(rels_xml) {
+        let Some(relationship_type) = entry.rel_type else {
+            continue;
+        };
 
-                let mut id: Option<String> = None;
-                let mut target: Option<String> = None;
-                let mut relationship_type: Option<String> = None;
+        let full_path = if let Some(stripped) = entry.target.strip_prefix('/') {
+            stripped.to_string()
+        } else {
+            format!("word/{}", entry.target)
+        };
 
-                for attribute in element.attributes().flatten() {
-                    match attribute.key.local_name().as_ref() {
-                        b"Id" => {
-                            if let Ok(value) = attribute.unescape_value() {
-                                id = Some(value.to_string());
-                            }
-                        }
-                        b"Target" => {
-                            if let Ok(value) = attribute.unescape_value() {
-                                target = Some(value.to_string());
-                            }
-                        }
-                        b"Type" => {
-                            if let Ok(value) = attribute.unescape_value() {
-                                relationship_type = Some(value.to_string());
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-
-                let Some(id) = id else { continue };
-                let Some(target) = target else { continue };
-                let Some(relationship_type) = relationship_type else {
-                    continue;
-                };
-
-                let full_path = if let Some(stripped) = target.strip_prefix('/') {
-                    stripped.to_string()
-                } else {
-                    format!("word/{target}")
-                };
-
-                if relationship_type.ends_with("/header") {
-                    headers.insert(id, full_path);
-                } else if relationship_type.ends_with("/footer") {
-                    footers.insert(id, full_path);
-                }
-            }
-            Ok(quick_xml::events::Event::Eof) => break,
-            Err(_) => break,
-            _ => {}
+        if relationship_type.ends_with("/header") {
+            headers.insert(entry.id, full_path);
+        } else if relationship_type.ends_with("/footer") {
+            footers.insert(entry.id, full_path);
         }
     }
 

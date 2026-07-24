@@ -138,3 +138,47 @@ fn get_attr_i64_parses_integer() {
         _ => panic!("expected Empty event"),
     }
 }
+
+#[test]
+fn parse_relationships_returns_id_target_type_entries() {
+    let xml = r#"<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/>
+</Relationships>"#;
+    let entries = parse_relationships(xml);
+    assert_eq!(entries.len(), 2);
+    assert_eq!(entries[0].id, "rId1");
+    assert_eq!(entries[0].target, "slides/slide1.xml");
+    assert!(
+        entries[0]
+            .rel_type
+            .as_deref()
+            .is_some_and(|t| t.ends_with("/slide"))
+    );
+    assert_eq!(entries[1].id, "rId2");
+    assert_eq!(entries[1].target, "../charts/chart1.xml");
+}
+
+#[test]
+fn parse_relationships_tolerates_missing_type_and_unescapes() {
+    let xml = r#"<Relationships>
+  <Relationship Id="rId1" Target="media/a&amp;b.png"/>
+  <Relationship Id="rId2" Type="t"/>
+</Relationships>"#;
+    let entries = parse_relationships(xml);
+    // rId2 has no Target and is dropped; rId1 has no Type but is kept.
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].target, "media/a&b.png");
+    assert_eq!(entries[0].rel_type, None);
+}
+
+#[test]
+fn parse_rels_id_target_last_duplicate_wins() {
+    let xml = r#"<Relationships>
+  <Relationship Id="rId1" Target="first.xml"/>
+  <Relationship Id="rId1" Target="second.xml"/>
+</Relationships>"#;
+    let map = parse_rels_id_target(xml);
+    assert_eq!(map.get("rId1").map(String::as_str), Some("second.xml"));
+}

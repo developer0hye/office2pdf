@@ -99,35 +99,32 @@ pub(crate) fn resolve_relative_path(base_dir: &str, relative: &str) -> String {
     parts.join("/")
 }
 
-/// Parse a .rels XML file and return a map of Id → Target.
-pub(crate) fn parse_rels_id_target(xml: &str) -> std::collections::HashMap<String, String> {
-    let mut map = std::collections::HashMap::new();
+/// One `<Relationship>` entry from an OPC `.rels` part.
+pub(crate) struct RelationshipEntry {
+    pub id: String,
+    pub target: String,
+    pub rel_type: Option<String>,
+}
+
+/// Parse an OPC `.rels` part into its `<Relationship>` entries in document
+/// order. Entries without an `Id` or `Target` are dropped; a missing `Type`
+/// is kept as `None` (some producers omit it).
+pub(crate) fn parse_relationships(xml: &str) -> Vec<RelationshipEntry> {
+    let mut entries: Vec<RelationshipEntry> = Vec::new();
     let mut reader = Reader::from_str(xml);
 
     loop {
         match reader.read_event() {
             Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
-                if e.local_name().as_ref() == b"Relationship" {
-                    let mut id = None;
-                    let mut target = None;
-                    for attr in e.attributes().flatten() {
-                        match attr.key.local_name().as_ref() {
-                            b"Id" => {
-                                if let Ok(v) = attr.unescape_value() {
-                                    id = Some(v.to_string());
-                                }
-                            }
-                            b"Target" => {
-                                if let Ok(v) = attr.unescape_value() {
-                                    target = Some(v.to_string());
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    if let (Some(id), Some(target)) = (id, target) {
-                        map.insert(id, target);
-                    }
+                if e.local_name().as_ref() == b"Relationship"
+                    && let (Some(id), Some(target)) =
+                        (get_attr_str(e, b"Id"), get_attr_str(e, b"Target"))
+                {
+                    entries.push(RelationshipEntry {
+                        id,
+                        target,
+                        rel_type: get_attr_str(e, b"Type"),
+                    });
                 }
             }
             Ok(Event::Eof) => break,
@@ -136,7 +133,15 @@ pub(crate) fn parse_rels_id_target(xml: &str) -> std::collections::HashMap<Strin
         }
     }
 
-    map
+    entries
+}
+
+/// Parse a .rels XML file and return a map of Id → Target.
+pub(crate) fn parse_rels_id_target(xml: &str) -> std::collections::HashMap<String, String> {
+    parse_relationships(xml)
+        .into_iter()
+        .map(|entry| (entry.id, entry.target))
+        .collect()
 }
 
 #[cfg(test)]
