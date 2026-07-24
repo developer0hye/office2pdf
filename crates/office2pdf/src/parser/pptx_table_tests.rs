@@ -1,32 +1,5 @@
 use super::*;
-
-fn make_table_graphic_frame(
-    x: i64,
-    y: i64,
-    cx: i64,
-    cy: i64,
-    col_widths_emu: &[i64],
-    rows_xml: &str,
-) -> String {
-    let mut grid = String::new();
-    for width in col_widths_emu {
-        grid.push_str(&format!(r#"<a:gridCol w="{width}"/>"#));
-    }
-    format!(
-        r#"<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Table"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr/><a:tblGrid>{grid}</a:tblGrid>{rows_xml}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>"#
-    )
-}
-
-fn make_table_row(cells: &[&str]) -> String {
-    let mut xml = String::from(r#"<a:tr h="370840">"#);
-    for text in cells {
-        xml.push_str(&format!(
-            r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>{text}</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>"#
-        ));
-    }
-    xml.push_str("</a:tr>");
-    xml
-}
+use crate::test_support::{make_table_graphic_frame, make_table_row};
 
 fn table_element(elem: &FixedElement) -> &Table {
     match &elem.kind {

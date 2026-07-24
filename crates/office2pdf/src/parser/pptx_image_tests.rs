@@ -1,5 +1,6 @@
 use super::*;
 use crate::ir::ImageCrop;
+use crate::test_support::make_test_svg;
 use std::io::{Cursor, Write};
 use zip::write::FileOptions;
 
@@ -26,11 +27,6 @@ pub(super) fn make_test_bmp() -> Vec<u8> {
     // Pixel data: 1 pixel (BGR) + 1 byte padding to align to 4 bytes
     bmp.extend_from_slice(&[0x00, 0x00, 0xFF, 0x00]);
     bmp
-}
-
-/// Create a minimal valid SVG image for test images.
-fn make_test_svg() -> Vec<u8> {
-    br##"<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" fill="#ff0000"/></svg>"##.to_vec()
 }
 
 fn append_u32(out: &mut Vec<u8>, value: u32) {

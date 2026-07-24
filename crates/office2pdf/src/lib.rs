@@ -67,7 +67,7 @@ use error::{ConvertError, ConvertResult};
 mod pipeline;
 #[cfg(test)]
 #[path = "lib_test_support.rs"]
-mod test_support;
+pub(crate) mod test_support;
 
 #[cfg(test)]
 fn is_ole2(data: &[u8]) -> bool {

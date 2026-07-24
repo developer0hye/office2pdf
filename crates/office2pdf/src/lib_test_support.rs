@@ -202,3 +202,42 @@ pub(super) fn make_test_docx_bytes() -> Vec<u8> {
     docx.build().pack(&mut buf).unwrap();
     buf.into_inner()
 }
+
+// ── Shared OOXML fixture builders ───────────────────────────────────────
+// Builders used verbatim by more than one sibling `*_tests.rs` module live
+// here; single-use or diverging variants stay local to their test file.
+
+/// One `<a:tr>` PPTX table row with a plain text cell per entry.
+pub(crate) fn make_table_row(cells: &[&str]) -> String {
+    let mut xml = String::from(r#"<a:tr h="370840">"#);
+    for text in cells {
+        xml.push_str(&format!(
+            r#"<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr lang="en-US"/><a:t>{text}</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>"#
+        ));
+    }
+    xml.push_str("</a:tr>");
+    xml
+}
+
+/// A `<p:graphicFrame>` wrapping a PPTX table with the given geometry (EMU).
+pub(crate) fn make_table_graphic_frame(
+    x: i64,
+    y: i64,
+    cx: i64,
+    cy: i64,
+    col_widths_emu: &[i64],
+    rows_xml: &str,
+) -> String {
+    let mut grid = String::new();
+    for width in col_widths_emu {
+        grid.push_str(&format!(r#"<a:gridCol w="{width}"/>"#));
+    }
+    format!(
+        r#"<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Table"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr/><a:tblGrid>{grid}</a:tblGrid>{rows_xml}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>"#
+    )
+}
+
+/// A minimal 1x1 red-rect SVG image.
+pub(crate) fn make_test_svg() -> Vec<u8> {
+    br##"<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" fill="#ff0000"/></svg>"##.to_vec()
+}

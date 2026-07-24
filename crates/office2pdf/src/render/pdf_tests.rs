@@ -1,5 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))] // native-only unit tests (filesystem, system fonts)
 use super::*;
+use crate::test_support::make_test_svg;
 
 #[test]
 fn test_compile_simple_text() {
@@ -138,10 +139,6 @@ fn make_test_png() -> Vec<u8> {
     png.extend_from_slice(&png_crc32(iend_type, &[]).to_be_bytes());
 
     png
-}
-
-fn make_test_svg() -> Vec<u8> {
-    br##"<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" fill="#ff0000"/></svg>"##.to_vec()
 }
 
 #[test]
