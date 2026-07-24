@@ -320,34 +320,18 @@ fn handle_presentation_element(
 }
 
 fn parse_relationships_xml(xml: &str) -> HashMap<String, Relationship> {
-    let mut map = HashMap::new();
-    let mut reader = Reader::from_str(xml);
-
-    loop {
-        match reader.read_event() {
-            Ok(Event::Empty(ref element)) | Ok(Event::Start(ref element)) => {
-                if element.local_name().as_ref() == b"Relationship"
-                    && let (Some(id), Some(target)) = (
-                        get_attr_str(element, b"Id"),
-                        get_attr_str(element, b"Target"),
-                    )
-                {
-                    map.insert(
-                        id,
-                        Relationship {
-                            target,
-                            rel_type: get_attr_str(element, b"Type"),
-                        },
-                    );
-                }
-            }
-            Ok(Event::Eof) => break,
-            Err(_) => break,
-            _ => {}
-        }
-    }
-
-    map
+    crate::parser::xml_util::parse_relationships(xml)
+        .into_iter()
+        .map(|entry| {
+            (
+                entry.id,
+                Relationship {
+                    target: entry.target,
+                    rel_type: entry.rel_type,
+                },
+            )
+        })
+        .collect()
 }
 
 pub(super) fn parse_rels_xml(xml: &str) -> HashMap<String, String> {
