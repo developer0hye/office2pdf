@@ -38,15 +38,28 @@
 //! ```
 
 pub mod config;
-pub mod defaults;
+pub(crate) mod defaults;
 pub mod error;
 pub mod ir;
-pub mod parser;
+pub(crate) mod parser;
 #[cfg(feature = "pdf-ops")]
 pub mod pdf_ops;
-pub mod render;
+pub(crate) mod render;
 #[cfg(feature = "wasm")]
 pub mod wasm;
+
+/// Implementation details re-exported for this crate's own integration tests.
+///
+/// Not part of the public API — no semver guarantees. Use [`convert`],
+/// [`convert_bytes`], or [`render_document`] instead.
+#[doc(hidden)]
+pub mod internal {
+    pub use crate::parser::Parser;
+    pub use crate::parser::docx::DocxParser;
+    pub use crate::parser::pptx::PptxParser;
+    pub use crate::parser::xlsx::XlsxParser;
+    pub use crate::render::typst_gen::{TypstOutput, generate_typst};
+}
 
 use config::{ConvertOptions, Format};
 use error::{ConvertError, ConvertResult};

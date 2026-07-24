@@ -4,15 +4,20 @@
 //! When the requested font is unavailable, the substitutes are tried in order.
 //! Uses a `match` statement for zero-cost static lookup (no runtime allocation).
 
+// Font discovery/embedding is native-only; on wasm32 these items are
+// compiled but unreachable (visibility sealing exposed them to dead_code).
+#![cfg_attr(target_arch = "wasm32", allow(dead_code))]
+
 use std::cell::RefCell;
 use std::collections::BTreeSet;
+#[cfg(target_arch = "wasm32")]
 use std::path::PathBuf;
 
 use crate::ir::{
     Block, Document, FixedElementKind, HFInline, HeaderFooter, Page, Paragraph, Table,
 };
 
-use super::font_context::{FontSearchContext, resolve_font_search_context};
+use super::font_context::FontSearchContext;
 
 thread_local! {
     static ACTIVE_FONT_CONTEXT: RefCell<Option<FontSearchContext>> = const { RefCell::new(None) };
@@ -556,15 +561,6 @@ fn resolve_available_fallback(font_family: &str, context: &FontSearchContext) ->
     fallback_candidates(font_family, Some(context))
         .into_iter()
         .find(|candidate| context.has_family(candidate))
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub fn detect_missing_font_fallbacks(
-    doc: &Document,
-    font_paths: &[PathBuf],
-) -> Vec<(String, String)> {
-    let context = resolve_font_search_context(font_paths);
-    detect_missing_font_fallbacks_with_context(doc, &context)
 }
 
 #[cfg(not(target_arch = "wasm32"))]

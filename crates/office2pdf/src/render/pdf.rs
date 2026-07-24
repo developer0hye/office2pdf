@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, OnceLock};
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Mutex;
+use std::sync::{Arc, OnceLock};
 // `SystemTime::now()` panics on wasm32-unknown-unknown; web-time shims it there
 // and re-exports std elsewhere. Mirrors the `Instant` handling in lib_pipeline.
 #[cfg(not(target_arch = "wasm32"))]
@@ -245,6 +247,8 @@ enum FontSource {
     /// Reference to globally cached font data (common case).
     Cached(&'static CachedFontData),
     /// Shared cached font data for resolved extra font paths.
+    /// Only constructed on native (extra font paths need filesystem access).
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
     Shared(Arc<CachedFontData>),
 }
 

@@ -1,5 +1,11 @@
+// Font discovery/embedding is native-only; on wasm32 these items are
+// compiled but unreachable (visibility sealing exposed them to dead_code).
+#![cfg_attr(target_arch = "wasm32", allow(dead_code))]
+
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::Path;
+use std::path::PathBuf;
 
 #[cfg(not(target_arch = "wasm32"))]
 use typst_kit::fonts::FontSearcher;

@@ -10,10 +10,10 @@ mod common;
 use std::path::PathBuf;
 
 use office2pdf::config::ConvertOptions;
+use office2pdf::internal::Parser;
+use office2pdf::internal::XlsxParser;
+use office2pdf::internal::generate_typst;
 use office2pdf::ir::{Alignment, Block, BorderLineStyle, Color, Page, SheetPage, TableCell};
-use office2pdf::parser::Parser;
-use office2pdf::parser::xlsx::XlsxParser;
-use office2pdf::render::typst_gen::generate_typst;
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -263,6 +263,9 @@ pub fn generate_typst(doc: &Document) -> Result<TypstOutput, ConvertError> {
 ///
 /// When `options.paper_size` is set, all pages use the specified paper size.
 /// When `options.landscape` is set, page orientation is forced.
+// Only the wasm pipeline branch calls this at runtime; native builds use the
+// font-context variant and reach this wrapper solely from tests.
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 pub fn generate_typst_with_options(
     doc: &Document,
     options: &ConvertOptions,

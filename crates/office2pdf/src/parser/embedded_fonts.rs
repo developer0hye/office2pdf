@@ -4,6 +4,10 @@
 //! them, deobfuscates using the GUID-based XOR scheme, and writes them to a
 //! temporary directory for use during PDF compilation.
 
+// Font discovery/embedding is native-only; on wasm32 these items are
+// compiled but unreachable (visibility sealing exposed them to dead_code).
+#![cfg_attr(target_arch = "wasm32", allow(dead_code))]
+
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::{Path, PathBuf};
 

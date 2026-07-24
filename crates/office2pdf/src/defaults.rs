@@ -49,6 +49,8 @@ pub const TYPST_DEFAULT_FONT_SIZE_PT: f64 = 11.0;
 // ---------------------------------------------------------------------------
 
 /// Default chunk size (in rows) for XLSX streaming mode.
+// Streaming needs the pdf-ops merge path; builds without that feature never read this.
+#[cfg_attr(not(feature = "pdf-ops"), allow(dead_code))]
 pub const DEFAULT_STREAMING_CHUNK_SIZE: usize = 1000;
 
 // ---------------------------------------------------------------------------
