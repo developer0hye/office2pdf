@@ -671,6 +671,7 @@ pub(super) fn extract_text_boxes_with_anchors(
     let sheet_rids = parse_workbook_sheet_rids(&workbook_xml);
     let workbook_rels_xml = read_zip_entry_string(&mut archive, "xl/_rels/workbook.xml.rels");
     let rid_to_target = parse_rels_targets(&workbook_rels_xml);
+    let theme_colors = workbook_theme_colors(&mut archive, &workbook_rels_xml);
 
     let mut result: HashMap<String, Vec<RawTextBoxAnchor>> = HashMap::new();
 
@@ -692,7 +693,7 @@ pub(super) fn extract_text_boxes_with_anchors(
             if drawing_xml.is_empty() {
                 continue;
             }
-            let boxes = parse_drawing_text_boxes(&drawing_xml);
+            let boxes = parse_drawing_text_boxes(&drawing_xml, &theme_colors);
             if !boxes.is_empty() {
                 result.entry(sheet_name.clone()).or_default().extend(boxes);
             }
@@ -702,32 +703,63 @@ pub(super) fn extract_text_boxes_with_anchors(
     result
 }
 
-/// Resolve a drawing color element to RGB. Scheme colors fall back to the
-/// standard light/dark mapping (worksheet drawings rarely restyle them).
-fn drawing_color(name: &[u8], val: &str) -> Option<crate::ir::Color> {
+/// Spreadsheets have no `<clrMap>` part; background/text scheme names map
+/// onto the light/dark theme slots directly.
+fn xlsx_scheme_aliases() -> HashMap<String, String> {
+    [
+        ("bg1", "lt1"),
+        ("tx1", "dk1"),
+        ("bg2", "lt2"),
+        ("tx2", "dk2"),
+    ]
+    .into_iter()
+    .map(|(from, to)| (from.to_string(), to.to_string()))
+    .collect()
+}
+
+/// Historical fallback for workbooks without a readable theme part: light
+/// slots render white, dark slots black, everything else is dropped.
+fn legacy_scheme_fallback(val: &str) -> Option<crate::ir::Color> {
     use crate::ir::Color;
-    match name {
-        b"srgbClr" => {
-            let v = u32::from_str_radix(val, 16).ok()?;
-            Some(Color::new(
-                ((v >> 16) & 0xFF) as u8,
-                ((v >> 8) & 0xFF) as u8,
-                (v & 0xFF) as u8,
-            ))
-        }
-        b"schemeClr" => match val {
-            "lt1" | "bg1" | "lt2" | "bg2" => Some(Color::new(0xFF, 0xFF, 0xFF)),
-            "dk1" | "tx1" | "dk2" | "tx2" => Some(Color::new(0, 0, 0)),
-            _ => None,
-        },
+    match val {
+        "lt1" | "bg1" | "lt2" | "bg2" => Some(Color::new(0xFF, 0xFF, 0xFF)),
+        "dk1" | "tx1" | "dk2" | "tx2" => Some(Color::new(0, 0, 0)),
         _ => None,
     }
 }
 
-/// Parse `<xdr:sp>` text boxes from a worksheet drawing.
-pub(super) fn parse_drawing_text_boxes(xml: &str) -> Vec<RawTextBoxAnchor> {
+/// Resolve a parsed drawing color, falling back to the legacy light/dark
+/// mapping for scheme colors the theme could not resolve.
+fn resolved_or_legacy(
+    parsed: Option<crate::ir::Color>,
+    element_name: &[u8],
+    e: &quick_xml::events::BytesStart<'_>,
+) -> Option<crate::ir::Color> {
+    parsed.or_else(|| {
+        if element_name == b"schemeClr" {
+            crate::parser::xml_util::get_attr_str(e, b"val")
+                .and_then(|val| legacy_scheme_fallback(&val))
+        } else {
+            None
+        }
+    })
+}
+
+/// Parse `<xdr:sp>` text boxes from a worksheet drawing, resolving scheme
+/// colors against the workbook theme palette.
+pub(super) fn parse_drawing_text_boxes(
+    xml: &str,
+    theme_colors: &HashMap<String, crate::ir::Color>,
+) -> Vec<RawTextBoxAnchor> {
     use crate::ir::{
         Alignment, BorderLineStyle, BorderSide, Paragraph, ParagraphStyle, Run, TextStyle,
+    };
+    use crate::parser::drawingml::{self, SchemeColors};
+
+    let aliases = xlsx_scheme_aliases();
+    let scheme = SchemeColors {
+        colors: theme_colors,
+        aliases: &aliases,
     };
 
     #[derive(Default, Clone, Copy)]
@@ -763,7 +795,6 @@ pub(super) fn parse_drawing_text_boxes(xml: &str) -> Vec<RawTextBoxAnchor> {
     let mut vertical_center = false;
     // Color element opened with children (e.g. <a:schemeClr><a:shade/>...):
     // committed on its End event after transforms apply.
-    let mut pending_color: Option<crate::ir::Color> = None;
 
     loop {
         match reader.read_event() {
@@ -837,15 +868,20 @@ pub(super) fn parse_drawing_text_boxes(xml: &str) -> Vec<RawTextBoxAnchor> {
                     }
                     b"t" if in_run => in_text = true,
                     b"srgbClr" | b"schemeClr" => {
-                        let mut val = String::new();
-                        for attr in e.attributes().flatten() {
-                            if attr.key.local_name().as_ref() == b"val"
-                                && let Ok(v) = attr.unescape_value()
-                            {
-                                val = v.to_string();
+                        let parsed =
+                            drawingml::parse_color_from_start(&mut reader, e, &scheme).color;
+                        let color = resolved_or_legacy(parsed, local.as_ref(), e);
+                        if in_run {
+                            if current_style.color.is_none() {
+                                current_style.color = color;
                             }
+                        } else if in_line {
+                            if border_color.is_none() {
+                                border_color = color;
+                            }
+                        } else if in_sp_fill && fill.is_none() {
+                            fill = color;
                         }
-                        pending_color = drawing_color(local.as_ref(), &val);
                     }
                     _ => {}
                 }
@@ -877,37 +913,9 @@ pub(super) fn parse_drawing_text_boxes(xml: &str) -> Vec<RawTextBoxAnchor> {
                             }
                         }
                     }
-                    b"shade" => {
-                        if let Some(color) = pending_color.as_mut()
-                            && let Some(factor) = e.attributes().flatten().find_map(|attr| {
-                                (attr.key.local_name().as_ref() == b"val")
-                                    .then(|| attr.unescape_value().ok())
-                                    .flatten()
-                                    .and_then(|v| v.parse::<f64>().ok())
-                            })
-                        {
-                            let shade = |channel: u8| -> u8 {
-                                (channel as f64 * factor / 100_000.0)
-                                    .round()
-                                    .clamp(0.0, 255.0) as u8
-                            };
-                            *color = crate::ir::Color::new(
-                                shade(color.r),
-                                shade(color.g),
-                                shade(color.b),
-                            );
-                        }
-                    }
                     b"srgbClr" | b"schemeClr" => {
-                        let mut val = String::new();
-                        for attr in e.attributes().flatten() {
-                            if attr.key.local_name().as_ref() == b"val"
-                                && let Ok(v) = attr.unescape_value()
-                            {
-                                val = v.to_string();
-                            }
-                        }
-                        let color = drawing_color(local.as_ref(), &val);
+                        let parsed = drawingml::parse_color_from_empty(e, &scheme).color;
+                        let color = resolved_or_legacy(parsed, local.as_ref(), e);
                         if in_run {
                             if current_style.color.is_none() {
                                 current_style.color = color;
@@ -998,21 +1006,6 @@ pub(super) fn parse_drawing_text_boxes(xml: &str) -> Vec<RawTextBoxAnchor> {
                     }
                     b"from" | b"to" => corner_target = None,
                     b"col" | b"colOff" | b"row" | b"rowOff" => current_field = None,
-                    b"srgbClr" | b"schemeClr" => {
-                        if let Some(color) = pending_color.take() {
-                            if in_run {
-                                if current_style.color.is_none() {
-                                    current_style.color = Some(color);
-                                }
-                            } else if in_line {
-                                if border_color.is_none() {
-                                    border_color = Some(color);
-                                }
-                            } else if in_sp_fill && fill.is_none() {
-                                fill = Some(color);
-                            }
-                        }
-                    }
                     b"txBody" => in_tx_body = false,
                     b"solidFill" => in_sp_fill = false,
                     b"ln" => in_line = false,
@@ -1034,3 +1027,22 @@ pub(super) fn parse_drawing_text_boxes(xml: &str) -> Vec<RawTextBoxAnchor> {
 
     result
 }
+
+/// Read the workbook theme palette (`xl/theme/theme1.xml` or the
+/// rels-declared target). Missing or unreadable themes yield an empty map,
+/// which downgrades scheme resolution to the legacy light/dark fallback.
+fn workbook_theme_colors(
+    archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
+    workbook_rels_xml: &str,
+) -> HashMap<String, crate::ir::Color> {
+    let theme_path = parse_rels_by_type(workbook_rels_xml, "theme")
+        .first()
+        .map(|target| resolve_relative_xl_path("xl", target))
+        .unwrap_or_else(|| "xl/theme/theme1.xml".to_string());
+    let theme_xml = read_zip_entry_string(archive, &theme_path);
+    crate::parser::drawingml::parse_theme_color_scheme(&theme_xml)
+}
+
+#[cfg(test)]
+#[path = "xlsx_drawing_tests.rs"]
+mod tests;
