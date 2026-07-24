@@ -579,6 +579,10 @@ xlsx_fixture_tests!(with_more_various_data, "WithMoreVariousData.xlsx");
 xlsx_fixture_tests!(with_text_box, "WithTextBox.xlsx");
 xlsx_fixture_tests!(with_various_data, "WithVariousData.xlsx");
 
+// --- Repo-authored regression fixtures --------------------------------------
+
+xlsx_fixture_tests!(theme_color_drawing, "theme_color_drawing.xlsx");
+
 // --- MIT: Open-Xml-PowerTools (Microsoft) ----------------------------------
 
 xlsx_fixture_tests!(
@@ -758,6 +762,26 @@ fn with_drawing_renders_anchored_images() {
 // ---------------------------------------------------------------------------
 // Worksheet text boxes (issue #240)
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Worksheet drawing scheme colors resolve against the theme (issue #430)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn theme_color_drawing_resolves_scheme_fills() {
+    use office2pdf::ir::Color;
+
+    let pages = sheet_pages("theme_color_drawing.xlsx");
+    let boxes: Vec<_> = pages.iter().flat_map(|sp| sp.text_boxes.iter()).collect();
+    assert_eq!(boxes.len(), 3, "fixture drawing holds three text boxes");
+
+    // accent1 straight from the workbook theme.
+    assert_eq!(boxes[0].fill, Some(Color::new(68, 114, 196)));
+    // "accent1, lighter 60%": lumMod 40% + lumOff 60% in HSL space.
+    assert_eq!(boxes[1].fill, Some(Color::new(180, 199, 231)));
+    // "accent6, darker 25%": lumMod 75%.
+    assert_eq!(boxes[2].fill, Some(Color::new(84, 130, 53)));
+}
 
 #[test]
 fn with_text_box_renders_anchored_text() {

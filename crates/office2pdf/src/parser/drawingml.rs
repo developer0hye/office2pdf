@@ -239,6 +239,63 @@ fn hsl_to_rgb(hue: f64, saturation: f64, lightness: f64) -> Color {
     Color::new(to_u8(red), to_u8(green), to_u8(blue))
 }
 
+/// Scheme slot names a `<a:clrScheme>` defines, in document order.
+const CLR_SCHEME_SLOTS: &[&str] = &[
+    "dk1", "dk2", "lt1", "lt2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6",
+    "hlink", "folHlink",
+];
+
+/// Parse just the `<a:clrScheme>` palette out of a theme part
+/// (`theme1.xml`) into a scheme-name → color map.
+///
+/// `srgbClr` uses `val`; `sysClr` uses the application-resolved `lastClr`.
+/// The pptx parser keeps its own combined single-pass reader because it also
+/// collects fonts and fill styles from the same document.
+pub(crate) fn parse_theme_color_scheme(xml: &str) -> HashMap<String, Color> {
+    let mut colors: HashMap<String, Color> = HashMap::new();
+    let mut reader = Reader::from_str(xml);
+    let mut current_slot: Option<String> = None;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                let local = e.local_name();
+                let name = std::str::from_utf8(local.as_ref()).unwrap_or("");
+                if CLR_SCHEME_SLOTS.contains(&name) {
+                    current_slot = Some(name.to_string());
+                }
+            }
+            Ok(Event::Empty(ref e)) => {
+                if let Some(ref slot) = current_slot {
+                    let local = e.local_name();
+                    let color = match local.as_ref() {
+                        b"srgbClr" => get_attr_str(e, b"val").and_then(|hex| parse_hex_color(&hex)),
+                        b"sysClr" => {
+                            get_attr_str(e, b"lastClr").and_then(|hex| parse_hex_color(&hex))
+                        }
+                        _ => None,
+                    };
+                    if let Some(color) = color {
+                        colors.insert(slot.clone(), color);
+                    }
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                let local = e.local_name();
+                let name = std::str::from_utf8(local.as_ref()).unwrap_or("");
+                if current_slot.as_deref() == Some(name) {
+                    current_slot = None;
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+    }
+
+    colors
+}
+
 #[cfg(test)]
 #[path = "drawingml_tests.rs"]
 mod tests;
