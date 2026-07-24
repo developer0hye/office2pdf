@@ -1387,8 +1387,26 @@ impl<'a> SlideXmlParser<'a> {
         }
     }
 
-    /// Handle an `Event::Start` element.
+    /// Handle an `Event::Start` element by trying each domain sub-handler in
+    /// the original dispatch order.
     fn handle_start(&mut self, reader: &mut Reader<&[u8]>, e: &BytesStart<'_>) {
+        let _ = self.handle_start_frames_tables_groups(reader, e)
+            || self.handle_start_shape_tree(reader, e)
+            || self.handle_start_text_body(reader, e)
+            || self.handle_start_fill_colors_and_style_refs(reader, e)
+            || self.handle_start_picture(e);
+    }
+
+    /// Graphic frames, embedded tables, and shape groups.
+    ///
+    /// Returns `true` when the element was dispatched here. The sub-handlers
+    /// preserve the original single-match arm order: each owns a contiguous
+    /// slice of it, so guard overlap between slices keeps its old priority.
+    fn handle_start_frames_tables_groups(
+        &mut self,
+        reader: &mut Reader<&[u8]>,
+        e: &BytesStart<'_>,
+    ) -> bool {
         let local = e.local_name();
         match local.as_ref() {
             b"graphicFrame" if !self.in_shape && !self.in_pic && !self.in_graphic_frame => {
@@ -1430,6 +1448,19 @@ impl<'a> SlideXmlParser<'a> {
                     self.warnings.extend(group_warnings);
                 }
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Shape (`sp`/`cxnSp`) tree: geometry, fills, outline, placeholders (plus picture geometry arms that share this dispatch range).
+    ///
+    /// Returns `true` when the element was dispatched here. The sub-handlers
+    /// preserve the original single-match arm order: each owns a contiguous
+    /// slice of it, so guard overlap between slices keeps its old priority.
+    fn handle_start_shape_tree(&mut self, reader: &mut Reader<&[u8]>, e: &BytesStart<'_>) -> bool {
+        let local = e.local_name();
+        match local.as_ref() {
             b"sp" | b"cxnSp" if !self.in_shape && !self.in_pic => {
                 self.in_shape = true;
                 self.shape.reset();
@@ -1534,6 +1565,19 @@ impl<'a> SlideXmlParser<'a> {
                 self.pic.ph_type = get_attr_str(e, b"type");
                 self.pic.ph_idx = get_attr_str(e, b"idx");
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Text body: paragraphs, spacing, bullets, runs, and run properties.
+    ///
+    /// Returns `true` when the element was dispatched here. The sub-handlers
+    /// preserve the original single-match arm order: each owns a contiguous
+    /// slice of it, so guard overlap between slices keeps its old priority.
+    fn handle_start_text_body(&mut self, reader: &mut Reader<&[u8]>, e: &BytesStart<'_>) -> bool {
+        let local = e.local_name();
+        match local.as_ref() {
             b"txBody" if self.in_shape => {
                 self.in_txbody = true;
                 self.text_body_style_defaults = if self.shape.has_placeholder {
@@ -1688,6 +1732,23 @@ impl<'a> SlideXmlParser<'a> {
             b"solidFill" if self.in_end_para_rpr && !self.in_text_line => {
                 self.solid_fill_ctx = SolidFillCtx::EndParaFill;
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Solid-fill color elements and `<p:style>` lnRef/fillRef/fontRef fallbacks.
+    ///
+    /// Returns `true` when the element was dispatched here. The sub-handlers
+    /// preserve the original single-match arm order: each owns a contiguous
+    /// slice of it, so guard overlap between slices keeps its old priority.
+    fn handle_start_fill_colors_and_style_refs(
+        &mut self,
+        reader: &mut Reader<&[u8]>,
+        e: &BytesStart<'_>,
+    ) -> bool {
+        let local = e.local_name();
+        match local.as_ref() {
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.solid_fill_ctx != SolidFillCtx::None => {
                 let parsed = parse_color_from_start(reader, e, self.ctx.theme, self.ctx.color_map);
                 apply_solid_fill_color(
@@ -1733,6 +1794,19 @@ impl<'a> SlideXmlParser<'a> {
             b"t" if self.in_run => {
                 self.in_text = true;
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Picture (`pic`) tree: blip fills, crops, outline, and image layers.
+    ///
+    /// Returns `true` when the element was dispatched here. The sub-handlers
+    /// preserve the original single-match arm order: each owns a contiguous
+    /// slice of it, so guard overlap between slices keeps its old priority.
+    fn handle_start_picture(&mut self, e: &BytesStart<'_>) -> bool {
+        let local = e.local_name();
+        match local.as_ref() {
             b"pic" if !self.in_shape && !self.in_pic => {
                 self.in_pic = true;
                 self.pic.reset();
@@ -1778,12 +1852,25 @@ impl<'a> SlideXmlParser<'a> {
             b"srcRect" if self.in_pic => {
                 self.pic.crop = parse_src_rect(e);
             }
-            _ => {}
+            _ => return false,
         }
+        true
     }
 
-    /// Handle an `Event::Empty` element.
+    /// Handle an `Event::Empty` element by trying each domain sub-handler in
+    /// the original dispatch order.
     fn handle_empty(&mut self, e: &BytesStart<'_>) {
+        let _ = self.handle_empty_geometry_and_picture(e)
+            || self.handle_empty_shape_props(e)
+            || self.handle_empty_fill_colors_and_style_refs(e)
+            || self.handle_empty_text_body(e);
+    }
+
+    /// Transform offsets/extents and self-closing picture attributes.
+    ///
+    /// Returns `true` when the element was dispatched here (same contiguous
+    /// arm-order preservation as the `handle_start_*` sub-handlers).
+    fn handle_empty_geometry_and_picture(&mut self, e: &BytesStart<'_>) -> bool {
         let local = e.local_name();
         match local.as_ref() {
             b"off" if self.shape.in_xfrm => {
@@ -1835,6 +1922,18 @@ impl<'a> SlideXmlParser<'a> {
                     .map(pptx_dash_to_border_style)
                     .unwrap_or(BorderLineStyle::Solid);
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Self-closing placeholder, body, geometry, and outline properties.
+    ///
+    /// Returns `true` when the element was dispatched here (same contiguous
+    /// arm-order preservation as the `handle_start_*` sub-handlers).
+    fn handle_empty_shape_props(&mut self, e: &BytesStart<'_>) -> bool {
+        let local = e.local_name();
+        match local.as_ref() {
             // Handle self-closing <p:ph type="..."/> (placeholder marker).
             b"ph" if self.in_shape => {
                 self.shape.has_placeholder = true;
@@ -1902,6 +2001,18 @@ impl<'a> SlideXmlParser<'a> {
             b"noFill" if self.shape.in_sp_pr && !self.shape.in_ln => {
                 self.shape.explicit_no_fill = true;
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Self-closing solid-fill color elements and style-ref colors.
+    ///
+    /// Returns `true` when the element was dispatched here (same contiguous
+    /// arm-order preservation as the `handle_start_*` sub-handlers).
+    fn handle_empty_fill_colors_and_style_refs(&mut self, e: &BytesStart<'_>) -> bool {
+        let local = e.local_name();
+        match local.as_ref() {
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_font_ref => {
                 let parsed = parse_color_from_empty(e, self.ctx.theme, self.ctx.color_map);
                 self.shape.style_font_color = parsed.color;
@@ -1926,6 +2037,18 @@ impl<'a> SlideXmlParser<'a> {
                     &mut self.pic,
                 );
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Self-closing paragraph, bullet, run-property, and typeface elements.
+    ///
+    /// Returns `true` when the element was dispatched here (same contiguous
+    /// arm-order preservation as the `handle_start_*` sub-handlers).
+    fn handle_empty_text_body(&mut self, e: &BytesStart<'_>) -> bool {
+        let local = e.local_name();
+        match local.as_ref() {
             b"rPr" if self.in_run => {
                 extract_rpr_attributes(e, &mut self.run_style);
             }
@@ -2033,8 +2156,9 @@ impl<'a> SlideXmlParser<'a> {
                 apply_typeface_to_style(e, &mut self.para_end_run_style, self.ctx.theme);
                 self.rpr_applied_typeface |= self.para_end_run_style.font_family.is_some();
             }
-            _ => {}
+            _ => return false,
         }
+        true
     }
 
     /// Handle an `Event::Text` element.
@@ -2044,8 +2168,20 @@ impl<'a> SlideXmlParser<'a> {
         }
     }
 
-    /// Handle an `Event::End` element.
+    /// Handle an `Event::End` element by trying each domain sub-handler in
+    /// the original dispatch order.
     fn handle_end(&mut self, local_name: &[u8]) {
+        let _ = self.handle_end_shape(local_name)
+            || self.handle_end_text_body(local_name)
+            || self.handle_end_fill_and_style_refs(local_name)
+            || self.handle_end_picture_and_frame(local_name);
+    }
+
+    /// Shape close (finalizes the accumulated shape) and shape scope flags.
+    ///
+    /// Returns `true` when the element was dispatched here (same contiguous
+    /// arm-order preservation as the `handle_start_*` sub-handlers).
+    fn handle_end_shape(&mut self, local_name: &[u8]) -> bool {
         match local_name {
             b"sp" | b"cxnSp" if self.in_shape => {
                 self.shape.depth -= 1;
@@ -2085,6 +2221,17 @@ impl<'a> SlideXmlParser<'a> {
             b"ln" if self.shape.in_ln => {
                 self.shape.in_ln = false;
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Text-body close: paragraph/run assembly and paragraph scope flags.
+    ///
+    /// Returns `true` when the element was dispatched here (same contiguous
+    /// arm-order preservation as the `handle_start_*` sub-handlers).
+    fn handle_end_text_body(&mut self, local_name: &[u8]) -> bool {
+        match local_name {
             b"txBody" if self.in_txbody => {
                 self.in_txbody = false;
             }
@@ -2138,6 +2285,17 @@ impl<'a> SlideXmlParser<'a> {
             b"spcAft" if self.in_spc_aft => {
                 self.in_spc_aft = false;
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Solid-fill and style-ref scope closes.
+    ///
+    /// Returns `true` when the element was dispatched here (same contiguous
+    /// arm-order preservation as the `handle_start_*` sub-handlers).
+    fn handle_end_fill_and_style_refs(&mut self, local_name: &[u8]) -> bool {
+        match local_name {
             b"solidFill" if self.solid_fill_ctx != SolidFillCtx::None => {
                 self.solid_fill_ctx = SolidFillCtx::None;
             }
@@ -2153,6 +2311,17 @@ impl<'a> SlideXmlParser<'a> {
             b"t" if self.in_text => {
                 self.in_text = false;
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Picture close (finalizes the image element) and graphic-frame flags.
+    ///
+    /// Returns `true` when the element was dispatched here (same contiguous
+    /// arm-order preservation as the `handle_start_*` sub-handlers).
+    fn handle_end_picture_and_frame(&mut self, local_name: &[u8]) -> bool {
+        match local_name {
             b"pic" if self.in_pic => {
                 if self.pic.has_placeholder
                     && !self.pic.has_explicit_xfrm
@@ -2191,8 +2360,9 @@ impl<'a> SlideXmlParser<'a> {
             b"xfrm" if self.gf.in_xfrm => {
                 self.gf.in_xfrm = false;
             }
-            _ => {}
+            _ => return false,
         }
+        true
     }
 
     /// Consume the parser and return the accumulated results.
