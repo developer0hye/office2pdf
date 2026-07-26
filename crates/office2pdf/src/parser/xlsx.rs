@@ -120,16 +120,21 @@ fn anchored_image(
             column_width_to_pt(DEFAULT_COLUMN_WIDTH, ctx.max_digit_width_px)
         }
     };
+    // Excel resolves a drawing's anchor against the worksheet's own row
+    // heights, not against the vertically compacted track its PDF grid
+    // prints. Measured on the native export: a two-cell anchor spanning six
+    // 18pt rows is 108pt tall, while the printed grid rounds those rows to
+    // 17pt each. Running the anchor through the grid conversion left every
+    // shape 6pt short (issue #460).
     let row_height_at = |row_zero_based: u32| -> f64 {
-        let declared = sheet
+        sheet
             .get_row_dimension(&(row_zero_based + 1))
             .map(|row| *row.get_height())
             .filter(|height| *height > 0.0)
             .unwrap_or_else(|| {
                 let default = *sheet.get_sheet_format_properties().get_default_row_height();
                 if default > 0.0 { default } else { 15.0 }
-            });
-        native_excel_pdf_row_height(declared)
+            })
     };
 
     let (width, height): (f64, f64) =

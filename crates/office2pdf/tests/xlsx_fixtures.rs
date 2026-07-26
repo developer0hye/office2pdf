@@ -780,6 +780,29 @@ fn theme_color_drawing_resolves_scheme_fills() {
 }
 
 // ---------------------------------------------------------------------------
+// Worksheet drawing anchor geometry (issue #460)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn theme_color_drawing_anchors_span_the_worksheet_row_heights() {
+    // The three shapes are `xdr:twoCellAnchor`s spanning rows 3..9 of a sheet
+    // whose default row height is 18pt, so Excel draws them 6 * 18 = 108pt
+    // tall - measured at 108pt on the native export. Anchors resolved through
+    // the compacted PDF grid track instead, which rounds 18pt to 17pt and left
+    // every shape 6pt short (issue #460).
+    let pages = sheet_pages("theme_color_drawing.xlsx");
+    let boxes: Vec<_> = pages.iter().flat_map(|sp| sp.text_boxes.iter()).collect();
+    assert_eq!(boxes.len(), 3, "fixture drawing holds three text boxes");
+    for text_box in &boxes {
+        assert!(
+            (text_box.height - 108.0).abs() < 0.5,
+            "anchor should span six 18pt worksheet rows, got {}",
+            text_box.height
+        );
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Worksheet text boxes (issue #240)
 // ---------------------------------------------------------------------------
 
