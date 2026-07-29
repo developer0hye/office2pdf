@@ -107,13 +107,28 @@ fn test_parse_streaming_multi_sheet() {
     assert_eq!(chunks.len(), 3, "Sheet1→2 chunks + Sheet2→1 chunk");
 }
 
+/// An empty sheet produces no row chunk, but the workbook still prints one
+/// page, and it is the sheet's own — not the compiler's A4 default.
+///
+/// Streaming used to hand back zero chunks here, and the pipeline's
+/// empty-document branch rendered a blank page answering to nothing in the
+/// file. Both parse paths now agree on that page (issue #632).
 #[test]
-fn test_parse_streaming_empty_sheet_skipped() {
+fn test_parse_streaming_empty_sheet_keeps_the_sheets_page_setup() {
     let data = build_xlsx_bytes("Empty", &[]);
     let parser = XlsxParser;
     let (chunks, _warnings) = parser
         .parse_streaming(&data, &ConvertOptions::default(), 10)
         .unwrap();
 
-    assert_eq!(chunks.len(), 0, "Empty sheet should be skipped");
+    assert_eq!(chunks.len(), 1, "no row chunks, one page for the workbook");
+    assert_eq!(chunks[0].pages.len(), 1);
+    let Page::Sheet(page) = &chunks[0].pages[0] else {
+        panic!("expected a sheet page");
+    };
+    assert_eq!(page.name, "Empty");
+    assert!(
+        page.table.rows.is_empty(),
+        "the fallback page carries no rows"
+    );
 }

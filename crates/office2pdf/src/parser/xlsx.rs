@@ -94,6 +94,51 @@ fn sheet_fit_to_width(
     Some(*sheet.get_page_setup().get_fit_to_width()).filter(|pages| *pages > 0)
 }
 
+/// The first sheet the caller asked for, honouring `sheet_names`.
+fn first_selected_sheet<'a>(
+    book: &'a umya_spreadsheet::Spreadsheet,
+    options: &ConvertOptions,
+) -> Option<&'a umya_spreadsheet::Worksheet> {
+    book.get_sheet_collection().iter().find(|sheet| {
+        options
+            .sheet_names
+            .as_ref()
+            .is_none_or(|names| names.iter().any(|name| name == sheet.get_name()))
+    })
+}
+
+/// The single page a workbook prints when none of its sheets has a used range.
+///
+/// The sheet loop skips a sheet with no used cells and no drawings, so such a
+/// workbook reached codegen with no pages at all and the Typst default — a
+/// blank A4 — stood in for it. That default answers to nothing in the file, so
+/// a sheet declaring `<pageSetup paperSize="1"/>` printed on A4 (issue #632).
+/// A blank page comes out either way; this one is the size the file asks for.
+///
+/// The page stays blank. The sheet's header and footer are deliberately not
+/// carried onto it: the ground truth for an empty sheet is a blank page, and
+/// Excel itself refuses to print one at all ("nothing found to print"), so
+/// there is no observed behaviour that puts running text on a page with no
+/// cells behind it. Rendering the paper the file asks for is what the evidence
+/// supports; inventing content for it is not.
+fn empty_workbook_page(
+    book: &umya_spreadsheet::Spreadsheet,
+    options: &ConvertOptions,
+) -> Option<SheetPage> {
+    let sheet = first_selected_sheet(book, options)?;
+    Some(SheetPage {
+        name: sheet.get_name().to_string(),
+        size: sheet_page_size(sheet),
+        margins: sheet_print_margins(sheet),
+        table: Table::default(),
+        header: None,
+        footer: None,
+        charts: Vec::new(),
+        images: Vec::new(),
+        text_boxes: Vec::new(),
+    })
+}
+
 fn sheet_page_size(sheet: &umya_spreadsheet::Worksheet) -> PageSize {
     let page_setup = sheet.get_page_setup();
     let size = worksheet_paper_size(*page_setup.get_paper_size());
@@ -459,6 +504,16 @@ impl XlsxParser {
             }
         }
 
+        if chunks.is_empty()
+            && let Some(page) = empty_workbook_page(&book, options)
+        {
+            chunks.push(Document {
+                metadata,
+                pages: vec![Page::Sheet(page)],
+                styles: StyleSheet::default(),
+            });
+        }
+
         Ok((chunks, warnings))
     }
 }
@@ -717,6 +772,12 @@ impl Parser for XlsxParser {
                     );
                 }
             }
+        }
+
+        if pages.is_empty()
+            && let Some(page) = empty_workbook_page(&book, options)
+        {
+            pages.push(Page::Sheet(page));
         }
 
         Ok((

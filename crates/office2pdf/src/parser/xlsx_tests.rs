@@ -319,6 +319,132 @@ fn test_page_size_defaults() {
     assert!((tp.size.height - default_size.height).abs() < 0.01);
 }
 
+/// Build a workbook whose only sheet has no cells, carrying a paper size and a
+/// header/footer. LibreOffice writes exactly this shape for a workbook saved
+/// with nothing typed into it.
+///
+/// The header and footer are declared so the tests can assert they are *not*
+/// carried onto the blank page, not because the page renders them.
+fn build_empty_sheet_xlsx(paper_size: u32, header: &str, footer: &str) -> Vec<u8> {
+    let mut book = umya_spreadsheet::new_file();
+    {
+        let sheet = book.get_sheet_mut(&0).unwrap();
+        sheet.get_page_setup_mut().set_paper_size(paper_size);
+        sheet
+            .get_header_footer_mut()
+            .get_odd_header_mut()
+            .set_value(header);
+        sheet
+            .get_header_footer_mut()
+            .get_odd_footer_mut()
+            .set_value(footer);
+    }
+    let mut cursor = Cursor::new(Vec::new());
+    umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+    cursor.into_inner()
+}
+
+/// A workbook whose only sheet has no cells still prints one page, and that
+/// page is the size the sheet asks for.
+///
+/// The sheet loop skips a sheet with no used range, so a single-sheet workbook
+/// reached codegen with no pages at all and the compiler's own default supplied
+/// a blank A4 — the file's `<pageSetup paperSize="1"/>` never reached the
+/// renderer (issue #632).
+#[test]
+fn test_empty_sheet_keeps_its_declared_paper_size() {
+    // 1 = Letter.
+    let data = build_empty_sheet_xlsx(1, "&CReport", "&CPage &P");
+    let (doc, _warnings) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(doc.pages.len(), 1, "an empty sheet still prints one page");
+    let page = get_sheet_page(&doc, 0);
+    assert!(
+        (page.size.width - 612.0).abs() < 0.01 && (page.size.height - 792.0).abs() < 0.01,
+        "expected Letter, got {:?}",
+        page.size
+    );
+}
+
+/// Triangulation: a different paper code must produce that code's size, so the
+/// page cannot be a hardcoded Letter.
+#[test]
+fn test_empty_sheet_keeps_a_non_letter_paper_size() {
+    // 5 = Legal.
+    let data = build_empty_sheet_xlsx(5, "&CReport", "&CPage &P");
+    let (doc, _warnings) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = get_sheet_page(&doc, 0);
+    assert!(
+        (page.size.width - 612.0).abs() < 0.01 && (page.size.height - 1008.0).abs() < 0.01,
+        "expected Legal, got {:?}",
+        page.size
+    );
+}
+
+/// The page an empty sheet prints stays blank.
+///
+/// The ground truth for a sheet with no used range is a blank page — Excel
+/// declines to print one at all — so nothing is invented to fill it. Only the
+/// paper the file asks for is restored.
+#[test]
+fn test_empty_sheet_page_stays_blank() {
+    let data = build_empty_sheet_xlsx(1, "&CQuarterly", "&CPage &P");
+    let (doc, _warnings) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = get_sheet_page(&doc, 0);
+    assert!(page.header.is_none(), "no header on a page with no cells");
+    assert!(page.footer.is_none(), "no footer on a page with no cells");
+    assert!(page.table.rows.is_empty());
+    assert!(page.images.is_empty() && page.charts.is_empty());
+}
+
+/// The page still carries the sheet's own print margins, not the renderer's.
+#[test]
+fn test_empty_sheet_page_keeps_its_print_margins() {
+    let mut book = umya_spreadsheet::new_file();
+    {
+        let sheet = book.get_sheet_mut(&0).unwrap();
+        sheet.get_page_setup_mut().set_paper_size(1);
+        sheet.get_page_margins_mut().set_left(1.25);
+    }
+    let mut cursor = Cursor::new(Vec::new());
+    umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+
+    let (doc, _warnings) = XlsxParser
+        .parse(&cursor.into_inner(), &ConvertOptions::default())
+        .unwrap();
+
+    let page = get_sheet_page(&doc, 0);
+    assert!(
+        (page.margins.left - 90.0).abs() < 0.01,
+        "expected 1.25in = 90pt, got {}",
+        page.margins.left
+    );
+}
+
+/// A sheet that does have cells keeps deciding the page count on its own — an
+/// empty *second* sheet must not add a blank page, which is what Excel does.
+#[test]
+fn test_empty_sheet_alongside_a_used_sheet_adds_no_page() {
+    let mut book = umya_spreadsheet::new_file();
+    {
+        let sheet = book.get_sheet_mut(&0).unwrap();
+        sheet.set_name("Data");
+        sheet.get_cell_mut("A1").set_value("Value");
+    }
+    book.new_sheet("Blank").unwrap();
+    let mut cursor = Cursor::new(Vec::new());
+    umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+
+    let (doc, _warnings) = XlsxParser
+        .parse(&cursor.into_inner(), &ConvertOptions::default())
+        .unwrap();
+
+    assert_eq!(doc.pages.len(), 1, "the blank sheet contributes no page");
+    assert_eq!(get_sheet_page(&doc, 0).name, "Data");
+}
+
 // ----- Table structure tests -----
 
 #[test]
