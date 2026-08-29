@@ -2889,11 +2889,10 @@ struct CellParagraphCtx<'a> {
     /// The fixed sheet track the cell sits in, so its line seats where Excel
     /// prints it (issue #1063). `None` outside that regime.
     sheet_seat: Option<SheetCellSeat>,
-    /// `Some(fit-to-page scale)` when this cell belongs to a spreadsheet,
-    /// whose lines advance on Excel's own measured per-face pitch rather than
-    /// on the face's hhea line (issue #1163) — the scale because Excel reads
-    /// that pitch at the cell's declared size. `None` off a sheet; the marker
-    /// is the same one the descender seat keys on.
+    /// `Some(fit-to-page scale)` when this cell belongs to a spreadsheet.
+    /// Excel reads its measured line pitch (#1163) and whole-point line seats
+    /// (#1238) at the cell's declared size before scaling them. `None` off a
+    /// sheet; the marker is the same one the descender seat keys on.
     sheet_print_scale: Option<f64>,
     /// Whether this paragraph is inside a spill cell's clipped wrapper, where
     /// the `#place` anchor already carries the cell's horizontal alignment.

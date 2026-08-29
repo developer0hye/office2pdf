@@ -2597,6 +2597,41 @@ fn test_right_aligned_sheet_cell_reserves_the_rounded_trailing_advance() {
     );
 }
 
+/// Excel rounds glyph advances at the cell's declared size and scales the
+/// resulting whole-point grid afterwards (issue #1238). At half scale,
+/// Libertinus Serif 10pt "Total" is emitted at 5pt: its four gap advances
+/// occupy 9.37 printed points and Excel's declared 19pt grid prints at 9.5pt,
+/// so each gap takes 0.0325pt. The final 2.64pt declared advance rounds to 3pt
+/// and contributes a separate 0.18 printed-point reserve.
+#[test]
+fn test_scaled_sheet_cell_uses_the_declared_size_advance_grid() {
+    let mut page = sheet_page_with_aligned_cell(
+        "Total",
+        TextStyle {
+            font_family: Some("Libertinus Serif".to_string()),
+            font_size: Some(5.0),
+            ..TextStyle::default()
+        },
+        Some(Alignment::Right),
+    );
+    let Page::Sheet(sheet) = &mut page else {
+        unreachable!("sheet_page_with_aligned_cell returns a sheet")
+    };
+    sheet.table.print_scale = Some(0.5);
+
+    let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+    let tracking: f64 =
+        emitted_tracking_pt(&source).unwrap_or_else(|| panic!("no tracking emitted: {source}"));
+    assert!(
+        (tracking - 0.0325).abs() < 1e-9,
+        "the declared-size grid needs 0.0325pt tracking after scaling, got {tracking}"
+    );
+    assert!(
+        source.contains("#h(0.18pt)"),
+        "the rounded final advance must reserve 0.18 printed points: {source}"
+    );
+}
+
 /// The trailing correction follows the advance's rounding direction rather
 /// than always widening the line. A single glyph also needs it even though it
 /// has no inter-glyph gap that could take `tracking`.

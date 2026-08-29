@@ -53,8 +53,10 @@ const POWERPOINT_ADVANCE_GRID_PT: f64 = 0.125;
 /// for the many advances that land just below a half point.
 ///
 /// The whole-point grid is the same quantum Excel's column widths take
-/// (issue #621); Word does not share it — no `docx` golden mock's export puts
-/// its origins on whole points.
+/// (issue #621). A fitted sheet applies this quantum in its declared
+/// coordinate system and scales the result afterwards (issue #1238). Word
+/// does not share it — no `docx` golden mock's export puts its origins on
+/// whole points.
 const SHEET_ADVANCE_GRID_PT: f64 = 1.0;
 
 /// Emit the ligature rule every PowerPoint slide follows.
@@ -1372,14 +1374,15 @@ pub(super) struct SheetCellSeat {
 /// `track_pt` row, as an offset below the track's **top boundary**
 /// (issues #1063, #1161).
 ///
-/// Excel lays a printed sheet out in whole device points, and it rounds the
-/// three `hhea` numbers into points **separately** before composing the line
-/// box: the ascender truncated, the line gap rounded up, the descender
-/// rounded. The box is the three added together, the baseline sits the gap
-/// plus the ascent below its top, and the box is centred in the row's own
-/// track — not in the cell's inset content box, which four native probe
-/// exports show has no say in the vertical seat — with an odd leftover point
-/// going to the space *above* the line.
+/// Excel lays a sheet out in whole sheet-space points, and it rounds the three
+/// `hhea` numbers into points **separately** before composing the line box:
+/// the ascender truncated, the line gap rounded up, the descender rounded.
+/// The box is the three added together, the baseline sits the gap plus the
+/// ascent below its top, and the box is centred in the row's own track — not
+/// in the cell's inset content box, which four native probe exports show has
+/// no say in the vertical seat — with an odd leftover point going to the
+/// space *above* the line. A fitted sheet scales that completed seat onto the
+/// printed page (issue #1238).
 ///
 /// Measured on native Excel-for-Mac exports of purpose-built probe workbooks
 /// (`/Volumes/T7/scratch/issue-1063/probe`, reproduced in
@@ -1402,13 +1405,20 @@ pub(super) fn sheet_cell_baseline_from_track_top_pt(
     descent_em: f64,
     line_gap_em: f64,
     font_size_pt: f64,
+    print_scale: Option<f64>,
 ) -> f64 {
-    let ascent_pt: f64 = (ascent_em * font_size_pt).floor();
-    let line_gap_pt: f64 = (line_gap_em * font_size_pt).ceil();
-    let descent_pt: f64 = (descent_em * font_size_pt).round();
+    // The parser has already folded a fit-to-page scale into the track and
+    // font. Excel instead snaps their declared sheet-space values, then
+    // scales that answer onto the printed page (issue #1238).
+    let scale: f64 = print_scale.filter(|scale| *scale > 0.0).unwrap_or(1.0);
+    let sheet_font_size_pt: f64 = font_size_pt / scale;
+    let sheet_track_pt: f64 = track_pt / scale;
+    let ascent_pt: f64 = (ascent_em * sheet_font_size_pt).floor();
+    let line_gap_pt: f64 = (line_gap_em * sheet_font_size_pt).ceil();
+    let descent_pt: f64 = (descent_em * sheet_font_size_pt).round();
     let above_baseline_pt: f64 = line_gap_pt + ascent_pt;
     let line_pt: f64 = above_baseline_pt + descent_pt;
-    ((track_pt - line_pt) / 2.0).ceil() + above_baseline_pt
+    (((sheet_track_pt - line_pt) / 2.0).ceil() + above_baseline_pt) * scale
 }
 
 /// The gap Excel never closes between a bottom-aligned sheet cell's baseline
@@ -1472,17 +1482,16 @@ pub(super) fn sheet_cell_descent_pt(
     print_scale: Option<f64>,
     descent_floor_pt: f64,
 ) -> f64 {
-    // Excel reads the seat at the size the cell declares and prints it through
-    // the sheet's `fitToWidth` scale, which the parser has already folded into
-    // `font_size_pt` — the same treatment a wrapped line's advance needs
-    // (issue #1163). Only the measured series is read that way; the rounded
-    // descent keeps evaluating at the printed size, where issue #1238 tracks
-    // the same question for every whole-point rule Excel snaps in sheet space.
+    // Excel reads every seat component at the size the cell declares and
+    // prints the result through the sheet's fit-to-page scale, which the
+    // parser has already folded into `font_size_pt`. That includes both the
+    // measured face series and the rounded hhea descent/floor (issue #1238).
     let scale: f64 = print_scale.filter(|scale| *scale > 0.0).unwrap_or(1.0);
-    sheet_cell_measured_seat_pt(family, font_size_pt / scale)
-        .map(|seat_pt| seat_pt * scale)
-        .unwrap_or_else(|| (descent_em * font_size_pt).round())
+    let sheet_font_size_pt: f64 = font_size_pt / scale;
+    sheet_cell_measured_seat_pt(family, sheet_font_size_pt)
+        .unwrap_or_else(|| (descent_em * sheet_font_size_pt).round())
         .max(descent_floor_pt)
+        * scale
 }
 
 /// The seat measured for `family` at `font_size_pt`, or `None` where no sweep
@@ -1811,6 +1820,7 @@ pub(super) fn word_cell_line_box(
                 descender_em,
                 line_gap_em,
                 font_size,
+                sheet_print_scale,
             );
             let top_em: f64 = advance_em / 2.0 + (baseline_pt - content_mid_pt) / font_size;
             (top_em, advance_em - top_em, leading_pt)
@@ -4281,9 +4291,11 @@ thread_local! {
     /// Whether run emission is currently inside a fixed PowerPoint page and
     /// should use the 1/8pt nominal-advance grid (issue #661).
     static POWERPOINT_ADVANCE_GRID: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-    /// Whether run emission is currently inside a spreadsheet page and should
-    /// set its lines on Excel's whole-point advance grid (issue #1088).
-    static SHEET_ADVANCE_GRID: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    /// The printed-to-declared scale while run emission is inside a
+    /// spreadsheet coordinate system. `None` off a sheet; `Some(1.0)` on an
+    /// unscaled sheet or inside a drawing that is scaled as a whole.
+    static SHEET_ADVANCE_GRID_SCALE: std::cell::Cell<Option<f64>> =
+        const { std::cell::Cell::new(None) };
     /// Whether the document being generated is laid out by Word's pre-2013
     /// engine, whose East Asian justification never compresses a line to fit
     /// one more token. See [`with_legacy_word_justification`].
@@ -4314,11 +4326,14 @@ fn legacy_word_justification_is_active() -> bool {
     LEGACY_WORD_JUSTIFICATION.with(std::cell::Cell::get)
 }
 
-/// Run `operation` with Excel's whole-point advance grid in the requested
-/// state, restoring the enclosing state even when generation panics.
-pub(super) fn with_sheet_advance_grid<T>(active: bool, operation: impl FnOnce() -> T) -> T {
-    SHEET_ADVANCE_GRID.with(|grid| {
-        let previous: bool = grid.replace(active);
+/// Run `operation` with Excel's whole-point advance grid at `print_scale`,
+/// restoring the enclosing state even when generation panics.
+pub(super) fn with_sheet_advance_grid<T>(
+    print_scale: Option<f64>,
+    operation: impl FnOnce() -> T,
+) -> T {
+    SHEET_ADVANCE_GRID_SCALE.with(|grid| {
+        let previous: Option<f64> = grid.replace(print_scale.filter(|scale| *scale > 0.0));
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(operation));
         grid.set(previous);
         match result {
@@ -4328,13 +4343,14 @@ pub(super) fn with_sheet_advance_grid<T>(active: bool, operation: impl FnOnce() 
     })
 }
 
-fn sheet_advance_grid_is_active() -> bool {
-    SHEET_ADVANCE_GRID.with(std::cell::Cell::get)
+fn sheet_advance_grid_scale() -> Option<f64> {
+    SHEET_ADVANCE_GRID_SCALE.with(std::cell::Cell::get)
 }
 
 /// The uniform inter-glyph spacing that puts `text` on
-/// [`SHEET_ADVANCE_GRID_PT`], or `None` when this run is not one the grid
-/// applies to.
+/// [`SHEET_ADVANCE_GRID_PT`] in sheet space, or `None` when this run is not one
+/// the grid applies to. A fitted cell rounds at its declared size and scales
+/// that grid onto the page (issue #1238).
 ///
 /// Typst lays a run out on the face's exact advances, and offers no per-glyph
 /// override; `tracking` is the one lever, and it is uniform. Spreading the
@@ -4356,10 +4372,9 @@ fn sheet_advance_grid_is_active() -> bool {
 /// A one-glyph run gets `None`: Typst drops the tracking after a shaped item's
 /// last glyph, so there is no gap to carry the correction.
 fn sheet_advance_grid_tracking_pt(style: &TextStyle, text: &str) -> Option<f64> {
-    if !sheet_advance_grid_is_active() {
-        return None;
-    }
+    let scale: f64 = sheet_advance_grid_scale()?;
     let size_pt: f64 = style.font_size.filter(|size| *size > 0.0)?;
+    let sheet_size_pt: f64 = size_pt / scale;
     let advances_em: Vec<f64> = sheet_advance_grid_glyph_advances_em(style, text)?;
     let gap_advances_em: &[f64] = advances_em.split_last()?.1;
     if gap_advances_em.is_empty() {
@@ -4372,7 +4387,9 @@ fn sheet_advance_grid_tracking_pt(style: &TextStyle, text: &str) -> Option<f64> 
         .sum();
     let quantized_pt: f64 = gap_advances_em
         .iter()
-        .map(|advance| round_half_up_to_grid(advance * size_pt, SHEET_ADVANCE_GRID_PT))
+        .map(|advance| {
+            round_half_up_to_grid(advance * sheet_size_pt, SHEET_ADVANCE_GRID_PT) * scale
+        })
         .sum();
     let gaps: f64 = gap_advances_em.len() as f64;
     let tracking_pt: f64 = (quantized_pt - natural_pt) / gaps;
@@ -4385,18 +4402,20 @@ fn sheet_advance_grid_tracking_pt(style: &TextStyle, text: &str) -> Option<f64> 
 /// sheet line from the cell's trailing edge.
 ///
 /// The inter-glyph tracking above stops at the last glyph so every visible
-/// origin stays on Excel's whole-point grid. Typst therefore measures the
-/// line's final advance at its natural width, while Excel includes that
-/// advance rounded to [`SHEET_ADVANCE_GRID_PT`]. A trailing `#h` carries only
-/// the difference: positive values move a right-aligned line left, and the
-/// rarer negative values move it right, without disturbing glyph pitch.
+/// origin stays on Excel's whole-point sheet grid. Typst therefore measures
+/// the line's final advance at its natural width, while Excel includes that
+/// advance rounded to [`SHEET_ADVANCE_GRID_PT`] before applying any print
+/// scale. A trailing `#h` carries only the printed difference: positive values
+/// move a right-aligned line left, and the rarer negative values move it right,
+/// without disturbing glyph pitch.
 ///
 /// Native Excel-for-Mac traces across the ten business workbooks predict the
 /// measured right-aligned origin residual run by run from this value (issue
 /// #1233). Centred lines deliberately stay unchanged: Excel's separate
 /// whole-point origin snap absorbs the half-residual in the measured corpus.
 pub(super) fn sheet_trailing_advance_space_pt(style: &ParagraphStyle, runs: &[Run]) -> Option<f64> {
-    if !sheet_advance_grid_is_active() || !matches!(style.alignment, Some(Alignment::Right)) {
+    let scale: f64 = sheet_advance_grid_scale()?;
+    if !matches!(style.alignment, Some(Alignment::Right)) {
         return None;
     }
 
@@ -4424,9 +4443,11 @@ pub(super) fn sheet_trailing_advance_space_pt(style: &ParagraphStyle, runs: &[Ru
         &run.text
     };
     let size_pt: f64 = run.style.font_size.filter(|size| *size > 0.0)?;
+    let sheet_size_pt: f64 = size_pt / scale;
     let advances_em: Vec<f64> = sheet_advance_grid_glyph_advances_em(&run.style, shaped)?;
     let natural_pt: f64 = advances_em.last()? * size_pt;
-    let rounded_pt: f64 = round_half_up_to_grid(natural_pt, SHEET_ADVANCE_GRID_PT);
+    let rounded_pt: f64 =
+        round_half_up_to_grid(advances_em.last()? * sheet_size_pt, SHEET_ADVANCE_GRID_PT) * scale;
     let space_pt: f64 = rounded_pt - natural_pt;
     (space_pt != 0.0).then_some(space_pt)
 }

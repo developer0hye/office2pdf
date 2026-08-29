@@ -160,7 +160,7 @@ struct GenCtx {
     /// bottom boundary ([`Table::bottom_aligned_descent_floor_pt`], issues
     /// #1097 and #1199).
     table_bottom_aligned_descent_floor_pt: f64,
-    /// The `fitToWidth` scale already folded into this table's sizes, from
+    /// The fit-to-page scale already folded into this table's sizes, from
     /// [`Table::print_scale`]. `None` on an unscaled sheet and off a sheet
     /// entirely; [`GenCtx::sheet_print_scale`] resolves the two apart.
     table_print_scale: Option<f64>,
@@ -228,10 +228,10 @@ struct GenCtx {
 }
 
 impl GenCtx {
-    /// The scale a spreadsheet cell's line advance must be read through:
-    /// `Some(1.0)` on an unscaled sheet, `Some(the fitToWidth factor)` on a
-    /// fitted one, and `None` off a sheet, where Excel's advance does not
-    /// apply at all (issue #1163).
+    /// The scale a spreadsheet cell's declared-space metrics must be read
+    /// through: `Some(1.0)` on an unscaled sheet, `Some(the fit-to-page
+    /// factor)` on a fitted one, and `None` off a sheet. This covers the
+    /// measured wrapped-line advance (#1163) and whole-point seats (#1238).
     fn sheet_print_scale(&self) -> Option<f64> {
         self.table_seats_bottom_aligned_text_on_descender
             .then(|| self.table_print_scale.unwrap_or(1.0))
@@ -855,11 +855,17 @@ fn generate_table_page(
     let centering_inset_pt: Option<f64> = horizontal_centering_inset_pt(page, &size);
 
     // Every glyph Excel prints on a sheet — the grid's cells and the text of
-    // the drawings floating over it alike — advances on the whole-point grid
-    // (issue #1088). The drawing layer goes into the page setup, so its scope
-    // has to open before that; the page setup itself states no run text.
-    let drawings: Option<SheetDrawingLayer> =
-        with_sheet_advance_grid(true, || sheet_drawing_layer(page, centering_inset_pt, ctx));
+    // the drawings floating over it alike — advances on a whole-point grid in
+    // sheet space (issues #1088, #1238). The drawing layer goes into the page
+    // setup, so its scope has to open before that; the page setup itself states
+    // no run text.
+    // A drawing keeps its declared sizes and is scaled as a whole by its
+    // placement, so its advance grid is already in sheet space. Cell runs,
+    // below, have had the print scale folded into their sizes by the parser
+    // and need that factor to recover the same coordinate system (#1238).
+    let drawings: Option<SheetDrawingLayer> = with_sheet_advance_grid(Some(1.0), || {
+        sheet_drawing_layer(page, centering_inset_pt, ctx)
+    });
 
     write_table_page_setup(
         out,
@@ -874,20 +880,19 @@ fn generate_table_page(
         let _ = writeln!(out, "#pad(left: {}pt)[", format_f64(inset_pt));
     }
 
-    with_sheet_advance_grid(true, || -> Result<(), ConvertError> {
-        if drawings.is_none() && page.charts.is_empty() {
-            generate_table(out, &page.table, ctx)?;
-        } else {
-            generate_sheet_grid(
-                out,
-                &page.table,
-                &page.charts,
-                drawings.as_ref().map(|layer| layer.marker.as_str()),
-                ctx,
-            )?;
-        }
-        Ok(())
-    })?;
+    if drawings.is_none() && page.charts.is_empty() {
+        with_sheet_advance_grid(Some(page.table.print_scale.unwrap_or(1.0)), || {
+            generate_table(out, &page.table, ctx)
+        })?;
+    } else {
+        generate_sheet_grid(
+            out,
+            &page.table,
+            &page.charts,
+            drawings.as_ref().map(|layer| layer.marker.as_str()),
+            ctx,
+        )?;
+    }
 
     if centering_inset_pt.is_some() {
         out.push_str("\n]\n");
@@ -975,7 +980,13 @@ fn generate_sheet_grid(
         out.push_str(marker);
     }
 
-    generate_table(out, table, ctx)?;
+    // Fitted cell runs already carry printed font sizes, so recover the
+    // declared sheet-space advance grid only while rendering the grid. A flow
+    // chart below it keeps declared chart sizes and must not inherit the cell
+    // scale (issue #1238), just like the floating drawing layer above.
+    with_sheet_advance_grid(Some(table.print_scale.unwrap_or(1.0)), || {
+        generate_table(out, table, ctx)
+    })?;
     out.push('\n');
 
     // A chart no drawing anchors has no worksheet coordinates to overlay it

@@ -1065,16 +1065,17 @@ pub struct Table {
     /// as Excel prints it. Word/PowerPoint place a table box with
     /// [`Self::alignment`] instead.
     pub centers_between_print_margins: bool,
-    /// The `fitToWidth` scale a sheet's sizes have **already** been multiplied
-    /// by, where one applies (issue #1163). `None` on an unscaled sheet and on
-    /// every Word/PowerPoint table.
+    /// The fit-to-page scale a sheet's sizes have **already** been multiplied
+    /// by, where one applies (issues #1163, #1238). `None` on an unscaled
+    /// sheet and on every Word/PowerPoint table.
     ///
     /// The parser folds the scale into every width, height and type size, so
     /// nothing downstream has to know it — except a rule Excel evaluates at
     /// the *declared* size and scales afterwards. Its wrapped-line advance is
     /// one: the sheet of issue #1163 prints its 14pt Segoe UI panel 17.22pt
     /// per line, which is the unscaled 21.00pt times this 0.82, not a whole
-    /// number of points in the scaled domain.
+    /// number of points in the scaled domain. Its whole-point line seats and
+    /// glyph advances follow the same order (issue #1238).
     pub print_scale: Option<f64>,
 }
 

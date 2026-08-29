@@ -2254,6 +2254,7 @@ fn sheet_cell_line_seat_reproduces_the_native_excel_probe() {
             ARIAL_DESCENT_EM,
             ARIAL_LINE_GAP_EM,
             font_size_pt,
+            None,
         );
         assert!(
             (seated_pt - expected_pt).abs() < 1e-9,
@@ -2317,6 +2318,7 @@ fn sheet_cell_line_seat_reproduces_a_face_with_no_line_gap() {
             descent_em,
             line_gap_em,
             font_size_pt,
+            None,
         );
         assert!(
             (seated_pt - expected_pt).abs() < 1e-9,
@@ -2325,6 +2327,32 @@ fn sheet_cell_line_seat_reproduces_a_face_with_no_line_gap() {
              the track top, seated {seated_pt}pt"
         );
     }
+}
+
+/// A fitted sheet snaps the line seat in its own declared-point coordinate
+/// system and scales that answer onto the printed page (issue #1238). The
+/// reported header is Segoe UI 12pt in a 49pt row at 0.82 scale: its 29pt
+/// sheet-space seat must therefore print at 23.78pt, not at the 25pt obtained
+/// by snapping the already-scaled 9.84pt face in the 40.18pt track.
+#[test]
+fn scaled_sheet_cell_line_seat_snaps_in_declared_sheet_space() {
+    const SEGOE_UI_ASCENT_EM: f64 = 2210.0 / 2048.0;
+    const SEGOE_UI_DESCENT_EM: f64 = 514.0 / 2048.0;
+    const SCALE: f64 = 0.82;
+
+    let seated_pt: f64 = sheet_cell_baseline_from_track_top_pt(
+        49.0 * SCALE,
+        SEGOE_UI_ASCENT_EM,
+        SEGOE_UI_DESCENT_EM,
+        0.0,
+        12.0 * SCALE,
+        Some(SCALE),
+    );
+
+    assert!(
+        (seated_pt - 29.0 * SCALE).abs() < 1e-9,
+        "the 29pt declared-space seat must print at 23.78pt, seated {seated_pt}pt"
+    );
 }
 
 /// The expense report's data rows: a 14pt track of Arial 10 whose cells Excel
@@ -2390,6 +2418,7 @@ fn fixed_track_sheet_cell_seats_its_centred_line_on_the_track() {
         descent_em,
         line_gap_em,
         font_size_pt,
+        None,
     );
     let expected_top_em: f64 = pitch_em / 2.0 + (baseline_pt - content_mid_pt) / font_size_pt;
     let needle: String = format!("top-edge: {}em", format_f64(expected_top_em));
@@ -2717,6 +2746,28 @@ fn a_scaled_sheet_reads_the_seat_at_the_declared_size() {
         (seated_pt - 8.0 * scale).abs() < 1e-9,
         "a half-scale 24pt Malgun cell seats at half of its 8pt sheet-space \
          seat, seated {seated_pt}pt"
+    );
+}
+
+/// The workbook-wide minimum bottom seat is declared in sheet points too. A
+/// half-scale Arial 10 cell therefore keeps 2 printed points below its
+/// baseline, not the full unscaled 4pt floor (issue #1238).
+#[test]
+fn a_scaled_sheet_scales_the_bottom_seat_floor_after_snapping() {
+    const ARIAL_DESCENT_EM: f64 = 434.0 / 2048.0;
+    let scale: f64 = 0.5;
+
+    let seated_pt: f64 = sheet_cell_descent_pt(
+        "Arial",
+        ARIAL_DESCENT_EM,
+        10.0 * scale,
+        Some(scale),
+        SHEET_CELL_MIN_DESCENT_SEAT_PT,
+    );
+
+    assert!(
+        (seated_pt - SHEET_CELL_MIN_DESCENT_SEAT_PT * scale).abs() < 1e-9,
+        "the 4pt sheet-space floor must print at 2pt, seated {seated_pt}pt"
     );
 }
 
