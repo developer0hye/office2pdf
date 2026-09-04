@@ -858,6 +858,54 @@ class MatchAndDiffTest(unittest.TestCase):
         self.assertEqual((rects["unmatched_gt"], rects["unmatched_out"]), (2, 1))
         self.assertEqual(rects["geometry_mismatch_count"], 0)
 
+    def test_unequal_rect_groups_do_not_pair_area_fill_with_nearby_rule(self) -> None:
+        gt = "\n".join(
+            [
+                rect_op(0.0, 0.0, 200.0, 25.0, color=".9 .9 .9"),
+                rect_op(300.0, 50.0, 366.0, 75.0, color=".2 .2 .2"),
+            ]
+        )
+        out = "\n".join(
+            [
+                # Its centre is within the ambiguity radius of the first GT
+                # fill, but this thin band is not the same painted area.
+                rect_op(65.0, 0.5, 135.0, 1.75, color=".9 .9 .9"),
+                rect_op(300.1, 50.1, 366.1, 75.1, color=".2 .2 .2"),
+                # Matching geometry alone cannot override different paint.
+                rect_op(0.0, 0.0, 200.0, 25.0, color=".4 .4 .4"),
+                rect_op(500.0, 500.0, 600.0, 510.0, color=".9 .9 .9"),
+            ]
+        )
+
+        rects = self.diff(gt, out, fine_shift=0.5)["rects"]
+
+        self.assertEqual(rects["matched"], 1)
+        self.assertEqual((rects["unmatched_gt"], rects["unmatched_out"]), (1, 3))
+        self.assertEqual(rects["geometry_mismatch_count"], 0)
+
+    def test_unequal_rect_groups_reject_incompatible_area_extents(self) -> None:
+        gt = "\n".join(
+            [
+                rect_op(0.0, 0.0, 200.0, 25.0, color=".9 .9 .9"),
+                rect_op(300.0, 50.0, 366.0, 75.0, color=".2 .2 .2"),
+            ]
+        )
+        out = "\n".join(
+            [
+                # The centres are close, but doubling the height means this is
+                # not defensibly the same painted area.
+                rect_op(5.0, -12.5, 195.0, 37.5, color=".9 .9 .9"),
+                rect_op(300.1, 50.1, 366.1, 75.1, color=".2 .2 .2"),
+                rect_op(500.0, 500.0, 600.0, 510.0, color=".9 .9 .9"),
+            ]
+        )
+
+        rects = self.diff(gt, out, fine_shift=0.5)["rects"]
+
+        self.assertEqual(rects["matched"], 1)
+        self.assertEqual((rects["unmatched_gt"], rects["unmatched_out"]), (1, 2))
+        self.assertEqual(rects["geometry_mismatch_count"], 0)
+
     def test_non_rectangular_path_bounds_do_not_become_rect_geometry(self) -> None:
         def triangle(x0: float, x1: float) -> str:
             midpoint = (x0 + x1) / 2

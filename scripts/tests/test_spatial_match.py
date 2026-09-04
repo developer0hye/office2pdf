@@ -36,6 +36,32 @@ class MinimumCostPairsTest(unittest.TestCase):
         self.assertEqual(minimum_cost_pairs([], [(1.0, 1.0)]), [])
         self.assertEqual(minimum_cost_pairs([(1.0, 1.0)], []), [])
 
+    def test_allowed_pairs_leave_incompatible_items_unmatched(self) -> None:
+        references = [(0.0, 0.0), (10.0, 0.0)]
+        candidates = [(1.0, 0.0), (9.0, 0.0)]
+
+        self.assertEqual(
+            minimum_cost_pairs(
+                references,
+                candidates,
+                allowed_pairs=[[False, False], [False, True]],
+            ),
+            [(1, 1)],
+        )
+
+    def test_allowed_pairs_maximise_cardinality_before_distance(self) -> None:
+        references = [(0.0, 0.0), (100.0, 0.0)]
+        candidates = [(1.0, 0.0), (2.0, 0.0)]
+
+        self.assertEqual(
+            minimum_cost_pairs(
+                references,
+                candidates,
+                allowed_pairs=[[True, True], [True, False]],
+            ),
+            [(0, 1), (1, 0)],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

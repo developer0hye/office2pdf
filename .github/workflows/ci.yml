@@ -118,7 +118,9 @@ jobs:
       - name: Test visual PR validator
         run: python3 -m unittest discover -s scripts/tests -p 'test_check_visual_pr.py'
       - name: Test layout differ
-        run: python3 -m unittest discover -s scripts/tests -p 'test_compare_layout.py'
+        run: |
+          python3 -m unittest discover -s scripts/tests -p 'test_compare_layout.py'
+          python3 -m unittest discover -s scripts/tests -p 'test_spatial_match.py'
       - name: Test render comparison
         run: python3 -m unittest discover -s scripts/tests -p 'test_compare_render.py'
       - name: Test text-layer census

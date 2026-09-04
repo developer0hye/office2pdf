@@ -104,6 +104,13 @@ SAFE_TOPOLOGY_GAP_PT = 24.0
 # shape elsewhere on the page. Equal-cardinality groups remain fully paired so
 # a large translation is reported as geometry instead of disappearing.
 RECT_AMBIGUOUS_MATCH_RADIUS_PT = 24.0
+# When one side contains extra paint operations, a corresponding area may be
+# split slightly differently, but a several-times thinner/wider primitive is
+# not defensibly the same rectangle. Keep that operation unmatched instead of
+# manufacturing a large geometry delta.
+RECT_AMBIGUOUS_MAX_EXTENT_RATIO = 1.5
+RECT_RULE_MAX_THICKNESS_PT = 2.0
+RECT_RULE_MIN_LENGTH_PT = 4.0
 RECT_SAMPLE_LIMIT = 5
 OPAQUE_ALPHA = 0.98
 INVISIBLE_ALPHA = 0.02
@@ -1327,6 +1334,106 @@ def rect_feature(rect: Rect) -> tuple[float, float, float, float]:
     return (rect.center[0], rect.center[1], rect.width / 2, rect.height / 2)
 
 
+def rect_match_topology(rect: Rect) -> str:
+    """Separate thin boundary operations from painted areas."""
+    if rect.geometry_kind != "rectangle":
+        return rect.geometry_kind
+    if (
+        rect.height <= RECT_RULE_MAX_THICKNESS_PT
+        and rect.width >= RECT_RULE_MIN_LENGTH_PT
+    ):
+        return "horizontal-rule"
+    if (
+        rect.width <= RECT_RULE_MAX_THICKNESS_PT
+        and rect.height >= RECT_RULE_MIN_LENGTH_PT
+    ):
+        return "vertical-rule"
+    return "area"
+
+
+def same_rect_match_bucket(first: Rect, second: Rect) -> bool:
+    return same_rect_paint(first, second) and rect_match_topology(
+        first
+    ) == rect_match_topology(second)
+
+
+def ambiguous_rect_pair_allowed(reference: Rect, candidate: Rect) -> bool:
+    center_delta = max(
+        abs(candidate.center[0] - reference.center[0]),
+        abs(candidate.center[1] - reference.center[1]),
+    )
+    if center_delta > RECT_AMBIGUOUS_MATCH_RADIUS_PT:
+        return False
+    if min(reference.width, reference.height, candidate.width, candidate.height) <= 0:
+        return False
+    extent_ratio = max(
+        reference.width / candidate.width,
+        candidate.width / reference.width,
+        reference.height / candidate.height,
+        candidate.height / reference.height,
+    )
+    return extent_ratio <= RECT_AMBIGUOUS_MAX_EXTENT_RATIO
+
+
+def match_rect_groups(
+    references: list[CanonicalRect], candidates: list[CanonicalRect]
+) -> list[tuple[CanonicalRect, CanonicalRect]]:
+    """Match rectangles without forcing unequal groups across paint/topology."""
+    if len(references) == len(candidates):
+        return [
+            (references[reference_index], candidates[candidate_index])
+            for reference_index, candidate_index in minimum_cost_pairs(
+                [rect_feature(group.rect) for group in references],
+                [rect_feature(group.rect) for group in candidates],
+            )
+        ]
+
+    matches: list[tuple[CanonicalRect, CanonicalRect]] = []
+    remaining_references = list(references)
+    remaining_candidates = list(candidates)
+    while remaining_references:
+        seed = remaining_references[0]
+        reference_bucket = [
+            group
+            for group in remaining_references
+            if same_rect_match_bucket(seed.rect, group.rect)
+        ]
+        candidate_bucket = [
+            group
+            for group in remaining_candidates
+            if same_rect_match_bucket(seed.rect, group.rect)
+        ]
+        remaining_references = [
+            group
+            for group in remaining_references
+            if not same_rect_match_bucket(seed.rect, group.rect)
+        ]
+        remaining_candidates = [
+            group
+            for group in remaining_candidates
+            if not same_rect_match_bucket(seed.rect, group.rect)
+        ]
+        if not candidate_bucket:
+            continue
+
+        allowed_pairs = [
+            [
+                ambiguous_rect_pair_allowed(reference.rect, candidate.rect)
+                for candidate in candidate_bucket
+            ]
+            for reference in reference_bucket
+        ]
+        matches.extend(
+            (reference_bucket[reference_index], candidate_bucket[candidate_index])
+            for reference_index, candidate_index in minimum_cost_pairs(
+                [rect_feature(group.rect) for group in reference_bucket],
+                [rect_feature(group.rect) for group in candidate_bucket],
+                allowed_pairs=allowed_pairs,
+            )
+        )
+    return matches
+
+
 def rect_sample(gt_group: CanonicalRect, out_group: CanonicalRect) -> dict:
     gt_rect = gt_group.rect
     out_rect = out_group.rect
@@ -1496,23 +1603,7 @@ def diff_page(
             for group in canonical_out_rects
             if (group.rect.kind, group.rect.geometry_kind) == (kind, geometry_kind)
         ]
-        has_equal_cardinality = len(references) == len(candidates)
-        for reference_index, candidate_index in minimum_cost_pairs(
-            [rect_feature(group.rect) for group in references],
-            [rect_feature(group.rect) for group in candidates],
-        ):
-            reference = references[reference_index]
-            candidate = candidates[candidate_index]
-            center_delta = max(
-                abs(candidate.rect.center[0] - reference.rect.center[0]),
-                abs(candidate.rect.center[1] - reference.rect.center[1]),
-            )
-            if (
-                not has_equal_cardinality
-                and center_delta > RECT_AMBIGUOUS_MATCH_RADIUS_PT
-            ):
-                continue
-            rect_matches.append((reference, candidate))
+        rect_matches.extend(match_rect_groups(references, candidates))
 
     rect_samples = [
         rect_sample(reference, candidate) for reference, candidate in rect_matches
