@@ -4305,16 +4305,34 @@ fn generate_chart_line_plot(out: &mut String, chart: &Chart, frame: Option<(f64,
 
     let legend: LegendBox = LegendBox::new(chart.legend_position, LINE_LEGEND_ROW_H, LEGEND_W);
     // A framed chart fills its `<p:graphicFrame>`; a flowed one keeps the
-    // intrinsic plot size (issue #548).
-    let (plot_w, plot_h) = match frame {
+    // intrinsic plot size (issue #548). Keep the automatic rectangle so the
+    // value-label gutter can follow the same displacement when the part states
+    // a different one below.
+    let (automatic_plot_w, automatic_plot_h) = match frame {
         Some((frame_w, frame_h)) => (
             (frame_w - (VALUE_GAP + GAP) - legend.left - legend.right).max(MIN_PLOT_PT),
             (frame_h - CAT_GAP - legend.top - legend.bottom).max(MIN_PLOT_PT),
         ),
         None => (PLOT_W, PLOT_H),
     };
-    let plot_x: f64 = legend.left + VALUE_GAP + GAP;
-    let plot_y: f64 = legend.top;
+    let automatic_plot_x: f64 = legend.left + VALUE_GAP + GAP;
+    let automatic_plot_y: f64 = legend.top;
+    // Line and scatter plots honour the same inner plot rectangle as the bar
+    // and column families. `stated_plot_rect` also translates chart-area y
+    // fractions into the title-reduced content box's coordinates (#1265).
+    let (plot_x, plot_y, plot_w, plot_h): (f64, f64, f64, f64) =
+        stated_plot_rect(chart, chart_area, title_h).unwrap_or((
+            automatic_plot_x,
+            automatic_plot_y,
+            automatic_plot_w,
+            automatic_plot_h,
+        ));
+    let plot_dx: f64 = plot_x - automatic_plot_x;
+    // Excel keeps the category-label band on its automatic vertical seat even
+    // when `manualLayout` gives the inner plot a shorter height. The reported
+    // chart's month-label baseline stays unchanged while its horizontal centres
+    // move with the stated plot (#1265).
+    let category_label_y: f64 = automatic_plot_y + automatic_plot_h + 3.0;
     let (total_w, total_h) = match frame {
         Some(extent) => extent,
         None => (
@@ -4355,7 +4373,8 @@ fn generate_chart_line_plot(out: &mut String, chart: &Chart, frame: Option<(f64,
         if value_axis_drawn {
             let _ = writeln!(
                 out,
-                "#place(top + left, dx: 0pt, dy: {}pt, box(width: {}pt, height: {}pt)[#align(right + horizon)[#text(size: {}pt{})[{}]]])",
+                "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt, height: {}pt)[#align(right + horizon)[#text(size: {}pt{})[{}]]])",
+                format_f64(plot_dx),
                 format_f64(
                     y - chart_label_box_h(chart_axis_text_pt(chart, chart.value_axis_text_style))
                         / 2.0
@@ -4404,7 +4423,7 @@ fn generate_chart_line_plot(out: &mut String, chart: &Chart, frame: Option<(f64,
                 out,
                 "#place(top + left, dx: {}pt, dy: {}pt, box(width: 24pt)[#align(center)[#text(size: {}pt{})[{}]]])",
                 format_f64(x - 12.0),
-                format_f64(plot_y + plot_h + 3.0),
+                format_f64(category_label_y),
                 format_f64(chart_axis_text_pt(chart, chart.category_axis_text_style)),
                 chart_axis_text_attrs(chart, chart.category_axis_text_style),
                 escape_typst(category)

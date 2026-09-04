@@ -7091,6 +7091,87 @@ fn the_bars_and_category_labels_follow_a_stated_plot_rectangle() {
     );
 }
 
+// ----- Line-family plot rectangles (issue #1265) -----
+
+/// The chart area and inner plot rectangle of `xl/charts/chart2.xml` in
+/// `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx`, before the worksheet's
+/// 0.78 print scale is applied.
+const MONTHLY_BUDGET_LINE_CHART_FRAME: (f64, f64) = (786.71, 75.55);
+const MONTHLY_BUDGET_LINE_PLOT_LAYOUT: crate::ir::ChartPlotAreaLayout =
+    crate::ir::ChartPlotAreaLayout {
+        x: 0.14276848195056766,
+        y: 0.07430787730224597,
+        width: 0.8572315180494323,
+        height: 0.5596752035269608,
+    };
+
+/// A line/scatter plot must use the same stated inner rectangle as the bar
+/// family instead of laying itself out from its private automatic gutters.
+///
+/// Native Excel seats this plot at 175.19..701.22pt on the printed page. Its
+/// chart area starts at 87.59pt and the sheet prints at 0.78, giving the four
+/// unscaled edges asserted below. The chart's real value axis is deleted; the
+/// test enables only its axis line so all four plot edges can be read back
+/// from generated chrome without changing the line/scatter layout path.
+#[test]
+fn a_line_family_plot_honours_its_stated_rectangle() {
+    let mut chart: Chart = combo_line_and_scatter_chart();
+    chart.plot_area_layout = Some(MONTHLY_BUDGET_LINE_PLOT_LAYOUT);
+    chart.value_axis_deleted = false;
+
+    let mut automatic_chart: Chart = chart.clone();
+    automatic_chart.plot_area_layout = None;
+    let automatic_source: String = framed_chart_source(
+        &automatic_chart,
+        MONTHLY_BUDGET_LINE_CHART_FRAME.0,
+        MONTHLY_BUDGET_LINE_CHART_FRAME.1,
+    );
+    let automatic_jan: PlacedBox = placed_box_holding(&automatic_source, "jan");
+
+    let source: String = framed_chart_source(
+        &chart,
+        MONTHLY_BUDGET_LINE_CHART_FRAME.0,
+        MONTHLY_BUDGET_LINE_CHART_FRAME.1,
+    );
+    let (x, y, width, height) = plot_rect(&emitted_lines(&source));
+    let layout = MONTHLY_BUDGET_LINE_PLOT_LAYOUT;
+    let expected = (
+        layout.x * MONTHLY_BUDGET_LINE_CHART_FRAME.0,
+        layout.y * MONTHLY_BUDGET_LINE_CHART_FRAME.1,
+        layout.width * MONTHLY_BUDGET_LINE_CHART_FRAME.0,
+        layout.height * MONTHLY_BUDGET_LINE_CHART_FRAME.1,
+    );
+
+    for (edge, actual, expected) in [
+        ("left", x, expected.0),
+        ("top", y, expected.1),
+        ("width", width, expected.2),
+        ("height", height, expected.3),
+    ] {
+        assert!(
+            (actual - expected).abs() <= 0.02,
+            "line-family plot {edge}: expected {expected}, got {actual}\n{source}"
+        );
+    }
+
+    let jan: PlacedBox = placed_box_holding(&source, "jan");
+    let first_band_centre: f64 = expected.0 + expected.2 / (2.0 * chart.categories.len() as f64);
+    assert!(
+        (jan.dx + jan.width / 2.0 - first_band_centre).abs() <= 0.02,
+        "the first category label must follow the stated plot; got {jan:?}, expected centre {first_band_centre}"
+    );
+    assert!(
+        (jan.dy - automatic_jan.dy).abs() <= 0.02,
+        "the stated inner plot must not move Excel's automatic category-label band; got {jan:?}, automatic {automatic_jan:?}"
+    );
+
+    let value_tick: PlacedBox = placed_box_holding(&source, "200");
+    assert!(
+        (value_tick.dx + value_tick.width - (expected.0 - 6.0)).abs() <= 0.02,
+        "the value labels must keep their automatic 6pt gap while following the stated plot; got {value_tick:?}"
+    );
+}
+
 // ----- A value axis fixed to its own interval (issue #1184) -----
 
 /// The `january cash flow:` chart of `xl/charts/chart1.xml` in the workbook of
