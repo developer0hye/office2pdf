@@ -173,6 +173,11 @@ struct GenCtx {
     /// [`Table::print_scale`]. `None` on an unscaled sheet and off a sheet
     /// entirely; [`GenCtx::sheet_print_scale`] resolves the two apart.
     table_print_scale: Option<f64>,
+    /// Visual translation applied to a fitted worksheet's table paint. Cell
+    /// content takes the inverse so text that already matches Excel stays in
+    /// its established seat while fills and boundary bands follow the scaled
+    /// paper-space origin (issue #1538).
+    sheet_paint_offset_pt: Option<(f64, f64)>,
     /// Whether the cell being generated seats its line box on the descender:
     /// the enclosing table is a spreadsheet and the cell's effective vertical
     /// alignment is bottom (issue #618).
@@ -269,6 +274,7 @@ impl GenCtx {
             table_seats_bottom_aligned_text_on_descender: false,
             table_bottom_aligned_descent_floor_pt: 0.0,
             table_print_scale: None,
+            sheet_paint_offset_pt: None,
             cell_seats_text_on_descender: false,
             cell_vertical_align: None,
             cell_sheet_row_line: None,
@@ -945,6 +951,13 @@ fn generate_table_page(
     // own alignment, which the centering does not touch.
     let centering_inset_pt: Option<f64> = horizontal_centering_inset_pt(page, &size);
 
+    // Excel paints a fitted sheet's grid against a paper box constructed in
+    // declared sheet space and then scaled. Cell text has its own already
+    // calibrated seats, so only the table paint takes this translation; the
+    // cell writer counter-shifts its content by the inverse (#1538).
+    let paint_offset_pt: Option<(f64, f64)> =
+        scaled_sheet_paint_offset_pt(page, &size, centering_inset_pt);
+
     // Every glyph Excel prints on a sheet — the grid's cells and the text of
     // the drawings floating over it alike — advances on a whole-point grid in
     // sheet space (issues #1088, #1238). The drawing layer goes into the page
@@ -967,6 +980,17 @@ fn generate_table_page(
     );
     out.push('\n');
 
+    if let Some((dx_pt, dy_pt)) = paint_offset_pt {
+        let _ = writeln!(
+            out,
+            "#move(dx: {}pt, dy: {}pt)[",
+            format_f64(dx_pt),
+            format_f64(dy_pt),
+        );
+    }
+
+    ctx.sheet_paint_offset_pt = paint_offset_pt;
+
     if let Some(inset_pt) = centering_inset_pt {
         let _ = writeln!(out, "#pad(left: {}pt)[", format_f64(inset_pt));
     }
@@ -988,7 +1012,47 @@ fn generate_table_page(
     if centering_inset_pt.is_some() {
         out.push_str("\n]\n");
     }
+    if paint_offset_pt.is_some() {
+        out.push_str("]\n");
+    }
+    ctx.sheet_paint_offset_pt = None;
     Ok(())
+}
+
+/// Translation from the converter's physical table origin to Excel's fitted
+/// sheet-space paint origin.
+///
+/// On issue #1538's A3 page, the converter centres the 1,078.30pt grid at
+/// `50 + 5.125 = 55.125pt`. Excel first snaps the paper box in sheet space:
+/// its left edge is `floor(50 / .82) * .82 = 49.20pt`, its right edge is
+/// `ceil((1190.55 - 50) / .82) * .82 = 1140.62pt`, and its scaled 1pt
+/// centring bias leaves a 5.74pt inset. The fitted paint origin is therefore
+/// 54.94pt, or -0.185pt from the converter's. The top origin similarly moves
+/// from 54pt to `floor(54 / .82) * .82 = 53.30pt`.
+fn scaled_sheet_paint_offset_pt(
+    page: &SheetPage,
+    size: &PageSize,
+    physical_centering_inset_pt: Option<f64>,
+) -> Option<(f64, f64)> {
+    let scale: f64 = page
+        .table
+        .print_scale
+        .filter(|scale| *scale > 0.0 && *scale < 1.0)?;
+    let thousandth = |points: f64| -> f64 { (points * 1000.0).round() / 1000.0 };
+    let left_pt: f64 = (page.margins.left / scale).floor() * scale;
+    let right_pt: f64 = ((size.width - page.margins.right) / scale).ceil() * scale;
+    let top_pt: f64 = (page.margins.top / scale).floor() * scale;
+    let grid_width_pt: f64 = page.table.column_widths.iter().sum();
+    let scaled_centering_inset_pt: f64 = if page.table.centers_between_print_margins {
+        ((right_pt - left_pt - grid_width_pt) / 2.0 - HORIZONTAL_CENTERING_BIAS_PT * scale).max(0.0)
+    } else {
+        0.0
+    };
+    let physical_left_pt: f64 = page.margins.left + physical_centering_inset_pt.unwrap_or(0.0);
+    Some((
+        thousandth(left_pt + scaled_centering_inset_pt - physical_left_pt),
+        thousandth(top_pt - page.margins.top),
+    ))
 }
 
 /// Points Excel prints a horizontally centred sheet left of the exact centre

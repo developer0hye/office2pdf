@@ -1800,6 +1800,46 @@ fn test_boundary_band_background_bleed_overlaps_its_cell_at_the_corner_junction(
     );
 }
 
+/// Excel applies a fit-to-page transform after painting its sheet-space 1pt
+/// positive-axis background band. On the issue #1538 workbook's 0.82-scale
+/// page, the outer bleed is therefore 0.82pt and the 0.25pt seam overlap is
+/// 0.205pt, not the unscaled 1pt and 0.25pt emitted before this regression.
+#[test]
+fn a_fit_scaled_sheet_scales_its_excel_background_bleed() {
+    let mut table = boundary_band_table(vec![fixed_row(vec![banded_cell("Gift")])], vec![69.0]);
+    table.print_scale = Some(0.82);
+    table.seats_bottom_aligned_text_on_descender = true;
+    let doc = make_doc(vec![Page::Sheet(SheetPage {
+        name: "Gift budget and tracker".to_string(),
+        size: PageSize {
+            width: 1_190.55,
+            height: 841.89,
+        },
+        margins: Margins {
+            top: 54.0,
+            bottom: 54.0,
+            left: 50.0,
+            right: 50.0,
+        },
+        table,
+        header: None,
+        footer: None,
+        charts: Vec::new(),
+        images: Vec::new(),
+        text_boxes: Vec::new(),
+    })]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("rect(width: 1.025pt, height: 20.82pt"),
+        "the right bleed must scale its band, overlap, and row-end extension: {result}"
+    );
+    assert!(
+        result.contains("height: 1.025pt"),
+        "the bottom bleed must scale its band and overlap: {result}"
+    );
+}
+
 /// A filled horizontal merge's visible Excel region reaches through its
 /// positive-axis background band. Excel centres the line on that effective
 /// region, while an unfilled merge and a left-aligned line keep the nominal

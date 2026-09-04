@@ -1,0 +1,759 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 231.8976,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 270.72,
+        "x": 811.92,
+        "y": 326.4
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "Matched 300 DPI Poppler and MuPDF pages show the same fills, rules, chart, and table bounds. These long thin residuals hug the agreed edges and follow native clipping versus Typst boundary antialiasing."
+      },
+      "id": "p2-654949249f03",
+      "region": "right"
+    },
+    {
+      "area_pt2": 81.0432,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 17.28,
+        "x": 192.0,
+        "y": 248.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-7be815f58535",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 64.0512,
+      "bbox_pt": {
+        "height": 1.2,
+        "width": 66.48,
+        "x": 342.0,
+        "y": 502.56
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "The matched 300 DPI Poppler and MuPDF crops show the corrected native fill bounds. These residuals are one-pixel edge coverage from native clipping versus Typst antialiasing, with no trace geometry deviation for the affected table fills."
+      },
+      "id": "p2-b0d2f8fde3f6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 64.0512,
+      "bbox_pt": {
+        "height": 1.2,
+        "width": 66.48,
+        "x": 342.0,
+        "y": 551.76
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "The matched 300 DPI Poppler and MuPDF crops show the corrected native fill bounds. These residuals are one-pixel edge coverage from native clipping versus Typst antialiasing, with no trace geometry deviation for the affected table fills."
+      },
+      "id": "p2-7f49101c48d1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 60.8832,
+      "bbox_pt": {
+        "height": 2.4,
+        "width": 71.28,
+        "x": 414.24,
+        "y": 329.52
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "Matched 300 DPI Poppler and MuPDF pages show the same fills, rules, chart, and table bounds. These long thin residuals hug the agreed edges and follow native clipping versus Typst boundary antialiasing."
+      },
+      "id": "p2-231b32f896e1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.72,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.96,
+        "x": 120.24,
+        "y": 199.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-c805a889d0bd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.9392,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.08,
+        "x": 200.4,
+        "y": 196.8
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-36091b13cbf4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 48.096,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 66.48,
+        "x": 342.0,
+        "y": 527.28
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "The matched 300 DPI Poppler and MuPDF crops show the corrected native fill bounds. These residuals are one-pixel edge coverage from native clipping versus Typst antialiasing, with no trace geometry deviation for the affected table fills."
+      },
+      "id": "p2-ac237bddd55d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 48.096,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 66.48,
+        "x": 342.0,
+        "y": 478.08
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "The matched 300 DPI Poppler and MuPDF crops show the corrected native fill bounds. These residuals are one-pixel edge coverage from native clipping versus Typst antialiasing, with no trace geometry deviation for the affected table fills."
+      },
+      "id": "p2-022e56881f32",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.3104,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 14.88,
+        "x": 92.16,
+        "y": 506.64
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "These clusters remain inside the three embedded gift thumbnails. The 300 DPI Poppler and MuPDF pages show the same image content, crop, size, and position with only native-export versus Typst resampling differences."
+      },
+      "id": "p2-b1b79a71e161",
+      "region": "left"
+    },
+    {
+      "area_pt2": 44.0064,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 11.76,
+        "x": 183.12,
+        "y": 217.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-3247d8d7eb4a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 42.336,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 8.16,
+        "x": 151.44,
+        "y": 179.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-311cdf4e6b8f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.5872,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.36,
+        "x": 196.8,
+        "y": 165.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-0dad53b5660b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.4144,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.8,
+        "x": 183.84,
+        "y": 165.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-29ffdc38e949",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.6864,
+      "bbox_pt": {
+        "height": 3.36,
+        "width": 18.0,
+        "x": 159.12,
+        "y": 506.88
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "These clusters remain inside the three embedded gift thumbnails. The 300 DPI Poppler and MuPDF pages show the same image content, crop, size, and position with only native-export versus Typst resampling differences."
+      },
+      "id": "p2-49cf1e078644",
+      "region": "left"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 40.08,
+        "width": 0.96,
+        "x": 276.24,
+        "y": 60.72
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "The matched 300 DPI Poppler and MuPDF crops show the corrected native fill bounds. These residuals are one-pixel edge coverage from native clipping versus Typst antialiasing, with no trace geometry deviation for the affected table fills."
+      },
+      "id": "p2-9cca8224836f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.3616,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.72,
+        "x": 212.88,
+        "y": 268.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-678f7bbc58e5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 39.12,
+        "width": 0.96,
+        "x": 276.24,
+        "y": 374.16
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "The matched 300 DPI Poppler and MuPDF crops show the corrected native fill bounds. These residuals are one-pixel edge coverage from native clipping versus Typst antialiasing, with no trace geometry deviation for the affected table fills."
+      },
+      "id": "p2-d21d47f3fc14",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.2672,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.96,
+        "x": 164.16,
+        "y": 265.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-26e96a2b4c67",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 20.64,
+        "width": 11.04,
+        "x": 144.24,
+        "y": 507.6
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "These clusters remain inside the three embedded gift thumbnails. The 300 DPI Poppler and MuPDF pages show the same image content, crop, size, and position with only native-export versus Typst resampling differences."
+      },
+      "id": "p2-9be9ca4cfa87",
+      "region": "left"
+    },
+    {
+      "area_pt2": 34.1568,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.36,
+        "x": 171.6,
+        "y": 268.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-860d654b3e80",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.6592,
+      "bbox_pt": {
+        "height": 3.36,
+        "width": 17.28,
+        "x": 206.4,
+        "y": 508.56
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "These clusters remain inside the three embedded gift thumbnails. The 300 DPI Poppler and MuPDF pages show the same image content, crop, size, and position with only native-export versus Typst resampling differences."
+      },
+      "id": "p2-d600a2f52dce",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.6592,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 17.52,
+        "x": 169.44,
+        "y": 107.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-57d2ddf8efee",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.0096,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 7.44,
+        "x": 187.2,
+        "y": 266.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-746a6be331d7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.8944,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 158.88,
+        "y": 265.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-1f732ae9957b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.48,
+        "x": 221.28,
+        "y": 197.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-36e9ceadef5f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.936,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.0,
+        "x": 228.72,
+        "y": 217.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-1df39cabf3ab",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.3232,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 8.16,
+        "x": 148.8,
+        "y": 199.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-32b75b83cba9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 3.6,
+        "width": 18.0,
+        "x": 111.36,
+        "y": 508.56
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "These clusters remain inside the three embedded gift thumbnails. The 300 DPI Poppler and MuPDF pages show the same image content, crop, size, and position with only native-export versus Typst resampling differences."
+      },
+      "id": "p2-39be9d0bb08b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.2864,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 139.2,
+        "y": 217.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-b61723c380e7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.9984,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 238.08,
+        "y": 216.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-99048268f087",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.9984,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.0,
+        "x": 187.44,
+        "y": 199.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-42242f1e7abc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.52,
+        "x": 134.16,
+        "y": 199.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-876ade0766d4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.52,
+        "x": 194.16,
+        "y": 199.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-3d213c5e7ad9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.768,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 201.6,
+        "y": 268.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-3c50fb3d7164",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 5.76,
+        "x": 238.8,
+        "y": 148.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-9721e29ce2cd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 4.56,
+        "width": 8.64,
+        "x": 121.68,
+        "y": 813.12
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-34fd64430d4a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.0768,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 4.32,
+        "x": 161.04,
+        "y": 196.8
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-0c2cfcf6229d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.7888,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 5.76,
+        "x": 156.24,
+        "y": 165.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-f4c7fa8b5afb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.7888,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 6.0,
+        "x": 177.36,
+        "y": 165.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-97b15d1c11b4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 211.92,
+        "y": 165.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-c5c142cd12a9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.3696,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 165.84,
+        "y": 199.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-22708aa5dbd6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.2544,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 9.6,
+        "x": 211.68,
+        "y": 107.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-0c9e7c228fe3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 4.56,
+        "width": 6.48,
+        "x": 1042.08,
+        "y": 464.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-dc058d2d009f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.1024,
+      "bbox_pt": {
+        "height": 8.88,
+        "width": 3.12,
+        "x": 141.6,
+        "y": 265.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-1efcf85c858d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 6.24,
+        "x": 230.88,
+        "y": 268.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The 300 DPI Poppler and MuPDF full-page and footer crops show matching content, position, wrapping, colour, and emphasis. The trace places the footer origin at the native 49.2pt; these compact residuals follow differing font outlines and rasterization only."
+      },
+      "id": "p2-6bbaec0e4a6d",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 46,
+    "duplicate": 0,
+    "total": 46,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

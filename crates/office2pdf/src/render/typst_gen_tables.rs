@@ -1116,8 +1116,11 @@ fn generate_table_cell(
                 cell.background_alpha,
                 inset,
                 &band.vertical_extent,
-                band.background_bleed_top_trim_pt,
-                band.background_bleed_bottom_left_trim_pt,
+                (
+                    band.background_bleed_top_trim_pt,
+                    band.background_bleed_bottom_left_trim_pt,
+                ),
+                ctx.sheet_print_scale(),
             );
         }
         if let Some(border) = band.painted_border {
@@ -1378,7 +1381,7 @@ fn generate_table_cell(
         out.push_str("#context {let o2p-spill = [");
         let enclosing_in_spill_cell = ctx.in_spill_cell;
         ctx.in_spill_cell = true;
-        let spill_content = generate_cell_content(out, &cell.content, ctx);
+        let spill_content = generate_sheet_cell_content(out, &cell.content, ctx);
         ctx.in_spill_cell = enclosing_in_spill_cell;
         spill_content?;
         // Translate the placed line itself. Wrapping this whole `#context`
@@ -1418,7 +1421,7 @@ fn generate_table_cell(
                 format_f64(height)
             );
         }
-        generate_cell_content(out, &cell.content, ctx)?;
+        generate_sheet_cell_content(out, &cell.content, ctx)?;
         if strut_height_pt.is_some() {
             out.push_str("])");
         }
@@ -2916,13 +2919,20 @@ fn write_excel_background_bleed(
     background_alpha: Option<f64>,
     inset: Insets,
     vertical_extent: &VerticalBandExtent,
-    top_trim_pt: f64,
-    bottom_left_trim_pt: f64,
+    trims_pt: (f64, f64),
+    sheet_print_scale: Option<f64>,
 ) {
-    let bleed_with_overlap: String = format!(
-        "{}pt",
-        format_geometry(BAND_RUN_END_EXTENSION_PT + BACKGROUND_BLEED_SEAM_OVERLAP_PT)
-    );
+    let (top_trim_pt, bottom_left_trim_pt) = trims_pt;
+    // A fitted worksheet paints these lengths in declared sheet space and
+    // scales the result. Word/PowerPoint and an unfitted sheet keep the
+    // measured physical lengths unchanged (#1538).
+    let scale: f64 = sheet_print_scale
+        .filter(|scale| *scale > 0.0 && *scale < 1.0)
+        .unwrap_or(1.0);
+    let end_extension_pt: f64 = BAND_RUN_END_EXTENSION_PT * scale;
+    let seam_overlap_pt: f64 = BACKGROUND_BLEED_SEAM_OVERLAP_PT * scale;
+    let bleed_with_overlap: String =
+        format!("{}pt", format_geometry(end_extension_pt + seam_overlap_pt));
     // The bottom strip runs the cell's full width plus the corner block it
     // shares with the right one, exactly as a horizontal border band does.
     // A differently painted left neighbour reserves its own corner block, so
@@ -2931,15 +2941,10 @@ fn write_excel_background_bleed(
         out,
         "bottom + left",
         &format!("{}pt", format_geometry(-inset.left + bottom_left_trim_pt)),
-        &format!(
-            "{}pt",
-            format_geometry(inset.bottom + BAND_RUN_END_EXTENSION_PT)
-        ),
+        &format!("{}pt", format_geometry(inset.bottom + end_extension_pt)),
         &format!(
             "100% + {}pt",
-            format_geometry(
-                inset.left + inset.right + BAND_RUN_END_EXTENSION_PT - bottom_left_trim_pt
-            )
+            format_geometry(inset.left + inset.right + end_extension_pt - bottom_left_trim_pt)
         ),
         &bleed_with_overlap,
         background,
@@ -2947,17 +2952,14 @@ fn write_excel_background_bleed(
     );
     // The right strip spans the row frame, and takes a concrete length for the
     // same reason [`VerticalBandExtent`] gives.
-    let dx: String = format!(
-        "{}pt",
-        format_geometry(inset.right + BAND_RUN_END_EXTENSION_PT)
-    );
+    let dx: String = format!("{}pt", format_geometry(inset.right + end_extension_pt));
     // Keep the lower edge fixed while moving the upper edge below a
     // horizontal band already painted by the preceding row. This applies to
     // both auto-row twins: reducing the bottom-anchored twin's height moves
     // only its top, so it cannot reintroduce the same overpaint (#1475).
     let top_dy: String = format!("{}pt", format_geometry(-inset.top + top_trim_pt));
     let (height, twins): (String, bool) =
-        background_bleed_vertical_run(vertical_extent, inset, top_trim_pt);
+        background_bleed_vertical_run(vertical_extent, inset, top_trim_pt, end_extension_pt);
     write_background_rect(
         out,
         "top + right",
@@ -2973,10 +2975,7 @@ fn write_excel_background_bleed(
             out,
             "bottom + right",
             &dx,
-            &format!(
-                "{}pt",
-                format_geometry(inset.bottom + BAND_RUN_END_EXTENSION_PT)
-            ),
+            &format!("{}pt", format_geometry(inset.bottom + end_extension_pt)),
             &bleed_with_overlap,
             &height,
             background,
@@ -2991,30 +2990,27 @@ fn background_bleed_vertical_run(
     vertical_extent: &VerticalBandExtent,
     inset: Insets,
     top_trim_pt: f64,
+    end_extension_pt: f64,
 ) -> (String, bool) {
     match *vertical_extent {
         VerticalBandExtent::FrameHeight(frame_height_pt) => (
             format!(
                 "{}pt",
-                format_geometry(
-                    (frame_height_pt + BAND_RUN_END_EXTENSION_PT - top_trim_pt).max(0.0)
-                )
+                format_geometry((frame_height_pt + end_extension_pt - top_trim_pt).max(0.0))
             ),
             false,
         ),
         VerticalBandExtent::TwinBands(frame_estimate_pt) => (
             format!(
                 "{}pt",
-                format_geometry(
-                    (frame_estimate_pt + BAND_RUN_END_EXTENSION_PT - top_trim_pt).max(0.0)
-                )
+                format_geometry((frame_estimate_pt + end_extension_pt - top_trim_pt).max(0.0))
             ),
             true,
         ),
         VerticalBandExtent::TwinBandsEmFallback => (
             format!(
                 "1.2em + {}pt",
-                format_geometry(inset.top + inset.bottom + BAND_RUN_END_EXTENSION_PT - top_trim_pt)
+                format_geometry(inset.top + inset.bottom + end_extension_pt - top_trim_pt)
             ),
             true,
         ),
@@ -3195,6 +3191,34 @@ fn format_cell_stroke(border: &CellBorder) -> String {
 
 fn format_border_side(side: &BorderSide) -> String {
     stroke_value(side, true)
+}
+
+/// Generate a table cell's content at its established seat when the fitted
+/// worksheet's paint layer has been translated underneath it.
+///
+/// `#move` leaves layout dimensions unchanged, so the inverse translation
+/// cancels only the visual table-paint offset from issue #1538. Off a fitted
+/// sheet the helper is byte-for-byte the old direct generation path.
+fn generate_sheet_cell_content(
+    out: &mut String,
+    blocks: &[Block],
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let paint_offset_pt: Option<(f64, f64)> = ctx.sheet_paint_offset_pt.take();
+    if let Some((paint_dx_pt, paint_dy_pt)) = paint_offset_pt {
+        let _ = write!(
+            out,
+            "#move(dx: {}pt, dy: {}pt)[",
+            format_geometry(-paint_dx_pt),
+            format_geometry(-paint_dy_pt),
+        );
+    }
+    let result = generate_cell_content(out, blocks, ctx);
+    ctx.sheet_paint_offset_pt = paint_offset_pt;
+    if paint_offset_pt.is_some() {
+        out.push(']');
+    }
+    result
 }
 
 fn generate_cell_content(

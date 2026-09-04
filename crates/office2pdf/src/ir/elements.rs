@@ -1109,7 +1109,10 @@ pub struct Table {
     /// one: the sheet of issue #1163 prints its 14pt Segoe UI panel 17.22pt
     /// per line, which is the unscaled 21.00pt times this 0.82, not a whole
     /// number of points in the scaled domain. Its whole-point line seats and
-    /// glyph advances follow the same order (issue #1238).
+    /// glyph advances follow the same order (issue #1238). Fitted sheet paint
+    /// is another exception: Excel constructs the paper-space origin and its
+    /// positive-axis background bleed before applying this scale (issue
+    /// #1538).
     pub print_scale: Option<f64>,
 }
 
