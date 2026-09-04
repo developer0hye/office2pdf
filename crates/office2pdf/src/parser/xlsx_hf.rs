@@ -368,6 +368,7 @@ pub(super) fn parse_hf_format_string(
         Some(HeaderFooter {
             paragraphs,
             distance_from_edge: None,
+            sheet_print_scale: None,
             shapes: Vec::new(),
         })
     }

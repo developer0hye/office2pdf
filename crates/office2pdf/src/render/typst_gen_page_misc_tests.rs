@@ -14,6 +14,7 @@ fn test_generate_flow_page_with_text_header() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -52,6 +53,7 @@ fn test_generate_flow_page_with_page_number_footer() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: Some(35.4),
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![
@@ -100,6 +102,7 @@ fn test_generate_footer_with_compound_border_and_right_positioned_tab() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![
@@ -165,6 +168,7 @@ fn a_page_anchored_footer_frame_paints_below_body_content() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -228,6 +232,7 @@ fn test_page_anchored_frame_page_number_compiles() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::PageNumber(TextStyle::default())],
@@ -286,6 +291,7 @@ fn test_generate_flow_page_with_header_and_footer() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -302,6 +308,7 @@ fn test_generate_flow_page_with_header_and_footer() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::PageNumber(TextStyle::default())],
@@ -625,6 +632,7 @@ fn test_table_page_with_header() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle {
                     alignment: Some(Alignment::Center),
@@ -663,6 +671,7 @@ fn test_table_page_with_page_number_footer() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle {
                     alignment: Some(Alignment::Center),
@@ -725,6 +734,7 @@ fn sheet_page_with_seated_footer(distance_from_edge: Option<f64>, family: Option
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle {
                     alignment: Some(Alignment::Left),
@@ -749,6 +759,36 @@ fn sheet_page_with_seated_footer(distance_from_edge: Option<f64>, family: Option
         images: Vec::new(),
         text_boxes: Vec::new(),
     })
+}
+
+/// Excel lays a fitted sheet's header/footer out in sheet coordinates and
+/// scales that box onto the paper. At 0.82, the A3 probe's 50pt page margins
+/// therefore become the outward-rounded box 49.2..1141.44pt (#1510).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_fitted_sheet_footer_uses_its_scaled_horizontal_coordinate_box() {
+    let mut page = sheet_page_with_seated_footer(Some(23.0), Some("Arial"));
+    let Page::Sheet(sheet) = &mut page else {
+        panic!("the fixture is a sheet page");
+    };
+    sheet.size = PageSize {
+        width: 1191.0,
+        height: 842.0,
+    };
+    sheet
+        .footer
+        .as_mut()
+        .expect("the fixture has a footer")
+        .sheet_print_scale = Some(0.82);
+
+    let source = generate_typst(&make_doc(vec![page]))
+        .expect("document should generate")
+        .source;
+
+    assert!(
+        source.contains("#move(dx: -0.8pt)[#block(width: 1092.24pt)["),
+        "the footer must use the scaled sheet-coordinate box: {source}"
+    );
 }
 
 /// A seated sheet footer grows up from the page's bottom edge, not down from
@@ -1255,6 +1295,7 @@ fn test_generate_header_with_bottom_border_draws_rule_below_text() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -1342,6 +1383,7 @@ fn a_right_aligned_header_does_not_drag_its_rule_left() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: right_aligned,
                 elements: vec![HFInline::Run(Run {
@@ -1402,6 +1444,7 @@ fn test_generate_header_with_top_and_bottom_borders_draws_both_rules() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -1457,6 +1500,7 @@ fn test_flow_page_footer_is_pinned_to_the_word_edge_distance() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: Some(35.4),
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -1518,6 +1562,7 @@ fn test_flow_page_footer_without_edge_distance_keeps_default_placement() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -1563,6 +1608,7 @@ fn test_flow_page_footer_distance_beyond_margin_falls_back() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: Some(48.0),
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -1682,6 +1728,7 @@ fn test_generate_header_border_uses_declared_pbdr_space() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -1743,6 +1790,7 @@ fn test_generate_header_border_without_space_keeps_hairline_gap() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -1798,6 +1846,7 @@ fn test_flow_page_header_is_pinned_to_the_word_edge_distance() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: Some(35.4),
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -1850,6 +1899,7 @@ fn test_flow_page_header_without_edge_distance_keeps_default_placement() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
@@ -1912,6 +1962,7 @@ fn doc_with_header(
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: header_distance_pt,
+            sheet_print_scale: None,
             paragraphs,
         }),
         footer: None,
@@ -2341,6 +2392,7 @@ fn test_header_band_shift_leaves_the_footer_where_it_was() {
             footer: Some(HeaderFooter {
                 shapes: Vec::new(),
                 distance_from_edge: Some(35.4),
+                sheet_print_scale: None,
                 paragraphs: vec![footer_paragraph.clone()],
             }),
             columns: None,
@@ -2354,6 +2406,7 @@ fn test_header_band_shift_leaves_the_footer_where_it_was() {
     let with_header = page(Some(HeaderFooter {
         shapes: Vec::new(),
         distance_from_edge: Some(35.4),
+        sheet_print_scale: None,
         paragraphs: vec![header_text_paragraph("Header", arial(8.0))],
     }));
 
@@ -2420,6 +2473,7 @@ fn test_page_number_field_uses_its_run_style() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![
@@ -2478,6 +2532,7 @@ fn test_unstyled_page_number_field_stays_bare() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::PageNumber(TextStyle::default())],
@@ -2522,6 +2577,7 @@ fn test_section_page_numbering_updates_the_counter_and_its_numerals() {
             frame: None,
         }],
         distance_from_edge: None,
+        sheet_print_scale: None,
     });
     flow.page_numbering = Some(crate::ir::PageNumbering {
         start: Some(1),
@@ -2842,6 +2898,7 @@ fn doc_with_spaced_footer_run(
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: Some(35.4),
+            sheet_print_scale: None,
             paragraphs: vec![paragraph],
         }),
         columns: None,
@@ -3019,6 +3076,7 @@ fn a_header_rule_is_spaced_from_the_line_box_bottom() {
         header: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![paragraph],
         }),
         footer: None,
@@ -3126,6 +3184,7 @@ fn a_taller_first_page_header_also_grows_the_margin() {
     page.first_header = Some(HeaderFooter {
         shapes: Vec::new(),
         distance_from_edge: Some(35.4),
+        sheet_print_scale: None,
         paragraphs: vec![
             line("표지 첫째 줄"),
             line("표지 둘째 줄"),
@@ -3263,6 +3322,7 @@ fn a_behind_text_header_banner_is_drawn_on_the_background_layer() {
         header: Some(HeaderFooter {
             shapes: vec![banner],
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: Vec::new(),
         }),
         footer: None,
@@ -3338,6 +3398,7 @@ fn a_non_wrapping_anchored_frame_sizes_to_its_content() {
             footer: Some(HeaderFooter {
                 shapes: Vec::new(),
                 distance_from_edge: None,
+                sheet_print_scale: None,
                 paragraphs: vec![HeaderFooterParagraph {
                     style: ParagraphStyle::default(),
                     elements: vec![HFInline::Run(Run {
@@ -3394,6 +3455,7 @@ fn a_bottom_seated_anchored_frame_keeps_one_em_above_its_bottom_inset() {
             footer: Some(HeaderFooter {
                 shapes: Vec::new(),
                 distance_from_edge: None,
+                sheet_print_scale: None,
                 paragraphs: vec![HeaderFooterParagraph {
                     style: ParagraphStyle::default(),
                     elements: vec![HFInline::Run(Run {
@@ -3458,6 +3520,7 @@ fn a_page_left_aligned_wps_footer_uses_the_writer_text_origin_seat() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {

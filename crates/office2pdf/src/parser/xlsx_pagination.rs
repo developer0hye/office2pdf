@@ -204,7 +204,7 @@ fn scale_sheet_page(
             .into_iter()
             .flatten()
         {
-            scale_header_footer_font_sizes(header_footer, scale);
+            scale_header_footer_with_sheet(header_footer, scale);
         }
     }
     // Every size below is multiplied by the scale outright. The factor itself
@@ -273,13 +273,19 @@ fn scale_sheet_page(
     page
 }
 
-/// Scale every run of a header or footer.
+/// Scale every run of a header or footer and retain the same factor for its
+/// horizontal sheet-coordinate box.
 ///
 /// A run that states no size takes the renderer's default rather than being
 /// left alone: it is the size the run actually prints at, and skipping it left
 /// the Gantt template's leading `_x000D_` at 11pt while everything around it
 /// shrank (issue #940).
-fn scale_header_footer_font_sizes(header_footer: &mut HeaderFooter, scale: f64) {
+///
+/// Excel applies the fit factor to the story's coordinates too. Retaining it
+/// separately lets the renderer reconstruct the scaled horizontal seat without
+/// scaling these already-adjusted font sizes a second time (issue #1510).
+fn scale_header_footer_with_sheet(header_footer: &mut HeaderFooter, scale: f64) {
+    header_footer.sheet_print_scale = Some(header_footer.sheet_print_scale.unwrap_or(1.0) * scale);
     for paragraph in &mut header_footer.paragraphs {
         for element in &mut paragraph.elements {
             if let HFInline::Run(run) = element {

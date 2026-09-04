@@ -758,6 +758,7 @@ fn footer_with_runs(runs: Vec<Run>) -> HeaderFooter {
             frame: None,
         }],
         distance_from_edge: None,
+        sheet_print_scale: None,
     }
 }
 
@@ -811,6 +812,14 @@ fn a_scaled_sheet_scales_its_footer_with_it() {
     assert_eq!(pages.len(), 1);
     // 400 + 400 onto a 400pt printable width: scale 0.5.
     assert_eq!(
+        pages[0]
+            .footer
+            .as_ref()
+            .and_then(|footer| footer.sheet_print_scale),
+        Some(0.5),
+        "the footer layout keeps the fit factor for its coordinate box"
+    );
+    assert_eq!(
         footer_run_sizes(&pages[0]),
         vec![
             Some(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT * 0.5),
@@ -818,6 +827,41 @@ fn a_scaled_sheet_scales_its_footer_with_it() {
         ],
         "both the sized run and the one taking the default shrink with the sheet"
     );
+}
+
+/// `scaleWithDoc="0"` leaves both the footer type and the coordinate box in
+/// page space even though the worksheet grid still fits to the page (#1510).
+#[test]
+fn a_scaled_sheet_that_opts_out_leaves_its_footer_coordinate_box_alone() {
+    let mut page = make_page(
+        vec![400.0, 400.0],
+        vec![TableRow {
+            minimum_height: None,
+            cells: vec![cell("left"), cell("right")],
+            height: Some(20.0),
+        }],
+    );
+    page.footer = Some(footer_with_runs(vec![Run {
+        text: "Footer".to_string(),
+        style: TextStyle {
+            font_size: Some(8.0),
+            ..TextStyle::default()
+        },
+        href: None,
+        footnote: None,
+    }]));
+
+    let pages = split_sheet_page_by_width(page, None, fit_to_width(1), false);
+
+    assert_eq!(pages.len(), 1);
+    assert_eq!(
+        pages[0]
+            .footer
+            .as_ref()
+            .and_then(|footer| footer.sheet_print_scale),
+        None
+    );
+    assert_eq!(footer_run_sizes(&pages[0]), vec![Some(8.0)]);
 }
 
 /// A sheet that already fits is never scaled up, so its footer is untouched

@@ -525,6 +525,7 @@ fn convert_docx_header(
     Some(HeaderFooter {
         paragraphs,
         distance_from_edge: None,
+        sheet_print_scale: None,
         shapes,
     })
 }
@@ -571,6 +572,7 @@ fn convert_docx_footer(
     Some(HeaderFooter {
         paragraphs,
         distance_from_edge: None,
+        sheet_print_scale: None,
         shapes,
     })
 }

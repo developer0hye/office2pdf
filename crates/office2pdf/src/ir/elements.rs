@@ -2,12 +2,15 @@ use std::collections::BTreeMap;
 
 use super::style::{Alignment, Color, ParagraphStyle, TabLeader, TextStyle};
 
-/// Header or footer content for flow pages.
+/// Header or footer content for flow pages and worksheets.
 #[derive(Debug, Clone)]
 pub struct HeaderFooter {
     pub paragraphs: Vec<HeaderFooterParagraph>,
-    /// Distance in points from the page edge, as specified by the section page margins.
+    /// Distance in points from the page edge, when the source states one.
     pub distance_from_edge: Option<f64>,
+    /// Fit-to-page scale of a worksheet header/footer's horizontal coordinate
+    /// box. `None` for flow-page stories and sheets whose story is not scaled.
+    pub sheet_print_scale: Option<f64>,
     /// Anchored shapes the story draws, positioned against the page rather
     /// than laid out in the story's flow. A header's decorative banner is one
     /// of these and carries no text at all (issue #961).

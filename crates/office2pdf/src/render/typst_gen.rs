@@ -2690,7 +2690,7 @@ fn write_table_page_setup(
         } else {
             out.push_str(", header: [");
         }
-        generate_hf_content(out, header, ctx);
+        generate_sheet_hf_content(out, header, size, &page.margins, ctx);
         out.push(']');
     }
 
@@ -2706,19 +2706,19 @@ fn write_table_page_setup(
                 format_f64(band),
                 sheet_footer_bottom_edge(footer),
             );
-            generate_hf_content(out, footer, ctx);
+            generate_sheet_hf_content(out, footer, size, &page.margins, ctx);
             out.push_str("])]");
         } else if hf_needs_stack_offset(footer) {
             out.push_str(", footer: context { let footer_content = block(width: 100%)[");
-            generate_hf_content(out, footer, ctx);
+            generate_sheet_hf_content(out, footer, size, &page.margins, ctx);
             out.push_str("]; move(dy: -measure(footer_content).height / 2)[#footer_content] }");
         } else if hf_needs_context(footer) {
             out.push_str(", footer: context [");
-            generate_hf_content(out, footer, ctx);
+            generate_sheet_hf_content(out, footer, size, &page.margins, ctx);
             out.push(']');
         } else {
             out.push_str(", footer: [");
-            generate_hf_content(out, footer, ctx);
+            generate_sheet_hf_content(out, footer, size, &page.margins, ctx);
             out.push(']');
         }
     }
@@ -2729,6 +2729,52 @@ fn write_table_page_setup(
     }
 
     out.push_str(")\n");
+}
+
+/// Generate a worksheet header/footer inside Excel's fitted horizontal box.
+///
+/// Excel keeps the paper geometry fixed, lays a `scaleWithDoc` story out in
+/// sheet coordinates, and applies the fit scale afterwards. Its sheet-space
+/// clip edges sit on whole points and round outwards. On the issue #1510 A3
+/// probe, the 50pt paper-space margins at 0.82 therefore become
+/// `floor(50 / 0.82) * 0.82 = 49.2pt` on the left and
+/// `ceil((1191 - 50) / 0.82) * 0.82 = 1141.44pt` on the right. Typst lays a
+/// page header/footer between the paper-space margins, so move that story to
+/// the scaled left edge and give it the scaled width. The run sizes were
+/// already multiplied once by pagination; this wrapper does not scale them a
+/// second time.
+fn generate_sheet_hf_content(
+    out: &mut String,
+    hf: &HeaderFooter,
+    size: &PageSize,
+    margins: &Margins,
+    ctx: &mut GenCtx,
+) {
+    let scaled_box: Option<(f64, f64)> = hf
+        .sheet_print_scale
+        .filter(|scale| *scale > 0.0 && *scale < 1.0)
+        .map(|scale| {
+            let hundredth = |points: f64| -> f64 { (points * 100.0).round() / 100.0 };
+            let left_pt: f64 = hundredth((margins.left / scale).floor() * scale);
+            let right_pt: f64 = hundredth(((size.width - margins.right) / scale).ceil() * scale);
+            (
+                hundredth(left_pt - margins.left),
+                hundredth(right_pt - left_pt),
+            )
+        });
+
+    if let Some((dx_pt, width_pt)) = scaled_box {
+        let _ = write!(
+            out,
+            "#move(dx: {}pt)[#block(width: {}pt)[",
+            format_f64(dx_pt),
+            format_f64(width_pt),
+        );
+    }
+    generate_hf_content(out, hf, ctx);
+    if scaled_box.is_some() {
+        out.push_str("]]");
+    }
 }
 
 /// The band a seated sheet footer spans, from the bottom margin line down to

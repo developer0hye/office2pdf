@@ -2069,6 +2069,7 @@ fn test_header_right_tab_stop_pushes_its_segment_to_the_margin() {
             vec![stop(465.3, TabAlignment::Right)],
         )],
         distance_from_edge: None,
+        sheet_print_scale: None,
     })]);
     let result = generate_typst(&doc).unwrap().source;
 
@@ -2094,6 +2095,7 @@ fn test_header_center_and_right_tab_stops_lay_out_three_segments() {
             ],
         )],
         distance_from_edge: None,
+        sheet_print_scale: None,
     })]);
     let result = generate_typst(&doc).unwrap().source;
 
@@ -2114,6 +2116,7 @@ fn test_header_tab_without_a_matching_stop_keeps_the_plain_advance() {
             vec![stop(72.0, TabAlignment::Left)],
         )],
         distance_from_edge: None,
+        sheet_print_scale: None,
     })]);
     let result = generate_typst(&doc).unwrap().source;
 

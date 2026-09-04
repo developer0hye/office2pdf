@@ -2310,6 +2310,7 @@ fn test_header_field_never_states_kerning_false() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: None,
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::PageNumber(field_style)],
@@ -2354,6 +2355,7 @@ fn test_unembedded_aptos_footer_uses_noto_sans_on_an_aptos_host() {
         footer: Some(HeaderFooter {
             shapes: Vec::new(),
             distance_from_edge: Some(24.0),
+            sheet_print_scale: None,
             paragraphs: vec![HeaderFooterParagraph {
                 style: ParagraphStyle::default(),
                 elements: vec![HFInline::Run(Run {
