@@ -1092,6 +1092,14 @@ const CHART_LABEL_BOX_RATIO: f64 = 1.25;
 const PPTX_HORIZONTAL_VALUE_LABEL_GAP_PT: f64 = 3.8602445;
 const PPTX_HORIZONTAL_VALUE_LABEL_GAP_EM: f64 = 0.738435;
 
+/// Top-edge placement of an embedded Excel worksheet bar chart's horizontal
+/// value-axis label box, measured from the inner plot's bottom edge.
+///
+/// Excel for Mac 16.112 places the #1266 workbook's zero-label baseline 15.03
+/// chart points below the plot bottom. Translating that baseline through the
+/// existing 10pt Typst text box gives a 7.65pt box-top gap.
+const EXCEL_WORKSHEET_HORIZONTAL_VALUE_LABEL_GAP_PT: f64 = 7.65;
+
 /// Height of the box holding one value tick label set at `text_pt`.
 fn chart_label_box_h(text_pt: f64) -> f64 {
     text_pt * CHART_LABEL_BOX_RATIO
@@ -1104,6 +1112,10 @@ fn horizontal_value_label_gap(chart: &Chart) -> f64 {
         PPTX_HORIZONTAL_VALUE_LABEL_GAP_PT
             + PPTX_HORIZONTAL_VALUE_LABEL_GAP_EM
                 * chart_axis_text_pt(chart, chart.value_axis_text_style)
+    } else if matches!(chart.host, crate::ir::ChartHost::Spreadsheet)
+        && matches!(chart.chart_type, ChartType::Bar)
+    {
+        EXCEL_WORKSHEET_HORIZONTAL_VALUE_LABEL_GAP_PT
     } else {
         4.0
     }

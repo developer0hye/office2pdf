@@ -4284,16 +4284,41 @@ fn a_powerpoint_horizontal_value_axis_keeps_native_label_gap_at_multiple_sizes()
 }
 
 #[test]
-fn a_spreadsheet_horizontal_value_axis_keeps_the_existing_label_gap() {
-    let mut chart = bar_chart_at(Some(18.0), &["Q1", "Q2"]);
-    chart.host = crate::ir::ChartHost::Spreadsheet;
-    let source = framed_chart_source(&chart, 480.0, 320.0);
-    let plot_bottom = axis_plot_rect(&chart, (480.0, 320.0), false).3;
+fn an_excel_worksheet_horizontal_value_axis_uses_the_native_label_band() {
+    // A native Excel for Mac 16.112 export of the #1266 workbook places the
+    // zero-label baseline 15.03 chart points below the plot bottom. Translating
+    // that baseline through the same Typst text box gives a 7.65pt box-top gap;
+    // the old flat 4pt fallback left the printed baseline 3.65pt too high.
+    let chart = monthly_budget_income_chart();
+    let source = framed_chart_source(
+        &chart,
+        MONTHLY_BUDGET_CHART_FRAME.0,
+        MONTHLY_BUDGET_CHART_FRAME.1,
+    );
+    let plot_bottom = axis_plot_rect(&chart, MONTHLY_BUDGET_CHART_FRAME, false).3;
     let actual_gap = horizontal_value_axis_label_y(&source, "0") - plot_bottom;
     assert!(
-        (actual_gap - 4.0).abs() <= 0.01,
-        "the Excel-compatible gap changed to {actual_gap}pt; got:\n{source}"
+        (actual_gap - 7.65).abs() <= 0.01,
+        "the worksheet value-label gap is {actual_gap}pt, expected the native-derived 7.65pt; got:\n{source}"
     );
+}
+
+#[test]
+fn non_worksheet_horizontal_value_axes_keep_their_existing_label_gap() {
+    for host in [
+        crate::ir::ChartHost::SpreadsheetChartsheet,
+        crate::ir::ChartHost::WordProcessing,
+    ] {
+        let mut chart = bar_chart_at(Some(18.0), &["Q1", "Q2"]);
+        chart.host = host;
+        let source = framed_chart_source(&chart, 480.0, 320.0);
+        let plot_bottom = axis_plot_rect(&chart, (480.0, 320.0), false).3;
+        let actual_gap = horizontal_value_axis_label_y(&source, "0") - plot_bottom;
+        assert!(
+            (actual_gap - 4.0).abs() <= 0.01,
+            "the {host:?} value-label gap changed to {actual_gap}pt; got:\n{source}"
+        );
+    }
 }
 
 #[test]
