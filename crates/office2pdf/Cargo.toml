@@ -36,6 +36,11 @@ zip = { version = "0.6", default-features = false, features = ["deflate"] }
 quick-xml = "0.38"
 umya-spreadsheet = "2"
 unicode-normalization = "0.1"
+# office2pdf is std-only, but transitive users currently select tinyvec's
+# broken 1.13.0 `alloc`-without-`std` path. Keep `std` unified until a patched
+# tinyvec release fixes Lokathor/tinyvec#225, then remove this workaround
+# (issue #1524).
+tinyvec = { version = "1", default-features = false, features = ["std"] }
 image = "0.25"
 tracing = "0.1"
 wasm-bindgen = { version = "0.2", optional = true }
