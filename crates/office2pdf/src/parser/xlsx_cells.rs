@@ -31,10 +31,12 @@ fn formatted_cell_value(cell: &umya_spreadsheet::Cell) -> String {
     cell.get_formatted_value()
 }
 
-/// Decode a conventional three- or four-section format's zero section when it
-/// contains only quoted or escaped literal text (plus bracketed controls).
-/// Value-dependent sections stay on the dependency's normal formatter path.
-fn literal_zero_section_text(format: &str) -> Option<String> {
+/// Split a number format into its one-to-four value sections.
+///
+/// Semicolons inside quoted literals and escaped/control arguments are not
+/// separators. Returning `None` for an unterminated construct keeps callers
+/// from guessing which section Excel would select.
+fn number_format_sections(format: &str) -> Option<Vec<&str>> {
     let mut sections: Vec<&str> = Vec::with_capacity(4);
     let mut section_start: usize = 0;
     let mut in_quotes = false;
@@ -59,6 +61,167 @@ fn literal_zero_section_text(format: &str) -> Option<String> {
         return None;
     }
     sections.push(&format[section_start..]);
+    (sections.len() <= 4).then_some(sections)
+}
+
+/// The ordinary positive/negative/zero section Excel uses for `value`.
+/// Conditional formats are left to the dependency because selecting their
+/// first matching predicate needs a complete number-format evaluator.
+fn selected_number_format_section(format: &str, value: f64) -> Option<&str> {
+    let sections = number_format_sections(format)?;
+    if sections
+        .iter()
+        .any(|section| section_has_condition(section))
+    {
+        return None;
+    }
+    match sections.len() {
+        1 => sections.first().copied(),
+        2 => sections.get(usize::from(value < 0.0)).copied(),
+        3 | 4 if value > 0.0 => sections.first().copied(),
+        3 | 4 if value < 0.0 => sections.get(1).copied(),
+        3 | 4 => sections.get(2).copied(),
+        _ => None,
+    }
+}
+
+/// Glyphs whose advance an Excel `_x` number-format control reserves.
+///
+/// The formatter intentionally drops this paint-free width: built-in format
+/// 38's positive section is `#,##0_)`, but its returned string is just
+/// `19,150`. Excel still measures the hidden closing parenthesis before it
+/// decides whether the value fits (issue #1263).
+fn number_format_skip_width_glyphs(section: &str) -> String {
+    let mut reserved = String::new();
+    let mut chars = section.chars();
+    let mut in_quotes = false;
+    while let Some(ch) = chars.next() {
+        if in_quotes {
+            if ch == '"' {
+                in_quotes = false;
+            }
+            continue;
+        }
+        match ch {
+            '"' => in_quotes = true,
+            '\\' | '*' => {
+                chars.next();
+            }
+            '_' => {
+                if let Some(glyph) = chars.next() {
+                    reserved.push(glyph);
+                }
+            }
+            '[' => {
+                for control in chars.by_ref() {
+                    if control == ']' {
+                        break;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    reserved
+}
+
+/// Reference advances for the issue #1263 face, from the macOS-shipped
+/// Trebuchet MS `hmtx` tables. This keeps the width gate deterministic on
+/// wasm and hosts without that Office face; other strings use the resolved
+/// rendering face when available, then the existing width estimator.
+fn reference_numeric_glyph_advance_em(family: &str, bold: bool, glyph: char) -> Option<f64> {
+    if !family.eq_ignore_ascii_case("Trebuchet MS") {
+        return None;
+    }
+    match glyph {
+        '0'..='9' | '#' => Some(if bold {
+            1200.0 / 2048.0
+        } else {
+            1074.0 / 2048.0
+        }),
+        ',' | '(' | ')' => Some(752.0 / 2048.0),
+        ' ' => Some(617.0 / 2048.0),
+        _ => None,
+    }
+}
+
+/// Width Excel assigns a formatted numeric run before deciding whether it
+/// fits. Each glyph advance is snapped to a whole unscaled sheet point: the
+/// native #1263 trace advances Trebuchet MS Bold 10 digits and hashes by 6pt,
+/// and commas/parentheses by 4pt.
+fn excel_numeric_text_width_pt(
+    text: &str,
+    style: &TextStyle,
+    normal_font: Option<&NormalFont>,
+) -> f64 {
+    let family: &str = style
+        .font_family
+        .as_deref()
+        .or_else(|| normal_font.map(|font| font.family.as_str()))
+        .unwrap_or("Calibri");
+    let size_pt: f64 = style
+        .font_size
+        .or_else(|| normal_font.map(|font| font.size_pt))
+        .unwrap_or(11.0);
+    let bold: bool = style.bold.unwrap_or(false);
+    let reference_advances: Option<Vec<f64>> = text
+        .chars()
+        .map(|glyph| reference_numeric_glyph_advance_em(family, bold, glyph))
+        .collect();
+    let advances =
+        reference_advances.or_else(|| crate::render::pdf::glyph_advances_em(family, bold, text));
+    advances.map_or_else(
+        || estimate_line_width_pt(text, Some(family), size_pt),
+        |advances| {
+            advances
+                .into_iter()
+                .map(|advance| round_half_up_pt(advance * size_pt))
+                .sum()
+        },
+    )
+}
+
+/// Replacement hashes for a fixed-format numeric value that does not fit its
+/// usable cell width. `General` and text formats stay on Excel's adaptive/text
+/// behavior rather than this fixed-format gate.
+#[allow(clippy::too_many_arguments)]
+fn numeric_overflow_replacement(
+    formatted: &str,
+    value: f64,
+    format_code: &str,
+    style: &TextStyle,
+    normal_font: Option<&NormalFont>,
+    cell_width_pt: f64,
+    cell_padding: Insets,
+    indent_pt: f64,
+) -> Option<String> {
+    if formatted.is_empty()
+        || format_code.eq_ignore_ascii_case(umya_spreadsheet::NumberingFormat::FORMAT_GENERAL)
+        || format_code == umya_spreadsheet::NumberingFormat::FORMAT_TEXT
+    {
+        return None;
+    }
+    let section = selected_number_format_section(format_code, value)?;
+    let mut measured = formatted.to_string();
+    measured.push_str(&number_format_skip_width_glyphs(section));
+    let usable_width_pt =
+        (cell_width_pt - cell_padding.left - cell_padding.right - indent_pt).max(0.0);
+    if excel_numeric_text_width_pt(&measured, style, normal_font) <= usable_width_pt {
+        return None;
+    }
+
+    // Native Excel fills the same usable box with whole hash advances: the
+    // 35pt issue cell therefore holds five 6pt hashes, not a clipped value.
+    let hash_width_pt = excel_numeric_text_width_pt("#", style, normal_font).max(0.01);
+    let count = (usable_width_pt / hash_width_pt).floor().max(1.0) as usize;
+    Some("#".repeat(count))
+}
+
+/// Decode a conventional three- or four-section format's zero section when it
+/// contains only quoted or escaped literal text (plus bracketed controls).
+/// Value-dependent sections stay on the dependency's normal formatter path.
+fn literal_zero_section_text(format: &str) -> Option<String> {
+    let sections = number_format_sections(format)?;
     if !matches!(sections.len(), 3 | 4) {
         return None;
     }
@@ -2424,7 +2587,7 @@ pub(super) fn build_rows_for_range(
             // emit one IR run per rich run instead of flattening.
             let rich_text: Option<umya_spreadsheet::RichText> =
                 umya_cell.and_then(|cell| cell.get_cell_value().get_raw_value().get_rich_text());
-            let runs: Vec<Run> = if let Some(rich_text) = rich_text {
+            let mut runs: Vec<Run> = if let Some(rich_text) = rich_text {
                 rich_text
                     .get_rich_text_elements()
                     .iter()
@@ -2443,8 +2606,8 @@ pub(super) fn build_rows_for_range(
                 Vec::new()
             } else {
                 vec![Run {
-                    text: value,
-                    style: text_style,
+                    text: value.clone(),
+                    style: text_style.clone(),
                     href: None,
                     footnote: None,
                 }]
@@ -2471,6 +2634,32 @@ pub(super) fn build_rows_for_range(
             } else {
                 (1, 1)
             };
+
+            if let Some(cell) = umya_cell
+                && let Some(number) = cell.get_value_number()
+                && let Some(number_format) = cell.get_style().get_number_format()
+            {
+                let cell_width_pt: f64 = (col_idx..col_idx + col_span)
+                    .filter_map(|col| {
+                        ctx.column_widths
+                            .get((col - ctx.col_start) as usize)
+                            .copied()
+                    })
+                    .sum();
+                if let Some(replacement) = numeric_overflow_replacement(
+                    &value,
+                    number,
+                    number_format.get_format_code(),
+                    &text_style,
+                    ctx.normal_font.as_ref(),
+                    cell_width_pt,
+                    cell_padding,
+                    cell_indent_pt,
+                ) && let Some(run) = runs.first_mut()
+                {
+                    run.text = replacement;
+                }
+            }
 
             let spill_width: Option<f64> = compute_spill_width(
                 sheet,
@@ -2851,8 +3040,65 @@ pub(super) fn prepare_sheet_context(
 }
 
 #[cfg(test)]
-mod literal_zero_section_tests {
-    use super::literal_zero_section_text;
+mod number_format_tests {
+    use super::{literal_zero_section_text, numeric_overflow_replacement};
+    use crate::ir::{Insets, TextStyle};
+
+    fn issue_1263_style() -> TextStyle {
+        TextStyle {
+            font_family: Some("Trebuchet MS".to_string()),
+            font_size: Some(10.0),
+            bold: Some(true),
+            ..Default::default()
+        }
+    }
+
+    fn issue_1263_padding() -> Insets {
+        Insets {
+            top: 0.0,
+            right: 2.0,
+            bottom: 0.0,
+            left: 3.0,
+        }
+    }
+
+    #[test]
+    fn fixed_numeric_overflow_matches_excel_width_boundaries() {
+        let style = issue_1263_style();
+        let padding = issue_1263_padding();
+        let format = "#,##0_);[Red](#,##0)";
+
+        assert_eq!(
+            numeric_overflow_replacement(
+                "9,999", 9_999.0, format, &style, None, 40.0, padding, 0.0,
+            ),
+            None,
+        );
+        assert_eq!(
+            numeric_overflow_replacement(
+                "10,000", 10_000.0, format, &style, None, 40.0, padding, 0.0,
+            ),
+            Some("#####".to_string()),
+        );
+        assert_eq!(
+            numeric_overflow_replacement(
+                "19,150", 19_150.0, format, &style, None, 40.0, padding, 0.0,
+            ),
+            Some("#####".to_string()),
+        );
+        assert_eq!(
+            numeric_overflow_replacement(
+                "19,150", 19_150.0, format, &style, None, 42.0, padding, 0.0,
+            ),
+            Some("######".to_string()),
+        );
+        assert_eq!(
+            numeric_overflow_replacement(
+                "19,150", 19_150.0, format, &style, None, 43.0, padding, 0.0,
+            ),
+            None,
+        );
+    }
 
     #[test]
     fn decodes_all_escaped_whitespace_from_the_zero_section() {

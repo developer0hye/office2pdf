@@ -431,6 +431,7 @@ fn test_cell_no_formatting_defaults() {
 #[test]
 fn test_number_format_currency() {
     let data = build_xlsx_formatted(|sheet| {
+        sheet.get_column_dimension_by_number_mut(&1).set_width(20.0);
         let cell = sheet.get_cell_mut("A1");
         cell.set_value_number(1234.56f64);
         cell.get_style_mut()
@@ -453,6 +454,7 @@ fn test_number_format_keeps_quoted_currency_suffix() {
     // The quoted euro literal after the digits was dropped, printing
     // "1,240.00" instead of Excel's "1,240.00 €" (issue #365).
     let data = build_xlsx_formatted(|sheet| {
+        sheet.get_column_dimension_by_number_mut(&1).set_width(20.0);
         let cell = sheet.get_cell_mut("A1");
         cell.set_value_number(1240.0f64);
         cell.get_style_mut()
@@ -562,6 +564,7 @@ fn test_number_format_percentage_with_decimals() {
 #[test]
 fn test_number_format_date() {
     let data = build_xlsx_formatted(|sheet| {
+        sheet.get_column_dimension_by_number_mut(&1).set_width(20.0);
         let cell = sheet.get_cell_mut("A1");
         cell.set_value_number(45306f64);
         cell.get_style_mut()
@@ -582,6 +585,7 @@ fn test_number_format_date() {
 #[test]
 fn test_number_format_thousands_separator() {
     let data = build_xlsx_formatted(|sheet| {
+        sheet.get_column_dimension_by_number_mut(&1).set_width(20.0);
         let cell = sheet.get_cell_mut("A1");
         cell.set_value_number(1234567f64);
         cell.get_style_mut()
@@ -594,6 +598,22 @@ fn test_number_format_thousands_separator() {
     let tp = get_sheet_page(&doc, 0);
     let text = cell_text(&tp.table.rows[0].cells[0]);
     assert_eq!(text, "1,234,567", "Expected thousands separator formatting");
+}
+
+/// Excel replaces a formatted numeric value with hashes when its measured
+/// ink plus the number format's skip-width padding cannot fit the cell. The
+/// native issue #1263 workbook keeps four-digit `7,500` visible in O32 but
+/// prints five hashes for the five-digit totals in O37 and O72.
+#[test]
+fn a_fixed_numeric_format_that_does_not_fit_prints_hashes() {
+    let data = include_bytes!("../../../../tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx");
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(data, &ConvertOptions::default()).unwrap();
+
+    let sheet = get_sheet_page(&doc, 1);
+    assert_eq!(cell_text(&sheet.table.rows[31].cells[14]), "7,500");
+    assert_eq!(cell_text(&sheet.table.rows[36].cells[14]), "#####");
+    assert_eq!(cell_text(&sheet.table.rows[71].cells[14]), "#####");
 }
 
 #[test]
