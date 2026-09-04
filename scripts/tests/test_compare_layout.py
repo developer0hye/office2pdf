@@ -827,6 +827,83 @@ class MatchAndDiffTest(unittest.TestCase):
         self.assertEqual(rects["geometry_mismatch_count"], 0)
         self.assertEqual(compare_layout.audit_failures([vector]), 0)
 
+    def test_boundary_bleed_completes_nominal_rectangle_coverage(self) -> None:
+        gt = rect_op(50.0, 54.0, 474.0, 145.0, color=".85 .71 .73")
+        out = "\n".join(
+            [
+                rect_op(50.0, 54.0, 473.0, 144.0, color=".85 .71 .73"),
+                rect_op(50.0, 143.75, 474.0, 145.0, color=".85 .71 .73"),
+                rect_op(472.75, 54.0, 474.0, 145.0, color=".85 .71 .73"),
+            ]
+        )
+
+        vector = self.diff(gt, out, noise_floor=0.5, fine_shift=0.5)
+        rects = vector["rects"]
+
+        self.assertEqual(
+            (rects["canonical_gt_count"], rects["canonical_out_count"]),
+            (1, 1),
+        )
+        self.assertEqual(rects["matched"], 1)
+        self.assertEqual(rects["geometry_mismatch_count"], 0)
+
+    def test_boundary_bleed_accepts_one_noise_floor_corner_gap(self) -> None:
+        gt = rect_op(50.0, 144.0, 474.0, 418.0, color=".97 .94 .94")
+        out = "\n".join(
+            [
+                rect_op(50.0, 144.0, 473.0, 417.0, color=".97 .94 .94"),
+                rect_op(50.0, 416.75, 454.0, 418.0, color=".97 .94 .94"),
+                rect_op(453.0, 416.75, 474.0, 418.0, color=".97 .94 .94"),
+                rect_op(452.75, 145.0, 454.0, 418.0, color=".97 .94 .94"),
+                rect_op(472.75, 145.0, 474.0, 418.0, color=".97 .94 .94"),
+            ]
+        )
+
+        vector = self.diff(gt, out, noise_floor=0.5, fine_shift=0.5)
+        rects = vector["rects"]
+
+        self.assertEqual(
+            (rects["canonical_gt_count"], rects["canonical_out_count"]),
+            (1, 1),
+        )
+        self.assertEqual(rects["geometry_mismatch_count"], 0)
+
+    def test_l_shaped_same_paint_component_stays_split(self) -> None:
+        page = compare_layout.parse_trace(
+            trace_document(
+                "\n".join(
+                    [
+                        rect_op(0.0, 0.0, 100.0, 10.0, color=".8 .2 .2"),
+                        rect_op(0.0, 10.0, 10.0, 100.0, color=".8 .2 .2"),
+                    ]
+                )
+            )
+        )[0]
+
+        rects = compare_layout.canonical_rects(page.rects, tolerance=0.5)
+
+        self.assertEqual(len(rects), 2)
+
+    def test_boundary_bleed_does_not_hide_a_material_corner_gap(self) -> None:
+        page = compare_layout.parse_trace(
+            trace_document(
+                "\n".join(
+                    [
+                        rect_op(0.0, 0.0, 98.0, 98.0, color=".8 .2 .2"),
+                        rect_op(0.0, 98.0, 98.0, 100.0, color=".8 .2 .2"),
+                        rect_op(98.0, 0.0, 100.0, 98.0, color=".8 .2 .2"),
+                    ]
+                )
+            )
+        )[0]
+
+        rects = compare_layout.canonical_rects(page.rects, tolerance=0.5)
+
+        self.assertEqual(len(rects), 2)
+        self.assertNotIn(
+            [0.0, 0.0, 100.0, 100.0], [rect.rect.bbox for rect in rects]
+        )
+
     def test_issue_1418_page_9_title_rule_is_a_rect_geometry_failure(self) -> None:
         gt = line_op(74.183, 137.254, 339.165, 137.254)
         out = line_op(74.215, 133.679, 327.632, 133.679)

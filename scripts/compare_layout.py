@@ -111,6 +111,11 @@ RECT_AMBIGUOUS_MATCH_RADIUS_PT = 24.0
 RECT_AMBIGUOUS_MAX_EXTENT_RATIO = 1.5
 RECT_RULE_MAX_THICKNESS_PT = 2.0
 RECT_RULE_MIN_LENGTH_PT = 4.0
+# Trace coordinates from separate paint operations can disagree by a few
+# thousandths of a point. Keep that below the visual noise floor while letting
+# a one-point right/bottom bleed close its single corner at the 0.5pt Excel
+# audit tolerance.
+RECT_COVERAGE_EPSILON_PT = 0.01
 RECT_SAMPLE_LIMIT = 5
 OPAQUE_ALPHA = 0.98
 INVISIBLE_ALPHA = 0.02
@@ -1309,6 +1314,125 @@ def merge_rect_groups(
     return merged
 
 
+def rect_interval_gap(
+    first_start: float, first_end: float, second_start: float, second_end: float
+) -> float:
+    return max(first_start - second_end, second_start - first_end, 0.0)
+
+
+def rects_connect(first: Rect, second: Rect, tolerance: float) -> bool:
+    return same_rect_paint(first, second) and rect_interval_gap(
+        first.x0, first.x1, second.x0, second.x1
+    ) <= tolerance and rect_interval_gap(
+        first.y0, first.y1, second.y0, second.y1
+    ) <= tolerance
+
+
+def rect_component_covers_bbox(
+    groups: list[CanonicalRect], tolerance: float
+) -> bool:
+    """Return whether filled rectangles cover their bounding box within noise."""
+    rects = [group.rect for group in groups]
+    component_bbox = (
+        min(rect.x0 for rect in rects),
+        min(rect.y0 for rect in rects),
+        max(rect.x1 for rect in rects),
+        max(rect.y1 for rect in rects),
+    )
+    # If one operation already owns the full bounds, the others are nested
+    # paints rather than pieces needed to complete a split rectangle.
+    if any(
+        all(
+            abs(edge - bound) <= tolerance
+            for edge, bound in zip(rect.bbox, component_bbox)
+        )
+        for rect in rects
+    ):
+        return False
+    xs = sorted({coordinate for rect in rects for coordinate in (rect.x0, rect.x1)})
+    ys = sorted({coordinate for rect in rects for coordinate in (rect.y0, rect.y1)})
+    allowed_edge = 2 * tolerance + RECT_COVERAGE_EPSILON_PT
+    allowed_missing_area = allowed_edge * allowed_edge
+    missing_area = 0.0
+    for x0, x1 in zip(xs, xs[1:]):
+        if x1 <= x0:
+            continue
+        x_midpoint = (x0 + x1) / 2
+        for y0, y1 in zip(ys, ys[1:]):
+            if y1 <= y0:
+                continue
+            y_midpoint = (y0 + y1) / 2
+            if any(
+                rect.x0 <= x_midpoint <= rect.x1
+                and rect.y0 <= y_midpoint <= rect.y1
+                for rect in rects
+            ):
+                continue
+            if x1 - x0 > allowed_edge or y1 - y0 > allowed_edge:
+                return False
+            missing_area += (x1 - x0) * (y1 - y0)
+            if missing_area > allowed_missing_area:
+                return False
+    return True
+
+
+def merge_rect_coverage_groups(
+    groups: list[CanonicalRect], tolerance: float
+) -> list[CanonicalRect]:
+    """Merge connected fill operations only when their union covers one rectangle."""
+    remaining = list(groups)
+    merged: list[CanonicalRect] = []
+    while remaining:
+        seed = remaining.pop(0)
+        if seed.rect.kind != "fill" or seed.rect.geometry_kind != "rectangle":
+            merged.append(seed)
+            continue
+
+        component = [seed]
+        while True:
+            connected = [
+                group
+                for group in remaining
+                if any(
+                    rects_connect(existing.rect, group.rect, tolerance)
+                    for existing in component
+                )
+            ]
+            if not connected:
+                break
+            component.extend(connected)
+            connected_ids = {id(group) for group in connected}
+            remaining = [
+                group for group in remaining if id(group) not in connected_ids
+            ]
+
+        if len(component) == 1 or not rect_component_covers_bbox(component, tolerance):
+            merged.extend(component)
+            continue
+        merged.append(
+            CanonicalRect(
+                rect=Rect(
+                    kind=seed.rect.kind,
+                    geometry_kind=seed.rect.geometry_kind,
+                    x0=min(group.rect.x0 for group in component),
+                    y0=min(group.rect.y0 for group in component),
+                    x1=max(group.rect.x1 for group in component),
+                    y1=max(group.rect.y1 for group in component),
+                    color=seed.rect.color,
+                    alpha=seed.rect.alpha,
+                ),
+                source_indices=tuple(
+                    sorted(
+                        index
+                        for group in component
+                        for index in group.source_indices
+                    )
+                ),
+            )
+        )
+    return merged
+
+
 def canonical_rects(rects: list[Rect], tolerance: float) -> list[CanonicalRect]:
     groups = [
         CanonicalRect(rect=rect, source_indices=(index,))
@@ -1317,6 +1441,7 @@ def canonical_rects(rects: list[Rect], tolerance: float) -> list[CanonicalRect]:
     ]
     groups = merge_rect_groups(groups, horizontal=True, tolerance=tolerance)
     groups = merge_rect_groups(groups, horizontal=False, tolerance=tolerance)
+    groups = merge_rect_coverage_groups(groups, tolerance=tolerance)
     return sorted(
         groups,
         key=lambda group: (
