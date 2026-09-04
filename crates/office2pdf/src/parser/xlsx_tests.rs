@@ -471,9 +471,28 @@ fn test_extract_normal_font_reads_first_styles_font() {
     umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
     let data = cursor.into_inner();
 
-    let normal_font = extract_normal_font(&data).expect("styles.xml has a Normal font");
+    let normal_font =
+        extract_normal_font(&data, Some(book.get_theme())).expect("styles.xml has a Normal font");
     assert_eq!(normal_font.family, "Calibri");
     assert_eq!(normal_font.size_pt, 11.0);
+}
+
+/// The pinned Excel-for-Mac footer probe behind issue #1210 uses a Segoe UI
+/// 10pt Normal font whose colour is theme slot 3 (`dk2`). The header/footer
+/// parser needs the resolved colour, not the unresolved stylesheet index.
+#[test]
+fn test_extract_normal_font_resolves_its_theme_colour() {
+    let data = build_xlsx_with_normal_font("Segoe UI", 10.0);
+    let data =
+        rewrite_first_styles_font_with_color(&data, "Segoe UI", 10.0, r#"<color theme="3"/>"#);
+    let book = umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(&data), true)
+        .expect("readable workbook");
+
+    let normal_font =
+        extract_normal_font(&data, Some(book.get_theme())).expect("styles.xml has a Normal font");
+    assert_eq!(normal_font.family, "Segoe UI");
+    assert_eq!(normal_font.size_pt, 10.0);
+    assert_eq!(normal_font.color, Some(Color::new(0x44, 0x54, 0x6A)));
 }
 
 #[test]
@@ -970,6 +989,17 @@ fn build_xlsx_with_normal_font(family: &str, size_pt: f64) -> Vec<u8> {
 /// writes Calibri 11 there, so the fixture has to patch the part directly to
 /// exercise a different Normal font.
 fn rewrite_first_styles_font(data: &[u8], family: &str, size_pt: f64) -> Vec<u8> {
+    rewrite_first_styles_font_with_color(data, family, size_pt, "")
+}
+
+/// Variant of [`rewrite_first_styles_font`] that includes one raw OOXML
+/// `<color>` element in the first font.
+fn rewrite_first_styles_font_with_color(
+    data: &[u8],
+    family: &str,
+    size_pt: f64,
+    color_xml: &str,
+) -> Vec<u8> {
     let mut archive = zip::ZipArchive::new(Cursor::new(data)).expect("readable zip");
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
@@ -982,7 +1012,7 @@ fn rewrite_first_styles_font(data: &[u8], family: &str, size_pt: f64) -> Vec<u8>
             let start = xml.find("<font>").expect("styles.xml has a font");
             let end = xml[start..].find("</font>").expect("font is closed") + start;
             let replacement =
-                format!("<font><sz val=\"{size_pt}\"/><name val=\"{family}\"/></font>");
+                format!("<font><sz val=\"{size_pt}\"/>{color_xml}<name val=\"{family}\"/></font>");
             bytes = format!(
                 "{}{}{}",
                 &xml[..start],
@@ -1240,6 +1270,7 @@ fn overrun_sweep_picture_width_pt(
     let normal_font = NormalFont {
         family: "Calibri".to_string(),
         size_pt: 11.0,
+        color: None,
         uses_theme_scheme: false,
         theme_declares_script_faces: false,
     };
@@ -1340,6 +1371,7 @@ fn test_empty_sheet_context_derives_metric_from_normal_font() {
     let calibri_11 = NormalFont {
         family: "Calibri".to_string(),
         size_pt: 11.0,
+        color: None,
         uses_theme_scheme: false,
         theme_declares_script_faces: false,
     };
@@ -1354,6 +1386,7 @@ fn test_empty_sheet_context_derives_metric_from_normal_font() {
     let calibri_8 = NormalFont {
         family: "Calibri".to_string(),
         size_pt: 8.0,
+        color: None,
         uses_theme_scheme: false,
         theme_declares_script_faces: false,
     };
@@ -1548,6 +1581,7 @@ fn test_empty_sheet_context_reads_declared_column_widths() {
     let calibri_11 = NormalFont {
         family: "Calibri".to_string(),
         size_pt: 11.0,
+        color: None,
         uses_theme_scheme: false,
         theme_declares_script_faces: false,
     };
@@ -1588,6 +1622,7 @@ fn theme_scheme_normal_font(size_pt: f64) -> NormalFont {
     NormalFont {
         family: "Calibri".to_string(),
         size_pt,
+        color: None,
         uses_theme_scheme: true,
         theme_declares_script_faces: true,
     }
@@ -1682,6 +1717,7 @@ fn substituted_face_normal_font(family: &str, size_pt: f64) -> NormalFont {
     NormalFont {
         family: family.to_string(),
         size_pt,
+        color: None,
         uses_theme_scheme: false,
         theme_declares_script_faces: false,
     }
@@ -2441,6 +2477,7 @@ fn named_face_printed_grid_measurements_are_not_extrapolated() {
     let scheme_font = NormalFont {
         family: "Arial".to_string(),
         size_pt: 12.0,
+        color: None,
         uses_theme_scheme: true,
         theme_declares_script_faces: false,
     };

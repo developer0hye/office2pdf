@@ -216,6 +216,7 @@ fn test_heading_text_uses_the_workbook_normal_font_and_center_alignment() {
     let verdana = NormalFont {
         family: "Verdana".to_string(),
         size_pt: 10.0,
+        color: None,
         uses_theme_scheme: false,
         theme_declares_script_faces: false,
     };

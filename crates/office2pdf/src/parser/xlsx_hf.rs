@@ -1,8 +1,9 @@
 use super::xlsx_cells::NormalFont;
 use crate::error::ConvertWarning;
 use crate::ir::{
-    Alignment, HFInline, HeaderFooter, HeaderFooterParagraph, ParagraphStyle, Run, TextStyle,
+    Alignment, Color, HFInline, HeaderFooter, HeaderFooterParagraph, ParagraphStyle, Run, TextStyle,
 };
+use crate::parser::xml_util::parse_hex_color;
 
 /// One run of header/footer text and the face it takes.
 ///
@@ -13,6 +14,7 @@ pub(super) struct HfSegment {
     text: String,
     family: Option<String>,
     size_pt: Option<f64>,
+    color: Option<Color>,
     bold: bool,
     italic: bool,
 }
@@ -26,6 +28,7 @@ impl HfSegment {
             font_family: self.family.clone(),
             east_asian_font_family: self.family.clone(),
             font_size: self.size_pt,
+            color: self.color,
             bold: self.bold.then_some(true),
             italic: self.italic.then_some(true),
             ..TextStyle::default()
@@ -118,11 +121,12 @@ fn xstring_escape_at(chars: &[char], index: usize) -> Option<char> {
 /// name" header, so it turns up in files nobody customised.
 ///
 /// `normal_font` is the workbook's Normal font, which every run before the
-/// string's first `&"Font"` code takes — the same face an unstyled cell
-/// inherits. Leaving those runs' family unstated sent them to the renderer's
-/// ambient default, a serif that nothing else on the sheet used (issue #951).
-/// `None` when the workbook's `xl/styles.xml` could not be read, which leaves
-/// the family unstated rather than inventing one.
+/// string's first face, size, or colour code takes — the same style an
+/// unstyled cell inherits. Leaving the family unstated sent those runs to a
+/// serif that nothing else on the sheet used (issue #951); leaving size and
+/// colour unstated made a 10pt themed prefix print at the renderer's ambient
+/// 11pt in black (issue #1210). `None` when `xl/styles.xml` could not be read,
+/// which leaves the style unstated rather than inventing one.
 ///
 /// Codes naming data this parser does not hold now warn instead of vanishing
 /// (issue #690). `&F` and `&Z` want the workbook's file name and path, which
@@ -156,6 +160,8 @@ pub(super) fn parse_hf_format_string(
     // code overrides it from that point on and nothing else has to thread it.
     let opening_segment = || HfSegment {
         family: normal_font.map(|font| font.family.clone()),
+        size_pt: normal_font.map(|font| font.size_pt),
+        color: normal_font.and_then(|font| font.color),
         ..HfSegment::default()
     };
     let mut left: Vec<HfSegment> = vec![opening_segment()];
@@ -239,14 +245,23 @@ pub(super) fn parse_hf_format_string(
                     open_segment(current, next);
                 }
                 'K' => {
-                    // Font color: &KRRGGBB (or &KTTSNN theme form) — skip the
-                    // six code characters; leaving them printed literal hex
-                    // prefixes like "000000top center".
+                    // Font color: `&KRRGGBB`. Theme-form `&KTTSNN` codes are
+                    // still consumed, but cannot be resolved without carrying
+                    // the workbook theme into this format-string parser.
                     i += 2;
+                    let start = i;
                     let mut consumed = 0;
                     while i < chars.len() && consumed < 6 && chars[i].is_ascii_alphanumeric() {
                         i += 1;
                         consumed += 1;
+                    }
+                    let code: String = chars[start..i].iter().collect();
+                    if consumed == 6
+                        && let Some(color) = parse_hex_color(&code)
+                    {
+                        let mut next = current.last().cloned().unwrap_or_default();
+                        next.color = Some(color);
+                        open_segment(current, next);
                     }
                 }
                 'A' => {

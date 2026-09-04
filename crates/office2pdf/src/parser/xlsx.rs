@@ -706,7 +706,7 @@ impl XlsxParser {
         let pristine_paper_sheets = paper_state::pristine_paper_sheets(data);
         let print_options_by_sheet = print_options::sheets_print_options(data);
         let mut table_styles = tables::extract_table_styles(data);
-        let normal_font = extract_normal_font(data);
+        let normal_font = extract_normal_font(data, Some(book.get_theme()));
 
         let chartsheet_setups = chartsheet::chartsheet_print_setups(data);
         let mut warnings = Vec::new();
@@ -1026,7 +1026,7 @@ impl Parser for XlsxParser {
         let pristine_paper_sheets = paper_state::pristine_paper_sheets(data);
         let print_options_by_sheet = print_options::sheets_print_options(data);
         let mut table_styles = tables::extract_table_styles(data);
-        let normal_font = extract_normal_font(data);
+        let normal_font = extract_normal_font(data, Some(book.get_theme()));
 
         let chartsheet_setups = chartsheet::chartsheet_print_setups(data);
         let mut warnings = Vec::new();

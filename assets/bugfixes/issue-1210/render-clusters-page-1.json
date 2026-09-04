@@ -1,0 +1,1175 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 921.0816,
+      "bbox_pt": {
+        "height": 90.96,
+        "width": 424.08,
+        "x": 49.92,
+        "y": 54.0
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "The native PDF paints the rose panel as one clipped rectangle while office2pdf composes the same final x=50..474, y=54..145 union from the nominal fill and bottom/right bleed. Poppler and MuPDF 300 DPI inspection confirms matching bounds and colour with only joined-edge antialiasing."
+      },
+      "id": "p1-e4e01bbc6cb3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 72.0576,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 21.36,
+        "x": 171.36,
+        "y": 302.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-00197543bb22",
+      "region": "left"
+    },
+    {
+      "area_pt2": 63.36,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 13.2,
+        "x": 191.04,
+        "y": 361.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-617172ae723e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 55.1808,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 16.56,
+        "x": 296.88,
+        "y": 302.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-d8601c31d8a1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 48.7296,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 21.12,
+        "x": 304.56,
+        "y": 88.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The centered title now starts within 0.042pt of Excel with matching width and baseline. Poppler 300 DPI matched crops show only subpixel glyph-edge rasterisation on the same Century Gothic outlines."
+      },
+      "id": "p1-449114e8d340",
+      "region": "top"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 11.52,
+        "x": 423.84,
+        "y": 193.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-54087027f2cb",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 43.3152,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 11.04,
+        "x": 280.8,
+        "y": 302.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-19aa7807db78",
+      "region": "center"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 9.6,
+        "x": 201.84,
+        "y": 317.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-75f4ad47185b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 36.6336,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 8.64,
+        "x": 215.04,
+        "y": 361.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-77b22ce32654",
+      "region": "center"
+    },
+    {
+      "area_pt2": 36.3456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.44,
+        "x": 146.16,
+        "y": 361.44
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-ddfb176f0460",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.5392,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 8.64,
+        "x": 412.08,
+        "y": 348.0
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-4d15a92f584b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 35.424,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 9.36,
+        "x": 218.16,
+        "y": 304.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-d312a90bacc8",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 232.08,
+        "y": 191.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-179ad8cb62e9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.1936,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 12.24,
+        "x": 204.72,
+        "y": 331.44
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-5d269da18401",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 12.0,
+        "x": 316.56,
+        "y": 302.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-54fa0b56f212",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.6176,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 12.24,
+        "x": 384.96,
+        "y": 302.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-51041b6776a6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.5024,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 9.36,
+        "x": 166.32,
+        "y": 361.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-75f3d6cbd33b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 34.0416,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 11.04,
+        "x": 183.12,
+        "y": 191.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-9a5cf880df26",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.68,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 7.68,
+        "x": 216.96,
+        "y": 317.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-a617de020a26",
+      "region": "center"
+    },
+    {
+      "area_pt2": 31.2192,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 10.08,
+        "x": 342.24,
+        "y": 302.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-efd7f1cc0500",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.48,
+        "x": 80.16,
+        "y": 159.36
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-5856dfe62a8b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.528,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 8.64,
+        "x": 96.48,
+        "y": 363.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-25f28b58f68e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 6.48,
+        "x": 205.2,
+        "y": 191.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-b6e28ade1477",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 382.8,
+        "y": 330.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-598b16ed6c5a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 256.8,
+        "y": 330.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-ae5ebb0647fa",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.8368,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 7.44,
+        "x": 332.64,
+        "y": 302.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-b918f4bf8125",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 389.76,
+        "y": 347.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-3be5bf13a02b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.3184,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.72,
+        "x": 353.04,
+        "y": 330.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-ad95a0c865a5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.1456,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.64,
+        "x": 256.32,
+        "y": 191.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-b22b677458fb",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.088,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 10.08,
+        "x": 151.92,
+        "y": 304.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-53ce1cd57c98",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.7424,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.96,
+        "x": 409.2,
+        "y": 193.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-8d6312fa38d3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 5.52,
+        "x": 431.52,
+        "y": 302.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-0d6685f34ff5",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.4544,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 197.04,
+        "y": 331.44
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-202541150320",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 7.68,
+        "x": 118.08,
+        "y": 811.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The footer prefix now matches the native 10pt theme-3 colour and the shared baseline is within 0.215pt. Poppler and MuPDF 300 DPI crops show the remaining fragments following the native Aptos and fallback Noto Sans glyph edges only."
+      },
+      "id": "p1-4cb958e5e002",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.0144,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 10.56,
+        "x": 306.48,
+        "y": 95.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The centered title now starts within 0.042pt of Excel with matching width and baseline. Poppler 300 DPI matched crops show only subpixel glyph-edge rasterisation on the same Century Gothic outlines."
+      },
+      "id": "p1-bfeab553b264",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.6112,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 350.64,
+        "y": 347.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-bf7d89f7512e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.4384,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.44,
+        "x": 379.2,
+        "y": 193.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-896020d9bcdb",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.3232,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.6,
+        "x": 124.56,
+        "y": 303.36
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-a22a6ecaeffe",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.208,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.96,
+        "x": 366.0,
+        "y": 331.44
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-c8441d025806",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.208,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.96,
+        "x": 397.92,
+        "y": 192.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-e81851e5f816",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.1504,
+      "bbox_pt": {
+        "height": 14.64,
+        "width": 10.08,
+        "x": 317.28,
+        "y": 95.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The centered title now starts within 0.042pt of Excel with matching width and baseline. Poppler 300 DPI matched crops show only subpixel glyph-edge rasterisation on the same Century Gothic outlines."
+      },
+      "id": "p1-934813399fed",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.7472,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 7.2,
+        "x": 393.6,
+        "y": 302.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-1ad185fb4e82",
+      "region": "right"
+    },
+    {
+      "area_pt2": 25.632,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 8.4,
+        "x": 163.44,
+        "y": 302.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-4f3847477ef5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5168,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 5.52,
+        "x": 340.56,
+        "y": 347.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-590b6105f49d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.4016,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 6.72,
+        "x": 416.64,
+        "y": 193.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-71b93c753a44",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.9984,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 6.0,
+        "x": 416.16,
+        "y": 302.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-6935e070b449",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.9408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.48,
+        "x": 115.2,
+        "y": 361.44
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-e1ecfd96809e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.7104,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.16,
+        "x": 149.76,
+        "y": 811.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The footer prefix now matches the native 10pt theme-3 colour and the shared baseline is within 0.215pt. Poppler and MuPDF 300 DPI crops show the remaining fragments following the native Aptos and fallback Noto Sans glyph edges only."
+      },
+      "id": "p1-47af7f94aeef",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.3072,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 7.2,
+        "x": 138.48,
+        "y": 363.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-b8f6c5ce324f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.0768,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 5.76,
+        "x": 83.28,
+        "y": 363.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-44d60bdcd698",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.0768,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 7.2,
+        "x": 220.32,
+        "y": 332.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-e887a866d962",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.0192,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 4.32,
+        "x": 372.48,
+        "y": 316.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-64bbd2d4ca0f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.8464,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 8.88,
+        "x": 138.48,
+        "y": 811.44
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The footer prefix now matches the native 10pt theme-3 colour and the shared baseline is within 0.215pt. Poppler and MuPDF 300 DPI crops show the remaining fragments following the native Aptos and fallback Noto Sans glyph edges only."
+      },
+      "id": "p1-263e97a05a09",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.8464,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 333.84,
+        "y": 348.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-b014879d7d19",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.7888,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 5.52,
+        "x": 173.04,
+        "y": 330.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-5184515ddd59",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.4432,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 6.96,
+        "x": 361.68,
+        "y": 349.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-2e2ea67db52f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.4432,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 6.96,
+        "x": 359.04,
+        "y": 302.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-09142b65e47c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.328,
+      "bbox_pt": {
+        "height": 19.44,
+        "width": 1.2,
+        "x": 281.28,
+        "y": 90.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "The centered title now starts within 0.042pt of Excel with matching width and baseline. Poppler 300 DPI matched crops show only subpixel glyph-edge rasterisation on the same Century Gothic outlines."
+      },
+      "id": "p1-c02c66b44b41",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 5.52,
+        "x": 92.4,
+        "y": 304.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-37f39f717a02",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.9248,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 6.0,
+        "x": 239.28,
+        "y": 361.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-de59e9d3fa09",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.6944,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 8.4,
+        "x": 397.44,
+        "y": 349.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-53707aad32c5",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 4.32,
+        "x": 369.36,
+        "y": 347.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-29ef7cd7e80d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.0608,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 5.28,
+        "x": 386.88,
+        "y": 193.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-7d901008e570",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.52,
+        "x": 216.24,
+        "y": 193.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-eabc9c7cd920",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.52,
+        "x": 363.12,
+        "y": 193.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-e5fc25de2744",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.52,
+        "x": 174.72,
+        "y": 318.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-86361dcc8788",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.2544,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 287.04,
+        "y": 192.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-462532f28b2c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.7936,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.44,
+        "x": 350.88,
+        "y": 317.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-e61a28c64750",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.7936,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.44,
+        "x": 143.04,
+        "y": 317.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-7fa3b20d07fd",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 95.28,
+        "y": 239.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-eaf5dc06d826",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5632,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.76,
+        "x": 167.04,
+        "y": 332.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Poppler and MuPDF 300 DPI matched A6 crops now agree in baseline position and wrap; the remaining fragments trace only glyph outlines."
+      },
+      "id": "p1-4cedfabc6bc5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.2176,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 3.6,
+        "x": 346.56,
+        "y": 347.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page and matched 300 DPI Poppler/MuPDF crops show matching text content, origins, baselines, wraps, colour, and emphasis outside the explicitly tracked title, A6, and footer regions; the remaining fragments follow glyph edges only."
+      },
+      "id": "p1-be3e2c95492a",
+      "region": "center"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 72,
+    "duplicate": 0,
+    "total": 72,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

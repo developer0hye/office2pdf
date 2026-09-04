@@ -896,36 +896,53 @@ fn test_hf_code_midway_splits_the_section() {
 /// issue #841 printed the run ahead of its `&"Aptos"` code in a serif nothing
 /// else on the sheet used (issue #951).
 ///
-/// The `_x000D_` that opens the string is a line break, not text, so the run
-/// it would have formed is an empty first line and is dropped (issue #929).
+/// `_x005F_x000D_` decodes to the literal text `_x000D_`, exactly as it does
+/// in the pinned native Excel probe from `Gift Budget and Tracker1.xlsx`.
 #[test]
 fn a_header_footer_run_before_any_font_code_takes_the_normal_font() {
     let normal_font = NormalFont {
         family: "Corbel".to_string(),
         size_pt: 11.0,
+        color: Some(Color::new(0x44, 0x54, 0x6A)),
         uses_theme_scheme: false,
         theme_declares_script_faces: false,
     };
     let hf = parse_hf_format_string(
-        r#"&L_x000D_&1#&"Aptos"&8&K000000 Sensitivity: Internal"#,
+        r#"&L_x005F_x000D_&1#&"Aptos"&8&K000000 Sensitivity: Internal"#,
         "Sheet1",
         Some(&normal_font),
         &mut Vec::new(),
     )
     .expect("footer parsed");
-    let families: Vec<Option<String>> = hf.paragraphs[0]
+    let styles: Vec<(Option<String>, Option<f64>, Option<Color>)> = hf.paragraphs[0]
         .elements
         .iter()
         .filter_map(|element| match element {
-            HFInline::Run(run) => Some(run.style.font_family.clone()),
+            HFInline::Run(run) => Some((
+                run.style.font_family.clone(),
+                run.style.font_size,
+                run.style.color,
+            )),
             _ => None,
         })
         .collect();
 
     assert_eq!(
-        families,
-        vec![Some("Corbel".to_string()), Some("Aptos".to_string())],
-        "the run before the code takes the Normal font; the one after takes Aptos"
+        styles,
+        vec![
+            (
+                Some("Corbel".to_string()),
+                Some(11.0),
+                Some(Color::new(0x44, 0x54, 0x6A)),
+            ),
+            (
+                Some("Corbel".to_string()),
+                Some(1.0),
+                Some(Color::new(0x44, 0x54, 0x6A)),
+            ),
+            (Some("Aptos".to_string()), Some(8.0), Some(Color::black()),),
+        ],
+        "the run before the code takes the whole Normal font; later codes keep their own sizes"
     );
 }
 

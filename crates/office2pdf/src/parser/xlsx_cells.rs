@@ -5,7 +5,7 @@ use crate::parser::cond_fmt::build_cond_fmt_overrides;
 
 use super::xlsx_style::{
     apply_rich_run_font, extract_cell_alignment, extract_cell_background, extract_cell_borders,
-    extract_cell_text_style, extract_style_background,
+    extract_cell_text_style, extract_style_background, resolve_style_color,
 };
 use crate::ir::{BorderSide, CellBorder, Color, Insets, TableCell, TextStyle};
 
@@ -186,7 +186,10 @@ fn round_half_up_pt(value: f64) -> f64 {
 /// entry at another `fontId`, one factor with a byte-identical re-zip control,
 /// left both the probe workbook of issue #1094 and `03_inventory_en.xlsx`
 /// exporting identically, while editing the first `<font>` moved every track.
-pub(super) fn extract_normal_font(data: &[u8]) -> Option<NormalFont> {
+pub(super) fn extract_normal_font(
+    data: &[u8],
+    theme: Option<&umya_spreadsheet::structs::drawing::Theme>,
+) -> Option<NormalFont> {
     use quick_xml::events::Event;
     use std::io::Read;
 
@@ -200,6 +203,7 @@ pub(super) fn extract_normal_font(data: &[u8]) -> Option<NormalFont> {
     let mut in_first_font = false;
     let mut name: Option<String> = None;
     let mut size: Option<f64> = None;
+    let mut font_color: Option<umya_spreadsheet::Color> = None;
     let mut uses_theme_scheme = false;
     loop {
         match reader.read_event() {
@@ -216,6 +220,42 @@ pub(super) fn extract_normal_font(data: &[u8]) -> Option<NormalFont> {
                 match e.local_name().as_ref() {
                     b"name" => name = val,
                     b"sz" => size = val.and_then(|v| v.parse::<f64>().ok()),
+                    b"color" => {
+                        let mut color = umya_spreadsheet::Color::default();
+                        let mut has_value = false;
+                        for attribute in e.attributes().flatten() {
+                            let Ok(value) = std::str::from_utf8(attribute.value.as_ref()) else {
+                                continue;
+                            };
+                            match attribute.key.local_name().as_ref() {
+                                b"rgb" => {
+                                    color.set_argb(value);
+                                    has_value = true;
+                                }
+                                b"theme" => {
+                                    if let Ok(index) = value.parse::<u32>() {
+                                        color.set_theme_index(index);
+                                        has_value = true;
+                                    }
+                                }
+                                b"indexed" => {
+                                    if let Ok(index) = value.parse::<u32>() {
+                                        color.set_indexed(index);
+                                        has_value = true;
+                                    }
+                                }
+                                b"tint" => {
+                                    if let Ok(tint) = value.parse::<f64>() {
+                                        color.set_tint(tint);
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        if has_value {
+                            font_color = Some(color);
+                        }
+                    }
                     b"scheme" => uses_theme_scheme = true,
                     _ => {}
                 }
@@ -227,6 +267,9 @@ pub(super) fn extract_normal_font(data: &[u8]) -> Option<NormalFont> {
     Some(NormalFont {
         family: name?,
         size_pt: size.unwrap_or(11.0),
+        color: font_color
+            .as_ref()
+            .and_then(|color| resolve_style_color(color, theme)),
         uses_theme_scheme,
         theme_declares_script_faces,
     })
@@ -288,13 +331,14 @@ fn theme_minor_font_declares_script_faces(
     false
 }
 
-/// The workbook's Normal font: the `xl/styles.xml` font that cells with no
-/// style of their own inherit, and the font Excel derives every column
-/// print metric from.
+/// The workbook's Normal font: the `xl/styles.xml` font that cells and
+/// header/footer prefixes with no style of their own inherit, and the font
+/// Excel derives every column print metric from.
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct NormalFont {
     pub(super) family: String,
     pub(super) size_pt: f64,
+    pub(super) color: Option<Color>,
     /// Whether the font defers its face to the theme's font scheme
     /// (`<scheme val="minor"/>`), rather than naming it outright.
     ///
