@@ -1355,11 +1355,14 @@ def rect_component_covers_bbox(
     allowed_missing_area = allowed_edge * allowed_edge
     missing_area = 0.0
     for x0, x1 in zip(xs, xs[1:]):
-        if x1 <= x0:
+        # Trace coordinates that represent the same painted edge can differ by
+        # a few ulps. Do not turn that serialization noise into a tall, empty
+        # coverage cell merely because the other axis is material.
+        if x1 - x0 <= RECT_COVERAGE_EPSILON_PT:
             continue
         x_midpoint = (x0 + x1) / 2
         for y0, y1 in zip(ys, ys[1:]):
-            if y1 <= y0:
+            if y1 - y0 <= RECT_COVERAGE_EPSILON_PT:
                 continue
             y_midpoint = (y0 + y1) / 2
             if any(

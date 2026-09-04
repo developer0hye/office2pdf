@@ -847,6 +847,36 @@ class MatchAndDiffTest(unittest.TestCase):
         self.assertEqual(rects["matched"], 1)
         self.assertEqual(rects["geometry_mismatch_count"], 0)
 
+    def test_boundary_bleed_ignores_sub_epsilon_coordinate_sliver(self) -> None:
+        gt = rect_op(341.94, 453.46, 408.36, 478.88, color=".85 .71 .73")
+        out = "\n".join(
+            [
+                rect_op(
+                    341.94, 453.46, 407.54, 478.06, color=".85 .71 .73"
+                ),
+                rect_op(
+                    341.94, 477.855, 408.36, 478.88, color=".85 .71 .73"
+                ),
+                rect_op(
+                    407.335,
+                    453.46,
+                    408.35999999999996,
+                    478.88,
+                    color=".85 .71 .73",
+                ),
+            ]
+        )
+
+        vector = self.diff(gt, out, noise_floor=0.5, fine_shift=0.5)
+        rects = vector["rects"]
+
+        self.assertEqual(
+            (rects["canonical_gt_count"], rects["canonical_out_count"]),
+            (1, 1),
+        )
+        self.assertEqual(rects["matched"], 1)
+        self.assertEqual(rects["geometry_mismatch_count"], 0)
+
     def test_boundary_bleed_accepts_one_noise_floor_corner_gap(self) -> None:
         gt = rect_op(50.0, 144.0, 474.0, 418.0, color=".97 .94 .94")
         out = "\n".join(
