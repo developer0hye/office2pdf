@@ -1186,6 +1186,15 @@ pub struct DataBarInfo {
     pub fill_pct: f64,
 }
 
+/// A line sparkline painted inside a spreadsheet cell.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SparklineInfo {
+    /// Source values in display order. `None` leaves a gap.
+    pub values: Vec<Option<f64>>,
+    /// Series stroke colour after workbook-theme resolution.
+    pub color: Color,
+}
+
 /// Vertical alignment within a table cell.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CellVerticalAlign {
@@ -1216,6 +1225,8 @@ pub struct TableCell {
     pub background_alpha: Option<f64>,
     /// DataBar conditional formatting render info.
     pub data_bar: Option<DataBarInfo>,
+    /// Excel x14 line sparkline painted over the cell without affecting layout.
+    pub sparkline: Option<SparklineInfo>,
     /// IconSet text symbol prepended to cell content.
     pub icon_text: Option<String>,
     /// Fill color of the IconSet symbol (Excel draws icons in band colors).
@@ -1252,6 +1263,7 @@ impl Default for TableCell {
             background: None,
             background_alpha: None,
             data_bar: None,
+            sparkline: None,
             icon_text: None,
             icon_color: None,
             icon_shading: None,

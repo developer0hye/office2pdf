@@ -530,6 +530,7 @@ impl<'a> PptxTableParser<'a> {
             background: self.cell_background.take(),
             background_alpha: self.cell_background_alpha.take(),
             data_bar: None,
+            sparkline: None,
             icon_text: None,
             icon_color: None,
             icon_shading: None,

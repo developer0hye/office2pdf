@@ -25,6 +25,8 @@ mod print_headings;
 mod print_options;
 #[path = "xlsx_row_boundaries.rs"]
 mod row_boundaries;
+#[path = "xlsx_sparklines.rs"]
+mod sparklines;
 #[path = "xlsx_tables.rs"]
 mod tables;
 #[path = "xlsx_cells.rs"]
@@ -533,6 +535,7 @@ fn empty_sheet_context(
         merge_tops: std::collections::HashMap::new(),
         merge_skips: std::collections::HashSet::new(),
         cond_fmt_overrides: std::collections::HashMap::new(),
+        sparklines: std::collections::HashMap::new(),
         normal_font: normal_font.cloned(),
         table_styles: Vec::new(),
         theme: theme.cloned(),
@@ -693,6 +696,8 @@ impl XlsxParser {
 
         let metadata = extract_xlsx_metadata(&book);
         let cond_fmt_hints = cond_fmt_raw::extract_cond_fmt_hints(data);
+        let sparkline_groups = sparklines::extract_sparkline_groups(data);
+        let sparklines_by_sheet = sparklines::resolve_sparklines(&book, &sparkline_groups);
         // umya drops `<alignment indent="N"/>`, so the levels come from the
         // package itself (issue #1109).
         let cell_indents = indent::extract_cell_indents(data);
@@ -750,6 +755,7 @@ impl XlsxParser {
                 Some(book.get_theme()),
                 cell_indents.get(sheet.get_name()),
                 row_boundary_points.get(sheet.get_name()),
+                sparklines_by_sheet.get(sheet.get_name()),
             ) else {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.
@@ -1013,6 +1019,8 @@ impl Parser for XlsxParser {
         // Extract metadata from umya-spreadsheet properties
         let metadata = extract_xlsx_metadata(&book);
         let cond_fmt_hints = cond_fmt_raw::extract_cond_fmt_hints(data);
+        let sparkline_groups = sparklines::extract_sparkline_groups(data);
+        let sparklines_by_sheet = sparklines::resolve_sparklines(&book, &sparkline_groups);
         // umya drops `<alignment indent="N"/>`, so the levels come from the
         // package itself (issue #1109).
         let cell_indents = indent::extract_cell_indents(data);
@@ -1068,6 +1076,7 @@ impl Parser for XlsxParser {
                 Some(book.get_theme()),
                 cell_indents.get(sheet.get_name()),
                 row_boundary_points.get(sheet.get_name()),
+                sparklines_by_sheet.get(sheet.get_name()),
             ) else {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.

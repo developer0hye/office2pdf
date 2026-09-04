@@ -14,7 +14,7 @@ use crate::ir::{
     Insets, LegendPosition, LineBox, LineJoin, LineSpacing, List, ListKind, Margins, MathEquation,
     Metadata, Page, PageNumberFormat, PageSize, PairKerning, Paragraph, ParagraphStyle,
     PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo, Run, Shadow,
-    Shape, ShapeKind, SheetPage, SmartArt, TabAlignment, TabLeader, TabStop, Table,
+    Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TabAlignment, TabLeader, TabStop, Table,
     TableBorderPaintModel, TableCell, TableOfContents, TableRow, TextBoxData, TextBoxVerticalAlign,
     TextDirection, TextStyle, VerticalTextAlign, WrapMode,
 };
@@ -307,6 +307,17 @@ impl GenCtx {
         let id = self.next_image_id;
         self.next_image_id += 1;
         let path = format!("img-{id}.svg");
+        self.images.push(ImageAsset {
+            path: path.clone(),
+            data,
+        });
+        path
+    }
+
+    fn add_generated_png(&mut self, data: Vec<u8>) -> String {
+        let id = self.next_image_id;
+        self.next_image_id += 1;
+        let path = format!("img-{id}.png");
         self.images.push(ImageAsset {
             path: path.clone(),
             data,

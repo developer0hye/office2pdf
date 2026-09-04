@@ -1271,6 +1271,18 @@ fn generate_table_cell(
         }
     }
 
+    if let Some(sparkline) = &cell.sparkline {
+        generate_sparkline_overlay(
+            out,
+            sparkline,
+            cell,
+            default_cell_padding,
+            row_height,
+            cell_track_height,
+            ctx,
+        );
+    }
+
     // Writer's positive-axis origin and Excel's filled-merge centring are
     // visual seats, not new layout measure. Keeping them as translations
     // preserves row pitch, column width, margins, and wrapping (#649, #1488,
@@ -1435,6 +1447,179 @@ fn generate_table_cell(
     ctx.cell_sheet_seat = enclosing_cell_sheet_seat;
     out.push_str("],\n");
     Ok(())
+}
+
+/// Excel renders an x14 line sparkline to an opaque cell-sized bitmap before
+/// fitting the worksheet to paper. The issue #1261 ground truth carries a
+/// 42 x 18px image in a 42 x 19pt destination cell; its frame starts 1pt in
+/// from the left and top boundaries and runs to the far edges.
+/// Reconstructing the declared geometry before rasterising preserves that
+/// image density on fitted sheets instead of generating a smaller bitmap from
+/// the already-scaled tracks.
+fn generate_sparkline_overlay(
+    out: &mut String,
+    sparkline: &SparklineInfo,
+    cell: &TableCell,
+    default_cell_padding: Insets,
+    row_height: Option<f64>,
+    cell_track_height: Option<f64>,
+    ctx: &mut GenCtx,
+) {
+    let scale = ctx.sheet_print_scale().unwrap_or(1.0).max(0.01);
+    let inset = cell_inset_with_border(cell, default_cell_padding);
+    let Some(content_width_pt) = ctx.available_measure_pt else {
+        return;
+    };
+    let track_width_pt = content_width_pt + inset.left + inset.right;
+    let track_height_pt = cell_track_height.or(row_height).unwrap_or(20.0 * scale);
+    let declared_width_pt = track_width_pt / scale;
+    let declared_height_pt = track_height_pt / scale;
+    let pixel_width = declared_width_pt.round().max(1.0) as u32;
+    let pixel_height = (declared_height_pt - 1.0).round().max(1.0) as u32;
+    let frame_width_pt = (declared_width_pt - 1.0).max(1.0) * scale;
+    let frame_height_pt = (declared_height_pt - 1.0).max(1.0) * scale;
+    let Some(data) = sparkline_png(sparkline, pixel_width, pixel_height) else {
+        return;
+    };
+    let path = ctx.add_generated_png(data);
+    let _ = write!(
+        out,
+        "#place(top + left, dx: {}pt, dy: {}pt, image(\"{}\", width: {}pt, height: {}pt, fit: \"stretch\"))",
+        format_geometry(scale - inset.left),
+        format_geometry(2.0 * scale - inset.top),
+        path,
+        format_f64(frame_width_pt),
+        format_f64(frame_height_pt),
+    );
+}
+
+/// Rasterise a one-pixel butt-capped line with the quarter-coverage palette
+/// Excel's embedded sparkline images use. Four-by-four subpixel sampling is
+/// quantised to 25% coverage, yielding the exact white/25/50/75/100% colour
+/// ladder visible in the native issue #1261 images.
+fn sparkline_png(sparkline: &SparklineInfo, width: u32, height: u32) -> Option<Vec<u8>> {
+    if width < 2 || height < 2 || sparkline.values.len() < 2 {
+        return None;
+    }
+    let present: Vec<f64> = sparkline.values.iter().flatten().copied().collect();
+    if present.len() < 2 {
+        return None;
+    }
+    let minimum = present.iter().copied().fold(f64::INFINITY, f64::min);
+    let maximum = present.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let left = 3.5_f64.min(f64::from(width) / 2.0);
+    let right = (f64::from(width) - 4.5).max(left);
+    let top = 4.5_f64.min(f64::from(height) / 2.0);
+    let bottom = (f64::from(height) - 4.5).max(top);
+    let last_index = (sparkline.values.len() - 1) as f64;
+    let points: Vec<Option<(f64, f64)>> = sparkline
+        .values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            value.map(|value| {
+                let x = left + (right - left) * index as f64 / last_index;
+                let y = if (maximum - minimum).abs() < f64::EPSILON {
+                    top
+                } else {
+                    top + (bottom - top) * (maximum - value) / (maximum - minimum)
+                };
+                (x, y)
+            })
+        })
+        .collect();
+    let segments: Vec<((f64, f64), (f64, f64))> = points
+        .windows(2)
+        .filter_map(|pair| Some((pair[0]?, pair[1]?)))
+        .collect();
+    if segments.is_empty() {
+        return None;
+    }
+    let interior_vertices: Vec<(f64, f64)> = points
+        .windows(3)
+        .filter_map(|triple| match triple {
+            [Some(_), Some(middle), Some(_)] => Some(*middle),
+            _ => None,
+        })
+        .collect();
+    let mut image = image::RgbImage::from_pixel(width, height, image::Rgb([255, 255, 255]));
+    for y in 0..height {
+        for x in 0..width {
+            let mut covered = 0_u32;
+            for sample_y in 0..4 {
+                for sample_x in 0..4 {
+                    let px = f64::from(x) + (f64::from(sample_x) + 0.5) / 4.0;
+                    let py = f64::from(y) + (f64::from(sample_y) + 0.5) / 4.0;
+                    let on_segment = segments
+                        .iter()
+                        .any(|&(start, end)| sample_hits_butt_segment(px, py, start, end));
+                    let on_join = interior_vertices
+                        .iter()
+                        .any(|&(vx, vy)| (px - vx).hypot(py - vy) <= 0.5);
+                    covered += u32::from(on_segment || on_join);
+                }
+            }
+            let coverage_quarters = ((covered + 2) / 4).min(4);
+            if coverage_quarters == 0 {
+                continue;
+            }
+            let blend = |ink: u8| -> u8 {
+                ((u32::from(ink) * coverage_quarters + 255 * (4 - coverage_quarters) + 2) / 4) as u8
+            };
+            image.put_pixel(
+                x,
+                y,
+                image::Rgb([
+                    blend(sparkline.color.r),
+                    blend(sparkline.color.g),
+                    blend(sparkline.color.b),
+                ]),
+            );
+        }
+    }
+    let mut bytes = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(image)
+        .write_to(&mut bytes, RasterImageFormat::Png)
+        .ok()?;
+    Some(bytes.into_inner())
+}
+
+fn sample_hits_butt_segment(px: f64, py: f64, start: (f64, f64), end: (f64, f64)) -> bool {
+    let (dx, dy) = (end.0 - start.0, end.1 - start.1);
+    let length_squared = dx * dx + dy * dy;
+    if length_squared <= f64::EPSILON {
+        return false;
+    }
+    let projection = ((px - start.0) * dx + (py - start.1) * dy) / length_squared;
+    if !(0.0..=1.0).contains(&projection) {
+        return false;
+    }
+    let nearest_x = start.0 + projection * dx;
+    let nearest_y = start.1 + projection * dy;
+    (px - nearest_x).hypot(py - nearest_y) <= 0.5
+}
+
+#[cfg(test)]
+mod sparkline_tests {
+    use super::*;
+
+    #[test]
+    fn flat_series_matches_excels_42_by_18_quarter_coverage_raster() {
+        let sparkline = SparklineInfo {
+            values: vec![Some(565.0); 12],
+            color: Color::new(0x29, 0x74, 0x4F),
+        };
+        let png = sparkline_png(&sparkline, 42, 18).expect("a line must rasterise");
+        let image = image::load_from_memory(&png).unwrap().to_rgb8();
+        assert_eq!(image.dimensions(), (42, 18));
+        assert_eq!(image.get_pixel(2, 4).0, [255, 255, 255]);
+        assert_eq!(image.get_pixel(3, 4).0, [148, 186, 167]);
+        assert_eq!(image.get_pixel(4, 4).0, [41, 116, 79]);
+        assert_eq!(image.get_pixel(36, 4).0, [41, 116, 79]);
+        assert_eq!(image.get_pixel(37, 4).0, [148, 186, 167]);
+        assert_eq!(image.get_pixel(38, 4).0, [255, 255, 255]);
+        assert_eq!(image.get_pixel(4, 5).0, [255, 255, 255]);
+    }
 }
 
 /// Writer's borderless DOCX table-cell text origin sits this far into the

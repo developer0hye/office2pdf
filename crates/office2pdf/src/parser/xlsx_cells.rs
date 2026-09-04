@@ -850,6 +850,8 @@ pub(super) struct SheetContext {
     pub(super) merge_tops: HashMap<(u32, u32), MergeInfo>,
     pub(super) merge_skips: HashSet<(u32, u32)>,
     pub(super) cond_fmt_overrides: HashMap<(u32, u32), crate::parser::cond_fmt::CondFmtOverride>,
+    /// Render-ready x14 line sparklines keyed by their destination cell.
+    pub(super) sparklines: HashMap<(u32, u32), crate::ir::SparklineInfo>,
     /// The workbook Normal font, which every cell without its own font
     /// inherits (issue #462). `None` when `styles.xml` is unreadable.
     pub(super) normal_font: Option<NormalFont>,
@@ -2415,6 +2417,7 @@ pub(super) fn build_rows_for_range(
                 icon_color = ovr.icon_color;
                 icon_shading = ovr.icon_shading;
             }
+            let sparkline = ctx.sparklines.get(&(col_idx, row_idx)).cloned();
 
             // Rich-text shared strings carry per-run formatting (bold labels,
             // per-run fonts/colors) that the cell's single xf style loses —
@@ -2538,6 +2541,7 @@ pub(super) fn build_rows_for_range(
                 background,
                 background_alpha: None,
                 data_bar,
+                sparkline,
                 padding,
                 icon_text,
                 icon_color,
@@ -2747,9 +2751,14 @@ pub(super) fn prepare_sheet_context(
     theme: Option<&umya_spreadsheet::structs::drawing::Theme>,
     cell_indents: Option<&super::indent::CellIndentLevels>,
     row_boundary_points: Option<&super::row_boundaries::RowBoundaryPoints>,
+    sparklines: Option<&HashMap<(u32, u32), crate::ir::SparklineInfo>>,
 ) -> Option<(SheetContext, u32, u32)> {
     let (worksheet_max_col, mut max_row) = sheet.get_highest_column_and_row();
-    if worksheet_max_col == 0 || max_row == 0 {
+    let sparklines = sparklines.cloned().unwrap_or_default();
+    let sparkline_max_col = sparklines.keys().map(|(col, _)| *col).max().unwrap_or(0);
+    let sparkline_max_row = sparklines.keys().map(|(_, row)| *row).max().unwrap_or(0);
+    max_row = max_row.max(sparkline_max_row);
+    if (worksheet_max_col == 0 && sparkline_max_col == 0) || max_row == 0 {
         return None;
     }
 
@@ -2760,7 +2769,8 @@ pub(super) fn prepare_sheet_context(
         worksheet_max_col
     } else {
         inferred_printed_max_col(sheet, theme, &table_styles, &cond_fmt_overrides)
-    };
+    }
+    .max(sparkline_max_col);
     if max_col == 0 && print_area.is_none() {
         return None;
     }
@@ -2827,6 +2837,7 @@ pub(super) fn prepare_sheet_context(
             merge_tops,
             merge_skips,
             cond_fmt_overrides,
+            sparklines,
             normal_font: normal_font.cloned(),
             table_styles,
             theme: theme.cloned(),
