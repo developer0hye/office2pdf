@@ -1,0 +1,18 @@
+{
+ "fixture": "tests/fixtures/xlsx/issue_1603_gift_budget.xlsx",
+ "fixture_sha256": "25f5dc75dab19ea12042979a61842314ddc226e3e45d447e36b2a2a104112613",
+ "purpose": "Shows why #1618's marker fix cannot be generalised across legend sizes until #1753 lands: office2pdf's own (unfixed) sample-line y already diverges from native past the 9pt case the marker offset was measured at, independent of any marker-floor change. Values in chart points (page pt / 0.82) from mutool draw -F trace on office2pdf's own output, converter built at a3c751b0.",
+ "font_substitution_note": "office2pdf renders this fixture's Segoe UI legend as Selawik (Microsoft's metric-compatible substitute) on this machine; residual noise below a few hundredths of a point is attributable to that, not to the row-height model itself.",
+ "rows": [
+  {"legend_size_pt": 6,  "native_line_y_chart_pt": 438.036, "office2pdf_line_y_chart_pt": 437.999, "delta_pt": 0.037},
+  {"legend_size_pt": 7,  "native_line_y_chart_pt": 437.377, "office2pdf_line_y_chart_pt": 437.499, "delta_pt": -0.122},
+  {"legend_size_pt": 8,  "native_line_y_chart_pt": 436.716, "office2pdf_line_y_chart_pt": 436.499, "delta_pt": 0.217},
+  {"legend_size_pt": 9,  "native_line_y_chart_pt": 436.061, "office2pdf_line_y_chart_pt": 436.000, "delta_pt": 0.061},
+  {"legend_size_pt": 10, "native_line_y_chart_pt": 435.402, "office2pdf_line_y_chart_pt": 436.000, "delta_pt": -0.598},
+  {"legend_size_pt": 11, "native_line_y_chart_pt": 434.744, "office2pdf_line_y_chart_pt": 435.000, "delta_pt": -0.256},
+  {"legend_size_pt": 12, "native_line_y_chart_pt": 434.086, "office2pdf_line_y_chart_pt": 435.000, "delta_pt": -0.914},
+  {"legend_size_pt": 14, "native_line_y_chart_pt": 432.769, "office2pdf_line_y_chart_pt": 434.001, "delta_pt": -1.232},
+  {"legend_size_pt": 18, "native_line_y_chart_pt": 430.133, "office2pdf_line_y_chart_pt": 433.001, "delta_pt": -2.868}
+ ],
+ "root_cause": "line_legend_key's box_height is SERIES_MARKER_SIZE_PT.min(marker_cap), which saturates at SERIES_MARKER_SIZE_PT (5.0pt) once the #1617 marker cap (floor(0.6 x legend_pt)) reaches 5, i.e. every legend size from 9pt up computes the same 5.0pt box_height. Native's row instead scales continuously, matching legend_key_line_box_pt (0.45 x hhea) to within 0.002pt at every size measured (see assets/validation/issue-1617/native-legend-marker-measurements.json's key_height_chart_pt column). Filed as https://github.com/developer0hye/office2pdf/issues/1753."
+}
