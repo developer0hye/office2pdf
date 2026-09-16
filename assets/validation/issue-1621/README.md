@@ -161,14 +161,62 @@ on a previously-exact interior row (`from savings`, 5-category), so a plain
 independent-edge-snap is ruled out as the mechanism, though "the plot
 rectangle's edges get special treatment" remains the live, narrower lead.
 
-## What's needed before this can ship
+## Shipped: interior rows only
 
-The remaining question is now narrowly scoped to *why* the edge rows deviate
-and in which direction — not whether `K` is chart-specific (it isn't) or
-which rounding function applies to interior rows (`floor`, settled). Shipping
-a fix before that edge-row rule is isolated would mean guessing at it —
-still the kind of unverified constant this project's methodology asks not to
-ship.
+`bar_category_label_baseline_pt` (`crates/office2pdf/src/render/typst_gen_diagrams.rs`)
+implements `floor(sheet_frame_top_pt + row_top + row / 2) + K` for a
+horizontal bar chart's category label, gated to:
+
+- a worksheet-anchored chart (`sheet_frame_origin_pt` is `Some`, which is
+  exactly the domain this measurement covers — a flowed or non-Excel-hosted
+  chart keeps its existing seat);
+- a row strictly between the plot rectangle's own top and bottom edge (an
+  edge row keeps its existing continuous seat — see below);
+- a category-axis size this issue actually measured against native Excel
+  (8, 10 or 14pt via a small `K` lookup, `4`/`4`/`5`) — an unmeasured size
+  (11pt, for instance) keeps the old seat rather than extrapolating a curve
+  through three points. No single `round(a * size_pt)` fits all three
+  measured `K` values for any constant `a` (the per-size constraints on `a`
+  that would reproduce `K=4` at 8pt and 10pt and `K=5` at 14pt don't
+  overlap), so there is no derived formula to extrapolate in the first
+  place — only a per-measured-size lookup.
+
+**Regression check before shipping (this is why edge rows are excluded, not
+just "not yet fixed"):** applying the same formula to every row, including
+edges, was checked against all 24 measured rows before writing any code.
+Income's bottom edge happens to match the interior formula exactly in 3 of 3
+measured configurations, but its **top** edge does not — at 10pt and 14pt
+that top row currently already sits inside the issue's own 0.5pt gate
+(+0.096 and +0.324 sheet points), and the naive formula would move it to
+exactly -1.0, *failing* a case that passes today. Expense's edges fail the
+same way in the other direction. So "interior rows only" is not a
+simplification of convenience; it is the largest rule this data supports
+without regressing an already-passing row.
+
+Verified on the issue's own fixture (`tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx`,
+page 2, fresh native Excel export): of this page's 7 interior category-label
+rows (4 on the expense chart, 3 on the income chart, all at the fixture's
+declared 10pt), all 7 now land on native's whole sheet point exactly ("dy"
+0.0 to 4 decimal places, per `assets/bugfixes/issue-1621/layout-audit.json`).
+One of those seven (`books & supplies`) was previously failing this issue's
+0.5pt gate (+0.505pt); the other six were already inside it. A before/after
+self-diff of office2pdf's own output (`compare_layout.py`, `--noise-floor
+0.01 --fine-shift 0.01`) confirms exactly these 7 text instances move and
+nothing else on the page does (592 instances compared, 7 deviant, 0
+missing/extra; rects 738/738 with 0 geometry deviations).
+
+## What's still open: the two edge rows
+
+The expense chart's topmost row (`other expenses`) and bottommost row
+(`room & board`) — the two rows the regression check above excludes — still
+deviate from native by roughly one sheet point (+0.668pt and +0.657pt
+printed, both past the 0.5pt gate), unchanged by this fix. The mechanism is
+still the open question the prior sessions narrowed to: *why* an edge row
+deviates and in which direction is chart-dependent (income's top overshoots,
+expense's top *and* bottom undershoot) for a reason not yet isolated, and
+shipping a guess at it would be exactly the kind of unverified constant this
+project's methodology asks not to ship. This residual keeps #1621 open;
+see the reproduction commands below to continue from here.
 
 ## Reproduction
 

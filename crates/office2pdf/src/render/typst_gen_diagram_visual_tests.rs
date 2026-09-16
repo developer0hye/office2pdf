@@ -10168,6 +10168,137 @@ fn category_line_spacing_quantizes_the_faces_leading_before_seating() {
 }
 
 #[test]
+fn bar_category_label_baseline_matches_measured_native_interior_rows() {
+    use crate::render::typst_gen::diagrams::bar_category_label_baseline_pt;
+    // Native Excel baselines for `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx`'s
+    // two worksheet bar charts, in unscaled sheet points (#1621). Three distinct
+    // plot geometries at 10pt (income @ 5 and 6 categories, expense @ 6) and one
+    // chart at 8/14pt all land on `floor(sheet_frame_top_pt + row_top + row / 2)
+    // + K`, with `K` depending only on the declared size — see
+    // `assets/validation/issue-1621/README.md` and `measurements.json`.
+    const SHEET_FRAME_TOP_PT: f64 = 159.5;
+    for (row_top, row, size_pt, native_sheet) in [
+        // Income, 5 categories, plot_y=71.85567962392459, row=23.122867122695773.
+        (94.97854674662037, 23.122867122695773, 8.0, 270.0), // from savings
+        (118.10141386931613, 23.122867122695773, 8.0, 293.0), // family help
+        (94.97854674662037, 23.122867122695773, 10.0, 270.0), // from savings
+        (118.10141386931613, 23.122867122695773, 10.0, 293.0), // family help
+        (141.22428099201193, 23.122867122695773, 10.0, 316.0), // wages (after-tax)
+        (94.97854674662037, 23.122867122695773, 14.0, 271.0), // from savings
+        (118.10141386931613, 23.122867122695773, 14.0, 294.0), // family help
+        // Expense, 6 categories, plot_y=70.87126605261206, row=19.59719379268398.
+        (90.46845984529602, 19.59719379268398, 10.0, 263.0), // discretionary
+        (110.06565363798, 19.59719379268398, 10.0, 283.0),   // transportation
+        (129.662847430664, 19.59719379268398, 10.0, 302.0),  // books & supplies
+        (149.26004122334797, 19.59719379268398, 10.0, 322.0), // tuition & fees
+        // Income widened to 6 categories (category-count probe), row=19.26905593557981.
+        (91.1247355595044, 19.26905593557981, 10.0, 264.0), // other
+        (110.3937914950842, 19.26905593557981, 10.0, 283.0), // from savings
+        (129.662847430664, 19.26905593557981, 10.0, 302.0), // family help
+        (148.93190330624383, 19.26905593557981, 10.0, 322.0), // wages (after-tax)
+    ] {
+        let local_dy = bar_category_label_baseline_pt(SHEET_FRAME_TOP_PT, row_top, row, size_pt)
+            .unwrap_or_else(|| panic!("{size_pt}pt is a measured size"));
+        let got_sheet = local_dy + SHEET_FRAME_TOP_PT;
+        assert!(
+            (got_sheet - native_sheet).abs() < 0.001,
+            "row_top={row_top}, row={row}, size={size_pt}: expected sheet {native_sheet}, got {got_sheet}"
+        );
+    }
+}
+
+#[test]
+fn bar_category_label_baseline_keeps_no_rule_for_an_unmeasured_size() {
+    use crate::render::typst_gen::diagrams::bar_category_label_baseline_pt;
+    assert_eq!(
+        bar_category_label_baseline_pt(159.5, 110.0, 20.0, 11.0),
+        None
+    );
+}
+
+#[test]
+fn a_worksheet_bar_chart_seats_only_interior_category_labels_on_the_quantized_baseline() {
+    let mut chart = two_series_bar_chart(Vec::new());
+    chart.series.truncate(1);
+    // A lone series would otherwise stand in as an automatic chart title,
+    // shifting the plot rectangle down by a title band this test's
+    // independent geometry check doesn't otherwise account for.
+    chart.auto_title_deleted = true;
+    chart.categories = vec![
+        "c0".into(),
+        "c1".into(),
+        "c2".into(),
+        "c3".into(),
+        "c4".into(),
+    ];
+    chart.series[0].values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+    chart.host = crate::ir::ChartHost::Spreadsheet;
+    chart.category_axis_text_style.size_pt = Some(10.0);
+
+    let frame = (400.0, 300.0);
+    const SHEET_FRAME_TOP_PT: f64 = 20.5;
+    let mut source = String::new();
+    generate_sheet_chart_in(&mut source, &chart, frame, (50.0, SHEET_FRAME_TOP_PT));
+
+    let (_, top, _, bottom) = axis_plot_rect(&chart, frame, false);
+    let plot_h: f64 = bottom - top;
+    let row: f64 = plot_h / chart.categories.len() as f64;
+
+    for (cat_index, label) in ["c0", "c1", "c2", "c3", "c4"].into_iter().enumerate() {
+        let line: &str = source
+            .lines()
+            .find(|line| line.contains(&format!("[{label}]")))
+            .unwrap_or_else(|| panic!("nothing prints {label} in:\n{source}"));
+        let is_edge_row: bool = cat_index == 0 || cat_index + 1 == chart.categories.len();
+        if is_edge_row {
+            assert!(
+                !line.contains("top-edge: 0pt, bottom-edge: 0pt"),
+                "edge row {label} keeps its existing centred seat: {line}"
+            );
+            continue;
+        }
+        assert!(
+            line.contains("top-edge: 0pt, bottom-edge: 0pt"),
+            "interior row {label} seats directly on its quantized baseline: {line}"
+        );
+        let placed = placed_box_holding(&source, label);
+        let row_top: f64 = plot_h - (cat_index as f64 + 1.0) * row;
+        let expected = crate::render::typst_gen::diagrams::bar_category_label_baseline_pt(
+            SHEET_FRAME_TOP_PT,
+            row_top,
+            row,
+            10.0,
+        )
+        .expect("10pt is a measured size");
+        assert!(
+            (placed.dy - expected).abs() < 0.01,
+            "{label}: expected {expected}, got {placed:?}"
+        );
+    }
+}
+
+#[test]
+fn a_worksheet_bar_chart_at_an_unmeasured_size_keeps_every_labels_centred_seat() {
+    let mut chart = two_series_bar_chart(Vec::new());
+    chart.series.truncate(1);
+    chart.categories = vec!["c0".into(), "c1".into(), "c2".into()];
+    chart.series[0].values = vec![1.0, 2.0, 3.0];
+    chart.host = crate::ir::ChartHost::Spreadsheet;
+    chart.category_axis_text_style.size_pt = Some(11.0); // never measured against native (#1621)
+
+    let mut source = String::new();
+    generate_sheet_chart_in(&mut source, &chart, (400.0, 300.0), (50.0, 20.5));
+    let line = source
+        .lines()
+        .find(|line| line.contains("[c1]"))
+        .expect("c1's label is emitted");
+    assert!(
+        !line.contains("top-edge: 0pt, bottom-edge: 0pt"),
+        "interior row at an unmeasured size keeps its existing seat: {line}"
+    );
+}
+
+#[test]
 fn declared_marker_paint_reaches_plot_and_legend_across_chart_families() {
     for kind in [
         ChartType::Line,
