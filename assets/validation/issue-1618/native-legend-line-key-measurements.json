@@ -1,0 +1,53 @@
+{
+ "fixture": "tests/fixtures/xlsx/issue_1603_gift_budget.xlsx",
+ "fixture_sha256": "25f5dc75dab19ea12042979a61842314ddc226e3e45d447e36b2a2a104112613",
+ "exporter": "Microsoft Excel for Mac 16.112, fitted print scale 0.82; values in chart points (page pt / 0.82)",
+ "page": 2,
+ "note": "Fresh native exports gathered for #1618, independent of the #1617 batch (assets/validation/issue-1617/native-legend-marker-measurements.json), which this cross-checks. Only the bottom legend's a:defRPr/@sz was patched (xl/charts/chart1.xml); the series' own declared c:marker/c:size (5) was left unchanged, so the marker cap of #1617 (floor(0.6 x legend_pt)) applies as authored.",
+ "rows": [
+  {
+   "legend_size_pt": 6,
+   "line_x0_chart_pt": 950.1493,
+   "line_x1_chart_pt": 969.3493,
+   "line_mid_x_chart_pt": 959.7493,
+   "line_y_chart_pt": 438.0357,
+   "marker_w_chart_pt": 3.0,
+   "marker_h_chart_pt": 3.0,
+   "marker_left_chart_pt": 957.0,
+   "marker_top_chart_pt": 436.0
+  },
+  {
+   "legend_size_pt": 9,
+   "line_x0_chart_pt": 978.2459,
+   "line_x1_chart_pt": 997.4459,
+   "line_mid_x_chart_pt": 987.8459,
+   "line_y_chart_pt": 436.0607,
+   "marker_w_chart_pt": 5.0,
+   "marker_h_chart_pt": 5.0,
+   "marker_left_chart_pt": 984.0,
+   "marker_top_chart_pt": 433.0
+  },
+  {
+   "legend_size_pt": 12,
+   "line_x0_chart_pt": 1006.3337,
+   "line_x1_chart_pt": 1025.5337,
+   "line_mid_x_chart_pt": 1015.9337,
+   "line_y_chart_pt": 434.0856,
+   "marker_w_chart_pt": 5.0,
+   "marker_h_chart_pt": 5.0,
+   "marker_left_chart_pt": 1012.0,
+   "marker_top_chart_pt": 431.0
+  },
+  {
+   "legend_size_pt": 18,
+   "line_x0_chart_pt": 1062.6044,
+   "line_x1_chart_pt": 1081.8044,
+   "line_mid_x_chart_pt": 1072.2044,
+   "line_y_chart_pt": 430.1330,
+   "marker_w_chart_pt": 5.0,
+   "marker_h_chart_pt": 5.0,
+   "marker_left_chart_pt": 1069.0,
+   "marker_top_chart_pt": 427.0
+  }
+ ]
+}
