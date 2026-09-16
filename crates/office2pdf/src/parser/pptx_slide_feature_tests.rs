@@ -1,4 +1,5 @@
 use super::*;
+use crate::config::SlideRange;
 
 // ── Slide background tests ───────────────────────────────────────────
 
@@ -338,7 +339,7 @@ fn test_slide_filter_none_includes_all() {
     };
     let (doc, _warnings) = parser.parse(&data, &opts).unwrap();
 
-    assert_eq!(doc.pages.len(), 2, "None should include all slides");
+    assert_eq!(doc.pages.len(), 2, "None should include all visible slides");
 }
 
 #[test]
@@ -442,6 +443,80 @@ fn test_hidden_slide_with_false_literal_is_skipped() {
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
     assert_eq!(page_texts(&doc), vec!["First"]);
+}
+
+#[test]
+fn test_include_hidden_slides_preserves_source_order_for_zero_and_false() {
+    let slides = vec![
+        make_slide_xml(&[make_text_box(0, 0, 5_000_000, 500_000, "First")]),
+        make_slide_xml_with_show("0", &[make_text_box(0, 0, 5_000_000, 500_000, "Hidden 2")]),
+        make_slide_xml(&[make_text_box(0, 0, 5_000_000, 500_000, "Third")]),
+        make_slide_xml_with_show(
+            "false",
+            &[make_text_box(0, 0, 5_000_000, 500_000, "Hidden 4")],
+        ),
+    ];
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &slides);
+    let options = ConvertOptions {
+        include_hidden_slides: true,
+        ..Default::default()
+    };
+
+    let (doc, _warnings) = PptxParser.parse(&data, &options).unwrap();
+
+    assert_eq!(
+        page_texts(&doc),
+        vec!["First", "Hidden 2", "Third", "Hidden 4"]
+    );
+}
+
+#[test]
+fn test_slide_range_uses_source_ordinals_when_hidden_slides_are_included() {
+    let slides = vec![
+        make_slide_xml(&[make_text_box(0, 0, 5_000_000, 500_000, "First")]),
+        make_slide_xml_with_show("0", &[make_text_box(0, 0, 5_000_000, 500_000, "Hidden 2")]),
+        make_slide_xml(&[make_text_box(0, 0, 5_000_000, 500_000, "Third")]),
+    ];
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &slides);
+
+    let default_options = ConvertOptions {
+        slide_range: Some(SlideRange::new(2, 3)),
+        ..Default::default()
+    };
+    let (default_doc, _warnings) = PptxParser.parse(&data, &default_options).unwrap();
+    assert_eq!(page_texts(&default_doc), vec!["Third"]);
+
+    let include_options = ConvertOptions {
+        slide_range: Some(SlideRange::new(2, 3)),
+        include_hidden_slides: true,
+        ..Default::default()
+    };
+    let (include_doc, _warnings) = PptxParser.parse(&data, &include_options).unwrap();
+    assert_eq!(page_texts(&include_doc), vec!["Hidden 2", "Third"]);
+}
+
+#[test]
+fn test_all_hidden_slides_are_omitted_by_default_and_included_with_opt_in() {
+    let slides = vec![
+        make_slide_xml_with_show("0", &[make_text_box(0, 0, 5_000_000, 500_000, "Hidden 1")]),
+        make_slide_xml_with_show(
+            "false",
+            &[make_text_box(0, 0, 5_000_000, 500_000, "Hidden 2")],
+        ),
+    ];
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &slides);
+
+    let (default_doc, _warnings) = PptxParser
+        .parse(&data, &ConvertOptions::default())
+        .expect("an all-hidden presentation still parses to an empty document");
+    assert!(default_doc.pages.is_empty());
+
+    let include_options = ConvertOptions {
+        include_hidden_slides: true,
+        ..Default::default()
+    };
+    let (doc, _warnings) = PptxParser.parse(&data, &include_options).unwrap();
+    assert_eq!(page_texts(&doc), vec!["Hidden 1", "Hidden 2"]);
 }
 
 #[test]

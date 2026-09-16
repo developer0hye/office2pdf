@@ -63,6 +63,10 @@ fn test_generated_types_contain_expected_content() {
         "ConvertOptions.ts should contain pdf_ua: {opts_ts}"
     );
     assert!(
+        opts_ts.contains("include_hidden_slides"),
+        "ConvertOptions.ts should contain include_hidden_slides: {opts_ts}"
+    );
+    assert!(
         opts_ts.contains("boolean"),
         "boolean fields should be mapped: {opts_ts}"
     );

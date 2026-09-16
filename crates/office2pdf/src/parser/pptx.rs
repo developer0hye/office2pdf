@@ -485,7 +485,6 @@ impl Parser for PptxParser {
             {
                 continue;
             }
-
             if let Some(target) = rel_map.get(rid) {
                 let slide_path = if let Some(stripped) = target.strip_prefix('/') {
                     stripped.to_string()
@@ -501,6 +500,7 @@ impl Parser for PptxParser {
                     slide_size,
                     &presentation_resources,
                     &mut archive,
+                    options.include_hidden_slides,
                 ) {
                     // Hidden slide (show="0"): PowerPoint omits it from PDF export.
                     Ok(None) => {}
