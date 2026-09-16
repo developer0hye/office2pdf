@@ -1,0 +1,24 @@
+{
+ "name": "issue-1622-bar-value-axis-label-gap-size",
+ "base": "../../../tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx",
+ "part": "xl/charts/chart3.xml",
+ "factor": "c:valAx c:txPr a:defRPr sz (income bar chart's value-axis size, 1/100 pt)",
+ "page": 2,
+ "noise_floor": 0.5,
+ "variants": [
+  {
+   "value": "800",
+   "find": "(<c:valAx>[\\s\\S]*?<a:defRPr sz=\")1000(\")",
+   "replace": "\\g<1>800\\g<2>",
+   "regex": true,
+   "count": 1
+  },
+  {
+   "value": "1400",
+   "find": "(<c:valAx>[\\s\\S]*?<a:defRPr sz=\")1000(\")",
+   "replace": "\\g<1>1400\\g<2>",
+   "regex": true,
+   "count": 1
+  }
+ ]
+}
