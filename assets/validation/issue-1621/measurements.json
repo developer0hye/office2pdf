@@ -31,6 +31,18 @@
           "native_y": {"other": 193.44000, "from savings": 211.38000, "family help": 229.32000},
           "ours_y":   {"other": 193.50104, "from savings": 211.53687, "family help": 229.57270}
         }
+      },
+      "category_count_probes": {
+        "note": "Built with build_category_count_probe.py: patches xl/workbook.xml's CategoriesIncome array literal AND widens c:val's c:f range in chart3.xml, because a chart-cache-only patch (ptCount + c:pt) is silently overwritten by native Excel's own recalculation on open (confirmed empirically -- see README's 'What this falsifies (new)' section). office2pdf reads the chart-part cache directly with no formula evaluation, so the same script's cache-only edits are what make our own output track the variant. plot_y_sheet_pt and plot_h_sheet_pt are unchanged from the 5-category chart above (the manualLayout fraction and chart frame size don't depend on category count); only row_sheet_pt (= plot_h_sheet_pt / N) changes.",
+        "6": {
+          "categories_top_to_bottom": ["probe extra", "other", "from savings", "family help", "wages (after-tax)", "financial aid"],
+          "row_sheet_pt": 19.269055935579812,
+          "sizes": {
+            "10": {
+              "native_y": {"probe extra": 191.10000, "other": 205.92000, "from savings": 220.74000, "family help": 235.56000, "wages (after-tax)": 251.16000, "financial aid": 265.98000}
+            }
+          }
+        }
       }
     },
     "expense": {
