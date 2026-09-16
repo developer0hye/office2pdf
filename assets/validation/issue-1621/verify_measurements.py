@@ -35,10 +35,12 @@ Falsifies (new):
      edge-row gap and additionally breaks a previously-exact interior row
      (`from savings`, 5-category income @ 10pt).
 
-Exit code is 0 when claims 1-5 hold exactly as documented (i.e. the
-measurements still support the README's "not yet a shippable rule"
-conclusion) and non-zero if the data no longer matches that story --
-which would mean README.md needs a re-read, not that the script is wrong.
+Exit code is 0 when claims 1-5 hold exactly as documented -- the same split
+between interior rows (claim 4, now shipped in
+`bar_category_label_baseline_pt`) and the still-open edge-row exception
+(claim 4's six-row exception set, claim 5) README.md describes -- and
+non-zero if the data no longer matches that story, which would mean
+README.md needs a re-read, not that the script is wrong.
 """
 
 from __future__ import annotations
