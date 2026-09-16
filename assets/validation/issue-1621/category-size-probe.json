@@ -1,0 +1,24 @@
+{
+ "name": "issue-1621-bar-category-label-y-size",
+ "base": "../../../tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx",
+ "part": "xl/charts/chart3.xml",
+ "factor": "c:catAx c:txPr a:defRPr sz (income bar chart's category-axis size, 1/100 pt) -- chart3 avoids the #1756 manualLayout-growth contamination chart4 hits past 10pt",
+ "page": 2,
+ "noise_floor": 0.5,
+ "variants": [
+  {
+   "value": "800",
+   "find": "(<c:catAx>[\\s\\S]*?<a:defRPr sz=\")1000(\")",
+   "replace": "\\g<1>800\\g<2>",
+   "regex": true,
+   "count": 1
+  },
+  {
+   "value": "1400",
+   "find": "(<c:catAx>[\\s\\S]*?<a:defRPr sz=\")1000(\")",
+   "replace": "\\g<1>1400\\g<2>",
+   "regex": true,
+   "count": 1
+  }
+ ]
+}
