@@ -4568,3 +4568,214 @@ fn top_aligned_fixed_track_sheet_cell_starts_on_the_native_seat() {
         );
     }
 }
+
+// ── Excel-Mac Hangul-substitution weight quirk (issue #1627) ──────────────
+
+/// Excel-for-Mac's rich-text cells split a mixed-script string one run per
+/// script: the corpus's own payroll title cell (`2026년 7월 급여대장`) declares
+/// its digit runs `Malgun Gothic` (installed) and its Hangul runs `Noto Sans
+/// CJK SC` (absent on both the GT machine and this one, issue #1625), each
+/// carrying its own trailing space (`"년 "`, `"월 급여대장"`). A ten-row
+/// one-factor native probe (evidence at
+/// `/Volumes/T7/scratch/issue-1627/probe1627.xlsx` plus both exported PDFs)
+/// found Excel keeps a *Latin* run's requested bold weight in whatever
+/// substitute it resolves to (`Helvetica-Bold`, `Times New Roman Bold`), but
+/// always paints a *Hangul* run's substitute at regular weight, even though
+/// the run explicitly asks for bold — and that drop applies to the run as a
+/// whole, including any embedded space, not per glyph (confirmed against
+/// the committed GT trace of `04_payroll_ko`'s title and `01_quotation_ko`'s
+/// A13, see `rewrite_blocks_for_unavailable_hangul_bold` in
+/// `typst_gen_tables.rs`). A Hangul run whose declared font resolves
+/// directly (Malgun Gothic by any name or scheme path) is unaffected and
+/// stays bold.
+fn hangul_substitution_test_context() -> crate::render::font_context::FontSearchContext {
+    crate::render::font_context::FontSearchContext::for_test(
+        Vec::new(),
+        &["Malgun Gothic"],
+        &[],
+        &[],
+    )
+}
+
+fn hangul_bold_run(text: &str, font_family: &str) -> Run {
+    Run {
+        text: text.to_string(),
+        style: TextStyle {
+            font_family: Some(font_family.to_string()),
+            font_size: Some(14.0),
+            bold: Some(true),
+            ..TextStyle::default()
+        },
+        href: None,
+        footnote: None,
+    }
+}
+
+fn sheet_cell_from_runs(runs: Vec<Run>) -> Table {
+    Table {
+        rows: vec![TableRow {
+            minimum_height: None,
+            cells: vec![TableCell {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs,
+                })],
+                ..TableCell::default()
+            }],
+            height: None,
+        }],
+        column_widths: vec![200.0],
+        ..Table::default()
+    }
+}
+
+/// Returns whether the `#text(...)` call immediately preceding `needle`
+/// carries `weight: "bold"`. Panics if `needle` or a preceding `#text(` call
+/// cannot be found, so a shape change in the codegen fails loudly instead of
+/// silently asserting on the wrong span.
+fn preceding_text_call_is_bold(source: &str, needle: &str) -> bool {
+    let needle_pos = source
+        .find(needle)
+        .unwrap_or_else(|| panic!("expected {needle:?} in generated source:\n{source}"));
+    let call_start = source[..needle_pos]
+        .rfind("#text(")
+        .unwrap_or_else(|| panic!("no #text( call precedes {needle:?} in:\n{source}"));
+    source[call_start..needle_pos].contains("weight: \"bold\"")
+}
+
+#[test]
+fn test_sheet_cell_hangul_run_drops_bold_when_font_needs_substitution() {
+    let table = sheet_cell_from_runs(vec![
+        hangul_bold_run("9975", "Malgun Gothic"),
+        hangul_bold_run("년", "Noto Sans CJK SC"),
+        hangul_bold_run("0631", "Malgun Gothic"),
+        hangul_bold_run("월급여대장", "Noto Sans CJK SC"),
+    ]);
+    let page = make_sheet_page("Sheet1", 400.0, 400.0, Margins::default(), table);
+    let doc = make_doc(vec![page]);
+
+    let context = hangul_substitution_test_context();
+    let source = generate_typst_with_options_and_font_context(
+        &doc,
+        &ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+
+    assert!(
+        preceding_text_call_is_bold(&source, "9975"),
+        "a Malgun Gothic run (directly available) must keep its declared bold:\n{source}"
+    );
+    assert!(
+        preceding_text_call_is_bold(&source, "0631"),
+        "a second Malgun Gothic run must also keep its declared bold:\n{source}"
+    );
+    assert!(
+        !preceding_text_call_is_bold(&source, "년"),
+        "a Hangul run under an unavailable declared font must drop to regular \
+         weight, matching Excel-for-Mac's substitution (issue #1627):\n{source}"
+    );
+    assert!(
+        !preceding_text_call_is_bold(&source, "월급여대장"),
+        "every Hangul run under the unavailable font must drop to regular, \
+         not just the first:\n{source}"
+    );
+}
+
+#[test]
+fn test_sheet_cell_hangul_run_drops_bold_for_its_whole_run_including_embedded_space() {
+    // Regression pin for the run-level model: this is a RUN-level decision,
+    // not a per-character script split. The corpus's own payroll title cell
+    // carries `"년 "` — a Hangul character and its own trailing space — as
+    // ONE declared run under the unavailable font, and the committed GT
+    // trace paints that embedded space `TimesNewRomanPSMT` (not a bold
+    // face). An implementation that only cleared bold on the Hangul glyphs
+    // and left the run's embedded space bold would diverge from GT, so no
+    // bold `#text` call may survive anywhere in this cell.
+    let table = sheet_cell_from_runs(vec![hangul_bold_run("년 ", "Noto Sans CJK SC")]);
+    let page = make_sheet_page("Sheet1", 400.0, 400.0, Margins::default(), table);
+    let doc = make_doc(vec![page]);
+
+    let context = hangul_substitution_test_context();
+    let source = generate_typst_with_options_and_font_context(
+        &doc,
+        &ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+
+    assert!(
+        !preceding_text_call_is_bold(&source, "년"),
+        "the Hangul glyph must drop to regular:\n{source}"
+    );
+    assert!(
+        !source.contains("weight: \"bold\""),
+        "the run's embedded space must drop to regular along with the Hangul \
+         glyph, not stay bold from a per-character split (issue #1627):\n{source}"
+    );
+}
+
+#[test]
+fn test_sheet_cell_hangul_run_keeps_bold_when_font_is_available() {
+    // Control: a Hangul run whose declared font Excel resolves directly
+    // (Malgun Gothic is installed) keeps its requested bold — the weight
+    // drop is specific to substitution, not to Hangul as a script.
+    let table = sheet_cell_from_runs(vec![hangul_bold_run("합계총결과", "Malgun Gothic")]);
+    let page = make_sheet_page("Sheet1", 400.0, 400.0, Margins::default(), table);
+    let doc = make_doc(vec![page]);
+
+    let context = hangul_substitution_test_context();
+    let source = generate_typst_with_options_and_font_context(
+        &doc,
+        &ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+
+    assert!(
+        preceding_text_call_is_bold(&source, "합계총결과"),
+        "a directly available Hangul font must keep its declared bold:\n{source}"
+    );
+}
+
+#[test]
+fn test_generic_table_cell_hangul_run_keeps_bold_when_font_needs_substitution() {
+    // The Excel-Mac substitution quirk is scoped to sheet cells only: a DOCX/
+    // PPTX-style generic table cell (rendered through `generate_table`
+    // rather than the sheet-cell path) must not have its Hangul weight
+    // rewritten just because it shares the same run shape.
+    let table = Table {
+        rows: vec![TableRow {
+            minimum_height: None,
+            cells: vec![TableCell {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![hangul_bold_run("년", "Noto Sans CJK SC")],
+                })],
+                ..TableCell::default()
+            }],
+            height: None,
+        }],
+        column_widths: vec![200.0],
+        ..Table::default()
+    };
+    let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+
+    let context = hangul_substitution_test_context();
+    let source = generate_typst_with_options_and_font_context(
+        &doc,
+        &ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+
+    assert!(
+        preceding_text_call_is_bold(&source, "년"),
+        "a generic (non-sheet) table cell must keep the run's declared bold \
+         even under an unavailable font:\n{source}"
+    );
+}
