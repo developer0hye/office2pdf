@@ -509,3 +509,17 @@ fn test_cli_split_command() {
 
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn test_cli_include_hidden_slides_defaults_to_false() {
+    let cli = Cli::try_parse_from(["office2pdf", "slides.pptx"]).unwrap();
+    assert!(!cli.include_hidden_slides);
+}
+
+#[test]
+fn test_cli_include_hidden_slides_flag_sets_option() {
+    let cli =
+        Cli::try_parse_from(["office2pdf", "--include-hidden-slides", "slides.pptx"]).unwrap();
+    let options = build_convert_options(&cli, None, None, None);
+    assert!(options.include_hidden_slides);
+}

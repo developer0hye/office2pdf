@@ -75,9 +75,14 @@ struct Cli {
     #[arg(long, value_delimiter = ',')]
     sheets: Option<Vec<String>>,
 
-    /// PPTX slide range to include (e.g. "1-5" or "3")
+    /// PPTX slide range by original one-based source position (e.g. "1-5" or "3").
+    /// Hidden slides stay omitted unless --include-hidden-slides is set.
     #[arg(long)]
     slides: Option<String>,
+
+    /// Include PPTX slides marked hidden (show="0" or show="false"); default: omitted
+    #[arg(long)]
+    include_hidden_slides: bool,
 
     /// Produce PDF/A-2b compliant output for archival purposes
     #[arg(long = "pdf-a")]
@@ -300,6 +305,29 @@ fn convert_batch(
     batch
 }
 
+fn build_convert_options(
+    cli: &Cli,
+    slide_range: Option<SlideRange>,
+    pdf_standard: Option<PdfStandard>,
+    paper_size: Option<PaperSize>,
+) -> ConvertOptions {
+    ConvertOptions {
+        sheet_names: cli.sheets.clone(),
+        slide_range,
+        include_hidden_slides: cli.include_hidden_slides,
+        pdf_standard,
+        paper_size,
+        font_paths: cli.font_path.clone(),
+        font_bytes: Vec::new(),
+        last_resort_font_family: None,
+        landscape: if cli.landscape { Some(true) } else { None },
+        tagged: cli.tagged,
+        pdf_ua: cli.pdf_ua,
+        streaming: cli.streaming,
+        streaming_chunk_size: cli.streaming_chunk_size,
+    }
+}
+
 fn run() -> Result<()> {
     let cli = Cli::parse();
 
@@ -315,7 +343,8 @@ fn run() -> Result<()> {
 
     let slide_range = cli
         .slides
-        .map(|s| SlideRange::parse(&s))
+        .as_ref()
+        .map(|s| SlideRange::parse(s))
         .transpose()
         .map_err(|e| anyhow::anyhow!("invalid --slides value: {e}"))?;
 
@@ -327,26 +356,12 @@ fn run() -> Result<()> {
 
     let paper_size = cli
         .paper
-        .map(|s| PaperSize::parse(&s))
+        .as_ref()
+        .map(|s| PaperSize::parse(s))
         .transpose()
         .map_err(|e| anyhow::anyhow!("invalid --paper value: {e}"))?;
 
-    let landscape = if cli.landscape { Some(true) } else { None };
-
-    let options = ConvertOptions {
-        sheet_names: cli.sheets,
-        slide_range,
-        pdf_standard,
-        paper_size,
-        font_paths: cli.font_path,
-        font_bytes: Vec::new(),
-        last_resort_font_family: None,
-        landscape,
-        tagged: cli.tagged,
-        pdf_ua: cli.pdf_ua,
-        streaming: cli.streaming,
-        streaming_chunk_size: cli.streaming_chunk_size,
-    };
+    let options = build_convert_options(&cli, slide_range, pdf_standard, paper_size);
 
     // Create outdir if specified and doesn't exist
     if let Some(ref outdir) = cli.outdir {

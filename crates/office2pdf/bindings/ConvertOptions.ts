@@ -9,13 +9,22 @@ import type { SlideRange } from "./SlideRange";
 export type ConvertOptions = { 
 /**
  * Filter XLSX sheets by name. Only sheets whose names are in this list
- * will be included. If `None`, all sheets are included.
+ * are included, hidden ones among them. If `None`, every sheet the
+ * workbook does not hide is included — Excel prints no `hidden` or
+ * `veryHidden` sheet.
  */
 sheet_names: Array<string> | null, 
 /**
- * Filter PPTX slides by range (1-indexed). If `None`, all slides are included.
+ * Filter PPTX slides by range (1-indexed). If `None`, all visible slides
+ * are included unless `include_hidden_slides` is enabled.
  */
 slide_range: SlideRange | null, 
+/**
+ * Include PPTX slides marked hidden with `show="0"` or `show="false"`.
+ * Defaults to `false`, matching PowerPoint PDF export. Slide ranges still
+ * use source slide ordinals whether hidden slides are included or omitted.
+ */
+include_hidden_slides: boolean,
 /**
  * PDF standard to enforce. If `None`, produces a standard PDF 1.7.
  */
