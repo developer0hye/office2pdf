@@ -485,6 +485,7 @@ impl Parser for PptxParser {
             {
                 continue;
             }
+
             if let Some(target) = rel_map.get(rid) {
                 let slide_path = if let Some(stripped) = target.strip_prefix('/') {
                     stripped.to_string()
@@ -502,7 +503,9 @@ impl Parser for PptxParser {
                     &mut archive,
                     options.include_hidden_slides,
                 ) {
-                    // Hidden slide (show="0"): PowerPoint omits it from PDF export.
+                    // Hidden slide (show="0" or show="false") omitted because
+                    // include_hidden_slides is false, matching PowerPoint's
+                    // default PDF export behavior.
                     Ok(None) => {}
                     Ok(Some((page, slide_warnings))) => {
                         warnings.extend(slide_warnings);
