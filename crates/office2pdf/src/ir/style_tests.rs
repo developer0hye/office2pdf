@@ -212,6 +212,7 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
         border: None,
         border_space: None,
         paragraph_mark_font_family: None,
+        sheet_number_format_reserved_glyphs: None,
     };
     let original: ParagraphStyle = target.clone();
     let source = ParagraphStyle::default();
@@ -260,6 +261,7 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
         border: None,
         border_space: None,
         paragraph_mark_font_family: None,
+        sheet_number_format_reserved_glyphs: None,
         tab_stops: Some(vec![TabStop {
             position: 144.0,
             alignment: TabAlignment::Right,

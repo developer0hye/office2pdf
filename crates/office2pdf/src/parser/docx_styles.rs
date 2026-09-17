@@ -630,6 +630,8 @@ pub(super) fn merge_paragraph_style(
         // Word does not share a fixed line box across a
         // paragraph's fonts, so its paragraph mark carries no line-box role.
         paragraph_mark_font_family: None,
+        // Worksheet-cell-only (issue #1631); Word paragraphs never carry one.
+        sheet_number_format_reserved_glyphs: None,
     }
 }
 
