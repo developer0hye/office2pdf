@@ -191,6 +191,28 @@ fn workbook_with_cell_font(family: &str, size_pt: f64) -> Vec<u8> {
     )
 }
 
+/// A one-cell, left-aligned workbook whose cell states `family`, `size_pt`,
+/// and `bold`.
+fn workbook_with_cell_font_and_weight(family: &str, size_pt: f64, bold: bool) -> Vec<u8> {
+    let mut book = umya_spreadsheet::new_file();
+    {
+        let sheet = book.get_sheet_mut(&0).unwrap();
+        let cell = sheet.get_cell_mut("B3");
+        cell.set_value("2026");
+        let style = cell.get_style_mut();
+        style
+            .get_alignment_mut()
+            .set_horizontal(umya_spreadsheet::HorizontalAlignmentValues::Left);
+        let font = style.get_font_mut();
+        font.set_name(family);
+        font.set_size(size_pt);
+        font.set_bold(bold);
+    }
+    let mut cursor = Cursor::new(Vec::new());
+    umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+    cursor.into_inner()
+}
+
 /// Every row of the issue #1165 probe whose family the reference digit table
 /// carries, so the expectation is the same on any machine. Century Gothic and
 /// Segoe UI are measured in the module doc but resolve through the live font
@@ -384,4 +406,108 @@ fn test_centred_cell_carries_its_wrap_text_flag_to_the_renderer() {
         wrapped.spill_width.is_none() && unwrapped.spill_width.is_none(),
         "text that fits its column leaves no spill on either cell, so the spill cannot stand in for the flag"
     );
+}
+
+/// Cambria 11/24/36/42/48, regular and bold, bracketed by a Calibri 11
+/// control (issue #1623). This is the already-validated `ceil(unit / 4) + 1`
+/// inset formula (#1165, #1232) evaluated at Cambria's regular and bold
+/// digit advances, which are read directly from Excel's own font files —
+/// `Cambria.ttc`'s 1134/2048em and `Cambriab.ttf`'s 1213/2048em hmtx maxima
+/// over U+0030..=U+0039 (verified with `fontTools`, not estimated).
+///
+/// Three of these rows also have an independent native Excel for Mac
+/// confirmation, not just the formula:
+/// - 42pt bold is the issue's own fixture title cell: a fresh native export
+///   places it at physical x 85.80pt, matching this model's 8pt inset to
+///   within the +0.475pt residual issue #1719 already tracks for every run on
+///   that fitted sheet (a shared paint/text origin snap, not this rule).
+/// - 36 and 48 are a differential probe (2026-09-17): the same wide-column
+///   workbook exported regular and bold, reading only the bold-minus-regular
+///   shift in the "2026" digits' start x so the (unmodelled) column boundary
+///   cancels out. Native gave +1.0pt at 36 and +0.0pt at 48, matching this
+///   table exactly.
+///
+/// 11 and 24 are not independently probed: at those sizes the rounded
+/// whole-point column unit lands in the same `ceil(unit / 4)` bracket
+/// regardless of weight, so they are the formula's own negative control
+/// rather than a new empirical claim.
+const MEASURED_CAMBRIA_LEFT_INSETS: &[(&str, f64, bool, f64)] = &[
+    ("Calibri", 11.0, false, 3.0),
+    ("Cambria", 11.0, false, 3.0),
+    ("Cambria", 11.0, true, 3.0),
+    ("Cambria", 24.0, false, 5.0),
+    ("Cambria", 24.0, true, 5.0),
+    ("Cambria", 36.0, false, 6.0),
+    ("Cambria", 36.0, true, 7.0),
+    ("Cambria", 42.0, false, 7.0),
+    ("Cambria", 42.0, true, 8.0),
+    ("Cambria", 48.0, false, 8.0),
+    ("Cambria", 48.0, true, 8.0),
+    ("Calibri", 11.0, false, 3.0),
+];
+
+#[test]
+fn test_bold_cell_font_prices_its_own_bold_digit_advance() {
+    for &(family, size_pt, bold, expected_left) in MEASURED_CAMBRIA_LEFT_INSETS {
+        let padding: Insets =
+            first_cell_padding(&workbook_with_cell_font_and_weight(family, size_pt, bold));
+
+        assert!(
+            (padding.left - expected_left).abs() < 0.01,
+            "{family} {size_pt} bold={bold} starts {expected_left}pt inside its column in \
+             Excel's own export, got {}",
+            padding.left,
+        );
+    }
+}
+
+/// A family whose digits are the same width at every weight (Calibri, Arial,
+/// Times New Roman all measured equal) must not move its inset just because
+/// the cell is bold — ruling out a hack that always adds a point for bold
+/// rather than actually pricing the bold face's own digit advance.
+#[test]
+fn test_bold_does_not_move_the_inset_for_a_tabular_digit_family() {
+    let regular: Insets =
+        first_cell_padding(&workbook_with_cell_font_and_weight("Calibri", 32.0, false));
+    let bold: Insets =
+        first_cell_padding(&workbook_with_cell_font_and_weight("Calibri", 32.0, true));
+
+    assert!(
+        (regular.left - bold.left).abs() < 0.01,
+        "Calibri's digits are the same width bold or regular, so the inset must not move: \
+         regular {} bold {}",
+        regular.left,
+        bold.left,
+    );
+}
+
+/// Malgun Gothic's bold digits (1187/2048em, read from Excel's own
+/// `malgunbd.ttf`) are ~5% wider than regular (1128/2048em) — the same class
+/// of defect as Cambria and Verdana (issue #1623), on a family this codebase
+/// already knew was not weight-invariant on other metrics (issues #1097,
+/// #1199, #1208, #1627). 11pt is the workbook-default size and lands both
+/// weights in the same `ceil(unit / 4)` bracket (a negative control); 22pt is
+/// where the wider bold digit measurably moves the inset. Formula-derived
+/// from the measured em values, not an independent native probe.
+#[test]
+fn test_bold_cell_font_prices_its_own_bold_malgun_gothic_digit_advance() {
+    for &(size_pt, bold, expected_left) in &[
+        (11.0_f64, false, 3.0_f64),
+        (11.0, true, 3.0),
+        (22.0, false, 4.0),
+        (22.0, true, 5.0),
+    ] {
+        let padding: Insets = first_cell_padding(&workbook_with_cell_font_and_weight(
+            "Malgun Gothic",
+            size_pt,
+            bold,
+        ));
+
+        assert!(
+            (padding.left - expected_left).abs() < 0.01,
+            "Malgun Gothic {size_pt} bold={bold} should start {expected_left}pt inside its \
+             column, got {}",
+            padding.left,
+        );
+    }
 }
