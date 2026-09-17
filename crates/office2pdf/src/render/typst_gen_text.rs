@@ -3908,7 +3908,7 @@ fn is_eojeol_delimiter(ch: char) -> bool {
 /// compatibility jamo. Han and kana are deliberately absent — Chinese and
 /// Japanese really do break between characters, and framing them would
 /// destroy correct output.
-fn is_hangul(ch: char) -> bool {
+pub(super) fn is_hangul(ch: char) -> bool {
     matches!(ch as u32, 0x1100..=0x11FF | 0x3130..=0x318F | 0xAC00..=0xD7A3)
 }
 
@@ -5309,7 +5309,11 @@ pub(super) fn with_sheet_advance_grid<T>(
     })
 }
 
-fn sheet_advance_grid_scale() -> Option<f64> {
+/// Whether codegen is currently inside a sheet's grid — [`with_sheet_advance_grid`]'s
+/// active scope. Excel's own text engine facts (like issue #1627's Hangul
+/// substitution weight) must not leak onto DOCX/PPTX tables, which share the
+/// same cell-emission code but never enter this scope.
+pub(super) fn sheet_advance_grid_scale() -> Option<f64> {
     SHEET_ADVANCE_GRID_SCALE.with(std::cell::Cell::get)
 }
 
