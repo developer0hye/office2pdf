@@ -1,0 +1,53 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 26.208,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.04,
+        "x": 60.48,
+        "y": 75.12
+      },
+      "disposition": {
+        "issue": "#1776",
+        "kind": "issue"
+      },
+      "id": "p1-d08d1541dda7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.1552,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.52,
+        "x": 86.4,
+        "y": 75.84
+      },
+      "disposition": {
+        "issue": "#1776",
+        "kind": "issue"
+      },
+      "id": "p1-c8a091b461a4",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 2,
+    "duplicate": 0,
+    "total": 2,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

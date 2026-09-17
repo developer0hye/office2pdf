@@ -126,6 +126,21 @@ fn number_format_skip_width_glyphs(section: &str) -> String {
     reserved
 }
 
+/// The glyphs a right-aligned cell's selected number-format section reserves
+/// without painting them, or `None` when the section carries no underscore
+/// padding control.
+///
+/// Excel seats the visible text left of this reserve — a `_)` positive
+/// section holds room for the closing parenthesis its paired negative section
+/// prints, without printing one itself (issue #1631). The caller must not
+/// apply this to a cell [`numeric_overflow_replacement`] already replaced
+/// with hashes: that replacement already fills the cell's usable width.
+fn right_aligned_number_format_reserve_glyphs(format_code: &str, value: f64) -> Option<String> {
+    let section = selected_number_format_section(format_code, value)?;
+    let reserved = number_format_skip_width_glyphs(section);
+    (!reserved.is_empty()).then_some(reserved)
+}
+
 /// Reference advances for the issue #1263 face, from the macOS-shipped
 /// Trebuchet MS `hmtx` tables. This keeps the width gate deterministic on
 /// wasm and hosts without that Office face; other strings use the resolved
@@ -3016,10 +3031,12 @@ pub(super) fn build_rows_for_range(
                 (1, 1)
             };
 
+            let mut sheet_number_format_reserved_glyphs: Option<String> = None;
             if let Some(cell) = umya_cell
                 && let Some(number) = cell.get_value_number()
                 && let Some(number_format) = cell.get_style().get_number_format()
             {
+                let format_code: &str = number_format.get_format_code();
                 let cell_width_pt: f64 = (col_idx..col_idx + col_span)
                     .filter_map(|col| {
                         ctx.column_widths
@@ -3027,18 +3044,25 @@ pub(super) fn build_rows_for_range(
                             .copied()
                     })
                     .sum();
-                if let Some(replacement) = numeric_overflow_replacement(
+                let overflow_replacement = numeric_overflow_replacement(
                     &value,
                     number,
-                    number_format.get_format_code(),
+                    format_code,
                     &text_style,
                     ctx.normal_font.as_ref(),
                     cell_width_pt,
                     cell_padding,
                     cell_indent_pt,
-                ) && let Some(run) = runs.first_mut()
+                );
+                if let Some(replacement) = &overflow_replacement
+                    && let Some(run) = runs.first_mut()
                 {
-                    run.text = replacement;
+                    run.text = replacement.clone();
+                } else if overflow_replacement.is_none()
+                    && matches!(paragraph_alignment, Some(crate::ir::Alignment::Right))
+                {
+                    sheet_number_format_reserved_glyphs =
+                        right_aligned_number_format_reserve_glyphs(format_code, number);
                 }
             }
 
@@ -3078,6 +3102,8 @@ pub(super) fn build_rows_for_range(
                 vec![Block::Paragraph(Paragraph {
                     style: ParagraphStyle {
                         alignment: paragraph_alignment,
+                        sheet_number_format_reserved_glyphs: sheet_number_format_reserved_glyphs
+                            .map(String::into_boxed_str),
                         ..ParagraphStyle::default()
                     },
                     runs,
@@ -3442,7 +3468,10 @@ pub(super) fn prepare_sheet_context(
 
 #[cfg(test)]
 mod number_format_tests {
-    use super::{literal_zero_section_text, numeric_overflow_replacement};
+    use super::{
+        literal_zero_section_text, numeric_overflow_replacement,
+        right_aligned_number_format_reserve_glyphs,
+    };
     use crate::ir::{Insets, TextStyle};
 
     fn issue_1263_style() -> TextStyle {
@@ -3531,5 +3560,58 @@ mod number_format_tests {
             None
         );
         assert_eq!(literal_zero_section_text(r#"0;-0;[h]" hours""#), None);
+    }
+
+    /// Issue #1631: a `_)` positive section reserves the closing parenthesis
+    /// its paired negative section prints, without painting one itself.
+    #[test]
+    fn a_padded_positive_section_reserves_its_hidden_glyph() {
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs("#,##0_);[Red](#,##0)", 1_225.0),
+            Some(")".to_string()),
+        );
+    }
+
+    /// The reserved glyph is whatever character follows the `_`, not always
+    /// `)` — a `_-` control reserves a hyphen-minus.
+    #[test]
+    fn the_reserved_glyph_follows_whichever_character_the_section_names() {
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs("#,##0_-;[Red](#,##0)", 1_225.0),
+            Some("-".to_string()),
+        );
+    }
+
+    /// A section with no underscore control reserves nothing: the built-in
+    /// 38 format's own negative and zero sections already print every glyph
+    /// they need (the parenthesised negative, the escaped literal dash), so
+    /// they must not also carry the positive section's reserve.
+    #[test]
+    fn a_section_without_underscore_padding_reserves_nothing() {
+        let format = r"#,##0_);[Red]\(#,##0\);\-\ \ ";
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs(format, -771.0),
+            None,
+            "the parenthesised negative section already prints its own )",
+        );
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs(format, 0.0),
+            None,
+            "the escaped literal zero section prints every glyph it needs",
+        );
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs("#,##0", 1_225.0),
+            None,
+        );
+    }
+
+    /// A `*` fill control repeats a character to stretch across the column;
+    /// it is not a hidden-glyph reserve and must not be conflated with `_`.
+    #[test]
+    fn an_asterisk_fill_control_reserves_nothing() {
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs("#,##0*x", 1_225.0),
+            None,
+        );
     }
 }
