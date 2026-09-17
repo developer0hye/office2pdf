@@ -1685,6 +1685,15 @@ fn word_cell_content_shift(boundary_band: &Option<BoundaryBandCell<'_>>) -> Opti
 /// region, which includes its background bleed. The native #1493 probes keep
 /// left alignment and an unfilled merge on the nominal track, so this is a
 /// content-only seat rather than a change to the cell's width.
+///
+/// The #1493 probe fixture happened to be unwrapped. `compute_spill_width`
+/// (`xlsx_cells.rs`) only returns `Some(merged_width)` for that unwrapped
+/// case; a wrapped merge returns `None` there instead, because it bails out
+/// on `wrapText` before ever reaching the `col_span > 1` branch. A wrapped
+/// centred merge takes no band seat: its whole-point line already lands on
+/// Excel's real position without this extension, and adding it moved
+/// `04_payroll_ko.xlsx`'s `합계` and `08_budget_ko.xlsx`'s `총계` one point
+/// right of Excel's own export (issue #1626).
 fn excel_merged_cell_content_shift(
     boundary_band: &Option<BoundaryBandCell<'_>>,
     cell: &TableCell,
@@ -1692,6 +1701,7 @@ fn excel_merged_cell_content_shift(
     let band = boundary_band.as_ref()?;
     (band.paint_model == TableBorderPaintModel::ExcelBoundaryBands
         && cell.col_span > 1
+        && !cell.wraps_text
         && cell.background.is_some()
         && cell_horizontal_alignment(cell) == Some(Alignment::Center))
     .then_some((BAND_RUN_END_EXTENSION_PT, 0.0))
