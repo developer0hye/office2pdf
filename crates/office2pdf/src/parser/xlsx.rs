@@ -201,7 +201,10 @@ fn sheet_fit(
 ///
 /// This is the same track a drawing anchor is measured against, not the
 /// heights the worksheet holds: Excel prints its rows compacted or truncated
-/// to whole device points and paginates against what it printed.
+/// to whole device points and paginates against what it printed. `false`
+/// keeps this sum off the near-whole-point cell round-up issue #1632 adds —
+/// see `native_excel_pdf_row_height`'s doc comment for why a row-height sum
+/// stays on the un-rounded grid.
 fn printed_sheet_height_pt(
     sheet: &umya_spreadsheet::Worksheet,
     (row_start, row_end): (u32, u32),
@@ -214,6 +217,7 @@ fn printed_sheet_height_pt(
                 row,
                 ctx.normal_font.as_ref(),
                 Some(&ctx.row_boundary_points),
+                false,
             )
         })
         .sum()
@@ -400,13 +404,19 @@ fn anchored_image(
     // either way (issue #460) — and part where it does: the picture of
     // `issue_1066_blip_effect_picture.xlsx` sits 96.00pt down and 112.00pt
     // tall in the worksheet over 16pt rows, and 90.00pt down and 105.00pt
-    // tall in the export over the 15pt track (issue #1102).
+    // tall in the export over the 15pt track (issue #1102). They part again
+    // at the near-whole-point cell round-up issue #1632 adds: the budget
+    // fixture's selected-month chart marker keeps its independently
+    // native-pinned center (issue #1577's test) only when this sum stays on
+    // the un-rounded row 1 track, so `false` here keeps drawing anchors off
+    // that round-up (see `native_excel_pdf_row_height`'s doc comment).
     let row_height_at = |row_zero_based: u32| -> f64 {
         xlsx_cells::printed_grid_row_height_pt(
             sheet,
             row_zero_based + 1,
             ctx.normal_font.as_ref(),
             Some(&ctx.row_boundary_points),
+            false,
         )
     };
 
