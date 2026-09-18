@@ -2476,8 +2476,11 @@ fn structure_fit_to_page_sheet_scales_its_anchored_picture_to_the_native_size() 
 /// it, staged and run inside Excel's own sandbox container, is a single A3 page
 /// drawn at 0.78 — `mutool draw -F trace` reports a `.78` text transform.
 /// Bounding the columns alone left the sheet at the width fit's 0.89 and a
-/// second page (issue #1181). The current 14.82pt body pitch is a separate
-/// known row-snap defect; fresh Excel 16.112.3 prints 15.60pt (#1514).
+/// second page (issue #1181). The 14.82pt body pitch is the confirmed-correct
+/// native value: issue #1514 proposed a 15.60pt reading, but that compared
+/// two differently bordered rows and was closed as invalid once native
+/// controls held a flat 19.00pt (14.82pt at 0.78) pitch across every
+/// fractional height and scheme variant tried.
 #[test]
 fn structure_fit_to_page_sheet_without_declared_bounds_fits_its_rows_on_one_page() {
     let pages = sheet_pages("issue_1181_fit_to_height.xlsx");
@@ -2494,9 +2497,10 @@ fn structure_fit_to_page_sheet_without_declared_bounds_fits_its_rows_on_one_page
          {printable_height}pt of printable height"
     );
 
-    // Keep the current converter's 0.78 fit result pinned independently of the
-    // known 19.5pt -> 19pt row snap. #1514 will move this body pitch from 14.82
-    // to the native export's 15.60pt once its fractional-height controls land.
+    // Pin the converter's 0.78 fit result at the native 19.00pt (14.82pt
+    // scaled) body row track. #1514 proposed a 15.60pt reading instead and
+    // was closed as invalid: native controls held this same 14.82pt pitch
+    // across every fractional height and scheme variant tried.
     let tracks: Vec<f64> = budget
         .table
         .rows
@@ -2506,7 +2510,7 @@ fn structure_fit_to_page_sheet_without_declared_bounds_fits_its_rows_on_one_page
     let body_track: f64 = tracks[tracks.len() - 1];
     assert!(
         (body_track - 14.82).abs() < 0.01,
-        "the current #1514 row-snap path must remain explicit, got {body_track}"
+        "the body row's native 14.82pt track must remain explicit, got {body_track}"
     );
 }
 
@@ -2537,8 +2541,9 @@ fn structure_monthly_budget_prints_its_two_chart_separator_lines() {
         );
         assert_eq!(x2, 0.0, "separator {index} is vertical");
         // Native: 2508265 EMU (197.50pt) of anchor height at 0.78 = 154.05pt;
-        // the anchor spans rows 4-14, whose printed tracks carry the #1514
-        // row snap, so the height is pinned loosely.
+        // the anchor spans rows 4-14, and each row's own whole-point printed
+        // track rounds independently of the raw EMU height, so the sum is
+        // pinned loosely rather than to the exact conversion.
         assert!(
             (y2 - 154.05).abs() < 2.0 && (line.height - y2).abs() < 1e-9,
             "separator {index} runs the anchor height, got {y2}pt"

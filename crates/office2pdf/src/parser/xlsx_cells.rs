@@ -2242,6 +2242,13 @@ fn measured_printed_grid_row_height(height: f64, normal_font: Option<&NormalFont
     measured_named_face_printed_grid_row_height(height, font)
 }
 
+/// How close a truncating-path row height must sit below the next whole
+/// point before Excel's printed grid rounds it up rather than down, measured
+/// on `issue_1181_fit_to_height.xlsx`: `61.9 -> 62` while `61.8 -> 61`
+/// (issue #1632). See [`native_excel_pdf_row_height`] for the full table and
+/// for why only some callers apply it.
+const TRUNCATING_ROW_HEIGHT_ROUND_UP_EPSILON_PT: f64 = 0.1;
+
 /// Convert an OOXML row height to the whole-point track emitted by native
 /// Excel's macOS PDF path. Excel exposes the stored value in points in the
 /// worksheet UI, and its PDF grid snaps that to whole PDF points — after
@@ -2264,10 +2271,41 @@ fn measured_printed_grid_row_height(height: f64, normal_font: Option<&NormalFont
 /// workbook of issue #1068 (Segoe UI 10 Normal) exports 12/15/18/25/30/40/49
 /// for declared 12/15/18/25.5/30/40/49.5, and its nine row boundaries down
 /// the page all land within 0.12pt of that model.
-/// A fresh Excel 16.112.3 export found a narrower exception: the theme-scheme
-/// Trebuchet MS 10 workbook of #1262 snaps 19.5pt custom rows up to 20pt
-/// (#1514). That combination remains on the conservative truncating path until
-/// its fractional-height and theme controls are measured.
+///
+/// It is not a bare `floor` for the row's own cell grid, though: issue #1514
+/// first proposed that the theme-scheme Trebuchet MS 10 workbook of #1262
+/// snaps a *whole* 19.5pt custom row up to 20pt, and native controls
+/// disproved it — sweeping the same rows to 19.25/19.5/19.75pt, and
+/// separately dropping the font's `<scheme>`, all held a flat 19.00pt pitch;
+/// the original 20pt reading had compared two differently bordered rows.
+/// Issue #1632 then measured that workbook's own row 1 (`ht="61.9"`), whose
+/// cell fills and rules print on a 62pt track where a bare `floor` gives 61.
+/// Four rounds of one-factor exports across 18.5-25pt and 61.5-61.9pt (row 1
+/// and the empty row 25 re-declared, byte-identical no-patch re-zip control)
+/// pin the cell-grid rule to `floor(height + 0.1)`, with the boundary itself
+/// only sampled between 19.85 (stays down) and 19.9 (rounds up):
+///
+/// | declared | 18.5 | 18.75 | 19.5 | 19.75 | 19.8 | 19.85 | 19.9 | 20.6 | 22.4 | 23.7 | 23.9 | 25 | 61.5 | 61.6 | 61.75 | 61.8 | 61.9 |
+/// | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+/// | printed | 18 | 18 | 19 | 19 | 19 | 19 | 20 | 20 | 22 | 23 | 24 | 25 | 61 | 61 | 61 | 61 | 62 |
+///
+/// Every point #1068 and #1514 already measured lands the same place under
+/// this rule: 0.1 only crosses a whole point when the declared height already
+/// sits inside that last tenth, which none of those samples did.
+///
+/// `round_up_near_whole_point` gates that correction, because it is not the
+/// same grid #1102 measured for drawing anchors. This same workbook's
+/// selected-month chart marker already has its native center pinned by
+/// `budget_compiled_marker_centers_match_native_placement_controls`
+/// (issue #1577, independent native exports, not derived from this row-1
+/// model at all): applying the round-up to that marker's row-height sum
+/// moves its computed center down by exactly the scaled 1pt (+0.78pt on the
+/// y-axis) and fails that test, so Excel's floating-drawing anchor resolution
+/// does not apply this round-up even though its cell grid does.
+/// `printed_grid_row_height_pt`'s two row-height-*sum* callers — a drawing
+/// anchor and the fit-to-page sheet height — pass `false` and stay on the
+/// grid #1102 measured; only `printed_row_height`'s single-row call, which
+/// becomes a table row's own printed height, passes `true`.
 ///
 /// Both declared and recomputed worksheet heights go through here. An
 /// auto-sized row's worksheet height already carries what its own cells
@@ -2278,9 +2316,16 @@ fn measured_printed_grid_row_height(height: f64, normal_font: Option<&NormalFont
 ///
 /// Keep this conversion in the XLSX parser rather than the generic table
 /// renderer so DOCX/PPTX table heights retain their native semantics.
-pub(super) fn native_excel_pdf_row_height(height: f64, normal_font: Option<&NormalFont>) -> f64 {
+pub(super) fn native_excel_pdf_row_height(
+    height: f64,
+    normal_font: Option<&NormalFont>,
+    round_up_near_whole_point: bool,
+) -> f64 {
     match measured_printed_grid_row_height(height, normal_font) {
         Some(measured) => measured.max(1.0),
+        None if round_up_near_whole_point => (height + TRUNCATING_ROW_HEIGHT_ROUND_UP_EPSILON_PT)
+            .floor()
+            .max(1.0),
         None => height.floor().max(1.0),
     }
 }
@@ -2474,6 +2519,7 @@ fn printed_row_height(
         row_idx,
         ctx.normal_font.as_ref(),
         Some(&ctx.row_boundary_points),
+        true,
     ))
 }
 
@@ -2709,7 +2755,12 @@ fn cell_sits_in_a_merged_range(sheet: &umya_spreadsheet::Worksheet, col: u32, ro
 /// worksheet seats the picture 96.00pt down and 112.00pt tall over 16pt rows,
 /// and the export draws it 90.00pt down and 105.00pt tall over the 15pt track
 /// those rows compact to — six and seven of each, the ratio exact
-/// (issue #1102).
+/// (issue #1102). That measured equivalence stops at the near-whole-point
+/// round-up issue #1632 adds on top of the same grid: `round_up_near_whole_point`
+/// forwards straight to [`native_excel_pdf_row_height`], whose doc comment
+/// has the test-based evidence (issue #1577's native-pinned chart-marker
+/// centers) showing a drawing anchor does not take it. Pass `true` only from
+/// the call that becomes a table row's own printed height.
 ///
 /// A recorded `ht` is that track only when the row marks it `customHeight`.
 /// Without the flag it is a cached auto-height that Excel discards, sizing the
@@ -2736,6 +2787,7 @@ pub(super) fn printed_grid_row_height_pt(
     row_idx: u32,
     normal_font: Option<&NormalFont>,
     row_boundary_points: Option<&super::row_boundaries::RowBoundaryPoints>,
+    round_up_near_whole_point: bool,
 ) -> f64 {
     let dimension: Option<&umya_spreadsheet::structs::Row> = sheet.get_row_dimension(&row_idx);
     let declared_height: Option<f64> = dimension
@@ -2754,7 +2806,8 @@ pub(super) fn printed_grid_row_height_pt(
             .copied()
             .unwrap_or(0),
     );
-    native_excel_pdf_row_height(worksheet_height, normal_font) + boundary_points
+    native_excel_pdf_row_height(worksheet_height, normal_font, round_up_near_whole_point)
+        + boundary_points
 }
 
 /// The outline a merged range prints: each side taken from the members that
