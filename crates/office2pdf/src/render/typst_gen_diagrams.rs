@@ -14,8 +14,8 @@ enum ChartVariant {
     /// One spoke per category radiating from a centre, each series a closed
     /// polygon through its value on every spoke.
     RadarPlot,
-    /// Bordered box holding a title, a type label, and a data table.
-    BorderedTable,
+    /// Bordered box holding a title/type label and a basic plot or data table.
+    FramedFallback,
 }
 
 fn chart_variant(chart: &Chart) -> ChartVariant {
@@ -50,7 +50,17 @@ fn chart_variant(chart: &Chart) -> ChartVariant {
     {
         return ChartVariant::PiePlot;
     }
-    ChartVariant::BorderedTable
+    ChartVariant::FramedFallback
+}
+
+/// Keep conversion warnings aligned with the renderer's actual fallback choice.
+pub(crate) fn chart_uses_data_table(chart: &Chart) -> bool {
+    matches!(chart_variant(chart), ChartVariant::FramedFallback)
+        && !chart.series.is_empty()
+        && !matches!(
+            chart.chart_type,
+            ChartType::Bar | ChartType::Column | ChartType::Line | ChartType::Pie
+        )
 }
 
 /// Height budget a chart must stay within to be kept atomic, in points.
@@ -76,7 +86,7 @@ fn chart_fits_on_one_page(chart: &Chart) -> bool {
         // The polyline, pie and radar plots are a fixed size regardless of how
         // many points they carry.
         ChartVariant::LinePlot | ChartVariant::PiePlot | ChartVariant::RadarPlot => return true,
-        ChartVariant::BorderedTable => {
+        ChartVariant::FramedFallback => {
             BORDERED_TABLE_CHROME_PT + chart.categories.len() as f64 * BORDERED_TABLE_ROW_PT
         }
     };
@@ -85,12 +95,10 @@ fn chart_fits_on_one_page(chart: &Chart) -> bool {
 
 /// Generate Typst markup for a chart.
 ///
-/// Bar and column charts render as an axis-scaled plot; line and area charts
-/// as a polyline plot over the same axis; pie and doughnut charts as a wedge
-/// plot; and a radar carrying at least three categories and one positive value
-/// as a spoke-and-polygon plot. What is left — bubble, stock, surface, and a
-/// radar too small or too flat to draw — falls back to a bordered box holding
-/// the title, a type label, and a data table.
+/// Charts meeting their data requirements use axis, polyline, wedge, or radar
+/// plots. Other charts use a titled frame: bar/column, line, and pie retain
+/// basic plot emitters; other families use data tables. An empty series list
+/// produces only the frame's title and type label.
 ///
 /// Excel and PowerPoint treat a chart as one floating graphic that never splits
 /// at a page boundary: it moves to the next page whole. Typst blocks are
@@ -196,7 +204,7 @@ fn generate_chart_body(
         ChartVariant::RadarPlot => {
             return generate_chart_radar_plot(out, chart, frame, sheet_frame_origin_pt);
         }
-        ChartVariant::BorderedTable => {}
+        ChartVariant::FramedFallback => {}
     }
 
     // A framed chart's box is its frame; `width: 100%` would otherwise take
