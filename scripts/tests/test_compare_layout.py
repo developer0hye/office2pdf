@@ -652,6 +652,62 @@ class MatchAndDiffTest(unittest.TestCase):
                 self.assertEqual(vector["instances"]["fine_shift_count"], 2)
                 self.assertGreater(compare_layout.audit_failures([vector]), 0)
 
+    def test_repeated_chart_axes_recover_spatially_distinct_anchors(self) -> None:
+        for label in ("0%10%20%30%40%50%", "020406080100"):
+            for translation in (0, 31):
+                joined = "\n".join([
+                    line_of(label, 72 + translation, 283.2336),
+                    line_of(label, 360 + translation, 283.7951),
+                ])
+                split = "\n".join([
+                    line_of(label, 72 + translation, 283.14),
+                    line_of(label, 360 + translation, 283.90785),
+                ])
+                for gt, out in ((joined, split), (split, joined)):
+                    with self.subTest(label=label, translation=translation, joined_gt=gt == joined):
+                        vector = self.diff(gt, out, fine_shift=0.5)
+                        self.assertEqual(vector["topology"]["groups"], 1)
+                        self.assertEqual(vector["instances"]["compared"], 2)
+                        self.assertEqual(vector["wraps"]["count"], 0)
+                        self.assertEqual(compare_layout.audit_failures([vector]), 0)
+
+    def test_repeated_chart_axes_keep_visibility_and_missing_objects_auditable(self) -> None:
+        label = "0%10%20%30%40%50%"
+        joined = "\n".join([
+            line_of(label, 72, 283.2336), line_of(label, 360, 283.7951),
+        ])
+        split = "\n".join([
+            line_of(label, 72, 283.14), line_of(label, 360, 283.90785),
+        ])
+        vector = self.diff(joined + "\n" + rect_op(350, 260, 480, 290), split)
+        self.assertEqual(vector["topology"]["groups"], 1)
+        self.assertEqual(vector["visibility"]["mismatch_count"], 1)
+        for output in (
+            line_of(label, 72, 283.14),
+            split + "\n" + line_of(label, 360, 300),
+            "\n".join([
+                line_of(label, 72, 283.14), line_of(label, 74, 283.90785),
+            ]),
+        ):
+            for gt, out in ((joined, output), (output, joined)):
+                vector = self.diff(gt, out)
+                self.assertEqual(vector["topology"]["groups"], 0)
+                self.assertGreater(compare_layout.audit_failures([vector]), 0)
+
+    def test_repeated_chart_axes_keep_horizontal_shifts_auditable(self) -> None:
+        label = "0%10%20%30%40%50%"
+        joined = "\n".join([
+            line_of(label, 72, 283.2336), line_of(label, 360, 283.7951),
+        ])
+        split = "\n".join([
+            line_of(label, 74, 283.14), line_of(label, 357, 283.90785),
+        ])
+        for gt, out in ((joined, split), (split, joined)):
+            vector = self.diff(gt, out, fine_shift=0.5)
+            self.assertEqual(vector["topology"]["groups"], 1)
+            self.assertEqual(vector["instances"]["fine_shift_count"], 2)
+            self.assertGreater(compare_layout.audit_failures([vector]), 0)
+
     def test_repeated_rows_recover_each_split_join_anchor(self) -> None:
         joined = "\n".join(
             line_of(text, x, y)
