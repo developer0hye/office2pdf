@@ -979,7 +979,7 @@ checksum = "780955b8b195a21ab8e4ac6b60dd1dbdcec1dc6c51c0617964b08c81785e12c9"
 [[package]]
 name = "docx-rs"
 version = "0.4.22"
-source = "git+https://github.com/developer0hye/docx-rs.git?branch=fix%2Fparse-tolerance-0.4.22#a829d902948585ed58147402a72bb85cdb101360"
+source = "git+https://github.com/developer0hye/docx-rs.git?branch=fix%2Fparse-tolerance-0.4.22#757ae3b0bdf0e110eb312bc8f2252d9d42603510"
 dependencies = [
  "base64",
  "crc32fast",

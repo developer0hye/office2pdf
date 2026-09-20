@@ -1944,3 +1944,21 @@ fn a_theme_major_heading_draws_the_light_member_where_office_ships_it() {
         "the headings must embed the light member Word embeds, got {names:?}"
     );
 }
+
+#[test]
+fn conflicting_unicode_docx_part_names_are_rejected() {
+    let bytes = load_fixture("poi/unicode-path.docx");
+    let error = DocxParser
+        .parse(&bytes, &ConvertOptions::default())
+        .expect_err("conflicting names must not select the alternate main document");
+    assert!(error.to_string().contains("Failed to parse DOCX"));
+    assert!(
+        office2pdf::convert_bytes(
+            &bytes,
+            office2pdf::config::Format::Docx,
+            &ConvertOptions::default(),
+        )
+        .is_err(),
+        "the public conversion API must reject the ambiguous package"
+    );
+}

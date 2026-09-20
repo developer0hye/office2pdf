@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1721",
+      "cluster_ids": [
+        "p1-ecab50898bac",
+        "p1-ad2ef706d37d",
+        "p1-5ecf3ed66e2c",
+        "p1-2f6fdbc6b8c1",
+        "p1-314c4846c6c9",
+        "p1-12235849f7c7",
+        "p1-cf5e71ad29eb"
+      ],
+      "note": "All body crops inspected: default-bottom cells in fixed 15pt rows remain 1pt high through the tight-row centered path."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1731",
+      "cluster_ids": [
+        "p1-df1c60fba423",
+        "p1-6e3a619627d4",
+        "p1-d2919fefa7b0",
+        "p1-726766fd8b5d"
+      ],
+      "note": "Header crop inspected: bold and regular portions restored, with baseline still 0.60pt high."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1659",
+      "cluster_ids": [
+        "p1-56f21fd46e23"
+      ],
+      "note": "Footer crop inspected: bold and regular portions restored. Native Arial advances round to whole points (I 3, n 7, t 4), versus fractional output (3.058, 6.721, 3.663), shifting the centered start 0.99pt."
+    }
+  ]
+}

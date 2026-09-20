@@ -20,6 +20,8 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 - **WASM** — runs in browsers and Node.js via WebAssembly, with optional caller-provided or feature-gated Simplified Chinese fonts
 - **Zero external dependencies** — runs as a standalone executable
 
+DOCX packages with conflicting ASCII ZIP part names are rejected.
+
 ## Installation
 
 ### Library
