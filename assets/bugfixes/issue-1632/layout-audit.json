@@ -7,23 +7,23 @@
     "matched": 58,
     "missing": 0,
     "extra": 0,
-    "deviant": 52,
+    "deviant": 5,
     "missing_text": [],
     "extra_text": []
    },
    "baseline": {
-    "mean_abs_dy": 0.1922844120689167,
+    "mean_abs_dy": 0.18979760172408922,
     "worst_dy": 1.3800000000000523,
     "worst_dy_signed": -1.3800000000000523,
     "worst_line": "JAN"
    },
    "dx0": {
-    "mean_abs": 0.8057608998275984,
+    "mean_abs": 0.8008735136207017,
     "worst": 1.1143000000000143
    },
    "width": {
-    "mean_abs_pct": 0.20842238233997934,
-    "worst_pct": 6.273421928521533
+    "mean_abs_pct": 0.20298582683937721,
+    "worst_pct": 3.347302719621894
    },
    "instances": {
     "compared": 580,
@@ -31,7 +31,7 @@
     "large_shift_count": 0,
     "large_shifts": [],
     "fine_shift_threshold": 0.5,
-    "fine_shift_count": 489,
+    "fine_shift_count": 488,
     "fine_shifts": [
      {
       "label": "januaryincome:",
@@ -67,29 +67,19 @@
       "label": "otherexpenses",
       "gt_x": 359.4159,
       "gt_y": 189.53999999999996,
-      "out_x": 359.16163,
+      "out_x": 359.4237,
       "out_y": 190.20801,
-      "dx": -0.25427000000001954,
+      "dx": 0.007799999999974716,
       "dy": 0.668010000000038,
       "width_pct": -0.6171947061443586
-     },
-     {
-      "label": "books&supplies",
-      "gt_x": 354.1237,
-      "gt_y": 235.55999999999995,
-      "out_x": 353.86769,
-      "out_y": 236.06543,
-      "dx": -0.2560100000000034,
-      "dy": 0.5054300000000467,
-      "width_pct": 0.5131532027442062
      },
      {
       "label": "room&board",
       "gt_x": 364.1038,
       "gt_y": 265.98,
-      "out_x": 363.8386,
+      "out_x": 364.10066,
       "out_y": 266.63703,
-      "dx": -0.265199999999993,
+      "dx": -0.0031399999999734973,
       "dy": 0.6570299999999634,
       "width_pct": 0.14617508360690953
      },
@@ -4921,7 +4911,7 @@
       "out_y": 1167.15,
       "dx": 0.0,
       "dy": -0.5099999999999909,
-      "width_pct": 6.273421928521533
+      "width_pct": -3.1202197381727528
      }
     ]
    },
@@ -5964,7 +5954,7 @@
      }
     }
    },
-   "noise_floor": 0.12
+   "noise_floor": 0.5
   }
  ],
  "gt_pages": 1,

@@ -1,0 +1,174 @@
+{
+  "date": "2026-09-20",
+  "candidate_parent": "93485251db0541daebd05fb97684880c7382f5da",
+  "integrated_parent": "9c65292f3d586df35c221136ecc5f344e0732939",
+  "runtime_tree": "4d2e0c3110a3596d9d9590cf8252756d7bba19f4",
+  "source_fixture": "tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx",
+  "source_sha256": "2b4a2d8dceda58758593c88409875efbda05780559154c02bd13fef4f7a1c65b",
+  "reference_exporter": "Microsoft Excel for Mac 16.112; retained native reference",
+  "reference_pdf_sha256": "7d7fd47175cfd0677716c69caa87e680a94d4b68b4b09c72e3afe07f3192838d",
+  "before_pdf_sha256": "40ff72399d4fd42692828e5afec781c4ea24e6e95a18503f0ae1d244c1ac05d7",
+  "after_pdf_sha256": "eebf64509a1e8a812e06ba0e7a50de6dae0e0b12b424d449a2f79e517d181a04",
+  "converter_sha256": "810337a1876cc8ecb267cac3252bd788d7b0d3f5af5ad960a99d2881a1021ddf",
+  "four_reported_fills": {
+    "gt": [
+      {
+        "bbox": [
+          79.56,
+          443.03999999999996,
+          729.3,
+          473.46000000000004
+        ],
+        "color": [
+          0.9490196,
+          0.9490196,
+          0.9490196
+        ]
+      },
+      {
+        "bbox": [
+          653.64,
+          620.88,
+          729.3,
+          680.94
+        ],
+        "color": [
+          0.9490196,
+          0.9490196,
+          0.9490196
+        ]
+      },
+      {
+        "bbox": [
+          653.64,
+          813.54,
+          729.3,
+          888.4200000000001
+        ],
+        "color": [
+          0.9490196,
+          0.9490196,
+          0.9490196
+        ]
+      },
+      {
+        "bbox": [
+          653.64,
+          902.46,
+          729.3,
+          1006.98
+        ],
+        "color": [
+          0.9490196,
+          0.9490196,
+          0.9490196
+        ]
+      }
+    ],
+    "after": [
+      {
+        "bbox": [
+          79.56,
+          443.04005,
+          729.3000000000001,
+          473.46000000000004
+        ],
+        "color": [
+          0.9490196,
+          0.9490196,
+          0.9490196
+        ]
+      },
+      {
+        "bbox": [
+          653.64,
+          620.88,
+          729.3000000000001,
+          680.94
+        ],
+        "color": [
+          0.9490196,
+          0.9490196,
+          0.9490196
+        ]
+      },
+      {
+        "bbox": [
+          653.64,
+          813.54,
+          729.3000000000001,
+          888.4200000000001
+        ],
+        "color": [
+          0.9490196,
+          0.9490196,
+          0.9490196
+        ]
+      },
+      {
+        "bbox": [
+          653.64,
+          902.46,
+          729.3000000000001,
+          1006.98
+        ],
+        "color": [
+          0.9490196,
+          0.9490196,
+          0.9490196
+        ]
+      }
+    ]
+  },
+  "self_comparison": {
+    "page_1_pixel_difference": 0,
+    "page_1_text_or_rect_changes": 0,
+    "page_2_moved_text_instances": 554,
+    "page_2_text_dy_pt": 0.78,
+    "page_2_changed_rectangle_groups": 624
+  },
+  "native_comparison": {
+    "page_2_fine_text_instances": 488,
+    "page_2_rectangle_geometry_findings": 9,
+    "normalized_layout_order_text": "exact match",
+    "render_dpi": 150,
+    "material_clusters": 207
+  },
+  "limits": [
+    "Drawing anchors retain their separately measured truncation path.",
+    "Fit-to-page aggregation retains existing policy; a binding vertical-fit boundary has not been independently probed.",
+    "Native Excel version is retained for reproducible comparison; this is not a claim that all Excel releases quantize identically."
+  ],
+  "new_follow_up_issues": [
+    1784,
+    1785,
+    1786
+  ],
+  "tests": {
+    "command": "cargo test --locked -p office2pdf --lib --test xlsx_fixtures",
+    "library_passed": 3119,
+    "xlsx_fixtures_passed": 215,
+    "library_seconds": 324.46,
+    "xlsx_fixtures_seconds": 734.65,
+    "failures": 0,
+    "cli_build": "passed",
+    "format": "passed",
+    "visual_pr_contract": "passed"
+  },
+  "evidence_images": {
+    "gt_dimensions": [
+      1755,
+      2482
+    ],
+    "before_after_dimensions": [
+      1754,
+      2481
+    ],
+    "dpi": 150,
+    "jpeg_quality": 86,
+    "progressive": true,
+    "note": "Native page dimensions are preserved; comparison-tool masks and crops normalize the one-pixel media-box size difference.",
+    "issue_comparison_padding": "Output panel padded white by one pixel on right and bottom to match native canvas; source raster pixels unchanged."
+  },
+  "tested_commit": "4f14bde3dee927d4e5bb2191f481a148136964b9"
+}
