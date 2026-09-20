@@ -1355,3 +1355,38 @@ fn xlsx_excel_grid_boundary_remains_valid_with_bounded_print_area() {
         "Report"
     );
 }
+
+#[test]
+fn header_footer_bold_toggle_preserves_surrounding_text_and_font_styles() {
+    let cases = [
+        (
+            r#"&C&"Arial,Regular"&BBold heading&B Regular label"#,
+            vec![("Bold heading", true), (" Regular label", false)],
+        ),
+        (
+            r#"&C&"Arial,Bold"&BRegular&B Bold again"#,
+            vec![("Regular", false), (" Bold again", true)],
+        ),
+        (
+            r#"&C&"Arial,Regular"&B&BRegular &&B literal"#,
+            vec![("Regular &B literal", false)],
+        ),
+        (
+            r#"&L&BLeft&CPlain&L continued"#,
+            vec![("Left continued", true), ("Plain", false)],
+        ),
+    ];
+    for (format, expected) in cases {
+        let header = parse_hf(format).expect("header parsed");
+        let actual: Vec<(&str, bool)> = header
+            .paragraphs
+            .iter()
+            .flat_map(|paragraph| paragraph.elements.iter())
+            .filter_map(|element| match element {
+                HFInline::Run(run) => Some((run.text.as_str(), run.style.bold.unwrap_or(false))),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(actual, expected, "{format}");
+    }
+}

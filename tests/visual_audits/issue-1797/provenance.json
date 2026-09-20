@@ -1,0 +1,15 @@
+{
+  "source": "Synthetic workbook with ordinary XML header/footer text and explicit Arial,Regular followed by paired &B toggles",
+  "source_sha256": "3d357c74d33e20f34fe4362d7645fd6cfd4827d807d08795681f21b2f7c224e8",
+  "reference": "Microsoft Excel 16.113, macOS 26.6.2; export_excel_pdfs.applescript",
+  "before_commit": "cf017a5841b58718cb8205502fc8fb1c15417d05",
+  "after": "Same base with header/footer bold toggle parsing",
+  "dpi": 150,
+  "page": 1,
+  "fine_shift_pt": 0.5,
+  "pdf_sha256": {
+    "gt": "af91b06604b580fa16cd75303a3c15cd306ed0936f9efa407459d3252e6c7db5",
+    "before": "cd48945ab42a94c278dac47562c5485862409416dab3b382962fca0ca7656d39",
+    "after": "0f3d38768d2cdb28d66d41a3faf3f961db05319891acd78d6b873b81f8145fe9"
+  }
+}
