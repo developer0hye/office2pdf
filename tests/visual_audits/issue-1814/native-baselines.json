@@ -1,0 +1,1532 @@
+{
+  "base.pdf": {
+    "labels": {
+      "Bottom row 1": {
+        "x": 53.0,
+        "y": 93.0
+      },
+      "Center row 1": {
+        "x": 269.0,
+        "y": 94.0
+      },
+      "Top row 1": {
+        "x": 161.0,
+        "y": 95.0
+      },
+      "Top row 2": {
+        "x": 161.0,
+        "y": 110.0
+      },
+      "Center row 2": {
+        "x": 269.0,
+        "y": 111.0
+      },
+      "Bottom row 2": {
+        "x": 53.0,
+        "y": 112.0
+      },
+      "Top row 3": {
+        "x": 161.0,
+        "y": 129.0
+      },
+      "Center row 3": {
+        "x": 269.0,
+        "y": 135.0
+      },
+      "Bottom row 3": {
+        "x": 53.0,
+        "y": 142.0
+      },
+      "Bottom row 4": {
+        "x": 53.0,
+        "y": 157.0
+      },
+      "Top row 4": {
+        "x": 161.0,
+        "y": 158.0
+      },
+      "Center row 4": {
+        "x": 269.0,
+        "y": 158.0
+      },
+      "Top row 5": {
+        "x": 161.0,
+        "y": 173.0
+      },
+      "Center row 5": {
+        "x": 269.0,
+        "y": 175.0
+      },
+      "Bottom row 5": {
+        "x": 53.0,
+        "y": 176.0
+      },
+      "Top row 6": {
+        "x": 161.0,
+        "y": 192.0
+      },
+      "Center row 6": {
+        "x": 269.0,
+        "y": 200.0
+      },
+      "Bottom row 6": {
+        "x": 53.0,
+        "y": 206.0
+      },
+      "Bottom row 7": {
+        "x": 53.0,
+        "y": 221.0
+      },
+      "Top row 7": {
+        "x": 161.0,
+        "y": 221.0
+      },
+      "Center row 7": {
+        "x": 269.0,
+        "y": 221.0
+      },
+      "Top row 8": {
+        "x": 161.0,
+        "y": 236.0
+      },
+      "Center row 8": {
+        "x": 269.0,
+        "y": 238.0
+      },
+      "Bottom row 8": {
+        "x": 53.0,
+        "y": 240.0
+      },
+      "Top row 9": {
+        "x": 161.0,
+        "y": 255.0
+      },
+      "Center row 9": {
+        "x": 269.0,
+        "y": 263.0
+      },
+      "Bottom row 9": {
+        "x": 53.0,
+        "y": 270.0
+      },
+      "Bottom row 10": {
+        "x": 53.0,
+        "y": 285.0
+      },
+      "Center row 10": {
+        "x": 269.0,
+        "y": 287.0
+      },
+      "Top row 10": {
+        "x": 161.0,
+        "y": 288.0
+      },
+      "Top row 11": {
+        "x": 161.0,
+        "y": 303.0
+      },
+      "Bottom row 11": {
+        "x": 53.0,
+        "y": 304.0
+      },
+      "Center row 11": {
+        "x": 269.0,
+        "y": 304.0
+      },
+      "Top row 12": {
+        "x": 161.0,
+        "y": 322.0
+      },
+      "Center row 12": {
+        "x": 269.0,
+        "y": 328.0
+      },
+      "Bottom row 12": {
+        "x": 53.0,
+        "y": 334.0
+      },
+      "Bottom row 13": {
+        "x": 53.0,
+        "y": 349.0
+      },
+      "Center row 13": {
+        "x": 269.0,
+        "y": 351.0
+      },
+      "Top row 13": {
+        "x": 161.0,
+        "y": 353.0
+      },
+      "Bottom row 14": {
+        "x": 53.0,
+        "y": 368.0
+      },
+      "Top row 14": {
+        "x": 161.0,
+        "y": 368.0
+      },
+      "Center row 14": {
+        "x": 269.0,
+        "y": 368.0
+      },
+      "Top row 15": {
+        "x": 161.0,
+        "y": 387.0
+      },
+      "Center row 15": {
+        "x": 269.0,
+        "y": 393.0
+      },
+      "Bottom row 15": {
+        "x": 53.0,
+        "y": 398.0
+      }
+    },
+    "rows": [
+      {
+        "row": 1,
+        "top": 82.0,
+        "bottom": 97.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 2,
+        "top": 97.0,
+        "bottom": 116.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 3,
+        "top": 116.0,
+        "bottom": 146.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 4,
+        "top": 146.0,
+        "bottom": 161.0,
+        "bottom_seat": 4.0,
+        "top_seat": 12.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 5,
+        "top": 161.0,
+        "bottom": 180.0,
+        "bottom_seat": 4.0,
+        "top_seat": 12.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 6,
+        "top": 180.0,
+        "bottom": 210.0,
+        "bottom_seat": 4.0,
+        "top_seat": 12.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 7,
+        "top": 210.0,
+        "bottom": 225.0,
+        "bottom_seat": 4.0,
+        "top_seat": 11.0,
+        "center_seat": 11.0
+      },
+      {
+        "row": 8,
+        "top": 225.0,
+        "bottom": 244.0,
+        "bottom_seat": 4.0,
+        "top_seat": 11.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 9,
+        "top": 244.0,
+        "bottom": 274.0,
+        "bottom_seat": 4.0,
+        "top_seat": 11.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 10,
+        "top": 274.0,
+        "bottom": 289.0,
+        "bottom_seat": 4.0,
+        "top_seat": 14.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 11,
+        "top": 289.0,
+        "bottom": 308.0,
+        "bottom_seat": 4.0,
+        "top_seat": 14.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 12,
+        "top": 308.0,
+        "bottom": 338.0,
+        "bottom_seat": 4.0,
+        "top_seat": 14.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 13,
+        "top": 338.0,
+        "bottom": 353.0,
+        "bottom_seat": 4.0,
+        "top_seat": 15.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 14,
+        "top": 353.0,
+        "bottom": 372.0,
+        "bottom_seat": 4.0,
+        "top_seat": 15.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 15,
+        "top": 372.0,
+        "bottom": 402.0,
+        "bottom_seat": 4.0,
+        "top_seat": 15.0,
+        "center_seat": 21.0
+      }
+    ]
+  },
+  "control.pdf": {
+    "labels": {
+      "Bottom row 1": {
+        "x": 53.0,
+        "y": 93.0
+      },
+      "Center row 1": {
+        "x": 269.0,
+        "y": 94.0
+      },
+      "Top row 1": {
+        "x": 161.0,
+        "y": 95.0
+      },
+      "Top row 2": {
+        "x": 161.0,
+        "y": 110.0
+      },
+      "Center row 2": {
+        "x": 269.0,
+        "y": 111.0
+      },
+      "Bottom row 2": {
+        "x": 53.0,
+        "y": 112.0
+      },
+      "Top row 3": {
+        "x": 161.0,
+        "y": 129.0
+      },
+      "Center row 3": {
+        "x": 269.0,
+        "y": 135.0
+      },
+      "Bottom row 3": {
+        "x": 53.0,
+        "y": 142.0
+      },
+      "Bottom row 4": {
+        "x": 53.0,
+        "y": 157.0
+      },
+      "Top row 4": {
+        "x": 161.0,
+        "y": 158.0
+      },
+      "Center row 4": {
+        "x": 269.0,
+        "y": 158.0
+      },
+      "Top row 5": {
+        "x": 161.0,
+        "y": 173.0
+      },
+      "Center row 5": {
+        "x": 269.0,
+        "y": 175.0
+      },
+      "Bottom row 5": {
+        "x": 53.0,
+        "y": 176.0
+      },
+      "Top row 6": {
+        "x": 161.0,
+        "y": 192.0
+      },
+      "Center row 6": {
+        "x": 269.0,
+        "y": 200.0
+      },
+      "Bottom row 6": {
+        "x": 53.0,
+        "y": 206.0
+      },
+      "Bottom row 7": {
+        "x": 53.0,
+        "y": 221.0
+      },
+      "Top row 7": {
+        "x": 161.0,
+        "y": 221.0
+      },
+      "Center row 7": {
+        "x": 269.0,
+        "y": 221.0
+      },
+      "Top row 8": {
+        "x": 161.0,
+        "y": 236.0
+      },
+      "Center row 8": {
+        "x": 269.0,
+        "y": 238.0
+      },
+      "Bottom row 8": {
+        "x": 53.0,
+        "y": 240.0
+      },
+      "Top row 9": {
+        "x": 161.0,
+        "y": 255.0
+      },
+      "Center row 9": {
+        "x": 269.0,
+        "y": 263.0
+      },
+      "Bottom row 9": {
+        "x": 53.0,
+        "y": 270.0
+      },
+      "Bottom row 10": {
+        "x": 53.0,
+        "y": 285.0
+      },
+      "Center row 10": {
+        "x": 269.0,
+        "y": 287.0
+      },
+      "Top row 10": {
+        "x": 161.0,
+        "y": 288.0
+      },
+      "Top row 11": {
+        "x": 161.0,
+        "y": 303.0
+      },
+      "Bottom row 11": {
+        "x": 53.0,
+        "y": 304.0
+      },
+      "Center row 11": {
+        "x": 269.0,
+        "y": 304.0
+      },
+      "Top row 12": {
+        "x": 161.0,
+        "y": 322.0
+      },
+      "Center row 12": {
+        "x": 269.0,
+        "y": 328.0
+      },
+      "Bottom row 12": {
+        "x": 53.0,
+        "y": 334.0
+      },
+      "Bottom row 13": {
+        "x": 53.0,
+        "y": 349.0
+      },
+      "Center row 13": {
+        "x": 269.0,
+        "y": 351.0
+      },
+      "Top row 13": {
+        "x": 161.0,
+        "y": 353.0
+      },
+      "Bottom row 14": {
+        "x": 53.0,
+        "y": 368.0
+      },
+      "Top row 14": {
+        "x": 161.0,
+        "y": 368.0
+      },
+      "Center row 14": {
+        "x": 269.0,
+        "y": 368.0
+      },
+      "Top row 15": {
+        "x": 161.0,
+        "y": 387.0
+      },
+      "Center row 15": {
+        "x": 269.0,
+        "y": 393.0
+      },
+      "Bottom row 15": {
+        "x": 53.0,
+        "y": 398.0
+      }
+    },
+    "rows": [
+      {
+        "row": 1,
+        "top": 82.0,
+        "bottom": 97.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 2,
+        "top": 97.0,
+        "bottom": 116.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 3,
+        "top": 116.0,
+        "bottom": 146.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 4,
+        "top": 146.0,
+        "bottom": 161.0,
+        "bottom_seat": 4.0,
+        "top_seat": 12.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 5,
+        "top": 161.0,
+        "bottom": 180.0,
+        "bottom_seat": 4.0,
+        "top_seat": 12.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 6,
+        "top": 180.0,
+        "bottom": 210.0,
+        "bottom_seat": 4.0,
+        "top_seat": 12.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 7,
+        "top": 210.0,
+        "bottom": 225.0,
+        "bottom_seat": 4.0,
+        "top_seat": 11.0,
+        "center_seat": 11.0
+      },
+      {
+        "row": 8,
+        "top": 225.0,
+        "bottom": 244.0,
+        "bottom_seat": 4.0,
+        "top_seat": 11.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 9,
+        "top": 244.0,
+        "bottom": 274.0,
+        "bottom_seat": 4.0,
+        "top_seat": 11.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 10,
+        "top": 274.0,
+        "bottom": 289.0,
+        "bottom_seat": 4.0,
+        "top_seat": 14.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 11,
+        "top": 289.0,
+        "bottom": 308.0,
+        "bottom_seat": 4.0,
+        "top_seat": 14.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 12,
+        "top": 308.0,
+        "bottom": 338.0,
+        "bottom_seat": 4.0,
+        "top_seat": 14.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 13,
+        "top": 338.0,
+        "bottom": 353.0,
+        "bottom_seat": 4.0,
+        "top_seat": 15.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 14,
+        "top": 353.0,
+        "bottom": 372.0,
+        "bottom_seat": 4.0,
+        "top_seat": 15.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 15,
+        "top": 372.0,
+        "bottom": 402.0,
+        "bottom_seat": 4.0,
+        "top_seat": 15.0,
+        "center_seat": 21.0
+      }
+    ]
+  },
+  "variant-Arial.pdf": {
+    "labels": {
+      "Bottom row 1": {
+        "x": 53.0,
+        "y": 93.0
+      },
+      "Center row 1": {
+        "x": 269.0,
+        "y": 94.0
+      },
+      "Top row 1": {
+        "x": 161.0,
+        "y": 95.0
+      },
+      "Top row 2": {
+        "x": 161.0,
+        "y": 110.0
+      },
+      "Center row 2": {
+        "x": 269.0,
+        "y": 111.0
+      },
+      "Bottom row 2": {
+        "x": 53.0,
+        "y": 112.0
+      },
+      "Top row 3": {
+        "x": 161.0,
+        "y": 129.0
+      },
+      "Center row 3": {
+        "x": 269.0,
+        "y": 135.0
+      },
+      "Bottom row 3": {
+        "x": 53.0,
+        "y": 142.0
+      },
+      "Top row 4": {
+        "x": 161.0,
+        "y": 158.0
+      },
+      "Center row 4": {
+        "x": 269.0,
+        "y": 158.0
+      },
+      "Bottom row 4": {
+        "x": 53.0,
+        "y": 159.0
+      },
+      "Top row 5": {
+        "x": 161.0,
+        "y": 173.0
+      },
+      "Center row 5": {
+        "x": 269.0,
+        "y": 175.0
+      },
+      "Bottom row 5": {
+        "x": 53.0,
+        "y": 178.0
+      },
+      "Top row 6": {
+        "x": 161.0,
+        "y": 192.0
+      },
+      "Center row 6": {
+        "x": 269.0,
+        "y": 200.0
+      },
+      "Bottom row 6": {
+        "x": 53.0,
+        "y": 208.0
+      },
+      "Top row 7": {
+        "x": 161.0,
+        "y": 221.0
+      },
+      "Center row 7": {
+        "x": 269.0,
+        "y": 221.0
+      },
+      "Bottom row 7": {
+        "x": 53.0,
+        "y": 222.0
+      },
+      "Top row 8": {
+        "x": 161.0,
+        "y": 236.0
+      },
+      "Center row 8": {
+        "x": 269.0,
+        "y": 238.0
+      },
+      "Bottom row 8": {
+        "x": 53.0,
+        "y": 241.0
+      },
+      "Top row 9": {
+        "x": 161.0,
+        "y": 255.0
+      },
+      "Center row 9": {
+        "x": 269.0,
+        "y": 263.0
+      },
+      "Bottom row 9": {
+        "x": 53.0,
+        "y": 271.0
+      },
+      "Bottom row 10": {
+        "x": 53.0,
+        "y": 286.0
+      },
+      "Center row 10": {
+        "x": 269.0,
+        "y": 287.0
+      },
+      "Top row 10": {
+        "x": 161.0,
+        "y": 288.0
+      },
+      "Top row 11": {
+        "x": 161.0,
+        "y": 303.0
+      },
+      "Center row 11": {
+        "x": 269.0,
+        "y": 304.0
+      },
+      "Bottom row 11": {
+        "x": 53.0,
+        "y": 305.0
+      },
+      "Top row 12": {
+        "x": 161.0,
+        "y": 322.0
+      },
+      "Center row 12": {
+        "x": 269.0,
+        "y": 328.0
+      },
+      "Bottom row 12": {
+        "x": 53.0,
+        "y": 335.0
+      },
+      "Bottom row 13": {
+        "x": 53.0,
+        "y": 350.0
+      },
+      "Center row 13": {
+        "x": 269.0,
+        "y": 351.0
+      },
+      "Top row 13": {
+        "x": 161.0,
+        "y": 353.0
+      },
+      "Top row 14": {
+        "x": 161.0,
+        "y": 368.0
+      },
+      "Center row 14": {
+        "x": 269.0,
+        "y": 368.0
+      },
+      "Bottom row 14": {
+        "x": 53.0,
+        "y": 369.0
+      },
+      "Top row 15": {
+        "x": 161.0,
+        "y": 387.0
+      },
+      "Center row 15": {
+        "x": 269.0,
+        "y": 393.0
+      },
+      "Bottom row 15": {
+        "x": 53.0,
+        "y": 399.0
+      }
+    },
+    "rows": [
+      {
+        "row": 1,
+        "top": 82.0,
+        "bottom": 97.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 2,
+        "top": 97.0,
+        "bottom": 116.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 3,
+        "top": 116.0,
+        "bottom": 146.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 4,
+        "top": 146.0,
+        "bottom": 161.0,
+        "bottom_seat": 2.0,
+        "top_seat": 12.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 5,
+        "top": 161.0,
+        "bottom": 180.0,
+        "bottom_seat": 2.0,
+        "top_seat": 12.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 6,
+        "top": 180.0,
+        "bottom": 210.0,
+        "bottom_seat": 2.0,
+        "top_seat": 12.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 7,
+        "top": 210.0,
+        "bottom": 225.0,
+        "bottom_seat": 3.0,
+        "top_seat": 11.0,
+        "center_seat": 11.0
+      },
+      {
+        "row": 8,
+        "top": 225.0,
+        "bottom": 244.0,
+        "bottom_seat": 3.0,
+        "top_seat": 11.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 9,
+        "top": 244.0,
+        "bottom": 274.0,
+        "bottom_seat": 3.0,
+        "top_seat": 11.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 10,
+        "top": 274.0,
+        "bottom": 289.0,
+        "bottom_seat": 3.0,
+        "top_seat": 14.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 11,
+        "top": 289.0,
+        "bottom": 308.0,
+        "bottom_seat": 3.0,
+        "top_seat": 14.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 12,
+        "top": 308.0,
+        "bottom": 338.0,
+        "bottom_seat": 3.0,
+        "top_seat": 14.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 13,
+        "top": 338.0,
+        "bottom": 353.0,
+        "bottom_seat": 3.0,
+        "top_seat": 15.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 14,
+        "top": 353.0,
+        "bottom": 372.0,
+        "bottom_seat": 3.0,
+        "top_seat": 15.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 15,
+        "top": 372.0,
+        "bottom": 402.0,
+        "bottom_seat": 3.0,
+        "top_seat": 15.0,
+        "center_seat": 21.0
+      }
+    ]
+  },
+  "variant-Calibri.pdf": {
+    "labels": {
+      "Bottom row 1": {
+        "x": 53.0,
+        "y": 93.0
+      },
+      "Center row 1": {
+        "x": 269.0,
+        "y": 94.0
+      },
+      "Top row 1": {
+        "x": 161.0,
+        "y": 95.0
+      },
+      "Top row 2": {
+        "x": 161.0,
+        "y": 110.0
+      },
+      "Center row 2": {
+        "x": 269.0,
+        "y": 111.0
+      },
+      "Bottom row 2": {
+        "x": 53.0,
+        "y": 112.0
+      },
+      "Top row 3": {
+        "x": 161.0,
+        "y": 129.0
+      },
+      "Center row 3": {
+        "x": 269.0,
+        "y": 135.0
+      },
+      "Bottom row 3": {
+        "x": 53.0,
+        "y": 142.0
+      },
+      "Bottom row 4": {
+        "x": 53.0,
+        "y": 158.0
+      },
+      "Top row 4": {
+        "x": 161.0,
+        "y": 158.0
+      },
+      "Center row 4": {
+        "x": 269.0,
+        "y": 158.0
+      },
+      "Top row 5": {
+        "x": 161.0,
+        "y": 173.0
+      },
+      "Center row 5": {
+        "x": 269.0,
+        "y": 175.0
+      },
+      "Bottom row 5": {
+        "x": 53.0,
+        "y": 177.0
+      },
+      "Top row 6": {
+        "x": 161.0,
+        "y": 192.0
+      },
+      "Center row 6": {
+        "x": 269.0,
+        "y": 200.0
+      },
+      "Bottom row 6": {
+        "x": 53.0,
+        "y": 207.0
+      },
+      "Top row 7": {
+        "x": 161.0,
+        "y": 221.0
+      },
+      "Center row 7": {
+        "x": 269.0,
+        "y": 221.0
+      },
+      "Bottom row 7": {
+        "x": 53.0,
+        "y": 222.0
+      },
+      "Top row 8": {
+        "x": 161.0,
+        "y": 236.0
+      },
+      "Center row 8": {
+        "x": 269.0,
+        "y": 238.0
+      },
+      "Bottom row 8": {
+        "x": 53.0,
+        "y": 241.0
+      },
+      "Top row 9": {
+        "x": 161.0,
+        "y": 255.0
+      },
+      "Center row 9": {
+        "x": 269.0,
+        "y": 263.0
+      },
+      "Bottom row 9": {
+        "x": 53.0,
+        "y": 271.0
+      },
+      "Bottom row 10": {
+        "x": 53.0,
+        "y": 286.0
+      },
+      "Center row 10": {
+        "x": 269.0,
+        "y": 287.0
+      },
+      "Top row 10": {
+        "x": 161.0,
+        "y": 288.0
+      },
+      "Top row 11": {
+        "x": 161.0,
+        "y": 303.0
+      },
+      "Center row 11": {
+        "x": 269.0,
+        "y": 304.0
+      },
+      "Bottom row 11": {
+        "x": 53.0,
+        "y": 305.0
+      },
+      "Top row 12": {
+        "x": 161.0,
+        "y": 322.0
+      },
+      "Center row 12": {
+        "x": 269.0,
+        "y": 328.0
+      },
+      "Bottom row 12": {
+        "x": 53.0,
+        "y": 335.0
+      },
+      "Bottom row 13": {
+        "x": 53.0,
+        "y": 350.0
+      },
+      "Center row 13": {
+        "x": 269.0,
+        "y": 351.0
+      },
+      "Top row 13": {
+        "x": 161.0,
+        "y": 353.0
+      },
+      "Top row 14": {
+        "x": 161.0,
+        "y": 368.0
+      },
+      "Center row 14": {
+        "x": 269.0,
+        "y": 368.0
+      },
+      "Bottom row 14": {
+        "x": 53.0,
+        "y": 369.0
+      },
+      "Top row 15": {
+        "x": 161.0,
+        "y": 387.0
+      },
+      "Center row 15": {
+        "x": 269.0,
+        "y": 393.0
+      },
+      "Bottom row 15": {
+        "x": 53.0,
+        "y": 399.0
+      }
+    },
+    "rows": [
+      {
+        "row": 1,
+        "top": 82.0,
+        "bottom": 97.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 2,
+        "top": 97.0,
+        "bottom": 116.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 3,
+        "top": 116.0,
+        "bottom": 146.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 4,
+        "top": 146.0,
+        "bottom": 161.0,
+        "bottom_seat": 3.0,
+        "top_seat": 12.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 5,
+        "top": 161.0,
+        "bottom": 180.0,
+        "bottom_seat": 3.0,
+        "top_seat": 12.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 6,
+        "top": 180.0,
+        "bottom": 210.0,
+        "bottom_seat": 3.0,
+        "top_seat": 12.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 7,
+        "top": 210.0,
+        "bottom": 225.0,
+        "bottom_seat": 3.0,
+        "top_seat": 11.0,
+        "center_seat": 11.0
+      },
+      {
+        "row": 8,
+        "top": 225.0,
+        "bottom": 244.0,
+        "bottom_seat": 3.0,
+        "top_seat": 11.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 9,
+        "top": 244.0,
+        "bottom": 274.0,
+        "bottom_seat": 3.0,
+        "top_seat": 11.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 10,
+        "top": 274.0,
+        "bottom": 289.0,
+        "bottom_seat": 3.0,
+        "top_seat": 14.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 11,
+        "top": 289.0,
+        "bottom": 308.0,
+        "bottom_seat": 3.0,
+        "top_seat": 14.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 12,
+        "top": 308.0,
+        "bottom": 338.0,
+        "bottom_seat": 3.0,
+        "top_seat": 14.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 13,
+        "top": 338.0,
+        "bottom": 353.0,
+        "bottom_seat": 3.0,
+        "top_seat": 15.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 14,
+        "top": 353.0,
+        "bottom": 372.0,
+        "bottom_seat": 3.0,
+        "top_seat": 15.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 15,
+        "top": 372.0,
+        "bottom": 402.0,
+        "bottom_seat": 3.0,
+        "top_seat": 15.0,
+        "center_seat": 21.0
+      }
+    ]
+  },
+  "variant-Trebuchet14.pdf": {
+    "labels": {
+      "Bottom row 1": {
+        "x": 53.0,
+        "y": 93.0
+      },
+      "Center row 1": {
+        "x": 269.0,
+        "y": 94.0
+      },
+      "Top row 1": {
+        "x": 161.0,
+        "y": 95.0
+      },
+      "Top row 2": {
+        "x": 161.0,
+        "y": 110.0
+      },
+      "Center row 2": {
+        "x": 269.0,
+        "y": 111.0
+      },
+      "Bottom row 2": {
+        "x": 53.0,
+        "y": 112.0
+      },
+      "Top row 3": {
+        "x": 161.0,
+        "y": 129.0
+      },
+      "Center row 3": {
+        "x": 269.0,
+        "y": 135.0
+      },
+      "Bottom row 3": {
+        "x": 53.0,
+        "y": 142.0
+      },
+      "Bottom row 4": {
+        "x": 53.0,
+        "y": 158.0
+      },
+      "Top row 4": {
+        "x": 161.0,
+        "y": 158.0
+      },
+      "Center row 4": {
+        "x": 269.0,
+        "y": 158.0
+      },
+      "Top row 5": {
+        "x": 161.0,
+        "y": 173.0
+      },
+      "Center row 5": {
+        "x": 269.0,
+        "y": 175.0
+      },
+      "Bottom row 5": {
+        "x": 53.0,
+        "y": 177.0
+      },
+      "Top row 6": {
+        "x": 161.0,
+        "y": 192.0
+      },
+      "Center row 6": {
+        "x": 269.0,
+        "y": 200.0
+      },
+      "Bottom row 6": {
+        "x": 53.0,
+        "y": 207.0
+      },
+      "Top row 7": {
+        "x": 161.0,
+        "y": 221.0
+      },
+      "Center row 7": {
+        "x": 269.0,
+        "y": 221.0
+      },
+      "Bottom row 7": {
+        "x": 53.0,
+        "y": 222.0
+      },
+      "Top row 8": {
+        "x": 161.0,
+        "y": 236.0
+      },
+      "Center row 8": {
+        "x": 269.0,
+        "y": 238.0
+      },
+      "Bottom row 8": {
+        "x": 53.0,
+        "y": 241.0
+      },
+      "Top row 9": {
+        "x": 161.0,
+        "y": 255.0
+      },
+      "Center row 9": {
+        "x": 269.0,
+        "y": 263.0
+      },
+      "Bottom row 9": {
+        "x": 53.0,
+        "y": 271.0
+      },
+      "Bottom row 10": {
+        "x": 53.0,
+        "y": 286.0
+      },
+      "Center row 10": {
+        "x": 269.0,
+        "y": 287.0
+      },
+      "Top row 10": {
+        "x": 161.0,
+        "y": 288.0
+      },
+      "Top row 11": {
+        "x": 161.0,
+        "y": 303.0
+      },
+      "Center row 11": {
+        "x": 269.0,
+        "y": 304.0
+      },
+      "Bottom row 11": {
+        "x": 53.0,
+        "y": 305.0
+      },
+      "Top row 12": {
+        "x": 161.0,
+        "y": 322.0
+      },
+      "Center row 12": {
+        "x": 269.0,
+        "y": 328.0
+      },
+      "Bottom row 12": {
+        "x": 53.0,
+        "y": 335.0
+      },
+      "Bottom row 13": {
+        "x": 53.0,
+        "y": 350.0
+      },
+      "Center row 13": {
+        "x": 269.0,
+        "y": 351.0
+      },
+      "Top row 13": {
+        "x": 161.0,
+        "y": 353.0
+      },
+      "Top row 14": {
+        "x": 161.0,
+        "y": 368.0
+      },
+      "Center row 14": {
+        "x": 269.0,
+        "y": 368.0
+      },
+      "Bottom row 14": {
+        "x": 53.0,
+        "y": 369.0
+      },
+      "Top row 15": {
+        "x": 161.0,
+        "y": 387.0
+      },
+      "Center row 15": {
+        "x": 269.0,
+        "y": 393.0
+      },
+      "Bottom row 15": {
+        "x": 53.0,
+        "y": 399.0
+      }
+    },
+    "rows": [
+      {
+        "row": 1,
+        "top": 82.0,
+        "bottom": 97.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 2,
+        "top": 97.0,
+        "bottom": 116.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 3,
+        "top": 116.0,
+        "bottom": 146.0,
+        "bottom_seat": 4.0,
+        "top_seat": 13.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 4,
+        "top": 146.0,
+        "bottom": 161.0,
+        "bottom_seat": 3.0,
+        "top_seat": 12.0,
+        "center_seat": 12.0
+      },
+      {
+        "row": 5,
+        "top": 161.0,
+        "bottom": 180.0,
+        "bottom_seat": 3.0,
+        "top_seat": 12.0,
+        "center_seat": 14.0
+      },
+      {
+        "row": 6,
+        "top": 180.0,
+        "bottom": 210.0,
+        "bottom_seat": 3.0,
+        "top_seat": 12.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 7,
+        "top": 210.0,
+        "bottom": 225.0,
+        "bottom_seat": 3.0,
+        "top_seat": 11.0,
+        "center_seat": 11.0
+      },
+      {
+        "row": 8,
+        "top": 225.0,
+        "bottom": 244.0,
+        "bottom_seat": 3.0,
+        "top_seat": 11.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 9,
+        "top": 244.0,
+        "bottom": 274.0,
+        "bottom_seat": 3.0,
+        "top_seat": 11.0,
+        "center_seat": 19.0
+      },
+      {
+        "row": 10,
+        "top": 274.0,
+        "bottom": 289.0,
+        "bottom_seat": 3.0,
+        "top_seat": 14.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 11,
+        "top": 289.0,
+        "bottom": 308.0,
+        "bottom_seat": 3.0,
+        "top_seat": 14.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 12,
+        "top": 308.0,
+        "bottom": 338.0,
+        "bottom_seat": 3.0,
+        "top_seat": 14.0,
+        "center_seat": 20.0
+      },
+      {
+        "row": 13,
+        "top": 338.0,
+        "bottom": 353.0,
+        "bottom_seat": 3.0,
+        "top_seat": 15.0,
+        "center_seat": 13.0
+      },
+      {
+        "row": 14,
+        "top": 353.0,
+        "bottom": 372.0,
+        "bottom_seat": 3.0,
+        "top_seat": 15.0,
+        "center_seat": 15.0
+      },
+      {
+        "row": 15,
+        "top": 372.0,
+        "bottom": 402.0,
+        "bottom_seat": 3.0,
+        "top_seat": 15.0,
+        "center_seat": 21.0
+      }
+    ]
+  }
+}

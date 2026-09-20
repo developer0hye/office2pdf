@@ -1,0 +1,25 @@
+{
+  "name": "body-alignment-default-xf-font",
+  "base": "source.xlsx",
+  "part": "xl/styles.xml",
+  "factor": "unused first cellXf font only",
+  "page": 1,
+  "noise_floor": 0.5,
+  "variants": [
+    {
+      "value": "Arial",
+      "find": "<cellXfs count=\"16\"><xf numFmtId=\"0\" fontId=\"5\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyAlignment=\"1\" applyBorder=\"1\">",
+      "replace": "<cellXfs count=\"16\"><xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyAlignment=\"1\" applyBorder=\"1\">"
+    },
+    {
+      "value": "Calibri",
+      "find": "<cellXfs count=\"16\"><xf numFmtId=\"0\" fontId=\"5\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyAlignment=\"1\" applyBorder=\"1\">",
+      "replace": "<cellXfs count=\"16\"><xf numFmtId=\"0\" fontId=\"2\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyAlignment=\"1\" applyBorder=\"1\">"
+    },
+    {
+      "value": "Trebuchet14",
+      "find": "<cellXfs count=\"16\"><xf numFmtId=\"0\" fontId=\"5\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyAlignment=\"1\" applyBorder=\"1\">",
+      "replace": "<cellXfs count=\"16\"><xf numFmtId=\"0\" fontId=\"3\" fillId=\"0\" borderId=\"1\" xfId=\"0\" applyAlignment=\"1\" applyBorder=\"1\">"
+    }
+  ]
+}

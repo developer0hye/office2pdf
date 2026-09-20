@@ -1,0 +1,21 @@
+{
+  "source_sha256": "d295c488c05004d9e022db0f759b7a95c3c609e10968b9251d6f1e723fb57dd2",
+  "before_commit": "bd443885328819da53a321c65174d77703f97110",
+  "converter_font_path": "/Applications/Microsoft Excel.app/Contents/Resources/DFonts",
+  "reference": "Native Microsoft Excel for Mac",
+  "native_pdf_metadata": "Title:           \ubb34\uc81c\nCreator:         Excel\nProducer:        macOS \ubc84\uc804 26.6.2(\ube4c\ub4dc 25G83) Quartz PDFContext\nCreationDate:    Mon Sep 21 04:45:22 2026 KST\nModDate:         Mon Sep 21 04:45:22 2026 KST\nCustom Metadata: no\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           1\nEncrypted:       no\nPage size:       612 x 792 pts (letter)\nPage rot:        0\nFile size:       35615 bytes\nOptimized:       no\nPDF version:     1.3\n",
+  "pdf_sha256": {
+    "control-sheet-0001.pdf": "aaf27688f20bcf9b4cff80a95937ba0f6eefba3bf096db973bac6f534e32f4fc",
+    "variant-Calibri-sheet-0001.pdf": "b416e33a212fab25b3c2e5770b7eedd9ce6637c363c03ff6f052deda8837c3f9",
+    "variant-Trebuchet14.pdf": "5d313153a9b4a856ef88b891d35a96d5247a3446a2c76aecf750909158bee16e",
+    "variant-Calibri.pdf": "b416e33a212fab25b3c2e5770b7eedd9ce6637c363c03ff6f052deda8837c3f9",
+    "control.pdf": "aaf27688f20bcf9b4cff80a95937ba0f6eefba3bf096db973bac6f534e32f4fc",
+    "variant-Arial.pdf": "6582c6ffdbf26dbf030f0be99fbd86332aec15ca7e922e19fea8eb7b2dbedbcf",
+    "variant-Trebuchet14-sheet-0001.pdf": "5d313153a9b4a856ef88b891d35a96d5247a3446a2c76aecf750909158bee16e",
+    "variant-Arial-sheet-0001.pdf": "6582c6ffdbf26dbf030f0be99fbd86332aec15ca7e922e19fea8eb7b2dbedbcf",
+    "base.pdf": "f2cac54ad06b8acb2d08964dbace45e9a7c95b039e67b70836313881418c9293",
+    "base-sheet-0001.pdf": "f2cac54ad06b8acb2d08964dbace45e9a7c95b039e67b70836313881418c9293"
+  },
+  "control": "Base and re-zipped control are layout-identical. All variants preserve the 45 cell font assignments and 16 row-boundary positions. Only unused cellXfs[0].fontId changes.",
+  "image": "GT left, exact-main output right; pdftoppm150DPI; progressive JPEG quality86, stripped then150DPI restored."
+}
