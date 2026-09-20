@@ -1,4 +1,5 @@
 use super::*;
+use crate::ir::ChartType;
 
 fn make_chart_graphic_frame(x: i64, y: i64, cx: i64, cy: i64, chart_rid: &str) -> String {
     format!(
@@ -204,4 +205,55 @@ fn test_scan_chart_refs_no_chart() {
 
     let refs = scan_chart_refs(slide_xml);
     assert!(refs.is_empty());
+}
+
+#[test]
+fn test_pptx_plotted_chart_has_no_data_table_fallback_warning() {
+    let frame = make_chart_graphic_frame(914_400, 1_828_800, 5_486_400, 3_086_100, "rId5");
+    let slide = make_slide_xml(&[frame]);
+    for (kind, categories, values) in [
+        (
+            "barChart",
+            vec!["Q1", "Q2", "Q3"],
+            vec![100.0, 200.0, 150.0],
+        ),
+        ("lineChart", vec!["Q1"], vec![100.0]),
+    ] {
+        let chart =
+            make_bar_chart_xml("Quarterly revenue", &categories, &values).replace("barChart", kind);
+        let data = build_test_pptx_with_chart(SLIDE_CX, SLIDE_CY, &slide, "rId5", &chart);
+        let (doc, warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        assert_eq!(first_fixed_page(&doc).elements.len(), 1);
+        assert!(
+            !warnings.iter().any(|warning| matches!(warning,
+                ConvertWarning::FallbackUsed { to, .. } if to == "data table"
+            )),
+            "{kind}: {warnings:?}"
+        );
+    }
+}
+
+#[test]
+fn test_pptx_scatter_chart_retains_data_table_fallback_warning() {
+    let frame = make_chart_graphic_frame(914_400, 1_828_800, 5_486_400, 3_086_100, "rId5");
+    let slide = make_slide_xml(&[frame]);
+    let chart = r#"<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">
+      <c:chart><c:plotArea><c:scatterChart><c:scatterStyle val="lineMarker"/>
+      <c:ser><c:idx val="0"/><c:order val="0"/><c:tx><c:v>Sales</c:v></c:tx>
+      <c:xVal><c:numLit><c:ptCount val="2"/><c:pt idx="0"><c:v>1</c:v></c:pt>
+      <c:pt idx="1"><c:v>2</c:v></c:pt></c:numLit></c:xVal>
+      <c:yVal><c:numLit><c:ptCount val="2"/><c:pt idx="0"><c:v>100</c:v></c:pt>
+      <c:pt idx="1"><c:v>200</c:v></c:pt></c:numLit></c:yVal></c:ser>
+      </c:scatterChart></c:plotArea></c:chart></c:chartSpace>"#;
+    let data = build_test_pptx_with_chart(SLIDE_CX, SLIDE_CY, &slide, "rId5", chart);
+    let (doc, warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_eq!(
+        get_chart(&first_fixed_page(&doc).elements[0]).chart_type,
+        ChartType::Scatter
+    );
+    let generated = crate::render::typst_gen::generate_typst(&doc).unwrap();
+    assert!(generated.source.contains("Scatter Chart"));
+    assert_eq!(warnings.iter().filter(|warning| matches!(warning,
+        ConvertWarning::FallbackUsed { format, to, .. } if format == "PPTX" && to == "data table"
+    )).count(), 1, "{warnings:?}");
 }
