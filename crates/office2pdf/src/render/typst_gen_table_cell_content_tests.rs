@@ -384,7 +384,7 @@ fn mixed_script_row_shares_one_line_box() {
     let Some((ascender, _descender, word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size: f64 = 10.0;
     let grid_em: f64 = 18.0 / font_size;
@@ -947,7 +947,7 @@ fn grid_cell_absorbs_space_after_into_the_line_box() {
     let Some((ascender, _descender, word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size: f64 = 10.0;
     // The East Asian line plus a 1.5pt gap still fits one 18pt grid line.
@@ -1119,7 +1119,7 @@ fn bottom_aligned_spreadsheet_cell_seats_its_line_box_on_the_descender() {
     let Some((ascender, descender, word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size: f64 = 10.0;
     let top_em: f64 = ascender;
@@ -1296,7 +1296,7 @@ fn bottom_aligned_spreadsheet_cell_in_auto_height_row_keeps_the_symmetric_line_b
     let Some((ascender, _descender, word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size: f64 = 10.0;
     let top_em: f64 = ascender;
@@ -1629,7 +1629,7 @@ fn expanded_word_bottom_cell_uses_the_native_quarter_point_last_line_seat() {
 #[test]
 fn stacked_cell_paragraphs_zero_the_default_block_spacing() {
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     }
     let make_para = |text: &str, space_after: Option<f64>| -> Block {
         Block::Paragraph(Paragraph {
@@ -1692,7 +1692,7 @@ fn stacked_cell_paragraphs_zero_the_default_block_spacing() {
 #[test]
 fn stacked_cell_paragraphs_without_w_after_stack_flush() {
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     }
     let make_para = |text: &str| -> Block {
         Block::Paragraph(Paragraph {
@@ -1744,7 +1744,7 @@ fn stacked_cell_paragraphs_without_w_after_stack_flush() {
 #[test]
 fn single_paragraph_cell_emission_is_unchanged() {
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     }
     let cell = TableCell {
         content: vec![Block::Paragraph(Paragraph {
@@ -1803,7 +1803,7 @@ fn single_paragraph_cell_emission_is_unchanged() {
 #[test]
 fn line_spaced_stacked_cell_paragraphs_take_a_scaled_line_box() {
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     }
     let make_para = |text: &str| -> Block {
         Block::Paragraph(Paragraph {
@@ -1870,7 +1870,7 @@ fn an_empty_cell_paragraph_holds_one_full_line_box() {
     let Some((_ascender, _descender, word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size: f64 = 9.5;
     let line_box_height_pt: f64 = word_pitch_em * font_size;
@@ -2038,7 +2038,7 @@ fn a_line_spaced_cell_paragraph_scales_its_line_box() {
     let Some((ascender_em, descender_em, word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size: f64 = 10.0;
     let make_cell = |line_spacing: Option<LineSpacing>| -> TableCell {
@@ -2157,7 +2157,7 @@ fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
 #[test]
 fn a_grid_snapped_line_spaced_cell_emits_its_space_after_once() {
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     }
     let cell = TableCell {
         content: vec![Block::Paragraph(Paragraph {
@@ -2214,7 +2214,7 @@ fn a_grid_snapped_line_spaced_cell_emits_its_space_after_once() {
 #[test]
 fn mixed_alignment_tight_sheet_row_seats_every_cell_on_one_baseline() {
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     }
     let font_size: f64 = 10.0;
     let make_cell = |text: &str, vertical_align: Option<CellVerticalAlign>| TableCell {
@@ -2287,7 +2287,7 @@ fn tight_sheet_row_resolves_one_metric_family_for_every_cell() {
         return; // Malgun Gothic not installed
     };
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     }
     let font_size: f64 = 10.0;
     let make_cell = |text: &str, family: &str| TableCell {
@@ -2361,7 +2361,7 @@ fn tight_sheet_row_resolves_one_metric_family_for_every_cell() {
 #[test]
 fn row_spanning_cell_keeps_its_declared_alignment_in_a_tight_row() {
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     }
     let font_size: f64 = 10.0;
     let make_cell =
@@ -2436,7 +2436,7 @@ fn row_spanning_cell_keeps_its_declared_alignment_in_a_tight_row() {
 fn boundary_rule_does_not_make_a_roomy_sheet_row_tight() {
     let Some((_, _, pitch_em)) = crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size: f64 = 10.0;
     let padding = Insets {
@@ -2522,7 +2522,7 @@ fn boundary_rule_does_not_make_a_roomy_sheet_row_tight() {
 fn boundary_rule_leaves_a_tight_sheet_row_tight() {
     let Some((_, _, pitch_em)) = crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size: f64 = 10.0;
     let padding = Insets {
@@ -3119,7 +3119,7 @@ fn bottom_aligned_merged_sheet_cell_uses_the_native_five_point_floor() {
     let Some((_ascent_em, descent_em, _pitch_em)) =
         crate::render::pdf::font_line_metrics_em(FAMILY)
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
 
     let font_size_pt: f64 = 14.0;
@@ -3208,7 +3208,7 @@ fn fixed_track_sheet_cell_seats_its_centred_line_on_the_track() {
     const FAMILY: &str = "Libertinus Serif";
     let Some((ascent_em, descent_em, pitch_em)) = crate::render::pdf::font_line_metrics_em(FAMILY)
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let line_gap_em: f64 = crate::render::pdf::font_line_gap_em(FAMILY).unwrap_or(0.0);
     let font_size_pt: f64 = 10.0;
@@ -3284,7 +3284,7 @@ fn bottom_aligned_sheet_cell_rests_its_descender_on_the_row_boundary() {
     let Some((_ascent_em, descent_em, _pitch_em)) =
         crate::render::pdf::font_line_metrics_em(FAMILY)
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size_pt: f64 = 14.0;
     let padding = Insets {
@@ -3883,7 +3883,7 @@ fn a_floored_sheet_cell_ends_its_box_on_excel_minimum_gap() {
     let Some((_ascent_em, descent_em, _pitch_em)) =
         crate::render::pdf::font_line_metrics_em(FAMILY)
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let font_size_pt: f64 = 10.0;
     let padding = Insets {
@@ -3980,7 +3980,7 @@ fn bottom_seat_floor_probe_seats_every_row_where_excel_prints_it() {
     let Some((_ascent_em, descent_em, _pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Arial")
     else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let data =
         include_bytes!("../../../../tests/fixtures/xlsx/issue_1097_bottom_seat_floor_probe.xlsx");
@@ -4121,7 +4121,7 @@ fn an_unswept_face_or_size_states_no_sheet_advance() {
 #[test]
 fn wrapped_sheet_cell_paces_its_lines_on_excels_advance() {
     let Some((family, font_size_pt, advance_pt)) = swept_face_with_metrics() else {
-        return; // no installed copy in a native build without embedded-fonts
+        return; // no font book available (e.g. exotic CI sandbox)
     };
     let (_ascender_em, _descender_em, pitch_em) =
         crate::render::pdf::font_line_metrics_em(family).expect("metrics resolved above");
