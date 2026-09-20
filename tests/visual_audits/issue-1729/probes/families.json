@@ -1,0 +1,30 @@
+{
+  "base": "base.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "footer-line-families",
+  "factor": "footer family",
+  "variants": [
+    {
+      "value": "Aptos",
+      "find": "&amp;\"Arial,Regular\"",
+      "replace": "&amp;\"Aptos,Regular\""
+    },
+    {
+      "value": "Calibri",
+      "find": "&amp;\"Arial,Regular\"",
+      "replace": "&amp;\"Calibri,Regular\""
+    },
+    {
+      "value": "Malgun Gothic",
+      "find": "&amp;\"Arial,Regular\"",
+      "replace": "&amp;\"Malgun Gothic,Regular\""
+    },
+    {
+      "value": "Times New Roman",
+      "find": "&amp;\"Arial,Regular\"",
+      "replace": "&amp;\"Times New Roman,Regular\""
+    }
+  ]
+}

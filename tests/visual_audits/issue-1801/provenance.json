@@ -1,0 +1,15 @@
+{
+  "source": "Synthetic workbook with ordinary XML, explicit Arial,Regular, three footer sections, and no explicit footer line breaks",
+  "source_sha256": "338f037111d08c2c67014559ec7c7ccb3a46274adfabb0a7aa9f63c3e5c4b05e",
+  "reference": "Microsoft Excel 16.113, macOS 26.6.2; export_excel_pdfs.applescript",
+  "before_commit": "cf017a5841b58718cb8205502fc8fb1c15417d05",
+  "dpi": 150,
+  "page": 1,
+  "fine_shift_pt": 0.5,
+  "pdf_sha256": {
+    "gt": "f6dba597743b355e47d7d6b3f9fb3d812608383b7c6eb3a98ff9a4e153173c51",
+    "before": "af4afb146d4fb4d360962e63fb1814dbf54a961d982838f7070c9208ce0004aa",
+    "after": "502dde8e79a3cffac861223f45c9dba5d7da7be153307b98eb250d99e47df452"
+  },
+  "after": "Same base with full-width independently aligned header/footer section boxes"
+}

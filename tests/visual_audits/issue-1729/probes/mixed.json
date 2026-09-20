@@ -1,0 +1,30 @@
+{
+  "base": "base.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "name": "footer-line-mixed-sizes",
+  "factor": "first or second line font size",
+  "page": 1,
+  "noise_floor": 0.5,
+  "variants": [
+    {
+      "value": "first8",
+      "find": "&amp;11Footer first\nFooter second",
+      "replace": "&amp;8Footer first\n&amp;11Footer second"
+    },
+    {
+      "value": "first24",
+      "find": "&amp;11Footer first\nFooter second",
+      "replace": "&amp;24Footer first\n&amp;11Footer second"
+    },
+    {
+      "value": "second8",
+      "find": "Footer first\nFooter second",
+      "replace": "Footer first\n&amp;8Footer second"
+    },
+    {
+      "value": "second24",
+      "find": "Footer first\nFooter second",
+      "replace": "Footer first\n&amp;24Footer second"
+    }
+  ]
+}

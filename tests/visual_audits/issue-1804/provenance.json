@@ -1,0 +1,14 @@
+{
+  "source": "tests/fixtures/xlsx/two_line_sheet_footer.xlsx",
+  "page": 2,
+  "dpi": 150,
+  "reference": "Microsoft Excel 16.113 on macOS 26.6.2",
+  "converter_commit": "7a89a402941bb99994a52c8bcdb9db52e8bac235",
+  "font_path": "/Applications/Microsoft Excel.app/Contents/Resources/DFonts",
+  "sha256": {
+    "source": "ac4129b8e72ff1bc9f4bcb44d2742408d8aa19bdcbae181df0334bd89e550564",
+    "gt": "388996bc7ad0a5239d9038f872dea91eceae919ae7f59ca9ccaeba8663d98c04",
+    "output": "6e8e6a23324ef9a9c808bfde9e4f26e8618572ddaa87774be08ae8683588df38"
+  },
+  "page2_before_candidate_pixel_delta": 0
+}
