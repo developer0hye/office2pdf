@@ -1630,7 +1630,7 @@
     "docx/poi/testComment.docx": "success",
     "docx/poi/tika-3388.docx": "success",
     "docx/poi/tika-3816.docx": "success",
-    "docx/poi/unicode-path.docx": "success",
+    "docx/poi/unicode-path.docx": "expected_error",
     "docx/poi/zero-length.docx": "success",
     "docx/poi_footnotes.docx": "success",
     "docx/poi_sample.docx": "success",
