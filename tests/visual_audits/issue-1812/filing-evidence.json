@@ -1,0 +1,12 @@
+{
+  "candidate_commit": "b8f9f57b7d8bd422a8ee2eed9b30cdb76a14bb5a",
+  "source_sha256": "0ec9bcf39b13344ae2ba3877c3518a4b0c88601346db4b20168c744a2c149b8a",
+  "native_pdf_sha256": "36b3417765de5dbf0916db355171df201286fd5b0981b3f79ea0b8a261939b35",
+  "output_pdf_sha256": "ec0d824aa9f8057652ee0025f3b5487e804dd9836d785f0cf76cec768b682492",
+  "dpi": 150,
+  "native_first_glyph_x_pt": 22,
+  "output_first_glyph_x_pt": 53,
+  "source_attribute": "xl/worksheets/sheet1.xml pageMargins/@left=0",
+  "native_control": "layout-identical re-zip",
+  "converter_control": "byte-identical re-zip"
+}
