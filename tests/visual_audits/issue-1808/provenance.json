@@ -1,0 +1,16 @@
+{
+  "fixture": "tests/fixtures/xlsx/headerFooterTest.xlsx",
+  "pages": [
+    1
+  ],
+  "reference": "Microsoft Excel 16.113",
+  "converter_commit": "7d2199cb64e38f92a396d9cdb7d8f5c883446527",
+  "renderer": "pdftoppm",
+  "dpi": 150,
+  "sha256": {
+    "source": "db7483ac7bc96d071db57ec6239d2c1b8593a5ef3c7f5b7418df0309753c1fe2",
+    "native_pdf": "632df38902467bcd5abf4d03bf30c724dd67caf7e8e70ecdadbe9a15c4c68f1f",
+    "output_pdf": "609e163c1d29ad10f92b29519b99ee99eca8297f62f9514cd2f28612ae6297a6",
+    "compare_jpg": "8e90f1945830af9a6c7bdf4d7466b7277ccf7d05025a1b48685d9ec56fc767a6"
+  }
+}

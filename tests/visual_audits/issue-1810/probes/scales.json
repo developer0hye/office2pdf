@@ -1,0 +1,25 @@
+{
+  "base": "two-lines.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "header-multiline-print-scale",
+  "factor": "print scale",
+  "variants": [
+    {
+      "value": "60",
+      "find": "orientation=\"portrait\"",
+      "replace": "orientation=\"portrait\" scale=\"60\""
+    },
+    {
+      "value": "80",
+      "find": "orientation=\"portrait\"",
+      "replace": "orientation=\"portrait\" scale=\"80\""
+    },
+    {
+      "value": "120",
+      "find": "orientation=\"portrait\"",
+      "replace": "orientation=\"portrait\" scale=\"120\""
+    }
+  ]
+}

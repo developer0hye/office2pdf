@@ -1,0 +1,30 @@
+{
+  "base": "source.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "header-multiline-font-sizes",
+  "factor": "header font size",
+  "variants": [
+    {
+      "value": "8",
+      "find": "Arial,Regular\"Header",
+      "replace": "Arial,Regular\"&amp;8Header"
+    },
+    {
+      "value": "12",
+      "find": "Arial,Regular\"Header",
+      "replace": "Arial,Regular\"&amp;12Header"
+    },
+    {
+      "value": "14",
+      "find": "Arial,Regular\"Header",
+      "replace": "Arial,Regular\"&amp;14Header"
+    },
+    {
+      "value": "24",
+      "find": "Arial,Regular\"Header",
+      "replace": "Arial,Regular\"&amp;24Header"
+    }
+  ]
+}

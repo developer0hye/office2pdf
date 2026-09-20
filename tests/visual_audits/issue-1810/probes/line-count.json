@@ -1,0 +1,20 @@
+{
+  "base": "line-count-base.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "sheet-header-line-count",
+  "factor": "header line count",
+  "variants": [
+    {
+      "value": "2",
+      "find": "Header line one",
+      "replace": "Header line one\nHeader line two"
+    },
+    {
+      "value": "3",
+      "find": "Header line one",
+      "replace": "Header line one\nHeader line two\nHeader line three"
+    }
+  ]
+}

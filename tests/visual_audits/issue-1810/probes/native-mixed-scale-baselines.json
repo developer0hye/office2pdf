@@ -1,0 +1,112 @@
+{
+  "header-multiline-mixed-sizes/variant-11-8": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      62.0
+    ]
+  ],
+  "header-multiline-mixed-sizes/control": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ]
+  ],
+  "header-multiline-mixed-sizes/variant-24-11": [
+    [
+      "Header line one",
+      63.0
+    ],
+    [
+      "Header line two",
+      80.0
+    ]
+  ],
+  "header-multiline-mixed-sizes/base": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ]
+  ],
+  "header-multiline-mixed-sizes/variant-8-11": [
+    [
+      "Header line one",
+      48.0
+    ],
+    [
+      "Header line two",
+      62.0
+    ]
+  ],
+  "header-multiline-mixed-sizes/variant-11-24": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      77.0
+    ]
+  ],
+  "header-multiline-print-scale/variant-120": [
+    [
+      "Header line one",
+      52.799999999999955
+    ],
+    [
+      "Header line two",
+      69.60000000000002
+    ]
+  ],
+  "header-multiline-print-scale/control": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ]
+  ],
+  "header-multiline-print-scale/variant-80": [
+    [
+      "Header line one",
+      48.799999999999955
+    ],
+    [
+      "Header line two",
+      59.999999999999886
+    ]
+  ],
+  "header-multiline-print-scale/variant-60": [
+    [
+      "Header line one",
+      46.799999999999955
+    ],
+    [
+      "Header line two",
+      55.19999999999993
+    ]
+  ],
+  "header-multiline-print-scale/base": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ]
+  ]
+}

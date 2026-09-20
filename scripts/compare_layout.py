@@ -71,7 +71,7 @@ PAGE_RE = re.compile(r"<page\b([^>]*)>(.*?)</page>", re.S)
 TEXT_RE = re.compile(r"<(fill_text|ignore_text)\b([^>]*)>(.*?)</\1>", re.S)
 SPAN_RE = re.compile(r"<span\b([^>]*)>(.*?)</span>", re.S)
 GLYPH_RE = re.compile(
-    r'<g unicode="([^"]*)" glyph="[^"]*" x="([-0-9.e]+)" y="([-0-9.e]+)" adv="([-0-9.e]+)"'
+    r'<g unicode="([^"]*)"(?: glyph="([^"]*)")? x="([-0-9.e]+)" y="([-0-9.e]+)" adv="([-0-9.e]+)"'
 )
 PATH_RE = re.compile(r"<(fill_path|stroke_path)\b([^>]*)>(.*?)</\1>", re.S)
 FILL_IMAGE_RE = re.compile(r"<fill_image\b([^>]*)/>", re.S)
@@ -1149,9 +1149,24 @@ def parse_trace(trace_xml: str) -> list[PageLayout]:
                 trm = TRM_RE.search(span_attrs)
                 size_units = float(trm.group(1)) if trm else 0.0
                 size_pt = abs(size_units) * (a * a + b * b) ** 0.5
-                for unicode_char, gx, gy, adv in GLYPH_RE.findall(span_body):
+                previous_origin: tuple[float, float] | None = None
+                for unicode_char, glyph_id, gx, gy, adv in GLYPH_RE.findall(span_body):
                     glyph_x = float(gx)
                     glyph_y = float(gy)
+                    if (
+                        not glyph_id
+                        and float(adv) == 0.0
+                        and previous_origin == (glyph_x, glyph_y)
+                    ):
+                        # MuPDF emits extra Unicode characters of one ligature
+                        # without a glyph ID or advance. They share its ink;
+                        # a separate box would invent width/visibility findings.
+                        previous = transformed_run[-1]
+                        transformed_run[-1] = replace(
+                            previous, unicode=previous.unicode + unescape(unicode_char)
+                        )
+                        continue
+                    previous_origin = (glyph_x, glyph_y)
                     transformed_run.append(
                         Glyph(
                             x=a * glyph_x + c * glyph_y + e,
@@ -1480,6 +1495,14 @@ def ordered_unique_segment_match(
                 if max(top, min(glyph_bbox(glyph)[1] for glyph in line.visible_glyphs))
                 < min(bottom, max(glyph_bbox(glyph)[3] for glyph in line.visible_glyphs))
             ]
+            if len(same_text) > 1:
+                # Independent chart axes can repeat the same labels on one
+                # row. Require a unique overlapping horizontal span as well;
+                # overlapping duplicate objects remain ambiguous.
+                same_text = [
+                    line for line in same_text
+                    if max(segment.x0, line.x0) < min(segment.x1, line.x1)
+                ]
         if len(same_text) != 1:
             return None
         selected.append(same_text[0])

@@ -1,0 +1,20 @@
+{
+  "base": "two-lines.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "header-multiline-sections",
+  "factor": "section font size and line count",
+  "variants": [
+    {
+      "value": "different-sizes",
+      "find": "&amp;C&amp;\"Arial,Regular\"Header line one\nHeader line two",
+      "replace": "&amp;L&amp;\"Arial,Regular\"&amp;8Left first\nLeft last&amp;C&amp;\"Arial,Regular\"&amp;24Center first\nCenter last&amp;R&amp;\"Arial,Regular\"&amp;11Right first\nRight last"
+    },
+    {
+      "value": "unequal-counts",
+      "find": "&amp;C&amp;\"Arial,Regular\"Header line one\nHeader line two",
+      "replace": "&amp;LLeft first&amp;CCenter first\nCenter middle\nCenter last&amp;RRight first\nRight last"
+    }
+  ]
+}

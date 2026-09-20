@@ -1,0 +1,16 @@
+{
+  "source": "Synthetic three-line Arial 11 worksheet header; no real document content",
+  "source_sha256": "3544c07e49be5ddfc2a337ed6c130ffa2b9d8bf5d9d18bb439cd64e435cbfd98",
+  "reference": "Microsoft Excel 16.113 on macOS 26.6.2; sheet-header-line-count native probe with passing re-zip control",
+  "before_office2pdf": "038e7cf26a32bd6cee206d31f380fede26ebb056",
+  "font_path": "Microsoft Excel application DFonts",
+  "page": 1,
+  "dpi": 150,
+  "fine_shift_pt": 0.5,
+  "pdf_sha256": {
+    "gt": "b9c26ef18813e8155aa84982aa3c419431eeab20fada73d95934c5ed40c56ff8",
+    "before": "ee7f23ce80c24a2b390f604feb825c912ad72ef8b2c5e75cac161e5f5851ae87",
+    "after": "82166ca3447a32064c2e09b016700732eea7a8a701133f3dae6347f08abc83ff"
+  },
+  "candidate_binary_sha256": "13553b0763139c2c7cb8e8ad1538672e8e3de9778d584786f53ccd0dd9db64fa"
+}
