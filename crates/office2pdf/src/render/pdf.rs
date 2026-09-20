@@ -51,6 +51,7 @@ impl FontSlot {
         }
     }
 
+    #[cfg(any(feature = "embedded-fonts", target_arch = "wasm32"))]
     fn loaded(font: Font) -> Self {
         Self {
             path: None,
@@ -115,7 +116,7 @@ pub(crate) fn discover_font_book(
     discover_fonts(font_dirs, include_system_fonts, include_embedded_fonts).0
 }
 
-/// Only the faces embedded in typst-assets: the WASM build's whole font set.
+/// Typst's fallback faces, empty on native builds without `embedded-fonts`.
 fn embedded_fonts() -> (typst::text::FontBook, Vec<FontSlot>) {
     let mut book = typst::text::FontBook::new();
     let mut fonts: Vec<FontSlot> = Vec::new();
@@ -124,13 +125,17 @@ fn embedded_fonts() -> (typst::text::FontBook, Vec<FontSlot>) {
 }
 
 /// Appends the faces embedded in typst-assets, which rank below every
-/// discovered face.
+/// discovered face. Always available on WASM, opt-out on native builds.
+#[cfg(any(feature = "embedded-fonts", target_arch = "wasm32"))]
 fn push_embedded_fonts(book: &mut typst::text::FontBook, fonts: &mut Vec<FontSlot>) {
     for (font, info) in typst_kit::fonts::embedded() {
         book.push(info);
         fonts.push(FontSlot::loaded(font));
     }
 }
+
+#[cfg(all(not(feature = "embedded-fonts"), not(target_arch = "wasm32")))]
+fn push_embedded_fonts(_book: &mut typst::text::FontBook, _fonts: &mut Vec<FontSlot>) {}
 
 /// Document- or caller-provided in-memory faces followed by cached fallback
 /// slots. The combined book preserves the same priority order that native
@@ -1145,7 +1150,8 @@ impl MinimalWorld {
         }
     }
 
-    /// Create a new `MinimalWorld` with embedded fonts only (no system font search).
+    /// Create a world without system font discovery, using the configured
+    /// Typst embedded set (empty on native builds without `embedded-fonts`).
     ///
     /// Uses a process-wide cache for embedded font data. This is the constructor
     /// used on WASM targets where system font discovery is not available.
@@ -1159,7 +1165,7 @@ impl MinimalWorld {
     }
 
     /// Create an embedded-only world with per-conversion in-memory faces at
-    /// higher priority than Typst's built-in fallback fonts.
+    /// higher priority than the configured Typst embedded set.
     #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
     fn new_embedded_with_fonts(
         source_text: &str,
@@ -1314,15 +1320,16 @@ mod tests;
 #[cfg(not(target_arch = "wasm32"))]
 fn best_face(family: &str) -> Option<typst::text::Font> {
     let data = active_font_data();
-    first_face_in_chain(family, |candidate| {
+    first_face_in_chain(family, typst::text::FontVariant::default(), |candidate| {
         select_face_index(&data, candidate)
             .and_then(|index| data.fonts.get(index))
             .and_then(|slot| slot.get())
     })
 }
 
-/// The first face the alias and substitute chain of `family` resolves to,
-/// taking each candidate's conversion-local in-memory face before `on_disk`.
+/// The first face the alias and substitute chain of `family` resolves to at
+/// `variant`'s weight, taking each candidate's conversion-local in-memory
+/// face before `on_disk`.
 ///
 /// This is the order the compiler selects in: `MinimalWorld` prepends the
 /// conversion's in-memory faces to the same fallback book, so a family held in
@@ -1333,19 +1340,22 @@ fn best_face(family: &str) -> Option<typst::text::Font> {
 /// and every metric lookup answered with Noto Serif's line box even when the
 /// exact face was supplied on `--font-path` and painted the run, seating the
 /// block two points high (issue #1629).
+///
+/// `on_disk` must itself resolve `candidate` at `variant`'s weight — this
+/// only fixes the in-memory step's weight, since the disk step's lookup
+/// (a plain book `select`, or the shadowed-system-face walk in
+/// [`line_metric_face`]) differs by caller.
 #[cfg(not(target_arch = "wasm32"))]
 fn first_face_in_chain(
     family: &str,
+    variant: typst::text::FontVariant,
     on_disk: impl Fn(&str) -> Option<typst::text::Font>,
 ) -> Option<typst::text::Font> {
     super::font_subst::family_candidates(family)
         .iter()
         .find_map(|candidate| {
-            super::font_subst::active_in_memory_font_named(
-                candidate,
-                typst::text::FontVariant::default(),
-            )
-            .or_else(|| on_disk(candidate))
+            super::font_subst::active_in_memory_font_named(candidate, variant)
+                .or_else(|| on_disk(candidate))
         })
 }
 
@@ -1394,7 +1404,7 @@ fn active_font_data() -> Arc<CachedFontData> {
 #[cfg(not(target_arch = "wasm32"))]
 fn line_metric_face(family: &str) -> Option<typst::text::Font> {
     let data = active_font_data();
-    first_face_in_chain(family, |candidate| {
+    first_face_in_chain(family, typst::text::FontVariant::default(), |candidate| {
         let shaped_index: usize = select_face_index(&data, candidate)?;
         line_metric_face_at(
             &data,
@@ -1706,8 +1716,8 @@ pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
     Some((top_em, hhea_pitch_em - top_em, hhea_pitch_em))
 }
 
-/// Maximum horizontal advance over the digits U+0030..=U+0039 of the best
-/// face for `family`, in em units.
+/// Maximum horizontal advance over the digits U+0030..=U+0039 of the face
+/// for `family` at the requested weight, in em units.
 ///
 /// Excel derives every column print metric from this value of the face it
 /// resolves for the workbook Normal font: 17 one-factor native Excel-for-Mac
@@ -1716,13 +1726,29 @@ pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
 /// This resolves families outside the parser's reference table — the same
 /// alias and substitute chain rendering uses, so the metric tracks the face
 /// the glyphs will actually come from.
+///
+/// `bold` must reflect the *cell's own* weight, not just its family: a
+/// family's digits are not always the same width at every weight. Cambria's
+/// bold digits measure 1213/2048em against 1134/2048em regular (~7% wider)
+/// and Verdana's 1456/2048em against 1302/2048em (~12%), while Calibri,
+/// Arial and Times New Roman keep identical digit widths across weight. A
+/// 42pt bold Cambria title priced on its regular digit width undershoots its
+/// whole-point left inset by a full step, 7pt instead of 8pt, against a
+/// native Excel for Mac export (issue #1623).
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) fn max_digit_advance_em(family: &str) -> Option<f64> {
-    use std::collections::HashMap;
-    use std::sync::Mutex;
-    static ADVANCE_CACHE: OnceLock<Mutex<HashMap<String, Option<f64>>>> = OnceLock::new();
+pub(crate) fn max_digit_advance_em(family: &str, bold: bool) -> Option<f64> {
+    static ADVANCE_CACHE: OnceLock<FaceAdvanceCache> = OnceLock::new();
 
-    face_advance_em(family, &ADVANCE_CACHE, |font| {
+    let variant = typst::text::FontVariant {
+        weight: if bold {
+            typst::text::FontWeight::BOLD
+        } else {
+            typst::text::FontWeight::REGULAR
+        },
+        ..typst::text::FontVariant::default()
+    };
+
+    face_advance_em(family, variant, &ADVANCE_CACHE, |font| {
         let instance = measured_instance(font);
         let ttf = instance.ttf();
         let upem: f64 = f64::from(ttf.units_per_em()).max(1.0);
@@ -1739,7 +1765,7 @@ pub(crate) fn max_digit_advance_em(family: &str) -> Option<f64> {
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn max_digit_advance_em(_family: &str) -> Option<f64> {
+pub(crate) fn max_digit_advance_em(_family: &str, _bold: bool) -> Option<f64> {
     None
 }
 
@@ -1754,18 +1780,21 @@ pub(crate) fn max_digit_advance_em(_family: &str) -> Option<f64> {
 /// will actually come from.
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn space_advance_em(family: &str) -> Option<f64> {
-    use std::collections::HashMap;
-    use std::sync::Mutex;
-    static ADVANCE_CACHE: OnceLock<Mutex<HashMap<String, Option<f64>>>> = OnceLock::new();
+    static ADVANCE_CACHE: OnceLock<FaceAdvanceCache> = OnceLock::new();
 
-    face_advance_em(family, &ADVANCE_CACHE, |font| {
-        let instance = measured_instance(font);
-        let ttf = instance.ttf();
-        let upem: f64 = f64::from(ttf.units_per_em()).max(1.0);
-        ttf.glyph_index(' ')
-            .and_then(|glyph| ttf.glyph_hor_advance(glyph))
-            .map(|advance| f64::from(advance) / upem)
-    })
+    face_advance_em(
+        family,
+        typst::text::FontVariant::default(),
+        &ADVANCE_CACHE,
+        |font| {
+            let instance = measured_instance(font);
+            let ttf = instance.ttf();
+            let upem: f64 = f64::from(ttf.units_per_em()).max(1.0);
+            ttf.glyph_index(' ')
+                .and_then(|glyph| ttf.glyph_hor_advance(glyph))
+                .map(|advance| f64::from(advance) / upem)
+        },
+    )
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -1773,8 +1802,12 @@ pub(crate) fn space_advance_em(_family: &str) -> Option<f64> {
     None
 }
 
-/// One `hmtx`-derived metric of the face `family` resolves to, cached per
-/// family in `cache`.
+/// A cached `hmtx`-derived metric, keyed by `(family, is_bold)`.
+#[cfg(not(target_arch = "wasm32"))]
+type FaceAdvanceCache = std::sync::Mutex<std::collections::HashMap<(String, bool), Option<f64>>>;
+
+/// One `hmtx`-derived metric of the face `family` resolves to at `variant`'s
+/// weight, cached per `(family, is_bold)` in `cache`.
 ///
 /// Shared by the digit and space metrics so both walk the same resolution
 /// order as [`best_face`]: the conversion's in-memory fonts and search paths
@@ -1782,18 +1815,33 @@ pub(crate) fn space_advance_em(_family: &str) -> Option<f64> {
 #[cfg(not(target_arch = "wasm32"))]
 fn face_advance_em(
     family: &str,
-    cache: &'static OnceLock<std::sync::Mutex<std::collections::HashMap<String, Option<f64>>>>,
+    variant: typst::text::FontVariant,
+    cache: &'static OnceLock<FaceAdvanceCache>,
     advance_for: impl Fn(&typst::text::Font) -> Option<f64>,
 ) -> Option<f64> {
     use std::collections::HashMap;
     use std::sync::Mutex;
 
+    let is_bold: bool = variant.weight == typst::text::FontWeight::BOLD;
+
     if super::font_subst::active_font_search_paths().is_some() {
-        return best_face(family).and_then(|font| advance_for(&font));
+        let data = active_font_data();
+        // Shares `first_face_in_chain` with `best_face` (issue #1629's
+        // interleaved in-memory-then-disk order per candidate) but at the
+        // requested weight instead of the hardcoded regular those line-metric
+        // callers pin to, so this can never drift from that order the way two
+        // independent copies could.
+        return first_face_in_chain(family, variant, |candidate| {
+            data.book
+                .select(&candidate.to_lowercase(), variant)
+                .and_then(|index| data.fonts.get(index))
+                .and_then(|slot| slot.get())
+        })
+        .and_then(|font| advance_for(&font));
     }
 
     let cache = cache.get_or_init(|| Mutex::new(HashMap::new()));
-    let key: String = family.to_lowercase();
+    let key: (String, bool) = (family.to_lowercase(), is_bold);
     if let Some(cached) = cache
         .lock()
         .expect("face advance cache mutex should not be poisoned")
@@ -1807,12 +1855,7 @@ fn face_advance_em(
     let data = get_fonts_for_extra_paths(super::font_context::default_font_search_paths());
     let advance: Option<f64> = super::font_subst::family_candidates(family)
         .iter()
-        .find_map(|candidate| {
-            data.book.select(
-                &candidate.to_lowercase(),
-                typst::text::FontVariant::default(),
-            )
-        })
+        .find_map(|candidate| data.book.select(&candidate.to_lowercase(), variant))
         .and_then(|index| data.fonts.get(index))
         .and_then(|slot| slot.get())
         .and_then(|font| advance_for(&font));

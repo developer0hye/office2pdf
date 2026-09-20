@@ -1,0 +1,25 @@
+{
+  "review_date": "2026-09-20",
+  "candidate_source_commit": "0eda5833",
+  "reference_exporter": "Microsoft Excel for Mac 16.112 (retained original reference)",
+  "supplemental_exporter": "Microsoft Excel for Mac 16.113",
+  "sha256": {
+    "source": "2b4a2d8dceda58758593c88409875efbda05780559154c02bd13fef4f7a1c65b",
+    "reference_pdf": "7d7fd47175cfd0677716c69caa87e680a94d4b68b4b09c72e3afe07f3192838d",
+    "candidate_pdf": "1d551450bf9750d18d252e898bbaa60cb198c9702c42ed08723192dc6f92ef5f",
+    "candidate_binary": "77d28f982502926fa79ffcfbe361a889fe74a8897a5846ce03fe502327fc1450"
+  },
+  "page": 2,
+  "dpi": 300,
+  "crop_pixels": {
+    "x": 240,
+    "y": 700,
+    "width": 1750,
+    "height": 520
+  },
+  "fine_shift_pt": 0.5,
+  "tests": {
+    "library_passed": 3112
+  },
+  "limitations": "The 16.113 export preserves category-label horizontal coordinates but changes some vertical chart baselines and omits the selected-month circle. Historical before/after evidence retains the original 16.112 reference. Remaining deviations are tracked in the PR visual audit, including newly identified sparkline stroke coverage in #1784."
+}

@@ -12,7 +12,7 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 ## Features
 
 - **DOCX** — paragraphs, inline formatting (bold/italic/underline/color), tables, images, drawing shapes, ordered/nested lists, syntax-highlighted code, headers/footers, page setup
-- **PPTX** — slides, text boxes, shapes, tables (with theme-based table styles), images, slide masters, speaker notes, gradient backgrounds, shadow/reflection effects
+- **PPTX** — slides, text boxes, shapes, tables (with theme-based table styles), images, slide masters, speaker notes, gradient backgrounds, shadow/reflection effects; hidden slides are omitted by default and can be included explicitly
 - **XLSX** — sheets (hidden ones skipped, as Excel does), chartsheets (one page-sized chart each), cell formatting, merged cells, column widths, row heights, Excel tables (built-in style banding, header/foot rules, bold header), conditional formatting (DataBar, IconSet, and formula rules)
 - **PDF/A-2b** — archival-compliant output via `--pdf-a`
 - **Embedded font extraction** — fonts embedded in PPTX/DOCX are automatically extracted, deobfuscated, and used during conversion
@@ -28,6 +28,35 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 [dependencies]
 office2pdf = "0.7.0"
 ```
+
+### Native builds without Typst's bundled fonts
+
+The default `embedded-fonts` Cargo feature includes Typst's bundled font set.
+To omit that set (including `NewCM10-Regular.otf`) from a native build, disable
+default features. This option is available from the repository; it is not in
+0.7.0:
+
+```toml
+[dependencies]
+office2pdf = { git = "https://github.com/developer0hye/office2pdf", default-features = false }
+```
+
+For the CLI, build from a checkout:
+
+```sh
+cargo install --path crates/office2pdf-cli --locked --no-default-features
+```
+
+Native font discovery, document-embedded fonts, caller-provided fonts, and
+Office-specific bundled Noto/Selawik fallbacks remain available. Documents that
+use Typst's fonts may render differently; supply suitable fonts with
+`ConvertOptions::font_paths` / `font_bytes` (CLI: `--font-path`). Equations need
+a suitable math font installed when Typst's math fonts are omitted.
+
+Cargo features are additive: another dependency enabling
+`office2pdf/embedded-fonts` or `typst-kit/embedded-fonts` can include the assets
+again. WASM builds always retain Typst's bundled fonts because they cannot
+search system font directories.
 
 ### CLI
 
@@ -75,6 +104,7 @@ use office2pdf::config::{ConvertOptions, PaperSize};
 
 let options = ConvertOptions {
     paper_size: Some(PaperSize::A4),
+    include_hidden_slides: true,
     ..Default::default()
 };
 let result = office2pdf::convert_with_options("slides.pptx", &options).unwrap();
@@ -106,6 +136,7 @@ office2pdf *.docx --outdir pdfs/
 
 # With options
 office2pdf slides.pptx --paper a4 --landscape
+office2pdf slides.pptx --include-hidden-slides
 office2pdf spreadsheet.xlsx --sheets "Sheet1,Summary"
 office2pdf document.docx --pdf-a
 office2pdf report.docx --font-path /usr/share/fonts/custom
@@ -203,7 +234,8 @@ Native Rust callers can use the same per-conversion path through
 | `--landscape` | Force landscape orientation |
 | `--pdf-a` | Produce PDF/A-2b compliant output |
 | `--sheets <NAMES>` | XLSX sheet filter (comma-separated); the only way to print a hidden sheet |
-| `--slides <RANGE>` | PPTX slide range (e.g. `1-5` or `3`) |
+| `--slides <RANGE>` | PPTX slide range by source ordinal (e.g. `1-5` or `3`); hidden slides are omitted unless opted in |
+| `--include-hidden-slides` | Include PPTX slides marked `show="0"` or `show="false"` (default: omitted) |
 | `--font-path <DIR>` | Additional font directory override (repeatable) |
 
 ## Supported Formats

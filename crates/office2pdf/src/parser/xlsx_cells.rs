@@ -126,6 +126,21 @@ fn number_format_skip_width_glyphs(section: &str) -> String {
     reserved
 }
 
+/// The glyphs a right-aligned cell's selected number-format section reserves
+/// without painting them, or `None` when the section carries no underscore
+/// padding control.
+///
+/// Excel seats the visible text left of this reserve — a `_)` positive
+/// section holds room for the closing parenthesis its paired negative section
+/// prints, without printing one itself (issue #1631). The caller must not
+/// apply this to a cell [`numeric_overflow_replacement`] already replaced
+/// with hashes: that replacement already fills the cell's usable width.
+fn right_aligned_number_format_reserve_glyphs(format_code: &str, value: f64) -> Option<String> {
+    let section = selected_number_format_section(format_code, value)?;
+    let reserved = number_format_skip_width_glyphs(section);
+    (!reserved.is_empty()).then_some(reserved)
+}
+
 /// Reference advances for the issue #1263 face, from the macOS-shipped
 /// Trebuchet MS `hmtx` tables. This keeps the width gate deterministic on
 /// wasm and hosts without that Office face; other strings use the resolved
@@ -634,40 +649,78 @@ const CALIBRI_DIGIT_ADVANCE_EM: f64 = 0.506836;
 /// geometry per machine, while Excel's own print metric always comes from the
 /// face Excel resolves. The table also keeps wasm and font-less environments
 /// on the exact native-Excel numbers.
-pub(super) fn reference_digit_advance_em(family: &str) -> Option<f64> {
+///
+/// `bold` selects the cell's own weight. Calibri/Carlito, Arial/Helvetica/
+/// Liberation Sans, Times New Roman, and Courier New are read directly from
+/// Excel's own `arial.ttf`/`arialbd.ttf`, `times.ttf`/`timesbd.ttf`, and the
+/// system `Courier New.ttf`/`Courier New Bold.ttf` with `fontTools`: all four
+/// keep the identical digit width at both weights, so `bold` is a no-op for
+/// them. Cambria, Verdana, Segoe UI/Selawik, and Malgun Gothic are each
+/// measured to widen their digits when bold (issue #1623) and get their own
+/// bold entry; do not add a family here without measuring both weights first
+/// — the four no-op families are the exception, not the default.
+pub(super) fn reference_digit_advance_em(family: &str, bold: bool) -> Option<f64> {
     match family.to_ascii_lowercase().as_str() {
         "calibri" | "carlito" => Some(CALIBRI_DIGIT_ADVANCE_EM),
-        // Segoe UI and its OFL fallback Selawik both advance every decimal
-        // digit by 1104/2048em (issue #1472); their line metrics differ.
-        "segoe ui" | "selawik" => Some(0.5390625),
+        // Segoe UI and its OFL fallback Selawik both advance every regular
+        // decimal digit by 1104/2048em (issue #1472); their line metrics
+        // differ. Selawik's bold digits (1178/2048em) are read directly from
+        // this crate's own bundled `Selawik-Bold.ttf`; Segoe UI itself is not
+        // shipped on this platform to check, but shares Selawik's design and
+        // regular-weight figure, so the same bold/regular split is applied
+        // (issue #1623).
+        "segoe ui" | "selawik" => Some(if bold { 0.575195312500 } else { 0.5390625 }),
         "arial" | "helvetica" | "liberation sans" => Some(0.556152),
-        "verdana" => Some(0.635742),
+        // Verdana's bold digits (1456/2048em) are ~12% wider than regular
+        // (1302/2048em), read from Excel's own `Verdana Bold.ttf` (#1623).
+        "verdana" => Some(if bold { 0.7109375 } else { 0.635742 }),
         "courier new" => Some(0.600098),
         "times new roman" => Some(0.500000),
-        "malgun gothic" | "맑은 고딕" => Some(0.550781),
+        // Malgun Gothic's bold digits (1187/2048em) are ~5% wider than
+        // regular (1128/2048em), read from Excel's own `malgunbd.ttf`
+        // (issue #1623) — this family was already known not to share every
+        // metric across weight (issues #1097, #1199, #1208, #1627).
+        "malgun gothic" | "맑은 고딕" => Some(if bold { 0.579589843750 } else { 0.550781 }),
+        // Cambria's bold digits (1213/2048em) are ~7% wider than regular
+        // (1134/2048em), read from Excel's own `Cambriab.ttf`. A 42pt bold
+        // title priced on the regular figure undershot its whole-point left
+        // inset by a full step against a native Excel for Mac export
+        // (issue #1623).
+        "cambria" => Some(if bold { 0.59228515625 } else { 0.5537109375 }),
         _ => None,
     }
 }
 
-/// The maximum digit advance, in em, of the face `family` names: the
-/// reference table first, then the live face, then Excel's default Normal
-/// font. Shared by the column metric and the single-line width estimate so
-/// both price a family from the same number.
-pub(super) fn digit_advance_em(family: &str) -> f64 {
-    reference_digit_advance_em(family)
-        .or_else(|| crate::render::pdf::max_digit_advance_em(family))
+/// The maximum digit advance, in em, of the face `family` names at `bold`'s
+/// weight: the reference table first, then the live face, then Excel's
+/// default Normal font.
+///
+/// Shared by the column metric and the single-line width estimate, but not
+/// necessarily at the same `bold`: [`estimate_line_width_pt`] always passes
+/// `false`, since a single-line width estimate does not model bold's effect
+/// on digit advance, while the per-cell inset callers below pass the cell's
+/// real weight. Both callers still resolve the same family through the same
+/// lookup order.
+pub(super) fn digit_advance_em(family: &str, bold: bool) -> f64 {
+    reference_digit_advance_em(family, bold)
+        .or_else(|| crate::render::pdf::max_digit_advance_em(family, bold))
         .unwrap_or(CALIBRI_DIGIT_ADVANCE_EM)
 }
 
-/// Points Excel allots to one column character unit for the given Normal
-/// font: `round_half_up(max digit advance × size)` — an INTEGER point count.
+/// Points Excel allots to one column character unit for the given font:
+/// `round_half_up(max digit advance × size)` — an INTEGER point count.
 /// Measured on 17 one-factor native Excel-for-Mac probes (issue #621); the
 /// probe set discriminates this model from every integer-96dpi-pixel model
 /// (Calibri 10 → 5pt, where pixel-ceiling gave 7px = 5.25pt) and from other
 /// rounding modes (Times New Roman 13 = 6.500 → 7 kills half-even; Calibri 9
 /// and Verdana 11 kill truncation; Calibri 10 and Verdana 10 kill ceiling).
-pub(super) fn column_unit_pt(family: &str, size_pt: f64) -> f64 {
-    round_half_up_pt(digit_advance_em(family) * size_pt)
+///
+/// `bold` matters only for the per-cell inset callers below: the column
+/// width itself is always priced off the workbook Normal font, which this
+/// crate does not model as bold (issue #366 already excludes cell fonts from
+/// column width entirely).
+pub(super) fn column_unit_pt(family: &str, size_pt: f64, bold: bool) -> f64 {
+    round_half_up_pt(digit_advance_em(family, bold) * size_pt)
 }
 
 /// Points Excel ends a cell's text left of the cell's own right gridline.
@@ -677,8 +730,8 @@ pub(super) fn column_unit_pt(family: &str, size_pt: f64) -> f64 {
 /// this right side is one point behind [`cell_left_inset_pt`] at every family
 /// and size. [`aligned_cell_padding`] rebalances that asymmetric pair into
 /// equal sides for a centred cell while preserving its total width.
-pub(super) fn cell_right_inset_pt(family: &str, size_pt: f64) -> f64 {
-    (column_unit_pt(family, size_pt) / 4.0).ceil()
+pub(super) fn cell_right_inset_pt(family: &str, size_pt: f64, bold: bool) -> f64 {
+    (column_unit_pt(family, size_pt, bold) / 4.0).ceil()
 }
 
 /// Points Excel starts a cell's text right of the cell's own left gridline.
@@ -730,14 +783,26 @@ pub(super) fn cell_right_inset_pt(family: &str, size_pt: f64) -> f64 {
 /// both sides of the same step, has the right inset one point behind it at
 /// every size. [`aligned_cell_padding`] rebalances that asymmetric pair for a
 /// centred cell, preserving its total width while centring on the column.
-pub(super) fn cell_left_inset_pt(family: &str, size_pt: f64) -> f64 {
-    cell_right_inset_pt(family, size_pt) + 1.0
+///
+/// `bold` must be the cell's own weight: Calibri, Arial and Times New Roman
+/// keep the same digit width at every weight, but Cambria and Verdana do not
+/// (see [`reference_digit_advance_em`]), so a bold cell in one of those two
+/// prices a wider unit and can take a whole point more inset than a regular
+/// cell of the same family and size — measured on a 12-row native Excel for
+/// Mac probe of Cambria 11/24/36/42/48 regular vs bold (issue #1623): the
+/// step lands at 36 (6 vs 7) and 42 (7 vs 8), and coincides at 11, 24 and 48
+/// where the rounded whole-point unit happens to land in the same
+/// `ceil(unit / 4)` bracket either way.
+pub(super) fn cell_left_inset_pt(family: &str, size_pt: f64, bold: bool) -> f64 {
+    cell_right_inset_pt(family, size_pt, bold) + 1.0
 }
 
 /// The box of a cell laid out in `style`: the font the cell states, else the
 /// workbook Normal font it inherits, else Excel's own Calibri 11 default — the
 /// same fallback order the cell's runs resolve through. The vertical sides do
-/// not vary with the font; only the horizontal pair does (issues #1165, #1232).
+/// not vary with the font; only the horizontal pair does (issues #1165, #1232),
+/// and the horizontal pair also varies with the cell's own bold flag for a
+/// family whose digit advance changes with weight (issue #1623).
 fn styled_cell_padding(style: &TextStyle, normal_font: Option<&NormalFont>) -> Insets {
     let family: &str = style
         .font_family
@@ -748,14 +813,18 @@ fn styled_cell_padding(style: &TextStyle, normal_font: Option<&NormalFont>) -> I
         .font_size
         .or_else(|| normal_font.map(|font| font.size_pt))
         .unwrap_or(11.0);
+    let bold: bool = style.bold.unwrap_or(false);
     Insets {
-        left: cell_left_inset_pt(family, size_pt),
-        right: cell_right_inset_pt(family, size_pt),
+        left: cell_left_inset_pt(family, size_pt, bold),
+        right: cell_right_inset_pt(family, size_pt, bold),
         ..XLSX_CELL_PADDING
     }
 }
 
 /// The table-level cell box inherited by cells in the workbook Normal font.
+/// The Normal font's own weight is not modelled — [`resolve_column_unit_pt`]
+/// already excludes cell fonts from column pricing entirely (issue #366),
+/// and no probe has measured a bold Normal font's column unit.
 pub(super) fn default_cell_padding(normal_font: Option<&NormalFont>) -> Insets {
     styled_cell_padding(&TextStyle::default(), normal_font)
 }
@@ -943,7 +1012,10 @@ pub(super) fn sheet_column_unit_pt(sheet: &umya_spreadsheet::Worksheet) -> f64 {
         .map(|(family, _)| family);
 
     match dominant_family {
-        Some(family) => column_unit_pt(&family, 11.0),
+        // Bold is not modelled for this fallback: it approximates the
+        // workbook Normal font, which column pricing never treats as bold
+        // (see `resolve_column_unit_pt`).
+        Some(family) => column_unit_pt(&family, 11.0, false),
         // No fonts at all: keep the legacy 7px × 0.75 = 5.25pt UNIT (issue
         // #716). Only the unit survives from the old model — the widths built
         // on it still change under #621: default columns move from 44.2575pt
@@ -1431,7 +1503,11 @@ fn estimate_text_width_pt(runs: &[Run]) -> f64 {
 /// on Excel's default Normal font, the same last resort [`column_unit_pt`]
 /// takes.
 pub(super) fn estimate_line_width_pt(text: &str, family: Option<&str>, font_size: f64) -> f64 {
-    let digit_advance_em: f64 = family.map_or(CALIBRI_DIGIT_ADVANCE_EM, digit_advance_em);
+    // A single-line width estimate, not the cell inset: bold's effect on
+    // digit advance (issue #1623) is not modelled here.
+    let digit_advance_em: f64 = family.map_or(CALIBRI_DIGIT_ADVANCE_EM, |family| {
+        digit_advance_em(family, false)
+    });
     text.chars()
         .map(|c| match c {
             ' '..='~' => {
@@ -2955,10 +3031,12 @@ pub(super) fn build_rows_for_range(
                 (1, 1)
             };
 
+            let mut sheet_number_format_reserved_glyphs: Option<String> = None;
             if let Some(cell) = umya_cell
                 && let Some(number) = cell.get_value_number()
                 && let Some(number_format) = cell.get_style().get_number_format()
             {
+                let format_code: &str = number_format.get_format_code();
                 let cell_width_pt: f64 = (col_idx..col_idx + col_span)
                     .filter_map(|col| {
                         ctx.column_widths
@@ -2966,18 +3044,25 @@ pub(super) fn build_rows_for_range(
                             .copied()
                     })
                     .sum();
-                if let Some(replacement) = numeric_overflow_replacement(
+                let overflow_replacement = numeric_overflow_replacement(
                     &value,
                     number,
-                    number_format.get_format_code(),
+                    format_code,
                     &text_style,
                     ctx.normal_font.as_ref(),
                     cell_width_pt,
                     cell_padding,
                     cell_indent_pt,
-                ) && let Some(run) = runs.first_mut()
+                );
+                if let Some(replacement) = &overflow_replacement
+                    && let Some(run) = runs.first_mut()
                 {
-                    run.text = replacement;
+                    run.text = replacement.clone();
+                } else if overflow_replacement.is_none()
+                    && matches!(paragraph_alignment, Some(crate::ir::Alignment::Right))
+                {
+                    sheet_number_format_reserved_glyphs =
+                        right_aligned_number_format_reserve_glyphs(format_code, number);
                 }
             }
 
@@ -3017,6 +3102,8 @@ pub(super) fn build_rows_for_range(
                 vec![Block::Paragraph(Paragraph {
                     style: ParagraphStyle {
                         alignment: paragraph_alignment,
+                        sheet_number_format_reserved_glyphs: sheet_number_format_reserved_glyphs
+                            .map(String::into_boxed_str),
                         ..ParagraphStyle::default()
                     },
                     runs,
@@ -3097,7 +3184,9 @@ pub(super) fn resolve_column_unit_pt(
     normal_font: Option<&NormalFont>,
 ) -> f64 {
     normal_font
-        .map(|font| column_unit_pt(font.resolved_family(), font.size_pt))
+        // Bold is not modelled here: `NormalFont` carries no weight, and cell
+        // fonts do not participate in column pricing at all (issue #366).
+        .map(|font| column_unit_pt(font.resolved_family(), font.size_pt, false))
         .unwrap_or_else(|| sheet_column_unit_pt(sheet))
 }
 
@@ -3379,7 +3468,10 @@ pub(super) fn prepare_sheet_context(
 
 #[cfg(test)]
 mod number_format_tests {
-    use super::{literal_zero_section_text, numeric_overflow_replacement};
+    use super::{
+        literal_zero_section_text, numeric_overflow_replacement,
+        right_aligned_number_format_reserve_glyphs,
+    };
     use crate::ir::{Insets, TextStyle};
 
     fn issue_1263_style() -> TextStyle {
@@ -3468,5 +3560,58 @@ mod number_format_tests {
             None
         );
         assert_eq!(literal_zero_section_text(r#"0;-0;[h]" hours""#), None);
+    }
+
+    /// Issue #1631: a `_)` positive section reserves the closing parenthesis
+    /// its paired negative section prints, without painting one itself.
+    #[test]
+    fn a_padded_positive_section_reserves_its_hidden_glyph() {
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs("#,##0_);[Red](#,##0)", 1_225.0),
+            Some(")".to_string()),
+        );
+    }
+
+    /// The reserved glyph is whatever character follows the `_`, not always
+    /// `)` — a `_-` control reserves a hyphen-minus.
+    #[test]
+    fn the_reserved_glyph_follows_whichever_character_the_section_names() {
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs("#,##0_-;[Red](#,##0)", 1_225.0),
+            Some("-".to_string()),
+        );
+    }
+
+    /// A section with no underscore control reserves nothing: the built-in
+    /// 38 format's own negative and zero sections already print every glyph
+    /// they need (the parenthesised negative, the escaped literal dash), so
+    /// they must not also carry the positive section's reserve.
+    #[test]
+    fn a_section_without_underscore_padding_reserves_nothing() {
+        let format = r"#,##0_);[Red]\(#,##0\);\-\ \ ";
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs(format, -771.0),
+            None,
+            "the parenthesised negative section already prints its own )",
+        );
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs(format, 0.0),
+            None,
+            "the escaped literal zero section prints every glyph it needs",
+        );
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs("#,##0", 1_225.0),
+            None,
+        );
+    }
+
+    /// A `*` fill control repeats a character to stretch across the column;
+    /// it is not a hidden-glyph reserve and must not be conflated with `_`.
+    #[test]
+    fn an_asterisk_fill_control_reserves_nothing() {
+        assert_eq!(
+            right_aligned_number_format_reserve_glyphs("#,##0*x", 1_225.0),
+            None,
+        );
     }
 }

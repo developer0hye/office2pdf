@@ -3908,7 +3908,7 @@ fn is_eojeol_delimiter(ch: char) -> bool {
 /// compatibility jamo. Han and kana are deliberately absent — Chinese and
 /// Japanese really do break between characters, and framing them would
 /// destroy correct output.
-fn is_hangul(ch: char) -> bool {
+pub(super) fn is_hangul(ch: char) -> bool {
     matches!(ch as u32, 0x1100..=0x11FF | 0x3130..=0x318F | 0xAC00..=0xD7A3)
 }
 
@@ -5309,7 +5309,11 @@ pub(super) fn with_sheet_advance_grid<T>(
     })
 }
 
-fn sheet_advance_grid_scale() -> Option<f64> {
+/// Whether codegen is currently inside a sheet's grid — [`with_sheet_advance_grid`]'s
+/// active scope. Excel's own text engine facts (like issue #1627's Hangul
+/// substitution weight) must not leak onto DOCX/PPTX tables, which share the
+/// same cell-emission code but never enter this scope.
+pub(super) fn sheet_advance_grid_scale() -> Option<f64> {
     SHEET_ADVANCE_GRID_SCALE.with(std::cell::Cell::get)
 }
 
@@ -5379,6 +5383,12 @@ fn sheet_advance_grid_tracking_pt(style: &TextStyle, text: &str) -> Option<f64> 
 /// measured right-aligned origin residual run by run from this value (issue
 /// #1233). Centred lines take no reserve: their whole-point origin is seated
 /// by [`centered_sheet_line_start_shift_pt`] instead (issue #1600).
+///
+/// A cell whose number-format section reserves glyphs it never paints (a
+/// `_)` positive section holding room for its paired negative section's
+/// closing parenthesis) adds their full rounded advance on top: Typst draws
+/// none of that width naturally, unlike the visible run's own final glyph
+/// above, which only needs its rounding delta (issue #1631).
 pub(super) fn sheet_trailing_advance_space_pt(style: &ParagraphStyle, runs: &[Run]) -> Option<f64> {
     let scale: f64 = sheet_advance_grid_scale()?;
     if !matches!(style.alignment, Some(Alignment::Right)) {
@@ -5414,7 +5424,20 @@ pub(super) fn sheet_trailing_advance_space_pt(style: &ParagraphStyle, runs: &[Ru
     let natural_pt: f64 = advances_em.last()? * size_pt;
     let rounded_pt: f64 =
         round_half_up_to_grid(advances_em.last()? * sheet_size_pt, SHEET_ADVANCE_GRID_PT) * scale;
-    let space_pt: f64 = rounded_pt - natural_pt;
+    let mut space_pt: f64 = rounded_pt - natural_pt;
+
+    if let Some(reserved_glyphs) = style.sheet_number_format_reserved_glyphs.as_deref()
+        && let Some(reserved_advances_em) =
+            sheet_advance_grid_glyph_advances_em(&run.style, reserved_glyphs)
+    {
+        space_pt += reserved_advances_em
+            .iter()
+            .map(|advance| {
+                round_half_up_to_grid(advance * sheet_size_pt, SHEET_ADVANCE_GRID_PT) * scale
+            })
+            .sum::<f64>();
+    }
+
     (space_pt != 0.0).then_some(space_pt)
 }
 

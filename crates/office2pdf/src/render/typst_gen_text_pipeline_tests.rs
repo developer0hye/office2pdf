@@ -3075,6 +3075,62 @@ fn test_right_aligned_sheet_cell_trailing_advance_can_narrow_the_line() {
     );
 }
 
+/// A cell whose number-format section reserves a hidden trailing glyph (a
+/// `_)` positive section holding room for its paired negative section's
+/// closing parenthesis) adds that glyph's *full* rounded advance, not a
+/// rounding delta: Typst never draws any of its width, unlike the visible
+/// run's own last glyph (issue #1631).
+///
+/// Libertinus Serif's `l` advances 0.264em: 2.64pt at 10pt, rounding to a
+/// full 3pt reserve. Combined with "O"'s own -0.02pt trailing-advance delta
+/// (the case above), the line reserves 2.98pt.
+#[test]
+fn test_right_aligned_sheet_cell_adds_the_number_format_reserved_glyph_advance() {
+    let mut page = sheet_page_with_aligned_cell(
+        "O",
+        TextStyle {
+            font_family: Some("Libertinus Serif".to_string()),
+            font_size: Some(10.0),
+            ..TextStyle::default()
+        },
+        Some(Alignment::Right),
+    );
+    let Page::Sheet(sheet) = &mut page else {
+        unreachable!("sheet_page_with_aligned_cell returns a sheet")
+    };
+    let Block::Paragraph(paragraph) = &mut sheet.table.rows[0].cells[0].content[0] else {
+        unreachable!("sheet_page_with_aligned_cell always emits a paragraph")
+    };
+    paragraph.style.sheet_number_format_reserved_glyphs = Some("l".to_string().into_boxed_str());
+
+    let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+    assert!(
+        source.contains("#h(2.98pt)"),
+        "O's -0.02pt delta plus l's full 3pt reserve should total 2.98pt: {source}"
+    );
+}
+
+/// A cell with no number-format reserve keeps only its own trailing-advance
+/// delta — an empty reserve must not silently add a spurious `#h`.
+#[test]
+fn test_right_aligned_sheet_cell_without_a_number_format_reserve_is_unaffected() {
+    let doc = make_doc(vec![sheet_page_with_aligned_cell(
+        "O",
+        TextStyle {
+            font_family: Some("Libertinus Serif".to_string()),
+            font_size: Some(10.0),
+            ..TextStyle::default()
+        },
+        Some(Alignment::Right),
+    )]);
+
+    let source = generate_typst(&doc).unwrap().source;
+    assert!(
+        source.contains("#h(-0.02pt)"),
+        "no number-format reserve was set, so only O's own delta should show: {source}"
+    );
+}
+
 /// Width cannot move a left-aligned origin, and Excel separately snaps a
 /// centred origin to a whole point. Keep the measured issue #1233 scope on
 /// right alignment instead of moving either unaffected class.

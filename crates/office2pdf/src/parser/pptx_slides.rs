@@ -421,8 +421,8 @@ fn is_hidden_slide(slide_xml: &str) -> bool {
 }
 
 /// Parse a single slide from the archive, returning a Page or an error.
-/// Returns `Ok(None)` for hidden slides, which PowerPoint excludes from
-/// PDF export.
+/// Returns `Ok(None)` for hidden slides when `include_hidden_slides` is false,
+/// which matches PowerPoint's default PDF export behavior.
 ///
 /// Resolves the inheritance chain (slide -> layout -> master) and
 /// prepends master/layout elements behind slide elements.
@@ -433,6 +433,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
     slide_size: PageSize,
     presentation: &PresentationResources<'_>,
     archive: &mut ZipArchive<R>,
+    include_hidden_slides: bool,
 ) -> Result<Option<(Page, Vec<ConvertWarning>)>, ConvertError> {
     let PresentationResources {
         theme,
@@ -441,7 +442,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
     } = *presentation;
     let chain: SlideInheritanceChain = resolve_inheritance_chain(slide_path, theme, archive)?;
 
-    if is_hidden_slide(&chain.slide_xml) {
+    if !include_hidden_slides && is_hidden_slide(&chain.slide_xml) {
         tracing::debug!(slide = slide_label, "skipping hidden slide");
         return Ok(None);
     }

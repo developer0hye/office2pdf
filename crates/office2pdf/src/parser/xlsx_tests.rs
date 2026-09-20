@@ -273,21 +273,21 @@ fn test_sheet_uses_dominant_carlito_font_for_column_metrics() {
 /// truncation, Calibri 10 and Verdana 10 kill ceiling.
 #[test]
 fn test_column_unit_pt_is_integer_points_from_digit_advance() {
-    assert_eq!(column_unit_pt("Calibri", 9.0), 5.0);
-    assert_eq!(column_unit_pt("Calibri", 10.0), 5.0);
-    assert_eq!(column_unit_pt("Calibri", 11.0), 6.0);
-    assert_eq!(column_unit_pt("Calibri", 12.0), 6.0);
-    assert_eq!(column_unit_pt("Arial", 10.0), 6.0);
-    assert_eq!(column_unit_pt("Arial", 12.0), 7.0);
-    assert_eq!(column_unit_pt("Verdana", 10.0), 6.0);
-    assert_eq!(column_unit_pt("Verdana", 11.0), 7.0);
-    assert_eq!(column_unit_pt("Times New Roman", 12.0), 6.0);
-    assert_eq!(column_unit_pt("Times New Roman", 13.0), 7.0);
-    assert_eq!(column_unit_pt("Courier New", 10.0), 6.0);
-    assert_eq!(column_unit_pt("Courier New", 12.0), 7.0);
-    assert_eq!(column_unit_pt("Malgun Gothic", 10.0), 6.0);
-    assert_eq!(column_unit_pt("Malgun Gothic", 11.0), 6.0);
-    assert_eq!(column_unit_pt("Segoe UI", 10.0), 5.0);
+    assert_eq!(column_unit_pt("Calibri", 9.0, false), 5.0);
+    assert_eq!(column_unit_pt("Calibri", 10.0, false), 5.0);
+    assert_eq!(column_unit_pt("Calibri", 11.0, false), 6.0);
+    assert_eq!(column_unit_pt("Calibri", 12.0, false), 6.0);
+    assert_eq!(column_unit_pt("Arial", 10.0, false), 6.0);
+    assert_eq!(column_unit_pt("Arial", 12.0, false), 7.0);
+    assert_eq!(column_unit_pt("Verdana", 10.0, false), 6.0);
+    assert_eq!(column_unit_pt("Verdana", 11.0, false), 7.0);
+    assert_eq!(column_unit_pt("Times New Roman", 12.0, false), 6.0);
+    assert_eq!(column_unit_pt("Times New Roman", 13.0, false), 7.0);
+    assert_eq!(column_unit_pt("Courier New", 10.0, false), 6.0);
+    assert_eq!(column_unit_pt("Courier New", 12.0, false), 7.0);
+    assert_eq!(column_unit_pt("Malgun Gothic", 10.0, false), 6.0);
+    assert_eq!(column_unit_pt("Malgun Gothic", 11.0, false), 6.0);
+    assert_eq!(column_unit_pt("Segoe UI", 10.0, false), 5.0);
 }
 
 /// The reference digit advances are the real `hmtx` maxima over U+0030..=0039
@@ -298,42 +298,95 @@ fn test_column_unit_pt_is_integer_points_from_digit_advance() {
 /// is 0.556em against Calibri's 0.5068) cannot shift column geometry.
 #[test]
 fn test_reference_digit_advance_em_pins_excel_face_metrics() {
-    let calibri: f64 = reference_digit_advance_em("Calibri").unwrap();
+    let calibri: f64 = reference_digit_advance_em("Calibri", false).unwrap();
     assert!((calibri - 0.506836).abs() < 1e-6);
     assert_eq!(
-        reference_digit_advance_em("Carlito"),
-        reference_digit_advance_em("Calibri"),
+        reference_digit_advance_em("Carlito", false),
+        reference_digit_advance_em("Calibri", false),
         "Carlito is metrically identical to Calibri"
     );
-    let arial: f64 = reference_digit_advance_em("Arial").unwrap();
+    let arial: f64 = reference_digit_advance_em("Arial", false).unwrap();
     assert!((arial - 0.556152).abs() < 1e-6);
-    let verdana: f64 = reference_digit_advance_em("Verdana").unwrap();
+    let verdana: f64 = reference_digit_advance_em("Verdana", false).unwrap();
     assert!((verdana - 0.635742).abs() < 1e-6);
-    let times: f64 = reference_digit_advance_em("Times New Roman").unwrap();
+    let times: f64 = reference_digit_advance_em("Times New Roman", false).unwrap();
     assert!((times - 0.500000).abs() < 1e-6);
-    let courier: f64 = reference_digit_advance_em("Courier New").unwrap();
+    let courier: f64 = reference_digit_advance_em("Courier New", false).unwrap();
     assert!((courier - 0.600098).abs() < 1e-6);
     // The repo's previous 0.529em Malgun estimate was wrong: the real face
     // advances 0.550781em (issue #621 probe artifacts).
-    let malgun: f64 = reference_digit_advance_em("Malgun Gothic").unwrap();
+    let malgun: f64 = reference_digit_advance_em("Malgun Gothic", false).unwrap();
     assert!((malgun - 0.550781).abs() < 1e-6);
     assert_eq!(
-        reference_digit_advance_em("맑은 고딕"),
-        reference_digit_advance_em("Malgun Gothic"),
+        reference_digit_advance_em("맑은 고딕", false),
+        reference_digit_advance_em("Malgun Gothic", false),
         "the localized Malgun name must map to the same face"
     );
-    let segoe: f64 = reference_digit_advance_em("Segoe UI").unwrap();
+    let segoe: f64 = reference_digit_advance_em("Segoe UI", false).unwrap();
     assert!((segoe - 0.5390625).abs() < 1e-6);
     assert_eq!(
-        reference_digit_advance_em("Selawik"),
+        reference_digit_advance_em("Selawik", false),
         Some(segoe),
         "Selawik shares Segoe UI's decimal digit advance"
     );
     assert_eq!(
-        reference_digit_advance_em("Definitely Not A Font"),
+        reference_digit_advance_em("Definitely Not A Font", false),
         None,
         "unknown families fall through to live font resolution"
     );
+}
+
+/// Cambria, Verdana, Segoe UI/Selawik, and Malgun Gothic are the reference
+/// families measured to advance their digits differently at bold than at
+/// regular (issue #1623), read from Excel's own `Cambriab.ttf`,
+/// `Verdana Bold.ttf`, and `malgunbd.ttf`, and from this crate's own bundled
+/// `Selawik-Bold.ttf` (Segoe UI itself is not shipped on the measuring
+/// platform). Calibri, Arial, Times New Roman, and Courier New are read from
+/// Excel's own regular/bold pairs and keep the same digit width at both
+/// weights, so `bold` must be a no-op for them.
+#[test]
+fn test_reference_digit_advance_em_is_bold_aware_only_where_measured() {
+    let cambria_regular: f64 = reference_digit_advance_em("Cambria", false).unwrap();
+    let cambria_bold: f64 = reference_digit_advance_em("Cambria", true).unwrap();
+    assert!((cambria_regular - 0.5537109375).abs() < 1e-9);
+    assert!((cambria_bold - 0.59228515625).abs() < 1e-9);
+    assert!(cambria_bold > cambria_regular);
+
+    let verdana_regular: f64 = reference_digit_advance_em("Verdana", false).unwrap();
+    let verdana_bold: f64 = reference_digit_advance_em("Verdana", true).unwrap();
+    assert!((verdana_regular - 0.635742).abs() < 1e-6);
+    assert!((verdana_bold - 0.7109375).abs() < 1e-9);
+    assert!(verdana_bold > verdana_regular);
+
+    let selawik_regular: f64 = reference_digit_advance_em("Selawik", false).unwrap();
+    let selawik_bold: f64 = reference_digit_advance_em("Selawik", true).unwrap();
+    assert!((selawik_regular - 0.5390625).abs() < 1e-9);
+    assert!((selawik_bold - 0.575195312500).abs() < 1e-9);
+    assert!(selawik_bold > selawik_regular);
+    assert_eq!(
+        reference_digit_advance_em("Segoe UI", true),
+        Some(selawik_bold),
+        "Segoe UI shares Selawik's bold digit advance too"
+    );
+
+    let malgun_regular: f64 = reference_digit_advance_em("Malgun Gothic", false).unwrap();
+    let malgun_bold: f64 = reference_digit_advance_em("Malgun Gothic", true).unwrap();
+    assert!((malgun_regular - 0.550781).abs() < 1e-6);
+    assert!((malgun_bold - 0.579589843750).abs() < 1e-9);
+    assert!(malgun_bold > malgun_regular);
+    assert_eq!(
+        reference_digit_advance_em("맑은 고딕", true),
+        Some(malgun_bold),
+        "the localized Malgun name must map to the same bold face"
+    );
+
+    for family in ["Calibri", "Arial", "Times New Roman", "Courier New"] {
+        assert_eq!(
+            reference_digit_advance_em(family, false),
+            reference_digit_advance_em(family, true),
+            "{family}'s digits are measured equal at both weights"
+        );
+    }
 }
 
 /// Families outside the reference table resolve their digit advance from the
@@ -343,14 +396,14 @@ fn test_reference_digit_advance_em_pins_excel_face_metrics() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn test_max_digit_advance_em_reads_real_face_hmtx() {
-    let advance: f64 = crate::render::pdf::max_digit_advance_em("Libertinus Serif")
+    let advance: f64 = crate::render::pdf::max_digit_advance_em("Libertinus Serif", false)
         .expect("the embedded Libertinus Serif face must resolve");
     assert!(
         (advance - 0.465).abs() < 1e-6,
         "Libertinus Serif digit advance should be 0.465em, got {advance}"
     );
     // And the column metric consumes it: round(0.465 × 11pt) = 5pt.
-    assert_eq!(column_unit_pt("Libertinus Serif", 11.0), 5.0);
+    assert_eq!(column_unit_pt("Libertinus Serif", 11.0, false), 5.0);
 }
 
 /// The single-line width estimate prices each ASCII character against the

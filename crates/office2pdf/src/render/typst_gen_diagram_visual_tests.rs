@@ -2608,6 +2608,94 @@ fn a_horizontal_bar_chart_puts_every_tick_on_the_geometry_it_marks() {
     assert_ticks_match_the_plot(ChartType::Bar, true);
 }
 
+/// The `dx:` an emitted horizontal category-label `#place` carries for the
+/// given category text, or `None` if no such line was written.
+fn category_label_box_dx(source: &str, category: &str) -> Option<f64> {
+    let suffix: String = format!("[{category}]]])");
+    let line: &str = source
+        .lines()
+        .find(|line| line.contains("align(right + horizon)") && line.ends_with(&suffix))?;
+    let after_dx: &str = line.split_once("dx: ")?.1;
+    after_dx.split_once("pt")?.0.parse::<f64>().ok()
+}
+
+#[test]
+fn an_excel_bar_category_label_sits_the_measured_offset_right_of_powerpoints() {
+    // Native Microsoft Excel 16.112 grid on
+    // `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx` (#1620), printed at
+    // this sheet's own 0.78 fit scale: patching the bar category axis size to
+    // 8, 10, 14 and 18pt and comparing a fresh native export against the
+    // PowerPoint-calibrated box shared by `chart_category_label_box_w` gives
+    // a label origin 0.2083, 0.2610, 0.3677 and 0.4733 **printed** points
+    // right of that box at each size. `framed_chart_source` below calls
+    // `generate_chart_in` directly, bypassing the fitted sheet's
+    // `#scale(print_scale)` wrapper `write_placed_sheet_anchor` applies at
+    // runtime, so `excel_dx - pptx_dx` here is a sheet-space (unscaled)
+    // delta; each literal is the printed measurement divided by this sheet's
+    // own 0.78 print scale to compare like with like. The two extreme sizes
+    // probed pin the measured rows themselves (not a recomputation of the
+    // constant under test) so a wrong slope or intercept in
+    // `EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM` fails this test — see
+    // `assets/validation/issue-1620/native-category-label-measurements.json`.
+    let print_scale: f64 = 0.78;
+    for (size_pt, measured_native_printed_dx0_pt) in [(8.0, 0.2083), (18.0, 0.4733)] {
+        let measured_native_sheet_dx0_pt: f64 = measured_native_printed_dx0_pt / print_scale;
+        let mut chart = two_series_bar_chart(Vec::new());
+        chart.categories = vec!["financial aid".to_string(), "other".to_string()];
+        chart.series[0].values = vec![10.0, 2.0];
+        chart.series.truncate(1);
+        chart.category_axis_text_style.size_pt = Some(size_pt);
+        chart.text_style.size_pt = Some(size_pt);
+
+        chart.host = crate::ir::ChartHost::Presentation;
+        let pptx_source: String = framed_chart_source(&chart, 400.0, 250.0);
+        chart.host = crate::ir::ChartHost::Spreadsheet;
+        let excel_source: String = framed_chart_source(&chart, 400.0, 250.0);
+
+        let pptx_dx: f64 = category_label_box_dx(&pptx_source, "financial aid")
+            .expect("PowerPoint host emits the category label");
+        let excel_dx: f64 = category_label_box_dx(&excel_source, "financial aid")
+            .expect("Excel host emits the category label");
+
+        assert!(
+            (excel_dx - pptx_dx - measured_native_sheet_dx0_pt).abs() < 0.01,
+            "at {size_pt}pt the Excel box must sit the native-measured \
+             {measured_native_sheet_dx0_pt}pt (sheet-space) right of \
+             PowerPoint's shared box; got excel={excel_dx} pptx={pptx_dx}"
+        );
+    }
+}
+
+#[test]
+fn an_excel_bar_category_label_with_no_declared_size_keeps_powerpoints_box() {
+    // No native export establishes this shift for implicit (file-default)
+    // text, so `excel_bar_category_label_x_shift_pt` deliberately stays at
+    // 0.0 when neither the category axis nor the chart space declares a
+    // size, mirroring `excel_category_label_y_shift_pt`'s same guard.
+    let mut chart = two_series_bar_chart(Vec::new());
+    chart.categories = vec!["financial aid".to_string(), "other".to_string()];
+    chart.series[0].values = vec![10.0, 2.0];
+    chart.series.truncate(1);
+    assert!(chart.category_axis_text_style.size_pt.is_none());
+    assert!(chart.text_style.size_pt.is_none());
+
+    chart.host = crate::ir::ChartHost::Presentation;
+    let pptx_source: String = framed_chart_source(&chart, 400.0, 250.0);
+    chart.host = crate::ir::ChartHost::Spreadsheet;
+    let excel_source: String = framed_chart_source(&chart, 400.0, 250.0);
+
+    let pptx_dx: f64 = category_label_box_dx(&pptx_source, "financial aid")
+        .expect("PowerPoint host emits the category label");
+    let excel_dx: f64 = category_label_box_dx(&excel_source, "financial aid")
+        .expect("Excel host emits the category label");
+
+    assert!(
+        (excel_dx - pptx_dx).abs() < 1e-9,
+        "an undeclared size must keep the shared PowerPoint box; \
+         got excel={excel_dx} pptx={pptx_dx}"
+    );
+}
+
 #[test]
 fn a_line_chart_puts_every_tick_on_the_geometry_it_marks() {
     // The line plot lays its categories out in bands of its own, so its ticks
@@ -5042,23 +5130,32 @@ fn a_powerpoint_horizontal_value_axis_keeps_native_label_gap_at_multiple_sizes()
 }
 
 #[test]
-fn an_excel_worksheet_horizontal_value_axis_uses_the_native_label_band() {
-    // A native Excel for Mac 16.112 export of the #1266 workbook places the
-    // zero-label baseline 15.03 chart points below the plot bottom. Translating
-    // that baseline through the same Typst text box gives a 7.65pt box-top gap;
-    // the old flat 4pt fallback left the printed baseline 3.65pt too high.
-    let chart = monthly_budget_income_chart();
-    let source = framed_chart_source(
-        &chart,
-        MONTHLY_BUDGET_CHART_FRAME.0,
-        MONTHLY_BUDGET_CHART_FRAME.1,
-    );
-    let plot_bottom = axis_plot_rect(&chart, MONTHLY_BUDGET_CHART_FRAME, false).3;
-    let actual_gap = horizontal_value_axis_label_y(&source, "0") - plot_bottom;
-    assert!(
-        (actual_gap - 7.65).abs() <= 0.01,
-        "the worksheet value-label gap is {actual_gap}pt, expected the native-derived 7.65pt; got:\n{source}"
-    );
+fn an_excel_worksheet_horizontal_value_axis_scales_its_label_gap_with_size() {
+    // Native Excel for Mac 16.112 exports of the `issue_1181_fit_to_height.xlsx`
+    // income bar chart (#1622), isolated to just the value-axis font size via
+    // the one-factor `office`-backend probes in `assets/validation/issue-1622/`.
+    // 8pt and 10pt are the only clean points -- native re-lays the plot itself
+    // past that, so no third point could confirm the fit is linear rather than
+    // merely a two-point line. Expected gaps translate the native measurement
+    // through the same Typst text box's own top-to-baseline offset for this
+    // Trebuchet MS face (see the constants' doc comment for the derivation).
+    let measurements = [(8.0, 8.131547), (10.0, 8.656938)];
+
+    for (size_pt, expected_gap) in measurements {
+        let mut chart = monthly_budget_income_chart();
+        chart.value_axis_text_style.size_pt = Some(size_pt);
+        let source = framed_chart_source(
+            &chart,
+            MONTHLY_BUDGET_CHART_FRAME.0,
+            MONTHLY_BUDGET_CHART_FRAME.1,
+        );
+        let plot_bottom = axis_plot_rect(&chart, MONTHLY_BUDGET_CHART_FRAME, false).3;
+        let actual_gap = horizontal_value_axis_label_y(&source, "0") - plot_bottom;
+        assert!(
+            (actual_gap - expected_gap).abs() <= 0.01,
+            "{size_pt}pt worksheet value-label gap is {actual_gap}pt, expected {expected_gap}pt; got:\n{source}"
+        );
+    }
 }
 
 #[test]
@@ -10255,6 +10352,12 @@ fn a_worksheet_bar_chart_seats_only_interior_category_labels_on_the_quantized_ba
             .lines()
             .find(|line| line.contains(&format!("[{label}]")))
             .unwrap_or_else(|| panic!("nothing prints {label} in:\n{source}"));
+        let placed = placed_box_holding(&source, label);
+        // Preserve #1620's native 10pt horizontal clearance in both baseline paths.
+        assert!(
+            (placed.dx - 0.2610 / 0.78).abs() < 0.01,
+            "{label}: horizontal clearance must survive the baseline correction: {placed:?}"
+        );
         let is_edge_row: bool = cat_index == 0 || cat_index + 1 == chart.categories.len();
         if is_edge_row {
             assert!(
@@ -10267,7 +10370,6 @@ fn a_worksheet_bar_chart_seats_only_interior_category_labels_on_the_quantized_ba
             line.contains("top-edge: 0pt, bottom-edge: 0pt"),
             "interior row {label} seats directly on its quantized baseline: {line}"
         );
-        let placed = placed_box_holding(&source, label);
         let row_top: f64 = plot_h - (cat_index as f64 + 1.0) * row;
         let expected = crate::render::typst_gen::diagrams::bar_category_label_baseline_pt(
             SHEET_FRAME_TOP_PT,

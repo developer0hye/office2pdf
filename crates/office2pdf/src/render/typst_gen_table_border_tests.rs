@@ -1964,6 +1964,66 @@ fn a_centered_merged_fill_uses_the_excel_background_band_for_its_text_seat() {
     );
 }
 
+/// A wrapped centred merge never reaches the unwrapped case #1493 probed:
+/// `compute_spill_width` (`xlsx_cells.rs`) returns `None` once `wrapText` is
+/// set, before the `col_span > 1` branch that returns `Some(merged_width)`
+/// for an unwrapped merge. Its line already lands on Excel's real position
+/// from the ordinary whole-point sheet seat alone, so the background-band
+/// extension must not also apply — doing so moved `04_payroll_ko.xlsx`'s
+/// `합계` and `08_budget_ko.xlsx`'s `총계` one point right of Excel's own
+/// export (issue #1626). Parametrised over two merge widths so the rule is
+/// pinned generally, not to the one reported span.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_wrapped_centered_merged_fill_keeps_its_nominal_track_origin() {
+    fn text_run(col_span: u32, background: Option<Color>) -> crate::render::pdf::PlacedTextRun {
+        let cell = TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    alignment: Some(Alignment::Center),
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![Run {
+                    text: "TOTAL".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                }],
+            })],
+            background,
+            col_span,
+            wraps_text: true,
+            vertical_align: Some(CellVerticalAlign::Center),
+            ..TableCell::default()
+        };
+        let column_widths = vec![80.0; col_span.max(1) as usize];
+        let table = boundary_band_table(vec![fixed_row(vec![cell])], column_widths);
+        let source = generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])]))
+            .expect("merged sheet table should generate")
+            .source;
+        crate::render::pdf::compiled_text_runs(&source, 0)
+            .unwrap_or_else(|error| {
+                panic!("merged sheet table failed to compile: {error}\n{source}")
+            })
+            .into_iter()
+            .find(|run| run.text == "TOTAL")
+            .unwrap_or_else(|| panic!("missing merged title in:\n{source}"))
+    }
+
+    let rose = Some(Color::new(218, 182, 186));
+    for col_span in [2, 3] {
+        let without_fill = text_run(col_span, None);
+        let with_fill = text_run(col_span, rose);
+        assert!(
+            (with_fill.left_pt - without_fill.left_pt).abs() < 0.001,
+            "a wrapped centred merge (col_span={col_span}) takes no band seat: \
+             unfilled={}, filled={}",
+            without_fill.left_pt,
+            with_fill.left_pt,
+        );
+    }
+}
+
 /// Native #982 paints each later cell's fill over its predecessor's positive
 /// extension. Probe final rectangle colors inside both neighboring cells;
 /// inspecting each strip's dimensions alone missed the reversed order (#1599).

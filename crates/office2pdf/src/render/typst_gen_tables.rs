@@ -1685,6 +1685,15 @@ fn word_cell_content_shift(boundary_band: &Option<BoundaryBandCell<'_>>) -> Opti
 /// region, which includes its background bleed. The native #1493 probes keep
 /// left alignment and an unfilled merge on the nominal track, so this is a
 /// content-only seat rather than a change to the cell's width.
+///
+/// The #1493 probe fixture happened to be unwrapped. `compute_spill_width`
+/// (`xlsx_cells.rs`) only returns `Some(merged_width)` for that unwrapped
+/// case; a wrapped merge returns `None` there instead, because it bails out
+/// on `wrapText` before ever reaching the `col_span > 1` branch. A wrapped
+/// centred merge takes no band seat: its whole-point line already lands on
+/// Excel's real position without this extension, and adding it moved
+/// `04_payroll_ko.xlsx`'s `합계` and `08_budget_ko.xlsx`'s `총계` one point
+/// right of Excel's own export (issue #1626).
 fn excel_merged_cell_content_shift(
     boundary_band: &Option<BoundaryBandCell<'_>>,
     cell: &TableCell,
@@ -1692,6 +1701,7 @@ fn excel_merged_cell_content_shift(
     let band = boundary_band.as_ref()?;
     (band.paint_model == TableBorderPaintModel::ExcelBoundaryBands
         && cell.col_span > 1
+        && !cell.wraps_text
         && cell.background.is_some()
         && cell_horizontal_alignment(cell) == Some(Alignment::Center))
     .then_some((BAND_RUN_END_EXTENSION_PT, 0.0))
@@ -3141,12 +3151,101 @@ fn generate_sheet_cell_content(
             format_geometry(dy_pt),
         );
     }
-    let result = generate_cell_content(out, blocks, ctx);
+    let rewritten_blocks: Option<Vec<Block>> = rewrite_blocks_for_unavailable_hangul_bold(blocks);
+    let result = generate_cell_content(out, rewritten_blocks.as_deref().unwrap_or(blocks), ctx);
     ctx.sheet_paint_offset_pt = paint_offset_pt;
     if content_shift_pt.is_some() {
         out.push(']');
     }
     result
+}
+
+/// Rewrites this sheet cell's blocks when a bold run's declared font needs
+/// substitution and its text carries Hangul, so the whole run paints
+/// regular the way Excel-for-Mac's own substitution does. Returns `None`
+/// when nothing needs it, so the ordinary cell skips the allocation.
+///
+/// Excel-for-Mac's rich-text cells split a mixed-script string one run per
+/// script — the corpus's own payroll title cell (`2026년 7월 급여대장`)
+/// declares its digit runs `Malgun Gothic` (installed) and its Hangul runs
+/// `Noto Sans CJK SC` (absent on the GT machine and this one, issue #1625),
+/// each run carrying its own trailing space (`"년 "`, `"월 급여대장"`). A
+/// ten-row one-factor native probe (English name, Korean name, theme
+/// scheme, non-bold control, pure-Hangul, pure-Latin-under-substitution,
+/// and a nonexistent-font control; evidence at
+/// `/Volumes/T7/scratch/issue-1627/probe1627.xlsx` plus both exported PDFs)
+/// found Excel keeps a run's requested bold weight whenever its declared
+/// font resolves — by any of those three paths — and whenever a
+/// substituted run is pure Latin/ASCII (`Helvetica-Bold`,
+/// `Times New Roman Bold`). A run that both needs substitution *and*
+/// carries Hangul paints entirely regular, including any embedded space:
+/// confirmed against the committed GT trace, where the space inside
+/// `04_payroll_ko`'s title run `"년 "` paints plain `TimesNewRomanPSMT`
+/// (not a bold face), and `01_quotation_ko`'s A13 run `"총 합계 "` paints
+/// entirely regular including its trailing space, while the separately
+/// declared, directly-resolving `"(VAT "` run in the same cell stays bold.
+/// The gate is therefore the *run's* font availability, not a
+/// per-character script split within it (issue #1627).
+///
+/// Scoped to sheet cells only: this is a fact about Excel's own text
+/// engine, not a general Hangul-bold rule, so it must not reach the
+/// DOCX/PPTX paths that route through the shared [`generate_cell_content`]
+/// without going through this wrapper.
+fn rewrite_blocks_for_unavailable_hangul_bold(blocks: &[Block]) -> Option<Vec<Block>> {
+    if !blocks.iter().any(sheet_block_needs_hangul_bold_rewrite) {
+        return None;
+    }
+    Some(
+        blocks
+            .iter()
+            .map(|block| match block {
+                Block::Paragraph(paragraph) => Block::Paragraph(Paragraph {
+                    style: paragraph.style.clone(),
+                    runs: paragraph
+                        .runs
+                        .iter()
+                        .map(|run| {
+                            if sheet_run_needs_hangul_bold_rewrite(run) {
+                                let mut rewritten: Run = run.clone();
+                                rewritten.style.bold = Some(false);
+                                rewritten
+                            } else {
+                                run.clone()
+                            }
+                        })
+                        .collect(),
+                }),
+                other => other.clone(),
+            })
+            .collect(),
+    )
+}
+
+fn sheet_block_needs_hangul_bold_rewrite(block: &Block) -> bool {
+    match block {
+        Block::Paragraph(paragraph) => paragraph
+            .runs
+            .iter()
+            .any(sheet_run_needs_hangul_bold_rewrite),
+        _ => false,
+    }
+}
+
+fn sheet_run_needs_hangul_bold_rewrite(run: &Run) -> bool {
+    // `generate_sheet_cell_content` is reached from `generate_table_cell`,
+    // which is shared with DOCX/PPTX tables — a bordered Word table cell
+    // takes the same code path. `sheet_advance_grid_scale` is `Some` only
+    // inside a sheet's own grid (set by `with_sheet_advance_grid` around
+    // every `generate_table` call `generate_table_page`/`generate_sheet_grid`
+    // make), so it is what actually scopes this Excel-only fact to XLSX.
+    sheet_advance_grid_scale().is_some()
+        && matches!(run.style.bold, Some(true))
+        && run.text.chars().any(is_hangul)
+        && run
+            .style
+            .font_family
+            .as_deref()
+            .is_some_and(|family| !crate::render::font_subst::is_primary_font_available(family))
 }
 
 /// Points a descender-seated sheet cell's last line must still drop below

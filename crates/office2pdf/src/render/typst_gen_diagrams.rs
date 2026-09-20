@@ -1364,10 +1364,30 @@ const PPTX_HORIZONTAL_VALUE_LABEL_GAP_EM: f64 = 0.738435;
 /// Top-edge placement of an embedded Excel worksheet bar chart's horizontal
 /// value-axis label box, measured from the inner plot's bottom edge.
 ///
-/// Excel for Mac 16.112 places the #1266 workbook's zero-label baseline 15.03
-/// chart points below the plot bottom. Translating that baseline through the
-/// existing 10pt Typst text box gives a 7.65pt box-top gap.
-const EXCEL_WORKSHEET_HORIZONTAL_VALUE_LABEL_GAP_PT: f64 = 7.65;
+/// The #1266 flat 7.65pt (a single 10pt measurement, no size term) undershoots
+/// a fresh native Excel for Mac 16.112 export of the same `issue_1181_fit_to_
+/// height.xlsx` income/expense bar charts (#1622) by ~0.6-0.8pt printed at the
+/// sheet's 0.78 fit scale, i.e. ~1pt in the chart's own unscaled sheet points.
+/// Isolating the value-axis font size with `assets/validation/issue-1622/`
+/// (one-factor `office` backend probes patching only `c:valAx/c:txPr` on the
+/// income chart) gives two clean, uncontaminated native measurements — 8pt and
+/// 10pt; 12pt and 14pt make native re-layout the plot itself and cannot
+/// isolate this term. Subtracting the same Typst box's own top-to-baseline
+/// offset (measured via `typst compile` with the chart's real Trebuchet MS
+/// font stack: 0.7373047pt per declared point, confirmed linear at 8/10/14pt)
+/// from each native measurement leaves a required gap of 8.131547pt at 8pt
+/// and 8.656938pt at 10pt — not flat, so (like the PowerPoint sibling above)
+/// it needs a size term. Two points fit a line exactly, so the slope below is
+/// that two-point fit, not an independently confirmed linear model; no third
+/// clean point was available to check it.
+///
+/// This value is Trebuchet MS's own box-top-to-baseline offset folded in. A
+/// value-axis face whose box metric differs from Trebuchet MS's — including
+/// the built-in fallback the `office2pdf` lib test harness's font search
+/// silently substitutes when it cannot find a real Trebuchet MS — carries a
+/// proportional residual against this constant.
+const EXCEL_WORKSHEET_HORIZONTAL_VALUE_LABEL_GAP_PT: f64 = 6.029984;
+const EXCEL_WORKSHEET_HORIZONTAL_VALUE_LABEL_GAP_EM: f64 = 0.262695;
 
 /// Height of the box holding one value tick label set at `text_pt`.
 fn chart_label_box_h(text_pt: f64) -> f64 {
@@ -1385,6 +1405,8 @@ fn horizontal_value_label_gap(chart: &Chart) -> f64 {
         && matches!(chart.chart_type, ChartType::Bar)
     {
         EXCEL_WORKSHEET_HORIZONTAL_VALUE_LABEL_GAP_PT
+            + EXCEL_WORKSHEET_HORIZONTAL_VALUE_LABEL_GAP_EM
+                * chart_axis_text_pt(chart, chart.value_axis_text_style)
     } else {
         4.0
     }
@@ -2867,6 +2889,43 @@ fn excel_category_label_y_shift_pt(chart: &Chart) -> f64 {
     let size_pt: f64 = chart_axis_text_pt(chart, chart.category_axis_text_style);
     let native_grid_steps: f64 = ((size_pt - 8.0) / 4.0).round();
     EXCEL_CATEGORY_LABEL_BASE_Y_SHIFT_PT - native_grid_steps
+}
+
+/// Horizontal correction for a bar chart's right-aligned category-label box
+/// in an Excel worksheet chart.
+///
+/// [`chart_category_label_box_w`] right-aligns the label inside a box whose
+/// clearance from the plot is [`CHART_LABEL_EDGE_PAD_EM`], calibrated from
+/// PowerPoint's own export of `bar-chart.pptx` (#998). Excel keeps a
+/// narrower clearance. This function's result is added to `plot.dx`, which
+/// `write_placed_sheet_anchor` emits inside the fitted sheet's own
+/// `#scale(print_scale)` wrapper — every point added here is a sheet point,
+/// not a printed one, matching how `sheet_frame_origin_pt` is itself divided
+/// by that same scale before this function ever sees it.
+///
+/// Re-exporting `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx` (#1620,
+/// printed at this sheet's own 0.78 fit scale) with only the bar
+/// category-axis size patched to 8, 10, 14 and 18pt gave a native label
+/// origin 0.2083, 0.2610, 0.3677 and 0.4733 **printed** points right of the
+/// shared box at each size. Dividing each by the sheet's 0.78 print scale
+/// before comparing to the *declared* (unscaled) size gives 0.0334, 0.0335,
+/// 0.0337 and 0.0337em — a fixed fraction of the text size in the same
+/// sheet-space this function operates in, not a flat point offset. This
+/// crate's own bar-rect x0 already matches native exactly at every size
+/// probed, so only the label's own box moves.
+///
+/// An undeclared size keeps the shared box: no native probe establishes that
+/// implicit text follows this regime, mirroring
+/// [`excel_category_label_y_shift_pt`].
+pub(super) const EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM: f64 = 0.0336;
+
+fn excel_bar_category_label_x_shift_pt(chart: &Chart) -> f64 {
+    if chart.host != crate::ir::ChartHost::Spreadsheet
+        || (chart.category_axis_text_style.size_pt.is_none() && chart.text_style.size_pt.is_none())
+    {
+        return 0.0;
+    }
+    EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM * chart_axis_text_pt(chart, chart.category_axis_text_style)
 }
 
 /// Vertical correction for a bottom legend in an Excel worksheet chart.
@@ -4819,7 +4878,7 @@ fn generate_chart_axis(
                 let _ = writeln!(
                     out,
                     "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt)[#align(right)[#text(top-edge: 0pt, bottom-edge: 0pt, size: {}pt{})[{}]]])",
-                    format_f64(plot.dx),
+                    format_f64(plot.dx + excel_bar_category_label_x_shift_pt(chart)),
                     format_f64(baseline),
                     format_f64(chart_category_label_box_w(chart)),
                     format_f64(size_pt),
@@ -4830,7 +4889,7 @@ fn generate_chart_axis(
                 let _ = writeln!(
                     out,
                     "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt, height: {}pt)[#align(right + horizon)[#text(size: {}pt{})[{}]]])",
-                    format_f64(plot.dx),
+                    format_f64(plot.dx + excel_bar_category_label_x_shift_pt(chart)),
                     format_f64(row_top),
                     format_f64(chart_category_label_box_w(chart)),
                     format_f64(row),
