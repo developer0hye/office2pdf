@@ -673,6 +673,40 @@ class MatchAndDiffTest(unittest.TestCase):
                 self.assertEqual(vector["reflow"]["gt_lines"], 0)
                 self.assertGreater(compare_layout.audit_failures([vector]), 0)
 
+    def test_repeated_rows_with_partially_joined_cells_keep_all_anchors(self) -> None:
+        joined = "\n".join(
+            line_of(text, x, y)
+            for y in (100, 120)
+            for text, x in (("Employee", 72), ("Working", 300), ("240", 500))
+        )
+        split = "\n".join(
+            line_of(text, x, y + delta)
+            for y in (100, 120)
+            for text, x, delta in (
+                ("Employee", 72, -1), ("Working", 300, 1), ("240", 500, 1)
+            )
+        )
+        for gt, out in ((joined, split), (split, joined)):
+            with self.subTest(joined_gt=gt == joined):
+                vector = self.diff(gt, out, fine_shift=0.5)
+                self.assertEqual(vector["topology"]["groups"], 2)
+                self.assertEqual(vector["instances"]["compared"], 6)
+                self.assertEqual(vector["instances"]["fine_shift_count"], 6)
+                self.assertEqual(vector["wraps"]["count"], 0)
+
+    def test_partial_join_matching_does_not_drop_unmatched_neighbor(self) -> None:
+        gt = "\n".join([
+            line_of("Employee", 72, 100), line_of("Working", 300, 100),
+        ])
+        out = "\n".join([
+            line_of("Employee", 72, 99), line_of("Working", 300, 101),
+            line_of("Unexpected", 500, 101),
+        ])
+        for reference, output in ((gt, out), (out, gt)):
+            vector = self.diff(reference, output)
+            self.assertEqual(vector["topology"]["groups"], 0)
+            self.assertGreater(compare_layout.audit_failures([vector]), 0)
+
     def test_repeated_row_matching_keeps_duplicates_and_ambiguous_rows(self) -> None:
         for baselines, duplicate in (((100, 120), True), ((100, 105), False)):
             joined = "\n".join(
