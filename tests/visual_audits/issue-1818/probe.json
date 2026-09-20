@@ -1,0 +1,20 @@
+{
+  "name": "body-fit-origin-control",
+  "base": "base.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "factor": "right margin controlling native fit percentage",
+  "page": 1,
+  "noise_floor": 0.12,
+  "variants": [
+    {
+      "value": "85",
+      "find": "right=\"0.7\"",
+      "replace": "right=\"3.97\""
+    },
+    {
+      "value": "78",
+      "find": "right=\"0.7\"",
+      "replace": "right=\"4.30\""
+    }
+  ]
+}

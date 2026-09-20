@@ -1,0 +1,14 @@
+{
+  "before_commit": "3022531cfd5bb3273f3109a839e9b35c0ec6b1a7",
+  "native_backend": "Microsoft Excel, probe_harness.py --backend office",
+  "control": "unchanged re-zip layout-identical",
+  "page": 1,
+  "dpi": 150,
+  "sha256": {
+    "source.xlsx": "52ea273168e37cb74b257f017476e2e13d1ef9ba9c9e48e98386259dda1929ae",
+    "source-78.xlsx": "2f665220129d6efd39a3c93302495d650d273955566bbc70a1c67aa13d0b89f0",
+    "gt.pdf": "52afa9509ded1bbb4cdddc1932ffdad3e11158074c65c7d48f7fa5e6e86a5682",
+    "before.pdf": "cf897fff9172cd1113a071b21dde145cd7681b871a55435cd4d2c346b60cad13",
+    "before-78.pdf": "1e0c9eb26a78ee0bdbd76fc4e3216a41ab70e4b9529c1f3533fefe370048e83f"
+  }
+}
