@@ -1,4 +1,4 @@
-Read `CLAUDE.md` and `METHODOLOGY.md` before you start, and follow them literally.
+Read `AGENTS.md` and `METHODOLOGY.md` before you start, and follow them literally.
 The points below are the ones an unattended run gets wrong most often; they do not
 replace those documents.
 
@@ -17,7 +17,7 @@ replace those documents.
   report alone is not a visual pass.
 - Settle an unclear native-application rule with `scripts/probe_harness.py` (one factor
   per variant) rather than by arguing from the corpus.
-- A visual defect fix owes the evidence contract in `CLAUDE.md`:
+- A visual defect fix owes the evidence contract in `AGENTS.md`:
   `assets/bugfixes/issue-<number>/gt.jpg`, `before.jpg`, `after.jpg`, and the pull
   request body the contract check expects.
 - Never name anything under `tests/classified_fixtures/` in a commit message, pull

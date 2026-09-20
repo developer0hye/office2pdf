@@ -1,0 +1,20 @@
+{
+  "fixture": "tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx",
+  "chart": "xl/charts/chart3.xml (\"Monthly Income Summary\", horizontal bar)",
+  "factor": "c:catAx c:txPr a:defRPr sz, patched via category-size-probe.json",
+  "renderer": "Microsoft Excel for Mac 16.112, page 2 (printed at this sheet's own 0.78 fit-to-height scale), mutool draw -F trace",
+  "method": "bar rect x0 (value-zero edge) confirmed identical between native and office2pdf at every size probed, isolating the residual to the right-aligned category-label box's own position; printed_dx0_pt = native label x0 minus office2pdf label x0 (pre-fix, unshifted box), averaged over up to five income-chart category labels present at that size (see each row's labels_measured and note for the sizes where fewer survived matching). office2pdf computes plot.dx and this correction inside the fitted sheet's own #scale(print_scale) wrapper (write_placed_sheet_anchor in typst_gen.rs), i.e. in unscaled sheet points, so sheet_dx0_pt = printed_dx0_pt / 0.78 converts each row to the same frame the correction is added in before dividing by the declared (unscaled) category-axis size.",
+  "rows": [
+    {"size_pt": 8, "labels_measured": 5, "printed_dx0_pt": 0.2083, "sheet_dx0_pt": 0.267051, "spread_pt": 0.0166, "printed_ratio_em": 0.02604, "sheet_ratio_em": 0.033381},
+    {"size_pt": 10, "labels_measured": 5, "printed_dx0_pt": 0.2610, "sheet_dx0_pt": 0.334615, "spread_pt": 0.0011, "printed_ratio_em": 0.02610, "sheet_ratio_em": 0.033462, "note": "the file's own declared size"},
+    {"size_pt": 14, "labels_measured": 4, "printed_dx0_pt": 0.3677, "sheet_dx0_pt": 0.471410, "spread_pt": 0.0071, "printed_ratio_em": 0.02626, "sheet_ratio_em": 0.033672, "note": "one label ('wages (after-tax)') fell out of the matcher's line-text key at this size; not investigated further, out of scope"},
+    {"size_pt": 18, "labels_measured": 1, "printed_dx0_pt": 0.4733, "sheet_dx0_pt": 0.606795, "spread_pt": 0.0, "printed_ratio_em": 0.02629, "sheet_ratio_em": 0.033711, "note": "four of five labels went missing from office2pdf's own output at this size on the *expense* chart (chart4); the one income-chart label that survived stays on the linear trend, see issue #1756 for the unrelated plot-rectangle defect this size uncovered"}
+  ],
+  "fit": {
+    "model": "sheet_dx0_pt = EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM * size_pt",
+    "EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM": 0.0336,
+    "mean_of_row_ratios": 0.033557,
+    "least_squares_with_free_intercept": {"slope": 0.034004, "intercept": -0.005082, "note": "intercept is within measurement spread of zero (same proportion as the original page-space fit's -0.003963/0.026523), so a pure proportional model was kept, matching CHART_LABEL_EDGE_PAD_EM's own flat-point-clearance form that this term corrects"},
+    "correctness_check": "re-converting the unmodified fixture with EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM = 0.0336 and comparing page 2 against a fresh native export (compare_layout.py --fine-shift 0.02 --noise-floor 0.02) gives dx +0.0003 to +0.0078pt on all five income-chart labels at the file's own declared 10pt size, against -0.254 to -0.266pt before this fix and a since-corrected but still-biased -0.050 to -0.062pt at the original (page-space-calibrated) 0.0262 constant."
+  }
+}

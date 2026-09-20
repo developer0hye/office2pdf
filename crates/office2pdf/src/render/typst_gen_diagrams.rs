@@ -2891,6 +2891,43 @@ fn excel_category_label_y_shift_pt(chart: &Chart) -> f64 {
     EXCEL_CATEGORY_LABEL_BASE_Y_SHIFT_PT - native_grid_steps
 }
 
+/// Horizontal correction for a bar chart's right-aligned category-label box
+/// in an Excel worksheet chart.
+///
+/// [`chart_category_label_box_w`] right-aligns the label inside a box whose
+/// clearance from the plot is [`CHART_LABEL_EDGE_PAD_EM`], calibrated from
+/// PowerPoint's own export of `bar-chart.pptx` (#998). Excel keeps a
+/// narrower clearance. This function's result is added to `plot.dx`, which
+/// `write_placed_sheet_anchor` emits inside the fitted sheet's own
+/// `#scale(print_scale)` wrapper — every point added here is a sheet point,
+/// not a printed one, matching how `sheet_frame_origin_pt` is itself divided
+/// by that same scale before this function ever sees it.
+///
+/// Re-exporting `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx` (#1620,
+/// printed at this sheet's own 0.78 fit scale) with only the bar
+/// category-axis size patched to 8, 10, 14 and 18pt gave a native label
+/// origin 0.2083, 0.2610, 0.3677 and 0.4733 **printed** points right of the
+/// shared box at each size. Dividing each by the sheet's 0.78 print scale
+/// before comparing to the *declared* (unscaled) size gives 0.0334, 0.0335,
+/// 0.0337 and 0.0337em — a fixed fraction of the text size in the same
+/// sheet-space this function operates in, not a flat point offset. This
+/// crate's own bar-rect x0 already matches native exactly at every size
+/// probed, so only the label's own box moves.
+///
+/// An undeclared size keeps the shared box: no native probe establishes that
+/// implicit text follows this regime, mirroring
+/// [`excel_category_label_y_shift_pt`].
+pub(super) const EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM: f64 = 0.0336;
+
+fn excel_bar_category_label_x_shift_pt(chart: &Chart) -> f64 {
+    if chart.host != crate::ir::ChartHost::Spreadsheet
+        || (chart.category_axis_text_style.size_pt.is_none() && chart.text_style.size_pt.is_none())
+    {
+        return 0.0;
+    }
+    EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM * chart_axis_text_pt(chart, chart.category_axis_text_style)
+}
+
 /// Vertical correction for a bottom legend in an Excel worksheet chart.
 ///
 /// With only the legend size changed to 7, 9, 11, 14 and 18pt, Excel moves the
@@ -4385,6 +4422,46 @@ fn column_value_label_y(
     chrome_y + independent_snap_delta
 }
 
+/// A horizontal bar chart's interior category label baseline, snapped to a
+/// whole Excel sheet point.
+///
+/// Excel 16.112 measurements of regular Trebuchet MS place an interior
+/// row's label baseline at
+/// `floor(sheet_frame_top_pt + row_top + row / 2) + K`, with `K` an integer
+/// that depends on the declared size within that measured face — not on which chart,
+/// how many categories it has, or the row's own position. Measured across two
+/// worksheet bar charts, two category counts and three sizes (#1621); see
+/// `assets/validation/issue-1621/README.md`. Other plot geometries use the same
+/// formula but have not been independently probed. Returns the LOCAL offset (still
+/// relative to `sheet_frame_top_pt`, matching `row_top`'s own coordinate
+/// space); the caller places it directly as a baseline (`text(top-edge: 0pt,
+/// bottom-edge: 0pt)`), not as the `dy` of the unquantized box(height:
+/// row)/`align(horizon)` placement — the two box models aren't interchangeable.
+///
+/// The caller gates this lookup to the measured family and weight.
+/// `None` for a size this issue never measured against native Excel. This
+/// function carries no row-position information and does not know whether its
+/// caller is an edge row: the plot rectangle's own top and bottom edge rows
+/// deviate from this rule by a further whole sheet point, in a direction that
+/// flips between the two measured charts for a reason not yet isolated, so
+/// `generate_chart_axis` never calls this function for one (it keeps that
+/// row's existing continuous seat instead of guessing at the residual).
+pub(super) fn bar_category_label_baseline_pt(
+    sheet_frame_top_pt: f64,
+    row_top: f64,
+    row: f64,
+    size_pt: f64,
+) -> Option<f64> {
+    let k: f64 = match size_pt {
+        size if (size - 8.0).abs() < 0.01 => 4.0,
+        size if (size - 10.0).abs() < 0.01 => 4.0,
+        size if (size - 14.0).abs() < 0.01 => 5.0,
+        _ => return None,
+    };
+    let centre_sheet: f64 = sheet_frame_top_pt + row_top + row / 2.0;
+    Some(centre_sheet.floor() + k - sheet_frame_top_pt)
+}
+
 /// Render a bar (horizontal) or column (vertical) chart as an axis-scaled
 /// plot with gridlines, tick labels, and a legend.
 fn generate_chart_axis(
@@ -4785,17 +4862,42 @@ fn generate_chart_axis(
         let category: &str = &formatted_category;
         if horizontal {
             let row_top: f64 = plot.dy + plot_h - (cat_index as f64 + 1.0) * row;
-            let _ = writeln!(
-                out,
-                "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt, height: {}pt)[#align(right + horizon)[#text(size: {}pt{})[{}]]])",
-                format_f64(plot.dx),
-                format_f64(row_top),
-                format_f64(chart_category_label_box_w(chart)),
-                format_f64(row),
-                format_f64(chart_axis_text_pt(chart, chart.category_axis_text_style)),
-                chart_category_text_attrs(chart),
-                escape_category_axis_label(category)
-            );
+            let size_pt: f64 = chart_axis_text_pt(chart, chart.category_axis_text_style);
+            // Only a row strictly between the plot's own top and bottom edge
+            // gets the quantized seat (see `bar_category_label_baseline_pt`).
+            let is_edge_row: bool = cat_index == 0 || cat_index + 1 == categories;
+            let (family, bold, _) = chart_category_label_face(chart);
+            let has_measured_face: bool = family.eq_ignore_ascii_case("Trebuchet MS") && !bold;
+            let quantized_baseline: Option<f64> = if is_edge_row || !has_measured_face {
+                None
+            } else {
+                sheet_frame_top_pt
+                    .and_then(|top| bar_category_label_baseline_pt(top, row_top, row, size_pt))
+            };
+            if let Some(baseline) = quantized_baseline {
+                let _ = writeln!(
+                    out,
+                    "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt)[#align(right)[#text(top-edge: 0pt, bottom-edge: 0pt, size: {}pt{})[{}]]])",
+                    format_f64(plot.dx + excel_bar_category_label_x_shift_pt(chart)),
+                    format_f64(baseline),
+                    format_f64(chart_category_label_box_w(chart)),
+                    format_f64(size_pt),
+                    chart_category_text_attrs(chart),
+                    escape_category_axis_label(category)
+                );
+            } else {
+                let _ = writeln!(
+                    out,
+                    "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt, height: {}pt)[#align(right + horizon)[#text(size: {}pt{})[{}]]])",
+                    format_f64(plot.dx + excel_bar_category_label_x_shift_pt(chart)),
+                    format_f64(row_top),
+                    format_f64(chart_category_label_box_w(chart)),
+                    format_f64(row),
+                    format_f64(size_pt),
+                    chart_category_text_attrs(chart),
+                    escape_category_axis_label(category)
+                );
+            }
         } else if category_labels_rotated {
             // Every label hangs from the axis by its trailing end, pinned at
             // its band's centre (less the PowerPoint-only inset of #1022),

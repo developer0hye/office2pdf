@@ -1,6 +1,24 @@
 # Horizontal bar-chart category-label vertical baselines (#1621)
 
-## What this confirms
+## Measurement scope
+
+The measurements below are historical Excel for Mac 16.112 exports of
+regular Trebuchet MS category labels. They establish a rule for the measured
+face, weight and sizes, not a universal Excel font metric. The geometric
+formula is intentionally applied to other plot positions, pitches and
+category counts; those geometries have not been independently probed.
+The implementation keeps other faces, bold labels and unmeasured sizes on
+the existing continuous placement.
+
+A fresh Excel 16.113 export on 2026-09-20 has fractional sheet-point
+baselines. Against that export, this change leaves all 11 category labels
+within 0.312 printed points; the expense edge residuals are +0.200pt and
++0.251pt, inside the 0.5pt gate. The whole-point and exact-match statements
+below apply to the retained 16.112 reference. No 16.113 size/category-count
+probe series has been run, so they must not be read as a version-independent
+native rule.
+
+## What the 16.112 measurements confirm
 
 The issue's own six expense-chart baselines, divided by the sheet's own
 0.78 fit-to-height print scale, are **exact integers**: 243, 263, 283, 302,
@@ -161,14 +179,64 @@ on a previously-exact interior row (`from savings`, 5-category), so a plain
 independent-edge-snap is ruled out as the mechanism, though "the plot
 rectangle's edges get special treatment" remains the live, narrower lead.
 
-## What's needed before this can ship
+## Shipped: interior rows only
 
-The remaining question is now narrowly scoped to *why* the edge rows deviate
-and in which direction — not whether `K` is chart-specific (it isn't) or
-which rounding function applies to interior rows (`floor`, settled). Shipping
-a fix before that edge-row rule is isolated would mean guessing at it —
-still the kind of unverified constant this project's methodology asks not to
-ship.
+`bar_category_label_baseline_pt` (`crates/office2pdf/src/render/typst_gen_diagrams.rs`)
+implements `floor(sheet_frame_top_pt + row_top + row / 2) + K` for a
+horizontal bar chart's category label, gated to:
+
+- a worksheet-anchored chart (`sheet_frame_origin_pt` is `Some`, which is
+  exactly the domain this measurement covers — a flowed or non-Excel-hosted
+  chart keeps its existing seat);
+- a row strictly between the plot rectangle's own top and bottom edge (an
+  edge row keeps its existing continuous seat — see below);
+- regular Trebuchet MS, the face and weight used by every retained probe;
+- a category-axis size this issue actually measured against native Excel
+  (8, 10 or 14pt via a small `K` lookup, `4`/`4`/`5`) — an unmeasured size
+  (11pt, for instance) keeps the old seat rather than extrapolating a curve
+  through three points. No single `round(a * size_pt)` fits all three
+  measured `K` values for any constant `a` (the per-size constraints on `a`
+  that would reproduce `K=4` at 8pt and 10pt and `K=5` at 14pt don't
+  overlap), so there is no derived formula to extrapolate in the first
+  place — only a per-measured-size lookup.
+
+**Regression check before shipping (this is why edge rows are excluded, not
+just "not yet fixed"):** applying the same formula to every row, including
+edges, was checked against all 24 measured rows before writing any code.
+Income's bottom edge happens to match the interior formula exactly in 3 of 3
+measured configurations, but its **top** edge does not — at 10pt and 14pt
+that top row currently already sits inside the issue's own 0.5pt gate
+(+0.096 and +0.324 sheet points), and the naive formula would move it to
+exactly -1.0, *failing* a case that passes today. Expense's edges fail the
+same way in the other direction. So "interior rows only" is not a
+simplification of convenience; it is the largest rule this data supports
+without regressing an already-passing row.
+
+Verified on the issue's own fixture (`tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx`,
+page 2, retained Excel 16.112 export): of this page's 7 interior category-label
+rows (4 on the expense chart, 3 on the income chart, all at the fixture's
+declared 10pt), all 7 now land on native's whole sheet point exactly ("dy"
+0.0 to 4 decimal places, per `assets/bugfixes/issue-1621/layout-audit.json`).
+One of those seven (`books & supplies`) was previously failing this issue's
+0.5pt gate (+0.505pt); the other six were already inside it. A before/after
+self-diff of office2pdf's own output (`compare_layout.py`, `--noise-floor
+0.01 --fine-shift 0.01`) confirms exactly these 7 text instances move and
+nothing else on the page does (592 instances compared, 7 deviant, 0
+missing/extra; rects 738/738 with 0 geometry deviations).
+
+## Historical 16.112 residual: the two edge rows
+
+The expense chart's topmost row (`other expenses`) and bottommost row
+(`room & board`) — the two rows the regression check above excludes — still
+deviate from native by roughly one sheet point (+0.668pt and +0.657pt
+printed, both past the 0.5pt gate), unchanged by this fix. The mechanism is
+still the open question the prior sessions narrowed to: *why* an edge row
+deviates and in which direction is chart-dependent (income's top overshoots,
+expense's top *and* bottom undershoot) for a reason not yet isolated, and
+shipping a guess at it would be exactly the kind of unverified constant this
+project's methodology asks not to ship. The 16.112 residual remains unexplained; the fresh 16.113 export does not
+reproduce a failing edge-row shift. Keep the reference version explicit
+when continuing #1621; the commands below use the installed Excel version.
 
 ## Reproduction
 
