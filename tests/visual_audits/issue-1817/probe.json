@@ -1,0 +1,20 @@
+{
+  "name": "body-default-xf-scale",
+  "base": "base.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "factor": "explicit print scale",
+  "page": 1,
+  "noise_floor": 0.5,
+  "variants": [
+    {
+      "value": "85",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"85\" />"
+    },
+    {
+      "value": "78",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"78\" />"
+    }
+  ]
+}
