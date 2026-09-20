@@ -2511,6 +2511,7 @@ fn an_auto_row_is_sized_by_its_own_cells_tallest_font() {
                 1,
                 Some(&theme_scheme_normal_font(11.0)),
                 None,
+                true,
             ),
             expected,
             "a row of {cell_size_pt}pt cells"
@@ -2530,6 +2531,7 @@ fn an_auto_row_ignores_another_rows_cell_font() {
             1,
             Some(&theme_scheme_normal_font(11.0)),
             None,
+            true,
         ),
         17.0
     );
@@ -2548,6 +2550,7 @@ fn an_auto_row_of_smaller_cells_keeps_the_recomputed_default() {
             1,
             Some(&theme_scheme_normal_font(11.0)),
             None,
+            true,
         ),
         17.0
     );
@@ -2565,6 +2568,7 @@ fn an_auto_row_whose_cell_size_is_unmeasured_keeps_the_recomputed_default() {
             1,
             Some(&theme_scheme_normal_font(11.0)),
             None,
+            true,
         ),
         17.0
     );
@@ -2628,7 +2632,7 @@ fn an_auto_row_is_sized_by_the_series_of_the_face_its_cell_names() {
             bare_theme_trebuchet_normal_font(),
         ] {
             assert_eq!(
-                xlsx_cells::printed_grid_row_height_pt(sheet, 1, Some(&normal_font), None),
+                xlsx_cells::printed_grid_row_height_pt(sheet, 1, Some(&normal_font), None, true),
                 expected,
                 "a row of {family} {size_pt}pt (bold: {is_bold}) under {} {}pt",
                 normal_font.family,
@@ -2657,7 +2661,8 @@ fn a_scheme_cell_font_resolves_its_series_through_the_theme() {
             sheet,
             1,
             Some(&theme_scheme_normal_font(11.0)),
-            None
+            None,
+            true,
         ),
         27.0,
         "an Office theme resolves the scheme cell to the UI face"
@@ -2667,7 +2672,8 @@ fn a_scheme_cell_font_resolves_its_series_through_the_theme() {
             sheet,
             1,
             Some(&bare_theme_trebuchet_normal_font()),
-            None
+            None,
+            true,
         ),
         24.0,
         "a bare theme leaves the scheme cell on Calibri's own series"
@@ -2691,7 +2697,8 @@ fn an_auto_row_of_an_unmeasured_named_face_keeps_its_cached_height() {
             sheet,
             1,
             Some(&bare_theme_trebuchet_normal_font()),
-            None
+            None,
+            true,
         ),
         25.0
     );
@@ -2724,6 +2731,7 @@ fn a_recorded_row_height_outranks_its_cells_font() {
             1,
             Some(&theme_scheme_normal_font(11.0)),
             None,
+            true,
         ),
         36.0
     );
@@ -3030,10 +3038,82 @@ fn named_face_printed_grid_measurements_are_not_extrapolated() {
         theme_ui_script_faces: ThemeUiScriptFaces::default(),
     };
     assert_eq!(
-        xlsx_cells::native_excel_pdf_row_height(16.0, Some(&scheme_font)),
+        xlsx_cells::native_excel_pdf_row_height(16.0, Some(&scheme_font), true),
         16.0,
         "a scheme font does not name Arial outright"
     );
+}
+
+/// The conservative truncating path is not a bare `floor` for a row's own
+/// cell-painted height: a declared height already within a tenth of a point
+/// of the next whole point prints there, not one short. Four rounds of
+/// `scripts/probe_harness.py --backend office` one-factor exports of
+/// `issue_1181_fit_to_height.xlsx` (row 1 and the empty row 25 re-declared,
+/// byte-identical no-patch re-zip control) pin `printed = floor(declared +
+/// 0.1)` (issue #1632). Every point already measured by #1068 still lands
+/// the same place — 0.1 only crosses a whole point when
+/// the declared height already sits inside that last tenth. This is gated by
+/// `round_up_near_whole_point`, not the default behaviour: a drawing anchor
+/// keeps the un-rounded grid (see `native_excel_pdf_row_height`'s doc
+/// comment).
+#[test]
+fn a_bare_theme_named_face_rounds_a_near_whole_point_row_height_up() {
+    let font = bare_theme_trebuchet_normal_font();
+    for (declared, expected) in [
+        (18.5, 18.0),
+        (18.75, 18.0),
+        (19.5, 19.0),
+        (19.75, 19.0),
+        (19.8, 19.0),
+        (19.85, 19.0),
+        (19.9, 20.0),
+        (20.6, 20.0),
+        (22.4, 22.0),
+        (23.7, 23.0),
+        (23.9, 24.0),
+        (25.0, 25.0),
+        (61.5, 61.0),
+        (61.6, 61.0),
+        (61.75, 61.0),
+        (61.8, 61.0),
+        (61.9, 62.0),
+    ] {
+        assert_eq!(
+            xlsx_cells::native_excel_pdf_row_height(declared, Some(&font), true),
+            expected,
+            "declared {declared}pt"
+        );
+        assert_eq!(
+            xlsx_cells::native_excel_pdf_row_height(declared, Some(&font), false),
+            declared.floor().max(1.0),
+            "declared {declared}pt without the round-up stays a bare floor"
+        );
+    }
+}
+
+/// The reported workbook end to end: the budget sheet's row 1 (`ht="61.9"
+/// customHeight="1"`) prints Excel's 62pt track, not a truncated 61pt, so
+/// every fill and rule below it seats on the same sheet point as the native
+/// export (issue #1632). The sheet fits its print area at a 0.78 scale, so
+/// the table row carries the printed 62pt already scaled down to 48.36pt —
+/// the same 0.78pt-per-sheet-point gap the issue measures on the cell fills.
+#[test]
+fn the_budget_sheets_declared_row_height_rounds_up_near_the_next_point() {
+    let data = include_bytes!("../../../../tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx");
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(data, &ConvertOptions::default()).unwrap();
+
+    let budget_sheet_first_page = doc
+        .pages
+        .iter()
+        .filter_map(|page| match page {
+            Page::Sheet(sheet_page) => Some(sheet_page),
+            _ => None,
+        })
+        .find(|sheet_page| sheet_page.name == "Monthly college budget")
+        .expect("the budget sheet has at least one page");
+
+    assert_eq!(budget_sheet_first_page.table.rows[0].height, Some(48.36));
 }
 
 fn table_bottom_aligned_descent_floor_pt(data: &[u8]) -> f64 {
