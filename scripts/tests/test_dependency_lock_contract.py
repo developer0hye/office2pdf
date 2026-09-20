@@ -83,13 +83,13 @@ class DependencyLockContractTest(unittest.TestCase):
         self.assertNotIn("cargo publish --locked --dry-run", workflow)
 
     def test_documented_visual_builds_use_the_reviewed_resolution(self) -> None:
-        claude = (PROJECT_ROOT / "CLAUDE.md").read_text()
+        agent_rules = (PROJECT_ROOT / "AGENTS.md").read_text()
         business = (PROJECT_ROOT / "tests/golden_mocks/business/README.md").read_text()
         readme = (PROJECT_ROOT / "README.md").read_text()
 
         self.assertIn(
             "cargo test --locked -p office2pdf --test artifact_generator",
-            claude,
+            agent_rules,
         )
         self.assertIn("cargo build --locked -p office2pdf-cli", business)
         wasm_builds = [
