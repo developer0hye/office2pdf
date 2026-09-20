@@ -1,0 +1,5 @@
+# MuPDF ligature continuation audit defect
+
+The public `tests/fixtures/xlsx/headerFooterTest.xlsx` page 1 has complete selectable text, but `compare_layout.py` drops ligature continuation records that omit the `glyph` attribute. The converter-side layout census shortens `top left` and `bottom left` to `toplef` and `botomlef`; the native census retains both complete labels. MuPDF emits the final letter as `<g unicode="t" x="..." y="..." adv="0"/>` after the painted `f` or `t` glyph at the same origin. `GLYPH_RE` currently requires `glyph`, so the continuation is lost.
+
+The comparison is native Excel left and converter right at 150 DPI. Full pages, side-by-side, pixel difference and full-scale header/footer crops were inspected: all labels remain visibly complete; the current header is high (#1731), and footer glyph/anchor differences remain to be dispositioned in that issue's audit. The text-layer comparison reports identical normalized content. This issue concerns the layout census, not missing rendered letters. No visual pass is claimed.
