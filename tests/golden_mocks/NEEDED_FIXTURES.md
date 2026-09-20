@@ -50,7 +50,7 @@ pixel count:
 python3 scripts/compare_render.py <expected>.pdf <output>.pdf [--page N]
 ```
 
-See the "Three-axis comparison" section of `CLAUDE.md` for why a pixel
+See the "Three-axis comparison" section of `AGENTS.md` for why a pixel
 difference alone is not evidence — on this corpus it has scored two visibly
 different renders identically, risen on a correct fix, and stayed flat
 through a twentyfold accuracy improvement.
