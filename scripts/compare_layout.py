@@ -1445,7 +1445,7 @@ def matched_text_fragments(gt: Line, out: Line) -> list[tuple[Line, Line]]:
 
 
 def ordered_unique_segment_match(
-    joined_line: Line, candidates: list[Line]
+    joined_line: Line, candidates: list[Line], joined_candidates: list[Line]
 ) -> tuple[list[Line], list[Line]] | None:
     """Return one-to-many split/join matches when order and count are exact."""
     segments = split_distant_text_objects(joined_line)
@@ -1455,8 +1455,25 @@ def ordered_unique_segment_match(
     selected: list[Line] = []
     for segment in segments:
         same_text = [line for line in candidates if line.key == segment.key]
-        # Ambiguous occurrences can hide a duplicated label, so leave the
-        # whole group unmatched for the normal missing/extra audit.
+        if len(same_text) > 1:
+            # Repeated table labels need balanced counts and a unique nearby
+            # row, not an arbitrary occurrence. Keep unequal counts and ambiguous
+            # overlapping rows in the normal missing/extra audit.
+            source_count = sum(
+                fragment.key == segment.key
+                for line in joined_candidates
+                for fragment in split_distant_text_objects(line)
+            )
+            if source_count != len(same_text):
+                return None
+            segment_boxes = [glyph_bbox(glyph) for glyph in segment.visible_glyphs]
+            top = min(box[1] for box in segment_boxes)
+            bottom = max(box[3] for box in segment_boxes)
+            same_text = [
+                line for line in same_text
+                if max(top, min(glyph_bbox(glyph)[1] for glyph in line.visible_glyphs))
+                < min(bottom, max(glyph_bbox(glyph)[3] for glyph in line.visible_glyphs))
+            ]
         if len(same_text) != 1:
             return None
         selected.append(same_text[0])
@@ -1495,7 +1512,9 @@ def take_topology_equivalents(
     remaining_extra = list(extra)
 
     for joined_gt in list(remaining_missing):
-        result = ordered_unique_segment_match(joined_gt, remaining_extra)
+        result = ordered_unique_segment_match(
+            joined_gt, remaining_extra, remaining_missing
+        )
         if result is None:
             continue
         gt_segments, out_lines = result
@@ -1506,7 +1525,9 @@ def take_topology_equivalents(
             remaining_extra.remove(line)
 
     for joined_out in list(remaining_extra):
-        result = ordered_unique_segment_match(joined_out, remaining_missing)
+        result = ordered_unique_segment_match(
+            joined_out, remaining_missing, remaining_extra
+        )
         if result is None:
             continue
         out_segments, gt_lines = result
