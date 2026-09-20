@@ -1445,25 +1445,56 @@ def matched_text_fragments(gt: Line, out: Line) -> list[tuple[Line, Line]]:
 
 
 def ordered_unique_segment_match(
-    joined_line: Line, candidates: list[Line]
-) -> tuple[list[Line], list[Line]] | None:
+    joined_line: Line, candidates: list[Line], joined_candidates: list[Line]
+) -> tuple[list[Line], list[Line], list[Line]] | None:
     """Return one-to-many split/join matches when order and count are exact."""
     segments = split_distant_text_objects(joined_line)
     if len(segments) < 2:
         return None
 
+    candidate_groups = [
+        (line, split_distant_text_objects(line)) for line in candidates
+    ]
+    candidate_fragments = [
+        fragment for _, fragments in candidate_groups for fragment in fragments
+    ]
     selected: list[Line] = []
     for segment in segments:
-        same_text = [line for line in candidates if line.key == segment.key]
-        # Ambiguous occurrences can hide a duplicated label, so leave the
-        # whole group unmatched for the normal missing/extra audit.
+        same_text = [line for line in candidate_fragments if line.key == segment.key]
+        if len(same_text) > 1:
+            # Repeated table labels need balanced counts and a unique nearby
+            # row, not an arbitrary occurrence. Keep unequal counts and ambiguous
+            # overlapping rows in the normal missing/extra audit.
+            source_count = sum(
+                fragment.key == segment.key
+                for line in joined_candidates
+                for fragment in split_distant_text_objects(line)
+            )
+            if source_count != len(same_text):
+                return None
+            segment_boxes = [glyph_bbox(glyph) for glyph in segment.visible_glyphs]
+            top = min(box[1] for box in segment_boxes)
+            bottom = max(box[3] for box in segment_boxes)
+            same_text = [
+                line for line in same_text
+                if max(top, min(glyph_bbox(glyph)[1] for glyph in line.visible_glyphs))
+                < min(bottom, max(glyph_bbox(glyph)[3] for glyph in line.visible_glyphs))
+            ]
         if len(same_text) != 1:
             return None
         selected.append(same_text[0])
     if len({id(line) for line in selected}) != len(selected):
         return None
-    if any(len(split_distant_text_objects(line)) != 1 for line in selected):
-        return None
+    selected_ids = {id(line) for line in selected}
+    consumed: list[Line] = []
+    for line, fragments in candidate_groups:
+        selected_count = sum(id(fragment) in selected_ids for fragment in fragments)
+        if selected_count:
+            # A candidate line must be recovered in full; taking only one
+            # cell would discard its unmatched neighbors from the audit.
+            if selected_count != len(fragments):
+                return None
+            consumed.append(line)
     for index, first in enumerate(selected):
         for second in selected[index + 1:]:
             if (first.y, first.x0) <= (second.y, second.x0):
@@ -1482,7 +1513,7 @@ def ordered_unique_segment_match(
             )
             if not same_row:
                 return None
-    return segments, selected
+    return segments, selected, consumed
 
 
 def take_topology_equivalents(
@@ -1495,25 +1526,29 @@ def take_topology_equivalents(
     remaining_extra = list(extra)
 
     for joined_gt in list(remaining_missing):
-        result = ordered_unique_segment_match(joined_gt, remaining_extra)
+        result = ordered_unique_segment_match(
+            joined_gt, remaining_extra, remaining_missing
+        )
         if result is None:
             continue
-        gt_segments, out_lines = result
+        gt_segments, out_lines, consumed = result
         match_groups.append(list(zip(gt_segments, out_lines)))
-        groups.append((1, len(out_lines), " + ".join(line.key for line in gt_segments)))
+        groups.append((1, len(consumed), " + ".join(line.key for line in gt_segments)))
         remaining_missing.remove(joined_gt)
-        for line in out_lines:
+        for line in consumed:
             remaining_extra.remove(line)
 
     for joined_out in list(remaining_extra):
-        result = ordered_unique_segment_match(joined_out, remaining_missing)
+        result = ordered_unique_segment_match(
+            joined_out, remaining_missing, remaining_extra
+        )
         if result is None:
             continue
-        out_segments, gt_lines = result
+        out_segments, gt_lines, consumed = result
         match_groups.append(list(zip(gt_lines, out_segments)))
-        groups.append((len(gt_lines), 1, " + ".join(line.key for line in out_segments)))
+        groups.append((len(consumed), 1, " + ".join(line.key for line in out_segments)))
         remaining_extra.remove(joined_out)
-        for line in gt_lines:
+        for line in consumed:
             remaining_missing.remove(line)
 
     info = {

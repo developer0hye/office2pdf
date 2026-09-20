@@ -55,6 +55,9 @@ Distant text objects in one row may have slightly reversed baseline order.
 The split/join matcher accepts their left-to-right order when horizontal bounds
 are disjoint and conservative ink bands overlap. Position and visibility checks
 still apply to every recovered fragment; separate-row reorderings remain findings.
+Repeated labels require equal occurrence counts and exactly one counterpart
+with an overlapping ink band. Unequal counts and ambiguous rows remain findings. Partially joined cells are
+recovered only when every fragment of each consumed line has a counterpart.
 
 
 The command exits nonzero when material findings remain but still writes the
