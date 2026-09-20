@@ -187,6 +187,12 @@ pub(super) fn parse_hf_format_string(
                     current = &mut right;
                     i += 2;
                 }
+                'B' => {
+                    let mut next = current.last().cloned().unwrap_or_default();
+                    next.bold = !next.bold;
+                    open_segment(current, next);
+                    i += 2;
+                }
                 'P' => {
                     push_char(current, '\x01'); // Sentinel for page number
                     i += 2;
@@ -295,8 +301,8 @@ pub(super) fn parse_hf_format_string(
                     i += 2;
                 }
                 _ => {
-                    // The remaining codes are formatting toggles — &B bold,
-                    // &I italic, &U underline, &E double underline, &S strike,
+                    // The remaining codes are formatting toggles — &I italic,
+                    // &U underline, &E double underline, &S strike,
                     // &X superscript, &Y subscript, &O outline, &H shadow —
                     // plus section separators this parser does not model. They
                     // carry no text of their own, so skipping one changes how
