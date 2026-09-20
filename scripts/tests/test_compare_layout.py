@@ -922,6 +922,32 @@ class MatchAndDiffTest(unittest.TestCase):
         self.assertEqual(rects["geometry_mismatch_count"], 0)
         self.assertEqual(compare_layout.audit_failures([vector]), 0)
 
+    def test_equal_raw_fills_with_different_clips_fail_visible_geometry(self) -> None:
+        fill = rect_op(50, 54, 474, 145, color=".8 .2 .3")
+        for clip_box in [(51, 55, 474, 418), (50, 54, 472, 144)]:
+            for clipped_side in ["gt", "out"]:
+                with self.subTest(clip_box=clip_box, clipped_side=clipped_side):
+                    clipped = (rect_op(*clip_box).replace("fill_path", "clip_path")
+                               + fill + "<pop_clip/>")
+                    gt, out = (clipped, fill) if clipped_side == "gt" else (fill, clipped)
+                    vector = self.diff(gt, out, fine_shift=0.5)
+                    rects = vector["rects"]
+                    self.assertEqual(rects["raw_geometry_mismatch_count"], 0)
+                    self.assertEqual(rects["geometry_mismatch_count"], 1)
+                    self.assertEqual(rects["coverage_equivalent_count"], 0)
+                    self.assertEqual(rects["geometry_mismatch_samples"][0]
+                                     ["visible_coverage"]["status"], "different")
+                    self.assertGreater(compare_layout.audit_failures([vector]), 0)
+
+    def test_equal_raw_fill_coverage_respects_active_geometry_gate(self) -> None:
+        fill = rect_op(50, 54, 474, 145, color=".8 .2 .3")
+        for inset, threshold in [(0.25, 0.5), (1, 5)]:
+            with self.subTest(inset=inset, threshold=threshold):
+                clipped = (rect_op(50 + inset, 54, 474, 418)
+                           .replace("fill_path", "clip_path") + fill + "<pop_clip/>")
+                vector = self.diff(clipped, fill, fine_shift=threshold)
+                self.assertEqual(vector["rects"]["geometry_mismatch_count"], 0)
+
     def fill_coverage_probe(self, overpaint: bool = False) -> tuple[str, str]:
         # The native lower-left corner is hidden by a later pale cell. The
         # split output deliberately leaves that corner unpainted, so its blue
@@ -1095,7 +1121,7 @@ class MatchAndDiffTest(unittest.TestCase):
         self.assertEqual(rects["matched"], 1)
         self.assertEqual(rects["geometry_mismatch_count"], 0)
 
-    def test_boundary_bleed_accepts_one_noise_floor_corner_gap(self) -> None:
+    def test_boundary_bleed_canonicalization_does_not_hide_visible_corner_gap(self) -> None:
         gt = rect_op(50.0, 144.0, 474.0, 418.0, color=".97 .94 .94")
         out = "\n".join(
             [
@@ -1114,7 +1140,12 @@ class MatchAndDiffTest(unittest.TestCase):
             (rects["canonical_gt_count"], rects["canonical_out_count"]),
             (1, 1),
         )
-        self.assertEqual(rects["geometry_mismatch_count"], 0)
+        # Canonical bounds agree, but the output leaves a visible 1pt square
+        # uncovered at the upper right, beyond the active 0.5pt gate.
+        self.assertEqual(rects["raw_geometry_mismatch_count"], 0)
+        self.assertEqual(rects["geometry_mismatch_count"], 1)
+        coverage = rects["geometry_mismatch_samples"][0]["visible_coverage"]
+        self.assertGreater(coverage["mismatch_area_pt2"], 0.5)
 
     def test_l_shaped_same_paint_component_stays_split(self) -> None:
         page = compare_layout.parse_trace(

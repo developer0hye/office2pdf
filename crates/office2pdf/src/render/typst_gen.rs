@@ -55,6 +55,7 @@ mod text;
 
 // The DOCX table min-content measurement routes East Asian codepoints to the
 // run's `w:eastAsia` face the same way rendering does (issue #624).
+pub(crate) use self::diagrams::chart_uses_data_table;
 pub(crate) use self::tables::header_row_count_covering_rowspans;
 pub(crate) use self::text::is_cjk_like;
 pub(crate) use self::text::{
