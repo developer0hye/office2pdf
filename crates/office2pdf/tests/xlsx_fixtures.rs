@@ -2476,11 +2476,8 @@ fn structure_fit_to_page_sheet_scales_its_anchored_picture_to_the_native_size() 
 /// it, staged and run inside Excel's own sandbox container, is a single A3 page
 /// drawn at 0.78 — `mutool draw -F trace` reports a `.78` text transform.
 /// Bounding the columns alone left the sheet at the width fit's 0.89 and a
-/// second page (issue #1181). The 14.82pt body pitch is the confirmed-correct
-/// native value: issue #1514 proposed a 15.60pt reading, but that compared
-/// two differently bordered rows and was closed as invalid once native
-/// controls held a flat 19.00pt (14.82pt at 0.78) pitch across every
-/// fractional height and scheme variant tried.
+/// second page (issue #1181). The later native controls recorded in #1632
+/// measure 19.00pt for the declared 19.5pt body row, or 14.82pt at 0.78.
 #[test]
 fn structure_fit_to_page_sheet_without_declared_bounds_fits_its_rows_on_one_page() {
     let pages = sheet_pages("issue_1181_fit_to_height.xlsx");
@@ -2497,10 +2494,8 @@ fn structure_fit_to_page_sheet_without_declared_bounds_fits_its_rows_on_one_page
          {printable_height}pt of printable height"
     );
 
-    // Pin the converter's 0.78 fit result at the native 19.00pt (14.82pt
-    // scaled) body row track. #1514 proposed a 15.60pt reading instead and
-    // was closed as invalid: native controls held this same 14.82pt pitch
-    // across every fractional height and scheme variant tried.
+    // Pin the 0.78 fit result at the 19.00pt body track measured in #1632.
+    // Its near-whole-point correction affects row 1, not this 19.5pt row.
     let tracks: Vec<f64> = budget
         .table
         .rows

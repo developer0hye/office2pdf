@@ -3050,8 +3050,8 @@ fn named_face_printed_grid_measurements_are_not_extrapolated() {
 /// `scripts/probe_harness.py --backend office` one-factor exports of
 /// `issue_1181_fit_to_height.xlsx` (row 1 and the empty row 25 re-declared,
 /// byte-identical no-patch re-zip control) pin `printed = floor(declared +
-/// 0.1)` (issue #1632). Every point already measured by issues #1068 and
-/// #1514 still lands the same place — 0.1 only crosses a whole point when
+/// 0.1)` (issue #1632). Every point already measured by #1068 still lands
+/// the same place — 0.1 only crosses a whole point when
 /// the declared height already sits inside that last tenth. This is gated by
 /// `round_up_near_whole_point`, not the default behaviour: a drawing anchor
 /// keeps the un-rounded grid (see `native_excel_pdf_row_height`'s doc

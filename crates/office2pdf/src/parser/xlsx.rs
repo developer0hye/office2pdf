@@ -197,14 +197,12 @@ fn sheet_fit(
     }
 }
 
-/// The printed grid height of every row a sheet prints, in points.
+/// Row-height sum used to choose the sheet's fit-to-page scale.
 ///
-/// This is the same track a drawing anchor is measured against, not the
-/// heights the worksheet holds: Excel prints its rows compacted or truncated
-/// to whole device points and paginates against what it printed. `false`
-/// keeps this sum off the near-whole-point cell round-up issue #1632 adds —
-/// see `native_excel_pdf_row_height`'s doc comment for why a row-height sum
-/// stays on the un-rounded grid.
+/// Keep the existing aggregation policy (`false`) while #1632 corrects the
+/// cell-painted grid. Drawing-anchor controls establish the unrounded path
+/// for anchors, but do not establish pagination behavior at the near-whole
+/// boundary. TODO(#1632): probe a binding vertical fit across that boundary.
 fn printed_sheet_height_pt(
     sheet: &umya_spreadsheet::Worksheet,
     (row_start, row_end): (u32, u32),

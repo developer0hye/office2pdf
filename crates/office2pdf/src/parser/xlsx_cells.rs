@@ -2272,13 +2272,8 @@ const TRUNCATING_ROW_HEIGHT_ROUND_UP_EPSILON_PT: f64 = 0.1;
 /// for declared 12/15/18/25.5/30/40/49.5, and its nine row boundaries down
 /// the page all land within 0.12pt of that model.
 ///
-/// It is not a bare `floor` for the row's own cell grid, though: issue #1514
-/// first proposed that the theme-scheme Trebuchet MS 10 workbook of #1262
-/// snaps a *whole* 19.5pt custom row up to 20pt, and native controls
-/// disproved it — sweeping the same rows to 19.25/19.5/19.75pt, and
-/// separately dropping the font's `<scheme>`, all held a flat 19.00pt pitch;
-/// the original 20pt reading had compared two differently bordered rows.
-/// Issue #1632 then measured that workbook's own row 1 (`ht="61.9"`), whose
+/// It is not a bare `floor` for the row's own cell grid, though.
+/// Issue #1632 measured `issue_1181_fit_to_height.xlsx` row 1 (`ht="61.9"`), whose
 /// cell fills and rules print on a 62pt track where a bare `floor` gives 61.
 /// Four rounds of one-factor exports across 18.5-25pt and 61.5-61.9pt (row 1
 /// and the empty row 25 re-declared, byte-identical no-patch re-zip control)
@@ -2289,9 +2284,9 @@ const TRUNCATING_ROW_HEIGHT_ROUND_UP_EPSILON_PT: f64 = 0.1;
 /// | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 /// | printed | 18 | 18 | 19 | 19 | 19 | 19 | 20 | 20 | 22 | 23 | 24 | 25 | 61 | 61 | 61 | 61 | 62 |
 ///
-/// Every point #1068 and #1514 already measured lands the same place under
-/// this rule: 0.1 only crosses a whole point when the declared height already
-/// sits inside that last tenth, which none of those samples did.
+/// The earlier #1068 samples remain unchanged: none lies within the last
+/// tenth of a point. The #1632 controls also retain 19pt for the declared
+/// 19.5pt row, superseding the earlier 20pt interpretation in #1514.
 ///
 /// `round_up_near_whole_point` gates that correction, because it is not the
 /// same grid #1102 measured for drawing anchors. This same workbook's
@@ -2302,10 +2297,10 @@ const TRUNCATING_ROW_HEIGHT_ROUND_UP_EPSILON_PT: f64 = 0.1;
 /// moves its computed center down by exactly the scaled 1pt (+0.78pt on the
 /// y-axis) and fails that test, so Excel's floating-drawing anchor resolution
 /// does not apply this round-up even though its cell grid does.
-/// `printed_grid_row_height_pt`'s two row-height-*sum* callers — a drawing
-/// anchor and the fit-to-page sheet height — pass `false` and stay on the
-/// grid #1102 measured; only `printed_row_height`'s single-row call, which
-/// becomes a table row's own printed height, passes `true`.
+/// Drawing anchors therefore pass `false`. Fit-to-page aggregation also
+/// retains `false` as its existing policy; near-whole-point pagination has
+/// not been independently probed. Only `printed_row_height`, which becomes
+/// a table row's own printed height, passes `true`.
 ///
 /// Both declared and recomputed worksheet heights go through here. An
 /// auto-sized row's worksheet height already carries what its own cells
