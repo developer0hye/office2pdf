@@ -1,0 +1,38 @@
+<document><page mediabox="0 0 960.00949 540">
+<group bbox=".085 -.0289917 959.953 540" isolated="0" knockout="1" blendmode="Normal" alpha=".7">
+            <clip_path winding="eofill" transform="1 0 0 -1 0 540">
+                <moveto x=".085" y="0" />
+                <lineto x="959.953" y="0" />
+                <lineto x="959.953" y="540.029" />
+                <lineto x=".085" y="540.029" />
+                <closepath />
+            </clip_path>
+                <fill_path winding="eofill" colorspace="DeviceRGB" color="0 .16078432 .18039216" ri="1" bp="1" op="0" opm="0" transform="1 0 0 -1 0 540">
+                    <moveto x=".085" y=".028" />
+                    <lineto x="959.924" y=".028" />
+                    <lineto x="959.924" y="540.028" />
+                    <lineto x=".085" y="540.028" />
+                    <lineto x=".085" y=".028" />
+                    <closepath />
+                </fill_path>
+            <pop_clip />
+        </group>
+        
+<group bbox="915.449 497.394 925.229 504.737" isolated="0" knockout="1" blendmode="Normal" alpha=".7">
+            <clip_path winding="eofill" transform="1 0 0 -1 0 540">
+                <moveto x="915.449" y="35.263" />
+                <lineto x="925.229" y="35.263" />
+                <lineto x="925.229" y="42.606" />
+                <lineto x="915.449" y="42.606" />
+                <closepath />
+            </clip_path>
+                <fill_text colorspace="DeviceRGB" color="0 .16078432 .18039216" ri="1" bp="1" op="0" opm="0" transform="1 0 0 -1 0 540">
+                    <span font="EAAAAA+Arial-ItalicMT" wmode="0" bidi="0" trm="10.006 0 0 10.006">
+                        <g unicode="1" glyph="40" x="913.975" y="35.405" adv=".55600008" />
+                        <g unicode="0" glyph="41" x="919.5083" y="35.405" adv=".55600008" />
+                    </span>
+                </fill_text>
+            <pop_clip />
+        </group>
+        
+</page></document>

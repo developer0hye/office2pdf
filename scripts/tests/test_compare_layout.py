@@ -1591,6 +1591,51 @@ class MatchAndDiffTest(unittest.TestCase):
 
         self.assertEqual(line.visibility, "painted")
 
+    def test_issue_1647_reference_slide_number_remains_painted(self) -> None:
+        fixture = Path(__file__).parent / "fixtures" / "issue-1647" / "slide-number.xml"
+        page = compare_layout.parse_trace(fixture.read_text())[0]
+        self.assertEqual([(line.key, line.visibility) for line in page.lines], [("10", "painted")])
+
+    def test_shared_group_opacity_preserves_internal_cover_and_contrast(self) -> None:
+        text = line_of("Label", 72, 100)
+        for content, expected in [
+            (text + rect_op(60, 80, 150, 110), "hidden"),
+            (rect_op(0, 0, 595.2, 841.92, color="0 0 0") + text, "low_contrast"),
+        ]:
+            with self.subTest(expected=expected):
+                page = compare_layout.parse_trace(trace_document('<group alpha=".7">' + content + '</group>'))[0]
+                self.assertEqual(page.lines[0].visibility, expected)
+
+    def test_translucent_group_backdrop_does_not_prove_low_contrast(self) -> None:
+        background = rect_op(0, 0, 595.2, 841.92, color="1 1 1")
+        tint = rect_op(0, 0, 595.2, 841.92, color="0 .16 .18")
+        text = line_of("10", 72, 100).replace('color="0 0 0"', 'color="0 .16 .18"')
+        grouped = (background + '<group isolated="0" knockout="1" alpha=".7">'
+                   + tint + '</group><group alpha=".7">' + text + '</group>')
+        direct = background + tint.replace('alpha="1.0"', 'alpha=".7"')
+        direct += text.replace('alpha="1"', 'alpha=".7"')
+        gt = compare_layout.parse_trace(trace_document(grouped))[0]
+        out = compare_layout.parse_trace(trace_document(direct))[0]
+        self.assertEqual(gt.lines[0].visibility, "painted")
+        self.assertEqual(out.lines[0].visibility, "painted")
+        self.assertEqual(compare_layout.diff_page(gt, out)["visibility"]["mismatch_count"], 0)
+
+    def test_group_opacity_applies_to_text_and_restores_after_nested_group(self) -> None:
+        hidden = '<group alpha="0"><group alpha=".7">' + line_of("Hidden", 72, 100) + '</group></group>'
+        painted = '<group alpha=".7">' + line_of("Visible", 72, 120) + '</group>'
+        page = compare_layout.parse_trace(trace_document(hidden + painted + line_of("After", 72, 140)))[0]
+        self.assertEqual([line.visibility for line in page.lines], ["hidden", "painted", "painted"])
+
+    def test_translucent_group_covers_do_not_hide_earlier_text(self) -> None:
+        covers = [rect_op(60, 80, 150, 110),
+                  '<fill_image alpha="1" transform="90 0 0 30 60 80"/>',
+                  clipped_shade_op(60, 80, 150, 110)]
+        for cover in covers:
+            with self.subTest(cover=cover):
+                grouped = line_of("Label", 72, 100) + '<group alpha=".7">' + cover + '</group>'
+                page = compare_layout.parse_trace(trace_document(grouped))[0]
+                self.assertEqual(page.lines[0].visibility, "painted")
+
     def test_same_color_text_on_flat_fill_reports_low_contrast(self) -> None:
         background = rect_op(0, 0, 595.2, 841.92, color=".8 .8 .8")
         gt = "\n".join(
