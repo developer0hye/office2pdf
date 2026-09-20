@@ -1,0 +1,28 @@
+[
+  {
+    "variant": "first",
+    "native_baselines_pt": [
+      740,
+      754,
+      768
+    ],
+    "output_baselines_pt": [
+      740.0,
+      754.0,
+      768.0
+    ]
+  },
+  {
+    "variant": "last",
+    "native_baselines_pt": [
+      740,
+      754,
+      768
+    ],
+    "output_baselines_pt": [
+      740.0,
+      754.0,
+      768.0
+    ]
+  }
+]

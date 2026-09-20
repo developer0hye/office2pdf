@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1659",
+      "cluster_ids": [
+        "p1-d6566928b9eb",
+        "p1-9b5a0bcbe702",
+        "p1-a94d20cfe3d4",
+        "p1-1f05ec29501a",
+        "p1-77a33fce56bd",
+        "p1-ea2ec6852607",
+        "p1-caa61df6fc82",
+        "p1-0037274ec1f1",
+        "p1-94ab6e605c17",
+        "p1-18434c92e44f",
+        "p1-17d69b9b5d54",
+        "p1-aeb24219f62e",
+        "p1-060f661a51c6",
+        "p1-b10b6b95d62c",
+        "p1-64037bbdfc6d",
+        "p1-e5b92a7b37f5",
+        "p1-dc55065010c6",
+        "p1-a417ec3bb43c",
+        "p1-13c2d1b98b38",
+        "p1-65630419c87c",
+        "p1-c6335b468f13",
+        "p1-80bf09002793",
+        "p1-89d4307dbd46",
+        "p1-392d8642c17f",
+        "p1-f9638bdc7836",
+        "p1-1bd11c90a2a4"
+      ],
+      "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+    }
+  ],
+  "renderer_observations": [
+    {
+      "class": "shape-edge-antialiasing",
+      "bbox_pt": {
+        "x": 64,
+        "y": 54,
+        "width": 381,
+        "height": 2
+      },
+      "note": "Inspected full-scale title-band crop. Top edge differs by one 150-DPI pixel (0.48pt); the layout audit proves equivalent final paint coverage despite raw rectangle-top differences. No material cluster is dispositioned by this observation."
+    }
+  ]
+}

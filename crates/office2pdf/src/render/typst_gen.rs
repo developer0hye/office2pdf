@@ -3113,6 +3113,130 @@ fn hf_needs_stack_offset(hf: &HeaderFooter) -> bool {
             .any(|element| matches!(element, HFInline::Image(_)))
 }
 
+/// A text-only sheet footer stacks sections from their existing last-line seats.
+/// Native mixed-size probes advance by the following line's measured height;
+/// each line retains its own descent, including the rich-section adjustment.
+fn generate_multiline_sheet_footer(
+    out: &mut String,
+    hf: &HeaderFooter,
+    ctx: &mut GenCtx,
+    seat: &SheetFooterSeat,
+) -> bool {
+    // A picture can determine the line height; preserve the existing flow layout
+    // rather than stacking an image-bearing line with text-only font metrics.
+    if hf.paragraphs.iter().any(|paragraph| {
+        paragraph
+            .elements
+            .iter()
+            .any(|element| matches!(element, HFInline::Image(_)))
+    }) {
+        return false;
+    }
+    let slots = [Alignment::Left, Alignment::Center, Alignment::Right];
+    if hf.paragraphs.iter().any(|paragraph| {
+        !slots
+            .iter()
+            .any(|slot| paragraph.style.alignment == Some(*slot))
+    }) {
+        return false;
+    }
+    let groups: Vec<Vec<usize>> = slots
+        .iter()
+        .map(|slot| {
+            hf.paragraphs
+                .iter()
+                .enumerate()
+                .filter_map(|(index, paragraph)| {
+                    (paragraph.style.alignment == Some(*slot)).then_some(index)
+                })
+                .collect()
+        })
+        .collect();
+    if !groups.iter().any(|group| group.len() > 1) {
+        return false;
+    }
+    let scale: f64 = hf
+        .sheet_print_scale
+        .filter(|scale| *scale > 0.0)
+        .unwrap_or(1.0);
+    let advances: Option<Vec<f64>> = hf
+        .paragraphs
+        .iter()
+        .map(|paragraph| {
+            hf_paragraph_metric_runs(paragraph)
+                .iter()
+                .map(|run| {
+                    let family = run.style.font_family.as_deref()?;
+                    let size: f64 = run.style.font_size.unwrap_or(11.0) / scale;
+                    text::sheet_wrapped_line_advance_pt(family, size)
+                        .or_else(|| text::sheet_row_line_advance_pt(family, size, false))
+                        .map(|advance| advance * scale)
+                })
+                .collect::<Option<Vec<f64>>>()?
+                .into_iter()
+                .reduce(f64::max)
+        })
+        .collect();
+    let Some(advances) = advances else {
+        return false;
+    };
+    let multiple_sections: bool = groups.iter().filter(|group| !group.is_empty()).count() > 1;
+    if multiple_sections {
+        out.push_str("#grid(columns: (1fr, 1fr, 1fr), align: (left + bottom, center + bottom, right + bottom), ");
+    }
+    for group in &groups {
+        if multiple_sections {
+            out.push_str("[#box(width: 300%)[");
+        }
+        if !group.is_empty() {
+            out.push_str("#layout(size => { ");
+            for &index in group {
+                let _ = write!(out, "let line_{index} = block(width: size.width)[");
+                if let Some(edge) = seat.section_bottom_edge(index) {
+                    let lift_pt = seat.section_lift_pt[index].unwrap_or(0.0);
+                    // The signed bottom edge contributes lift below the baseline.
+                    let _ = write!(
+                        out,
+                        "#set text(top-edge: {}pt, bottom-edge: {edge}); #set par(leading: 0pt); ",
+                        format_f64(advances[index] - lift_pt)
+                    );
+                }
+                generate_hf_styled_paragraph(out, &hf.paragraphs[index], ctx);
+                out.push_str("]; ");
+            }
+            let last_index = group[group.len() - 1];
+            let _ = write!(out, "let offset_{last_index} = 0pt; ");
+            for position in (0..group.len() - 1).rev() {
+                let index = group[position];
+                let next = group[position + 1];
+                // A wrapped paragraph contributes every visual line; even an
+                // empty explicit paragraph still reserves one native advance.
+                let _ = write!(
+                    out,
+                    "let offset_{index} = offset_{next} + calc.max({}pt, measure(line_{next}).height); ",
+                    format_f64(advances[next])
+                );
+            }
+            out.push_str("block(width: size.width, height: calc.max(");
+            for &index in group {
+                let _ = write!(out, "measure(line_{index}).height + offset_{index}, ");
+            }
+            out.push_str("))[");
+            for &index in group {
+                let _ = write!(out, "#place(bottom, dy: -offset_{index}, line_{index})");
+            }
+            out.push_str("] })");
+        }
+        if multiple_sections {
+            out.push_str("]], ");
+        }
+    }
+    if multiple_sections {
+        out.push(')');
+    }
+    true
+}
+
 /// Generate inline content for a header or footer.
 ///
 /// `seat` is a seated sheet footer's per-section `bottom-edge`: Excel decides
@@ -3124,6 +3248,11 @@ fn generate_hf_content(
     ctx: &mut GenCtx,
     seat: Option<&SheetFooterSeat>,
 ) {
+    if let Some(seat) = seat
+        && generate_multiline_sheet_footer(out, hf, ctx, seat)
+    {
+        return;
+    }
     let section_bottom_edge =
         |index: usize| -> Option<String> { seat.and_then(|seat| seat.section_bottom_edge(index)) };
     // Excel's left/center/right header sections share one line; stacking
