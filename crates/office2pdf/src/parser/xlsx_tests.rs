@@ -3500,3 +3500,16 @@ fn a_scheme_normal_font_over_a_theme_without_script_faces_compacts() {
         "5 ht=12 rows compact to 11pt, got {heights:?}"
     );
 }
+
+#[test]
+fn xlsx_rejects_cells_past_excel_grid_limits() {
+    for address in ["XFE1", "ZZZ2", "A1048577", "B16777217"] {
+        let data = build_xlsx_bytes("Sheet1", &[("A1", "Report"), (address, "Outside grid")]);
+        let result = XlsxParser.parse(&data, &ConvertOptions::default());
+        assert!(result.is_err(), "{address} must fail before grid expansion");
+        assert!(result.unwrap_err().to_string().contains("Excel grid"));
+        let streaming = XlsxParser.parse_streaming(&data, &ConvertOptions::default(), 100);
+        assert!(streaming.is_err(), "streaming must reject {address}");
+        assert!(streaming.unwrap_err().to_string().contains("Excel grid"));
+    }
+}

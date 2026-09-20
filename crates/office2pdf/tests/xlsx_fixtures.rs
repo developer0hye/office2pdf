@@ -2847,3 +2847,23 @@ fn text_content_monthly_budget_cash_flow_caption() {
         "the chart's own drawing part prints its caption; got:\n{text}"
     );
 }
+
+#[test]
+fn out_of_grid_xlsx_fixture_is_rejected_before_layout_allocation() {
+    let data = load_fixture("libreoffice/too-many-cols-rows.xlsx");
+    let error = office2pdf::convert_bytes(
+        &data,
+        office2pdf::config::Format::Xlsx,
+        &ConvertOptions::default(),
+    )
+    .expect_err("the out-of-grid workbook must fail before dense layout allocation");
+    let message: String = error.to_string();
+    assert!(message.contains("Excel grid"), "{message}");
+    assert!(
+        message.contains("16385") && message.contains("16777217"),
+        "{message}"
+    );
+    let streaming = XlsxParser.parse_streaming(&data, &ConvertOptions::default(), 100);
+    assert!(streaming.is_err());
+    assert!(streaming.unwrap_err().to_string().contains("Excel grid"));
+}

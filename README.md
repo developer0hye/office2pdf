@@ -246,6 +246,9 @@ Native Rust callers can use the same per-conversion path through
 | PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
 
+XLSX workbooks with cells beyond Excel's 16,384-column or 1,048,576-row grid
+are rejected before layout expansion.
+
 ## Workspace Crates
 
 | Crate | Published | Purpose |
