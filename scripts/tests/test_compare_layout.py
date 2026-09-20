@@ -632,6 +632,26 @@ class MatchAndDiffTest(unittest.TestCase):
         )
         self.assertEqual(compare_layout.audit_failures([vector]), 1)
 
+    def test_same_row_split_join_keeps_geometry_when_baseline_order_reverses(self) -> None:
+        # The budget title and month headers share a native baseline, while
+        # their output baselines sort the right-hand header before the title.
+        joined = "\n".join([
+            line_of("MonthlyCashAfterExpense", 82.68, 440.70),
+            line_of("JANFEBMAR", 294.76, 440.70),
+        ])
+        split = "\n".join([
+            line_of("MonthlyCashAfterExpense", 82.205, 438.54005),
+            line_of("JANFEBMAR", 294.2848, 437.412),
+        ])
+        for gt, out in [(joined, split), (split, joined)]:
+            with self.subTest(joined_gt=gt == joined):
+                vector = self.diff(gt, out, fine_shift=0.5)
+                self.assertEqual(vector["topology"]["groups"], 1)
+                self.assertEqual(vector["reflow"]["gt_lines"], 0)
+                self.assertEqual(vector["wraps"]["count"], 0)
+                self.assertEqual(vector["instances"]["fine_shift_count"], 2)
+                self.assertGreater(compare_layout.audit_failures([vector]), 0)
+
     def test_distant_split_join_does_not_hide_reordered_objects(self) -> None:
         gt = "\n".join(
             [line_of("left", 72, 100), line_of("right", 500, 100)]

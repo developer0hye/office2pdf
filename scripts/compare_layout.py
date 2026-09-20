@@ -1425,10 +1425,24 @@ def ordered_unique_segment_match(
         return None
     if any(len(split_distant_text_objects(line)) != 1 for line in selected):
         return None
-    ordered = sorted(selected, key=lambda line: (line.y, line.x0))
-    if [id(line) for line in selected] != [id(line) for line in ordered]:
-        # A split/join changes PDF object topology, never reading order.
-        return None
+    for index, first in enumerate(selected):
+        for second in selected[index + 1:]:
+            if (first.y, first.x0) <= (second.y, second.x0):
+                continue
+            # Different font baselines can reverse the vertical sort within
+            # one row. Preserve left-to-right order only for disjoint objects
+            # whose conservative ink bands overlap; real row swaps still fail.
+            first_boxes = [glyph_bbox(glyph) for glyph in first.visible_glyphs]
+            second_boxes = [glyph_bbox(glyph) for glyph in second.visible_glyphs]
+            same_row = (
+                first.x1 <= second.x0
+                and max(min(box[1] for box in first_boxes),
+                        min(box[1] for box in second_boxes))
+                < min(max(box[3] for box in first_boxes),
+                      max(box[3] for box in second_boxes))
+            )
+            if not same_row:
+                return None
     return segments, selected
 
 
