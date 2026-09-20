@@ -66,14 +66,18 @@ the configured fine or large threshold.
 ### Composed fill coverage
 
 Rectangle diagnostics retain raw matched dimensions and source-operation
-indices. For a raw fill geometry finding, the layout audit also compares the
-opaque flat-fill layer after rectangular clipping and paint-order composition.
+indices. Every matched fill pair is checked after rectangular clipping and
+paint-order composition, including pairs with equal raw bounds. A visible
+coverage difference beyond the active geometry tolerance is a finding.
+For a raw fill geometry finding, the audit requires a stricter coverage proof.
 Only equivalent coverage makes that finding informational; a real difference
 or unmodeled coverage keeps the geometry finding active. Per-edge coverage
 separates an already-painted edge from an error elsewhere in the same fill.
 The fine/coarse gate is unchanged; coincident trace coordinates use the existing
 0.01pt epsilon, clamped to the active gate when it is finer. Each coordinate
-cluster is bounded to that full span.
+cluster is bounded to that full span. Pairs without a raw finding use the active
+geometry tolerance for coordinate normalization; unmodeled coverage is reported
+but does not alone introduce a geometry finding.
 
 Images, shading, nonrectangular paths/clips, translucent paint, soft masks, and
 non-normal groups cannot establish flat-fill equivalence. A mask or tile marks
