@@ -1,0 +1,16 @@
+{
+  "source": "Synthetic workbook pair; worksheet elements have identical expanded XML names and values, but default namespace versus s prefix",
+  "reference": "Microsoft Excel 16.113, macOS 26.6.2",
+  "converter_commit": "333923fc94c4e33075d0d39ad3a5e5ca14d2a127",
+  "page": 1,
+  "dpi": 150,
+  "native_pair_pixel_delta": 0,
+  "sha256": {
+    "control.xlsx": "71eb71a05be3f3b780e738a551ab4016c61ffb622371de1c630a448b4c3ef85b",
+    "prefixed.xlsx": "0fcf8bd508f4c8b68c05eeb1ed8d78931f3dd9e0160329583da1c475823dc119",
+    "control-native.pdf": "03d21003d7773724732a7b131bdbcab55a51e4e4f2193080960466f2e8d27671",
+    "prefixed-native.pdf": "283571f779f7f7c2c83fb7a57e9b6f0256ae18f61fcb50db4ce2134cc4e3bd63",
+    "control.pdf": "502dde8e79a3cffac861223f45c9dba5d7da7be153307b98eb250d99e47df452",
+    "prefixed.pdf": "3182b1cc8752f514c600d703c4d08d3a987ac4739f60a3a1e018db9846f7a385"
+  }
+}
