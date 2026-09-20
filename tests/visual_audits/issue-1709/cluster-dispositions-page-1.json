@@ -1,0 +1,44 @@
+{
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1731",
+      "cluster_ids": [
+        "p1-3e14cebad44a",
+        "p1-d6dfdc4a0b6c",
+        "p1-be1d1151e9c6",
+        "p1-6484bf4cfc98",
+        "p1-920129e4df5d",
+        "p1-4f7163706158",
+        "p1-4d7f4c80005b",
+        "p1-d111b3d5f9db"
+      ],
+      "note": "Inspected bold header glyphs: current baseline is 1.6pt high, matching #1731; centered-width displacement also remains tracked in #1659."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1721",
+      "cluster_ids": [
+        "p1-ecab50898bac",
+        "p1-ad2ef706d37d",
+        "p1-5ecf3ed66e2c",
+        "p1-2f6fdbc6b8c1",
+        "p1-314c4846c6c9",
+        "p1-12235849f7c7",
+        "p1-cf5e71ad29eb"
+      ],
+      "note": "Inspected all body text crops: fixed 15pt rows with default bottom alignment emit table.cell(align: horizon) through the tight-row centered path, matching #1721; all five text instances sit 1pt high."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1659",
+      "cluster_ids": [
+        "p1-2bf9e331761f",
+        "p1-7e182c9d0064",
+        "p1-cdc9cdaeea33"
+      ],
+      "note": "Inspected footer glyph crop: baseline agrees; fractional glyph advances shorten centered text and move its start 0.515pt right, tracked in #1659."
+    }
+  ],
+  "schema_version": 1
+}

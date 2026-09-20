@@ -710,6 +710,45 @@ fn build_xlsx_with_footer(footer_str: &str) -> Vec<u8> {
     buf.into_inner()
 }
 
+#[test]
+fn cdata_header_footer_text_preserves_text_and_bold_in_both_parser_paths() {
+    for is_header in [true, false] {
+        let original = if is_header {
+            build_xlsx_with_header("CDATA_PLACEHOLDER")
+        } else {
+            build_xlsx_with_footer("CDATA_PLACEHOLDER")
+        };
+        let data = rewrite_zip_parts(
+            &original,
+            |name| name == "xl/worksheets/sheet1.xml",
+            |xml| {
+                xml.replace(
+                    "CDATA_PLACEHOLDER",
+                    r#"<![CDATA[&C&"-,Bold"Research && Development]]>"#,
+                )
+            },
+        );
+        let (document, _) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let (chunks, _) = XlsxParser
+            .parse_streaming(&data, &ConvertOptions::default(), 100)
+            .unwrap();
+        for parsed in std::iter::once(&document).chain(chunks.iter()) {
+            let sheet = get_sheet_page(parsed, 0);
+            let section = if is_header {
+                &sheet.header
+            } else {
+                &sheet.footer
+            };
+            let section = section.as_ref().expect("header/footer parsed");
+            assert_eq!(hf_section_texts(section), vec!["Research & Development"]);
+            let HFInline::Run(run) = &section.paragraphs[0].elements[0] else {
+                panic!("expected text run");
+            };
+            assert_eq!(run.style.bold, Some(true));
+        }
+    }
+}
+
 /// Helper: build an XLSX whose sheet states `<pageMargins>` alongside a footer.
 fn build_xlsx_with_footer_margins(footer_str: &str, footer_in: f64, bottom_in: f64) -> Vec<u8> {
     let mut book = umya_spreadsheet::new_file();
