@@ -47,9 +47,14 @@ cell/object anchors within a shared baseline. A separate text paint with at
 least one em of empty space identifies a fragment boundary; a boundary on
 either side is mapped to the same text offset on the other. This prevents a
 fixed first cell from hiding later cells' movement or visibility differences.
-Normal word spacing stays together, and the stricter split/join topology rules
-remain unchanged. Closely packed text without such a boundary still needs the
+Normal word spacing stays together; split/join topology matching separately
+requires distant, independently painted objects. Closely packed text without such a boundary still needs the
 pixel comparison and manual crop inspection.
+
+Distant text objects in one row may have slightly reversed baseline order.
+The split/join matcher accepts their left-to-right order when horizontal bounds
+are disjoint and conservative ink bands overlap. Position and visibility checks
+still apply to every recovered fragment; separate-row reorderings remain findings.
 
 
 The command exits nonzero when material findings remain but still writes the
