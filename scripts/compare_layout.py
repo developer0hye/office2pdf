@@ -28,7 +28,8 @@ visible ink. It then matches lines by their text and reports typed deviations:
   splits are merged before matching. Raw fill geometry findings become
   informational only when composed opaque flat-fill coverage is equivalent;
   differing or unmodeled coverage retains the finding and names the affected
-  regions. Raw dimensions and per-edge coverage remain available.
+  regions. Matching raw bounds also undergo coverage comparison at the active
+  geometry tolerance. Raw dimensions and per-edge coverage remain available.
 
 A noise floor (default 0.12pt — native Word exports quantise coordinates to a
 0.24pt grid; use 0.5 for Excel GT, whose Quartz export rounds every advance to
@@ -971,12 +972,13 @@ def compare_fill_coverage(
     sample: dict,
     coordinate_epsilon_pt: float = RECT_COVERAGE_EPSILON_PT,
 ) -> dict:
-    """Prove equivalence only when every resolved fill region agrees.
+    """Compare resolved fill regions after clipping and paint composition.
 
-    Keep the existing rectangle gate. Its raw finding can be explained only
-    by a full coverage proof; different or unmodeled coverage retains it.
-    Coincident edges use the existing trace epsilon, clamped by the caller
-    to the active fine/coarse gate so normalization cannot widen that gate.
+    Raw geometry findings require equivalence at the trace epsilon, clamped
+    by the caller to the active gate. Pairs within the raw geometry gate use
+    that gate directly: different coverage introduces a finding, while
+    unmodeled coverage alone does not. Coordinate clusters stay within the
+    caller's tolerance so normalization cannot widen it.
     """
     if gt.coverage_paints is None or out.coverage_paints is None:
         return {"status": "unmodeled", "reason": "fill trace unavailable"}
@@ -2042,15 +2044,24 @@ def diff_page(
         sample for sample in rect_samples
         if sample["max_abs_delta"] > rect_geometry_threshold
     ]
-    for sample in raw_geometry_mismatches:
+    for sample in rect_samples:
         if sample["kind"] == "fill":
+            # Raw-matching rectangles can paint different edges under clips.
+            # New coverage findings use the active geometry tolerance; a raw
+            # finding still needs the stricter trace-level equivalence proof.
+            has_raw_mismatch = sample["max_abs_delta"] > rect_geometry_threshold
             sample["visible_coverage"] = compare_fill_coverage(
                 gt, out, sample,
-                coordinate_epsilon_pt=min(RECT_COVERAGE_EPSILON_PT, rect_geometry_threshold),
+                coordinate_epsilon_pt=(
+                    min(RECT_COVERAGE_EPSILON_PT, rect_geometry_threshold)
+                    if has_raw_mismatch else rect_geometry_threshold
+                ),
             )
     rect_geometry_mismatches = [
-        sample for sample in raw_geometry_mismatches
-        if sample.get("visible_coverage", {}).get("status") != "equivalent"
+        sample for sample in rect_samples
+        if sample.get("visible_coverage", {}).get("status") == "different"
+        or (sample["max_abs_delta"] > rect_geometry_threshold
+            and sample.get("visible_coverage", {}).get("status") != "equivalent")
     ]
     rect_center_deltas = [
         max(abs(sample["center_dx"]), abs(sample["center_dy"]))
@@ -2130,11 +2141,14 @@ def diff_page(
             "geometry_threshold": rect_geometry_threshold,
             "raw_geometry_mismatch_count": len(raw_geometry_mismatches),
             "raw_geometry_mismatch_samples": raw_geometry_mismatches[:RECT_SAMPLE_LIMIT],
-            "coverage_equivalent_count": len(raw_geometry_mismatches) - len(rect_geometry_mismatches),
+            "coverage_equivalent_count": sum(
+                sample.get("visible_coverage", {}).get("status") == "equivalent"
+                for sample in raw_geometry_mismatches
+            ),
             "coverage_unmodeled_count": sum(
                 sample.get("visible_coverage", {}).get("status") == "unmodeled"
                 or sample.get("visible_coverage", {}).get("unmodeled_area_pt2", 0) > 0
-                for sample in raw_geometry_mismatches
+                for sample in rect_samples
             ),
             "geometry_mismatch_count": len(rect_geometry_mismatches),
             "geometry_mismatch_samples": rect_geometry_mismatches[:RECT_SAMPLE_LIMIT],
@@ -2271,7 +2285,7 @@ def render_reading(vectors: list[dict]) -> str:
                 for item in vector["rects"]["geometry_mismatch_samples"]
             )
             page_notes.append(
-                f"{vector['rects']['geometry_mismatch_count']} matched rectangle geometry "
+                f"{vector['rects']['geometry_mismatch_count']} matched rectangle geometry or fill coverage "
                 f"deviation(s) exceed {vector['rects']['geometry_threshold']:.2f}pt: "
                 f"{examples}. Inspect the recorded source operation indices and corresponding "
                 "render cluster"
