@@ -1,0 +1,20 @@
+{
+  "name": "body-isolated-small-face-seats",
+  "base": "source.xlsx",
+  "part": "xl/styles.xml",
+  "factor": "default first-cell-style Arial size",
+  "page": 1,
+  "noise_floor": 0.5,
+  "variants": [
+    {
+      "value": "8",
+      "find": "<fonts count=\"24\"><font><sz val=\"11\" /><name val=\"Malgun Gothic\" /></font><font><sz val=\"4\" /><name val=\"Arial\" /></font>",
+      "replace": "<fonts count=\"24\"><font><sz val=\"11\" /><name val=\"Malgun Gothic\" /></font><font><sz val=\"8\" /><name val=\"Arial\" /></font>"
+    },
+    {
+      "value": "11",
+      "find": "<fonts count=\"24\"><font><sz val=\"11\" /><name val=\"Malgun Gothic\" /></font><font><sz val=\"4\" /><name val=\"Arial\" /></font>",
+      "replace": "<fonts count=\"24\"><font><sz val=\"11\" /><name val=\"Malgun Gothic\" /></font><font><sz val=\"11\" /><name val=\"Arial\" /></font>"
+    }
+  ]
+}

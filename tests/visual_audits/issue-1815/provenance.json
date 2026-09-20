@@ -1,0 +1,8 @@
+{
+  "native": "Microsoft Excel for Mac; Quartz PDF export",
+  "source_sha256": "62d739bbb3be7370b9e23c6ae6963f18121d12aae642c55a50edb460c090583c",
+  "native_pdf_sha256": "719fe4dd391e6e2e2baf0b9a3a9817161fb3e06602ec788a7429aa0fe1215e75",
+  "before_commit": "bd443885328819da53a321c65174d77703f97110",
+  "before_pdf_sha256": "18614bfeb79022c65be9a86435c96e6370966650d5d1088ef35d820e444e7922",
+  "control": "Unchanged re-zip layout-identical; native default Arial size 4, 8 and 11 variants also retain all 22 baselines and 23 boundaries."
+}
