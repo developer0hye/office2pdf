@@ -106,6 +106,7 @@ limitations under the License.
 - `docx/HeaderFooterUnicode.docx`
 - `docx/heading123.docx`
 - `docx/IllustrativeCases.docx`
+- `docx/poi/unicode-path.docx`
 - `docx/poi_footnotes.docx`
 - `docx/poi_sample.docx`
 - `docx/poi_styles.docx`

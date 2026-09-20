@@ -92,12 +92,14 @@ const DENYLIST: &[&str] = &[
 
 // ---------------------------------------------------------------------------
 // Expected errors — files that produce errors by design (e.g. encrypted).
-// These exercise a valid code path (OLE2 detection → clear error) and must
+// These exercise a valid rejection path and must
 // not count against the conversion success rate.
 // See: https://github.com/developer0hye/office2pdf/issues/82
 // ---------------------------------------------------------------------------
 
 const EXPECTED_ERRORS: &[&str] = &[
+    // Conflicting ASCII and Unicode ZIP part names select different content.
+    "unicode-path.docx",
     // Encrypted DOCX (OLE2 containers, password-protected)
     "Encrypted_LO_Standard_abc.docx",
     "Encrypted_MSO2007_abc.docx",
