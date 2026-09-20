@@ -1,0 +1,30 @@
+{
+  "review_date": "2026-09-20",
+  "source_commit": "9c65292f3d586df35c221136ecc5f344e0732939",
+  "native_reference": "Retained Excel16.112; same reference as original before image",
+  "supplemental_reference": "Fresh Excel16.113; fractional baseline results retained separately",
+  "files_sha256": {
+    "/Volumes/T7/scratch/pr-review-20260920/pr1765-office2pdf": "cdee0400ad54b693ba591e392400bca240a56c01558a6856bf68fe3f0005df3a",
+    "/Volumes/T7/scratch/pr-review-20260920/pr1765-after.pdf": "40ff72399d4fd42692828e5afec781c4ea24e6e95a18503f0ae1d244c1ac05d7",
+    "/Volumes/T7/scratch/issue-1621/gt.pdf": "7d7fd47175cfd0677716c69caa87e680a94d4b68b4b09c72e3afe07f3192838d",
+    "/Volumes/T7/scratch/pr-review-20260920/pr1762-after.pdf": "1d551450bf9750d18d252e898bbaa60cb198c9702c42ed08723192dc6f92ef5f"
+  },
+  "tests": {
+    "library_passed": 3117,
+    "font_weight_red": "Arial incorrectly used empirical baseline before guard",
+    "integration_red": "Interior label dx0 instead of measured0.2610/0.78 before integration fix",
+    "measurement_verifier": "PASS"
+  },
+  "self_diff": {
+    "page1_changed_instances": 0,
+    "page2_compared_instances": 592,
+    "page2_changed_instances": 7,
+    "horizontal_shift": 0,
+    "rectangle_geometry_changes": 0
+  },
+  "limitations": [
+    "Lookup measured only for regular Trebuchet MS at8/10/14pt",
+    "Other plot geometries generalize the measured formula without independent probes",
+    "Whole-point exact matches apply to retained16.112, not universal exporter behavior"
+  ]
+}

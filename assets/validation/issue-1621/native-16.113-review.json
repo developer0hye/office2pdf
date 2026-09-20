@@ -1,0 +1,126 @@
+{
+  "exporter": "Microsoft Excel for Mac 16.113",
+  "export_date": "2026-09-20",
+  "candidate_source_commit": "9c65292f",
+  "native_provenance": "Native Excel sandbox export; original sheets report Creator Microsoft Excel, Producer Quartz PDFContext; PDFs combined with pdfunite. Exporter version read from application Info.plist.",
+  "sha256": {
+    "source": "2b4a2d8dceda58758593c88409875efbda05780559154c02bd13fef4f7a1c65b",
+    "native_reference": "32f6901902ffdb696dbb160fd62afa98c1b81902fc947ce53154e6bfdc209655",
+    "candidate": "40ff72399d4fd42692828e5afec781c4ea24e6e95a18503f0ae1d244c1ac05d7"
+  },
+  "command": "python3 scripts/compare_layout.py <native.pdf> <candidate.pdf> --page 2 --noise-floor 0.01 --fine-shift 0.01 --json",
+  "units": "printed PDF points; output minus reference",
+  "category_labels": [
+    {
+      "label": "otherexpenses",
+      "gt_x": 359.4159,
+      "gt_y": 190.00800000000004,
+      "out_x": 359.4237,
+      "out_y": 190.20801,
+      "dx": 0.007799999999974716,
+      "dy": 0.20000999999996338,
+      "width_pct": -0.6171947061443586
+    },
+    {
+      "label": "other",
+      "gt_x": 126.9529,
+      "gt_y": 192.25440000000003,
+      "out_x": 126.95324,
+      "out_y": 192.35083,
+      "dx": 0.0003399999999942338,
+      "dy": 0.0964299999999696,
+      "width_pct": 1.004604420182376
+    },
+    {
+      "label": "discretionary",
+      "gt_x": 366.5803,
+      "gt_y": 205.1712,
+      "out_x": 366.57624,
+      "out_y": 205.14002,
+      "dx": -0.004060000000038144,
+      "dy": -0.031180000000006203,
+      "width_pct": -0.7806022851236203
+    },
+    {
+      "label": "fromsavings",
+      "gt_x": 102.2191,
+      "gt_y": 210.41280000000006,
+      "out_x": 102.22023,
+      "out_y": 210.59998,
+      "dx": 0.001130000000003406,
+      "dy": 0.18717999999992685,
+      "width_pct": -0.3568331502783122
+    },
+    {
+      "label": "transportation",
+      "gt_x": 362.0328,
+      "gt_y": 220.52160000000003,
+      "out_x": 362.0326,
+      "out_y": 220.73999,
+      "dx": -0.0002000000000066393,
+      "dy": 0.218389999999971,
+      "width_pct": -0.26373099596641447
+    },
+    {
+      "label": "familyhelp",
+      "gt_x": 106.4389,
+      "gt_y": 228.38400000000001,
+      "out_x": 106.440158,
+      "out_y": 228.53998,
+      "dx": 0.001257999999992876,
+      "dy": 0.15597999999999956,
+      "width_pct": -0.29662049256996087
+    },
+    {
+      "label": "books&supplies",
+      "gt_x": 354.1237,
+      "gt_y": 235.87200000000007,
+      "out_x": 354.12977,
+      "out_y": 235.56,
+      "dx": 0.006070000000022446,
+      "dy": -0.31200000000006867,
+      "width_pct": 0.5131532027441077
+    },
+    {
+      "label": "wages(after-tax)",
+      "gt_x": 85.14867,
+      "gt_y": 246.35519999999997,
+      "out_x": 85.150119,
+      "out_y": 246.47998,
+      "dx": 0.0014490000000080272,
+      "dy": 0.12478000000004386,
+      "width_pct": 0.03862494674587022
+    },
+    {
+      "label": "tuition&fees",
+      "gt_x": 364.0881,
+      "gt_y": 251.0353,
+      "out_x": 364.09306,
+      "out_y": 251.16004,
+      "dx": 0.004959999999982756,
+      "dy": 0.12474000000000274,
+      "width_pct": -0.6607574494068541
+    },
+    {
+      "label": "financialaid",
+      "gt_x": 102.5467,
+      "gt_y": 264.5137,
+      "out_x": 102.547779,
+      "out_y": 264.49415,
+      "dx": 0.001079000000004271,
+      "dy": -0.019549999999981083,
+      "width_pct": -0.30592045682655367
+    },
+    {
+      "label": "room&board",
+      "gt_x": 364.1038,
+      "gt_y": 266.38560000000007,
+      "out_x": 364.10066,
+      "out_y": 266.63703,
+      "dx": -0.0031399999999734973,
+      "dy": 0.2514299999999139,
+      "width_pct": 0.14617508360690953
+    }
+  ],
+  "max_abs_dy": 0.31200000000006867
+}
