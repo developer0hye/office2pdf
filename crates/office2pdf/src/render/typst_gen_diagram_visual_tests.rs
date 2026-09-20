@@ -10171,7 +10171,8 @@ fn category_line_spacing_quantizes_the_faces_leading_before_seating() {
 fn bar_category_label_baseline_matches_measured_native_interior_rows() {
     use crate::render::typst_gen::diagrams::bar_category_label_baseline_pt;
     // Native Excel baselines for `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx`'s
-    // two worksheet bar charts, in unscaled sheet points (#1621). Three distinct
+    // two worksheet bar charts, regular Trebuchet MS in Excel 16.112 (#1621).
+    // Baselines are unscaled sheet points. Three distinct
     // plot geometries at 10pt (income @ 5 and 6 categories, expense @ 6) and one
     // chart at 8/14pt all land on `floor(sheet_frame_top_pt + row_top + row / 2)
     // + K`, with `K` depending only on the declared size — see
@@ -10234,6 +10235,11 @@ fn a_worksheet_bar_chart_seats_only_interior_category_labels_on_the_quantized_ba
     chart.series[0].values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
     chart.host = crate::ir::ChartHost::Spreadsheet;
     chart.category_axis_text_style.size_pt = Some(10.0);
+    // Axis overrides resolve to the measured face despite different chart defaults.
+    chart.text_font_family = Some("Arial".into());
+    chart.text_style.bold = Some(true);
+    chart.category_axis_text_font_family = Some("Trebuchet MS".into());
+    chart.category_axis_text_style.bold = Some(false);
 
     let frame = (400.0, 300.0);
     const SHEET_FRAME_TOP_PT: f64 = 20.5;
@@ -10273,6 +10279,34 @@ fn a_worksheet_bar_chart_seats_only_interior_category_labels_on_the_quantized_ba
         assert!(
             (placed.dy - expected).abs() < 0.01,
             "{label}: expected {expected}, got {placed:?}"
+        );
+    }
+}
+
+#[test]
+fn worksheet_bar_category_baselines_keep_unmeasured_faces_and_weights_centred() {
+    for (family, inherited_bold, axis_bold) in [
+        ("Arial", false, None),
+        ("Calibri", false, None),
+        ("Trebuchet MS", false, Some(true)),
+        ("Trebuchet MS", true, None),
+    ] {
+        let mut chart = two_series_bar_chart(Vec::new());
+        chart.series.truncate(1);
+        chart.categories = vec!["Rent".into(), "Food".into(), "Travel".into()];
+        chart.series[0].values = vec![900.0, 300.0, 120.0];
+        chart.host = crate::ir::ChartHost::Spreadsheet;
+        chart.text_font_family = Some(family.into());
+        chart.text_style.bold = Some(inherited_bold);
+        chart.category_axis_text_style.bold = axis_bold;
+        chart.category_axis_text_style.size_pt = Some(10.0);
+
+        let mut source = String::new();
+        generate_sheet_chart_in(&mut source, &chart, (400.0, 300.0), (50.0, 20.5));
+        let line: &str = source.lines().find(|line| line.contains("[Food]")).unwrap();
+        assert!(
+            !line.contains("top-edge: 0pt, bottom-edge: 0pt"),
+            "unmeasured {family}, inherited bold {inherited_bold}, axis bold {axis_bold:?}: {line}"
         );
     }
 }

@@ -4366,17 +4366,20 @@ fn column_value_label_y(
 /// A horizontal bar chart's interior category label baseline, snapped to a
 /// whole Excel sheet point.
 ///
-/// Native Excel places an interior row's label baseline at
+/// Excel 16.112 measurements of regular Trebuchet MS place an interior
+/// row's label baseline at
 /// `floor(sheet_frame_top_pt + row_top + row / 2) + K`, with `K` an integer
-/// that depends only on the declared category-axis size — not on which chart,
+/// that depends on the declared size within that measured face — not on which chart,
 /// how many categories it has, or the row's own position. Measured across two
 /// worksheet bar charts, two category counts and three sizes (#1621); see
-/// `assets/validation/issue-1621/README.md`. Returns the LOCAL offset (still
+/// `assets/validation/issue-1621/README.md`. Other plot geometries use the same
+/// formula but have not been independently probed. Returns the LOCAL offset (still
 /// relative to `sheet_frame_top_pt`, matching `row_top`'s own coordinate
 /// space); the caller places it directly as a baseline (`text(top-edge: 0pt,
 /// bottom-edge: 0pt)`), not as the `dy` of the unquantized box(height:
 /// row)/`align(horizon)` placement — the two box models aren't interchangeable.
 ///
+/// The caller gates this lookup to the measured family and weight.
 /// `None` for a size this issue never measured against native Excel. This
 /// function carries no row-position information and does not know whether its
 /// caller is an edge row: the plot rectangle's own top and bottom edge rows
@@ -4804,7 +4807,9 @@ fn generate_chart_axis(
             // Only a row strictly between the plot's own top and bottom edge
             // gets the quantized seat (see `bar_category_label_baseline_pt`).
             let is_edge_row: bool = cat_index == 0 || cat_index + 1 == categories;
-            let quantized_baseline: Option<f64> = if is_edge_row {
+            let (family, bold, _) = chart_category_label_face(chart);
+            let has_measured_face: bool = family.eq_ignore_ascii_case("Trebuchet MS") && !bold;
+            let quantized_baseline: Option<f64> = if is_edge_row || !has_measured_face {
                 None
             } else {
                 sheet_frame_top_pt
