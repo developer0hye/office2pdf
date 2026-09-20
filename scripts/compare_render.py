@@ -68,7 +68,7 @@ FILL_TEXT_RE = re.compile(
 # `number` attribute. Splitting on the numbered form alone yields zero pages and
 # silently drops the geometry axis.
 TRACE_PAGE_RE = re.compile(r"<page\b")
-GLYPH_RE = re.compile(r'<g unicode="([^"]*)" glyph="[^"]*" x="([-0-9.]+)" y="([-0-9.]+)"')
+GLYPH_RE = re.compile(r'<g unicode="([^"]*)"(?: glyph="[^"]*")? x="([-0-9.]+)" y="([-0-9.]+)"')
 HISTOGRAM_BINS = 32
 # Every ImageMagick tool the colour and pixel axes reach for. Named here so the
 # availability check and the call sites cannot drift apart.
@@ -616,7 +616,8 @@ def baseline_lines(pdf: Path) -> list[TextLine]:
                 for x, baseline, char in transformed_glyphs:
                     rows.setdefault(round(baseline), []).append((x, baseline, char))
         for key in sorted(rows):
-            glyphs = sorted(rows[key])
+            # Same-origin ligature continuations retain their trace text order.
+            glyphs = sorted(rows[key], key=lambda glyph: glyph[:2])
             text = re.sub(r"\s+", " ", "".join(glyph[2] for glyph in glyphs)).strip()
             if text:
                 # The 1pt bucket only groups glyphs into a line; reporting its
