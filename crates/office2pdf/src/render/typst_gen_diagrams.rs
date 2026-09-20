@@ -2891,6 +2891,43 @@ fn excel_category_label_y_shift_pt(chart: &Chart) -> f64 {
     EXCEL_CATEGORY_LABEL_BASE_Y_SHIFT_PT - native_grid_steps
 }
 
+/// Horizontal correction for a bar chart's right-aligned category-label box
+/// in an Excel worksheet chart.
+///
+/// [`chart_category_label_box_w`] right-aligns the label inside a box whose
+/// clearance from the plot is [`CHART_LABEL_EDGE_PAD_EM`], calibrated from
+/// PowerPoint's own export of `bar-chart.pptx` (#998). Excel keeps a
+/// narrower clearance. This function's result is added to `plot.dx`, which
+/// `write_placed_sheet_anchor` emits inside the fitted sheet's own
+/// `#scale(print_scale)` wrapper — every point added here is a sheet point,
+/// not a printed one, matching how `sheet_frame_origin_pt` is itself divided
+/// by that same scale before this function ever sees it.
+///
+/// Re-exporting `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx` (#1620,
+/// printed at this sheet's own 0.78 fit scale) with only the bar
+/// category-axis size patched to 8, 10, 14 and 18pt gave a native label
+/// origin 0.2083, 0.2610, 0.3677 and 0.4733 **printed** points right of the
+/// shared box at each size. Dividing each by the sheet's 0.78 print scale
+/// before comparing to the *declared* (unscaled) size gives 0.0334, 0.0335,
+/// 0.0337 and 0.0337em — a fixed fraction of the text size in the same
+/// sheet-space this function operates in, not a flat point offset. This
+/// crate's own bar-rect x0 already matches native exactly at every size
+/// probed, so only the label's own box moves.
+///
+/// An undeclared size keeps the shared box: no native probe establishes that
+/// implicit text follows this regime, mirroring
+/// [`excel_category_label_y_shift_pt`].
+pub(super) const EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM: f64 = 0.0336;
+
+fn excel_bar_category_label_x_shift_pt(chart: &Chart) -> f64 {
+    if chart.host != crate::ir::ChartHost::Spreadsheet
+        || (chart.category_axis_text_style.size_pt.is_none() && chart.text_style.size_pt.is_none())
+    {
+        return 0.0;
+    }
+    EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM * chart_axis_text_pt(chart, chart.category_axis_text_style)
+}
+
 /// Vertical correction for a bottom legend in an Excel worksheet chart.
 ///
 /// With only the legend size changed to 7, 9, 11, 14 and 18pt, Excel moves the
@@ -4788,7 +4825,7 @@ fn generate_chart_axis(
             let _ = writeln!(
                 out,
                 "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt, height: {}pt)[#align(right + horizon)[#text(size: {}pt{})[{}]]])",
-                format_f64(plot.dx),
+                format_f64(plot.dx + excel_bar_category_label_x_shift_pt(chart)),
                 format_f64(row_top),
                 format_f64(chart_category_label_box_w(chart)),
                 format_f64(row),

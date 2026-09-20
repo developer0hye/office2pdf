@@ -2608,6 +2608,94 @@ fn a_horizontal_bar_chart_puts_every_tick_on_the_geometry_it_marks() {
     assert_ticks_match_the_plot(ChartType::Bar, true);
 }
 
+/// The `dx:` an emitted horizontal category-label `#place` carries for the
+/// given category text, or `None` if no such line was written.
+fn category_label_box_dx(source: &str, category: &str) -> Option<f64> {
+    let suffix: String = format!("[{category}]]])");
+    let line: &str = source
+        .lines()
+        .find(|line| line.contains("align(right + horizon)") && line.ends_with(&suffix))?;
+    let after_dx: &str = line.split_once("dx: ")?.1;
+    after_dx.split_once("pt")?.0.parse::<f64>().ok()
+}
+
+#[test]
+fn an_excel_bar_category_label_sits_the_measured_offset_right_of_powerpoints() {
+    // Native Microsoft Excel 16.112 grid on
+    // `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx` (#1620), printed at
+    // this sheet's own 0.78 fit scale: patching the bar category axis size to
+    // 8, 10, 14 and 18pt and comparing a fresh native export against the
+    // PowerPoint-calibrated box shared by `chart_category_label_box_w` gives
+    // a label origin 0.2083, 0.2610, 0.3677 and 0.4733 **printed** points
+    // right of that box at each size. `framed_chart_source` below calls
+    // `generate_chart_in` directly, bypassing the fitted sheet's
+    // `#scale(print_scale)` wrapper `write_placed_sheet_anchor` applies at
+    // runtime, so `excel_dx - pptx_dx` here is a sheet-space (unscaled)
+    // delta; each literal is the printed measurement divided by this sheet's
+    // own 0.78 print scale to compare like with like. The two extreme sizes
+    // probed pin the measured rows themselves (not a recomputation of the
+    // constant under test) so a wrong slope or intercept in
+    // `EXCEL_BAR_CATEGORY_LABEL_X_SHIFT_EM` fails this test — see
+    // `assets/validation/issue-1620/native-category-label-measurements.json`.
+    let print_scale: f64 = 0.78;
+    for (size_pt, measured_native_printed_dx0_pt) in [(8.0, 0.2083), (18.0, 0.4733)] {
+        let measured_native_sheet_dx0_pt: f64 = measured_native_printed_dx0_pt / print_scale;
+        let mut chart = two_series_bar_chart(Vec::new());
+        chart.categories = vec!["financial aid".to_string(), "other".to_string()];
+        chart.series[0].values = vec![10.0, 2.0];
+        chart.series.truncate(1);
+        chart.category_axis_text_style.size_pt = Some(size_pt);
+        chart.text_style.size_pt = Some(size_pt);
+
+        chart.host = crate::ir::ChartHost::Presentation;
+        let pptx_source: String = framed_chart_source(&chart, 400.0, 250.0);
+        chart.host = crate::ir::ChartHost::Spreadsheet;
+        let excel_source: String = framed_chart_source(&chart, 400.0, 250.0);
+
+        let pptx_dx: f64 = category_label_box_dx(&pptx_source, "financial aid")
+            .expect("PowerPoint host emits the category label");
+        let excel_dx: f64 = category_label_box_dx(&excel_source, "financial aid")
+            .expect("Excel host emits the category label");
+
+        assert!(
+            (excel_dx - pptx_dx - measured_native_sheet_dx0_pt).abs() < 0.01,
+            "at {size_pt}pt the Excel box must sit the native-measured \
+             {measured_native_sheet_dx0_pt}pt (sheet-space) right of \
+             PowerPoint's shared box; got excel={excel_dx} pptx={pptx_dx}"
+        );
+    }
+}
+
+#[test]
+fn an_excel_bar_category_label_with_no_declared_size_keeps_powerpoints_box() {
+    // No native export establishes this shift for implicit (file-default)
+    // text, so `excel_bar_category_label_x_shift_pt` deliberately stays at
+    // 0.0 when neither the category axis nor the chart space declares a
+    // size, mirroring `excel_category_label_y_shift_pt`'s same guard.
+    let mut chart = two_series_bar_chart(Vec::new());
+    chart.categories = vec!["financial aid".to_string(), "other".to_string()];
+    chart.series[0].values = vec![10.0, 2.0];
+    chart.series.truncate(1);
+    assert!(chart.category_axis_text_style.size_pt.is_none());
+    assert!(chart.text_style.size_pt.is_none());
+
+    chart.host = crate::ir::ChartHost::Presentation;
+    let pptx_source: String = framed_chart_source(&chart, 400.0, 250.0);
+    chart.host = crate::ir::ChartHost::Spreadsheet;
+    let excel_source: String = framed_chart_source(&chart, 400.0, 250.0);
+
+    let pptx_dx: f64 = category_label_box_dx(&pptx_source, "financial aid")
+        .expect("PowerPoint host emits the category label");
+    let excel_dx: f64 = category_label_box_dx(&excel_source, "financial aid")
+        .expect("Excel host emits the category label");
+
+    assert!(
+        (excel_dx - pptx_dx).abs() < 1e-9,
+        "an undeclared size must keep the shared PowerPoint box; \
+         got excel={excel_dx} pptx={pptx_dx}"
+    );
+}
+
 #[test]
 fn a_line_chart_puts_every_tick_on_the_geometry_it_marks() {
     // The line plot lays its categories out in bands of its own, so its ticks
