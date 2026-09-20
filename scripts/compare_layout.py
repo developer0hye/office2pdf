@@ -1480,6 +1480,14 @@ def ordered_unique_segment_match(
                 if max(top, min(glyph_bbox(glyph)[1] for glyph in line.visible_glyphs))
                 < min(bottom, max(glyph_bbox(glyph)[3] for glyph in line.visible_glyphs))
             ]
+            if len(same_text) > 1:
+                # Independent chart axes can repeat the same labels on one
+                # row. Require a unique overlapping horizontal span as well;
+                # overlapping duplicate objects remain ambiguous.
+                same_text = [
+                    line for line in same_text
+                    if max(segment.x0, line.x0) < min(segment.x1, line.x1)
+                ]
         if len(same_text) != 1:
             return None
         selected.append(same_text[0])
