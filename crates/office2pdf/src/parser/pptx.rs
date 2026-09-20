@@ -513,7 +513,11 @@ impl Parser for PptxParser {
                         if let Page::Fixed(ref fp) = page {
                             for elem in &fp.elements {
                                 match &elem.kind {
-                                    FixedElementKind::Chart(chart) => {
+                                    FixedElementKind::Chart(chart)
+                                        if crate::render::typst_gen::chart_uses_data_table(
+                                            chart,
+                                        ) =>
+                                    {
                                         let title = chart
                                             .title
                                             .as_deref()
