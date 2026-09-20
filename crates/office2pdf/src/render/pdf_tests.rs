@@ -223,6 +223,7 @@ fn make_test_png() -> Vec<u8> {
     png
 }
 
+#[cfg(feature = "embedded-fonts")]
 #[test]
 fn test_embedded_fonts_are_available() {
     // MinimalWorld should always have embedded fallback fonts available
@@ -236,12 +237,10 @@ fn test_embedded_fonts_are_available() {
 
 #[test]
 fn test_system_fonts_enabled() {
-    // With system font discovery enabled, on typical systems we should have
-    // more fonts than just the embedded set. On minimal systems, we at least
-    // have the embedded fonts.
+    // System discovery adds to the feature-selected embedded set, which
+    // can be empty on native builds without default features.
     let world = MinimalWorld::new("", &[], &[]);
     let embedded_only_count = { embedded_fonts().1.len() };
-    // At minimum, we should have the embedded fonts
     assert!(
         world.font_source.len() >= embedded_only_count,
         "System font discovery should not reduce available fonts: total {} vs embedded-only {}",
@@ -253,9 +252,8 @@ fn test_system_fonts_enabled() {
 #[test]
 fn test_compile_with_system_font_name() {
     // A document specifying a common system font should compile successfully.
-    // Typst falls back to embedded fonts if the named font isn't available,
-    // so this test always succeeds — but with system fonts enabled, the
-    // named font will be used if present on the system.
+    // If Arial is unavailable, another installed font or the optional
+    // Typst embedded set supplies the fallback.
     let source = r#"#set text(font: "Arial")
 Hello with a system font."#;
     let result = compile_to_pdf(source, &[], None, &[], false, false).unwrap();
@@ -263,6 +261,7 @@ Hello with a system font."#;
     assert!(result.starts_with(b"%PDF"));
 }
 
+#[cfg(feature = "embedded-fonts")]
 #[test]
 fn test_embedded_fonts_still_available_as_fallback() {
     // Embedded fonts (Libertinus Serif) must still be available even with
@@ -620,6 +619,7 @@ fn test_compile_with_embedded_svg_image() {
     assert!(result.starts_with(b"%PDF"));
 }
 
+#[cfg(feature = "embedded-fonts")]
 #[test]
 fn test_embedded_only_world_produces_valid_pdf() {
     // Simulates the WASM code path: embedded fonts only, no system fonts.
@@ -639,8 +639,8 @@ fn test_embedded_only_world_produces_valid_pdf() {
 
 #[test]
 fn test_embedded_only_world_has_fonts() {
-    // The embedded-only constructor (used on WASM) must have at least
-    // the embedded fallback fonts (Libertinus, New Computer Modern, DejaVu).
+    // The native simulation follows the Cargo feature; real WASM builds
+    // always retain their fallback set.
     let world = MinimalWorld::new_embedded_only("", &[]);
     let embedded_count = { embedded_fonts().1.len() };
     assert_eq!(
@@ -1829,4 +1829,39 @@ fn times_new_roman_line_box_follows_the_system_copy_beside_the_office_bundle() {
     );
     let gap_em = font_line_gap_em("Times New Roman").expect("the face is installed");
     assert!((gap_em - 87.0 / 2048.0).abs() < tolerance, "gap {gap_em}");
+}
+
+#[test]
+fn test_embedded_font_feature_controls_native_font_book() {
+    // Exclude disk fonts so an installed copy cannot conceal a feature leak.
+    let (book, fonts) = discover_fonts(&[], false, true);
+    assert_eq!(
+        !fonts.is_empty(),
+        cfg!(feature = "embedded-fonts"),
+        "Typst's embedded fonts must follow the native Cargo feature"
+    );
+    assert_eq!(
+        book.select_family("new computer modern").next().is_some(),
+        cfg!(feature = "embedded-fonts")
+    );
+}
+
+#[test]
+fn test_font_feature_caller_fonts_compile_without_discovered_fonts() {
+    let font_data = font_data_for_dirs(&[]);
+    let source = "#set text(font: \"Noto Serif\")\nOffice report: Revenue 2026";
+    let world = MinimalWorld::new_with_font_source(
+        source,
+        &[],
+        FontSource::InMemory(InMemoryFontData::new(
+            crate::bundled_fonts::noto_serif_fonts(),
+            FallbackFontData::Shared(Arc::new(font_data)),
+        )),
+    );
+    let document = typst::compile::<PagedDocument>(&world)
+        .output
+        .expect("caller fonts suffice without any discovered fonts");
+    let pdf = typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default()).unwrap();
+    let text = pdf_extract::extract_text_from_mem(&pdf).unwrap();
+    assert!(text.contains("Office report: Revenue 2026"));
 }

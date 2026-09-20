@@ -1,0 +1,71 @@
+{
+  "_comment": "Raw measurements for issue #1621 (horizontal bar-chart category-label vertical baselines). All y values are printed points, y down, from mutool trace + scripts/compare_layout.py's own line parser (scripts/compare_layout.py:parse_trace/build_lines). print_scale is the sheet's fit-to-height scale (0.78). ours_y is office2pdf main @ c3bfafd7. sheet_frame_top_pt and row_top/row/plot_y/plot_h are read directly off office2pdf's own internal geometry via temporary instrumentation (not shipped) in generate_chart_axis.",
+  "fixture": "tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx",
+  "page": 2,
+  "print_scale": 0.78,
+  "sheet_frame_top_pt": 159.5,
+  "charts": {
+    "income": {
+      "part": "xl/charts/chart3.xml",
+      "categories_top_to_bottom": ["other", "from savings", "family help", "wages (after-tax)", "financial aid"],
+      "row_sheet_pt": 23.122867122695773,
+      "plot_y_sheet_pt": 71.85567962392459,
+      "plot_h_sheet_pt": 115.61433561347887,
+      "row_top_sheet_pt_by_cat_index": {
+        "0_financial_aid": 164.3471481147077,
+        "1_wages_after_tax": 141.22428099201193,
+        "2_family_help": 118.10141386931613,
+        "3_from_savings": 94.97854674662037,
+        "4_other": 71.8556796239246
+      },
+      "sizes": {
+        "8": {
+          "native_y": {"other": 192.66000, "from savings": 210.60000, "family help": 228.54000, "financial aid": 264.42000},
+          "ours_y":   {"other": 191.77576, "from savings": 209.81159, "family help": 227.84741, "financial aid": 263.91908}
+        },
+        "10": {
+          "native_y": {"other": 192.66000, "from savings": 210.60000, "family help": 228.54000, "wages (after-tax)": 246.48000, "financial aid": 264.42000},
+          "ours_y":   {"other": 192.35083, "from savings": 210.38666, "family help": 228.42249, "wages (after-tax)": 246.45838, "financial aid": 264.49415}
+        },
+        "14": {
+          "native_y": {"other": 193.44000, "from savings": 211.38000, "family help": 229.32000},
+          "ours_y":   {"other": 193.50104, "from savings": 211.53687, "family help": 229.57270}
+        }
+      },
+      "category_count_probes": {
+        "note": "Built with build_category_count_probe.py: patches xl/workbook.xml's CategoriesIncome array literal AND widens c:val's c:f range in chart3.xml, because a chart-cache-only patch (ptCount + c:pt) is silently overwritten by native Excel's own recalculation on open (confirmed empirically -- see README's 'What this falsifies (new)' section). office2pdf reads the chart-part cache directly with no formula evaluation, so the same script's cache-only edits are what make our own output track the variant. plot_y_sheet_pt and plot_h_sheet_pt are unchanged from the 5-category chart above (the manualLayout fraction and chart frame size don't depend on category count); only row_sheet_pt (= plot_h_sheet_pt / N) changes.",
+        "6": {
+          "categories_top_to_bottom": ["probe extra", "other", "from savings", "family help", "wages (after-tax)", "financial aid"],
+          "row_sheet_pt": 19.269055935579812,
+          "sizes": {
+            "10": {
+              "native_y": {"probe extra": 191.10000, "other": 205.92000, "from savings": 220.74000, "family help": 235.56000, "wages (after-tax)": 251.16000, "financial aid": 265.98000}
+            }
+          }
+        }
+      }
+    },
+    "expense": {
+      "part": "xl/charts/chart4.xml",
+      "note": "size probes must stay at 10pt on THIS chart -- past 10pt it hits #1756 (fixed c:manualLayout plot rect not growing with the category-label gutter), unrelated to this issue and independently filed. Only the native/ours pair at the fixture's own declared 10pt is used below.",
+      "categories_top_to_bottom": ["other expenses", "discretionary", "transportation", "books & supplies", "tuition & fees", "room & board"],
+      "row_sheet_pt": 19.59719379268398,
+      "plot_y_sheet_pt": 70.87126605261206,
+      "plot_h_sheet_pt": 117.58316275610389,
+      "row_top_sheet_pt_by_cat_index": {
+        "0_room_and_board": 168.85723501603195,
+        "1_tuition_and_fees": 149.26004122334797,
+        "2_books_and_supplies": 129.662847430664,
+        "3_transportation": 110.06565363798,
+        "4_discretionary": 90.46845984529602,
+        "5_other_expenses": 70.87126605261204
+      },
+      "sizes": {
+        "10": {
+          "native_y": {"other expenses": 189.54000, "discretionary": 205.14000, "transportation": 220.74000, "books & supplies": 235.56000, "tuition & fees": 251.16000, "room & board": 265.98000},
+          "ours_y":   {"other expenses": 190.20801, "discretionary": 205.49378, "transportation": 220.77960, "books & supplies": 236.06543, "tuition & fees": 251.35120, "room & board": 266.63703}
+        }
+      }
+    }
+  }
+}

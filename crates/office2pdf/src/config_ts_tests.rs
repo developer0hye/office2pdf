@@ -63,6 +63,10 @@ fn test_convert_options_ts_declaration() {
         decl.contains("last_resort_font_family"),
         "should expose the final fallback family: {decl}"
     );
+    assert!(
+        decl.contains("include_hidden_slides"),
+        "should expose hidden-slide inclusion: {decl}"
+    );
 }
 
 #[test]

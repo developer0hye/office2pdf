@@ -124,6 +124,16 @@ pub struct ParagraphStyle {
     /// line box does not work that way, or a paragraph whose mark resolves to
     /// no family at all.
     pub paragraph_mark_font_family: Option<Box<str>>,
+    /// The glyphs a worksheet cell's selected number-format section reserves
+    /// space for without painting them — e.g. the `)` a `_)`-padded positive
+    /// section holds room for beside a parenthesised negative section.
+    ///
+    /// Right alignment must seat the visible text left of this reserve's own
+    /// rounded advance, the same way it already seats a right-aligned line
+    /// left of its final glyph's rounding noise (issue #1631). `None` for a
+    /// cell whose selected section reserves nothing, a non-worksheet
+    /// paragraph, or a cell already replaced with overflow hashes.
+    pub sheet_number_format_reserved_glyphs: Option<Box<str>>,
 }
 
 /// A custom tab stop definition.

@@ -5130,23 +5130,32 @@ fn a_powerpoint_horizontal_value_axis_keeps_native_label_gap_at_multiple_sizes()
 }
 
 #[test]
-fn an_excel_worksheet_horizontal_value_axis_uses_the_native_label_band() {
-    // A native Excel for Mac 16.112 export of the #1266 workbook places the
-    // zero-label baseline 15.03 chart points below the plot bottom. Translating
-    // that baseline through the same Typst text box gives a 7.65pt box-top gap;
-    // the old flat 4pt fallback left the printed baseline 3.65pt too high.
-    let chart = monthly_budget_income_chart();
-    let source = framed_chart_source(
-        &chart,
-        MONTHLY_BUDGET_CHART_FRAME.0,
-        MONTHLY_BUDGET_CHART_FRAME.1,
-    );
-    let plot_bottom = axis_plot_rect(&chart, MONTHLY_BUDGET_CHART_FRAME, false).3;
-    let actual_gap = horizontal_value_axis_label_y(&source, "0") - plot_bottom;
-    assert!(
-        (actual_gap - 7.65).abs() <= 0.01,
-        "the worksheet value-label gap is {actual_gap}pt, expected the native-derived 7.65pt; got:\n{source}"
-    );
+fn an_excel_worksheet_horizontal_value_axis_scales_its_label_gap_with_size() {
+    // Native Excel for Mac 16.112 exports of the `issue_1181_fit_to_height.xlsx`
+    // income bar chart (#1622), isolated to just the value-axis font size via
+    // the one-factor `office`-backend probes in `assets/validation/issue-1622/`.
+    // 8pt and 10pt are the only clean points -- native re-lays the plot itself
+    // past that, so no third point could confirm the fit is linear rather than
+    // merely a two-point line. Expected gaps translate the native measurement
+    // through the same Typst text box's own top-to-baseline offset for this
+    // Trebuchet MS face (see the constants' doc comment for the derivation).
+    let measurements = [(8.0, 8.131547), (10.0, 8.656938)];
+
+    for (size_pt, expected_gap) in measurements {
+        let mut chart = monthly_budget_income_chart();
+        chart.value_axis_text_style.size_pt = Some(size_pt);
+        let source = framed_chart_source(
+            &chart,
+            MONTHLY_BUDGET_CHART_FRAME.0,
+            MONTHLY_BUDGET_CHART_FRAME.1,
+        );
+        let plot_bottom = axis_plot_rect(&chart, MONTHLY_BUDGET_CHART_FRAME, false).3;
+        let actual_gap = horizontal_value_axis_label_y(&source, "0") - plot_bottom;
+        assert!(
+            (actual_gap - expected_gap).abs() <= 0.01,
+            "{size_pt}pt worksheet value-label gap is {actual_gap}pt, expected {expected_gap}pt; got:\n{source}"
+        );
+    }
 }
 
 #[test]

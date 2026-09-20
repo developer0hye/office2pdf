@@ -127,8 +127,13 @@ pub struct ConvertOptions {
     /// workbook does not hide is included — Excel prints no `hidden` or
     /// `veryHidden` sheet.
     pub sheet_names: Option<Vec<String>>,
-    /// Filter PPTX slides by range (1-indexed). If `None`, all slides are included.
+    /// Filter PPTX slides by range (1-indexed). If `None`, all visible slides
+    /// are included unless `include_hidden_slides` is enabled.
     pub slide_range: Option<SlideRange>,
+    /// Include PPTX slides marked hidden with `show="0"` or `show="false"`.
+    /// Defaults to `false`, matching PowerPoint PDF export. Slide ranges still
+    /// use source slide ordinals whether hidden slides are included or omitted.
+    pub include_hidden_slides: bool,
     /// PDF standard to enforce. If `None`, produces a standard PDF 1.7.
     pub pdf_standard: Option<PdfStandard>,
     /// Override paper size for the output PDF. If `None`, uses the source document's size.

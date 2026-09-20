@@ -14,6 +14,8 @@ categories = ["text-processing"]
 crate-type = ["cdylib", "rlib"]
 
 [features]
+default = ["embedded-fonts"]
+embedded-fonts = ["typst-kit/embedded-fonts"]
 wasm = ["wasm-bindgen"]
 wasm-cjk-font = ["wasm"]
 pdf-ops = ["lopdf"]
@@ -28,7 +30,6 @@ typst-pdf = "0.15"
 typst-layout = "0.15"
 typst-kit = { version = "0.15", default-features = false, features = [
     "scan-fonts",
-    "embedded-fonts",
 ] }
 comemo = "0.5"
 docx-rs = "0.4.22"
@@ -44,6 +45,8 @@ wasm-bindgen = { version = "0.2", optional = true }
 ts-rs = { version = "12", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+# Browsers cannot discover system fonts; preserve their built-in fallback set.
+typst-kit = { version = "0.15", default-features = false, features = ["embedded-fonts"] }
 getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
 getrandom = { version = "0.3", features = ["wasm_js"] }
 # `std::time::{Instant, SystemTime}` panic with "time not implemented on this

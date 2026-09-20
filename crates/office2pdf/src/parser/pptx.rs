@@ -501,8 +501,11 @@ impl Parser for PptxParser {
                     slide_size,
                     &presentation_resources,
                     &mut archive,
+                    options.include_hidden_slides,
                 ) {
-                    // Hidden slide (show="0"): PowerPoint omits it from PDF export.
+                    // Hidden slide (show="0" or show="false") omitted because
+                    // include_hidden_slides is false, matching PowerPoint's
+                    // default PDF export behavior.
                     Ok(None) => {}
                     Ok(Some((page, slide_warnings))) => {
                         warnings.extend(slide_warnings);

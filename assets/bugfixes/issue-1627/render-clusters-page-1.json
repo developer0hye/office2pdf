@@ -1,0 +1,279 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 59.2704,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 13.44,
+        "x": 349.68,
+        "y": 238.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-26392815f643",
+      "region": "top"
+    },
+    {
+      "area_pt2": 48.3264,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 14.64,
+        "x": 364.08,
+        "y": 238.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-05170a97a09a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.9808,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 14.16,
+        "x": 175.92,
+        "y": 78.0
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-f309d77a01c2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 45.6768,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.4,
+        "x": 463.2,
+        "y": 116.16
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-f6d257e5e964",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 37.152,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 4.56,
+        "x": 156.24,
+        "y": 78.0
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-c1a73991e86f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 13.2,
+        "width": 5.52,
+        "x": 167.52,
+        "y": 78.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-371951470256",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 3.36,
+        "x": 490.8,
+        "y": 116.16
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-6165fdf85b73",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 3.36,
+        "x": 418.8,
+        "y": 116.16
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-44bca72488af",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 27.8784,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 270.72,
+        "y": 238.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-096a35de3ee8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 305.04,
+        "y": 238.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-96da7a5e0574",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 3.84,
+        "x": 80.88,
+        "y": 238.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-dbb97728ee16",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.6944,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 9.12,
+        "x": 318.48,
+        "y": 238.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-7bbd80099125",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 4.32,
+        "x": 148.56,
+        "y": 78.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-bc611c7e9bf7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.56,
+        "x": 296.88,
+        "y": 238.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-34b59d4533be",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.3696,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 2.88,
+        "x": 172.32,
+        "y": 78.0
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-80e325fec2e4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 3.36,
+        "x": 162.48,
+        "y": 79.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Title (y~78), header row (y~116), and footnote (y~238) Hangul glyphs this fix repaints at regular weight (matching GT's own Malgun Gothic regular face for these substituted runs, issue #1627). A before/after self-diff isolates the fix's own pixel effect to exactly these three lines with zero movement elsewhere; matched GT/output crops at these bboxes show identical glyph shape and weight, differing only by sub-pixel antialiasing."
+      },
+      "id": "p1-bfba75dfbd82",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 16,
+    "duplicate": 0,
+    "total": 16,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

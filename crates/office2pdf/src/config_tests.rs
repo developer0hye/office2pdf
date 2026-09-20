@@ -46,6 +46,16 @@ fn test_convert_options_default() {
     let opts = ConvertOptions::default();
     assert!(opts.sheet_names.is_none());
     assert!(opts.slide_range.is_none());
+    assert!(!opts.include_hidden_slides);
+}
+
+#[test]
+fn test_convert_options_with_include_hidden_slides() {
+    let opts = ConvertOptions {
+        include_hidden_slides: true,
+        ..Default::default()
+    };
+    assert!(opts.include_hidden_slides);
 }
 
 #[test]
