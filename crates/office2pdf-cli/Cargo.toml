@@ -15,10 +15,12 @@ name = "office2pdf"
 path = "src/main.rs"
 
 [features]
+default = ["embedded-fonts"]
+embedded-fonts = ["office2pdf/embedded-fonts"]
 server = ["tiny_http"]
 
 [dependencies]
-office2pdf = { version = "0.7.0", path = "../office2pdf", features = ["pdf-ops"] }
+office2pdf = { version = "0.7.0", path = "../office2pdf", default-features = false, features = ["pdf-ops"] }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 rayon = "1"

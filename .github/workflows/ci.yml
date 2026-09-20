@@ -81,6 +81,8 @@ jobs:
 
       - name: Validate dependency lock contract
         run: python3 -m unittest scripts.tests.test_dependency_lock_contract
+      - name: Validate embedded font feature resolution
+        run: python3 -m unittest scripts.tests.test_embedded_font_features
 
   business-golden-contract:
     name: Business Golden Contract
@@ -182,6 +184,11 @@ jobs:
       - run: cargo test --locked --workspace
         env:
           OFFICE2PDF_VALIDATE_PDF: "1"
+      - name: Test native conversion without Typst fonts
+        run: |
+          cargo test --locked -p office2pdf --no-default-features --lib font_feature
+          cargo test --locked -p office2pdf --no-default-features --test font_features
+          cargo check --locked -p office2pdf-cli --no-default-features
 
   clippy:
     name: Clippy
@@ -207,6 +214,7 @@ jobs:
           key: wasm
       - run: cargo check --locked --target wasm32-unknown-unknown -p office2pdf
       - run: cargo check --locked --target wasm32-unknown-unknown -p office2pdf --features wasm
+      - run: cargo check --locked --target wasm32-unknown-unknown -p office2pdf --no-default-features --features wasm
       - run: cargo check --locked --target wasm32-unknown-unknown -p office2pdf --features wasm-cjk-font
       - uses: taiki-e/install-action@v2
         with:

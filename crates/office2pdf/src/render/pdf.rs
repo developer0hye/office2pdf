@@ -51,6 +51,7 @@ impl FontSlot {
         }
     }
 
+    #[cfg(any(feature = "embedded-fonts", target_arch = "wasm32"))]
     fn loaded(font: Font) -> Self {
         Self {
             path: None,
@@ -115,7 +116,7 @@ pub(crate) fn discover_font_book(
     discover_fonts(font_dirs, include_system_fonts, include_embedded_fonts).0
 }
 
-/// Only the faces embedded in typst-assets: the WASM build's whole font set.
+/// Typst's fallback faces, empty on native builds without `embedded-fonts`.
 fn embedded_fonts() -> (typst::text::FontBook, Vec<FontSlot>) {
     let mut book = typst::text::FontBook::new();
     let mut fonts: Vec<FontSlot> = Vec::new();
@@ -124,13 +125,17 @@ fn embedded_fonts() -> (typst::text::FontBook, Vec<FontSlot>) {
 }
 
 /// Appends the faces embedded in typst-assets, which rank below every
-/// discovered face.
+/// discovered face. Always available on WASM, opt-out on native builds.
+#[cfg(any(feature = "embedded-fonts", target_arch = "wasm32"))]
 fn push_embedded_fonts(book: &mut typst::text::FontBook, fonts: &mut Vec<FontSlot>) {
     for (font, info) in typst_kit::fonts::embedded() {
         book.push(info);
         fonts.push(FontSlot::loaded(font));
     }
 }
+
+#[cfg(all(not(feature = "embedded-fonts"), not(target_arch = "wasm32")))]
+fn push_embedded_fonts(_book: &mut typst::text::FontBook, _fonts: &mut Vec<FontSlot>) {}
 
 /// Document- or caller-provided in-memory faces followed by cached fallback
 /// slots. The combined book preserves the same priority order that native
@@ -1145,7 +1150,8 @@ impl MinimalWorld {
         }
     }
 
-    /// Create a new `MinimalWorld` with embedded fonts only (no system font search).
+    /// Create a world without system font discovery, using the configured
+    /// Typst embedded set (empty on native builds without `embedded-fonts`).
     ///
     /// Uses a process-wide cache for embedded font data. This is the constructor
     /// used on WASM targets where system font discovery is not available.
@@ -1159,7 +1165,7 @@ impl MinimalWorld {
     }
 
     /// Create an embedded-only world with per-conversion in-memory faces at
-    /// higher priority than Typst's built-in fallback fonts.
+    /// higher priority than the configured Typst embedded set.
     #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
     fn new_embedded_with_fonts(
         source_text: &str,

@@ -29,6 +29,35 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 office2pdf = "0.7.0"
 ```
 
+### Native builds without Typst's bundled fonts
+
+The default `embedded-fonts` Cargo feature includes Typst's bundled font set.
+To omit that set (including `NewCM10-Regular.otf`) from a native build, disable
+default features. This option is available from the repository; it is not in
+0.7.0:
+
+```toml
+[dependencies]
+office2pdf = { git = "https://github.com/developer0hye/office2pdf", default-features = false }
+```
+
+For the CLI, build from a checkout:
+
+```sh
+cargo install --path crates/office2pdf-cli --locked --no-default-features
+```
+
+Native font discovery, document-embedded fonts, caller-provided fonts, and
+Office-specific bundled Noto/Selawik fallbacks remain available. Documents that
+use Typst's fonts may render differently; supply suitable fonts with
+`ConvertOptions::font_paths` / `font_bytes` (CLI: `--font-path`). Equations need
+a suitable math font installed when Typst's math fonts are omitted.
+
+Cargo features are additive: another dependency enabling
+`office2pdf/embedded-fonts` or `typst-kit/embedded-fonts` can include the assets
+again. WASM builds always retain Typst's bundled fonts because they cannot
+search system font directories.
+
 ### CLI
 
 ```sh
