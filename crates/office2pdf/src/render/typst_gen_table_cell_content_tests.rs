@@ -254,11 +254,11 @@ fn test_east_asian_table_cell_snaps_to_the_document_grid() {
     // Asian line alone — 03_meeting_minutes_ko's 25.44pt rows decompose to
     // 3.5pt cell margins, a 16.43pt line for 9.5pt Malgun, its 1.5pt `w:after`
     // and a 0.5pt border, with no 18pt slot anywhere (issue #518). Uses a
-    // Typst-embedded font so the test is environment-free.
+    // Typst-embedded font, so default builds do not need an installed copy.
     let Some((ascender, _descender, word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
-        return; // no font book available (e.g. exotic CI sandbox)
+        return; // no installed copy in a native build without embedded-fonts
     };
     let font_size: f64 = 10.0;
     // One 18pt grid line, since the East Asian line fits inside it.
