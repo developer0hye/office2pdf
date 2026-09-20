@@ -1,0 +1,13 @@
+{
+  "converter_commit": "bd443885328819da53a321c65174d77703f97110",
+  "native_exporter": "Microsoft Excel 16.113 on macOS",
+  "dpi": 150,
+  "source_attribute": "xl/worksheets/sheet1.xml pageMargins/@left=0.25",
+  "source_sha256": "68c126a6de09949f1c350c3428ddb08a6945bd711092e53172fa7d8bb0be76ef",
+  "native_pdf_sha256": "eadbb448c7beb44ad0e321d1711820340937755a434a9860b5b7bb592dbdf63a",
+  "output_pdf_sha256": "b823ee9ba2843a3e9a3ea2665be1488d28a9ea7088a89979d4df386bacba6f6f",
+  "native_control": "layout-identical re-zip",
+  "converter_control": "byte-identical re-zip",
+  "native_x_pt": 22,
+  "output_x_pt": 21
+}

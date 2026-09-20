@@ -1,0 +1,42 @@
+[
+  {
+    "file": "base.pdf",
+    "native_x": 22.0,
+    "converter_x": 21.0
+  },
+  {
+    "file": "control.pdf",
+    "native_x": 22.0,
+    "converter_x": 21.0
+  },
+  {
+    "file": "variant-0.1.pdf",
+    "native_x": 22.0,
+    "converter_x": 10.0
+  },
+  {
+    "file": "variant-0.2.pdf",
+    "native_x": 22.0,
+    "converter_x": 17.0
+  },
+  {
+    "file": "variant-0.3.pdf",
+    "native_x": 24.0,
+    "converter_x": 24.0
+  },
+  {
+    "file": "variant-0.4.pdf",
+    "native_x": 31.0,
+    "converter_x": 31.0
+  },
+  {
+    "file": "variant-0.7.pdf",
+    "native_x": 53.0,
+    "converter_x": 53.0
+  },
+  {
+    "file": "variant-0.pdf",
+    "native_x": 22.0,
+    "converter_x": 53.0
+  }
+]
