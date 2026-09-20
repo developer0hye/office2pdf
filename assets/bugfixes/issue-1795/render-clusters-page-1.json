@@ -1,0 +1,183 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 55.0656,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 13.44,
+        "x": 72.48,
+        "y": 119.52
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected all body crops: values and styles agree; default-bottom cells in fixed15pt rows still follow the tight-row centered path and sit1pt high (#1721)."
+      },
+      "id": "p1-ecab50898bac",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.08,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 11.52,
+        "x": 308.16,
+        "y": 44.64
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected header crop: the bold black header is restored, but its baseline remains 1.6pt high (#1731) and width-related x offset remains tracked in #1659."
+      },
+      "id": "p1-eb620ee1b717",
+      "region": "top"
+    },
+    {
+      "area_pt2": 42.3936,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 11.52,
+        "x": 340.32,
+        "y": 44.64
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected header crop: the bold black header is restored, but its baseline remains 1.6pt high (#1731) and width-related x offset remains tracked in #1659."
+      },
+      "id": "p1-29a81a0f14db",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 102.24,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected all body crops: values and styles agree; default-bottom cells in fixed15pt rows still follow the tight-row centered path and sit1pt high (#1721)."
+      },
+      "id": "p1-ad2ef706d37d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 67.68,
+        "y": 107.04
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected all body crops: values and styles agree; default-bottom cells in fixed15pt rows still follow the tight-row centered path and sit1pt high (#1721)."
+      },
+      "id": "p1-5ecf3ed66e2c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 73.92,
+        "y": 107.04
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected all body crops: values and styles agree; default-bottom cells in fixed15pt rows still follow the tight-row centered path and sit1pt high (#1721)."
+      },
+      "id": "p1-2f6fdbc6b8c1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 61.92,
+        "y": 107.04
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected all body crops: values and styles agree; default-bottom cells in fixed15pt rows still follow the tight-row centered path and sit1pt high (#1721)."
+      },
+      "id": "p1-314c4846c6c9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 61.44,
+        "y": 121.92
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected all body crops: values and styles agree; default-bottom cells in fixed15pt rows still follow the tight-row centered path and sit1pt high (#1721)."
+      },
+      "id": "p1-12235849f7c7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 108.0,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected all body crops: values and styles agree; default-bottom cells in fixed15pt rows still follow the tight-row centered path and sit1pt high (#1721)."
+      },
+      "id": "p1-cf5e71ad29eb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 7.68,
+        "x": 259.2,
+        "y": 47.52
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected header crop: the bold black header is restored, but its baseline remains 1.6pt high (#1731) and width-related x offset remains tracked in #1659."
+      },
+      "id": "p1-7753287877e8",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 10,
+    "duplicate": 0,
+    "total": 10,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

@@ -383,7 +383,7 @@ pub(super) fn extract_normal_font(
     let mut in_first_font = false;
     let mut name: Option<String> = None;
     let mut size: Option<f64> = None;
-    let mut font_color: Option<umya_spreadsheet::Color> = None;
+    let mut font_color: Option<Color> = None;
     let mut theme_scheme: Option<ThemeFontSlot> = None;
     loop {
         match reader.read_event() {
@@ -400,42 +400,7 @@ pub(super) fn extract_normal_font(
                 match e.local_name().as_ref() {
                     b"name" => name = val,
                     b"sz" => size = val.and_then(|v| v.parse::<f64>().ok()),
-                    b"color" => {
-                        let mut color = umya_spreadsheet::Color::default();
-                        let mut has_value = false;
-                        for attribute in e.attributes().flatten() {
-                            let Ok(value) = std::str::from_utf8(attribute.value.as_ref()) else {
-                                continue;
-                            };
-                            match attribute.key.local_name().as_ref() {
-                                b"rgb" => {
-                                    color.set_argb(value);
-                                    has_value = true;
-                                }
-                                b"theme" => {
-                                    if let Ok(index) = value.parse::<u32>() {
-                                        color.set_theme_index(index);
-                                        has_value = true;
-                                    }
-                                }
-                                b"indexed" => {
-                                    if let Ok(index) = value.parse::<u32>() {
-                                        color.set_indexed(index);
-                                        has_value = true;
-                                    }
-                                }
-                                b"tint" => {
-                                    if let Ok(tint) = value.parse::<f64>() {
-                                        color.set_tint(tint);
-                                    }
-                                }
-                                _ => {}
-                            }
-                        }
-                        if has_value {
-                            font_color = Some(color);
-                        }
-                    }
+                    b"color" => font_color = normal_font_color(e, theme),
                     b"scheme" => theme_scheme = val.as_deref().and_then(ThemeFontSlot::parse),
                     _ => {}
                 }
@@ -447,12 +412,52 @@ pub(super) fn extract_normal_font(
     Some(NormalFont {
         family: name?,
         size_pt: size.unwrap_or(11.0),
-        color: font_color
-            .as_ref()
-            .and_then(|color| resolve_style_color(color, theme)),
+        color: font_color,
         theme_scheme,
         theme_ui_script_faces,
     })
+}
+
+/// Match umya's ordinary style-color precedence without invoking its mutually
+/// clearing setters in XML attribute order. Some exporters retain RGB beside
+/// a theme selector; that fallback must not turn a black themed header white.
+fn normal_font_color(
+    element: &quick_xml::events::BytesStart<'_>,
+    theme: Option<&umya_spreadsheet::structs::drawing::Theme>,
+) -> Option<Color> {
+    let attribute = |name: &str| -> Option<String> {
+        let attribute = element.try_get_attribute(name).ok().flatten()?;
+        String::from_utf8(attribute.value.into_owned()).ok()
+    };
+    let tint: Option<f64> = attribute("tint").and_then(|value| value.parse().ok());
+    for name in ["indexed", "theme", "rgb"] {
+        let Some(value) = attribute(name) else {
+            continue;
+        };
+        let mut color = umya_spreadsheet::Color::default();
+        match name {
+            "indexed" | "theme" => {
+                let Ok(index) = value.parse::<u32>() else {
+                    continue;
+                };
+                if name == "indexed" {
+                    color.set_indexed(index);
+                } else {
+                    color.set_theme_index(index);
+                }
+            }
+            _ => {
+                color.set_argb(value);
+            }
+        }
+        if let Some(tint) = tint {
+            color.set_tint(tint);
+        }
+        if let Some(resolved) = resolve_style_color(&color, theme) {
+            return Some(resolved);
+        }
+    }
+    None
 }
 
 /// The script whose theme face Excel resolves a scheme font to on the
