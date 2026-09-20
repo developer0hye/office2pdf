@@ -230,6 +230,46 @@ class ParseTraceTest(unittest.TestCase):
         # adv .5 em at that size is 5.28pt.
         self.assertAlmostEqual(line.glyphs[0].advance, 5.28, places=3)
 
+    def test_ligature_continuations_preserve_text_and_painted_geometry(self) -> None:
+        for prefix, ligature, suffix in (("le", "ft", ""), ("bo", "tt", "om"), ("o", "ffi", "ce")):
+            with self.subTest(ligature=ligature):
+                glyphs = [
+                    f'<g unicode="{char}" glyph="1" x="{index * 6}" y="0" adv=".5"/>'
+                    for index, char in enumerate(prefix)
+                ]
+                x = len(prefix) * 6
+                glyphs.append(
+                    f'<g unicode="{ligature[0]}" glyph="7" x="{x}" y="0" adv=".616"/>'
+                )
+                glyphs.extend(
+                    f'<g unicode="{char}" x="{x}" y="0" adv="0"/>'
+                    for char in ligature[1:]
+                )
+                glyphs.extend(
+                    f'<g unicode="{char}" glyph="1" x="{x + 12 * 0.616 + index * 6}" y="0" adv=".5"/>'
+                    for index, char in enumerate(suffix)
+                )
+                operation = (
+                    '<fill_text colorspace="DeviceRGB" color="0 0 0" '
+                    'transform="1 0 0 1 72 100"><span font="Calibri" '
+                    'trm="12 0 0 12">' + "".join(glyphs) + '</span></fill_text>'
+                )
+                for covered in (False, True):
+                    content = operation + (rect_op(70, 80, 120, 110) if covered else "")
+                    page = compare_layout.parse_trace(trace_document(content))[0]
+                    line = page.lines[0]
+                    self.assertEqual(line.key, prefix + ligature + suffix)
+                    self.assertAlmostEqual(line.x0, 72)
+                    self.assertAlmostEqual(line.x1, 72 + x + 12 * 0.616 + len(suffix) * 6)
+                    self.assertEqual(line.visibility, "hidden" if covered else "painted")
+                original = compare_layout.parse_trace(trace_document(operation))[0]
+                shifted = compare_layout.parse_trace(
+                    trace_document(operation.replace("72 100", "74 103"))
+                )[0]
+                vector = compare_layout.diff_page(original, shifted, fine_shift=0.5)
+                self.assertEqual(vector["lines"]["missing"], 0)
+                self.assertEqual(vector["instances"]["fine_shift_count"], 1)
+
     def test_glyphs_on_one_baseline_group_into_one_line_in_x_order(self) -> None:
         page = "\n".join(
             [
