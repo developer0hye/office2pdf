@@ -3146,10 +3146,13 @@ fn generate_hf_content(
     if is_single_line_sections {
         out.push_str("#grid(columns: (1fr, 1fr, 1fr), ");
         if seat.is_some() {
-            out.push_str("align: bottom, ");
+            out.push_str("align: (left + bottom, center + bottom, right + bottom), ");
+        } else {
+            out.push_str("align: (left, center, right), ");
         }
         for slot in [Alignment::Left, Alignment::Center, Alignment::Right] {
-            let _ = write!(out, "[");
+            // Excel sections share the page width; the grid only anchors them.
+            out.push_str("[#box(width: 300%)[");
             if let Some((index, para)) = hf
                 .paragraphs
                 .iter()
@@ -3161,7 +3164,7 @@ fn generate_hf_content(
                 }
                 generate_hf_styled_paragraph(out, para, ctx);
             }
-            out.push_str("], ");
+            out.push_str("]], ");
         }
         out.push(')');
         return;

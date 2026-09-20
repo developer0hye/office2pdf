@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1731",
+      "cluster_ids": [
+        "p1-0fbab44cbb82",
+        "p1-cc8f181222bb",
+        "p1-2fbe948664b3",
+        "p1-b5d16c82f2cd"
+      ],
+      "note": "Header baseline remains 1.60pt high; inspected full header crop."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1721",
+      "cluster_ids": [
+        "p1-ecab50898bac",
+        "p1-ad2ef706d37d",
+        "p1-5ecf3ed66e2c",
+        "p1-2f6fdbc6b8c1",
+        "p1-314c4846c6c9",
+        "p1-12235849f7c7",
+        "p1-cf5e71ad29eb"
+      ],
+      "note": "Body rows retain their content and styling but remain 1pt high; inspected all body crops."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1728",
+      "cluster_ids": [
+        "p1-d61059adbf69"
+      ],
+      "note": "Plain left footer starts 1pt left of native; source has one uniform Arial run. Inspected full-scale footer crop."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1659",
+      "cluster_ids": [
+        "p1-c6438bc51dfb",
+        "p1-c98841851f94"
+      ],
+      "note": "Center footer now fits on one line with matching baseline; native whole-point glyph advances differ. Full-scale footer crop inspected."
+    }
+  ]
+}
