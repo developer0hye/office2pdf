@@ -1,0 +1,71 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 72.48,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Malgun10 baseline now matches; native whole-point glyph origins differ from fractional output origins by up to0.9374pt. Inspected full-resolution top paired crop."
+      },
+      "id": "p1-b547b123c708",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.32,
+        "x": 92.16,
+        "y": 200.16
+      },
+      "disposition": {
+        "issue": "#1814",
+        "kind": "issue",
+        "note": "Gulim9 remains1ptlow under the missing default-style minimum; per-glyph placement also remains tracked in1659."
+      },
+      "id": "p1-abc0b84964f0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 67.68,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Malgun10 baseline now matches; native whole-point glyph origins differ from fractional output origins by up to0.9374pt. Inspected full-resolution top paired crop."
+      },
+      "id": "p1-3c0d580dbf42",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 3,
+    "duplicate": 0,
+    "total": 3,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

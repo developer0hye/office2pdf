@@ -2059,12 +2059,13 @@ pub(super) fn sheet_cell_thick_bottom_lift_pt(
 /// those samples. MS Gothic conforming is why the exception cannot be stated
 /// as "an East Asian face".
 ///
-/// `None` below each series' first entry, because the probe workbook floors at
-/// [`SHEET_CELL_MIN_DESCENT_SEAT_PT`] and so cannot tell a face value of 4pt
-/// from a floored one — and the floor is exactly what differs between the two
-/// workbook families (issue #1199). The rounded descent stands in there, and
-/// on all three faces it lands at or under both floors (3pt at the largest
-/// such size on each), so the family's own floor decides as it did before.
+/// The original sweep left values at or below its four-point workbook floor
+/// unmeasured. Issue #1815 isolates Malgun Gothic sizes 8–14 in separate ruled
+/// rows under an Arial default style: sizes 8–10 seat at 3pt, and 11–14 at 4pt.
+/// An independent Arial 4pt control seats at 2pt, below every measured Malgun
+/// value; default-style Arial sizes 4, 8 and 11 preserve those positions.
+/// Gulim/Batang values still masked by the workbook floor remain `None`, with
+/// rounded descent as the fallback; their unfloored small seats are unverified.
 ///
 /// **Nothing here interpolates**, and no family may be lent another's column:
 /// Gulim and Batang share their `hhea` metrics but were each swept in full
@@ -2101,7 +2102,7 @@ struct SheetCellSeats {
 #[rustfmt::skip]
 const SHEET_CELL_SEATS: [SheetCellSeats; 3] = [
     SheetCellSeats { families: &["Malgun Gothic", "맑은 고딕"], seats_pt:
-        [None, None, None, None, None, None, None, Some(5.0), Some(5.0), Some(6.0), Some(6.0), Some(7.0), Some(7.0), Some(8.0), Some(8.0), Some(9.0), Some(10.0), Some(11.0), Some(12.0), Some(14.0), Some(16.0)] },
+        [Some(3.0), Some(3.0), Some(3.0), Some(4.0), Some(4.0), Some(4.0), Some(4.0), Some(5.0), Some(5.0), Some(6.0), Some(6.0), Some(7.0), Some(7.0), Some(8.0), Some(8.0), Some(9.0), Some(10.0), Some(11.0), Some(12.0), Some(14.0), Some(16.0)] },
     SheetCellSeats { families: &["Gulim", "굴림"], seats_pt:
         [None, None, None, None, None, None, None, None, None, None, None, None, None, None, Some(5.0), Some(5.0), Some(5.0), Some(7.0), Some(7.0), Some(8.0), Some(10.0)] },
     SheetCellSeats { families: &["Batang", "바탕"], seats_pt:
