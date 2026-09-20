@@ -961,6 +961,9 @@ impl XlsxParser {
                 .map(|anchor| anchored_chart(anchor, sheet, &ctx))
                 .collect();
             for sheet_chart in &sheet_charts {
+                if !crate::render::typst_gen::chart_uses_data_table(&sheet_chart.chart) {
+                    continue;
+                }
                 let title = sheet_chart
                     .chart
                     .title
@@ -1347,6 +1350,9 @@ impl Parser for XlsxParser {
                 .map(|anchor| anchored_chart(anchor, sheet, &ctx))
                 .collect();
             for sheet_chart in &sheet_charts {
+                if !crate::render::typst_gen::chart_uses_data_table(&sheet_chart.chart) {
+                    continue;
+                }
                 let title = sheet_chart
                     .chart
                     .title

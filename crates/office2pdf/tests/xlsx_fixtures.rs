@@ -2847,3 +2847,154 @@ fn text_content_monthly_budget_cash_flow_caption() {
         "the chart's own drawing part prints its caption; got:\n{text}"
     );
 }
+
+#[test]
+fn plotted_xlsx_chart_does_not_report_data_table_fallback() {
+    let (_, warnings) = XlsxParser
+        .parse_streaming(
+            &load_fixture("issue_1603_gift_budget.xlsx"),
+            &ConvertOptions::default(),
+            1000,
+        )
+        .unwrap();
+    assert!(
+        !warnings.iter().any(|warning| matches!(
+            warning, office2pdf::error::ConvertWarning::FallbackUsed { format, to, .. }
+                if format == "XLSX" && to == "data table"
+        )),
+        "streaming must not report a fallback for a plotted chart"
+    );
+    let result = office2pdf::convert(fixture_path("issue_1603_gift_budget.xlsx"))
+        .expect("the public chart workbook should convert");
+    assert!(result.pdf.starts_with(b"%PDF"));
+    assert!(
+        !result.warnings.iter().any(|warning| matches!(
+            warning,
+            office2pdf::error::ConvertWarning::FallbackUsed { format, from, to }
+                if format == "XLSX" && from.starts_with("chart (") && to == "data table"
+        )),
+        "plotted charts must not report a data-table fallback: {:?}",
+        result.warnings
+    );
+}
+
+#[test]
+fn unsupported_xlsx_chart_reports_data_table_fallback() {
+    let data = repackage_xlsx_part(
+        &load_fixture("issue_1603_gift_budget.xlsx"),
+        "xl/charts/chart1.xml",
+        |_xml| {
+            r#"<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">
+          <c:chart><c:plotArea><c:scatterChart><c:scatterStyle val="lineMarker"/>
+            <c:ser><c:idx val="0"/><c:order val="0"/>
+              <c:xVal><c:numLit><c:formatCode>General</c:formatCode><c:ptCount val="2"/>
+                <c:pt idx="0"><c:v>10</c:v></c:pt><c:pt idx="1"><c:v>20</c:v></c:pt>
+              </c:numLit></c:xVal>
+              <c:yVal><c:numLit><c:formatCode>General</c:formatCode><c:ptCount val="2"/>
+                <c:pt idx="0"><c:v>100</c:v></c:pt><c:pt idx="1"><c:v>200</c:v></c:pt>
+              </c:numLit></c:yVal>
+            </c:ser>
+          </c:scatterChart></c:plotArea></c:chart>
+        </c:chartSpace>"#
+                .to_string()
+        },
+    );
+    let (document, _) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let charts: Vec<_> = document
+        .pages
+        .iter()
+        .filter_map(|page| match page {
+            Page::Sheet(sheet) => Some(&sheet.charts),
+            _ => None,
+        })
+        .flatten()
+        .collect();
+    assert!(!charts.is_empty());
+    assert!(
+        charts
+            .iter()
+            .all(|chart| chart.chart.chart_type == office2pdf::ir::ChartType::Scatter)
+    );
+    let generated = generate_typst(&document).unwrap();
+    assert!(generated.source.contains("Scatter Chart"));
+    let (_, warnings) = XlsxParser
+        .parse_streaming(&data, &ConvertOptions::default(), 1000)
+        .unwrap();
+    assert!(
+        warnings.iter().any(|warning| matches!(
+            warning, office2pdf::error::ConvertWarning::FallbackUsed { format, to, .. }
+                if format == "XLSX" && to == "data table"
+        )),
+        "streaming must retain actual fallback warnings"
+    );
+    let result = office2pdf::convert_bytes(
+        &data,
+        office2pdf::config::Format::Xlsx,
+        &ConvertOptions::default(),
+    )
+    .expect("an unsupported scatter chart should still convert using its table");
+    assert!(result.pdf.starts_with(b"%PDF"));
+    assert!(
+        result.warnings.iter().any(|warning| matches!(
+            warning,
+            office2pdf::error::ConvertWarning::FallbackUsed { format, from, to }
+                if format == "XLSX" && from.starts_with("chart (") && to == "data table"
+        )),
+        "the actual fallback must remain visible to callers"
+    );
+}
+
+#[test]
+fn empty_xlsx_chart_frame_does_not_report_data_table_fallback() {
+    let data = repackage_xlsx_part(
+        &load_fixture("issue_1603_gift_budget.xlsx"),
+        "xl/charts/chart1.xml",
+        |xml| {
+            let mut xml = xml.to_string();
+            while let Some(start) = xml.find("<c:ser>") {
+                let end = start + xml[start..].find("</c:ser>").unwrap() + "</c:ser>".len();
+                xml.replace_range(start..end, "");
+            }
+            xml
+        },
+    );
+    let (document, warnings) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let generated = generate_typst(&document).unwrap();
+    assert!(generated.source.contains("Column Chart"));
+    assert!(
+        !warnings.iter().any(|warning| matches!(
+            warning, office2pdf::error::ConvertWarning::FallbackUsed { format, to, .. }
+                if format == "XLSX" && to == "data table"
+        )),
+        "an empty chart frame contains no data table"
+    );
+}
+
+#[test]
+fn single_point_line_xlsx_chart_does_not_report_data_table_fallback() {
+    let data = repackage_xlsx_part(
+        &load_fixture("issue_1603_gift_budget.xlsx"),
+        "xl/charts/chart1.xml",
+        |_| {
+            r#"<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">
+          <c:chart><c:plotArea><c:lineChart><c:grouping val="standard"/>
+            <c:ser><c:idx val="0"/><c:order val="0"/>
+              <c:cat><c:strLit><c:ptCount val="1"/><c:pt idx="0"><c:v>January</c:v></c:pt></c:strLit></c:cat>
+              <c:val><c:numLit><c:formatCode>General</c:formatCode><c:ptCount val="1"/>
+                <c:pt idx="0"><c:v>100</c:v></c:pt></c:numLit></c:val>
+            </c:ser>
+          </c:lineChart></c:plotArea></c:chart>
+        </c:chartSpace>"#.to_string()
+        },
+    );
+    let (document, warnings) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let generated = generate_typst(&document).unwrap();
+    assert!(generated.source.contains("Line Chart"));
+    assert!(
+        !warnings.iter().any(|warning| matches!(
+            warning, office2pdf::error::ConvertWarning::FallbackUsed { format, to, .. }
+                if format == "XLSX" && to == "data table"
+        )),
+        "a framed basic line plot is not a data table"
+    );
+}
