@@ -1,0 +1,206 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 7,
+    "out": 7,
+    "matched": 7,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 6,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 2.0222313333333344,
+    "worst_dy": 4.400028000000006,
+    "worst_dy_signed": 4.400028000000006,
+    "worst_line": "Headerlinetwo"
+   },
+   "dx0": {
+    "mean_abs": 0.14286444444444316,
+    "worst": -0.8330000000000268
+   },
+   "width": {
+    "mean_abs_pct": 0.7395488419029205,
+    "worst_pct": 2.064798090265898
+   },
+   "instances": {
+    "compared": 9,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 8,
+    "fine_shifts": [
+     {
+      "label": "Headerlineone",
+      "gt_x": 268.0,
+      "gt_y": 51.0,
+      "out_x": 267.167,
+      "out_y": 55.400026,
+      "dx": -0.8330000000000268,
+      "dy": 4.400025999999997,
+      "width_pct": 2.064798090265898
+     },
+     {
+      "label": "Headerlinetwo",
+      "gt_x": 268.0,
+      "gt_y": 65.0,
+      "out_x": 267.78468,
+      "out_y": 69.400028,
+      "dx": -0.21532000000001972,
+      "dy": 4.400028000000006,
+      "width_pct": 1.784617298117495
+     },
+     {
+      "label": "Headerlinethree",
+      "gt_x": 264.0,
+      "gt_y": 79.0,
+      "out_x": 263.80738,
+      "out_y": 83.400028,
+      "dx": -0.1926199999999767,
+      "dy": 4.400028000000006,
+      "width_pct": 1.5652508719790268
+     },
+     {
+      "label": "Quarterlysummary",
+      "gt_x": 53.0,
+      "gt_y": 95.0,
+      "out_x": 53.0,
+      "out_y": 94.0,
+      "dx": 0.0,
+      "dy": -1.0,
+      "width_pct": 0.03778350864710714
+     },
+     {
+      "label": "Research",
+      "gt_x": 53.0,
+      "gt_y": 124.0,
+      "out_x": 53.0,
+      "out_y": 123.0,
+      "dx": 0.0,
+      "dy": -1.0,
+      "width_pct": 0.010290182977002339
+     },
+     {
+      "label": "120",
+      "gt_x": 246.0,
+      "gt_y": 124.0,
+      "out_x": 246.00032,
+      "out_y": 123.0,
+      "dx": 0.00031999999998788553,
+      "dy": -1.0,
+      "width_pct": -0.023999557260015656
+     },
+     {
+      "label": "Development",
+      "gt_x": 53.0,
+      "gt_y": 139.0,
+      "out_x": 53.0,
+      "out_y": 138.0,
+      "dx": 0.0,
+      "dy": -1.0,
+      "width_pct": 0.003402455147026413
+     },
+     {
+      "label": "240",
+      "gt_x": 246.0,
+      "gt_y": 139.0,
+      "out_x": 246.00032,
+      "out_y": 138.0,
+      "dx": 0.00031999999998788553,
+      "dy": -1.0,
+      "width_pct": -0.023999557260015656
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 6,
+    "worst_delta": 5.400028000000006
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 0,
+    "out_count": 0,
+    "canonical_gt_count": 0,
+    "canonical_out_count": 0,
+    "matched": 0,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.5
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}

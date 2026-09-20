@@ -1,0 +1,30 @@
+{
+  "base": "two-lines.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "header-multiline-mixed-sizes",
+  "factor": "first and second header font size",
+  "variants": [
+    {
+      "value": "8-11",
+      "find": "Header line one\nHeader line two",
+      "replace": "&amp;8Header line one\n&amp;11Header line two"
+    },
+    {
+      "value": "24-11",
+      "find": "Header line one\nHeader line two",
+      "replace": "&amp;24Header line one\n&amp;11Header line two"
+    },
+    {
+      "value": "11-8",
+      "find": "Header line one\nHeader line two",
+      "replace": "&amp;11Header line one\n&amp;8Header line two"
+    },
+    {
+      "value": "11-24",
+      "find": "Header line one\nHeader line two",
+      "replace": "&amp;11Header line one\n&amp;24Header line two"
+    }
+  ]
+}

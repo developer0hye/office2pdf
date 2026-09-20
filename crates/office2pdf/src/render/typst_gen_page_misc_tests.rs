@@ -903,6 +903,128 @@ fn sheet_header_footer_sections_preserve_page_width_and_explicit_breaks() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn multiline_sheet_header_uses_native_line_advance() {
+    for (family, size, advance) in [
+        ("Arial", 8.0, 11.0),
+        ("Arial", 11.0, 14.0),
+        ("Arial", 12.0, 15.0),
+        ("Arial", 14.0, 17.0),
+        ("Arial", 24.0, 29.0),
+        ("Calibri", 11.0, 14.0),
+        ("Aptos", 11.0, 14.0),
+        ("Times New Roman", 11.0, 14.0),
+        ("Malgun Gothic", 11.0, 17.0),
+    ] {
+        for line_count in [2, 3] {
+            let mut page = sheet_page_with_footer_sections(
+                PageSize {
+                    width: 612.0,
+                    height: 792.0,
+                },
+                72.0,
+                Some(21.6),
+                None,
+                ["First header", "Second header", "Third header"]
+                    .into_iter()
+                    .take(line_count)
+                    .map(|label| {
+                        (
+                            Alignment::Center,
+                            true,
+                            vec![hf_run(label, Some(family), size)],
+                        )
+                    })
+                    .collect(),
+            );
+            let Page::Sheet(sheet) = &mut page else {
+                unreachable!()
+            };
+            sheet.header = sheet.footer.take();
+            let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+            let baselines: Vec<f64> = ["First", "Second", "Third"]
+                .into_iter()
+                .take(line_count)
+                .map(|label| compiled_baseline_of(&source, label))
+                .collect();
+            for pair in baselines.windows(2) {
+                assert!(
+                    (pair[1] - pair[0] - advance).abs() < 0.01,
+                    "{line_count}-line {family} {size}pt header: native advance {advance}pt, got {}",
+                    pair[1] - pair[0],
+                );
+            }
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn multiline_sheet_header_sections_keep_independent_first_lines() {
+    for unequal_counts in [false, true] {
+        let specifications = if unequal_counts {
+            [
+                (Alignment::Left, "Left", 11.0, 1),
+                (Alignment::Center, "Center", 11.0, 3),
+                (Alignment::Right, "Right", 11.0, 2),
+            ]
+        } else {
+            [
+                (Alignment::Left, "Left", 8.0, 2),
+                (Alignment::Center, "Center", 24.0, 2),
+                (Alignment::Right, "Right", 11.0, 2),
+            ]
+        };
+        let mut page = sheet_page_with_footer_sections(
+            PageSize {
+                width: 612.0,
+                height: 792.0,
+            },
+            72.0,
+            Some(21.6),
+            None,
+            specifications
+                .into_iter()
+                .flat_map(|(alignment, label, size, count)| {
+                    (0..count).map(move |index| {
+                        (
+                            alignment,
+                            true,
+                            vec![hf_run(
+                                &format!("{label} line {index}"),
+                                Some("Arial"),
+                                size,
+                            )],
+                        )
+                    })
+                })
+                .collect(),
+        );
+        let Page::Sheet(sheet) = &mut page else {
+            unreachable!()
+        };
+        sheet.header = sheet.footer.take();
+        let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+        let left = compiled_baseline_of(&source, "Left line 0");
+        let center = compiled_baseline_of(&source, "Center line 0");
+        let right = compiled_baseline_of(&source, "Right line 0");
+        let (center_delta, right_delta) = if unequal_counts {
+            (-1.0, -1.0)
+        } else {
+            (15.0, 3.0)
+        };
+        assert!(
+            (center - left - center_delta).abs() < 0.01,
+            "first center/left baselines {center}/{left}, expected delta {center_delta}"
+        );
+        assert!(
+            (right - left - right_delta).abs() < 0.01,
+            "first right/left baselines {right}/{left}, expected delta {right_delta}"
+        );
+    }
+}
+
 /// Native Excel footer probes match its wrapped-cell line advances (#1729).
 /// Specs and measurements: tests/visual_audits/issue-1729/probes/.
 #[cfg(not(target_arch = "wasm32"))]
@@ -957,6 +1079,76 @@ fn multiline_sheet_footer_uses_native_line_advance_and_keeps_last_seat() {
             (last - compiled_baseline_of(&single, "Last")).abs() < 0.01,
             "{family} {size}pt: adding a line changed the last baseline"
         );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn multiline_sheet_header_preserves_mixed_sizes_sections_and_fit_scale() {
+    for (first_size, last_size, native_advance) in [
+        (8.0, 11.0, 14.0),
+        (24.0, 11.0, 17.0),
+        (11.0, 8.0, 11.0),
+        (11.0, 24.0, 26.0),
+    ] {
+        for scale in [1.0, 0.6, 0.8, 1.2] {
+            let sections = [
+                (Alignment::Left, "Left first", "Left last"),
+                (Alignment::Center, "Center first", "Center last"),
+                (Alignment::Right, "Right first", "Right last"),
+            ];
+            let paragraphs = sections
+                .iter()
+                .flat_map(|&(alignment, first, last)| {
+                    [(first, first_size), (last, last_size)].map(|(label, size)| {
+                        (
+                            alignment,
+                            true,
+                            vec![hf_run(label, Some("Arial"), size * scale)],
+                        )
+                    })
+                })
+                .collect();
+            let mut page = sheet_page_with_footer_sections(
+                PageSize {
+                    width: 612.0,
+                    height: 792.0,
+                },
+                72.0,
+                Some(21.6),
+                Some(scale),
+                paragraphs,
+            );
+            let Page::Sheet(sheet) = &mut page else {
+                unreachable!()
+            };
+            sheet.header = sheet.footer.take();
+            let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+            let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+            for (_, first, last) in sections {
+                let first_run = runs.iter().find(|run| run.text.contains(first)).unwrap();
+                let last_run = runs.iter().find(|run| run.text.contains(last)).unwrap();
+                let actual = last_run.baseline_pt - first_run.baseline_pt;
+                assert!(
+                    (actual - native_advance * scale).abs() < 0.02,
+                    "{first_size}/{last_size} at {scale}: expected {}, got {actual}",
+                    native_advance * scale
+                );
+            }
+            let left = runs
+                .iter()
+                .find(|run| run.text.contains("Left last"))
+                .unwrap();
+            let center = runs
+                .iter()
+                .find(|run| run.text.contains("Center last"))
+                .unwrap();
+            let right = runs
+                .iter()
+                .find(|run| run.text.contains("Right last"))
+                .unwrap();
+            assert!(left.left_pt < center.left_pt && center.left_pt < right.left_pt);
+        }
     }
 }
 
@@ -1091,6 +1283,73 @@ fn multiline_sheet_footer_keeps_text_clear_of_inline_picture() {
             !overlaps,
             "footer text overlaps its picture: {text:?} / {picture:?}"
         );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn multiline_sheet_header_counts_wrapped_lines_without_moving_first_line() {
+    let long_line =
+        "Prepared for the quarterly finance review and approved for internal distribution. "
+            .repeat(2);
+    for wraps_first in [true, false] {
+        let labels = if wraps_first {
+            [long_line.as_str(), "Footer second"]
+        } else {
+            ["Footer first", long_line.as_str()]
+        };
+        let mut page = sheet_page_with_footer_sections(
+            PageSize {
+                width: 612.0,
+                height: 792.0,
+            },
+            72.0,
+            Some(21.6),
+            None,
+            labels
+                .iter()
+                .map(|label| {
+                    (
+                        Alignment::Left,
+                        true,
+                        vec![hf_run(label, Some("Arial"), 11.0)],
+                    )
+                })
+                .collect(),
+        );
+        let Page::Sheet(sheet) = &mut page else {
+            unreachable!()
+        };
+        sheet.header = sheet.footer.take();
+        let mut unwrapped = page.clone();
+        let Page::Sheet(sheet) = &mut unwrapped else {
+            unreachable!()
+        };
+        for paragraph in &mut sheet.header.as_mut().unwrap().paragraphs {
+            paragraph.elements = vec![HFInline::Run(hf_run("Short header", Some("Arial"), 11.0))];
+        }
+        let unwrapped_source = generate_typst(&make_doc(vec![unwrapped])).unwrap().source;
+        let expected_first = compiled_baseline_of(&unwrapped_source, "Short");
+        let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+        let mut baselines: Vec<f64> = crate::render::pdf::compiled_text_runs(&source, 0)
+            .unwrap()
+            .iter()
+            .filter(|run| run.text != "A")
+            .map(|run| run.baseline_pt)
+            .collect();
+        baselines.sort_by(f64::total_cmp);
+        baselines.dedup_by(|a, b| (*a - *b).abs() < 0.01);
+        assert_eq!(baselines.len(), 3, "wrapped header lines: {baselines:?}");
+        for (actual, expected) in
+            baselines
+                .iter()
+                .zip([expected_first, expected_first + 14.0, expected_first + 28.0])
+        {
+            assert!(
+                (actual - expected).abs() < 0.01,
+                "native wrapped header baseline {expected}, got {baselines:?}; wraps_first={wraps_first}"
+            );
+        }
     }
 }
 

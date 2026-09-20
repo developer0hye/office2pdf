@@ -1,0 +1,20 @@
+{
+  "base": "two-lines.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "header-multiline-wrapping",
+  "factor": "wrapped paragraph position",
+  "variants": [
+    {
+      "value": "first",
+      "find": "Header line one",
+      "replace": "Prepared for the quarterly finance review and approved for internal distribution. Prepared for the quarterly finance review and approved for internal distribution. "
+    },
+    {
+      "value": "last",
+      "find": "Header line two",
+      "replace": "Prepared for the quarterly finance review and approved for internal distribution. Prepared for the quarterly finance review and approved for internal distribution. "
+    }
+  ]
+}

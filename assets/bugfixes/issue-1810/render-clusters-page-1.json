@@ -1,0 +1,247 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 55.0656,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 13.44,
+        "x": 72.48,
+        "y": 129.6
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected full body, difference and all body crops: labels and values remain intact, with body baselines 1pt high."
+      },
+      "id": "p1-a3dc15e57af2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.7664,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 7.2,
+        "x": 267.84,
+        "y": 42.72
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected full header and all three shift crops: equal 14pt advances and all text restored, but every header baseline remains 4.40003pt low."
+      },
+      "id": "p1-4ef9581adfc9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 43.3152,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 6.72,
+        "x": 268.32,
+        "y": 56.64
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected full header and all three shift crops: equal 14pt advances and all text restored, but every header baseline remains 4.40003pt low."
+      },
+      "id": "p1-2afda8ef7206",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.712,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.76,
+        "x": 287.52,
+        "y": 43.2
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected full header and all three shift crops: equal 14pt advances and all text restored, but every header baseline remains 4.40003pt low."
+      },
+      "id": "p1-242a1cd5c323",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 329.28,
+        "y": 72.96
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected full header and all three shift crops: equal 14pt advances and all text restored, but every header baseline remains 4.40003pt low."
+      },
+      "id": "p1-2749b72fdbbd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 102.24,
+        "y": 87.84
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected full body, difference and all body crops: labels and values remain intact, with body baselines 1pt high."
+      },
+      "id": "p1-053808eb9bd8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 293.76,
+        "y": 46.08
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected full header and all three shift crops: equal 14pt advances and all text restored, but every header baseline remains 4.40003pt low."
+      },
+      "id": "p1-aa070f948f8e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.24,
+        "x": 275.52,
+        "y": 46.08
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected full header and all three shift crops: equal 14pt advances and all text restored, but every header baseline remains 4.40003pt low."
+      },
+      "id": "p1-1074c4d0b2ea",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 67.68,
+        "y": 117.12
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected full body, difference and all body crops: labels and values remain intact, with body baselines 1pt high."
+      },
+      "id": "p1-e9299e75661d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 73.92,
+        "y": 117.12
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected full body, difference and all body crops: labels and values remain intact, with body baselines 1pt high."
+      },
+      "id": "p1-dbe343ff90f5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 61.92,
+        "y": 117.12
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected full body, difference and all body crops: labels and values remain intact, with body baselines 1pt high."
+      },
+      "id": "p1-cc1d20a7a4f1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 61.44,
+        "y": 132.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected full body, difference and all body crops: labels and values remain intact, with body baselines 1pt high."
+      },
+      "id": "p1-5b77b6f62123",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 282.24,
+        "y": 45.12
+      },
+      "disposition": {
+        "issue": "#1731",
+        "kind": "issue",
+        "note": "Inspected full header and all three shift crops: equal 14pt advances and all text restored, but every header baseline remains 4.40003pt low."
+      },
+      "id": "p1-ecfd787779fd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 108.0,
+        "y": 87.84
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Inspected full body, difference and all body crops: labels and values remain intact, with body baselines 1pt high."
+      },
+      "id": "p1-d6dff534ebee",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 14,
+    "duplicate": 0,
+    "total": 14,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

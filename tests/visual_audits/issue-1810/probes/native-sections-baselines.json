@@ -1,0 +1,66 @@
+{
+  "control": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ]
+  ],
+  "variant-unequal-counts": [
+    [
+      "Center firstRight first",
+      51.0
+    ],
+    [
+      "Left first",
+      52.0
+    ],
+    [
+      "Center middleRight last",
+      65.0
+    ],
+    [
+      "Center last",
+      79.0
+    ]
+  ],
+  "base": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ]
+  ],
+  "variant-different-sizes": [
+    [
+      "Left first",
+      48.0
+    ],
+    [
+      "Right first",
+      51.0
+    ],
+    [
+      "Left last",
+      59.0
+    ],
+    [
+      "Center first",
+      63.0
+    ],
+    [
+      "Right last",
+      65.0
+    ],
+    [
+      "Center last",
+      92.0
+    ]
+  ]
+}
