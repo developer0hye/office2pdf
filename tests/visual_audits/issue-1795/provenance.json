@@ -1,0 +1,18 @@
+{
+  "source": "Synthetic single-page workbook; rgb-first.xlsx differs only in Normal-font color attribute order",
+  "source_sha256": "7d7e278f8c7e0262adf1a1d897c9b4e6f5bb3016f7e2a83bda7ba58335edf242",
+  "reference": "Native Microsoft Excel16.113, macOS26.6.2; export_excel_pdfs.applescript",
+  "before_commit": "cf017a5841b58718cb8205502fc8fb1c15417d05",
+  "after": "Same base with Normal-font color precedence fix",
+  "dpi": 150,
+  "page": 1,
+  "fine_shift_pt": 0.5,
+  "native_attribute_order_pixel_delta": 0,
+  "before_attribute_order_pixel_delta": 2610,
+  "pdf_sha256": {
+    "gt": "e88da96099eed537740b2c82dd3b2676703da7fa2d796dd855ba3f6c99de0b92",
+    "before": "21f26ed2404413c05c471b9bc1b7f53d3e785fcf35cf32d13e699e0b1e41e6bf",
+    "after": "7adec734f3b1b7d0661d2d187530874a679dfbdd3a9cdd5152368552262de4bc"
+  },
+  "after_attribute_order_pixel_delta": 0
+}

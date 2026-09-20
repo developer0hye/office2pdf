@@ -710,6 +710,72 @@ fn build_xlsx_with_footer(footer_str: &str) -> Vec<u8> {
     buf.into_inner()
 }
 
+#[test]
+fn normal_font_color_precedence_is_independent_of_xml_attribute_order() {
+    let cases: &[(&str, Color)] = &[
+        (r#"theme="1" rgb="FFFFFF""#, Color::black()),
+        (r#"rgb="FFFFFF" theme="1""#, Color::black()),
+        (r#"theme="0" rgb="000000""#, Color::new(255, 255, 255)),
+        (r#"rgb="000000" theme="0""#, Color::new(255, 255, 255)),
+        (
+            r#"indexed="2" theme="1" rgb="FFFFFF""#,
+            Color::new(255, 0, 0),
+        ),
+        (
+            r#"rgb="FFFFFF" theme="1" indexed="2""#,
+            Color::new(255, 0, 0),
+        ),
+        (
+            r#"tint="1" theme="1" rgb="000000""#,
+            Color::new(255, 255, 255),
+        ),
+        (
+            r#"rgb="000000" theme="1" tint="1""#,
+            Color::new(255, 255, 255),
+        ),
+        (r#"rgb="FF123456""#, Color::new(0x12, 0x34, 0x56)),
+    ];
+    for is_header in [true, false] {
+        let original = if is_header {
+            build_xlsx_with_header("&CReport title")
+        } else {
+            build_xlsx_with_footer("&CReport footer")
+        };
+        for &(attributes, expected) in cases {
+            let data = rewrite_zip_parts(
+                &original,
+                |name| name == "xl/styles.xml",
+                |xml| {
+                    let start = xml.find("<color ").expect("Normal font color");
+                    let end = start + xml[start..].find("/>").unwrap() + 2;
+                    format!("{}<color {attributes}/>{}", &xml[..start], &xml[end..])
+                },
+            );
+            let (document, _) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
+            let (chunks, _) = XlsxParser
+                .parse_streaming(&data, &ConvertOptions::default(), 100)
+                .unwrap();
+            for parsed in std::iter::once(&document).chain(chunks.iter()) {
+                let sheet = get_sheet_page(parsed, 0);
+                let section = if is_header {
+                    &sheet.header
+                } else {
+                    &sheet.footer
+                };
+                let HFInline::Run(run) = &section.as_ref().unwrap().paragraphs[0].elements[0]
+                else {
+                    panic!("expected header/footer text");
+                };
+                assert_eq!(
+                    run.style.color,
+                    Some(expected),
+                    "color attributes: {attributes}"
+                );
+            }
+        }
+    }
+}
+
 /// Helper: build an XLSX whose sheet states `<pageMargins>` alongside a footer.
 fn build_xlsx_with_footer_margins(footer_str: &str, footer_in: f64, bottom_in: f64) -> Vec<u8> {
     let mut book = umya_spreadsheet::new_file();

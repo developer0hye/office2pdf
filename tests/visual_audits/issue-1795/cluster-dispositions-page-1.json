@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1731",
+      "cluster_ids": [
+        "p1-eb620ee1b717",
+        "p1-29a81a0f14db",
+        "p1-7753287877e8"
+      ],
+      "note": "Inspected header crop: the bold black header is restored, but its baseline remains 1.6pt high (#1731) and width-related x offset remains tracked in #1659."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1721",
+      "cluster_ids": [
+        "p1-ecab50898bac",
+        "p1-ad2ef706d37d",
+        "p1-5ecf3ed66e2c",
+        "p1-2f6fdbc6b8c1",
+        "p1-314c4846c6c9",
+        "p1-12235849f7c7",
+        "p1-cf5e71ad29eb"
+      ],
+      "note": "Inspected all body crops: values and styles agree; default-bottom cells in fixed15pt rows still follow the tight-row centered path and sit1pt high (#1721)."
+    }
+  ]
+}
