@@ -18,7 +18,9 @@ visible ink. It then matches lines by their text and reports typed deviations:
   image, single closed axis-aligned rectangular fill, or fully extended
   shading under a single closed axis-aligned rectangular clip, or painted with
   the same colour as a flat background, is distinguished from text that
-  remains visibly painted. Unmatched hidden trace lines are reported but do
+  remains visibly painted. Group opacity attenuates text and paint outside
+  shared group ancestry; opaque covers inside the same group still hide text.
+  Unmatched hidden trace lines are reported but do
   not become visual missing/extra findings;
 - visible-fill occlusions: a later opaque, differently coloured rectangle
   cutting into a thin earlier rule is compared by final overlap area, colour,
@@ -49,12 +51,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import shutil
 import statistics
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from spatial_match import minimum_cost_pairs
@@ -150,6 +153,7 @@ class Glyph:
     paint_window_start: int = -1
     paint_window_end: int = -1
     visible_clip: tuple[float, float, float, float] | None = None
+    group_opacities: tuple[tuple[int, float], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -164,6 +168,7 @@ class Paint:
     y1: float
     alpha: float
     color: tuple[float, float, float] | None = None
+    group_opacities: tuple[tuple[int, float], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -560,7 +565,7 @@ def visible_fill_occlusions(paints: list[Paint]) -> list[VisibleFillOcclusion]:
         paint
         for paint in paints
         if paint.kind == "flat"
-        and paint.alpha >= OPAQUE_ALPHA
+        and paint_alpha_relative_to(paint) >= OPAQUE_ALPHA
         and paint.color is not None
     ]
     occlusion_cells: list[VisibleFillOcclusion] = []
@@ -788,7 +793,7 @@ def ignored_text_path_inks(glyph: Glyph, paints: list[Paint]) -> list[Paint]:
         paint
         for paint in paints
         if paint.kind == "path"
-        and paint.alpha > INVISIBLE_ALPHA
+        and paint_alpha_relative_to(paint, glyph) > INVISIBLE_ALPHA
         and glyph.paint_window_start < paint.index < glyph.paint_window_end
         and paint.x0 >= bbox[0] - allowance
         and paint.y0 >= bbox[1] - allowance
@@ -799,6 +804,35 @@ def ignored_text_path_inks(glyph: Glyph, paints: list[Paint]) -> list[Paint]:
             bbox,
         )
     ]
+
+
+def group_opacity_contexts(content: str) -> dict[int, tuple[tuple[int, float], ...]]:
+    """Retain group identity so shared opacity is not applied twice in a group."""
+    contexts: dict[int, tuple[tuple[int, float], ...]] = {}
+    stack: list[tuple[int, float]] = []
+    events = re.finditer(
+        r"</?group\b[^>]*>|<(?:fill_text|ignore_text|fill_path|stroke_path|fill_image|fill_shade)\b[^>]*>",
+        content,
+    )
+    for event in events:
+        operation = event.group()
+        if operation.startswith("</group"):
+            if stack:
+                stack.pop()
+        elif operation.startswith("<group"):
+            stack.append((event.start(), parse_alpha(operation)))
+        else:
+            contexts[event.start()] = tuple(stack)
+    return contexts
+
+
+def paint_alpha_relative_to(paint: Paint, glyph: Glyph | None = None) -> float:
+    # An opaque cover still hides an earlier glyph inside the same translucent
+    # group. Only group opacity outside their shared ancestry attenuates it.
+    shared_groups = set(group_id for group_id, _ in glyph.group_opacities) if glyph else set()
+    return paint.alpha * math.prod(
+        alpha for group_id, alpha in paint.group_opacities if group_id not in shared_groups
+    )
 
 
 def glyph_visibility(glyph: Glyph, paints: list[Paint]) -> str:
@@ -817,7 +851,7 @@ def glyph_visibility(glyph: Glyph, paints: list[Paint]) -> str:
     if any(
         paint.kind in {"flat", "image", "shade"}
         and paint.index > glyph.paint_index
-        and paint.alpha >= OPAQUE_ALPHA
+        and paint_alpha_relative_to(paint, glyph) >= OPAQUE_ALPHA
         and paint_covers(paint, bbox)
         for paint in paints
     ):
@@ -836,7 +870,7 @@ def glyph_visibility(glyph: Glyph, paints: list[Paint]) -> str:
         glyph.color is not None
         and background is not None
         and background.kind == "flat"
-        and background.alpha >= OPAQUE_ALPHA
+        and paint_alpha_relative_to(background, glyph) >= OPAQUE_ALPHA
         and background.color is not None
     ):
         channel_delta = max(
@@ -1089,6 +1123,7 @@ def parse_trace(trace_xml: str) -> list[PageLayout]:
         page_attrs, content = page_match.groups()
         media_box = parse_media_box(page_attrs)
         visible_clips = text_visible_clips(content, media_box)
+        group_contexts = group_opacity_contexts(content)
         glyphs: list[Glyph] = []
         rotated_lines: list[Line] = []
         text_operations = list(TEXT_RE.finditer(content))
@@ -1105,7 +1140,8 @@ def parse_trace(trace_xml: str) -> list[PageLayout]:
                 continue
             a, b, c, d, e, f = transform
             color = parse_rgb(op_attrs)
-            alpha = parse_alpha(op_attrs)
+            groups = group_contexts.get(op_match.start(), ())
+            alpha = parse_alpha(op_attrs) * math.prod(alpha for _, alpha in groups)
             transformed_run: list[Glyph] = []
             for span_attrs, span_body in SPAN_RE.findall(op_body):
                 trm = TRM_RE.search(span_attrs)
@@ -1128,6 +1164,7 @@ def parse_trace(trace_xml: str) -> list[PageLayout]:
                             paint_window_start=paint_window_start,
                             paint_window_end=paint_window_end,
                             visible_clip=visible_clips.get(op_match.start(), media_box),
+                            group_opacities=groups,
                         )
                     )
             if not transformed_run:
@@ -1236,6 +1273,8 @@ def parse_trace(trace_xml: str) -> list[PageLayout]:
                 )
             )
         paints.extend(clipped_shade_paints(content))
+        paints = [replace(paint, group_opacities=group_contexts.get(paint.index, ()))
+                  for paint in paints]
         paints.sort(key=lambda paint: paint.index)
         lines = build_lines(glyphs)
         lines.extend(line for line in rotated_lines if line.key)
