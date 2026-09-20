@@ -1,0 +1,30 @@
+{
+  "base": "base.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "footer-line-sizes",
+  "factor": "footer size",
+  "variants": [
+    {
+      "value": "8",
+      "find": "&amp;11Footer",
+      "replace": "&amp;8Footer"
+    },
+    {
+      "value": "12",
+      "find": "&amp;11Footer",
+      "replace": "&amp;12Footer"
+    },
+    {
+      "value": "14",
+      "find": "&amp;11Footer",
+      "replace": "&amp;14Footer"
+    },
+    {
+      "value": "24",
+      "find": "&amp;11Footer",
+      "replace": "&amp;24Footer"
+    }
+  ]
+}

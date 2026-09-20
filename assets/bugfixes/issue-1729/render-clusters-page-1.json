@@ -1,0 +1,450 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 73.0368,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 15.36,
+        "x": 145.44,
+        "y": 259.2
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-d6566928b9eb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 56.9088,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 12.48,
+        "x": 298.56,
+        "y": 272.16
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-9b5a0bcbe702",
+      "region": "center"
+    },
+    {
+      "area_pt2": 51.84,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 10.56,
+        "x": 110.4,
+        "y": 96.96
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-a94d20cfe3d4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 43.3152,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 11.52,
+        "x": 174.72,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-1f05ec29501a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.7024,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 10.56,
+        "x": 225.6,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-77a33fce56bd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 420.96,
+        "y": 247.2
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-ea2ec6852607",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.12,
+        "x": 346.56,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-caa61df6fc82",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.2,
+        "x": 169.44,
+        "y": 261.6
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-0037274ec1f1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.6432,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 397.92,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-94ab6e605c17",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.68,
+        "x": 122.4,
+        "y": 247.68
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-18434c92e44f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-17d69b9b5d54",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 168.48,
+        "y": 246.72
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-aeb24219f62e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 106.08,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-060f661a51c6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.8,
+        "x": 281.76,
+        "y": 273.6
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-b10b6b95d62c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.8,
+        "x": 128.64,
+        "y": 260.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-64037bbdfc6d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 408.48,
+        "y": 259.68
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-e5b92a7b37f5",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.28,
+        "x": 91.2,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-dc55065010c6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 4.8,
+        "x": 154.08,
+        "y": 189.6
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-a417ec3bb43c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 166.56,
+        "y": 156.96
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-13c2d1b98b38",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.2,
+        "x": 96.96,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-65630419c87c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 4.32,
+        "x": 173.76,
+        "y": 129.6
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-c6335b468f13",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 4.8,
+        "x": 369.12,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-80bf09002793",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 2.88,
+        "x": 192.0,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-89d4307dbd46",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 4.32,
+        "x": 101.76,
+        "y": 99.36
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-392d8642c17f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 3.36,
+        "x": 300.96,
+        "y": 159.36
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-f9638bdc7836",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.68,
+        "x": 357.12,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected the full-page pair, pixel diff, and body text. Every material cluster is inside a body glyph, with matching line origins and baselines. MuPDF traces confirm whole-point native glyph origins versus fractional output origins; glyph-advances-page1.json preserves the measurements."
+      },
+      "id": "p1-1bd11c90a2a4",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [
+    {
+      "bbox_pt": {
+        "height": 2.0,
+        "width": 381.0,
+        "x": 64.0,
+        "y": 54.0
+      },
+      "class": "shape-edge-antialiasing",
+      "note": "Inspected full-scale title-band crop. Top edge differs by one 150-DPI pixel (0.48pt); the layout audit proves equivalent final paint coverage despite raw rectangle-top differences. No material cluster is dispositioned by this observation."
+    }
+  ],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 26,
+    "duplicate": 0,
+    "total": 26,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

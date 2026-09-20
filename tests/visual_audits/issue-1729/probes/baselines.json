@@ -1,0 +1,92 @@
+[
+  {
+    "probe": "footer-line-families",
+    "variant": "base",
+    "baselines": [
+      754.0,
+      768.0
+    ],
+    "pitch": 14.0
+  },
+  {
+    "probe": "footer-line-families",
+    "variant": "variant-Aptos",
+    "baselines": [
+      753.0,
+      767.0
+    ],
+    "pitch": 14.0
+  },
+  {
+    "probe": "footer-line-families",
+    "variant": "variant-Calibri",
+    "baselines": [
+      753.0,
+      767.0
+    ],
+    "pitch": 14.0
+  },
+  {
+    "probe": "footer-line-families",
+    "variant": "variant-Malgun-Gothic",
+    "baselines": [
+      749.0,
+      766.0
+    ],
+    "pitch": 17.0
+  },
+  {
+    "probe": "footer-line-families",
+    "variant": "variant-Times-New-Roman",
+    "baselines": [
+      754.0,
+      768.0
+    ],
+    "pitch": 14.0
+  },
+  {
+    "probe": "footer-line-sizes",
+    "variant": "base",
+    "baselines": [
+      754.0,
+      768.0
+    ],
+    "pitch": 14.0
+  },
+  {
+    "probe": "footer-line-sizes",
+    "variant": "variant-12",
+    "baselines": [
+      752.0,
+      767.0
+    ],
+    "pitch": 15.0
+  },
+  {
+    "probe": "footer-line-sizes",
+    "variant": "variant-14",
+    "baselines": [
+      750.0,
+      767.0
+    ],
+    "pitch": 17.0
+  },
+  {
+    "probe": "footer-line-sizes",
+    "variant": "variant-24",
+    "baselines": [
+      736.0,
+      765.0
+    ],
+    "pitch": 29.0
+  },
+  {
+    "probe": "footer-line-sizes",
+    "variant": "variant-8",
+    "baselines": [
+      757.0,
+      768.0
+    ],
+    "pitch": 11.0
+  }
+]

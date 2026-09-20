@@ -1,0 +1,42 @@
+[
+  {
+    "variant": "base",
+    "baselines": [
+      754.0,
+      768.0
+    ],
+    "pitch": 14.0
+  },
+  {
+    "variant": "variant-first24",
+    "baselines": [
+      751.0,
+      768.0
+    ],
+    "pitch": 17.0
+  },
+  {
+    "variant": "variant-first8",
+    "baselines": [
+      754.0,
+      768.0
+    ],
+    "pitch": 14.0
+  },
+  {
+    "variant": "variant-second24",
+    "baselines": [
+      739.0,
+      765.0
+    ],
+    "pitch": 26.0
+  },
+  {
+    "variant": "variant-second8",
+    "baselines": [
+      757.0,
+      768.0
+    ],
+    "pitch": 11.0
+  }
+]

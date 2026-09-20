@@ -1,0 +1,20 @@
+{
+  "base": "base.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "footer-line-wrapping",
+  "factor": "long footer line",
+  "variants": [
+    {
+      "value": "first",
+      "find": "Footer first",
+      "replace": "Prepared for the quarterly finance review and approved for internal distribution. Prepared for the quarterly finance review and approved for internal distribution. "
+    },
+    {
+      "value": "last",
+      "find": "Footer second",
+      "replace": "Prepared for the quarterly finance review and approved for internal distribution. Prepared for the quarterly finance review and approved for internal distribution. "
+    }
+  ]
+}

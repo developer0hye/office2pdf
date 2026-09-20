@@ -1,0 +1,37 @@
+{
+  "source": "tests/fixtures/xlsx/two_line_sheet_footer.xlsx",
+  "pages": [
+    1,
+    2
+  ],
+  "reference": "Microsoft Excel 16.113, macOS 26.6.2",
+  "dpi": 150,
+  "font_path": "/Applications/Microsoft Excel.app/Contents/Resources/DFonts",
+  "before_commit": "7a89a402941bb99994a52c8bcdb9db52e8bac235",
+  "after_base": "28b424a0cc8672901fee45197b744e7bea600c45",
+  "sha256": {
+    "source": "ac4129b8e72ff1bc9f4bcb44d2742408d8aa19bdcbae181df0334bd89e550564",
+    "gt_pdf": "388996bc7ad0a5239d9038f872dea91eceae919ae7f59ca9ccaeba8663d98c04",
+    "before_pdf": "6e8e6a23324ef9a9c808bfde9e4f26e8618572ddaa87774be08ae8683588df38",
+    "after_pdf": "ba9c0d8cfaf973e4a94513e6c3a45a77e4bd0d904378abddc3206b38243e6688",
+    "gt_jpg": "7cadd9bb905f60f21094956e772f446c88bf7b4a425a37b02c385f2bc7bbd794",
+    "before_jpg": "ac22b1dc39b500f5fd2b75f4af42fcf34b8d32ca7f2a03cd43cb7680a3e3c7fa",
+    "after_jpg": "a6dfa42624dca8381bda81f0a0f27357c967bf64a54ddd99a87b233d367bd2d7"
+  },
+  "footer_baselines_pt": {
+    "native": [
+      757,
+      768
+    ],
+    "before": [
+      727.1042,
+      768
+    ],
+    "after": [
+      757,
+      768
+    ]
+  },
+  "page2_before_after_pixel_delta": 0,
+  "after_validation": "Final image/wrapping-safe CLI produced the same complete two-page PDF bytes as the audited candidate; after_pdf identifies that PDF and after_jpg its page-1 raster asset."
+}
