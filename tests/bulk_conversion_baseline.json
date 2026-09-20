@@ -2456,6 +2456,7 @@
     "xlsx/libreoffice/textbox-CharKerningSpace.xlsx": "success",
     "xlsx/libreoffice/textbox-CondensedCharacterSpace.xlsx": "success",
     "xlsx/libreoffice/textbox-hyperlink.xlsx": "success",
+    "xlsx/libreoffice/too-many-cols-rows.xlsx": "expected_error",
     "xlsx/libreoffice/totalsRowFunction.xlsx": "success",
     "xlsx/libreoffice/totalsRowShown.xlsx": "success",
     "xlsx/libreoffice/underlineColor.xlsx": "success",

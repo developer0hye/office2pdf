@@ -86,8 +86,6 @@ const DENYLIST: &[&str] = &[
     "54764-2.xlsx",
     // Shared string table bomb (OOM)
     "poc-shared-strings.xlsx",
-    // Extreme dimensions stress test (OOM)
-    "too-many-cols-rows.xlsx",
     // Hangs during conversion (CI timeout)
     "bug62181.xlsx",
 ];
@@ -109,6 +107,8 @@ const EXPECTED_ERRORS: &[&str] = &[
     "bug53475-password-is-solrcell.docx",
     // Encrypted XLSX (OLE2 container, password-protected)
     "protected_passtika.xlsx",
+    // Invalid cell coordinates past Excel's grid are rejected before layout.
+    "too-many-cols-rows.xlsx",
 ];
 
 /// Returns `true` if the file should be skipped due to being on the denylist.
@@ -986,7 +986,7 @@ fn test_denylist_filtering() {
     );
 }
 
-/// Verifies that `is_expected_error` correctly identifies encrypted fixture files.
+/// Verifies that `is_expected_error` identifies fixtures rejected by design.
 #[test]
 fn test_expected_error_filtering() {
     // Every entry in EXPECTED_ERRORS should be recognized

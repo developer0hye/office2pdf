@@ -776,6 +776,29 @@ fn chartsheet_page(
     }
 }
 
+// Excel's worksheet limits, independent of the document's declared dimension.
+// https://support.microsoft.com/en-gb/excel/excel-specifications-and-limits
+const EXCEL_MAX_COLUMNS: u32 = 16_384;
+const EXCEL_MAX_ROWS: u32 = 1_048_576;
+
+fn validate_xlsx_cell_bounds(book: &umya_spreadsheet::Spreadsheet) -> Result<(), ConvertError> {
+    // The reader stores sparse cells. Reject impossible used ranges before our
+    // layout preparation expands them into dense row/cell vectors (#1703).
+    for (sheet_index, sheet) in book.get_sheet_collection().iter().enumerate() {
+        let (column, row): (u32, u32) = sheet.get_highest_column_and_row();
+        if column > EXCEL_MAX_COLUMNS || row > EXCEL_MAX_ROWS {
+            tracing::warn!(sheet_index, column, row, "XLSX cells exceed the Excel grid");
+            return Err(crate::parser::parse_err(format!(
+                "XLSX worksheet {} contains cells beyond the Excel grid ({} columns by {} rows): column {column}, row {row}",
+                sheet_index + 1,
+                EXCEL_MAX_COLUMNS,
+                EXCEL_MAX_ROWS,
+            )));
+        }
+    }
+    Ok(())
+}
+
 pub struct XlsxParser;
 
 impl XlsxParser {
@@ -794,6 +817,7 @@ impl XlsxParser {
         let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true).map_err(|e| {
             crate::parser::parse_err(format!("Failed to parse XLSX (umya-spreadsheet): {e}"))
         })?;
+        validate_xlsx_cell_bounds(&book)?;
 
         let metadata = extract_xlsx_metadata(&book);
         let cond_fmt_hints = cond_fmt_raw::extract_cond_fmt_hints(data);
@@ -1152,6 +1176,7 @@ impl Parser for XlsxParser {
         let book = umya_spreadsheet::reader::xlsx::read_reader(cursor, true).map_err(|e| {
             crate::parser::parse_err(format!("Failed to parse XLSX (umya-spreadsheet): {e}"))
         })?;
+        validate_xlsx_cell_bounds(&book)?;
 
         // Extract metadata from umya-spreadsheet properties
         let metadata = extract_xlsx_metadata(&book);

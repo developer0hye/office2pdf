@@ -1269,3 +1269,23 @@ fn a_header_footer_drops_a_decoded_control_character() {
         .expect("header parsed");
     assert_eq!(hf_section_texts(&hf), vec!["ab"]);
 }
+
+#[test]
+fn xlsx_excel_grid_boundary_remains_valid_with_bounded_print_area() {
+    let data = build_xlsx_with_print_area(
+        &[("A1", "Report"), ("XFD1048576", "Last valid cell")],
+        "Sheet1!$A$1:$A$1",
+    );
+    let (document, _) = XlsxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let sheet = get_sheet_page(&document, 0);
+    assert_eq!(sheet.table.rows.len(), 1);
+    assert_eq!(cell_text(&sheet.table.rows[0].cells[0]), "Report");
+    let (chunks, _) = XlsxParser
+        .parse_streaming(&data, &ConvertOptions::default(), 100)
+        .unwrap();
+    assert_eq!(chunks.len(), 1);
+    assert_eq!(
+        cell_text(&get_sheet_page(&chunks[0], 0).table.rows[0].cells[0]),
+        "Report"
+    );
+}
