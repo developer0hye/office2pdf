@@ -1,0 +1,906 @@
+{
+  "base.pdf": {
+    "labels": {
+      "Malgun size 8": {
+        "x": 52.0,
+        "y": 104.0
+      },
+      "Gulim size 8": {
+        "x": 53.0,
+        "y": 130.0
+      },
+      "Batang size 8": {
+        "x": 53.0,
+        "y": 155.0
+      },
+      "Malgun size 9": {
+        "x": 53.0,
+        "y": 179.0
+      },
+      "Gulim size 9": {
+        "x": 53.0,
+        "y": 205.0
+      },
+      "Batang size 9": {
+        "x": 53.0,
+        "y": 230.0
+      },
+      "Malgun size 10": {
+        "x": 53.0,
+        "y": 254.0
+      },
+      "Gulim size 10": {
+        "x": 53.0,
+        "y": 280.0
+      },
+      "Batang size 10": {
+        "x": 53.0,
+        "y": 305.0
+      },
+      "Malgun size 11": {
+        "x": 53.0,
+        "y": 328.0
+      },
+      "Gulim size 11": {
+        "x": 53.0,
+        "y": 355.0
+      },
+      "Batang size 11": {
+        "x": 53.0,
+        "y": 380.0
+      },
+      "Malgun size 12": {
+        "x": 53.0,
+        "y": 403.0
+      },
+      "Gulim size 12": {
+        "x": 53.0,
+        "y": 430.0
+      },
+      "Batang size 12": {
+        "x": 53.0,
+        "y": 455.0
+      },
+      "Malgun size 13": {
+        "x": 53.0,
+        "y": 478.0
+      },
+      "Gulim size 13": {
+        "x": 53.0,
+        "y": 505.0
+      },
+      "Batang size 13": {
+        "x": 53.0,
+        "y": 530.0
+      },
+      "Malgun size 14": {
+        "x": 53.0,
+        "y": 553.0
+      },
+      "Gulim size 14": {
+        "x": 53.0,
+        "y": 580.0
+      },
+      "Batang size 14": {
+        "x": 53.0,
+        "y": 605.0
+      },
+      "Arial size 4": {
+        "x": 52.0,
+        "y": 630.0
+      }
+    },
+    "rows": [
+      {
+        "label": "Malgun size 8",
+        "y": 104.0,
+        "bottom": 107.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 8",
+        "y": 130.0,
+        "bottom": 132.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 8",
+        "y": 155.0,
+        "bottom": 157.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 9",
+        "y": 179.0,
+        "bottom": 182.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 9",
+        "y": 205.0,
+        "bottom": 207.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 9",
+        "y": 230.0,
+        "bottom": 232.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 10",
+        "y": 254.0,
+        "bottom": 257.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 10",
+        "y": 280.0,
+        "bottom": 282.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 10",
+        "y": 305.0,
+        "bottom": 307.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 11",
+        "y": 328.0,
+        "bottom": 332.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 11",
+        "y": 355.0,
+        "bottom": 357.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 11",
+        "y": 380.0,
+        "bottom": 382.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 12",
+        "y": 403.0,
+        "bottom": 407.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 12",
+        "y": 430.0,
+        "bottom": 432.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 12",
+        "y": 455.0,
+        "bottom": 457.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 13",
+        "y": 478.0,
+        "bottom": 482.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 13",
+        "y": 505.0,
+        "bottom": 507.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 13",
+        "y": 530.0,
+        "bottom": 532.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 14",
+        "y": 553.0,
+        "bottom": 557.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 14",
+        "y": 580.0,
+        "bottom": 582.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 14",
+        "y": 605.0,
+        "bottom": 607.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Arial size 4",
+        "y": 630.0,
+        "bottom": 632.0,
+        "seat": 2.0
+      }
+    ]
+  },
+  "control.pdf": {
+    "labels": {
+      "Malgun size 8": {
+        "x": 52.0,
+        "y": 104.0
+      },
+      "Gulim size 8": {
+        "x": 53.0,
+        "y": 130.0
+      },
+      "Batang size 8": {
+        "x": 53.0,
+        "y": 155.0
+      },
+      "Malgun size 9": {
+        "x": 53.0,
+        "y": 179.0
+      },
+      "Gulim size 9": {
+        "x": 53.0,
+        "y": 205.0
+      },
+      "Batang size 9": {
+        "x": 53.0,
+        "y": 230.0
+      },
+      "Malgun size 10": {
+        "x": 53.0,
+        "y": 254.0
+      },
+      "Gulim size 10": {
+        "x": 53.0,
+        "y": 280.0
+      },
+      "Batang size 10": {
+        "x": 53.0,
+        "y": 305.0
+      },
+      "Malgun size 11": {
+        "x": 53.0,
+        "y": 328.0
+      },
+      "Gulim size 11": {
+        "x": 53.0,
+        "y": 355.0
+      },
+      "Batang size 11": {
+        "x": 53.0,
+        "y": 380.0
+      },
+      "Malgun size 12": {
+        "x": 53.0,
+        "y": 403.0
+      },
+      "Gulim size 12": {
+        "x": 53.0,
+        "y": 430.0
+      },
+      "Batang size 12": {
+        "x": 53.0,
+        "y": 455.0
+      },
+      "Malgun size 13": {
+        "x": 53.0,
+        "y": 478.0
+      },
+      "Gulim size 13": {
+        "x": 53.0,
+        "y": 505.0
+      },
+      "Batang size 13": {
+        "x": 53.0,
+        "y": 530.0
+      },
+      "Malgun size 14": {
+        "x": 53.0,
+        "y": 553.0
+      },
+      "Gulim size 14": {
+        "x": 53.0,
+        "y": 580.0
+      },
+      "Batang size 14": {
+        "x": 53.0,
+        "y": 605.0
+      },
+      "Arial size 4": {
+        "x": 52.0,
+        "y": 630.0
+      }
+    },
+    "rows": [
+      {
+        "label": "Malgun size 8",
+        "y": 104.0,
+        "bottom": 107.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 8",
+        "y": 130.0,
+        "bottom": 132.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 8",
+        "y": 155.0,
+        "bottom": 157.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 9",
+        "y": 179.0,
+        "bottom": 182.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 9",
+        "y": 205.0,
+        "bottom": 207.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 9",
+        "y": 230.0,
+        "bottom": 232.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 10",
+        "y": 254.0,
+        "bottom": 257.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 10",
+        "y": 280.0,
+        "bottom": 282.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 10",
+        "y": 305.0,
+        "bottom": 307.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 11",
+        "y": 328.0,
+        "bottom": 332.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 11",
+        "y": 355.0,
+        "bottom": 357.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 11",
+        "y": 380.0,
+        "bottom": 382.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 12",
+        "y": 403.0,
+        "bottom": 407.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 12",
+        "y": 430.0,
+        "bottom": 432.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 12",
+        "y": 455.0,
+        "bottom": 457.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 13",
+        "y": 478.0,
+        "bottom": 482.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 13",
+        "y": 505.0,
+        "bottom": 507.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 13",
+        "y": 530.0,
+        "bottom": 532.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 14",
+        "y": 553.0,
+        "bottom": 557.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 14",
+        "y": 580.0,
+        "bottom": 582.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 14",
+        "y": 605.0,
+        "bottom": 607.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Arial size 4",
+        "y": 630.0,
+        "bottom": 632.0,
+        "seat": 2.0
+      }
+    ]
+  },
+  "variant-11.pdf": {
+    "labels": {
+      "Malgun size 8": {
+        "x": 52.0,
+        "y": 104.0
+      },
+      "Gulim size 8": {
+        "x": 53.0,
+        "y": 130.0
+      },
+      "Batang size 8": {
+        "x": 53.0,
+        "y": 155.0
+      },
+      "Malgun size 9": {
+        "x": 53.0,
+        "y": 179.0
+      },
+      "Gulim size 9": {
+        "x": 53.0,
+        "y": 205.0
+      },
+      "Batang size 9": {
+        "x": 53.0,
+        "y": 230.0
+      },
+      "Malgun size 10": {
+        "x": 53.0,
+        "y": 254.0
+      },
+      "Gulim size 10": {
+        "x": 53.0,
+        "y": 280.0
+      },
+      "Batang size 10": {
+        "x": 53.0,
+        "y": 305.0
+      },
+      "Malgun size 11": {
+        "x": 53.0,
+        "y": 328.0
+      },
+      "Gulim size 11": {
+        "x": 53.0,
+        "y": 355.0
+      },
+      "Batang size 11": {
+        "x": 53.0,
+        "y": 380.0
+      },
+      "Malgun size 12": {
+        "x": 53.0,
+        "y": 403.0
+      },
+      "Gulim size 12": {
+        "x": 53.0,
+        "y": 430.0
+      },
+      "Batang size 12": {
+        "x": 53.0,
+        "y": 455.0
+      },
+      "Malgun size 13": {
+        "x": 53.0,
+        "y": 478.0
+      },
+      "Gulim size 13": {
+        "x": 53.0,
+        "y": 505.0
+      },
+      "Batang size 13": {
+        "x": 53.0,
+        "y": 530.0
+      },
+      "Malgun size 14": {
+        "x": 53.0,
+        "y": 553.0
+      },
+      "Gulim size 14": {
+        "x": 53.0,
+        "y": 580.0
+      },
+      "Batang size 14": {
+        "x": 53.0,
+        "y": 605.0
+      },
+      "Arial size 4": {
+        "x": 52.0,
+        "y": 630.0
+      }
+    },
+    "rows": [
+      {
+        "label": "Malgun size 8",
+        "y": 104.0,
+        "bottom": 107.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 8",
+        "y": 130.0,
+        "bottom": 132.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 8",
+        "y": 155.0,
+        "bottom": 157.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 9",
+        "y": 179.0,
+        "bottom": 182.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 9",
+        "y": 205.0,
+        "bottom": 207.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 9",
+        "y": 230.0,
+        "bottom": 232.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 10",
+        "y": 254.0,
+        "bottom": 257.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 10",
+        "y": 280.0,
+        "bottom": 282.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 10",
+        "y": 305.0,
+        "bottom": 307.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 11",
+        "y": 328.0,
+        "bottom": 332.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 11",
+        "y": 355.0,
+        "bottom": 357.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 11",
+        "y": 380.0,
+        "bottom": 382.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 12",
+        "y": 403.0,
+        "bottom": 407.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 12",
+        "y": 430.0,
+        "bottom": 432.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 12",
+        "y": 455.0,
+        "bottom": 457.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 13",
+        "y": 478.0,
+        "bottom": 482.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 13",
+        "y": 505.0,
+        "bottom": 507.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 13",
+        "y": 530.0,
+        "bottom": 532.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 14",
+        "y": 553.0,
+        "bottom": 557.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 14",
+        "y": 580.0,
+        "bottom": 582.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 14",
+        "y": 605.0,
+        "bottom": 607.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Arial size 4",
+        "y": 630.0,
+        "bottom": 632.0,
+        "seat": 2.0
+      }
+    ]
+  },
+  "variant-8.pdf": {
+    "labels": {
+      "Malgun size 8": {
+        "x": 52.0,
+        "y": 104.0
+      },
+      "Gulim size 8": {
+        "x": 53.0,
+        "y": 130.0
+      },
+      "Batang size 8": {
+        "x": 53.0,
+        "y": 155.0
+      },
+      "Malgun size 9": {
+        "x": 53.0,
+        "y": 179.0
+      },
+      "Gulim size 9": {
+        "x": 53.0,
+        "y": 205.0
+      },
+      "Batang size 9": {
+        "x": 53.0,
+        "y": 230.0
+      },
+      "Malgun size 10": {
+        "x": 53.0,
+        "y": 254.0
+      },
+      "Gulim size 10": {
+        "x": 53.0,
+        "y": 280.0
+      },
+      "Batang size 10": {
+        "x": 53.0,
+        "y": 305.0
+      },
+      "Malgun size 11": {
+        "x": 53.0,
+        "y": 328.0
+      },
+      "Gulim size 11": {
+        "x": 53.0,
+        "y": 355.0
+      },
+      "Batang size 11": {
+        "x": 53.0,
+        "y": 380.0
+      },
+      "Malgun size 12": {
+        "x": 53.0,
+        "y": 403.0
+      },
+      "Gulim size 12": {
+        "x": 53.0,
+        "y": 430.0
+      },
+      "Batang size 12": {
+        "x": 53.0,
+        "y": 455.0
+      },
+      "Malgun size 13": {
+        "x": 53.0,
+        "y": 478.0
+      },
+      "Gulim size 13": {
+        "x": 53.0,
+        "y": 505.0
+      },
+      "Batang size 13": {
+        "x": 53.0,
+        "y": 530.0
+      },
+      "Malgun size 14": {
+        "x": 53.0,
+        "y": 553.0
+      },
+      "Gulim size 14": {
+        "x": 53.0,
+        "y": 580.0
+      },
+      "Batang size 14": {
+        "x": 53.0,
+        "y": 605.0
+      },
+      "Arial size 4": {
+        "x": 52.0,
+        "y": 630.0
+      }
+    },
+    "rows": [
+      {
+        "label": "Malgun size 8",
+        "y": 104.0,
+        "bottom": 107.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 8",
+        "y": 130.0,
+        "bottom": 132.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 8",
+        "y": 155.0,
+        "bottom": 157.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 9",
+        "y": 179.0,
+        "bottom": 182.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 9",
+        "y": 205.0,
+        "bottom": 207.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 9",
+        "y": 230.0,
+        "bottom": 232.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 10",
+        "y": 254.0,
+        "bottom": 257.0,
+        "seat": 3.0
+      },
+      {
+        "label": "Gulim size 10",
+        "y": 280.0,
+        "bottom": 282.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 10",
+        "y": 305.0,
+        "bottom": 307.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 11",
+        "y": 328.0,
+        "bottom": 332.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 11",
+        "y": 355.0,
+        "bottom": 357.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 11",
+        "y": 380.0,
+        "bottom": 382.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 12",
+        "y": 403.0,
+        "bottom": 407.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 12",
+        "y": 430.0,
+        "bottom": 432.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 12",
+        "y": 455.0,
+        "bottom": 457.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 13",
+        "y": 478.0,
+        "bottom": 482.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 13",
+        "y": 505.0,
+        "bottom": 507.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 13",
+        "y": 530.0,
+        "bottom": 532.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Malgun size 14",
+        "y": 553.0,
+        "bottom": 557.0,
+        "seat": 4.0
+      },
+      {
+        "label": "Gulim size 14",
+        "y": 580.0,
+        "bottom": 582.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Batang size 14",
+        "y": 605.0,
+        "bottom": 607.0,
+        "seat": 2.0
+      },
+      {
+        "label": "Arial size 4",
+        "y": 630.0,
+        "bottom": 632.0,
+        "seat": 2.0
+      }
+    ]
+  }
+}

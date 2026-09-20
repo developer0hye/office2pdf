@@ -4779,3 +4779,45 @@ fn test_generic_table_cell_hangul_run_keeps_bold_when_font_needs_substitution() 
          even under an unavailable font:\n{source}"
     );
 }
+
+/// Isolated native rows expose the small Malgun seats hidden by the older
+/// four-point workbook floor. Each size is independently observed (#1815).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn small_malgun_sheet_baselines_match_native_isolated_rows() {
+    if crate::render::pdf::font_line_metrics_em("Malgun Gothic").is_none() {
+        return;
+    }
+    let data = include_bytes!("../../../../tests/visual_audits/issue-1815/source.xlsx");
+    let (document, _) = crate::parser::Parser::parse(
+        &crate::parser::xlsx::XlsxParser,
+        data,
+        &ConvertOptions::default(),
+    )
+    .unwrap();
+    let source = generate_typst(&document).unwrap().source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+    let mut differences: Vec<String> = Vec::new();
+    for (size, expected_baseline) in [
+        (8, 104.0),
+        (9, 179.0),
+        (10, 254.0),
+        (11, 328.0),
+        (12, 403.0),
+        (13, 478.0),
+        (14, 553.0),
+    ] {
+        let label = format!("Malgun size {size}");
+        let run = runs
+            .iter()
+            .find(|run| run.text == label)
+            .expect("each native label remains present");
+        if (run.baseline_pt - expected_baseline).abs() > 0.01 {
+            differences.push(format!(
+                "{label}: expected {expected_baseline}, got {}",
+                run.baseline_pt
+            ));
+        }
+    }
+    assert!(differences.is_empty(), "{}", differences.join("\n"));
+}

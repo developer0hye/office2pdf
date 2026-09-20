@@ -1,0 +1,22 @@
+{
+  "page": 1,
+  "dpi": 150,
+  "observations": [
+    "All22labels and23thin solid gray rules remain in order; no element loss, rotation, unexpected fill, changed outline or clipping.",
+    "Malgun8..14 now match native baseline distance to row rules; the previous1pt downward displacement is gone.",
+    "Gulim/Batang8..10 andArial4 remain1ptlow, tracked1814.",
+    "Glyph-origin rounding remains visible within words (up to0.9374pt in the preserved before census; x positions are unchanged by this y-only patch), tracked1659.",
+    "No bold, italic or underline runs are declared or visible. Sans/serif family forms and black text are retained.",
+    "All3material clusters were inspected in full-resolution paired region crops: two inMalgun10 relate to1659, one inGulim9 to1814."
+  ],
+  "viewed": [
+    "fullGT/outputsidebyside",
+    "page1diff5pct",
+    "all7emittedshiftcrops",
+    "top/middle/bottompairedcropscoverall22rows"
+  ],
+  "remaining_issues": [
+    1814,
+    1659
+  ]
+}

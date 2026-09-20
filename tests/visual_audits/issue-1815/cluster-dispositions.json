@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1659",
+      "cluster_ids": [
+        "p1-b547b123c708",
+        "p1-3c0d580dbf42"
+      ],
+      "note": "Malgun10 baseline now matches; native whole-point glyph origins differ from fractional output origins by up to0.9374pt. Inspected full-resolution top paired crop."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1814",
+      "cluster_ids": [
+        "p1-abc0b84964f0"
+      ],
+      "note": "Gulim9 remains1ptlow under the missing default-style minimum; per-glyph placement also remains tracked in1659."
+    }
+  ]
+}
