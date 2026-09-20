@@ -1,0 +1,30 @@
+{
+  "base": "source.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "page": 1,
+  "noise_floor": 0.5,
+  "name": "header-multiline-font-families",
+  "factor": "header font family",
+  "variants": [
+    {
+      "value": "Calibri",
+      "find": "Arial,Regular",
+      "replace": "Calibri,Regular"
+    },
+    {
+      "value": "Aptos",
+      "find": "Arial,Regular",
+      "replace": "Aptos,Regular"
+    },
+    {
+      "value": "Times New Roman",
+      "find": "Arial,Regular",
+      "replace": "Times New Roman,Regular"
+    },
+    {
+      "value": "Malgun Gothic",
+      "find": "Arial,Regular",
+      "replace": "Malgun Gothic,Regular"
+    }
+  ]
+}

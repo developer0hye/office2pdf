@@ -1,0 +1,170 @@
+{
+  "header-multiline-font-sizes/variant-24": [
+    [
+      "Header line one",
+      63.0
+    ],
+    [
+      "Header line two",
+      92.0
+    ],
+    [
+      "Header line three",
+      121.0
+    ]
+  ],
+  "header-multiline-font-sizes/control": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ],
+    [
+      "Header line three",
+      79.0
+    ]
+  ],
+  "header-multiline-font-sizes/variant-8": [
+    [
+      "Header line one",
+      48.0
+    ],
+    [
+      "Header line two",
+      59.0
+    ],
+    [
+      "Header line three",
+      70.0
+    ]
+  ],
+  "header-multiline-font-sizes/base": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ],
+    [
+      "Header line three",
+      79.0
+    ]
+  ],
+  "header-multiline-font-sizes/variant-12": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      66.0
+    ],
+    [
+      "Header line three",
+      81.0
+    ]
+  ],
+  "header-multiline-font-sizes/variant-14": [
+    [
+      "Header line one",
+      53.0
+    ],
+    [
+      "Header line two",
+      70.0
+    ],
+    [
+      "Header line three",
+      87.0
+    ]
+  ],
+  "header-multiline-font-families/variant-Malgun-Gothic": [
+    [
+      "Header line one",
+      52.0
+    ],
+    [
+      "Header line two",
+      69.0
+    ],
+    [
+      "Header line three",
+      86.0
+    ]
+  ],
+  "header-multiline-font-families/variant-Times-New-Roman": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ],
+    [
+      "Header line three",
+      79.0
+    ]
+  ],
+  "header-multiline-font-families/variant-Calibri": [
+    [
+      "Header line one",
+      50.0
+    ],
+    [
+      "Header line two",
+      64.0
+    ],
+    [
+      "Header line three",
+      78.0
+    ]
+  ],
+  "header-multiline-font-families/control": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ],
+    [
+      "Header line three",
+      79.0
+    ]
+  ],
+  "header-multiline-font-families/variant-Aptos": [
+    [
+      "Header line one",
+      50.0
+    ],
+    [
+      "Header line two",
+      64.0
+    ],
+    [
+      "Header line three",
+      78.0
+    ]
+  ],
+  "header-multiline-font-families/base": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ],
+    [
+      "Header line three",
+      79.0
+    ]
+  ]
+}

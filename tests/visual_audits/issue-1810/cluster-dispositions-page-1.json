@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1731",
+      "cluster_ids": [
+        "p1-4ef9581adfc9",
+        "p1-2afda8ef7206",
+        "p1-242a1cd5c323",
+        "p1-2749b72fdbbd",
+        "p1-aa070f948f8e",
+        "p1-1074c4d0b2ea",
+        "p1-ecfd787779fd"
+      ],
+      "note": "Inspected full header and all three shift crops: equal 14pt advances and all text restored, but every header baseline remains 4.40003pt low."
+    },
+    {
+      "kind": "issue",
+      "issue": "#1721",
+      "cluster_ids": [
+        "p1-a3dc15e57af2",
+        "p1-053808eb9bd8",
+        "p1-e9299e75661d",
+        "p1-dbe343ff90f5",
+        "p1-cc1d20a7a4f1",
+        "p1-5b77b6f62123",
+        "p1-d6dff534ebee"
+      ],
+      "note": "Inspected full body, difference and all body crops: labels and values remain intact, with body baselines 1pt high."
+    }
+  ]
+}

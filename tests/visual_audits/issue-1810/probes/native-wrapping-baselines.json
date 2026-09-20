@@ -1,0 +1,50 @@
+{
+  "variant-last": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Prepared for the quarterly finance review and approved for internal distribution. Prepared for the quarterly",
+      65.0
+    ],
+    [
+      "finance review and approved for internal distribution.",
+      79.0
+    ]
+  ],
+  "control": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ]
+  ],
+  "base": [
+    [
+      "Header line one",
+      51.0
+    ],
+    [
+      "Header line two",
+      65.0
+    ]
+  ],
+  "variant-first": [
+    [
+      "Prepared for the quarterly finance review and approved for internal distribution. Prepared for the quarterly",
+      51.0
+    ],
+    [
+      "finance review and approved for internal distribution.",
+      65.0
+    ],
+    [
+      "Header line two",
+      79.0
+    ]
+  ]
+}

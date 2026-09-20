@@ -2875,7 +2875,7 @@ fn write_table_page_setup(
         } else {
             out.push_str(", header: [");
         }
-        generate_sheet_hf_content(out, header, size, &page.margins, ctx, None);
+        generate_sheet_hf_content(out, header, size, &page.margins, ctx, true, None);
         out.push(']');
     }
 
@@ -2891,19 +2891,19 @@ fn write_table_page_setup(
                 format_f64(seat.band_pt),
                 seat.story_bottom_edge(),
             );
-            generate_sheet_hf_content(out, footer, size, &page.margins, ctx, Some(&seat));
+            generate_sheet_hf_content(out, footer, size, &page.margins, ctx, false, Some(&seat));
             out.push_str("])]");
         } else if hf_needs_stack_offset(footer) {
             out.push_str(", footer: context { let footer_content = block(width: 100%)[");
-            generate_sheet_hf_content(out, footer, size, &page.margins, ctx, None);
+            generate_sheet_hf_content(out, footer, size, &page.margins, ctx, false, None);
             out.push_str("]; move(dy: -measure(footer_content).height / 2)[#footer_content] }");
         } else if hf_needs_context(footer) {
             out.push_str(", footer: context [");
-            generate_sheet_hf_content(out, footer, size, &page.margins, ctx, None);
+            generate_sheet_hf_content(out, footer, size, &page.margins, ctx, false, None);
             out.push(']');
         } else {
             out.push_str(", footer: [");
-            generate_sheet_hf_content(out, footer, size, &page.margins, ctx, None);
+            generate_sheet_hf_content(out, footer, size, &page.margins, ctx, false, None);
             out.push(']');
         }
     }
@@ -2934,6 +2934,7 @@ fn generate_sheet_hf_content(
     size: &PageSize,
     margins: &Margins,
     ctx: &mut GenCtx,
+    is_header: bool,
     seat: Option<&SheetFooterSeat>,
 ) {
     let scaled_box: Option<(f64, f64)> = hf
@@ -2957,7 +2958,9 @@ fn generate_sheet_hf_content(
             format_f64(width_pt),
         );
     }
-    generate_hf_content(out, hf, ctx, seat);
+    if !is_header || !generate_multiline_sheet_text(out, hf, ctx, None) {
+        generate_hf_content(out, hf, ctx, seat);
+    }
     if scaled_box.is_some() {
         out.push_str("]]");
     }
@@ -3113,14 +3116,14 @@ fn hf_needs_stack_offset(hf: &HeaderFooter) -> bool {
             .any(|element| matches!(element, HFInline::Image(_)))
 }
 
-/// A text-only sheet footer stacks sections from their existing last-line seats.
-/// Native mixed-size probes advance by the following line's measured height;
-/// each line retains its own descent, including the rich-section adjustment.
-fn generate_multiline_sheet_footer(
+/// Text-only sheet stories use native line boxes. Footers grow upward from
+/// their last-line seats; headers grow downward from their first-line anchors.
+/// Each line retains its own descent, including the footer rich-section adjustment.
+fn generate_multiline_sheet_text(
     out: &mut String,
     hf: &HeaderFooter,
     ctx: &mut GenCtx,
-    seat: &SheetFooterSeat,
+    seat: Option<&SheetFooterSeat>,
 ) -> bool {
     // A picture can determine the line height; preserve the existing flow layout
     // rather than stacking an image-bearing line with text-only font metrics.
@@ -3180,9 +3183,26 @@ fn generate_multiline_sheet_footer(
     let Some(advances) = advances else {
         return false;
     };
+    let section_lifts: Vec<Option<f64>> = match seat {
+        Some(seat) => seat.section_lift_pt.clone(),
+        // Native mixed-size header probes round descents in sheet points
+        // before applying the print scale.
+        None => hf
+            .paragraphs
+            .iter()
+            .map(|paragraph| {
+                text::sheet_line_deepest_descent_pt(&hf_paragraph_metric_runs(paragraph), scale)
+                    .map(|descent| descent.round() * scale)
+            })
+            .collect(),
+    };
     let multiple_sections: bool = groups.iter().filter(|group| !group.is_empty()).count() > 1;
     if multiple_sections {
-        out.push_str("#grid(columns: (1fr, 1fr, 1fr), align: (left + bottom, center + bottom, right + bottom), ");
+        let edge = if seat.is_some() { "bottom" } else { "top" };
+        let _ = write!(
+            out,
+            "#grid(columns: (1fr, 1fr, 1fr), align: (left + {edge}, center + {edge}, right + {edge}), "
+        );
     }
     for group in &groups {
         if multiple_sections {
@@ -3192,8 +3212,15 @@ fn generate_multiline_sheet_footer(
             out.push_str("#layout(size => { ");
             for &index in group {
                 let _ = write!(out, "let line_{index} = block(width: size.width)[");
-                if let Some(edge) = seat.section_bottom_edge(index) {
-                    let lift_pt = seat.section_lift_pt[index].unwrap_or(0.0);
+                if let Some(lift_pt) = section_lifts[index] {
+                    // Native single-line header sections sit one sheet point
+                    // below multiline sections with the same font metrics.
+                    let lift_pt = if seat.is_none() && group.len() == 1 {
+                        lift_pt - scale
+                    } else {
+                        lift_pt
+                    };
+                    let edge = SheetFooterSeat::bottom_edge_value(lift_pt);
                     // The signed bottom edge contributes lift below the baseline.
                     let _ = write!(
                         out,
@@ -3204,26 +3231,50 @@ fn generate_multiline_sheet_footer(
                 generate_hf_styled_paragraph(out, &hf.paragraphs[index], ctx);
                 out.push_str("]; ");
             }
-            let last_index = group[group.len() - 1];
-            let _ = write!(out, "let offset_{last_index} = 0pt; ");
-            for position in (0..group.len() - 1).rev() {
-                let index = group[position];
-                let next = group[position + 1];
-                // A wrapped paragraph contributes every visual line; even an
-                // empty explicit paragraph still reserves one native advance.
+            if seat.is_none() {
+                let first_index = group[0];
+                let _ = write!(out, "let offset_{first_index} = 0pt; ");
+                for pair in group.windows(2) {
+                    let previous = pair[0];
+                    let index = pair[1];
+                    let _ = write!(
+                        out,
+                        "let offset_{index} = offset_{previous} + calc.max({}pt, measure(line_{previous}).height); ",
+                        format_f64(advances[previous])
+                    );
+                }
+                // Reserve the first line's box so adding lines does not move
+                // the first header upward through the page's top boundary.
                 let _ = write!(
                     out,
-                    "let offset_{index} = offset_{next} + calc.max({}pt, measure(line_{next}).height); ",
-                    format_f64(advances[next])
+                    "block(width: size.width, height: {}pt)[",
+                    format_f64(advances[first_index])
                 );
-            }
-            out.push_str("block(width: size.width, height: calc.max(");
-            for &index in group {
-                let _ = write!(out, "measure(line_{index}).height + offset_{index}, ");
-            }
-            out.push_str("))[");
-            for &index in group {
-                let _ = write!(out, "#place(bottom, dy: -offset_{index}, line_{index})");
+                for &index in group {
+                    let _ = write!(out, "#place(top, dy: offset_{index}, line_{index})");
+                }
+            } else {
+                let last_index = group[group.len() - 1];
+                let _ = write!(out, "let offset_{last_index} = 0pt; ");
+                for position in (0..group.len() - 1).rev() {
+                    let index = group[position];
+                    let next = group[position + 1];
+                    // A wrapped paragraph contributes every visual line; even an
+                    // empty explicit paragraph still reserves one native advance.
+                    let _ = write!(
+                        out,
+                        "let offset_{index} = offset_{next} + calc.max({}pt, measure(line_{next}).height); ",
+                        format_f64(advances[next])
+                    );
+                }
+                out.push_str("block(width: size.width, height: calc.max(");
+                for &index in group {
+                    let _ = write!(out, "measure(line_{index}).height + offset_{index}, ");
+                }
+                out.push_str("))[");
+                for &index in group {
+                    let _ = write!(out, "#place(bottom, dy: -offset_{index}, line_{index})");
+                }
             }
             out.push_str("] })");
         }
@@ -3249,7 +3300,7 @@ fn generate_hf_content(
     seat: Option<&SheetFooterSeat>,
 ) {
     if let Some(seat) = seat
-        && generate_multiline_sheet_footer(out, hf, ctx, seat)
+        && generate_multiline_sheet_text(out, hf, ctx, Some(seat))
     {
         return;
     }
