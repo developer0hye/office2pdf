@@ -80,6 +80,26 @@ class TracePageSplitTest(unittest.TestCase):
 
 
 class AffineTextPositionTest(unittest.TestCase):
+    def test_ligature_continuations_keep_text_order_and_anchor(self) -> None:
+        for ligature in ("ft", "tt", "ffi", "لا"):
+            for transform in ("1 0 0 1 72 100", "0 -1 1 0 72 100"):
+                glyphs = f'<g unicode="{ligature[0]}" glyph="7" x="0" y="0" adv=".6"/>'
+                glyphs += "".join(
+                    f'<g unicode="{char}" x="0" y="0" adv="0"/>'
+                    for char in ligature[1:]
+                )
+                trace = trace_page(
+                    f'<fill_text transform="{transform}"><span>{glyphs}</span></fill_text>',
+                    numbered=False,
+                )
+                with self.subTest(ligature=ligature, transform=transform):
+                    with mock.patch.object(compare_render.subprocess, "run") as run:
+                        run.return_value = mock.Mock(returncode=0, stdout=trace)
+                        lines = compare_render.baseline_lines(Path("ligature.pdf"))
+                    self.assertEqual(len(lines), 1)
+                    self.assertEqual(lines[0].text, ligature)
+                    self.assertEqual((lines[0].x_min, lines[0].y_min), (72, 100))
+
     def test_rotated_text_uses_the_complete_affine_transform(self) -> None:
         trace = trace_page(rotated_text_op("AB", 500.0, 600.0), numbered=True)
 
