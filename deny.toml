@@ -10,3 +10,10 @@ version = 2
 yanked = "deny"
 unmaintained = "none"
 unsound = "workspace"
+ignore = [
+  # Pre-existing when this gate was added (2026-09-22). Each needs an upstream
+  # upgrade; remove the entry once the fixed version is locked.
+  { id = "RUSTSEC-2026-0187", reason = "lopdf 0.38 is a dev-dependency (tests parse repository fixtures only); fixed in lopdf >=0.42" },
+  { id = "RUSTSEC-2026-0194", reason = "quick-xml 0.38 comes only via typst's citationberg 0.7 (bundled CSL styles, not user documents); needs a typst/citationberg release on quick-xml >=0.41" },
+  { id = "RUSTSEC-2026-0195", reason = "quick-xml 0.38 comes only via typst's citationberg 0.7 (bundled CSL styles, not user documents); needs a typst/citationberg release on quick-xml >=0.41" },
+]
