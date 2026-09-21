@@ -208,109 +208,16 @@ pub(super) fn generate_paragraph(
     let style = &para.style;
     let paragraph_tab_width_pt: f64 = paragraph_default_tab_width_pt(style, default_tab_width_pt);
 
-    if let Some(level) = style.heading_level {
-        // A heading is still a paragraph: Word paints its `w:pBdr` and `w:shd`
-        // around it exactly as it does around body copy, and a chapter-rule
-        // heading style is the commonest place a `w:pBdr` appears at all.
-        // Returning here before any decoration was emitted dropped every one
-        // of them — 22 chapter rules in the technical-brief fixture, while the
-        // header rule on the same page, declared directly rather than through
-        // a style, survived (issue #581).
-        //
-        // Word spaces and measures it as one too. While the wrapper opened
-        // only for decoration, both the block spacing and the line box were
-        // Typst's own `#set heading` defaults — numbers no `w:spacing`, no
-        // style definition and no Word rule produced — and since Typst
-        // collapses adjacent block spacing to the larger of the two, that
-        // default swallowed the neighbouring paragraph's declared gap as well
-        // (issue #1132).
-        //
-        // A heading resolves `w:spacing` exactly as body copy does, so
-        // `style` already holds the answer and no heading-specific fallback
-        // exists to add. Measured on native Word exports of a package whose
-        // `Heading1` paragraphs state no `w:spacing`: with
-        // `w:docDefaults/w:pPrDefault` declared the export is layout-identical
-        // to one stating `w:before="0" w:after="0"`, and without it identical
-        // to `w:before="0" w:after="160"` — Word's built-in `Normal`, the same
-        // fallback #1085 measured for body paragraphs. Word's built-in
-        // `Heading N` spacing takes no part.
-        let decorated = style.background.is_some() || style.border.is_some();
-        let line_height_settings: Option<String> =
-            word_line_height_settings(&para.runs, style, line_grid_pitch);
-        // The gaps measure from the line box's edges, so the box has to come
-        // with them: on Typst's glyph-tight default the block ends at the
-        // baseline, and the heading's own descender goes missing from the gap
-        // below it.
-        let wrapped: bool = decorated
-            || style.space_before.is_some()
-            || style.space_after.is_some()
-            || style.line_box.is_some()
-            || line_height_settings.is_some();
-        if wrapped {
-            out.push_str("#block(width: 100%");
-            write_block_spacing_params(out, style);
-            write_block_decoration_params(out, style);
-            out.push_str(")[\n");
-            write_paragraph_double_border_overlays(
-                out,
-                &style.border,
-                style.border_space.as_deref().copied().unwrap_or_default(),
-            );
-            write_line_box_settings(out, style.line_box);
-            if let Some(ref settings) = line_height_settings {
-                out.push_str(settings);
-            }
-        }
-        // A contents entry is laid out as body text, not as a copy of the
-        // heading, so it cannot be built from the heading's rendered content —
-        // the size and weight are inline markup inside it and no enclosing set
-        // rule beats them. Drop the heading's plain text under a label instead
-        // and let the list style it (issue #610), the same shape the caption
-        // lists already use.
-        let plain: String = paragraph_plain_text(&para.runs);
-        let _ = writeln!(
-            out,
-            "#metadata((level: {level}, text: \"{}\", font: {}))<{}>",
-            escape_typst_string(&plain),
-            crate::render::font_subst::font_with_fallbacks_for_text(
-                first_run_family(&para.runs).unwrap_or("Calibri"),
-                &plain,
-            ),
-            TOC_ENTRY_LABEL
-        );
-        // Whichever fixed line box the wrapper just put in force is what a
-        // framed eojeol has to restore inside itself (issue #626); an
-        // unwrapped heading still emits no fixed edges and needs no
-        // correction.
-        let line_box_em: Option<(f64, f64)> = wrapped
-            .then(|| {
-                word_line_box_em(&para.runs, style, line_grid_pitch).or_else(|| {
-                    style
-                        .line_box
-                        .map(|line_box| (line_box.ascent_em, line_box.descent_em))
-                })
-            })
-            .flatten();
-        let _ = write!(out, "#heading(level: {level})[");
-        generate_runs_with_tabs(
-            out,
-            &para.runs,
-            style.tab_stops.as_deref(),
-            paragraph_tab_width_pt,
-            paragraph_eojeol_wrap(
-                breaks_hangul_at_eojeol,
-                style,
-                line_box_em,
-                available_measure_pt,
-            ),
-        );
-        out.push_str("]\n");
-        if wrapped {
-            out.push_str("]\n");
-        }
-        return Ok(());
-    }
-
+    // A heading is a paragraph that also feeds the outline, and Word lays it
+    // out as one. It paints the heading's `w:pBdr` and `w:shd` (issue #581),
+    // spaces and measures it from the same `w:spacing` and line box — no
+    // built-in `Heading N` gap takes part, measured on native exports whose
+    // `Heading1` states no `w:spacing` (issue #1132) — and seats it across the
+    // line by the same `w:jc`, `w:ind` and `w:bidi` (issue #1820). So a heading
+    // takes this path too, and only its inline content differs. It used to
+    // have a copy of this path that gained those settings one issue at a time;
+    // the horizontal ones never arrived, and a centred zh-CN Word "Title",
+    // which carries `w:outlineLvl 0`, printed flush left.
     let line_height_settings: Option<String> =
         word_line_height_settings(&para.runs, style, line_grid_pitch);
     let has_para_style = needs_block_wrapper(style) || line_height_settings.is_some();
@@ -351,7 +258,7 @@ pub(super) fn generate_paragraph(
         }
     }
 
-    if para.runs.is_empty() {
+    if para.runs.is_empty() && style.heading_level.is_none() {
         out.push_str("#v(12pt)");
         if has_para_style {
             out.push_str("\n]");
@@ -361,6 +268,10 @@ pub(super) fn generate_paragraph(
         }
         out.push('\n');
         return Ok(());
+    }
+
+    if let Some(level) = style.heading_level {
+        write_heading_contents_entry(out, level, &para.runs);
     }
 
     let alignment = style.alignment;
@@ -393,20 +304,36 @@ pub(super) fn generate_paragraph(
         })
         .flatten();
 
-    generate_word_runs_with_tabs(
-        out,
-        &para.runs,
-        style.tab_stops.as_deref(),
-        paragraph_tab_width_pt,
-        paragraph_eojeol_wrap(
-            breaks_hangul_at_eojeol,
-            style,
-            line_box_em,
-            available_measure_pt,
-        ),
+    let eojeol_wrap: EojeolWrap = paragraph_eojeol_wrap(
+        breaks_hangul_at_eojeol,
         style,
-        line_grid_pitch,
+        line_box_em,
+        available_measure_pt,
     );
+    match style.heading_level {
+        // The runs keep the plain emitter: the per-run line boxes of issue
+        // #638 were measured on mixed-face body paragraphs only.
+        Some(level) => {
+            let _ = write!(out, "#heading(level: {level})[");
+            generate_runs_with_tabs(
+                out,
+                &para.runs,
+                style.tab_stops.as_deref(),
+                paragraph_tab_width_pt,
+                eojeol_wrap,
+            );
+            out.push(']');
+        }
+        None => generate_word_runs_with_tabs(
+            out,
+            &para.runs,
+            style.tab_stops.as_deref(),
+            paragraph_tab_width_pt,
+            eojeol_wrap,
+            style,
+            line_grid_pitch,
+        ),
+    }
 
     if use_align {
         out.push(']');
@@ -421,6 +348,27 @@ pub(super) fn generate_paragraph(
 
     out.push('\n');
     Ok(())
+}
+
+/// Drop a heading's plain text under the contents label.
+///
+/// A contents entry is laid out as body text, not as a copy of the heading,
+/// so it cannot be built from the heading's rendered content — the size and
+/// weight are inline markup inside it and no enclosing set rule beats them.
+/// The list styles this instead (issue #610), the same shape the caption
+/// lists already use.
+fn write_heading_contents_entry(out: &mut String, level: u8, runs: &[Run]) {
+    let plain: String = paragraph_plain_text(runs);
+    let _ = writeln!(
+        out,
+        "#metadata((level: {level}, text: \"{}\", font: {}))<{}>",
+        escape_typst_string(&plain),
+        crate::render::font_subst::font_with_fallbacks_for_text(
+            first_run_family(runs).unwrap_or("Calibri"),
+            &plain,
+        ),
+        TOC_ENTRY_LABEL
+    );
 }
 
 /// The letter-space PowerPoint counts after a slide line's last glyph, when
