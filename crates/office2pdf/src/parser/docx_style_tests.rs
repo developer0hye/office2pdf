@@ -1969,6 +1969,7 @@ fn collect_paragraphs(doc: &Document) -> Vec<&Paragraph> {
         .collect()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_centred_title_style_with_an_outline_level_prints_centred() {
     // The Title style zh-CN Word ships is centred, bold 16pt and carries

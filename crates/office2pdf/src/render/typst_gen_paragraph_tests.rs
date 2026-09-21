@@ -2010,6 +2010,7 @@ fn test_generate_undecorated_heading_keeps_its_bare_form() {
 
 /// A one-run paragraph of `text` carrying `style`, set bold at 16pt so a
 /// heading's own show rule has no size or weight left to change.
+#[cfg(not(target_arch = "wasm32"))]
 fn placement_probe_paragraph(style: ParagraphStyle, text: &str) -> Block {
     Block::Paragraph(Paragraph {
         style,
@@ -2026,6 +2027,7 @@ fn placement_probe_paragraph(style: ParagraphStyle, text: &str) -> Block {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_heading_is_placed_across_the_line_exactly_like_body_copy() {
     // An outline level makes a paragraph a heading for the navigation pane
