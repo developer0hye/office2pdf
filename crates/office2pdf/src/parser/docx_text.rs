@@ -121,13 +121,31 @@ fn extract_paragraph_borders(
 
     let side = |name: &str| -> Option<BorderSide> {
         let side_json = json.get(name)?;
-        let val = side_json.get("val")?.as_str()?;
+        let val = side_json
+            .get("val")
+            .or_else(|| side_json.get("borderType"))?
+            .as_str()?;
+        // The thinThick/thickThin families are Word's multi-line borders, so
+        // they carry the double rule rather than the single one a bare
+        // `_` arm would give them. Header and footer paragraphs used to read
+        // their borders through a second extractor that had this list while
+        // this one did not; both now come through here (issue #1822).
         let style = match val {
             "nil" | "none" => return None,
-            "double" | "triple" => BorderLineStyle::Double,
+            "double"
+            | "triple"
+            | "thinThickSmallGap"
+            | "thickThinSmallGap"
+            | "thinThickMediumGap"
+            | "thickThinMediumGap"
+            | "thinThickLargeGap"
+            | "thickThinLargeGap"
+            | "thinThickThinSmallGap"
+            | "thinThickThinMediumGap"
+            | "thinThickThinLargeGap" => BorderLineStyle::Double,
             "dotted" => BorderLineStyle::Dotted,
             "dashed" | "dashSmallGap" => BorderLineStyle::Dashed,
-            "dotDash" => BorderLineStyle::DashDot,
+            "dotDash" | "dashDotStroked" => BorderLineStyle::DashDot,
             "dotDotDash" => BorderLineStyle::DashDotDot,
             _ => BorderLineStyle::Solid,
         };
@@ -138,6 +156,7 @@ fn extract_paragraph_borders(
         let color = side_json
             .get("color")
             .and_then(|v| v.as_str())
+            .filter(|value| *value != "auto")
             .and_then(xml_util::parse_hex_color)
             .unwrap_or_else(Color::black);
         Some(BorderSide {

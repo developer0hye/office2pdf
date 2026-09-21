@@ -1,0 +1,17 @@
+{
+  "source": "Synthetic A4 package using zh-CN Word's built-in Header and Footer styles as shipped: the header paragraph states only w:pStyle (style supplies jc=center, a bottom pBdr, centre 4153 / right 8306 stops and sz 18), the footer likewise; Arial; no real document content",
+  "source_sha256": "b3d745225e18f17c8f57d7ba47b0a573cbec803685fa821614a99dab254d128b",
+  "reference": "Microsoft Word 16.113.1 on macOS 26.6.2, exported with scripts/macos/export_word_pdfs.applescript from the Word container; Arial embedded, check_gt_integrity.py clean",
+  "before_office2pdf": "c4456004f51d18838225d8f7a12a4766bffe7935",
+  "page": 1,
+  "dpi": 150,
+  "render_audit_dpi": 300,
+  "fine_shift_pt": 0.5,
+  "pdf_sha256": {
+    "gt": "aa2aca89ee6a2e7569b8d3a630b923bfac0bbac9bb0e503bef2dd86c3d1720b7",
+    "before": "1b31e0ab2e270859398f2033d8d890589a039b163f505ec5022584b44722c652",
+    "after": "931425272e889445b1e665449d7e8d9243d9e679678fa7de0f5c1dd9aa9436de"
+  },
+  "before_binary_sha256": "a27c30363f334773b7b28063cb868ba2b1b35ee014b2b799e1250a4a6c278a53",
+  "candidate_binary_sha256": "c562f0dd599e31c697edf32084a39e1de761f9cd3345139d837317a10c93bfd4"
+}

@@ -715,6 +715,26 @@ fn build_text_run(
     if text.is_empty() {
         return None;
     }
+    Some(Run {
+        text,
+        style: resolve_run_style(run_property, is_small_caps, resolved_style, style_map),
+        href,
+        footnote: None,
+    })
+}
+
+/// A run's formatting with everything it inherits already folded in: the
+/// referenced character style beneath its explicit properties, then the
+/// paragraph style beneath both.
+///
+/// Header and footer runs resolve through here too, so a `w:pStyle`'s `w:sz`
+/// reaches a running head exactly as it reaches body copy (issue #1822).
+fn resolve_run_style(
+    run_property: &docx_rs::RunProperty,
+    is_small_caps: bool,
+    resolved_style: Option<&ResolvedStyle>,
+    style_map: &StyleMap,
+) -> TextStyle {
     let mut explicit_style: TextStyle = extract_run_style(run_property);
     if is_small_caps {
         explicit_style.small_caps = Some(true);
@@ -727,12 +747,7 @@ fn build_text_run(
         combined.merge_from(&explicit_style);
         explicit_style = combined;
     }
-    Some(Run {
-        text,
-        style: merge_text_style(&explicit_style, resolved_style),
-        href,
-        footnote: None,
-    })
+    merge_text_style(&explicit_style, resolved_style)
 }
 
 /// Intermediate results from scanning a run's children for media, text boxes,

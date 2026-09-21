@@ -1,0 +1,9 @@
+# Header and footer paragraphs resolve their paragraph style
+
+`source.docx` is a synthetic A4 package in Arial that uses zh-CN Word's built-in Header and Footer styles as Word ships them. The header paragraph states only `<w:pStyle w:val="a3"/>`; the style supplies `jc=center`, a bottom `w:pBdr`, the centre 4153 and right 8306 stops and `w:sz 18`. The footer states only its own `w:pStyle`, whose style sets `w:sz 18`.
+
+`convert_hf_paragraph` resolved no style at all, so every one of those was dropped and only `w:spacing w:after` was patched in through a lookup of its own. Native Word centres the header on 297.66pt, draws the rule and sets both stories at 9pt. Before the fix the header started at the 90pt margin, no rule was drawn, and header and footer text used the document default 10.5pt: the footer's `Internal` measured 35.02pt wide against native 30.05pt, exactly 10.5/9.
+
+Header and footer paragraphs now resolve `w:pStyle` (or the default paragraph style) through the same merge body paragraphs use, take their border and border space from the merged style, and resolve run formatting through the shared `resolve_run_style`, which also layers a referenced character style. The header's own border extractor is gone; its richer multi-line border list (`thinThick*`, `thickThin*`, `dashDotStroked`) moved into the paragraph extractor so `FancyFoot.docx`'s `thinThickSmallGap` footer rule stays a double rule.
+
+After the fix `compare_layout.py --audit --fine-shift 0.5` matches all five lines with no large or fine shifts and reports the rule present (rects 1/1, against 1/0 before). The header text lands at 287.903pt against native 287.895pt, and the footer word measures 30.02pt against 30.05pt. The one render cluster is the rule sitting 0.76pt high, which is the bordered header paragraph's vertical placement, tracked in #1824. The normalized text layer is identical.

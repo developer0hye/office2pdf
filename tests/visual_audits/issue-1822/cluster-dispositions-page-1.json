@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1824",
+      "cluster_ids": ["p1-29050e46916b"],
+      "note": "Inspected the header band at 300 DPI: the rule now exists and spans the native width, but sits 0.76pt high (native fills 54.00-54.72pt, we stroke at 53.60pt), which is the bordered header paragraph's vertical placement."
+    }
+  ]
+}
