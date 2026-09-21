@@ -1,0 +1,17 @@
+{
+  "source": "Synthetic A4 package, Arial 10.5pt: header paragraph 1 is <tab>{Title} with a bottom border, header paragraph 2 is Confidential<tab>Draft 2, footer is Left<tab>Centre<tab>Right; every header and footer paragraph states centre 4153 and right 8306 tab stops directly; no real document content",
+  "source_sha256": "7b940b5fcd8f80d686d4836cac36dd6a3d69ae1ce39eb88b42907845d141a76e",
+  "reference": "Microsoft Word 16.113.1 on macOS 26.6.2, exported with scripts/macos/export_word_pdfs.applescript from the Word container; Arial embedded, check_gt_integrity.py clean",
+  "before_office2pdf": "6c43b58ff20fa1dbf1b664563a9745f218171cd0",
+  "page": 1,
+  "dpi": 150,
+  "render_audit_dpi": 300,
+  "fine_shift_pt": 0.5,
+  "pdf_sha256": {
+    "gt": "cb40f0df3c350e5c2da35837f5b996abef6111180c1fcc26494ba83cd2f86232",
+    "before": "24904e5a0fd368f005481d8376f3b2564be9b983c655e91a1a38e7a529134c35",
+    "after": "0521e2fbf71c4924c0082972daacb67b95e76f1e4ea1922c64a1596ffbf25872"
+  },
+  "before_binary_sha256": "250757ef9df65445fa384969c3da635b2d5e4fa3518eabe5d1cc135965c74542",
+  "candidate_binary_sha256": "a27c30363f334773b7b28063cb868ba2b1b35ee014b2b799e1250a4a6c278a53"
+}

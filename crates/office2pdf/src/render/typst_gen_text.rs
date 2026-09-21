@@ -3303,11 +3303,41 @@ fn generate_runs_with_tabs_and_metrics(
     }
 
     let segments: Vec<Vec<Run>> = split_runs_on_tabs(runs);
+    write_measured_tab_segments(
+        out,
+        &segments,
+        tab_stops,
+        default_tab_width_pt,
+        |out, index| {
+            generate_runs_with_metrics(out, &segments[index], eojeol_wrap, run_line_metrics)
+        },
+    );
+}
+
+/// Lay tab-separated segments out on the paragraph's stops: each tab advances
+/// to the first stop past the measured width of everything before it, and the
+/// segment after it is aligned by that stop, or starts at the next default
+/// stop when none is left.
+///
+/// `segment_runs[index]` is segment `index`'s text, read for its decimal
+/// anchor; `write_segment` emits its content. Header and footer paragraphs
+/// come through here as well as body copy, so a tab lands in the same place in
+/// both. Their segments used to be matched against two running-head shapes
+/// instead, which sent a lone tab to the right margin whenever the last stop
+/// was a right stop, so a header centred on the Header style's centre stop
+/// printed right-aligned (issue #1821).
+pub(super) fn write_measured_tab_segments(
+    out: &mut String,
+    segment_runs: &[Vec<Run>],
+    tab_stops: Option<&[TabStop]>,
+    default_tab_width_pt: f64,
+    mut write_segment: impl FnMut(&mut String, usize),
+) {
     out.push_str("#context {\n");
 
-    for (index, segment) in segments.iter().enumerate() {
+    for (index, segment) in segment_runs.iter().enumerate() {
         let _ = write!(out, "  let tab_segment_{index} = [");
-        generate_runs_with_metrics(out, segment, eojeol_wrap, run_line_metrics);
+        write_segment(out, index);
         out.push_str("]\n");
 
         if index == 0 {
@@ -3318,7 +3348,7 @@ fn generate_runs_with_tabs_and_metrics(
         write_tab_segment_bindings(out, index, segment, tab_stops, default_tab_width_pt);
     }
 
-    let _ = writeln!(out, "  tab_prefix_{}", segments.len() - 1);
+    let _ = writeln!(out, "  tab_prefix_{}", segment_runs.len() - 1);
     out.push('}');
 }
 

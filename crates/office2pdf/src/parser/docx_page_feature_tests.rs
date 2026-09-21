@@ -1630,3 +1630,62 @@ fn an_explicit_word_wrap_keeps_eojeol_frames_on_a_bare_paragraph() {
         "an explicit word-level wrap request keeps the frames: {source}"
     );
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_header_tab_before_a_centre_stop_centres_its_text_on_that_stop() {
+    // Word's Header style declares a centre and a right stop, and a centred
+    // running head is typed as `<tab>Title`, which Word saves as one run. The
+    // tab advances to the centre stop, the first one past the pen. Header
+    // tabs were matched against running-head shapes instead, and a lone tab
+    // with a right stop last went to the right margin (issue #1821). The same
+    // paragraph in the body is the reference: both must land on one x.
+    let centred_head = || {
+        docx_rs::Paragraph::new()
+            .add_tab(
+                docx_rs::Tab::new()
+                    .val(docx_rs::TabValueType::Center)
+                    .pos(4153),
+            )
+            .add_tab(
+                docx_rs::Tab::new()
+                    .val(docx_rs::TabValueType::Right)
+                    .pos(8306),
+            )
+            .add_run(docx_rs::Run::new().add_tab().add_text("{Title}"))
+    };
+    let docx = docx_rs::Docx::new()
+        .header(docx_rs::Header::new().add_paragraph(centred_head()))
+        .add_paragraph(centred_head());
+    let mut cursor = Cursor::new(Vec::new());
+    docx.build().pack(&mut cursor).unwrap();
+    let data: Vec<u8> = cursor.into_inner();
+
+    let left_margin: f64 = parse_flow_page(&data).margins.left;
+    let (document, _warnings) = DocxParser
+        .parse(&data, &ConvertOptions::default())
+        .expect("document parses");
+    let source: String = crate::internal::generate_typst(&document)
+        .expect("document generates")
+        .source;
+    let mut placed: Vec<(f64, f64)> = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap()
+        .into_iter()
+        .filter(|run| run.text == "{Title}")
+        .map(|run| (run.baseline_pt, run.left_pt))
+        .collect();
+    placed.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let [(_, header_x), (_, body_x)] = placed[..] else {
+        panic!("expected the title in the header and in the body, got {placed:?}");
+    };
+
+    let centre_stop: f64 = left_margin + 4153.0 / 20.0;
+    assert!(
+        (centre_stop - 40.0..centre_stop).contains(&body_x),
+        "the body centres the title on the {centre_stop}pt stop: {body_x}pt"
+    );
+    assert!(
+        (header_x - body_x).abs() < 0.01,
+        "the header title starts at {header_x}pt, the body's at {body_x}pt"
+    );
+}
