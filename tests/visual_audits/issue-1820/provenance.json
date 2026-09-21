@@ -1,0 +1,16 @@
+{
+  "source": "Synthetic zh-CN Word report template: built-in Title (jc center, outlineLvl 0, bottom rule) and Subtitle (jc center, outlineLvl 1), a left Heading 1 control, and a Heading 2 indented by w:ind w:left=840; Arial throughout; no real document content",
+  "source_sha256": "5c3b85cd337a647986b6f30e9b8253eddd56882bbbb8a104fe09dabb89a6c659",
+  "reference": "Microsoft Word 16.113.1 on macOS 26.6.2, exported with scripts/macos/export_word_pdfs.applescript from the Word container; Arial embedded, check_gt_integrity.py clean",
+  "before_office2pdf": "3022531cfd5bb3273f3109a839e9b35c0ec6b1a7",
+  "page": 1,
+  "dpi": 150,
+  "render_audit_dpi": 300,
+  "fine_shift_pt": 0.5,
+  "pdf_sha256": {
+    "gt": "5a81d7f69ea4fd02f1b153f55ada6550a414bbeadad245c53d75e608cddce1c7",
+    "before": "31d4c61deb2a02aae9beb208f39f822d0365f95e69893b0e338a6045bb04dc5b",
+    "after": "66764127d6a89eadfddb5e9bc2ff35ea97376353710e900155f4340dd507f254"
+  },
+  "candidate_binary_sha256": "250757ef9df65445fa384969c3da635b2d5e4fa3518eabe5d1cc135965c74542"
+}

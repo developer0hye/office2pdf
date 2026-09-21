@@ -1968,3 +1968,68 @@ fn collect_paragraphs(doc: &Document) -> Vec<&Paragraph> {
         })
         .collect()
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_centred_title_style_with_an_outline_level_prints_centred() {
+    // The Title style zh-CN Word ships is centred, bold 16pt and carries
+    // `w:outlineLvl 0`, so the parser resolves it as a level-1 heading. A
+    // template's `{Title}` placeholder in it printed flush left, while the
+    // same paragraph in a style without the outline level printed centred
+    // (issue #1820). The two must land on the same x.
+    let styles_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:docDefaults><w:rPrDefault><w:rPr><w:sz w:val="21"/></w:rPr></w:rPrDefault></w:docDefaults>
+  <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+  <w:style w:type="paragraph" w:styleId="a3">
+    <w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>
+    <w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="auto"/></w:pBdr>
+      <w:spacing w:before="240" w:after="60"/><w:jc w:val="center"/><w:outlineLvl w:val="0"/></w:pPr>
+    <w:rPr><w:b/><w:bCs/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:customStyle="1" w:styleId="CentredLine">
+    <w:name w:val="Centred Line"/><w:basedOn w:val="Normal"/>
+    <w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="auto"/></w:pBdr>
+      <w:spacing w:before="240" w:after="60"/><w:jc w:val="center"/></w:pPr>
+    <w:rPr><w:b/><w:bCs/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>
+  </w:style>
+</w:styles>"#;
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+  <w:p><w:pPr><w:pStyle w:val="a3"/></w:pPr><w:r><w:t>{Title}</w:t></w:r></w:p>
+  <w:p><w:pPr><w:pStyle w:val="CentredLine"/></w:pPr><w:r><w:t>{Title}</w:t></w:r></w:p>
+  <w:p><w:r><w:t>Body copy under the title.</w:t></w:r></w:p>
+  <w:sectPr><w:pgSz w:w="11906" w:h="16838"/>
+    <w:pgMar w:top="1440" w:right="1800" w:bottom="1440" w:left="1800" w:header="851" w:footer="992" w:gutter="0"/></w:sectPr>
+</w:body></w:document>"#;
+
+    let data = build_docx_with_styles_xml(document_xml, styles_xml);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let paragraphs: Vec<&Paragraph> = collect_paragraphs(&doc);
+    assert_eq!(paragraphs[0].style.heading_level, Some(1));
+    assert_eq!(paragraphs[1].style.heading_level, None);
+
+    let source: String = crate::render::typst_gen::generate_typst(&doc)
+        .unwrap()
+        .source;
+    let lefts: Vec<f64> = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap()
+        .into_iter()
+        .filter(|run| run.text == "{Title}")
+        .map(|run| run.left_pt)
+        .collect();
+    let [title, centred_line] = lefts[..] else {
+        panic!("expected both placeholders on page 1, got {lefts:?}");
+    };
+    // w:left="1800" is a 90pt margin; a centred 16pt placeholder starts far
+    // inside it on a 415pt measure.
+    assert!(
+        centred_line > 90.0 + 100.0,
+        "the style without an outline level is centred: {centred_line}pt"
+    );
+    assert!(
+        (title - centred_line).abs() < 0.01,
+        "the outline-level Title starts at {title}pt, not where the same \
+         centred paragraph does ({centred_line}pt)"
+    );
+}

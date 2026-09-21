@@ -2008,6 +2008,152 @@ fn test_generate_undecorated_heading_keeps_its_bare_form() {
     );
 }
 
+/// A one-run paragraph of `text` carrying `style`, set bold at 16pt so a
+/// heading's own show rule has no size or weight left to change.
+#[cfg(not(target_arch = "wasm32"))]
+fn placement_probe_paragraph(style: ParagraphStyle, text: &str) -> Block {
+    Block::Paragraph(Paragraph {
+        style,
+        runs: vec![Run {
+            text: text.to_string(),
+            style: TextStyle {
+                bold: Some(true),
+                font_size: Some(16.0),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }],
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_heading_is_placed_across_the_line_exactly_like_body_copy() {
+    // An outline level makes a paragraph a heading for the navigation pane
+    // and the contents, not a different kind of paragraph: Word lays it out
+    // with the same `w:jc`, `w:ind` and `w:bidi` as body copy. The heading
+    // branch was a second copy of the paragraph emitter that picked up the
+    // vertical settings one issue at a time (#581, #1132) but none of the
+    // horizontal ones, so a centred zh-CN Word "Title" — which carries
+    // `w:outlineLvl 0` — printed flush left (issue #1820).
+    //
+    // Each case gets its own page holding a body paragraph and a heading
+    // with the same settings, so the two runs on a page must share an x.
+    let cases: Vec<(&str, ParagraphStyle)> = vec![
+        ("default", ParagraphStyle::default()),
+        (
+            "left",
+            ParagraphStyle {
+                alignment: Some(Alignment::Left),
+                ..ParagraphStyle::default()
+            },
+        ),
+        (
+            "centre",
+            ParagraphStyle {
+                alignment: Some(Alignment::Center),
+                ..ParagraphStyle::default()
+            },
+        ),
+        (
+            "right",
+            ParagraphStyle {
+                alignment: Some(Alignment::Right),
+                ..ParagraphStyle::default()
+            },
+        ),
+        (
+            "left indent",
+            ParagraphStyle {
+                indent_left: Some(144.0),
+                ..ParagraphStyle::default()
+            },
+        ),
+        (
+            "centre inside both indents",
+            ParagraphStyle {
+                alignment: Some(Alignment::Center),
+                indent_left: Some(144.0),
+                indent_right: Some(36.0),
+                ..ParagraphStyle::default()
+            },
+        ),
+        (
+            "right inside a right indent",
+            ParagraphStyle {
+                alignment: Some(Alignment::Right),
+                indent_right: Some(90.0),
+                ..ParagraphStyle::default()
+            },
+        ),
+        (
+            "centre with spacing and a rule",
+            ParagraphStyle {
+                alignment: Some(Alignment::Center),
+                space_before: Some(12.0),
+                space_after: Some(3.0),
+                border: Some(Box::new(CellBorder {
+                    bottom: Some(BorderSide {
+                        width: 0.75,
+                        color: Color::new(0, 0, 0),
+                        style: BorderLineStyle::Solid,
+                        join: LineJoin::Miter,
+                    }),
+                    ..CellBorder::default()
+                })),
+                ..ParagraphStyle::default()
+            },
+        ),
+        (
+            "right-to-left",
+            ParagraphStyle {
+                direction: Some(TextDirection::Rtl),
+                ..ParagraphStyle::default()
+            },
+        ),
+    ];
+    let pages: Vec<Page> = cases
+        .iter()
+        .map(|(_, style)| {
+            make_flow_page(vec![
+                placement_probe_paragraph(style.clone(), "Overview"),
+                placement_probe_paragraph(
+                    ParagraphStyle {
+                        heading_level: Some(1),
+                        ..style.clone()
+                    },
+                    "Overview",
+                ),
+            ])
+        })
+        .collect();
+    let source: String = generate_typst(&make_doc(pages)).unwrap().source;
+
+    let left_margin: f64 = Margins::default().left;
+    for (page_index, (label, _)) in cases.iter().enumerate() {
+        let lefts: Vec<f64> = crate::render::pdf::compiled_text_runs(&source, page_index)
+            .unwrap()
+            .into_iter()
+            .filter(|run| run.text == "Overview")
+            .map(|run| run.left_pt)
+            .collect();
+        let [body, heading] = lefts[..] else {
+            panic!("{label}: expected one body and one heading run, got {lefts:?}");
+        };
+        assert!(
+            (body - heading).abs() < 0.01,
+            "{label}: the heading starts at {heading}pt where body copy starts at {body}pt"
+        );
+        if *label != "default" && *label != "left" {
+            assert!(
+                body > left_margin + 1.0,
+                "{label}: the case must move text off the margin to test anything: {body}pt"
+            );
+        }
+    }
+}
+
 /// Build a header paragraph in Word's running-head shape: segments separated
 /// by `<w:tab/>` runs, with the stops that place them declared on the
 /// paragraph.
