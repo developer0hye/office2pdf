@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1640",
+      "cluster_ids": ["p1-fb3c469d3d5e"],
+      "note": "Inspected the header band at 300 DPI: both lines and the rule sit in Word's order with no overprinting, and the rule is 0.4pt high because the story's first baseline is still seated a line gap high (native fills 55.68-56.40pt, we stroke at 55.28pt)."
+    }
+  ]
+}
