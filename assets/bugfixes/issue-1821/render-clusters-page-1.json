@@ -1,0 +1,167 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 301.0176,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 418.08,
+        "x": 88.56,
+        "y": 55.68
+      },
+      "disposition": {
+        "issue": "#1824",
+        "kind": "issue",
+        "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+      },
+      "id": "p1-d4d93c68e13a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 191.5776,
+      "bbox_pt": {
+        "height": 3.12,
+        "width": 198.24,
+        "x": 308.4,
+        "y": 50.64
+      },
+      "disposition": {
+        "issue": "#1824",
+        "kind": "issue",
+        "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+      },
+      "id": "p1-b3fbc7d148c4",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 191.1744,
+      "bbox_pt": {
+        "height": 2.88,
+        "width": 198.0,
+        "x": 88.56,
+        "y": 50.88
+      },
+      "disposition": {
+        "issue": "#1824",
+        "kind": "issue",
+        "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+      },
+      "id": "p1-e223c954b5d1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8256,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.48,
+        "x": 282.48,
+        "y": 58.32
+      },
+      "disposition": {
+        "issue": "#1824",
+        "kind": "issue",
+        "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+      },
+      "id": "p1-c5c7e28e0f61",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.48,
+        "x": 282.48,
+        "y": 78.72
+      },
+      "disposition": {
+        "issue": "#1824",
+        "kind": "issue",
+        "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+      },
+      "id": "p1-073f05d73bd7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.8672,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 298.8,
+        "y": 78.72
+      },
+      "disposition": {
+        "issue": "#1824",
+        "kind": "issue",
+        "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+      },
+      "id": "p1-6a9aaa8bd1c2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 298.8,
+        "y": 58.32
+      },
+      "disposition": {
+        "issue": "#1824",
+        "kind": "issue",
+        "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+      },
+      "id": "p1-639474af6bb3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.312,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 22.32,
+        "x": 286.32,
+        "y": 52.8
+      },
+      "disposition": {
+        "issue": "#1824",
+        "kind": "issue",
+        "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+      },
+      "id": "p1-36e770a4e474",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.72,
+        "x": 90.48,
+        "y": 58.32
+      },
+      "disposition": {
+        "issue": "#1824",
+        "kind": "issue",
+        "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+      },
+      "id": "p1-67198ef072a9",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 9,
+    "duplicate": 0,
+    "total": 9,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

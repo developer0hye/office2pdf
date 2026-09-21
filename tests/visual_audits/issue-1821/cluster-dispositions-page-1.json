@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1824",
+      "cluster_ids": [
+        "p1-d4d93c68e13a",
+        "p1-b3fbc7d148c4",
+        "p1-e223c954b5d1",
+        "p1-c5c7e28e0f61",
+        "p1-073f05d73bd7",
+        "p1-6a9aaa8bd1c2",
+        "p1-639474af6bb3",
+        "p1-36e770a4e474",
+        "p1-67198ef072a9"
+      ],
+      "note": "Inspected the full pages, the header-band crops and the difference image: {Title} and Draft 2 now sit on the native x, but the bordered first header line and its rule are 2.49pt high and the second header line is 20.31pt low, overprinting the first body line. All nine clusters are that vertical displacement."
+    }
+  ]
+}

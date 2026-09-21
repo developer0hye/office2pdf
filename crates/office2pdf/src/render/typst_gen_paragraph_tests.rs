@@ -2157,6 +2157,7 @@ fn a_heading_is_placed_across_the_line_exactly_like_body_copy() {
 /// Build a header paragraph in Word's running-head shape: segments separated
 /// by `<w:tab/>` runs, with the stops that place them declared on the
 /// paragraph.
+#[cfg(not(target_arch = "wasm32"))]
 fn running_head(texts: &[&str], stops: Vec<TabStop>) -> crate::ir::HeaderFooterParagraph {
     let mut elements: Vec<HFInline> = Vec::new();
     for (index, text) in texts.iter().enumerate() {
@@ -2188,14 +2189,7 @@ fn running_head(texts: &[&str], stops: Vec<TabStop>) -> crate::ir::HeaderFooterP
     }
 }
 
-fn page_with_header(header: crate::ir::HeaderFooter) -> Page {
-    let Page::Flow(mut flow) = make_flow_page(vec![]) else {
-        unreachable!()
-    };
-    flow.header = Some(header);
-    Page::Flow(flow)
-}
-
+#[cfg(not(target_arch = "wasm32"))]
 fn stop(position: f64, alignment: TabAlignment) -> TabStop {
     TabStop {
         position,
@@ -2204,76 +2198,115 @@ fn stop(position: f64, alignment: TabAlignment) -> TabStop {
     }
 }
 
-#[test]
-fn test_header_right_tab_stop_pushes_its_segment_to_the_margin() {
-    // A `<w:tab/>` was advanced by a fixed 1em however the paragraph's stops
-    // were declared, so the segment a right stop should have pushed to the
-    // right margin sat beside the left one (issue #579).
-    let doc = make_doc(vec![page_with_header(crate::ir::HeaderFooter {
-        shapes: Vec::new(),
-        paragraphs: vec![running_head(
-            &["office2pdf 기술 소개서", "본문"],
-            vec![stop(465.3, TabAlignment::Right)],
-        )],
-        distance_from_edge: None,
-        sheet_print_scale: None,
-    })]);
-    let result = generate_typst(&doc).unwrap().source;
-
-    assert!(
-        result.contains("#grid(columns: (1fr, auto)"),
-        "a right stop lays the two segments out against the margins: {result}"
-    );
-    assert!(
-        !result.contains("#h(1em)"),
-        "the tab must not fall back to a fixed advance: {result}"
-    );
+/// A body paragraph with the same segments and stops as `running_head`.
+#[cfg(not(target_arch = "wasm32"))]
+fn tabbed_body_paragraph(texts: &[&str], stops: Option<Vec<TabStop>>) -> Block {
+    Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            tab_stops: stops,
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: texts.join("\t"),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+        }],
+    })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn test_header_center_and_right_tab_stops_lay_out_three_segments() {
-    let doc = make_doc(vec![page_with_header(crate::ir::HeaderFooter {
-        shapes: Vec::new(),
-        paragraphs: vec![running_head(
-            &["left", "middle", "right"],
-            vec![
-                stop(232.6, TabAlignment::Center),
-                stop(465.3, TabAlignment::Right),
-            ],
-        )],
-        distance_from_edge: None,
-        sheet_print_scale: None,
-    })]);
-    let result = generate_typst(&doc).unwrap().source;
+fn a_header_tab_places_its_segment_exactly_like_a_body_tab() {
+    // Word advances every tab to the first stop past the pen, in a header as
+    // in the body. Header tabs were instead matched against two running-head
+    // shapes: one tab went to the right margin whenever the last stop was a
+    // right stop, so `<tab>Title` under the Header style's centre and right
+    // stops printed right-aligned instead of centred (issue #1821), and any
+    // other shape collapsed the tab to a space. Body paragraphs already
+    // measure the pen and resolve each tab against the stops, so a header
+    // segment must land exactly where the same runs land in the body.
+    let centre_and_right = || {
+        Some(vec![
+            stop(225.6, TabAlignment::Center),
+            stop(451.3, TabAlignment::Right),
+        ])
+    };
+    let cases: Vec<(Vec<&str>, Option<Vec<TabStop>>)> = vec![
+        // No declared stop: the document's default stops apply. First, because
+        // only the first page's header can be written before the page's
+        // default is in force.
+        (vec!["Section", "Detail"], None),
+        (vec!["", "Centred"], centre_and_right()),
+        (vec!["Confidential", "Draft"], centre_and_right()),
+        (vec!["Left", "Middle", "Margin"], centre_and_right()),
+        // The #579 running head: a lone right stop at the text edge.
+        (
+            vec!["Handbook", "Chapter"],
+            Some(vec![stop(451.3, TabAlignment::Right)]),
+        ),
+        (
+            vec!["Label", "Value"],
+            Some(vec![stop(144.0, TabAlignment::Left)]),
+        ),
+    ];
+    let pages: Vec<Page> = cases
+        .iter()
+        .map(|(texts, stops)| {
+            let mut head = running_head(texts, stops.clone().unwrap_or_default());
+            head.style.tab_stops = stops.clone();
+            let Page::Flow(mut flow) =
+                make_flow_page(vec![tabbed_body_paragraph(texts, stops.clone())])
+            else {
+                unreachable!()
+            };
+            flow.header = Some(crate::ir::HeaderFooter {
+                shapes: Vec::new(),
+                paragraphs: vec![head],
+                distance_from_edge: None,
+                sheet_print_scale: None,
+            });
+            Page::Flow(flow)
+        })
+        .collect();
+    // A declared `w:defaultTabStop` (708 twips) rather than the 36pt fallback,
+    // so a header written before the page's default is in force shows up.
+    let mut doc: Document = make_doc(pages);
+    doc.styles.default_tab_stop_pt = Some(35.4);
+    let source: String = generate_typst(&doc).unwrap().source;
 
-    assert!(
-        result.contains("#grid(columns: (1fr, auto, 1fr), align: (left, center, right)"),
-        "a centre and a right stop give three placed segments: {result}"
-    );
-}
+    for (page_index, (texts, _)) in cases.iter().enumerate() {
+        let runs = crate::render::pdf::compiled_text_runs(&source, page_index).unwrap();
+        for text in texts.iter().filter(|text| !text.is_empty()) {
+            let mut placed: Vec<(f64, f64)> = runs
+                .iter()
+                .filter(|run| run.text == *text)
+                .map(|run| (run.baseline_pt, run.left_pt))
+                .collect();
+            placed.sort_by(|a, b| a.0.total_cmp(&b.0));
+            let [(_, header_x), (_, body_x)] = placed[..] else {
+                panic!(
+                    "{texts:?}: expected '{text}' once in the header and once in the body, got {placed:?}"
+                );
+            };
+            assert!(
+                (header_x - body_x).abs() < 0.01,
+                "{texts:?}: header '{text}' starts at {header_x}pt, the body places it at {body_x}pt"
+            );
+        }
+    }
 
-#[test]
-fn test_header_tab_without_a_matching_stop_keeps_the_plain_advance() {
-    // Only the two running-head shapes are laid out; a header that tabs for
-    // some other reason keeps the behaviour it had.
-    let doc = make_doc(vec![page_with_header(crate::ir::HeaderFooter {
-        shapes: Vec::new(),
-        paragraphs: vec![running_head(
-            &["a", "b"],
-            vec![stop(72.0, TabAlignment::Left)],
-        )],
-        distance_from_edge: None,
-        sheet_print_scale: None,
-    })]);
-    let result = generate_typst(&doc).unwrap().source;
-
+    // The case the running-head shapes got wrong lands on the centre stop,
+    // not the right margin: the stop sits 225.6pt into a 72pt margin.
+    let centred_x: f64 = crate::render::pdf::compiled_text_runs(&source, 1)
+        .unwrap()
+        .into_iter()
+        .filter(|run| run.text == "Centred")
+        .map(|run| run.left_pt)
+        .fold(f64::INFINITY, f64::min);
     assert!(
-        !result.contains("#grid(columns: (1fr, auto)"),
-        "a left stop is not the running-head idiom: {result}"
-    );
-    assert!(
-        result.contains('\t'),
-        "the tab stays a literal tab for Typst to collapse: {result}"
+        (72.0 + 225.6 - 40.0..72.0 + 225.6).contains(&centred_x),
+        "a lone tab before a centre stop centres its segment on that stop: {centred_x}pt"
     );
 }
 

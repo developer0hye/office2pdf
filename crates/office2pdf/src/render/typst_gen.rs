@@ -689,6 +689,18 @@ fn generate_flow_page(
     // left and right margins.
     ctx.available_measure_pt =
         Some(size.width - page.margins.left - page.margins.right).filter(|measure| *measure > 0.0);
+    // Absent w:defaultTabStop: East Asian Word editions (signalled by the
+    // section's w:docGrid) default to 800 twips = 40pt where Western
+    // editions use the ECMA 720 twips = 36pt (issue #393). Set before the
+    // page setup, whose header and footer tabs use the same default stops
+    // (issue #1821).
+    ctx.default_tab_width_pt =
+        ctx.document_default_tab_stop_pt
+            .unwrap_or(if page.line_grid_pitch.is_some() {
+                EAST_ASIAN_DEFAULT_TAB_WIDTH_PT
+            } else {
+                DEFAULT_TAB_WIDTH_PT
+            });
     write_flow_page_setup(out, page, &size, ctx);
     out.push('\n');
     // The marker sits at the section's first page, so a first-page header can
@@ -723,16 +735,6 @@ fn generate_flow_page(
     // presence of the element still marks an East Asian edition for the tab
     // default below, which is a different question.
     ctx.line_grid_pitch = page.line_grid_pitch.filter(|_| page.line_grid_snaps_lines);
-    // Absent w:defaultTabStop: East Asian Word editions (signalled by the
-    // section's w:docGrid) default to 800 twips = 40pt where Western
-    // editions use the ECMA 720 twips = 36pt (issue #393).
-    ctx.default_tab_width_pt =
-        ctx.document_default_tab_stop_pt
-            .unwrap_or(if page.line_grid_pitch.is_some() {
-                EAST_ASIAN_DEFAULT_TAB_WIDTH_PT
-            } else {
-                DEFAULT_TAB_WIDTH_PT
-            });
 
     // Word keeps `w:spacing w:before` on the document's first body paragraph,
     // but Typst collapses leading block spacing at a page boundary, pulling the
@@ -3386,52 +3388,6 @@ fn generate_hf_styled_paragraph(
     }
 }
 
-/// Where a header or footer paragraph's `<w:tab/>` runs place their segments.
-///
-/// Word's running-head idiom declares a right-aligned tab stop at the text
-/// edge, or a centre stop and a right stop, and separates the segments with
-/// tabs. Those two shapes are what `w:tabs` is used for in a header; anything
-/// else keeps the plain advance below.
-enum HeaderFooterTabLayout {
-    /// `left`, tab, `right`.
-    LeftRight(usize),
-    /// `left`, tab, `centre`, tab, `right`.
-    LeftCenterRight(usize, usize),
-}
-
-/// Resolve a header or footer paragraph's tabs against its own tab stops.
-///
-/// `generate_hf_elements` passed every `<w:tab/>` straight to `generate_run`,
-/// which writes the tab into the Typst source as a literal tab character.
-/// Typst's markup lexer treats that exactly as it treats a space, so the two
-/// segments ended up one space apart and the one a right stop should have
-/// pushed to the right margin sat beside the left one — on every page of a
-/// document that uses the idiom (issue #579).
-///
-/// The `#h(1em)` advance below is a different element: `w:ptab`, which states
-/// its own alignment rather than referring to a stop.
-fn header_footer_tab_layout(
-    paragraph: &crate::ir::HeaderFooterParagraph,
-) -> Option<HeaderFooterTabLayout> {
-    let tabs: Vec<usize> = paragraph
-        .elements
-        .iter()
-        .enumerate()
-        .filter(|(_, element)| matches!(element, HFInline::Run(run) if run.text == "\t"))
-        .map(|(index, _)| index)
-        .collect();
-    let stops = paragraph.style.tab_stops.as_deref()?;
-    let alignments: Vec<TabAlignment> = stops.iter().map(|stop| stop.alignment).collect();
-
-    match (tabs.as_slice(), alignments.as_slice()) {
-        ([tab], [.., TabAlignment::Right]) => Some(HeaderFooterTabLayout::LeftRight(*tab)),
-        ([first, second], [TabAlignment::Center, .., TabAlignment::Right]) => {
-            Some(HeaderFooterTabLayout::LeftCenterRight(*first, *second))
-        }
-        _ => None,
-    }
-}
-
 fn generate_hf_paragraph(
     out: &mut String,
     paragraph: &crate::ir::HeaderFooterParagraph,
@@ -3495,26 +3451,36 @@ fn generate_hf_paragraph(
         out.push_str("], [");
         generate_hf_elements(out, &paragraph.elements[index + 1..], ctx);
         out.push_str("])");
+    } else if paragraph.elements.iter().any(is_hf_tab) {
+        // `generate_run` would write a `<w:tab/>` into the source as a literal
+        // tab, which Typst's markup lexer treats as a space, so the segment a
+        // stop should place sat beside the one before it (issue #579). The
+        // `#h(1em)` of `generate_hf_elements` is a different element: `w:ptab`,
+        // which states its own alignment rather than referring to a stop.
+        let segments: Vec<&[HFInline]> = paragraph.elements.split(is_hf_tab).collect();
+        let segment_runs: Vec<Vec<Run>> = segments
+            .iter()
+            .map(|segment| {
+                segment
+                    .iter()
+                    .filter_map(|element| match element {
+                        HFInline::Run(run) => Some(run.clone()),
+                        _ => None,
+                    })
+                    .collect()
+            })
+            .collect();
+        let default_tab_width_pt: f64 =
+            paragraph_default_tab_width_pt(&paragraph.style, ctx.default_tab_width_pt);
+        write_measured_tab_segments(
+            out,
+            &segment_runs,
+            paragraph.style.tab_stops.as_deref(),
+            default_tab_width_pt,
+            |out, index| generate_hf_elements(out, segments[index], ctx),
+        );
     } else {
-        match header_footer_tab_layout(paragraph) {
-            Some(HeaderFooterTabLayout::LeftRight(index)) => {
-                out.push_str("#grid(columns: (1fr, auto), [");
-                generate_hf_elements(out, &paragraph.elements[..index], ctx);
-                out.push_str("], [");
-                generate_hf_elements(out, &paragraph.elements[index + 1..], ctx);
-                out.push_str("])");
-            }
-            Some(HeaderFooterTabLayout::LeftCenterRight(first, second)) => {
-                out.push_str("#grid(columns: (1fr, auto, 1fr), align: (left, center, right), [");
-                generate_hf_elements(out, &paragraph.elements[..first], ctx);
-                out.push_str("], [");
-                generate_hf_elements(out, &paragraph.elements[first + 1..second], ctx);
-                out.push_str("], [");
-                generate_hf_elements(out, &paragraph.elements[second + 1..], ctx);
-                out.push_str("])");
-            }
-            None => generate_hf_elements(out, &paragraph.elements, ctx),
-        }
+        generate_hf_elements(out, &paragraph.elements, ctx);
     }
 
     if stacks_rules {
@@ -3593,6 +3559,11 @@ fn write_hf_field(out: &mut String, style: &TextStyle, field: &str) {
     } else {
         out.push_str(field);
     }
+}
+
+/// A `<w:tab/>`: the parser gives each one a run of its own.
+fn is_hf_tab(element: &HFInline) -> bool {
+    matches!(element, HFInline::Run(run) if run.text == "\t")
 }
 
 fn generate_hf_elements(out: &mut String, elements: &[HFInline], ctx: &mut GenCtx) {
