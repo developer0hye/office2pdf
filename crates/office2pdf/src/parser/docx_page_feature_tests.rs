@@ -1900,3 +1900,96 @@ fn a_multi_line_footer_border_keeps_its_double_rule() {
     assert_eq!(top.width, 3.0, "w:sz=24 eighths of a point");
     assert_eq!(top.color, Color::new(0x62, 0x24, 0x23));
 }
+
+/// A package whose header holds two paragraphs, the first optionally ruled off
+/// with `w:pBdr/w:bottom` at `space` points. `w:header` is 851 twips (42.55pt)
+/// under a 72pt top margin, and everything is Arial 10.5pt.
+fn build_docx_with_ruled_header(space: Option<usize>) -> Vec<u8> {
+    let border = space.map_or(String::new(), |space| {
+        format!(
+            r#"<w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="{space}" w:color="auto"/></w:pBdr></w:pPr>"#
+        )
+    });
+    build_docx_with_raw_header_styles(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="21"/></w:rPr></w:rPrDefault><w:pPrDefault/></w:docDefaults>
+  <w:style w:type="paragraph" w:default="1" w:styleId="a"><w:name w:val="Normal"/></w:style>
+</w:styles>"#,
+        &format!(
+            r#"<w:p>{border}<w:r><w:t>Header line one</w:t></w:r></w:p>
+               <w:p><w:r><w:t>Header line two</w:t></w:r></w:p>"#
+        ),
+    )
+}
+
+/// The baselines of the two header lines, in points from the page top.
+#[cfg(not(target_arch = "wasm32"))]
+fn ruled_header_baselines(space: Option<usize>) -> (f64, f64) {
+    let data: Vec<u8> = build_docx_with_ruled_header(space);
+    let (document, _warnings) = DocxParser
+        .parse(&data, &ConvertOptions::default())
+        .expect("document parses");
+    let source: String = crate::internal::generate_typst(&document)
+        .expect("document generates")
+        .source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+    let find = |needle: &str| -> f64 {
+        runs.iter()
+            .find(|run| run.text.contains(needle))
+            .unwrap_or_else(|| panic!("header line {needle} must render: {runs:?}"))
+            .baseline_pt
+    };
+    (find("one"), find("two"))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_header_rule_hangs_below_its_line_without_moving_it() {
+    // Measured on native Word 16.113.1 with this package (issue #1824). Word
+    // seats the ruled line where an unruled one sits, hangs the rule below the
+    // line's bottom edge, and starts the next paragraph under the rule, so the
+    // story advances by the line plus the rule and its `w:space`. Word's
+    // second baseline: 64.56pt bare, 65.28pt at `w:space="0"` and with no
+    // `w:space` at all, 66.24pt at `w:space="1"`, 73.20pt at `w:space="8"` —
+    // the bare line plus the rule's own 0.75pt (`w:sz="6"`) plus the gap.
+    //
+    // The story used to join its paragraphs with a line break, which a ruled
+    // paragraph's block-level stack split into two Typst paragraphs with the
+    // default paragraph gap between them: the second line landed 20.32pt low,
+    // on the first body line, while the taller measured story clamped away the
+    // band shift and lifted the first line 2.49pt.
+    let (bare_first, bare_second) = ruled_header_baselines(None);
+    let (zero_first, zero_second) = ruled_header_baselines(Some(0));
+    let (ruled_first, ruled_second) = ruled_header_baselines(Some(1));
+    let (wide_first, wide_second) = ruled_header_baselines(Some(8));
+    let thickness: f64 = 0.75;
+
+    for (label, first) in [
+        ("w:space=0", zero_first),
+        ("w:space=1", ruled_first),
+        ("w:space=8", wide_first),
+    ] {
+        assert!(
+            (first - bare_first).abs() < 0.01,
+            "{label}: the rule must not move the line it belongs to, {first}pt against an unruled {bare_first}pt"
+        );
+    }
+    for (label, second, reserved) in [
+        ("no w:space", zero_second, thickness),
+        ("w:space=1", ruled_second, thickness + 1.0),
+        ("w:space=8", wide_second, thickness + 8.0),
+    ] {
+        assert!(
+            ((second - bare_second) - reserved).abs() < 0.05,
+            "{label}: the rule pushes the next line down {}pt, Word reserves {reserved}pt",
+            second - bare_second
+        );
+    }
+    // Both stories stay on the seat the band shift gives them, which is a line
+    // gap high against Word — 52.06pt here against 52.56pt, tracked in #1640.
+    assert!(
+        (ruled_first - 52.56).abs() < 0.7 && (ruled_second - 66.24).abs() < 0.7,
+        "the ruled header lines sit at {ruled_first}pt and {ruled_second}pt, native Word at 52.56pt and 66.24pt"
+    );
+}

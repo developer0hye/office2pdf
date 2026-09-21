@@ -1,0 +1,18 @@
+{
+  "source": "Synthetic A4 package, Arial 10.5pt: a two-paragraph header whose first paragraph is ruled off with w:bottom sz=6 space=1, over two body lines; w:header = 851 twips; no real document content",
+  "source_sha256": "7eb0da05fda5d53a3f26fb0e0f065fe7ff0d09714fdc5b1eca4ffc615c700514",
+  "reference": "Microsoft Word 16.113.1 on macOS 26.6.2, exported with scripts/macos/export_word_pdfs.applescript from the Word container; Arial embedded, check_gt_integrity.py clean",
+  "before_office2pdf": "d42b58100570121335e7b2a4b555ac1ad17a12f2",
+  "page": 1,
+  "dpi": 150,
+  "render_audit_dpi": 300,
+  "fine_shift_pt": 0.5,
+  "pdf_sha256": {
+    "gt": "a30f6566f0d8b89aae54f74c8fb88e74ed57f0507374de398cc69fa91eb15d96",
+    "before": "8429d46d07608e241bdc26d8ededd51d7e8b6cd26585253078db0d09e85f8ee4",
+    "after": "db1ab712f0bca126c448e72647360848a018a1e898f97230e6f7219a98dd4257"
+  },
+  "before_binary_sha256": "c562f0dd599e31c697edf32084a39e1de761f9cd3345139d837317a10c93bfd4",
+  "candidate_binary_sha256": "c03100becc1038e9e4b231e882b73a295d95ac56c84803a653365a0e3765a5c6",
+  "probes": "p1-p10 under /Volumes/T7/scratch/issue-1824: w:space 0/1/8/absent, 18pt, and a Malgun Gothic pair"
+}

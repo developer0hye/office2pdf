@@ -1,0 +1,39 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 602.0352,
+      "bbox_pt": {
+        "height": 1.44,
+        "width": 418.08,
+        "x": 88.56,
+        "y": 54.96
+      },
+      "disposition": {
+        "issue": "#1640",
+        "kind": "issue",
+        "note": "Inspected the header band at 300 DPI: both lines and the rule sit in Word's order with no overprinting, and the rule is 0.4pt high because the story's first baseline is still seated a line gap high (native fills 55.68-56.40pt, we stroke at 55.28pt)."
+      },
+      "id": "p1-fb3c469d3d5e",
+      "region": "top"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 1,
+    "duplicate": 0,
+    "total": 1,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

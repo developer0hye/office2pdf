@@ -2795,9 +2795,9 @@ fn test_generate_header_border_uses_declared_pbdr_space() {
     );
 }
 
-/// Without `w:space` the rule keeps the previous hairline clearance.
+/// Without `w:space` the rule sits directly under the line's bottom edge.
 #[test]
-fn test_generate_header_border_without_space_keeps_hairline_gap() {
+fn a_header_border_without_space_leaves_no_gap() {
     use crate::ir::{BorderSide, CellBorder, HFInline, HeaderFooter, HeaderFooterParagraph};
 
     let doc = make_doc(vec![Page::Flow(FlowPage {
@@ -2842,7 +2842,16 @@ fn test_generate_header_border_without_space_keeps_hairline_gap() {
     })]);
 
     let output = generate_typst(&doc).unwrap();
-    assert!(output.source.contains("block(height: 0.5pt)[]"));
+    // An absent `w:space` is the schema's zero. Native Word 16.113.1 seats the
+    // line after a ruled header paragraph identically for `w:space="0"` and
+    // for a `w:bottom` stating none — 65.28pt in both exports — where the
+    // 0.5pt clearance this used to keep put it 0.44pt low (issue #1824). The
+    // fallback predates `w:space` being parsed at all (issue #446).
+    assert!(
+        output.source.contains("block(height: 0pt)[]"),
+        "no declared gap means no gap: {}",
+        output.source
+    );
 }
 
 /// Word measures `w:pgMar/@w:header` from the top page edge to the top of the
