@@ -1,0 +1,12 @@
+# Supply-chain gate for .github/workflows/cargo-deny.yml.
+# Vulnerability advisories always fail; RustSec also files known-malicious
+# crates (e.g. the 2026-08-20 arrayref / proc-macro1 attack). Yanked versions
+# fail too. Licenses and bans are not checked here.
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+unmaintained = "none"
+unsound = "workspace"

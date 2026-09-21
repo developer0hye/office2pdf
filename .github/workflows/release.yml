@@ -95,7 +95,7 @@ jobs:
 
           version="${RELEASE_TAG#v}"
           set +e
-          output="$(cargo publish -p office2pdf 2>&1)"
+          output="$(cargo publish --locked -p office2pdf 2>&1)"
           status=$?
           set -e
           printf '%s\n' "${output}"
@@ -120,7 +120,7 @@ jobs:
           version="${RELEASE_TAG#v}"
           for attempt in {1..30}; do
             set +e
-            output="$(cargo publish -p office2pdf-cli 2>&1)"
+            output="$(cargo publish --locked -p office2pdf-cli 2>&1)"
             status=$?
             set -e
             printf '%s\n' "${output}"
