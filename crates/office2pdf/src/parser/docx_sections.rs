@@ -4,10 +4,9 @@ use std::io::{Cursor, Read, Seek};
 
 use crate::error::ConvertWarning;
 use crate::ir::{
-    Block, BorderLineStyle, BorderSide, CellBorder, Color, ColumnLayout, FlowPage, FrameAnchor,
-    HFInline, HeaderFooter, HeaderFooterFrame, HeaderFooterParagraph, Insets, LineJoin, Margins,
-    PageNumbering, PageSize, PositionedTab, PositionedTabAlignment, PositionedTabRelativeTo, Run,
-    TabLeader, TextDirection, TextStyle,
+    Block, Color, ColumnLayout, FlowPage, FrameAnchor, HFInline, HeaderFooter, HeaderFooterFrame,
+    HeaderFooterParagraph, Margins, PageNumbering, PageSize, PositionedTab, PositionedTabAlignment,
+    PositionedTabRelativeTo, Run, TabLeader, TextDirection, TextStyle,
 };
 
 use super::contexts::WrapContext;
@@ -15,12 +14,11 @@ use super::media::extract_drawing_image;
 use super::{
     DOC_DEFAULT_STYLE_ID, ImageMap, NumberingMap, ParagraphItem, ResolvedStyle, StyleMap,
     TaggedElement, extract_column_layout_from_section_property, extract_paragraph_style,
-    extract_run_style, extract_tab_stop_overrides, flatten_tracked_changes, get_paragraph_style_id,
-    group_into_lists, merge_paragraph_style, merge_text_style, read_zip_text,
+    extract_tab_stop_overrides, flatten_tracked_changes, get_paragraph_style_id, group_into_lists,
+    merge_paragraph_style, merge_text_style, read_zip_text, resolve_run_style,
     word_compatible_paragraph_space_after_pt,
 };
 use crate::parser::units::twips_to_pt;
-use crate::parser::xml_util::parse_hex_color;
 
 /// Parsed header/footer assets addressed by relationship ID.
 #[derive(Default)]
@@ -761,35 +759,6 @@ fn apply_doc_default_text_style(
     }
 }
 
-/// The `w:spacing w:after` a header or footer paragraph resolves to, in points.
-///
-/// The same cascade a body paragraph takes: its own `w:pPr`, then the style it
-/// names — or the document's default paragraph style where it names none — and
-/// finally Word's fallback for a gap nothing states, which is the built-in
-/// `Normal`'s 8pt until the package declares `w:pPrDefault` (issue #1085).
-///
-/// A footer needs it because Word keeps the last paragraph's gap between the
-/// story's last line and `w:pgMar/@w:footer`; a header records it for the same
-/// reason a body paragraph does, so the two stories resolve alike (issue #1195).
-fn hf_space_after_pt(
-    explicit_pt: Option<f64>,
-    property: &docx_rs::ParagraphProperty,
-    styles: HeaderFooterStyleContext<'_>,
-) -> f64 {
-    explicit_pt
-        .or_else(|| {
-            get_paragraph_style_id(property)
-                .and_then(|style_id| styles.style_map.get(style_id))
-                .or_else(|| styles.style_map.get(DOC_DEFAULT_STYLE_ID))
-                .and_then(|resolved| resolved.paragraph.space_after)
-        })
-        .unwrap_or_else(|| {
-            word_compatible_paragraph_space_after_pt(
-                styles.paragraph_property_defaults_are_declared,
-            )
-        })
-}
-
 /// Convert a docx-rs Paragraph into a HeaderFooterParagraph.
 /// Detects PAGE/NUMPAGES field codes within runs and emits page counter inlines.
 fn convert_hf_paragraph(
@@ -799,14 +768,24 @@ fn convert_hf_paragraph(
     simple_fields: &[SimpleFieldMarker],
     styles: HeaderFooterStyleContext<'_>,
 ) -> HeaderFooterParagraph {
+    // A header paragraph resolves `w:pStyle` exactly as a body paragraph
+    // does. It used to resolve none, so everything a style supplied — Word's
+    // built-in Header style is centred, ruled off with a `w:pBdr`, declares
+    // the running-head stops and sets 9pt — was dropped, and only `w:spacing
+    // w:after` was patched back in through a lookup of its own (issue #1822).
+    let resolved_style: Option<&ResolvedStyle> = get_paragraph_style_id(&paragraph.property)
+        .and_then(|style_id| styles.style_map.get(style_id))
+        .or_else(|| styles.style_map.get(DOC_DEFAULT_STYLE_ID));
     let explicit_style = extract_paragraph_style(&paragraph.property);
     let explicit_tab_overrides = extract_tab_stop_overrides(&paragraph.property.tabs);
-    let mut style = merge_paragraph_style(&explicit_style, explicit_tab_overrides.as_deref(), None);
-    style.space_after = Some(hf_space_after_pt(
-        style.space_after,
-        &paragraph.property,
-        styles,
-    ));
+    let mut style = merge_paragraph_style(
+        &explicit_style,
+        explicit_tab_overrides.as_deref(),
+        resolved_style,
+    );
+    style.space_after = Some(style.space_after.unwrap_or_else(|| {
+        word_compatible_paragraph_space_after_pt(styles.paragraph_property_defaults_are_declared)
+    }));
     if is_bidi || paragraph.property.bidi == Some(true) {
         style.direction = Some(TextDirection::Rtl);
     }
@@ -828,7 +807,8 @@ fn convert_hf_paragraph(
                     cached_runs_to_skip -= 1;
                     continue;
                 }
-                let run_style = extract_run_style(&run.run_property);
+                let run_style =
+                    resolve_run_style(&run.run_property, false, resolved_style, styles.style_map);
                 extract_hf_run_elements(&run.children, &run_style, &mut elements, &mut field_state);
                 for run_child in &run.children {
                     if let docx_rs::RunChild::Drawing(drawing) = run_child
@@ -867,90 +847,13 @@ fn convert_hf_paragraph(
     }
 
     HeaderFooterParagraph {
+        border: style.border.as_deref().cloned(),
+        border_space: style.border_space.as_deref().copied(),
         style,
         elements,
-        border: extract_hf_paragraph_border(&paragraph.property),
-        border_space: extract_hf_paragraph_border_space(&paragraph.property),
         sheet_section_is_rich: false,
         frame: extract_hf_frame(&paragraph.property),
     }
-}
-
-/// `w:pBdr` sides carry a `w:space` attribute in points that sets the gap Word
-/// leaves between the paragraph text and the rule.
-fn extract_hf_paragraph_border_space(property: &docx_rs::ParagraphProperty) -> Option<Insets> {
-    let borders = serde_json::to_value(property.borders.as_ref()?).ok()?;
-    let side_space = |key: &str| -> f64 {
-        borders
-            .get(key)
-            .and_then(|side| side.get("space"))
-            .and_then(serde_json::Value::as_f64)
-            .unwrap_or(0.0)
-    };
-    let insets = Insets {
-        top: side_space("top"),
-        right: side_space("right"),
-        bottom: side_space("bottom"),
-        left: side_space("left"),
-    };
-    (insets.top > 0.0 || insets.right > 0.0 || insets.bottom > 0.0 || insets.left > 0.0)
-        .then_some(insets)
-}
-
-fn extract_hf_paragraph_border(property: &docx_rs::ParagraphProperty) -> Option<CellBorder> {
-    let borders = serde_json::to_value(property.borders.as_ref()?).ok()?;
-    let extract_side = |key: &str| -> Option<BorderSide> {
-        let side = borders.get(key)?.as_object()?;
-        let border_type = side
-            .get("borderType")
-            .or_else(|| side.get("val"))?
-            .as_str()?;
-        if matches!(border_type, "none" | "nil") {
-            return None;
-        }
-        let width = side.get("size")?.as_f64()? / 8.0;
-        let color = side
-            .get("color")
-            .and_then(serde_json::Value::as_str)
-            .filter(|value| *value != "auto")
-            .and_then(parse_hex_color)
-            .unwrap_or_else(Color::black);
-        let style = match border_type {
-            "dashed" | "dashSmallGap" => BorderLineStyle::Dashed,
-            "dotted" => BorderLineStyle::Dotted,
-            "dashDotStroked" | "dotDash" => BorderLineStyle::DashDot,
-            "dotDotDash" => BorderLineStyle::DashDotDot,
-            "double"
-            | "thinThickSmallGap"
-            | "thickThinSmallGap"
-            | "thinThickMediumGap"
-            | "thickThinMediumGap"
-            | "thinThickLargeGap"
-            | "thickThinLargeGap"
-            | "thinThickThinSmallGap"
-            | "thinThickThinMediumGap"
-            | "thinThickThinLargeGap"
-            | "triple" => BorderLineStyle::Double,
-            _ => BorderLineStyle::Solid,
-        };
-        Some(BorderSide {
-            width,
-            color,
-            style,
-            join: LineJoin::Round,
-        })
-    };
-    let border = CellBorder {
-        top: extract_side("top"),
-        bottom: extract_side("bottom"),
-        left: extract_side("left"),
-        right: extract_side("right"),
-    };
-    (border.top.is_some()
-        || border.bottom.is_some()
-        || border.left.is_some()
-        || border.right.is_some())
-    .then_some(border)
 }
 
 fn extract_hf_frame(property: &docx_rs::ParagraphProperty) -> Option<HeaderFooterFrame> {
