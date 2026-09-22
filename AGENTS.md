@@ -34,6 +34,7 @@ This file is the canonical repository instruction source for all coding agents.
 - The bulk corpus (2,695 files) lives in the `fixtures-v1` release asset and is fetched by `.github/actions/bulk-fixtures`, which verifies the archive checksum and that every archived file survived extraction. Only the `#[ignore]`d gate in `bulk_conversion.rs` needs it.
 - `.gitignore` covers `tests/fixtures/*/libreoffice/*` and `tests/fixtures/*/poi/*` so extracted bulk files stay untracked. Committing a fixture there needs `git add -f`, which is the intended friction — confirm the default suite actually reads it first.
 - Regenerate the corpus with `scripts/download-third-party-fixtures.sh`, then publish a new `fixtures-vN` release and bump the `tag`, `sha256`, and `min-files` inputs in `.github/actions/bulk-fixtures/action.yml`. Build the archive with `COPYFILE_DISABLE=1 tar czf` on macOS, or it gains `._` xattr members that macOS `tar` hides from listings but Linux extracts as bogus `.docx` fixtures.
+- Every prefix a fixture names in `mc:Ignorable` must be declared in scope on that element; Word silently refuses to open a package that breaks this, so no native ground truth can be exported from it. `fixture_package_validity.rs` gates every authored package under `tests/`.
 - A fixture referenced anywhere outside `tests/bulk_conversion_baseline.json` — including `tests/golden_mocks/**` and `tests/visual_audits/**`, which non-`#[ignore]`d tests read — must be tracked, not left to the release asset.
 
 ## Logging
