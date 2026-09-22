@@ -45,6 +45,26 @@ fn make_paragraph(text: &str) -> Block {
     })
 }
 
+/// The tracked Noto Sans CJK SC face's family, and its `hhea` ascender and
+/// descender in em (1160 and -288 of 1000 units). It declares no line gap,
+/// which [`noto_sans_cjk_context_with_line_gap`] rewrites.
+const NOTO_SANS_CJK_SC: &str = "Noto Sans CJK SC";
+const NOTO_SANS_CJK_ASCENDER_EM: f64 = 1.160;
+const NOTO_SANS_CJK_DESCENDER_EM: f64 = 0.288;
+
+/// A font context whose only caller-provided face is the tracked Noto Sans
+/// CJK SC with its `hhea` line gap rewritten to `line_gap` units — the one
+/// factor Batang, Gulim, Dotum and Gungsuh (152/1024) differ from Malgun
+/// Gothic (0) by. Held in memory, it outranks any installed copy.
+fn noto_sans_cjk_context_with_line_gap(
+    line_gap: i16,
+) -> crate::render::font_context::FontSearchContext {
+    let base: &[u8] = include_bytes!("../../fonts/NotoSansCJKsc-GB2312.otf");
+    let face: Vec<u8> = crate::test_support::make_face_with_hhea_line_gap(base.to_vec(), line_gap);
+    let fonts = crate::render::pdf::load_fonts_from_bytes([face.as_slice()]);
+    crate::render::font_context::resolve_font_search_context_from_fonts(&fonts)
+}
+
 /// The `(top_edge_em, bottom_edge_em)` of the first line box the generator
 /// emits, or `None` when the source declares no fixed text edges.
 fn emitted_line_box_em(source: &str) -> Option<(f64, f64)> {

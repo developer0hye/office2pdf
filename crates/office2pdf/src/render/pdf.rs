@@ -1615,7 +1615,8 @@ pub(crate) fn font_cap_height_em(family: &str) -> Option<f64> {
 /// is where Word puts the baseline. Excel does not: it rounds the ascender,
 /// the line gap and the descender into whole points *separately* before it
 /// composes a printed sheet cell's line box, so that path needs the gap on its
-/// own (issue #1161).
+/// own (issue #1161). Word's East Asian line box needs it for the opposite
+/// reason — to take the gap back out of the folded pair (issue #1638).
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn font_line_gap_em(family: &str) -> Option<f64> {
     use std::collections::HashMap;
@@ -1652,7 +1653,10 @@ pub(crate) fn font_line_gap_em(family: &str) -> Option<f64> {
 /// the baseline 0.2em off where Word does (issue #508).
 ///
 /// The pitch itself is the `hhea` ascender + descender + line gap sum that
-/// Word uses for "single" line spacing (issue #354).
+/// Word uses for "single" line spacing (issue #354). An East Asian line is the
+/// exception at both ends: it leaves the gap out of the pitch *and* out of the
+/// seat, so that path takes this triple through
+/// `typst_gen_text::word_line_metrics_em` (issue #1638).
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
     use std::collections::HashMap;

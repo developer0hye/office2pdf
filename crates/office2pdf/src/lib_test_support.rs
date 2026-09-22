@@ -353,3 +353,27 @@ pub(crate) fn states_a_gpos_kern_feature(font: &typst::text::Font) -> bool {
                 .any(|feature| feature.tag.to_bytes() == *b"kern")
         })
 }
+
+/// `font_bytes` with its `hhea` line gap rewritten to `line_gap` font units,
+/// leaving every other table — the PostScript name above all — untouched.
+///
+/// Works on any sfnt table directory, CFF-flavoured OpenType included, so a
+/// tracked face can stand in for one whose only difference is its line gap.
+pub(crate) fn make_face_with_hhea_line_gap(mut font_bytes: Vec<u8>, line_gap: i16) -> Vec<u8> {
+    let table_count = usize::from(u16::from_be_bytes([font_bytes[4], font_bytes[5]]));
+    let hhea_offset: usize = (0..table_count)
+        .map(|record| 12 + record * 16)
+        .find(|&record| &font_bytes[record..record + 4] == b"hhea")
+        .map(|record| {
+            u32::from_be_bytes([
+                font_bytes[record + 8],
+                font_bytes[record + 9],
+                font_bytes[record + 10],
+                font_bytes[record + 11],
+            ]) as usize
+        })
+        .expect("an sfnt face carries an hhea table");
+    // `hhea`: version (4 bytes), ascender (2), descender (2), lineGap (2).
+    font_bytes[hhea_offset + 8..hhea_offset + 10].copy_from_slice(&line_gap.to_be_bytes());
+    font_bytes
+}

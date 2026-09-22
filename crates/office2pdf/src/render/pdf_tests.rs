@@ -1663,27 +1663,6 @@ fn tracked_noto_serif_bytes() -> Vec<u8> {
     std::fs::read(path).expect("the tracked Noto Serif face should be readable")
 }
 
-/// Rewrite the `hhea` line gap of a TrueType file in place, leaving every
-/// other table — the PostScript name above all — untouched.
-fn with_hhea_line_gap(mut font_bytes: Vec<u8>, line_gap: i16) -> Vec<u8> {
-    let table_count = usize::from(u16::from_be_bytes([font_bytes[4], font_bytes[5]]));
-    let hhea_offset: usize = (0..table_count)
-        .map(|record| 12 + record * 16)
-        .find(|&record| &font_bytes[record..record + 4] == b"hhea")
-        .map(|record| {
-            u32::from_be_bytes([
-                font_bytes[record + 8],
-                font_bytes[record + 9],
-                font_bytes[record + 10],
-                font_bytes[record + 11],
-            ]) as usize
-        })
-        .expect("a TrueType face carries an hhea table");
-    // `hhea`: version (4 bytes), ascender (2), descender (2), lineGap (2).
-    font_bytes[hhea_offset + 8..hhea_offset + 10].copy_from_slice(&line_gap.to_be_bytes());
-    font_bytes
-}
-
 /// Index the given directories in order, the way [`get_fonts_for_extra_paths`]
 /// indexes the Office bundle ahead of the system, without the host's fonts.
 fn font_data_for_dirs(font_dirs: &[PathBuf]) -> CachedFontData {
@@ -1711,7 +1690,10 @@ fn a_system_face_sharing_the_bundled_faces_postscript_name_supplies_the_line_met
     let system = TempFontDir::new("system-fonts");
     std::fs::write(
         bundle.path.join("NotoSerif-Regular.ttf"),
-        with_hhea_line_gap(tracked_noto_serif_bytes(), REWRITTEN_LINE_GAP),
+        crate::test_support::make_face_with_hhea_line_gap(
+            tracked_noto_serif_bytes(),
+            REWRITTEN_LINE_GAP,
+        ),
     )
     .unwrap();
     std::fs::write(
@@ -1757,7 +1739,10 @@ fn a_user_installed_face_sharing_the_postscript_name_does_not_shadow_the_bundle(
     let user = TempFontDir::new("user-fonts");
     std::fs::write(
         bundle.path.join("NotoSerif-Regular.ttf"),
-        with_hhea_line_gap(tracked_noto_serif_bytes(), REWRITTEN_LINE_GAP),
+        crate::test_support::make_face_with_hhea_line_gap(
+            tracked_noto_serif_bytes(),
+            REWRITTEN_LINE_GAP,
+        ),
     )
     .unwrap();
     std::fs::write(
@@ -1781,12 +1766,15 @@ fn a_face_resolved_outside_the_bundle_keeps_its_own_line_metrics() {
     let system = TempFontDir::new("system-fonts");
     std::fs::write(
         bundle.path.join("NotoSerif-Regular.ttf"),
-        with_hhea_line_gap(tracked_noto_serif_bytes(), REWRITTEN_LINE_GAP),
+        crate::test_support::make_face_with_hhea_line_gap(
+            tracked_noto_serif_bytes(),
+            REWRITTEN_LINE_GAP,
+        ),
     )
     .unwrap();
     std::fs::write(
         system.path.join("NotoSerif-Regular.ttf"),
-        with_hhea_line_gap(tracked_noto_serif_bytes(), 300),
+        crate::test_support::make_face_with_hhea_line_gap(tracked_noto_serif_bytes(), 300),
     )
     .unwrap();
     // System first: the resolved face is the system copy itself.

@@ -324,6 +324,57 @@ fn test_east_asian_table_cell_snaps_to_the_document_grid() {
     );
 }
 
+/// A Word table cell takes the same gap-free East Asian line as the body: the
+/// row pitch of a Batang table would otherwise grow by 1.3 x its 152/1024
+/// line gap per line (issue #1638).
+#[test]
+fn east_asian_table_cell_leaves_the_faces_line_gap_out_of_its_box() {
+    let bare_line_em: f64 = NOTO_SANS_CJK_ASCENDER_EM + NOTO_SANS_CJK_DESCENDER_EM;
+    let top_em: f64 = NOTO_SANS_CJK_ASCENDER_EM + 0.15 * bare_line_em;
+    let bottom_em: f64 = 1.3 * bare_line_em - top_em;
+    let cell = TableCell {
+        content: vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: "会议议程".to_string(),
+                style: TextStyle {
+                    font_family: Some(NOTO_SANS_CJK_SC.to_string()),
+                    font_size: Some(10.5),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+            }],
+        })],
+        ..TableCell::default()
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            minimum_height: None,
+            cells: vec![cell],
+            height: None,
+        }],
+        column_widths: vec![200.0],
+        ..Table::default()
+    };
+    let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+    let context = noto_sans_cjk_context_with_line_gap(300);
+    let result: String = crate::render::typst_gen::generate_typst_with_options_and_font_context(
+        &doc,
+        &ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+
+    let (top, bottom) =
+        emitted_line_box_em(&result).unwrap_or_else(|| panic!("no cell line box in: {result}"));
+    assert!(
+        (top - top_em).abs() < 0.001 && (bottom - bottom_em).abs() < 0.001,
+        "the cell box should be {top_em}/{bottom_em}em, got {top}/{bottom}em: {result}"
+    );
+}
+
 #[test]
 fn test_latin_table_cell_uses_natural_line_height() {
     // Latin cells likewise fill the font's full hhea line box (Word single

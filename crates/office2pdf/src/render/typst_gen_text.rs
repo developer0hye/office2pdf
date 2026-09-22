@@ -451,16 +451,18 @@ pub(super) fn needs_block_wrapper(style: &ParagraphStyle) -> bool {
 }
 
 /// Line-box settings for a body paragraph: a fixed box spanning Word's full
-/// line advance — the font's hhea line, 1.3 times it when the line carries
-/// East Asian text, or a snapping document grid's pitch — with zero leading.
+/// line advance — the font's hhea line, 1.3 times its gap-free part when the
+/// line carries East Asian text, or a snapping document grid's pitch — with
+/// zero leading.
 /// Typst's glyph-tight default renders such documents 20-30% shorter and
 /// shifts every page break (issue #354).
 ///
 /// The baseline sits at a constant `hhea ascender + lineGap` below the box
-/// top, never at the font's ascender/descender proportion of it: whatever
-/// height the line gains over the font's own — the East Asian bonus's lower
-/// half, or a grid slot's slack — accrues below the baseline, not around it
-/// (issues #508, #518).
+/// top — bare `hhea ascender` for an East Asian line, which leaves the gap out
+/// entirely (issue #1638) — never at the font's ascender/descender proportion
+/// of it: whatever height the line gains over the font's own — the East Asian
+/// bonus's lower half, or a grid slot's slack — accrues below the baseline,
+/// not around it (issues #508, #518).
 ///
 /// Carrying the advance inside the box, rather than recovering the
 /// remainder as `par(leading:)`, is what makes a paragraph's height match
@@ -1134,13 +1136,14 @@ fn word_line_box_and_leading(
     let leading_pt: f64 = word_line_leading_pt(runs, style, line_grid_pitch)?;
     let family: &str = east_asian_aware_metric_family(runs)?;
     let (ascender_em, descender_em, _word_pitch_em) =
-        crate::render::pdf::font_line_metrics_em(family)?;
+        word_line_metrics_em(family, line_takes_east_asian_metrics(runs))?;
     let font_size: f64 = paragraph_font_size_pt(runs);
     Some((ascender_em, descender_em, leading_pt / font_size))
 }
 
-/// Word gives a line set in an East Asian face 130% of the font's own hhea
-/// line, and centres the bonus on the baseline: half above, half below.
+/// Word gives a line set in an East Asian face 130% of the font's own
+/// ascender-plus-descender, and centres the bonus on the baseline: half above,
+/// half below.
 ///
 /// The face decides, not the line's characters — see
 /// [`line_takes_east_asian_metrics`] (issue #643).
@@ -1148,16 +1151,67 @@ fn word_line_box_and_leading(
 /// Both halves are measured, not assumed. Against native Word exports an Arial
 /// first baseline sits at `hhea ascender + lineGap` = 0.937988em below the text
 /// top while a Malgun Gothic one at the same settings sits at 1.28786em, and
-/// the difference is exactly `0.15 x` Malgun's 1.330078em hhea pitch — the term
-/// #508 could not attribute to any font table. The matching lower half shows up
+/// the difference is exactly `0.15 x` Malgun's 1.330078em line — the term #508
+/// could not attribute to any font table. The matching lower half shows up
 /// as the advance: every Korean fixture in the business corpus paces its
-/// wrapped lines at `1.3 x` the hhea pitch (10.5pt Malgun measures 18.00-18.24
+/// wrapped lines at `1.3 x` that line (10.5pt Malgun measures 18.00-18.24
 /// against 18.156 predicted), and 06_official_letter_ko's 9.5pt paragraphs
-/// advance 16.43pt where the font's bare hhea line is 12.64pt (issue #518).
+/// advance 16.43pt where the font's bare line is 12.64pt (issue #518).
+///
+/// The line the factor multiplies excludes the face's `hhea` line gap, which
+/// Malgun Gothic and Meiryo could not show because theirs is zero — see
+/// [`word_line_metrics_em`] (issue #1638).
 const EAST_ASIAN_LINE_HEIGHT_FACTOR: f64 = 1.3;
 
 /// The half of that bonus which lands above the baseline.
 const EAST_ASIAN_ASCENT_EXCESS: f64 = (EAST_ASIAN_LINE_HEIGHT_FACTOR - 1.0) / 2.0;
+
+/// The line metrics Word measures a line set in `family` by, in em units:
+/// `(above baseline, below baseline, single-line pitch)`.
+///
+/// A Latin line is [`crate::render::pdf::font_line_metrics_em`] unchanged: the
+/// face's `hhea` line gap belongs to the pitch, and Word puts it above the
+/// baseline (Arial 67/2048 in issue #508, the system Times New Roman's 87/2048
+/// in #1284).
+///
+/// **An East Asian line leaves the gap out of both.** Its box is
+/// [`EAST_ASIAN_LINE_HEIGHT_FACTOR`] times the bare `hhea` ascender-plus-
+/// descender, and its baseline sits [`EAST_ASIAN_ASCENT_EXCESS`] of that same
+/// bare line below the ascender. Malgun Gothic and Meiryo hid this for as long
+/// as they were the only faces measured, because their gap is zero; Batang,
+/// Gulim, Dotum and Gungsuh declare 152/1024, and carrying it advanced a 10.5pt
+/// Batang paragraph 15.68pt per line where a native Word for Mac export
+/// advances 13.65pt = `1.3 x (879 + 145)/1024`, and seated its first baseline
+/// 1.77pt low (issue #1638).
+///
+/// The gap-free reading is `hhea`'s, not `OS/2`'s `usWin` pair, which those
+/// faces cannot tell apart because the two are equal for every one of them.
+/// Three native Word for Mac exports of Japanese probe paragraphs in faces
+/// where they differ settle it: Yu Gothic (`hhea` 1802/-455/1024, `usWin`
+/// 2017/619) advances 15.03pt at 10.5pt against 15.04 predicted from `hhea`
+/// and 17.57 from `usWin`, Hiragino Sans GB (880/-120/500 against 951/211)
+/// advances 13.65 against 13.65 and 15.86, and Yu Mincho — same `hhea` as Yu
+/// Gothic, different `usWin` — exports baselines identical to Yu Gothic's.
+///
+/// The rule is not Korean-specific: a SimSun probe (`hhea` 220/-36/36 per 256)
+/// advances 13.60pt and seats its first baseline 10.61pt below the margin,
+/// against 13.65 and 10.59 gap-free (15.57 and 12.38 with the gap), and a
+/// Microsoft YaHei one — a CJK face that declares no gap — keeps the plain
+/// 1.3 factor at 18.00pt against 18.02 predicted.
+fn word_line_metrics_em(family: &str, takes_east_asian_metrics: bool) -> Option<(f64, f64, f64)> {
+    let (ascender_em, descender_em, pitch_em) = crate::render::pdf::font_line_metrics_em(family)?;
+    if !takes_east_asian_metrics {
+        return Some((ascender_em, descender_em, pitch_em));
+    }
+    // `font_line_metrics_em` folds the gap into its first element, so removing
+    // it from the ascent and the pitch keeps the triple summing to itself.
+    let line_gap_em: f64 = crate::render::pdf::font_line_gap_em(family).unwrap_or(0.0);
+    Some((
+        ascender_em - line_gap_em,
+        descender_em,
+        pitch_em - line_gap_em,
+    ))
+}
 
 /// The family whose metrics pace these runs' lines.
 ///
@@ -1263,9 +1317,10 @@ pub(super) fn line_takes_east_asian_metrics(runs: &[Run]) -> bool {
 
 /// The extra ascent, in em, that Word gives a line set in an East Asian face.
 ///
-/// `pitch_em` is the font's own hhea pitch, never the line's advance: under a
-/// document grid the slot's extra height accrues entirely below the baseline,
-/// so this term must not scale with the slot (issue #518).
+/// `pitch_em` is the font's own gap-free line ([`word_line_metrics_em`]), never
+/// the line's advance: under a document grid the slot's extra height accrues
+/// entirely below the baseline, so this term must not scale with the slot
+/// (issues #518, #1638).
 fn east_asian_ascent_excess_em(runs: &[Run], pitch_em: f64) -> f64 {
     if line_takes_east_asian_metrics(runs) {
         EAST_ASIAN_ASCENT_EXCESS * pitch_em
@@ -1306,7 +1361,8 @@ fn east_asian_ascent_excess_em(runs: &[Run], pitch_em: f64) -> f64 {
 /// renderer's own seat.
 pub(super) fn word_line_box_descent_em(runs: &[Run]) -> Option<f64> {
     let family: &str = east_asian_aware_metric_family(runs)?;
-    let (ascender_em, descender_em, pitch_em) = crate::render::pdf::font_line_metrics_em(family)?;
+    let (ascender_em, descender_em, pitch_em) =
+        word_line_metrics_em(family, line_takes_east_asian_metrics(runs))?;
     if ascender_em + descender_em <= 0.0 || pitch_em <= 0.0 {
         return None;
     }
@@ -1384,7 +1440,7 @@ fn word_header_line_ascent_em(runs: &[Run], family: &str) -> Option<f64> {
     if !line_takes_east_asian_metrics(runs) {
         return Some(ascender_em);
     }
-    let (_, _, pitch_em) = crate::render::pdf::font_line_metrics_em(family)?;
+    let (_, _, pitch_em) = word_line_metrics_em(family, true)?;
     Some(ascender_em + EAST_ASIAN_ASCENT_EXCESS * pitch_em)
 }
 
@@ -1431,7 +1487,8 @@ pub(super) fn word_header_band_shift_pt(runs: &[Run]) -> Option<f64> {
 /// exceed Word's pitch and no leading could shrink the advance to it.
 pub(super) fn word_hf_line_leading_pt(runs: &[Run], bottom_edge_em: f64) -> Option<f64> {
     let family: &str = east_asian_aware_metric_family(runs)?;
-    let (_ascender_em, _descender_em, pitch_em) = crate::render::pdf::font_line_metrics_em(family)?;
+    let (_ascender_em, _descender_em, pitch_em) =
+        word_line_metrics_em(family, line_takes_east_asian_metrics(runs))?;
     if pitch_em <= 0.0 {
         return None;
     }
@@ -1446,7 +1503,7 @@ pub(super) fn word_hf_line_leading_pt(runs: &[Run], bottom_edge_em: f64) -> Opti
 /// The height one header or footer line takes, in points.
 ///
 /// Word's natural line for the paragraph's resolved face and size — the hhea
-/// line, or 1.3 times it for an East Asian one. A header taller than the band
+/// line, or 1.3 times its gap-free part for an East Asian one. A header taller than the band
 /// `w:top - w:header` leaves has to grow the top margin, and this is the term
 /// that measures it (issue #736).
 ///
@@ -1454,7 +1511,8 @@ pub(super) fn word_hf_line_leading_pt(runs: &[Run], bottom_edge_em: f64) -> Opti
 /// declared size rather than guessing at a growth.
 pub(super) fn word_line_advance_pt(runs: &[Run]) -> Option<f64> {
     let family: &str = east_asian_aware_metric_family(runs)?;
-    let (_ascender_em, _descender_em, pitch_em) = crate::render::pdf::font_line_metrics_em(family)?;
+    let (_ascender_em, _descender_em, pitch_em) =
+        word_line_metrics_em(family, line_takes_east_asian_metrics(runs))?;
     if pitch_em <= 0.0 {
         return None;
     }
@@ -1462,8 +1520,10 @@ pub(super) fn word_line_advance_pt(runs: &[Run]) -> Option<f64> {
 }
 
 /// The line advance Word gives this paragraph before any grid is consulted:
-/// the font's hhea line, or 1.3 times it when the line is set in an East Asian
-/// face (issues #518, #643).
+/// the font's hhea line, or 1.3 times its gap-free part when the line is set in
+/// an East Asian face (issues #518, #643, #1638). `word_pitch_em` must come
+/// from [`word_line_metrics_em`], which has already dropped the gap for such a
+/// line.
 fn word_natural_line_em(runs: &[Run], word_pitch_em: f64) -> f64 {
     if line_takes_east_asian_metrics(runs) {
         EAST_ASIAN_LINE_HEIGHT_FACTOR * word_pitch_em
@@ -2217,7 +2277,7 @@ pub(super) fn word_cell_line_box(
         ),
     };
     let (ascender_em, descender_em, word_pitch_em) =
-        crate::render::pdf::font_line_metrics_em(family)?;
+        word_line_metrics_em(family, row_east_asian.takes_east_asian_metrics)?;
     let metric_em: f64 = ascender_em + descender_em;
     if metric_em <= 0.0 || word_pitch_em <= 0.0 {
         return None;
@@ -2537,7 +2597,7 @@ pub(super) fn word_line_leading_pt(
     };
     let family: &str = east_asian_aware_metric_family(runs)?;
     let (ascender_em, descender_em, word_pitch_em) =
-        crate::render::pdf::font_line_metrics_em(family)?;
+        word_line_metrics_em(family, line_takes_east_asian_metrics(runs))?;
     let font_size: f64 = runs
         .iter()
         .filter_map(|run| run.style.font_size)
