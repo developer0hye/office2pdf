@@ -8871,6 +8871,218 @@ fn a_stated_plot_rectangle_that_overruns_the_chart_area_is_pulled_back_inside_it
     }
 }
 
+// ----- A pulled-back bar plot keeps its value labels inside (issue #1634) -----
+
+/// The chart area the reported workbook's drawing anchor gives its `january
+/// income:` bar chart, in points before the sheet's 0.78 print scale. The
+/// native export prints it 240.23pt wide, which is this at 0.78.
+const INCOME_BAR_CHART_FRAME: (f64, f64) = (307.985, 207.523);
+
+/// That chart's `c:plotArea/c:layout/c:manualLayout`, verbatim.
+const INCOME_BAR_PLOT_LAYOUT: crate::ir::ChartPlotAreaLayout = crate::ir::ChartPlotAreaLayout {
+    x: 0.302_222_981_850_811_3,
+    y: 0.346_254_853_367_148_95,
+    width: 0.641_393_111_355_616_6,
+    height: 0.557_117_057_893_036_4,
+};
+
+/// The `january income:` chart: horizontal bars over five categories, the
+/// value axis printing percentage tick labels under the plot from 0 to 0.5.
+///
+/// The labels are set in Calibri rather than the workbook's Trebuchet MS so the
+/// expected overhang reads the same calibrated advance table on every runner.
+fn income_bar_chart(value_format: &str, value_size_pt: f64) -> Chart {
+    let mut chart: Chart = cash_flow_bar_chart();
+    chart.host = crate::ir::ChartHost::Spreadsheet;
+    chart.grouping = ChartGrouping::Clustered;
+    chart.categories = [
+        "other",
+        "from savings",
+        "family help",
+        "wages (after-tax)",
+        "financial aid",
+    ]
+    .map(str::to_string)
+    .to_vec();
+    chart.series.truncate(1);
+    chart.series[0].values = vec![0.0, 0.0, 0.05, 0.4, 0.3];
+    chart.value_axis_min = Some(0.0);
+    chart.value_axis_max = Some(0.5);
+    chart.value_axis_major_unit = Some(0.1);
+    chart.value_axis_number_format = Some(value_format.to_string());
+    chart.text_font_family = Some("Calibri".to_string());
+    chart.text_style.size_pt = Some(10.0);
+    chart.value_axis_text_style.size_pt = Some(value_size_pt);
+    chart
+}
+
+/// Half the last value label's advance plus Excel's flat 6pt: how far inside
+/// the chart area's right edge a pulled-back plot ends.
+fn income_bar_overhang_pt(last_label: &str, value_size_pt: f64) -> f64 {
+    chart_text_advance_em("Calibri", false, last_label).expect("Calibri is calibrated")
+        * value_size_pt
+        / 2.0
+        + 6.0
+}
+
+/// Assert a plot's four edges, as `(left, top, right, bottom)` in points.
+fn assert_plot_edges(case: &str, actual: (f64, f64, f64, f64), expected: (f64, f64, f64, f64)) {
+    let errors = [
+        ("left", actual.0, expected.0),
+        ("top", actual.1, expected.1),
+        ("right", actual.2, expected.2),
+        ("bottom", actual.3, expected.3),
+    ]
+    .map(|(edge, actual, expected)| (edge, actual, expected, (actual - expected).abs()));
+    assert!(
+        errors.iter().all(|(_, _, _, error)| *error <= 0.01),
+        "{case}: plot edges {errors:?}"
+    );
+}
+
+/// A bar plot whose value tick labels run under it is pulled back until the
+/// last label, centred on its right edge, stops 6pt inside the chart area —
+/// not until the plot's own edge reaches the chart area's.
+///
+/// Native Excel for Mac 16.112 exports of the reported workbook with one value
+/// of this chart's layout rewritten per variant end the plot at 0.9538 of the
+/// chart area for `x` 0.33, 0.36, 0.40 and 0.50 alike — 0.33 would still have
+/// ended inside it — and further in for a wider last label (`50.00%`, 0.9308)
+/// or a larger one (`50%` at 14pt, 0.9431). The file's own `x` fits and stays.
+/// Taking only the plot's own edge as the limit put the `x` 0.5 plot 11.1pt
+/// right of the export (issue #1634).
+#[test]
+fn a_pulled_back_bar_plot_keeps_its_last_value_label_inside_the_chart_area() {
+    let (frame_w, frame_h) = INCOME_BAR_CHART_FRAME;
+    let layout = INCOME_BAR_PLOT_LAYOUT;
+    let top: f64 = layout.y * frame_h;
+    let bottom: f64 = top + layout.height * frame_h;
+    let plot_w: f64 = layout.width * frame_w;
+
+    let mut as_written: Chart = income_bar_chart("0%", 10.0);
+    as_written.plot_area_layout = Some(layout);
+    assert_plot_edges(
+        "the file's own layout fits",
+        axis_plot_rect(&as_written, INCOME_BAR_CHART_FRAME, false),
+        (layout.x * frame_w, top, layout.x * frame_w + plot_w, bottom),
+    );
+
+    let cases: [(&str, f64, &str, &str, f64); 6] = [
+        ("x 0.33", 0.33, "0%", "50%", 10.0),
+        ("x 0.36", 0.36, "0%", "50%", 10.0),
+        ("x 0.40", 0.40, "0%", "50%", 10.0),
+        ("x 0.50", 0.50, "0%", "50%", 10.0),
+        ("x 0.50, a wider last label", 0.50, "0.00%", "50.00%", 10.0),
+        ("x 0.50, a larger last label", 0.50, "0%", "50%", 14.0),
+    ];
+    for (case, x, value_format, last_label, value_size_pt) in cases {
+        let mut chart: Chart = income_bar_chart(value_format, value_size_pt);
+        chart.plot_area_layout = Some(crate::ir::ChartPlotAreaLayout { x, ..layout });
+        let right: f64 = frame_w - income_bar_overhang_pt(last_label, value_size_pt);
+        assert_plot_edges(
+            case,
+            axis_plot_rect(&chart, INCOME_BAR_CHART_FRAME, false),
+            (right - plot_w, top, right, bottom),
+        );
+    }
+}
+
+/// A stated bar plot too wide to pull back past its category labels is cut to
+/// start where those labels end, rather than pushing them off the chart area.
+///
+/// Excel's export of `w` 0.9 on the reported chart runs the plot from 0.2863 to
+/// 0.9538 of the chart area: the right edge at the labelled limit, the left
+/// 1.525pt + 0.89152em past the widest category label, a band four exports at
+/// 8, 10, 14 and 18pt category labels fit to 0.005pt. `x` 0.1 with `w` 0.9
+/// prints on the same band, but `x` 0.1 with the file's own `w` fits and stays
+/// at 0.1, the labels cut short to make room (issue #1634).
+#[test]
+fn a_bar_plot_too_wide_to_pull_back_is_cut_to_its_category_labels() {
+    let (frame_w, frame_h) = INCOME_BAR_CHART_FRAME;
+    let layout = INCOME_BAR_PLOT_LAYOUT;
+    let top: f64 = layout.y * frame_h;
+    let bottom: f64 = top + layout.height * frame_h;
+    let right: f64 = frame_w - income_bar_overhang_pt("50%", 10.0);
+    let widest_em: f64 = chart_text_advance_em("Calibri", false, "wages (after-tax)")
+        .expect("Calibri is calibrated");
+    let band_pt = |category_size_pt: f64| -> f64 {
+        widest_em * category_size_pt + 1.525 + 0.89152 * category_size_pt
+    };
+
+    let cases: [(&str, f64, f64, f64); 3] = [
+        ("w 0.9", layout.x, 10.0, band_pt(10.0)),
+        ("x 0.1 w 0.9", 0.1, 10.0, band_pt(10.0)),
+        ("w 0.9, 14pt category labels", layout.x, 14.0, band_pt(14.0)),
+    ];
+    for (case, x, category_size_pt, left) in cases {
+        let mut chart: Chart = income_bar_chart("0%", 10.0);
+        chart.category_axis_text_style.size_pt = Some(category_size_pt);
+        chart.plot_area_layout = Some(crate::ir::ChartPlotAreaLayout {
+            x,
+            width: 0.9,
+            ..layout
+        });
+        assert_plot_edges(
+            case,
+            axis_plot_rect(&chart, INCOME_BAR_CHART_FRAME, false),
+            (left, top, right, bottom),
+        );
+    }
+
+    assert!(
+        band_pt(10.0) > 0.1 * frame_w,
+        "the labels must need more than 0.1 of the frame for the fitting case \
+         to test anything"
+    );
+    let mut fits: Chart = income_bar_chart("0%", 10.0);
+    fits.plot_area_layout = Some(crate::ir::ChartPlotAreaLayout { x: 0.1, ..layout });
+    assert_plot_edges(
+        "x 0.1 fits",
+        axis_plot_rect(&fits, INCOME_BAR_CHART_FRAME, false),
+        (0.1 * frame_w, top, (0.1 + layout.width) * frame_w, bottom),
+    );
+}
+
+/// The label reserve covers only what was measured: an Excel bar plot whose
+/// value axis prints labels at a stated size. A column plot, a deleted value
+/// axis, a PowerPoint chart and a chart stating no size keep #1272's limit on
+/// the plot's own edge.
+#[test]
+fn the_value_label_reserve_stays_off_charts_it_was_not_measured_on() {
+    let (frame_w, frame_h) = INCOME_BAR_CHART_FRAME;
+    let layout = crate::ir::ChartPlotAreaLayout {
+        x: 0.5,
+        ..INCOME_BAR_PLOT_LAYOUT
+    };
+    let top: f64 = layout.y * frame_h;
+    let bottom: f64 = top + layout.height * frame_h;
+    let own_edge_limit = ((1.0 - layout.width) * frame_w, top, frame_w, bottom);
+
+    let mut column: Chart = income_bar_chart("0%", 10.0);
+    column.chart_type = ChartType::Column;
+    let mut deleted_axis: Chart = income_bar_chart("0%", 10.0);
+    deleted_axis.value_axis_deleted = true;
+    let mut presentation: Chart = income_bar_chart("0%", 10.0);
+    presentation.host = crate::ir::ChartHost::Presentation;
+    let mut undeclared_size: Chart = income_bar_chart("0%", 10.0);
+    undeclared_size.text_style.size_pt = None;
+    undeclared_size.value_axis_text_style.size_pt = None;
+
+    for (case, mut chart) in [
+        ("column plot", column),
+        ("deleted value axis", deleted_axis),
+        ("PowerPoint host", presentation),
+        ("no stated size", undeclared_size),
+    ] {
+        chart.plot_area_layout = Some(layout);
+        assert_plot_edges(
+            case,
+            axis_plot_rect(&chart, INCOME_BAR_CHART_FRAME, false),
+            own_edge_limit,
+        );
+    }
+}
+
 // ----- Line-family plot rectangles (issue #1265) -----
 
 /// The chart area and inner plot rectangle of `xl/charts/chart2.xml` in

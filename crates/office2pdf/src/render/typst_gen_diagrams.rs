@@ -3267,7 +3267,9 @@ fn automatic_plot_origin(
 /// `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx` states `x` 0.092 with
 /// `w` 1, and its native export draws the plot from the chart area's own left
 /// edge; taken as written, the plot sat 13.9pt right of the export's
-/// (issue #1272).
+/// (issue #1272). A bar plot whose value tick labels run along its bottom edge
+/// stops short of that edge by the last label's overhang instead — see
+/// [`pulled_back_labelled_plot_span`] (issue #1634).
 ///
 /// `None` for a chart that states no rectangle, and for an unframed one: a
 /// flowed chart sizes itself from its own content, so there is no chart area to
@@ -3279,10 +3281,22 @@ fn stated_plot_rect(
 ) -> Option<(f64, f64, f64, f64)> {
     let layout: crate::ir::ChartPlotAreaLayout = chart.plot_area_layout?;
     let (frame_w, frame_h) = frame?;
+    let (x, width): (f64, f64) = match excel_bar_value_label_overhang_pt(chart) {
+        Some(overhang_pt) => pulled_back_labelled_plot_span(
+            layout.x * frame_w,
+            layout.width * frame_w,
+            frame_w - overhang_pt,
+            excel_bar_category_label_band_pt(chart),
+        ),
+        None => (
+            pulled_back_plot_edge(layout.x, layout.width) * frame_w,
+            layout.width * frame_w,
+        ),
+    };
     Some((
-        pulled_back_plot_edge(layout.x, layout.width) * frame_w,
+        x,
         pulled_back_plot_edge(layout.y, layout.height) * frame_h - title_h,
-        layout.width * frame_w,
+        width,
         layout.height * frame_h,
     ))
 }
@@ -3303,13 +3317,147 @@ fn stated_plot_rect(
 /// never reaches here: the parser keeps the automatic layout for it, as Excel
 /// does, so the pulled-back edge is never negative.
 ///
-/// That chart has no tick labels. Where an axis carries them, Excel's limit
-/// sits inside the chart area by the labels' own overhang — the `january
-/// income:` chart of the same workbook stops its plot's right edge at 0.9538
-/// of the chart area for `x` 0.33 and above — which this does not model.
+/// That chart has no tick labels. Where a bar plot's value axis prints them,
+/// the horizontal limit sits further in — see
+/// [`pulled_back_labelled_plot_span`].
 fn pulled_back_plot_edge(edge: f64, size: f64) -> f64 {
     edge.min(1.0 - size)
 }
+
+/// Excel's reading of a stated horizontal span, in points, on a bar plot whose
+/// value tick labels run along its bottom edge: a span ending past `limit`
+/// comes back until it ends on it, but never to start inside `category_band`,
+/// so a span too wide for both gives up width instead.
+///
+/// Measured on native Excel for Mac 16.112 exports of
+/// `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx` with one value of its
+/// `january income:` bar chart's layout rewritten per variant, the plot read
+/// off its category axis and last gridline as fractions of the printed chart
+/// area. The file's `x` 0.302 with `w` 0.641 ends at 0.9437 and fits as
+/// stated; `x` 0.33, 0.36, 0.40 and 0.50 all end at 0.9538, although 0.33
+/// would still end inside the chart area; and `w` 0.9 runs from 0.2863 to
+/// 0.9538. `limit` is where [`excel_bar_value_label_overhang_pt`] puts that
+/// 0.9538, and `category_band` where [`excel_bar_category_label_band_pt`] puts
+/// the 0.2863.
+///
+/// Only a span that has to come back is held off the band. `x` 0.1 with the
+/// file's `w` fits, and Excel prints it at 0.1, cutting the category labels
+/// short with an ellipsis; `x` 0.1 with `w` 0.9 does not, and prints at 0.2863
+/// exactly as `w` 0.9 does from the file's `x` (issue #1634).
+fn pulled_back_labelled_plot_span(
+    edge: f64,
+    size: f64,
+    limit: f64,
+    category_band: f64,
+) -> (f64, f64) {
+    if edge + size <= limit {
+        return (edge, size);
+    }
+    let pulled_back: f64 = limit - size;
+    if pulled_back >= category_band {
+        (pulled_back, size)
+    } else {
+        (category_band, (limit - category_band).max(MIN_PLOT_PT))
+    }
+}
+
+/// The band a bar plot's category labels take between the chart area's left
+/// edge and a plot [`pulled_back_labelled_plot_span`] holds off them, in
+/// unscaled chart points: the widest label's advance plus
+/// [`EXCEL_CATEGORY_LABEL_BAND_PT`] and [`EXCEL_CATEGORY_LABEL_BAND_EM`] of
+/// the labels' size. Zero for an axis that prints no label.
+fn excel_bar_category_label_band_pt(chart: &Chart) -> f64 {
+    if chart.category_axis_deleted {
+        return 0.0;
+    }
+    let size_pt: f64 = chart_axis_text_pt(chart, chart.category_axis_text_style);
+    chart_category_label_widest_pt(chart).map_or(0.0, |widest_pt| {
+        widest_pt + EXCEL_CATEGORY_LABEL_BAND_PT + EXCEL_CATEGORY_LABEL_BAND_EM * size_pt
+    })
+}
+
+/// Excel's category-label band beyond the widest label, as a fixed and a
+/// text-scaled part.
+///
+/// Four native exports of the `w` 0.9 variant of the `january income:` chart
+/// (see [`pulled_back_labelled_plot_span`]) with the category axis' `sz`
+/// rewritten start the plot this far inside the chart area, the widest label
+/// `wages (after-tax)` measured in the chart's Trebuchet MS:
+///
+/// | size | band | label | remainder |
+/// | ---: | ---: | ---: | ---: |
+/// | 8pt | 70.846 | 62.184 | 8.662 |
+/// | 10pt | 88.165 | 77.730 | 10.436 |
+/// | 14pt | 122.824 | 108.821 | 14.003 |
+/// | 18pt | 157.488 | 139.913 | 17.575 |
+///
+/// The least-squares line through the remainders is `1.525 + 0.89152 em`, and
+/// no export sits further than 0.005pt from it. The widest label starts 1.50pt
+/// inside the chart area in all four, so the text-scaled part is the gap
+/// between the labels and the plot. This is not
+/// [`CHART_LABEL_EDGE_PAD_PT`]/[`CHART_LABEL_EDGE_PAD_EM`], PowerPoint's
+/// automatic gutter, which is 5.3pt wider at 10pt.
+const EXCEL_CATEGORY_LABEL_BAND_PT: f64 = 1.525;
+const EXCEL_CATEGORY_LABEL_BAND_EM: f64 = 0.89152;
+
+/// How far inside the chart area's right edge Excel stops a pulled-back bar
+/// plot: half the last value tick label, which sits centred on the plot's
+/// right edge, plus [`EXCEL_VALUE_LABEL_OVERHANG_PAD_PT`].
+///
+/// `None` wherever that was not measured — a column or line plot, whose
+/// horizontal axis is the category axis; a PowerPoint or Word host; a deleted
+/// value axis, which prints no labels; a chart stating no text size; or a face
+/// that cannot be measured. Each keeps [`pulled_back_plot_edge`]'s limit. Every
+/// export measured is a worksheet chart; a chartsheet's plot area is laid out
+/// by the same Excel chart engine and takes the same reading, unprobed.
+fn excel_bar_value_label_overhang_pt(chart: &Chart) -> Option<f64> {
+    let is_excel_host: bool = matches!(
+        chart.host,
+        crate::ir::ChartHost::Spreadsheet | crate::ir::ChartHost::SpreadsheetChartsheet
+    );
+    let has_declared_size: bool =
+        chart.text_style.size_pt.is_some() || chart.value_axis_text_style.size_pt.is_some();
+    if !matches!(chart.chart_type, ChartType::Bar)
+        || !is_excel_host
+        || chart.value_axis_deleted
+        || !has_declared_size
+    {
+        return None;
+    }
+    let last_label: String = chart_value_axis_labels(chart).pop()?;
+    let bold: bool = chart
+        .text_style
+        .resolved_bold(chart.value_axis_text_style)
+        .unwrap_or(false);
+    let family: &str = chart
+        .value_axis_font_family()
+        .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_FAMILY);
+    let advance_em: f64 = chart_text_advance_em(family, bold, &last_label)?;
+    Some(
+        advance_em * chart_axis_text_pt(chart, chart.value_axis_text_style) / 2.0
+            + EXCEL_VALUE_LABEL_OVERHANG_PAD_PT,
+    )
+}
+
+/// What Excel keeps between a bar plot's last value tick label and the chart
+/// area's right edge when it pulls the plot back, in unscaled chart points.
+///
+/// The three pulled-back exports of the `january income:` chart that change
+/// the label (see [`pulled_back_labelled_plot_span`]) end the plot this far
+/// inside the chart area, the label's advance measured in the chart's Trebuchet
+/// MS:
+///
+/// | last label | inset | half the label | remainder |
+/// | --- | ---: | ---: | ---: |
+/// | `50%` at 10pt | 14.245 | 8.245 | 6.000 |
+/// | `50.00%` at 10pt | 21.325 | 15.325 | 6.000 |
+/// | `50%` at 14pt | 17.540 | 11.542 | 5.998 |
+///
+/// Flat across the label's size, so it is not text-scaled. The label's true
+/// advance is what the limit reads, although Excel paints whole-point glyph
+/// advances: fitted on the painted widths instead (16, 31 and 23.39pt), the
+/// remainder spreads from 5.83 to 6.25pt. Every label measured ends in `%`.
+const EXCEL_VALUE_LABEL_OVERHANG_PAD_PT: f64 = 6.0;
 
 /// The plotting rectangle of a framed axis plot, in the plot box's own
 /// coordinates.
