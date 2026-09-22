@@ -1711,6 +1711,44 @@ fn a_variable_font_request_paints_and_measures_through_its_trimmed_family() {
 }
 
 #[test]
+fn a_weight_suffixed_request_reaches_its_base_family_for_metrics_too() {
+    // The book files `segoeuisb.ttf` under `Segoe UI` at 600 and never under
+    // `Segoe UI Semibold`, so a chain keyed on the untrimmed name resolves no
+    // face at all and every metric answers `None`. Native Word measures the
+    // member the name denotes — twelve single-spaced 20pt `Arial Black`
+    // paragraphs advance 28.189pt against Arial's 22.996pt, which is Arial
+    // Black's own 1.4102em `hhea` sum and not Arial's 1.1499em — so the
+    // metrics chain has to reach the base family too (issue #1643).
+    for purpose in [ChainPurpose::Paint, ChainPurpose::Metrics] {
+        for (requested, base_family) in [
+            ("Segoe UI Semibold", "Segoe UI"),
+            ("Arial Black", "Arial"),
+            ("Calibri Light", "Calibri"),
+        ] {
+            let candidates: Vec<String> = fallback_candidates(requested, None, purpose);
+            assert_eq!(
+                candidates.first().map(String::as_str),
+                Some(base_family),
+                "{purpose:?} chain for {requested:?}: {candidates:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_family_name_stating_no_weight_keeps_its_base_family_out_of_both_chains() {
+    // A stretch suffix names a family of its own — `Arial Narrow` is not a
+    // member of Arial — so neither chain may fall back on the base family.
+    for purpose in [ChainPurpose::Paint, ChainPurpose::Metrics] {
+        let candidates: Vec<String> = fallback_candidates("Arial Narrow", None, purpose);
+        assert!(
+            !candidates.iter().any(|candidate| candidate == "Arial"),
+            "{purpose:?} chain for Arial Narrow must not reach Arial: {candidates:?}"
+        );
+    }
+}
+
+#[test]
 fn a_weight_suffix_states_the_weight_of_the_member_it_names() {
     use typst::text::FontWeight;
     assert_eq!(

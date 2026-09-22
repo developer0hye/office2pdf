@@ -486,11 +486,31 @@ pub(crate) mod test_faces {
     /// `weight_class` — the shape of `calibril.ttf`, which the book registers
     /// as `Calibri` at 300 and never as `Calibri Light` (issue #1286).
     pub(crate) fn noto_serif_at_weight(weight_class: u16) -> Font {
-        let mut bytes: Vec<u8> = include_bytes!("../../fonts/NotoSerif-Regular.ttf").to_vec();
+        rewritten_noto_serif(weight_class, None)
+    }
+
+    /// [`noto_serif_at_weight`] with its declared ascender rewritten too, so
+    /// two members of one family disagree on the line box they declare.
+    ///
+    /// The tracked Noto Serif ships one line box for every weight, which
+    /// cannot tell "the member the name denotes" apart from "the family's
+    /// regular member". Real families do: `Arial Black` declares an `hhea`
+    /// ascender of 2254/2048 against Arial's 1854/2048 (issue #1643).
+    ///
+    /// Both the `hhea` ascender and OS/2 `sTypoAscender` are rewritten, so the
+    /// face declares the taller line whichever table the reader consults:
+    /// Noto Serif sets `USE_TYPO_METRICS`, and `ttf_parser`'s `ascender()`
+    /// answers from OS/2 rather than `hhea` whenever that bit is set.
+    pub(crate) fn noto_serif_at_weight_with_ascender(weight_class: u16, ascender: i16) -> Font {
+        rewritten_noto_serif(weight_class, Some(ascender))
+    }
+
+    /// Offset of `tag`'s table in a TrueType face's table directory.
+    fn table_offset(bytes: &[u8], tag: &[u8; 4]) -> usize {
         let table_count = usize::from(u16::from_be_bytes([bytes[4], bytes[5]]));
-        let os2_offset: usize = (0..table_count)
+        (0..table_count)
             .map(|record| 12 + record * 16)
-            .find(|&record| &bytes[record..record + 4] == b"OS/2")
+            .find(|&record| &bytes[record..record + 4] == tag)
             .map(|record| {
                 u32::from_be_bytes([
                     bytes[record + 8],
@@ -499,9 +519,28 @@ pub(crate) mod test_faces {
                     bytes[record + 11],
                 ]) as usize
             })
-            .expect("a TrueType face carries an OS/2 table");
+            .expect("a TrueType face carries this table")
+    }
+
+    /// The tracked Noto Serif with its declared weight, and optionally its
+    /// ascender, rewritten in place.
+    ///
+    /// Neither `ttf-parser` nor Typst verifies a table checksum, so patching
+    /// the fixed-layout fields in place needs no rebuild of the directory.
+    fn rewritten_noto_serif(weight_class: u16, ascender: Option<i16>) -> Font {
+        /// Byte offset of `sTypoAscender` within an OS/2 table of any version.
+        const TYPO_ASCENDER_OFFSET: usize = 68;
+        let mut bytes: Vec<u8> = include_bytes!("../../fonts/NotoSerif-Regular.ttf").to_vec();
+        let os2_offset: usize = table_offset(&bytes, b"OS/2");
         // `OS/2`: version (2 bytes), xAvgCharWidth (2), usWeightClass (2).
         bytes[os2_offset + 4..os2_offset + 6].copy_from_slice(&weight_class.to_be_bytes());
+        if let Some(ascender) = ascender {
+            let hhea_offset: usize = table_offset(&bytes, b"hhea");
+            // `hhea`: version (4 bytes), ascender (2).
+            bytes[hhea_offset + 4..hhea_offset + 6].copy_from_slice(&ascender.to_be_bytes());
+            let typo_ascender: usize = os2_offset + TYPO_ASCENDER_OFFSET;
+            bytes[typo_ascender..typo_ascender + 2].copy_from_slice(&ascender.to_be_bytes());
+        }
         Font::new(Bytes::new(bytes), 0).expect("the rewritten face parses")
     }
 }

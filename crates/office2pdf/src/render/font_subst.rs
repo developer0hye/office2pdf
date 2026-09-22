@@ -293,15 +293,19 @@ fn weight_member_base_family(font_family: &str) -> Option<&str> {
 
 /// What a candidate list is being built for.
 ///
-/// The two answers differ once a family's own substitutes are exhausted.
-/// Painting wants the class tail: Typst walks the list per glyph, so a face of
-/// the family's own class beats falling through to the engine's default serif.
-/// Reading a family's *metrics* does not — [`family_candidates`] takes the
-/// numbers of the first candidate that resolves, whole, and a generic class
-/// face's numbers are not the family's. A fit-to-page sheet whose Normal font
-/// is `Trebuchet MS` re-scaled by 13% on a host without Ubuntu once the tail
-/// handed its column unit Liberation Sans's digit advance, and a Korean footer
-/// on a host without a Korean font reported a Latin line box (issue #1213).
+/// The two answers differ only in the generic class tail. Painting wants it:
+/// Typst walks the list per glyph, so a face of the family's own class beats
+/// falling through to the engine's default serif. Reading a family's *metrics*
+/// does not — [`family_candidates`] takes the numbers of the first candidate
+/// that resolves, whole, and a generic class face's numbers are not the
+/// family's. A fit-to-page sheet whose Normal font is `Trebuchet MS` re-scaled
+/// by 13% on a host without Ubuntu once the tail handed its column unit
+/// Liberation Sans's digit advance, and a Korean footer on a host without a
+/// Korean font reported a Latin line box (issue #1213).
+///
+/// A weight-suffixed request's base family is *not* one of those differences:
+/// both chains carry it, because the resolver walks them at the weight the
+/// name states and so lands on the same member (issue #1643).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ChainPurpose {
     /// Choosing the faces Typst paints with.
@@ -319,16 +323,14 @@ fn fallback_candidates(
     let requested = font_family.trim();
 
     // Typst never finds a family called `Calibri Light`: the book holds that
-    // face as `Calibri` at 300. The base family follows the request so the
-    // weight the run states lands on the member it names; a metrics lookup
-    // stays off it, since that resolves the regular variant, which is not the
-    // member the name denotes (issue #1286). A variable-font suffix, which
-    // typst 0.15 trims too, names the very face requested, so both follow it.
-    let base_family: Option<&str> = variable_font_base_family(requested).or_else(|| {
-        (purpose == ChainPurpose::Paint)
-            .then(|| weight_member_base_family(requested))
-            .flatten()
-    });
+    // face as `Calibri` at 300. Both chains follow the base family so the
+    // weight the run states lands on the member it names — the resolver walks
+    // this list at that weight, so a metrics lookup reads the same face the
+    // paint chain shapes with rather than the family's regular member (issues
+    // #1286 and #1643). A variable-font suffix, which typst 0.15 trims too,
+    // names the very face requested, so both follow it as well.
+    let base_family: Option<&str> =
+        variable_font_base_family(requested).or_else(|| weight_member_base_family(requested));
     if let Some(base_family) = base_family {
         candidates.push(base_family.to_string());
     }
@@ -413,7 +415,10 @@ fn table_entry(normalized_family: &str) -> Option<(FamilyClass, &'static [&'stat
         //
         // `Calibri` leads because the light member declares Calibri's own hhea
         // line — both are 1950/-550/0 on 2048 upem — so it reproduces the line
-        // box exactly.
+        // box either way. Since #1643 the chain builder adds `Calibri` to both
+        // chains for every weight-suffixed name, and the resolver picks the 300
+        // member off it; this entry stays because it also orders the substitutes
+        // a host without Calibri falls back on.
         "calibri light" => (SansSerif, &["Calibri", "Carlito", "Liberation Sans"]),
         "carlito" => (SansSerif, &["Calibri", "Liberation Sans", "Arimo", "Arial"]),
         "cambria" => (Serif, &["Caladea", "Liberation Serif"]),

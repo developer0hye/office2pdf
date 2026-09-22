@@ -1320,11 +1320,48 @@ mod tests;
 #[cfg(not(target_arch = "wasm32"))]
 fn best_face(family: &str) -> Option<typst::text::Font> {
     let data = active_font_data();
-    first_face_in_chain(family, typst::text::FontVariant::default(), |candidate| {
-        select_face_index(&data, candidate)
+    let variant: typst::text::FontVariant = chain_variant(family, None);
+    first_face_in_chain(family, variant, |candidate| {
+        select_face_index(&data, candidate, variant)
             .and_then(|index| data.fonts.get(index))
             .and_then(|slot| slot.get())
     })
+}
+
+/// The variant a chain walk resolves `family` at.
+///
+/// A family name can state a weight in its style suffix — `Calibri Light`,
+/// `Segoe UI Semibold`, `Arial Black` — and the font book files that face
+/// under the base family with the suffix trimmed, so the chain reaches it only
+/// through the base family, and only the weight tells the member apart from
+/// the family's regular one. Their vertical metrics need not agree: Arial
+/// Black declares an `hhea` ascender of 2254/2048 against Arial's 1854/2048,
+/// and twelve single-spaced 20pt `Arial Black` paragraphs advance 28.189pt in
+/// a native Word export — Arial Black's own 1.4102em sum, not Arial's
+/// 1.1499em. Resolving the chain at the regular variant would read a line box
+/// 18% short (issue #1643).
+///
+/// `explicit_weight` is the weight the *run* states on top of the name, and
+/// the heavier of the two wins — the composition `write_text_params` already
+/// emits, so the face measured is the face painted. A bold cell in `Segoe UI
+/// Semibold` paints the family's bold member, and so measures it.
+#[cfg(not(target_arch = "wasm32"))]
+fn chain_variant(
+    family: &str,
+    explicit_weight: Option<typst::text::FontWeight>,
+) -> typst::text::FontVariant {
+    let stated: Option<typst::text::FontWeight> =
+        super::font_subst::weight_stated_by_family_name(family);
+    let weight: typst::text::FontWeight = match (stated, explicit_weight) {
+        (Some(stated), Some(explicit)) => stated.max(explicit),
+        (Some(stated), None) => stated,
+        (None, Some(explicit)) => explicit,
+        (None, None) => typst::text::FontVariant::default().weight,
+    };
+    typst::text::FontVariant {
+        weight,
+        ..typst::text::FontVariant::default()
+    }
 }
 
 /// The first face the alias and substitute chain of `family` resolves to at
@@ -1359,13 +1396,15 @@ fn first_face_in_chain(
         })
 }
 
-/// Index into `data` of the regular face registered under exactly `candidate`.
+/// Index into `data` of the face registered under exactly `candidate` that
+/// sits nearest `variant`'s weight.
 #[cfg(not(target_arch = "wasm32"))]
-fn select_face_index(data: &CachedFontData, candidate: &str) -> Option<usize> {
-    data.book.select(
-        &candidate.to_lowercase(),
-        typst::text::FontVariant::default(),
-    )
+fn select_face_index(
+    data: &CachedFontData,
+    candidate: &str,
+    variant: typst::text::FontVariant,
+) -> Option<usize> {
+    data.book.select(&candidate.to_lowercase(), variant)
 }
 
 /// The font set the compiler shapes with: the caller's search paths when a
@@ -1404,8 +1443,9 @@ fn active_font_data() -> Arc<CachedFontData> {
 #[cfg(not(target_arch = "wasm32"))]
 fn line_metric_face(family: &str) -> Option<typst::text::Font> {
     let data = active_font_data();
-    first_face_in_chain(family, typst::text::FontVariant::default(), |candidate| {
-        let shaped_index: usize = select_face_index(&data, candidate)?;
+    let variant: typst::text::FontVariant = chain_variant(family, None);
+    first_face_in_chain(family, variant, |candidate| {
+        let shaped_index: usize = select_face_index(&data, candidate, variant)?;
         line_metric_face_at(
             &data,
             super::font_context::default_font_search_paths(),
@@ -1493,7 +1533,18 @@ fn macos_system_font_dirs() -> &'static [PathBuf] {
 
 #[cfg(target_arch = "wasm32")]
 fn best_face(family: &str) -> Option<typst::text::Font> {
-    super::font_subst::active_in_memory_font(family, typst::text::FontVariant::default())
+    // Mirrors the native arm's weight rule: a weight-suffixed name reaches its
+    // member only through the base family, at the weight the name states
+    // (issue #1643).
+    let weight: typst::text::FontWeight = super::font_subst::weight_stated_by_family_name(family)
+        .unwrap_or_else(|| typst::text::FontVariant::default().weight);
+    super::font_subst::active_in_memory_font(
+        family,
+        typst::text::FontVariant {
+            weight,
+            ..typst::text::FontVariant::default()
+        },
+    )
 }
 
 /// Look a per-family `f64` metric up through a process-wide cache.
@@ -1742,14 +1793,8 @@ pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
 pub(crate) fn max_digit_advance_em(family: &str, bold: bool) -> Option<f64> {
     static ADVANCE_CACHE: OnceLock<FaceAdvanceCache> = OnceLock::new();
 
-    let variant = typst::text::FontVariant {
-        weight: if bold {
-            typst::text::FontWeight::BOLD
-        } else {
-            typst::text::FontWeight::REGULAR
-        },
-        ..typst::text::FontVariant::default()
-    };
+    let variant: typst::text::FontVariant =
+        chain_variant(family, bold.then_some(typst::text::FontWeight::BOLD));
 
     face_advance_em(family, variant, &ADVANCE_CACHE, |font| {
         let instance = measured_instance(font);
@@ -1787,7 +1832,7 @@ pub(crate) fn space_advance_em(family: &str) -> Option<f64> {
 
     face_advance_em(
         family,
-        typst::text::FontVariant::default(),
+        chain_variant(family, None),
         &ADVANCE_CACHE,
         |font| {
             let instance = measured_instance(font);
@@ -1812,6 +1857,10 @@ type FaceAdvanceCache = std::sync::Mutex<std::collections::HashMap<(String, bool
 /// One `hmtx`-derived metric of the face `family` resolves to at `variant`'s
 /// weight, cached per `(family, is_bold)` in `cache`.
 ///
+/// `is_bold` narrows the key rather than defining it: the family name is part
+/// of the key, so two weight-suffixed members of one family — resolved at
+/// different weights by [`chain_variant`] — never share an entry.
+///
 /// Shared by the digit and space metrics so both walk the same resolution
 /// order as [`best_face`]: the conversion's in-memory fonts and search paths
 /// when one is active, else the font set the compiler itself will use.
@@ -1830,10 +1879,11 @@ fn face_advance_em(
     if super::font_subst::active_font_search_paths().is_some() {
         let data = active_font_data();
         // Shares `first_face_in_chain` with `best_face` (issue #1629's
-        // interleaved in-memory-then-disk order per candidate) but at the
-        // requested weight instead of the hardcoded regular those line-metric
-        // callers pin to, so this can never drift from that order the way two
-        // independent copies could.
+        // interleaved in-memory-then-disk order per candidate), so this can
+        // never drift from that order the way two independent copies could.
+        // Every caller composes its weight through `chain_variant`, so a
+        // weight-suffixed family measures the member its name denotes here too
+        // (issue #1643).
         return first_face_in_chain(family, variant, |candidate| {
             data.book
                 .select(&candidate.to_lowercase(), variant)
@@ -1914,14 +1964,8 @@ pub(crate) fn glyph_advances_em(family: &str, bold: bool, text: &str) -> Option<
     type ResolvedFaceCache = HashMap<(String, bool), Option<typst::text::Font>>;
     static FACE_CACHE: OnceLock<Mutex<ResolvedFaceCache>> = OnceLock::new();
 
-    let variant = typst::text::FontVariant {
-        weight: if bold {
-            typst::text::FontWeight::BOLD
-        } else {
-            typst::text::FontWeight::REGULAR
-        },
-        ..typst::text::FontVariant::default()
-    };
+    let variant: typst::text::FontVariant =
+        chain_variant(family, bold.then_some(typst::text::FontWeight::BOLD));
     let active_font = super::font_subst::active_in_memory_font(family, variant);
 
     let cache = FACE_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
