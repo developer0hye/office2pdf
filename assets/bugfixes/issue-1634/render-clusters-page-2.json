@@ -1,0 +1,3335 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 105.2928,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 27.84,
+        "x": 731.04,
+        "y": 816.96
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-295f572378b3",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 89.6256,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 20.16,
+        "x": 738.24,
+        "y": 698.4
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-f6d84e2e0e61",
+      "region": "right"
+    },
+    {
+      "area_pt2": 82.2528,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 27.36,
+        "x": 731.04,
+        "y": 461.28
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-b231a6dc5690",
+      "region": "right"
+    },
+    {
+      "area_pt2": 77.8752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 22.56,
+        "x": 736.32,
+        "y": 446.4
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-84a11fbce79d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 71.1936,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 22.56,
+        "x": 734.88,
+        "y": 905.76
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-5d18118e2be5",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 65.2032,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 16.8,
+        "x": 353.28,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-7feb2343d32c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 63.5904,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 14.4,
+        "x": 385.92,
+        "y": 432.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-dc5fe81bbd65",
+      "region": "center"
+    },
+    {
+      "area_pt2": 63.5904,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 23.52,
+        "x": 734.88,
+        "y": 1024.32
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-4d3490e09180",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 62.4384,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 18.24,
+        "x": 731.52,
+        "y": 1098.72
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-18c84e731515",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 60.8256,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.96,
+        "x": 667.2,
+        "y": 969.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-e08a73c29ffa",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 60.5952,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 15.36,
+        "x": 734.88,
+        "y": 758.4
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-c12ea61756a9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 60.1344,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 12.96,
+        "x": 450.72,
+        "y": 494.4
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-b1a09e660189",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.9824,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.48,
+        "x": 667.68,
+        "y": 924.48
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-71cbc3e2f9ab",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 13.44,
+        "x": 604.8,
+        "y": 432.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-9773c60b4de1",
+      "region": "right"
+    },
+    {
+      "area_pt2": 57.3696,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 23.52,
+        "x": 734.88,
+        "y": 579.84
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-76975aae8fee",
+      "region": "right"
+    },
+    {
+      "area_pt2": 54.144,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 669.12,
+        "y": 449.28
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-fcbd5905ca8b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 53.4528,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 11.04,
+        "x": 327.84,
+        "y": 494.4
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-396b01df9764",
+      "region": "center"
+    },
+    {
+      "area_pt2": 53.2224,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 12.96,
+        "x": 294.72,
+        "y": 494.4
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-536243a8dffb",
+      "region": "center"
+    },
+    {
+      "area_pt2": 51.84,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.48,
+        "x": 667.68,
+        "y": 939.36
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-8325c93c6b98",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 51.6096,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 26.88,
+        "x": 731.52,
+        "y": 624.48
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-44306d39bd1d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 50.2272,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 11.04,
+        "x": 669.12,
+        "y": 568.8
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-88e84a30eeeb",
+      "region": "right"
+    },
+    {
+      "area_pt2": 50.2272,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 11.04,
+        "x": 669.12,
+        "y": 1072.8
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-8c267f74cd5b",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 50.2272,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 11.04,
+        "x": 669.12,
+        "y": 998.88
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-8a23a5fc776d",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 48.1536,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 12.48,
+        "x": 636.0,
+        "y": 1103.04
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-5d5158a174ae",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 47.9232,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 482.4,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-beda89455c14",
+      "region": "center"
+    },
+    {
+      "area_pt2": 47.9232,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.08,
+        "x": 482.4,
+        "y": 494.4
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-11239061267a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 11.52,
+        "x": 416.16,
+        "y": 494.4
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-8074eb0d151e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.56,
+        "x": 669.6,
+        "y": 717.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-5e8909b22680",
+      "region": "right"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.56,
+        "x": 669.6,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-7144ed28b5af",
+      "region": "right"
+    },
+    {
+      "area_pt2": 44.928,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.0,
+        "x": 667.68,
+        "y": 776.16
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-8be4c227858b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 44.6976,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.12,
+        "x": 671.04,
+        "y": 628.32
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-67aff22709b9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 44.2368,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.12,
+        "x": 611.04,
+        "y": 465.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-6c0b683edcb6",
+      "region": "right"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.08,
+        "x": 669.12,
+        "y": 494.4
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-4bd354e41ccb",
+      "region": "right"
+    },
+    {
+      "area_pt2": 40.7808,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.64,
+        "x": 671.52,
+        "y": 865.44
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-018128be78b5",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 40.7808,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 361.44,
+        "y": 432.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-3639cbd160cd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.6,
+        "x": 636.0,
+        "y": 494.4
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-f4bd847803a8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 40.0896,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 10.08,
+        "x": 391.2,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-dcced2400e5e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 11.52,
+        "x": 416.16,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-a6cad50c8545",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 12.0,
+        "x": 449.28,
+        "y": 1102.56
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-c89a46437e7a",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 38.9376,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.64,
+        "x": 668.64,
+        "y": 642.72
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-9c9ce8b64dfd",
+      "region": "right"
+    },
+    {
+      "area_pt2": 38.7072,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.08,
+        "x": 667.2,
+        "y": 553.92
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-04b8bd8a7562",
+      "region": "right"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.6,
+        "x": 670.08,
+        "y": 1057.92
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-43c1e48622b5",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.16,
+        "x": 636.0,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-7be480ff3af8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 572.16,
+        "y": 432.96
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-ee94b692b6f1",
+      "region": "right"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.12,
+        "x": 545.76,
+        "y": 1102.56
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-7e99b512d332",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 10.08,
+        "x": 669.12,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-45bacca5e486",
+      "region": "right"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 731.04,
+        "y": 698.4
+      },
+      "disposition": {
+        "issue": "#1784",
+        "kind": "issue",
+        "note": "Inspected ten sparkline regions at full scale; reconstructed green strokes are visibly thinner than native bitmaps."
+      },
+      "id": "p2-9ed2ca9fcc5c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.6,
+        "x": 667.68,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-2ce67c168653",
+      "region": "right"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 453.6,
+        "y": 1057.92
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-865256a2f2a7",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.64,
+        "x": 549.12,
+        "y": 432.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-002f137f4619",
+      "region": "center"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 516.0,
+        "y": 465.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-b4e1f2178cb8",
+      "region": "center"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.72,
+        "x": 673.44,
+        "y": 850.56
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-7d09f59db70b",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 669.6,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-f30234bac5a8",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.64,
+        "x": 642.72,
+        "y": 465.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-d89a402b2990",
+      "region": "right"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 332.64,
+        "y": 432.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-1cb6463311a3",
+      "region": "center"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.68,
+        "x": 672.48,
+        "y": 1043.04
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-50bc9c01dacc",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 390.72,
+        "y": 449.28
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-f3be9e37d58a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 361.44,
+        "y": 494.88
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-f456f81d3a87",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 579.84,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-9c3b59ecc8e9",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 548.64,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-7fa7f4e89276",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 486.24,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-f57da5c57cb8",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 361.44,
+        "y": 465.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-d0e50dd9e174",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 423.84,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-558e88f3d48f",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 299.04,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-99fa9b5bdff0",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 361.44,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-888092f6ef10",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 330.24,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-e6bf797247cd",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 611.04,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-bd7f37f48110",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 455.04,
+        "y": 835.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-905257a9ff7d",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.6432,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.68,
+        "x": 456.0,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-de2e26c88010",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 391.68,
+        "y": 761.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-07dda76f9d46",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 390.24,
+        "y": 1103.04
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-9627acee6086",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 11.52,
+        "x": 356.16,
+        "y": 776.16
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-351cfd317b68",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 422.88,
+        "y": 761.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-300d6b055089",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 422.88,
+        "y": 432.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-d5afaf15a22d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 330.24,
+        "y": 465.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-8b80ef534fdf",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 8.64,
+        "x": 114.72,
+        "y": 511.2
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected category/body label glyph interiors; native whole-point advances differ from fractional output advances."
+      },
+      "id": "p2-8977d4db8bd8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 324.48,
+        "y": 524.64
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-5cee3eca2493",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 293.28,
+        "y": 524.64
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-cb5931628a4f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.16,
+        "x": 669.12,
+        "y": 524.16
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-19553dfe7a59",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 511.68,
+        "y": 524.64
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-4ba09b4c4639",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 480.48,
+        "y": 524.64
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-015a7839da9b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 449.28,
+        "y": 524.64
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-127540fef61c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 418.08,
+        "y": 524.64
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-927d211fe0b7",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 386.88,
+        "y": 524.64
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-3b2f7b178a82",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 355.68,
+        "y": 524.64
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-4bea06b4f519",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.2,
+        "x": 516.96,
+        "y": 761.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-cfed4ee75c52",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.2,
+        "x": 485.76,
+        "y": 761.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-ab76c7343874",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 12.0,
+        "x": 94.08,
+        "y": 911.04
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected category/body label glyph interiors; native whole-point advances differ from fractional output advances."
+      },
+      "id": "p2-34d9ca13e063",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 667.2,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-a09992df4ce8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 27.8784,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 11.04,
+        "x": 130.08,
+        "y": 431.04
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-8fc8a27d420a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.8784,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.24,
+        "x": 673.92,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-4109b892181e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 549.6,
+        "y": 494.4
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-3585fd98b419",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.2,
+        "x": 394.08,
+        "y": 494.88
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-e3b2d1081f55",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 450.24,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-68e348d89933",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 451.2,
+        "y": 761.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-2be69afa63f4",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 357.6,
+        "y": 761.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-b76cf2b3c586",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.24,
+        "x": 673.92,
+        "y": 732.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-bb55b77cd994",
+      "region": "right"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.2,
+        "x": 298.08,
+        "y": 1103.04
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-34c2618ae4d2",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 518.88,
+        "y": 432.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-2325faaba31b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.24,
+        "x": 673.92,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-ce28fea6027b",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.24,
+        "x": 673.92,
+        "y": 880.32
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-3ab77ca51230",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 188.64,
+        "y": 431.04
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-ac66aaa6c216",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 187.68,
+        "y": 511.2
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected category/body label glyph interiors; native whole-point advances differ from fractional output advances."
+      },
+      "id": "p2-4b8ad407bd8c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 114.72,
+        "y": 539.04
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected category/body label glyph interiors; native whole-point advances differ from fractional output advances."
+      },
+      "id": "p2-38d779b11078",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.72,
+        "x": 332.16,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-8ed0f26369c5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 122.88,
+        "y": 539.52
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected category/body label glyph interiors; native whole-point advances differ from fractional output advances."
+      },
+      "id": "p2-f29b255f8cb7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.16,
+        "x": 299.52,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-bd7e9e7fe4c9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.2,
+        "x": 484.32,
+        "y": 465.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-010ec3050a7e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 518.4,
+        "y": 1057.92
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-466478552201",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.2,
+        "x": 636.48,
+        "y": 910.08
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-611939ed7a9d",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.16,
+        "x": 710.88,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-42f31edad422",
+      "region": "right"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 642.72,
+        "y": 1057.92
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-1550e93d5b62",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 611.52,
+        "y": 1057.92
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-3e25ba99daf9",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 580.32,
+        "y": 1057.92
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-b71047280832",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.16,
+        "x": 710.88,
+        "y": 642.72
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-aad4bf8de19b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.16,
+        "x": 710.88,
+        "y": 1028.16
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-85f4b519033b",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.16,
+        "x": 710.88,
+        "y": 553.92
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-d0818516a212",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 711.36,
+        "y": 524.16
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-54f5c259439c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 329.76,
+        "y": 1102.56
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-2fcd153d81c4",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.72,
+        "x": 667.2,
+        "y": 909.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-0d44fc8269e7",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.6,
+        "x": 545.28,
+        "y": 776.16
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-7fdf1d8fcfc5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 416.16,
+        "y": 134.4
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-95394999e89b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 7.68,
+        "x": 95.52,
+        "y": 540.48
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected category/body label glyph interiors; native whole-point advances differ from fractional output advances."
+      },
+      "id": "p2-fa699e50f032",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 294.24,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1774",
+        "kind": "issue",
+        "note": "Inspected mmm-formatted month headings; string-dependent right-aligned horizontal displacement remains as in #1774."
+      },
+      "id": "p2-a00f80137d04",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 393.12,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-1fe60677a7dd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 549.12,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-b74d8bdf7eb3",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 455.52,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-6607b259fd99",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 361.92,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-41d7713e6c5e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 611.52,
+        "y": 880.32
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-cf100382f5a0",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 393.12,
+        "y": 924.48
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-05eaf7faabf1",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 642.72,
+        "y": 880.32
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-b3ea165407c0",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 424.32,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-f7e43c538141",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 361.92,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-120a32d279c1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 642.72,
+        "y": 954.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-d3f51518bbbe",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 393.12,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-df638bb628ee",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 424.32,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-cb70a3a86366",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 455.52,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-b85f280fa849",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 486.72,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-808db06981df",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 517.92,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-82836562f254",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 549.12,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-08572c2b3b39",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.68,
+        "x": 711.36,
+        "y": 672.48
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-b092ab2125ec",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 580.32,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-f90bfbb61d4f",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 486.72,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-a91951ff0739",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 455.52,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-d7cffefb8b3f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 611.52,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-be02db025ee8",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 642.72,
+        "y": 984.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-a5c651c3ee03",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 361.92,
+        "y": 732.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-498b9a9b259a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 455.52,
+        "y": 732.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-b3fbeed19588",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 549.12,
+        "y": 732.0
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-22fc8a199a49",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 297.12,
+        "y": 1028.16
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-81ffbc87453e",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 642.72,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-175bb1f03905",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 611.52,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-03494eeb42c5",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 328.32,
+        "y": 1028.16
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-c61287f2caef",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 580.32,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-de7d227eebd4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 549.12,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-0930eedd61a9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 517.92,
+        "y": 509.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-8795c00c78dc",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 299.52,
+        "y": 880.32
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-58251d90c648",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 106.56,
+        "y": 539.52
+      },
+      "disposition": {
+        "issue": "#1659",
+        "kind": "issue",
+        "note": "Inspected category/body label glyph interiors; native whole-point advances differ from fractional output advances."
+      },
+      "id": "p2-e1db2ee5bbc3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 667.68,
+        "y": 672.96
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-8690f60dd47c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 544.8,
+        "y": 761.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-8b38349ab549",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 208.32,
+        "y": 433.92
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-174817c8da9c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 227.04,
+        "y": 433.92
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-d0187c5a5055",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.2,
+        "x": 712.32,
+        "y": 1102.56
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-20226d14d53e",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.2,
+        "x": 712.32,
+        "y": 583.68
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-362570b75294",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.24,
+        "x": 544.32,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-47455f8b941b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 3.84,
+        "x": 511.2,
+        "y": 432.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-820ba416a91e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.24,
+        "x": 353.76,
+        "y": 341.28
+      },
+      "disposition": {
+        "issue": "#1785",
+        "kind": "issue",
+        "note": "Cash-flow category glyph cluster; category baseline remains above native, as in #1785."
+      },
+      "id": "p2-fa174287df84",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 3.84,
+        "x": 298.08,
+        "y": 432.0
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-e60d4487fb4c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 580.8,
+        "y": 449.28
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-9357b0d7c2db",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 576.48,
+        "y": 909.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-2046a14b6386",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 545.28,
+        "y": 909.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-6bad7266d4dd",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.16,
+        "x": 355.2,
+        "y": 539.04
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-b51b7bbaec5d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.72,
+        "x": 636.96,
+        "y": 1029.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-1675182a1269",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.72,
+        "x": 543.36,
+        "y": 1029.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-713ecac70827",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.72,
+        "x": 574.56,
+        "y": 1029.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-cea69c669291",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.72,
+        "x": 605.76,
+        "y": 1029.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-6a83df42ae30",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 574.56,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-a10916c4a992",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 394.56,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-f7b7a5a8e689",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 449.76,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-9addd719f266",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 418.56,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-2947f365dee6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 293.76,
+        "y": 539.04
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-94b3daa74029",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 387.36,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-6a6b37b6d296",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 324.96,
+        "y": 539.04
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-212f071a72a2",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 356.16,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-269dcc681105",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 324.96,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-79e6a7ea5790",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 293.76,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-c995eebd4de5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 422.4,
+        "y": 791.04
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-734935ff9043",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 391.2,
+        "y": 791.04
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-c02725590580",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 300.96,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-1f6a1c982141",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 332.16,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-019611542f23",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 644.16,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-aec4213f45df",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 612.96,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-78575ea409d9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 581.76,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-8ab377fac7c2",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 519.36,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-57e91dae6233",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 488.16,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-badec7f18f97",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 300.96,
+        "y": 761.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-c114cb3826f9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 332.16,
+        "y": 761.76
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-16c51095bd14",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 636.96,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-c0897b71af61",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 605.76,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-d50287362e21",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 425.76,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-0792c218bb6a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 543.36,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-38dc7f8fce8c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 512.16,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-134452afeffe",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 480.96,
+        "y": 657.6
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-454b42c283e7",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 7.68,
+        "x": 637.44,
+        "y": 451.2
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-64224f730fb4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 173.76,
+        "y": 433.44
+      },
+      "disposition": {
+        "issue": "#1721",
+        "kind": "issue",
+        "note": "Tight-row card and table headings remain high. Month-heading clusters also carry the string-dependent horizontal residual tracked in #1774."
+      },
+      "id": "p2-2ac676ed31fa",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.72,
+        "x": 636.96,
+        "y": 820.8
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-da0569587ff5",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 636.48,
+        "y": 465.12
+      },
+      "disposition": {
+        "issue": "#1773",
+        "kind": "issue",
+        "note": "Inspected numeric rows and totals in full-scale left/right region pairs; numeric glyph clusters retain the common right-aligned horizontal residual. Internal glyph advances additionally differ as in #1659."
+      },
+      "id": "p2-285ff3c88396",
+      "region": "right"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 207,
+    "duplicate": 0,
+    "total": 207,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
