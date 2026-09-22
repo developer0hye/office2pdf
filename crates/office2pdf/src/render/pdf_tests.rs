@@ -37,9 +37,10 @@ use crate::test_support::make_test_svg;
 /// an explicit font set, walking the same alias and substitute chain as
 /// `best_face` but without a conversion context's in-memory faces.
 fn best_face_index(data: &CachedFontData, family: &str) -> Option<usize> {
+    let variant: typst::text::FontVariant = chain_variant(family, None);
     crate::render::font_subst::family_candidates(family)
         .iter()
-        .find_map(|candidate| select_face_index(data, candidate))
+        .find_map(|candidate| select_face_index(data, candidate, variant))
 }
 
 /// `line_metric_face` over an explicit font set: `office_font_dirs` hold the
@@ -480,6 +481,143 @@ fn test_path_font_last_resort_bypasses_process_metric_caches() {
         powerpoint, cached_powerpoint,
         "the materialized face should replace the cached default-font split"
     );
+}
+
+/// The line box, bare `hhea` ascender and line gap a face declares, in em.
+#[cfg(not(target_arch = "wasm32"))]
+fn declared_line_box_em(font: &typst::text::Font) -> (f64, f64, f64) {
+    let instance = measured_instance(font);
+    let ttf = instance.ttf();
+    let upem = f64::from(ttf.units_per_em()).max(1.0);
+    let pitch =
+        (f64::from(ttf.ascender()) - f64::from(ttf.descender()) + f64::from(ttf.line_gap())) / upem;
+    let top = (f64::from(ttf.ascender()) + f64::from(ttf.line_gap())) / upem;
+    (top, pitch - top, pitch)
+}
+
+#[test]
+fn a_weight_suffixed_family_measures_the_member_its_name_denotes() {
+    // The book files a weight member under the base family with the suffix
+    // trimmed, so `Segoe UI Semibold` and `Arial Black` match no family key and
+    // every line metric answered `None` — leaving `word_line_height_settings`
+    // with no fixed Word line box, the shape of #1197 (issue #1643).
+    //
+    // Reaching the base family is only half of it: the member the name denotes
+    // is the one the document asked for, and a family's members need not share
+    // vertical metrics. Native Word measures that member — twelve
+    // single-spaced 20pt `Arial Black` paragraphs advance 28.189pt, which is
+    // Arial Black's own 1.4102em `hhea` sum, not the 22.996pt (1.1499em) Arial
+    // regular declares; a `w:b` run on plain Arial advances 22.996pt, so the
+    // stated weight alone does not move the box, the named member does.
+    //
+    // The tracked Noto Serif ships one `hhea` for every weight, so the light
+    // member here carries a rewritten ascender: the regular declares
+    // 1069/-293/0 on 1000 upem and the light 1500/-293/0. Reading the regular's
+    // box for a light request is then off by 0.431em, the same shape as reading
+    // Arial's for Arial Black.
+    use crate::render::font_context::test_faces::{
+        noto_serif_at_weight, noto_serif_at_weight_with_ascender,
+    };
+
+    let regular: typst::text::Font = noto_serif_at_weight(400);
+    let light: typst::text::Font = noto_serif_at_weight_with_ascender(300, 1500);
+    let expected_regular = declared_line_box_em(&regular);
+    let expected_light = declared_line_box_em(&light);
+    assert_ne!(
+        expected_regular.2, expected_light.2,
+        "the rewritten members must declare different line boxes for the test to discriminate"
+    );
+
+    let context = crate::render::font_context::resolve_font_search_context_from_fonts(&[
+        regular.clone(),
+        light.clone(),
+    ]);
+    let (suffixed_line, base_line, suffixed_ascender, suffixed_gap) =
+        crate::render::font_subst::with_font_search_context(Some(&context), || {
+            (
+                font_line_metrics_em("Noto Serif Light"),
+                font_line_metrics_em("Noto Serif"),
+                font_hhea_ascender_em("Noto Serif Light"),
+                font_line_gap_em("Noto Serif Light"),
+            )
+        });
+
+    let suffixed_line =
+        suffixed_line.expect("a weight-suffixed request resolves through its base family");
+    let base_line = base_line.expect("the base family resolves its own regular member");
+    let suffixed_ascender = suffixed_ascender.expect("the suffixed request resolves an ascender");
+    let suffixed_gap = suffixed_gap.expect("the suffixed request resolves a line gap");
+
+    let close = |actual: (f64, f64, f64), expected: (f64, f64, f64)| {
+        (actual.0 - expected.0).abs() < 1e-12
+            && (actual.1 - expected.1).abs() < 1e-12
+            && (actual.2 - expected.2).abs() < 1e-12
+    };
+    assert!(
+        close(suffixed_line, expected_light),
+        "`Noto Serif Light` must measure the 300 member's own line box: \
+         {suffixed_line:?} against {expected_light:?}"
+    );
+    assert!(
+        close(base_line, expected_regular),
+        "`Noto Serif` must still measure the regular member: \
+         {base_line:?} against {expected_regular:?}"
+    );
+
+    let light_instance = measured_instance(&light);
+    let light_ttf = light_instance.ttf();
+    let upem = f64::from(light_ttf.units_per_em()).max(1.0);
+    assert!(
+        (suffixed_ascender - f64::from(light_ttf.tables().hhea.ascender) / upem).abs() < 1e-12,
+        "the bare ascender must come from the 300 member too: {suffixed_ascender}"
+    );
+    assert!(
+        (suffixed_gap - f64::from(light_ttf.line_gap()) / upem).abs() < 1e-12,
+        "the line gap must come from the 300 member too: {suffixed_gap}"
+    );
+}
+
+#[test]
+fn a_stretch_suffixed_family_does_not_borrow_its_base_family_metrics() {
+    // `Arial Narrow` is its own family, not a member of Arial, and the trimmer
+    // that files `Arial Black` under `Arial` files it there too. Only a weight
+    // suffix names a member, so a stretch suffix must keep answering from its
+    // own chain (issue #1643).
+    use crate::render::font_context::test_faces::noto_serif_at_weight_with_ascender;
+
+    let regular: typst::text::Font =
+        crate::render::font_context::test_faces::noto_serif_at_weight(400);
+    let bold: typst::text::Font = noto_serif_at_weight_with_ascender(700, 1500);
+    let bold_line = declared_line_box_em(&bold);
+    let context = crate::render::font_context::resolve_font_search_context_from_fonts(&[
+        regular.clone(),
+        bold,
+    ]);
+    let (narrow, suffixed) =
+        crate::render::font_subst::with_font_search_context(Some(&context), || {
+            (
+                font_line_metrics_em("Noto Serif Condensed"),
+                font_line_metrics_em("Noto Serif Bold"),
+            )
+        });
+
+    // The weight-suffixed control proves the context discriminates at all: a
+    // `Bold` request reaches the 700 member's taller box.
+    let suffixed = suffixed.expect("a weight-suffixed request resolves through its base family");
+    assert!(
+        (suffixed.2 - bold_line.2).abs() < 1e-12,
+        "`Noto Serif Bold` must measure the 700 member: {suffixed:?}"
+    );
+
+    // Nothing declares a condensed member, so the request falls through its own
+    // chain — never onto a heavier member picked because the name happened to
+    // end in a suffix the book trims.
+    if let Some(narrow) = narrow {
+        assert!(
+            (narrow.2 - bold_line.2).abs() > 1e-9,
+            "a stretch suffix must not select a weight member: {narrow:?}"
+        );
+    }
 }
 
 #[test]
