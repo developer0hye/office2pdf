@@ -1,0 +1,34 @@
+{
+  "name": "issue-1645-paragraph-mark-list-style-face",
+  "base": "../../tests/fixtures/pptx/paragraph_mark_list_style_face.pptx",
+  "part": "ppt/slides/slide1.xml",
+  "factor": "a:lstStyle/a:lvl1pPr/a:defRPr latin typeface, with the run naming Arial itself",
+  "page": 1,
+  "variants": [
+    {
+      "value": "lst-meiryo",
+      "find": "typeface=\"Arial\" pitchFamily=\"34\"",
+      "replace": "typeface=\"Meiryo\" pitchFamily=\"34\"",
+      "count": 8
+    },
+    {
+      "value": "lst-calibri",
+      "find": "typeface=\"Arial\" pitchFamily=\"34\"",
+      "replace": "typeface=\"Calibri\" pitchFamily=\"34\"",
+      "count": 8
+    },
+    {
+      "value": "mark-meiryo",
+      "find": "</a:r></a:p>",
+      "replace": "</a:r><a:endParaRPr lang=\"en-US\"><a:latin typeface=\"Meiryo\"/></a:endParaRPr></a:p>",
+      "count": 8
+    },
+    {
+      "value": "lst-meiryo-bare-mark",
+      "find": "typeface=\"Arial\" pitchFamily=\"34\"(.*?)</a:r></a:p>",
+      "replace": "typeface=\"Meiryo\" pitchFamily=\"34\"\\1</a:r><a:endParaRPr lang=\"en-US\"/></a:p>",
+      "regex": true,
+      "count": 8
+    }
+  ]
+}

@@ -617,3 +617,67 @@ fn make_table_row_with_height(h_emu: i64, cells: &[&str]) -> String {
     xml.push_str("</a:tr>");
     xml
 }
+
+/// A slide table cell reads its paragraph marks by the same rule a text box
+/// does (issue #1645).
+///
+/// The two parsers keep separate paragraph-assembly state machines, so a rule
+/// that only lands in one of them drifts — the cell would keep putting the
+/// theme's minor Latin font on a line whose run names its own face.
+#[test]
+fn an_undeclared_cell_paragraph_mark_adds_no_face_to_the_line() {
+    let cell = concat!(
+        r#"<a:tc><a:txBody><a:bodyPr/><a:lstStyle/>"#,
+        r#"<a:p><a:r><a:rPr lang="en-US"><a:latin typeface="Verdana"/></a:rPr><a:t>Manager</a:t></a:r></a:p>"#,
+        r#"</a:txBody><a:tcPr/></a:tc>"#,
+    );
+    let para = only_cell_paragraph(cell);
+
+    assert_eq!(
+        para.runs[0].style.font_family.as_deref(),
+        Some("Verdana"),
+        "the run keeps the face it declares"
+    );
+    assert_eq!(
+        para.style.paragraph_mark_font_family.as_deref(),
+        Some("Verdana"),
+        "a cell paragraph writing no <a:endParaRPr> keeps its run's own face          instead of adding the theme's minor Latin font to the line"
+    );
+}
+
+/// The other branch in a table cell: a mark element that is present but names
+/// no typeface still falls to the theme's minor Latin font (issue #1176).
+#[test]
+fn a_present_but_bare_cell_paragraph_mark_takes_the_theme_minor_latin_font() {
+    let cell = concat!(
+        r#"<a:tc><a:txBody><a:bodyPr/><a:lstStyle/>"#,
+        r#"<a:p><a:r><a:rPr lang="en-US"><a:latin typeface="Verdana"/></a:rPr><a:t>Manager</a:t></a:r>"#,
+        r#"<a:endParaRPr lang="en-US"/></a:p>"#,
+        r#"</a:txBody><a:tcPr/></a:tc>"#,
+    );
+    let para = only_cell_paragraph(cell);
+
+    assert_eq!(
+        para.style.paragraph_mark_font_family.as_deref(),
+        Some("Calibri"),
+        "a present mark declaring no typeface still takes the theme's minor          Latin font"
+    );
+}
+
+/// The single paragraph of a one-cell table built from `cell_xml`, parsed
+/// against a theme whose minor Latin font is Calibri.
+fn only_cell_paragraph(cell_xml: &str) -> Paragraph {
+    let rows_xml = format!(r#"<a:tr h="370840">{cell_xml}</a:tr>"#);
+    let table_frame =
+        make_table_graphic_frame(914400, 914400, 1828800, 370840, &[1828800], &rows_xml);
+    let slide = make_slide_xml(&[table_frame]);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Gill Sans MT", "Calibri");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+    let (doc, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let table = table_element(&first_fixed_page(&doc).elements[0]);
+    match &table.rows[0].cells[0].content[0] {
+        Block::Paragraph(para) => para.clone(),
+        other => panic!("Expected a paragraph in the cell, got {other:?}"),
+    }
+}

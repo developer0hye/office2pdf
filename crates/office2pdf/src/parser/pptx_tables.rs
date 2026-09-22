@@ -62,6 +62,9 @@ struct PptxTableParser<'a> {
     default_text_size_pt: Option<f64>,
     paragraph_default_run_style: TextStyle,
     paragraph_end_run_style: TextStyle,
+    /// Whether the open cell paragraph wrote an `<a:endParaRPr>` element.
+    /// An absent mark takes no inherited face onto the line (issue #1645).
+    paragraph_declares_end_para_rpr: bool,
     paragraph_bullet_definition: PptxBulletDefinition,
     is_in_line_spacing: bool,
     runs: Vec<Run>,
@@ -139,6 +142,7 @@ impl<'a> PptxTableParser<'a> {
             paragraph_level: 0,
             paragraph_default_run_style: TextStyle::default(),
             paragraph_end_run_style: TextStyle::default(),
+            paragraph_declares_end_para_rpr: false,
             paragraph_bullet_definition: PptxBulletDefinition::default(),
             is_in_line_spacing: false,
             runs: Vec::new(),
@@ -308,6 +312,7 @@ impl<'a> PptxTableParser<'a> {
             }
             b"endParaRPr" if self.is_in_paragraph && !self.is_in_run => {
                 self.paragraph_end_run_style = self.paragraph_default_run_style.clone();
+                self.paragraph_declares_end_para_rpr = true;
                 extract_rpr_attributes(e, &mut self.paragraph_end_run_style);
             }
             b"tcPr" if self.is_in_cell => {
@@ -587,6 +592,7 @@ impl<'a> PptxTableParser<'a> {
             .text_body_style_defaults
             .run_style_for_level(self.paragraph_level);
         self.paragraph_end_run_style = self.paragraph_default_run_style.clone();
+        self.paragraph_declares_end_para_rpr = false;
         self.paragraph_bullet_definition = self
             .text_body_style_defaults
             .bullet_for_level(self.paragraph_level);
@@ -620,10 +626,13 @@ impl<'a> PptxTableParser<'a> {
             &self.paragraph_default_run_style,
         );
         let mut paragraph_runs: Vec<Run> = std::mem::take(&mut self.runs);
-        insert_hangul_kinsoku_break_markers(&mut paragraph_runs);
         let mut paragraph_style: ParagraphStyle = self.paragraph_style.clone();
-        paragraph_style.paragraph_mark_font_family =
-            pptx_paragraph_mark_font_family(&self.paragraph_end_run_style, self.theme);
+        paragraph_style.paragraph_mark_font_family = pptx_paragraph_mark_font_family(
+            &self.paragraph_end_run_style,
+            self.theme,
+            PptxParagraphMark::for_paragraph(self.paragraph_declares_end_para_rpr, &paragraph_runs),
+        );
+        insert_hangul_kinsoku_break_markers(&mut paragraph_runs);
         self.cell_text_entries.push(PptxParagraphEntry {
             paragraph: Paragraph {
                 style: paragraph_style,
@@ -745,6 +754,7 @@ impl<'a> PptxTableParser<'a> {
             b"endParaRPr" => {
                 self.is_in_end_paragraph_run_properties = true;
                 self.paragraph_end_run_style = self.paragraph_default_run_style.clone();
+                self.paragraph_declares_end_para_rpr = true;
                 extract_rpr_attributes(e, &mut self.paragraph_end_run_style);
             }
             b"solidFill" if self.is_in_run_properties => {
@@ -801,6 +811,7 @@ impl<'a> PptxTableParser<'a> {
             b"endParaRPr" if !self.is_in_run => {
                 self.is_in_end_paragraph_run_properties = true;
                 self.paragraph_end_run_style = self.paragraph_default_run_style.clone();
+                self.paragraph_declares_end_para_rpr = true;
                 extract_rpr_attributes(e, &mut self.paragraph_end_run_style);
             }
             b"solidFill" if self.is_in_run_properties => {

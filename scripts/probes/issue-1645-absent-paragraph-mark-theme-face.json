@@ -1,0 +1,21 @@
+{
+  "name": "issue-1645-absent-paragraph-mark-theme-face",
+  "base": "../../tests/fixtures/pptx/paragraph_mark_list_style_face.pptx",
+  "part": "ppt/theme/theme1.xml",
+  "factor": "a:minorFont latin typeface, with every run and list style naming Arial itself and no a:endParaRPr anywhere",
+  "page": 1,
+  "variants": [
+    {
+      "value": "minor-meiryo",
+      "find": "<a:minorFont><a:latin typeface=\"Arial\"/>",
+      "replace": "<a:minorFont><a:latin typeface=\"Meiryo\"/>",
+      "count": 1
+    },
+    {
+      "value": "minor-calibri",
+      "find": "<a:minorFont><a:latin typeface=\"Arial\"/>",
+      "replace": "<a:minorFont><a:latin typeface=\"Calibri\"/>",
+      "count": 1
+    }
+  ]
+}

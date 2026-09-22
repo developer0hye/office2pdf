@@ -1335,21 +1335,36 @@ fn run_fill_alpha_composites_in_the_generated_source() {
     );
 }
 
-/// A paragraph that writes no `<a:endParaRPr>` at all still puts its mark in
-/// the theme's minor Latin font.
+/// A paragraph that writes no `<a:endParaRPr>` at all puts no face of its own
+/// on PowerPoint's shared line box, and still seats where the native export
+/// of this fixture seats it.
 ///
-/// PowerPoint shares one 1.2em line box across every font on the line, the
-/// paragraph mark included, so the mark's face decides where the baseline sits
-/// inside it. The golden mocks' Korean titles carry a bare `<a:endParaRPr>`
-/// (issue #1176); these three paragraphs omit the element entirely, and the
-/// mark still has to end up where `presentation.xml`'s `<a:defaultTextStyle>`
-/// puts it — its `<a:latin typeface="+mn-lt"/>` names this deck's `Calisto MT`,
-/// whose usWin descent is deeper than the runs' Arial and so moves the shared
-/// box (issue #1179).
+/// This test asserted `Calisto MT` — the theme's minor Latin font, which
+/// `presentation.xml`'s `<a:defaultTextStyle>` names — until the native
+/// one-factor probes of issue #1645 measured that an *absent* mark inherits
+/// nothing at all, list style or theme. #1179's own resolution records that
+/// its frame cannot tell the two apart on the first baseline: at 32pt the
+/// shared Arial/Calisto MT share (0.963654em) and Arial's own (0.972378em)
+/// both round to the 31pt seat its export reads, so the 202.56pt baseline
+/// that issue measured is unchanged.
+///
+/// The deck's own second and third paragraphs do separate them. They carry
+/// `a:alpha`, so a native PowerPoint 16 export rasterises both to identical
+/// 306.48x66.72pt sprites, placed at y 200.88 and 239.04 — a 38.16pt step,
+/// and two identical sprites step by exactly their baseline gap. Rounding
+/// each absolute story position (#1259) off Arial's own share gives seats 31,
+/// 70 and 108 below the content top, a 38pt step; off the shared share it
+/// gives 31, 69 and 108, a 39pt step, which the export's 0.24pt position grid
+/// cannot reach. The `seat` assertion below pins the first baseline; the mark
+/// family is the model that also puts the other two where the sprites are.
 #[test]
-fn structure_run_fill_alpha_marks_take_the_theme_minor_latin_font() {
-    let pages = fixed_pages("run-fill-alpha.pptx");
-    let text_box = pages[0]
+fn structure_run_fill_alpha_marks_add_no_face_to_their_line() {
+    let data = load_fixture("run-fill-alpha.pptx");
+    let (document, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let Page::Fixed(slide) = &document.pages[0] else {
+        panic!("the fixture's only page is a slide");
+    };
+    let text_box = slide
         .elements
         .iter()
         .find_map(|element| match &element.kind {
@@ -1369,8 +1384,20 @@ fn structure_run_fill_alpha_marks_take_the_theme_minor_latin_font() {
 
     assert_eq!(
         mark_families,
-        vec![Some("Calisto MT"); 3],
-        "a mark declaring nothing must fall to the theme's minor Latin font"
+        vec![Some("Arial"); 3],
+        "an absent mark stays on the face of the run it follows"
+    );
+
+    let source = generate_typst(&document).unwrap().source;
+    let seat_pt: f64 = source
+        .split("top-edge: ")
+        .nth(1)
+        .and_then(|rest| rest.split_once("pt"))
+        .and_then(|(seat, _)| seat.parse().ok())
+        .unwrap_or_else(|| panic!("the label frame emits a line box: {source}"));
+    assert!(
+        (seat_pt - 31.0).abs() < 0.001,
+        "the 32pt label must keep the 31pt seat PowerPoint's export reads          (issue #1179), got {seat_pt}pt"
     );
 }
 

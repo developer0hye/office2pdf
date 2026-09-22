@@ -62,20 +62,71 @@ pub(super) fn apply_typeface_to_style(
     }
 }
 
+/// Whether a paragraph wrote an `<a:endParaRPr>` at all, and — when it did
+/// not — the runs whose face its mark then takes.
+pub(super) enum PptxParagraphMark<'a> {
+    /// The paragraph carries an `<a:endParaRPr>` element, declared typeface or
+    /// not.
+    Declared,
+    /// The paragraph carries no `<a:endParaRPr>` element.
+    Undeclared { runs: &'a [Run] },
+}
+
+impl<'a> PptxParagraphMark<'a> {
+    /// The mark of a paragraph that did (`declares_end_para_rpr`) or did not
+    /// write an `<a:endParaRPr>`, holding `runs` for the absent case.
+    pub(super) fn for_paragraph(declares_end_para_rpr: bool, runs: &'a [Run]) -> Self {
+        if declares_end_para_rpr {
+            Self::Declared
+        } else {
+            Self::Undeclared { runs }
+        }
+    }
+}
+
 /// The family a paragraph's mark — the empty run `<a:endParaRPr>` describes —
-/// ends up set in, given the mark's resolved style.
+/// ends up set in.
 ///
-/// A mark that declares no typeface inherits the presentation's default text
-/// style, whose `<a:latin typeface="+mn-lt"/>` names the theme's minor Latin
-/// font. That fallback has to be the real face rather than the renderer's own
-/// default, because the mark shares the final physical line's box with its
-/// text fonts. For the golden mocks' unwrapped Arial paragraphs, bare marks
-/// change the only line's ascent share from 0.97238em to 0.94377em (#1176).
-/// Earlier wrapped lines exclude the mark (#1177).
+/// A mark that is **present** but declares no typeface inherits the run
+/// properties the paragraph resolved, ending at the presentation's default
+/// text style, whose `<a:latin typeface="+mn-lt"/>` names the theme's minor
+/// Latin font. That fallback has to be the real face rather than the
+/// renderer's own default, because the mark shares the final physical line's
+/// box with its text fonts. For the golden mocks' unwrapped Arial paragraphs,
+/// bare marks change the only line's ascent share from 0.97238em to 0.94377em
+/// (#1176). Earlier wrapped lines exclude the mark (#1177).
+///
+/// A mark that is **absent** inherits nothing: it is typed in the face of the
+/// text it follows, so it puts no family on the line the runs have not put
+/// there already. Measured with two native one-factor probes over eight sizes
+/// from 11pt to 53pt (`scripts/probes/issue-1645-*.json`, exported through
+/// `probe_harness.py --backend office`): with the run naming its own typeface
+/// and no `<a:endParaRPr>` present, replacing the body list style's
+/// `<a:latin>` with Meiryo or Calibri — or the theme's minor Latin font with
+/// either — moves no baseline at all, while declaring
+/// `<a:endParaRPr><a:latin typeface="Meiryo"/></a:endParaRPr>` moves all eight
+/// by up to 5.04pt, and a present-but-bare `<a:endParaRPr lang="en-US"/>` over
+/// a Meiryo list style moves them by exactly as much. Inheriting the list
+/// style's face into an absent mark seated the Arial role lines of issue
+/// #1645 one point high, because the shared and unshared boxes straddle the
+/// whole point PowerPoint rounds the story position to.
+///
+/// A paragraph with no runs has no such face, so its absent mark keeps the
+/// inherited resolution — the blank line still has to be set in something.
 pub(super) fn pptx_paragraph_mark_font_family(
     end_run_style: &TextStyle,
     theme: &ThemeData,
+    mark: PptxParagraphMark<'_>,
 ) -> Option<Box<str>> {
+    if let PptxParagraphMark::Undeclared { runs } = mark
+        && !runs.is_empty()
+    {
+        return runs
+            .iter()
+            .rev()
+            .find_map(|run| run.style.font_family.as_deref())
+            .map(Box::from);
+    }
     end_run_style
         .font_family
         .clone()
