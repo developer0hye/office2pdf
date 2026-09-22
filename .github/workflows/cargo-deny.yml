@@ -1,0 +1,31 @@
+name: cargo-deny
+
+# Supply-chain gate: fails on RustSec advisories (vulnerabilities, including
+# known-malicious crates) and on yanked versions in Cargo.lock. The daily
+# schedule surfaces a new advisory against an already-locked dependency
+# without waiting for a code change.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  advisories:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        manifest: [Cargo.toml]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          manifest-path: ${{ matrix.manifest }}
+          command: check advisories
+          arguments: --all-features --workspace --locked
