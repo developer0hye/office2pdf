@@ -1566,7 +1566,21 @@ fn test_empty_indented_paragraph_closes_its_block() {
 
 /// One paragraph of `text` in `family` at `font_size`, with no grid.
 fn line_box_for_text(text: &str, family: &str, font_size: f64) -> Option<(f64, f64)> {
-    crate::render::pdf::font_line_metrics_em(family)?;
+    line_box_for_text_in_context(text, family, font_size, None)
+}
+
+/// The same box, generated under `font_context` — which must be handed to the
+/// generator rather than merely installed around it, because generation
+/// replaces the ambient context with the one it is given.
+fn line_box_for_text_in_context(
+    text: &str,
+    family: &str,
+    font_size: f64,
+    font_context: Option<&crate::render::font_context::FontSearchContext>,
+) -> Option<(f64, f64)> {
+    crate::render::font_subst::with_font_search_context(font_context, || {
+        crate::render::pdf::font_line_metrics_em(family)
+    })?;
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
         style: ParagraphStyle::default(),
         runs: vec![Run {
@@ -1580,7 +1594,15 @@ fn line_box_for_text(text: &str, family: &str, font_size: f64) -> Option<(f64, f
             footnote: None,
         }],
     })])]);
-    emitted_line_box_em(&generate_typst(&doc).unwrap().source)
+    emitted_line_box_em(
+        &crate::render::typst_gen::generate_typst_with_options_and_font_context(
+            &doc,
+            &ConvertOptions::default(),
+            font_context,
+        )
+        .unwrap()
+        .source,
+    )
 }
 
 #[test]
@@ -1674,6 +1696,115 @@ fn the_east_asian_bonus_scales_with_the_font_size_not_with_the_text() {
         (small_top - large_top).abs() < 0.001 && (small_bottom - large_bottom).abs() < 0.001,
         "the split is a property of the font, not of the size or the text: \
          {small_top}/{small_bottom} vs {large_top}/{large_bottom}"
+    );
+}
+
+/// The body line box of one 10.5pt paragraph of `text` set in Noto Sans CJK
+/// SC whose `hhea` line gap is `line_gap` units.
+fn line_box_with_cjk_line_gap(line_gap: i16, text: &str) -> (f64, f64) {
+    let context = noto_sans_cjk_context_with_line_gap(line_gap);
+    line_box_for_text_in_context(text, NOTO_SANS_CJK_SC, 10.5, Some(&context))
+        .expect("the conversion-local face resolves")
+}
+
+#[test]
+fn an_east_asian_line_leaves_the_faces_line_gap_out_of_its_box() {
+    // Word builds its 1.3x East Asian line from the `hhea` ascender and
+    // descender alone. A native Word for Mac export of a 10.5pt Batang
+    // paragraph (hhea 879/-145, line gap 152 of 1024 units) advances 13.65pt
+    // per line = 1.3 x (asc + desc), where carrying the gap gave 15.68pt, and
+    // seats the first baseline at asc + 0.15 x (asc + desc) below the margin
+    // (issue #1638).
+    let (top, bottom) = line_box_with_cjk_line_gap(300, "本合同由双方签订");
+    let bare_line_em: f64 = NOTO_SANS_CJK_ASCENDER_EM + NOTO_SANS_CJK_DESCENDER_EM;
+
+    assert!(
+        (top + bottom - 1.3 * bare_line_em).abs() < 0.001,
+        "the East Asian advance {}em should be 1.3 x the gap-free {bare_line_em}em line",
+        top + bottom
+    );
+    assert!(
+        (top - (NOTO_SANS_CJK_ASCENDER_EM + 0.15 * bare_line_em)).abs() < 0.001,
+        "the baseline should sit asc + 0.15 x (asc + desc) below the box top, got {top}em"
+    );
+}
+
+#[test]
+fn an_east_asian_line_box_does_not_move_with_the_line_gap() {
+    // Triangulation: Batang's 152/1024 gap is one value, and a model keyed to
+    // it would pass the test above. Word's box ignores the gap at any size of
+    // it — Yu Gothic's 1024/2048 and Hiragino Sans GB's 500/1000 export the
+    // same gap-free pitch (issue #1638).
+    let without_gap: (f64, f64) = line_box_with_cjk_line_gap(0, "表");
+    for line_gap in [76, 148, 500] {
+        let (top, bottom) = line_box_with_cjk_line_gap(line_gap, "完全不同的一句中文");
+        assert!(
+            (top - without_gap.0).abs() < 0.001 && (bottom - without_gap.1).abs() < 0.001,
+            "a {line_gap}-unit gap moved the East Asian box to {top}/{bottom}em from \
+             {}/{}em",
+            without_gap.0,
+            without_gap.1
+        );
+    }
+}
+
+#[test]
+fn a_latin_line_in_the_same_face_keeps_the_line_gap() {
+    // The gap stays in Word's Latin single line, above the baseline: Arial's
+    // 67/2048 (#508, #514) and the system Times New Roman's 87/2048 (#1284)
+    // were both measured that way. Only the East Asian box drops it.
+    let (top, bottom) = line_box_with_cjk_line_gap(300, "plain body text");
+    let line_gap_em: f64 = 0.300;
+
+    assert!(
+        (top + bottom - (NOTO_SANS_CJK_ASCENDER_EM + NOTO_SANS_CJK_DESCENDER_EM + line_gap_em))
+            .abs()
+            < 0.001,
+        "a Latin line advances the gap-inclusive hhea line, got {}em",
+        top + bottom
+    );
+    assert!(
+        (top - (NOTO_SANS_CJK_ASCENDER_EM + line_gap_em)).abs() < 0.001,
+        "a Latin baseline keeps the `hhea ascender + lineGap` seat, got {top}em"
+    );
+}
+
+#[test]
+fn a_header_or_footer_east_asian_line_leaves_the_line_gap_out() {
+    // Header and footer stories size their band, their `w:pBdr` rule and
+    // their seat from the same East Asian line as the body, so they must drop
+    // the gap with it or a Batang header would outgrow its body (issue #1638).
+    let runs: Vec<Run> = vec![Run {
+        text: "本合同由双方签订".to_string(),
+        style: TextStyle {
+            font_family: Some(NOTO_SANS_CJK_SC.to_string()),
+            font_size: Some(10.0),
+            ..TextStyle::default()
+        },
+        href: None,
+        footnote: None,
+    }];
+    let bare_line_em: f64 = NOTO_SANS_CJK_ASCENDER_EM + NOTO_SANS_CJK_DESCENDER_EM;
+    let context = noto_sans_cjk_context_with_line_gap(300);
+    let (advance_pt, descent_em) =
+        crate::render::font_subst::with_font_search_context(Some(&context), || {
+            (
+                text::word_line_advance_pt(&runs),
+                text::word_line_box_descent_em(&runs),
+            )
+        });
+
+    let advance_pt: f64 = advance_pt.expect("the face resolves");
+    assert!(
+        (advance_pt - 1.3 * bare_line_em * 10.0).abs() < 0.001,
+        "the story line should advance 1.3 x the gap-free line, got {advance_pt}pt"
+    );
+    let descent_em: f64 = descent_em.expect("the face resolves");
+    let expected_descent_em: f64 = NOTO_SANS_CJK_DESCENDER_EM + 0.15 * bare_line_em;
+    assert!(
+        (descent_em - expected_descent_em).abs() < 0.001,
+        "the line box should end desc + 0.15 x (asc + desc) below the baseline, \
+         got {descent_em}em"
     );
 }
 
