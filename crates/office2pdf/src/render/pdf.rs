@@ -1532,13 +1532,12 @@ fn cached_family_metric(
 /// The `hhea` ascender of the face Word measures `family` by, in em units
 /// (see [`line_metric_face`]).
 ///
-/// This is the ascent Word measures a header story's first baseline by, and it
-/// is deliberately *not* [`font_line_metrics_em`]'s first element: that one
-/// folds in the `hhea` line gap, which Word keeps above the header origin
-/// rather than below it. The 0.0327em difference on Arial is why an 8pt header
-/// baseline lands at 42.64pt below `w:pgMar/@w:header` = 35.40pt instead of
-/// 42.90pt — the native export measures 42.72pt on its 0.24pt grid (issues
-/// #508, #629).
+/// The bare ascender, with the `hhea` line gap left out — deliberately *not*
+/// [`font_line_metrics_em`]'s first element, which folds the gap in. Callers
+/// that want Word's line top add the gap back themselves: a header seat does
+/// (`typst_gen_text::word_header_line_ascent_em`, issue #1640), and an East
+/// Asian line box does not, because it leaves the gap out at both ends (issue
+/// #1638). Splitting it here is what lets those two share one ascender read.
 ///
 /// Read out of the `hhea` table directly rather than through
 /// `ttf_parser::Face::ascender`, whose name promises `hhea` but which returns

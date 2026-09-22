@@ -1986,10 +1986,14 @@ fn a_header_rule_hangs_below_its_line_without_moving_it() {
             second - bare_second
         );
     }
-    // Both stories stay on the seat the band shift gives them, which is a line
-    // gap high against Word — 52.06pt here against 52.56pt, tracked in #1640.
+    // Both stories land on Word's own seat: 52.40pt against 52.56pt and
+    // 66.22pt against 66.24pt, inside the 0.24pt grid the export quantises to.
+    // They used to sit a whole line gap high — 52.06pt at this 10.5pt Arial —
+    // because the header seat omitted it (issue #1640).
+    let export_grid_pt: f64 = 0.24;
     assert!(
-        (ruled_first - 52.56).abs() < 0.7 && (ruled_second - 66.24).abs() < 0.7,
+        (ruled_first - 52.56).abs() < export_grid_pt
+            && (ruled_second - 66.24).abs() < export_grid_pt,
         "the ruled header lines sit at {ruled_first}pt and {ruled_second}pt, native Word at 52.56pt and 66.24pt"
     );
 }
