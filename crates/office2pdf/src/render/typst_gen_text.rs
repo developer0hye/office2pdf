@@ -1417,28 +1417,42 @@ pub(super) fn sheet_line_deepest_descent_pt(runs: &[Run], scale: f64) -> Option<
 /// Where Word seats a header story's first baseline, in em below the
 /// `w:pgMar/@w:header` line the header is measured from.
 ///
-/// That origin is the top of the first line's *ascent*, so the term is the
-/// face's bare hhea ascender — not [`word_line_box_em`]'s top edge, which folds
-/// in the hhea line gap Word keeps above the origin — plus the upper half of
-/// the East Asian bonus when the line carries East Asian text.
+/// That origin is the top of the first line's box, so a Latin header gets the
+/// very edge [`crate::render::pdf::font_line_metrics_em`] gives every body
+/// line: the face's `hhea` ascender **plus** its `hhea` line gap. An East Asian
+/// line adds the upper half of its bonus to a gap-free ascender instead,
+/// because its box leaves the gap out at both ends ([`word_line_metrics_em`],
+/// issue #1638).
 ///
-/// Measured against native Word exports of the business corpus, all at
-/// `w:header="708"` = 35.40pt: an 8pt Arial header baseline lands at 42.72pt
-/// against 42.64pt predicted (`0.9053em`), and an 8pt Malgun Gothic one at
-/// 45.60pt against 45.70pt predicted (`1.2879em`), both within the 0.24pt grid
-/// those exports quantise positions to. Taking the gap-inclusive body ascent
-/// instead would predict 42.90pt for the Arial case, a whole grid step past
-/// what Word wrote (issue #629).
+/// The Latin seat is four one-factor native Word 16.112 exports of
+/// `unit_test_headers.docx` at `w:header="720"` = 36pt, the header run given an
+/// explicit `w:rFonts` and `w:sz`: Arial 24pt lands at 58.56pt against 58.51
+/// predicted, Times New Roman 24pt at 58.32 against 58.41, and Times New Roman
+/// 12pt at 47.28 against 47.20, each inside the 0.24pt grid those exports
+/// quantise positions to and each 0.59 to 0.93pt away from the bare-ascender
+/// seat. Georgia 24pt, which declares no gap, is the control: it measures
+/// 58.08pt where both models predict 58.01 (issue #1640).
 ///
-/// The bonus keys on the resolved face, not on the header's characters, like
-/// every other line box (issues #643, #814): a one-factor native export of
-/// `10_research_report_ko` with its header text swapped to `Monthly Customer
-/// Satisfaction Trend Report` keeps the baseline at 45.60pt — exactly the
-/// Korean control's seat — where the bare ascender would put it at 44.11pt.
+/// That supersedes the bare-ascender reading of issues #508 and #629, which was
+/// calibrated on an 8pt Arial header at `w:header="708"` = 35.40pt — a size
+/// whose 0.26pt gap and an origin sitting half a device pixel off the grid
+/// leave the two models one pixel apart, too close for that export to separate.
+///
+/// The East Asian bonus keys on the resolved face, not on the header's
+/// characters, like every other line box (issues #643, #814): a one-factor
+/// native export of `10_research_report_ko` with its header text swapped to
+/// `Monthly Customer Satisfaction Trend Report` keeps the baseline at 45.60pt —
+/// exactly the Korean control's seat — where the bare ascender would put it at
+/// 44.11pt. Malgun Gothic declares no line gap, so those Korean measurements
+/// bind the gap-free branch unchanged.
 fn word_header_line_ascent_em(runs: &[Run], family: &str) -> Option<f64> {
+    // Read the ascender explicitly rather than through `font_line_metrics_em`,
+    // whose `ttf_parser` alias answers with OS/2 `sTypoAscender` on the faces
+    // that set `USE_TYPO_METRICS` (see `font_hhea_ascender_em`).
     let ascender_em: f64 = crate::render::pdf::font_hhea_ascender_em(family)?;
     if !line_takes_east_asian_metrics(runs) {
-        return Some(ascender_em);
+        let line_gap_em: f64 = crate::render::pdf::font_line_gap_em(family).unwrap_or(0.0);
+        return Some(ascender_em + line_gap_em);
     }
     let (_, _, pitch_em) = word_line_metrics_em(family, true)?;
     Some(ascender_em + EAST_ASIAN_ASCENT_EXCESS * pitch_em)

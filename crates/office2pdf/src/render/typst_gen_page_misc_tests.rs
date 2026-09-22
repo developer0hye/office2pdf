@@ -2971,6 +2971,28 @@ const ARIAL_METRIC_FACES: [&str; 3] = ["Arial", "Liberation Sans", "Arimo"];
 /// can be held to the Korean corpus baselines.
 const MALGUN_METRIC_FACES: [&str; 1] = ["Malgun Gothic"];
 
+/// The faces that carry Times New Roman's metrics: Liberation Serif and Tinos
+/// are metric-compatible clones, and their `hhea` ascender and line gap agree
+/// with it to within a thousandth of an em.
+const TIMES_METRIC_FACES: [&str; 3] = ["Times New Roman", "Liberation Serif", "Tinos"];
+
+/// Georgia is the zero-line-gap control of
+/// [`test_header_first_baseline_includes_the_face_line_gap`], and no clone of
+/// it ships anywhere, so only the face itself can carry its baseline.
+const GEORGIA_METRIC_FACES: [&str; 1] = ["Georgia"];
+
+/// The ascent Word gives a Latin header line set in Arial, in em: the face's
+/// `hhea` ascender plus its `hhea` line gap (issue #1640). The cases below
+/// share it so a change to the seat cannot be half-applied.
+#[cfg(not(target_arch = "wasm32"))]
+fn arial_header_line_ascent_em() -> f64 {
+    let ascender_em: f64 =
+        crate::render::pdf::font_hhea_ascender_em("Arial").expect("Arial metrics should resolve");
+    let line_gap_em: f64 =
+        crate::render::pdf::font_line_gap_em("Arial").expect("Arial metrics should resolve");
+    ascender_em + line_gap_em
+}
+
 /// Build a one-section document whose header holds the given paragraphs.
 fn doc_with_header(
     header_distance_pt: Option<f64>,
@@ -3102,22 +3124,35 @@ fn baselines_of(doc: &Document, needle: &str) -> Vec<f64> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// Word seats the header's first baseline one font ascent below
+/// Word seats the header's first baseline one line ascent below
 /// `w:pgMar/@w:header`, not at a proportion of the top margin.
 ///
 /// `05_technical_manual_en` declares `w:top="1247" w:header="708"` — 62.35pt and
 /// 35.40pt — over an 8pt Arial run, and its native export puts that baseline at
-/// 42.72pt on the 0.24pt grid Word quantises to, against `35.40 + 0.9053 x 8 =
-/// 42.64` predicted (issue #629).
+/// 42.72pt on the 0.24pt grid Word quantises to (issue #629).
+///
+/// This case cannot decide *which* ascent that is, which is why
+/// [`test_header_first_baseline_includes_the_face_line_gap`] exists. Arial's
+/// line gap is 0.26pt at 8pt, so the bare-ascender seat predicts 42.64pt and
+/// the gap-inclusive one 42.90pt — barely more than one 0.24pt device pixel
+/// apart — and this origin sits on a half pixel itself (35.40 / 0.24 = 147.5),
+/// so which pixel the export rounds into is not evidence either way. Only the
+/// 0.59-0.93pt separations measured at 12 and 24pt settle it (issue #1640).
+/// What this case still pins is the part it always could: the origin is
+/// `w:header`, and the term scales with the font.
 #[test]
-fn test_header_first_baseline_sits_one_font_ascent_below_the_header_distance() {
+fn test_header_first_baseline_sits_one_line_ascent_below_the_header_distance() {
+    /// One device pixel of the native export's coordinate grid.
+    const EXPORT_GRID_PT: f64 = 0.24;
     let ascender_em: f64 =
         crate::render::pdf::font_hhea_ascender_em("Arial").expect("Arial metrics should resolve");
+    let line_gap_em: f64 =
+        crate::render::pdf::font_line_gap_em("Arial").expect("Arial metrics should resolve");
     let doc = doc_with_header_run(Some(35.4), 62.35, "office2pdf CLI Manual v0.6", arial(8.0));
 
     let baselines: Vec<f64> = baselines_of(&doc, "office2pdf CLI Manual");
     assert_eq!(baselines.len(), 1, "the header is one line");
-    let expected_pt: f64 = 35.4 + ascender_em * 8.0;
+    let expected_pt: f64 = 35.4 + (ascender_em + line_gap_em) * 8.0;
     assert!(
         (baselines[0] - expected_pt).abs() < 0.01,
         "header baseline {}pt should be {expected_pt}pt",
@@ -3125,19 +3160,155 @@ fn test_header_first_baseline_sits_one_font_ascent_below_the_header_distance() {
     );
     assert!(
         !shaped_by(&doc, "office2pdf CLI Manual", &ARIAL_METRIC_FACES)
-            || (baselines[0] - 42.72).abs() < 0.12,
+            || (baselines[0] - 42.72).abs() < EXPORT_GRID_PT,
         "Word's own export measures 42.72pt, not {}pt",
         baselines[0]
     );
+}
 
-    // Word keeps the hhea line gap above the header origin, so the header
-    // ascent is not the body line's gap-inclusive one.
-    let (body_ascent_em, _, _) = crate::render::pdf::font_line_metrics_em("Arial")
-        .expect("Arial line metrics should resolve");
+#[cfg(not(target_arch = "wasm32"))]
+/// Word seats a header's first baseline at the face's `hhea` ascender **plus**
+/// its `hhea` line gap — the same top edge [`font_line_metrics_em`] gives every
+/// body line — not at the bare ascender.
+///
+/// Four one-factor native Word 16.112 exports of
+/// `tests/fixtures/docx/unit_test_headers.docx`, `w:header="720"` = 36pt, with
+/// the header run given an explicit `w:rFonts` and `w:sz` and nothing else
+/// changed. The baselines are read from `mutool draw -F trace`:
+///
+/// | header | native | 36 + asc | 36 + asc + gap |
+/// | --- | ---: | ---: | ---: |
+/// | Arial 24pt (1854 / 67 on 2048) | 58.56 | 57.73 | **58.51** |
+/// | Times New Roman 24pt (1825 / 87) | 58.32 | 57.39 | **58.41** |
+/// | Times New Roman 12pt (the fixture) | 47.28 | 46.69 | **47.20** |
+/// | Georgia 24pt (1878 / 0) | 58.08 | 58.01 | 58.01 |
+///
+/// Every gap-carrying face lands on the gap-inclusive seat inside the 0.24pt
+/// grid those exports quantise coordinates to, and misses the bare-ascender
+/// seat by up to 0.83pt. Georgia, which declares no gap at all, is the control
+/// that keeps the correction from being read as a constant: there the two
+/// models coincide and the export agrees with both (issue #1640).
+///
+/// The 8pt Arial case #629 calibrated the bare-ascender reading on cannot
+/// separate the two — see
+/// [`test_header_first_baseline_sits_one_line_ascent_below_the_header_distance`].
+#[test]
+fn test_header_first_baseline_includes_the_face_line_gap() {
+    /// The distance native Word for Mac quantises an exported coordinate to.
+    const EXPORT_GRID_PT: f64 = 0.24;
+    /// Half of it: the noise floor a Word ground truth is compared under.
+    const GRID_NOISE_FLOOR_PT: f64 = 0.12;
+    const HEADER_DISTANCE_PT: f64 = 36.0;
+    const TOP_MARGIN_PT: f64 = 72.0;
+    const HEADER_TEXT: &str = "Unit Test Document Header";
+
+    struct HeaderSeatCase {
+        family: &'static str,
+        metric_faces: &'static [&'static str],
+        size_pt: f64,
+        native_baseline_pt: f64,
+    }
+
+    let cases: [HeaderSeatCase; 4] = [
+        HeaderSeatCase {
+            family: "Arial",
+            metric_faces: &ARIAL_METRIC_FACES,
+            size_pt: 24.0,
+            native_baseline_pt: 58.56,
+        },
+        HeaderSeatCase {
+            family: "Times New Roman",
+            metric_faces: &TIMES_METRIC_FACES,
+            size_pt: 24.0,
+            native_baseline_pt: 58.32,
+        },
+        HeaderSeatCase {
+            family: "Times New Roman",
+            metric_faces: &TIMES_METRIC_FACES,
+            size_pt: 12.0,
+            native_baseline_pt: 47.28,
+        },
+        HeaderSeatCase {
+            family: "Georgia",
+            metric_faces: &GEORGIA_METRIC_FACES,
+            size_pt: 24.0,
+            native_baseline_pt: 58.08,
+        },
+    ];
+
+    let mut measured_faces: usize = 0;
+    for case in cases {
+        let (Some(ascender_em), Some(line_gap_em)) = (
+            crate::render::pdf::font_hhea_ascender_em(case.family),
+            crate::render::pdf::font_line_gap_em(case.family),
+        ) else {
+            continue;
+        };
+        measured_faces += 1;
+        let doc = doc_with_header_run(
+            Some(HEADER_DISTANCE_PT),
+            TOP_MARGIN_PT,
+            HEADER_TEXT,
+            TextStyle {
+                font_family: Some(case.family.to_string()),
+                font_size: Some(case.size_pt),
+                ..TextStyle::default()
+            },
+        );
+
+        let baselines: Vec<f64> = baselines_of(&doc, HEADER_TEXT);
+        assert_eq!(
+            baselines.len(),
+            1,
+            "{} {}pt: the header is one line, not {baselines:?}",
+            case.family,
+            case.size_pt
+        );
+        let bare_ascent_pt: f64 = HEADER_DISTANCE_PT + ascender_em * case.size_pt;
+        let expected_pt: f64 = bare_ascent_pt + line_gap_em * case.size_pt;
+        assert!(
+            (baselines[0] - expected_pt).abs() < 0.01,
+            "{} {}pt: header baseline {}pt should be {expected_pt}pt",
+            case.family,
+            case.size_pt,
+            baselines[0]
+        );
+        // The correction is this face's own line gap at this size, so it can be
+        // neither a constant nor a share of the ascent.
+        assert!(
+            ((baselines[0] - bare_ascent_pt) - line_gap_em * case.size_pt).abs() < 0.01,
+            "{} {}pt: the seat moved by {}pt, not the face's {}pt line gap",
+            case.family,
+            case.size_pt,
+            baselines[0] - bare_ascent_pt,
+            line_gap_em * case.size_pt
+        );
+
+        if !shaped_by(&doc, HEADER_TEXT, case.metric_faces) {
+            continue;
+        }
+        assert!(
+            (baselines[0] - case.native_baseline_pt).abs() < GRID_NOISE_FLOOR_PT,
+            "{} {}pt: Word's own export measures {}pt, not {}pt",
+            case.family,
+            case.size_pt,
+            case.native_baseline_pt,
+            baselines[0]
+        );
+        if line_gap_em > 0.0 {
+            assert!(
+                (bare_ascent_pt - case.native_baseline_pt).abs() > EXPORT_GRID_PT,
+                "{} {}pt: the bare-ascender seat at {bare_ascent_pt}pt has to miss \
+                 Word's {}pt by more than one grid step for this case to discriminate",
+                case.family,
+                case.size_pt,
+                case.native_baseline_pt
+            );
+        }
+    }
     assert!(
-        (baselines[0] - (35.4 + body_ascent_em * 8.0)).abs() > 0.2,
-        "the body line's ascent would put the header baseline at {}pt",
-        35.4 + body_ascent_em * 8.0
+        measured_faces > 0,
+        "no calibrated face resolved, so nothing was measured"
     );
 }
 
@@ -3147,12 +3318,11 @@ fn test_header_first_baseline_sits_one_font_ascent_below_the_header_distance() {
 /// be a constant.
 #[test]
 fn test_header_first_baseline_scales_with_font_size_and_header_distance() {
-    let ascender_em: f64 =
-        crate::render::pdf::font_hhea_ascender_em("Arial").expect("Arial metrics should resolve");
+    let ascent_em: f64 = arial_header_line_ascent_em();
     let doc = doc_with_header_run(Some(56.7), 85.05, "Datasheet", arial(12.0));
 
     let baselines: Vec<f64> = baselines_of(&doc, "Datasheet");
-    let expected_pt: f64 = 56.7 + ascender_em * 12.0;
+    let expected_pt: f64 = 56.7 + ascent_em * 12.0;
     assert_eq!(baselines.len(), 1, "the header is one line");
     assert!(
         (baselines[0] - expected_pt).abs() < 0.01,
@@ -3264,8 +3434,7 @@ fn test_latin_only_header_in_east_asian_face_keeps_the_word_line_bonus() {
 /// (issue #629).
 #[test]
 fn test_shifting_the_header_band_leaves_the_wrapped_line_advance_alone() {
-    let ascender_em: f64 =
-        crate::render::pdf::font_hhea_ascender_em("Arial").expect("Arial metrics should resolve");
+    let ascent_em: f64 = arial_header_line_ascent_em();
     // Every line has to carry the marker so both wrapped lines are found.
     let wrapping: String = "office2pdf ".repeat(20);
 
@@ -3291,7 +3460,7 @@ fn test_shifting_the_header_band_leaves_the_wrapped_line_advance_alone() {
         "the band shift changed the wrapped advance: {pinned_advance} vs {unpinned_advance}"
     );
     assert!(
-        (pinned[0] - (35.4 + ascender_em * 8.0)).abs() < 0.01,
+        (pinned[0] - (35.4 + ascent_em * 8.0)).abs() < 0.01,
         "the first line still has to land on Word's baseline, not {}pt",
         pinned[0]
     );
@@ -3313,8 +3482,7 @@ fn test_shifting_the_header_band_leaves_the_wrapped_line_advance_alone() {
 fn test_header_whose_first_paragraph_is_a_page_field_seats_that_line() {
     use crate::ir::{HFInline, HeaderFooterParagraph};
 
-    let ascender_em: f64 =
-        crate::render::pdf::font_hhea_ascender_em("Arial").expect("Arial metrics should resolve");
+    let ascent_em: f64 = arial_header_line_ascent_em();
     let page_field = HeaderFooterParagraph {
         style: ParagraphStyle::default(),
         elements: vec![HFInline::PageNumber(arial(8.0))],
@@ -3329,7 +3497,7 @@ fn test_header_whose_first_paragraph_is_a_page_field_seats_that_line() {
     let unpinned = doc_with_header(None, 62.35, vec![page_field, second]);
 
     let pinned_number: Vec<f64> = baselines_of(&pinned, "1");
-    let expected_pt: f64 = 35.4 + ascender_em * 8.0;
+    let expected_pt: f64 = 35.4 + ascent_em * 8.0;
     assert!(
         pinned_number
             .first()
