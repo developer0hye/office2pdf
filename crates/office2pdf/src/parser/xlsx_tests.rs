@@ -478,13 +478,17 @@ fn test_declared_column_width_quantizes_to_integer_points() {
 }
 
 /// A column with no `<col>` entry and no declared `defaultColWidth` prints at
-/// `baseColWidth × unit + 5` points — NOT 8.43 character units. Verified by
-/// the issue #621 probes: at the 6pt Calibri-11 unit, baseColWidth 10 → 65pt
-/// and 12 → 77pt (round-3 probes calibri11base10/12), the ECMA base 8 → 53pt;
-/// units 5/7 at base 8 → 45/61pt. A declared `defaultColWidth` outranks
-/// `baseColWidth` and goes through the declared-units quantization instead.
+/// `baseColWidth × unit` points plus the Normal font's inset pair — NOT 8.43
+/// character units. Verified by the issue #621 probes: at the 6pt Calibri-11
+/// unit, baseColWidth 10 → 65pt and 12 → 77pt (round-3 probes
+/// calibri11base10/12), the ECMA base 8 → 53pt; units 5/7 at base 8 →
+/// 45/61pt. Every unit here sits in the 5-8pt bracket, where the pair is 5pt;
+/// the brackets on either side of it are pinned by
+/// [`test_default_column_padding_is_the_normal_font_inset_pair`]. A declared
+/// `defaultColWidth` outranks `baseColWidth` and goes through the
+/// declared-units quantization instead.
 #[test]
-fn test_default_column_width_is_base_col_width_units_plus_five_points() {
+fn test_default_column_width_is_base_col_width_units_plus_the_inset_pair() {
     assert_eq!(default_column_width_pt(None, 8, 5.0), 45.0);
     assert_eq!(default_column_width_pt(None, 8, 6.0), 53.0);
     assert_eq!(default_column_width_pt(None, 8, 7.0), 61.0);
@@ -501,10 +505,13 @@ fn test_default_column_width_is_base_col_width_units_plus_five_points() {
 /// `<sheetFormatPr>` element at all, not only on its `baseColWidth`
 /// attribute. Measured one factor at a time on native Excel-for-Mac exports
 /// of `100-customers.xlsx` (issue #1656): with no element the default column
-/// prints `10 × unit + 5` (75pt at the 7pt Malgun Gothic 12 unit, 65pt at
-/// 6pt, 85pt at 8pt); adding `<sheetFormatPr defaultRowHeight="15"/>` alone
-/// drops it to `8 × unit + 5` (61pt), `baseColWidth="10"` restores 75pt, and
-/// `defaultColWidth="8.43"` quantizes like a declared width (59pt).
+/// prints `10 × unit` plus the 5pt inset pair those units carry (75pt at the
+/// 7pt Malgun Gothic 12 unit, 65pt at 6pt, 85pt at 8pt); adding
+/// `<sheetFormatPr defaultRowHeight="15"/>` alone drops it to the same
+/// `8 × unit` plus that pair (61pt), `baseColWidth="10"` restores 75pt, and
+/// `defaultColWidth="8.43"` quantizes like a declared width (59pt). Every
+/// unit here sits in the 5pt-padding bracket, so these readings identify the
+/// base rather than the padding.
 #[test]
 fn test_absent_sheet_format_pr_prices_default_columns_at_excel_mac_base_ten() {
     assert_eq!(base_column_width_chars(None, false), 10);
@@ -526,6 +533,143 @@ fn test_absent_sheet_format_pr_prices_default_columns_at_excel_mac_base_ten() {
         75.0
     );
     assert_eq!(default_column_width_pt(Some(8.43), absent, 7.0), 59.0);
+}
+
+/// The default column's padding is the Normal font's own horizontal inset
+/// pair — `cell_left_inset_pt + cell_right_inset_pt`, i.e.
+/// `2 × ceil(unit / 4) + 1` — not the constant 5pt the units 5-7 probes of
+/// issue #621 could not tell apart from it.
+///
+/// Measured by the issue #1657 sweep: 17 one-factor native Excel-for-Mac
+/// exports of `issue_1657_default_column_padding_probe.xlsx`, whose sheet
+/// declares `<sheetFormatPr defaultRowHeight="15"/>` (base 8) and no
+/// `<cols>`, patching only the Normal font in `xl/styles.xml`. Column pitch
+/// read from the five left-aligned row-1 labels' pen origins, every pitch on
+/// a page identical, and the re-zip control layout-identical to the base:
+///
+/// | Normal font | unit | default column | 8 × unit | padding |
+/// | --- | ---: | ---: | ---: | ---: |
+/// | Arial 6 | 3 | 27 | 24 | 3 |
+/// | Arial 7, Calibri 8 | 4 | 35 | 32 | 3 |
+/// | Arial 9, Calibri 9 | 5 | 45 | 40 | 5 |
+/// | Arial 10, Arial 11 | 6 | 53 | 48 | 5 |
+/// | Arial 12, Courier New 11 | 7 | 61 | 56 | 5 |
+/// | Arial 14, Calibri 16 | 8 | 69 | 64 | 5 |
+/// | Arial 16, Malgun Gothic 16 | 9 | 79 | 72 | 7 |
+/// | Arial 18 | 10 | 87 | 80 | 7 |
+/// | Arial 20 | 11 | 95 | 88 | 7 |
+/// | Arial 22 | 12 | 103 | 96 | 7 |
+/// | Arial 24 | 13 | 113 | 104 | 9 |
+/// | Courier New 24 | 14 | 121 | 112 | 9 |
+///
+/// Point size is not the driver: Calibri 16 and Arial 14 both price a 8pt
+/// unit and both print 69pt, while Arial 16 and Malgun Gothic 16 both price
+/// a 9pt unit and both print 79pt. The same exports move the first column's
+/// own text origin 52 → 53 → 54 → 55pt across the three steps, which is
+/// [`cell_left_inset_pt`] (2 → 3 → 4 → 5) on a grid origin of 50pt.
+#[test]
+fn test_default_column_padding_is_the_normal_font_inset_pair() {
+    for (unit_pt, expected_pt) in [
+        (3.0, 27.0),
+        (4.0, 35.0),
+        (5.0, 45.0),
+        (6.0, 53.0),
+        (7.0, 61.0),
+        (8.0, 69.0),
+        (9.0, 79.0),
+        (10.0, 87.0),
+        (11.0, 95.0),
+        (12.0, 103.0),
+        (13.0, 113.0),
+        (14.0, 121.0),
+    ] {
+        assert_eq!(
+            default_column_width_pt(None, 8, unit_pt),
+            expected_pt,
+            "base 8 at a {unit_pt}pt unit"
+        );
+    }
+    // The reading that filed the issue: a base-10 sheet on the 9pt unit of a
+    // 16pt scheme Normal font prints 97pt, not the 95pt a flat 5pt predicts.
+    assert_eq!(default_column_width_pt(None, 10, 9.0), 97.0);
+
+    // The padding is the very pair the per-cell model already carries, at
+    // every family and size — not a second table that happens to agree.
+    for (family, size_pt) in [
+        ("Arial", 6.0),
+        ("Calibri", 8.0),
+        ("Calibri", 11.0),
+        ("Calibri", 16.0),
+        ("Arial", 14.0),
+        ("Arial", 16.0),
+        ("Arial", 24.0),
+        ("Malgun Gothic", 16.0),
+        ("Courier New", 11.0),
+        ("Courier New", 24.0),
+        ("Times New Roman", 18.0),
+        ("Verdana", 20.0),
+    ] {
+        let unit_pt: f64 = column_unit_pt(family, size_pt, false);
+        assert_eq!(
+            default_column_width_pt(None, 8, unit_pt),
+            8.0 * unit_pt
+                + cell_left_inset_pt(family, size_pt, false)
+                + cell_right_inset_pt(family, size_pt, false),
+            "{family} {size_pt}pt (unit {unit_pt}pt)"
+        );
+    }
+}
+
+/// End to end on the package the sweep exported: the probe workbook prints
+/// 95pt default columns at its own Arial 20 Normal font, and 35/53/79/113pt
+/// once that font drops to the 4pt unit or reaches the 6, 9 and 13pt ones —
+/// the pitches the native Excel-for-Mac exports of those exact variants were
+/// measured to print (issue #1657).
+#[test]
+fn test_probe_workbook_default_columns_follow_the_measured_padding_steps() {
+    let base: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/xlsx/issue_1657_default_column_padding_probe.xlsx"
+    );
+    let parser = XlsxParser;
+    for (normal_size_pt, expected_width_pt) in
+        [(7, 35.0), (11, 53.0), (16, 79.0), (20, 95.0), (24, 113.0)]
+    {
+        let package: Vec<u8> = with_normal_font_size(base, normal_size_pt);
+        let (doc, _warnings) = parser.parse(&package, &ConvertOptions::default()).unwrap();
+        let widths: Vec<f64> = get_sheet_page(&doc, 0).table.column_widths.clone();
+        assert_eq!(
+            widths,
+            vec![expected_width_pt; widths.len()],
+            "Arial {normal_size_pt}pt Normal font"
+        );
+    }
+}
+
+/// Rewrite the probe workbook's Normal font size, the one factor the issue
+/// #1657 sweep varied — the same patch `scripts/probes/`'s spec applies to
+/// the same part. The fixture's `xl/styles.xml` carries exactly one `<sz>`,
+/// so the edit cannot reach a cell font by accident.
+fn with_normal_font_size(xlsx: &[u8], size_pt: u32) -> Vec<u8> {
+    let mut archive = zip::ZipArchive::new(Cursor::new(xlsx.to_vec())).unwrap();
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    for index in 0..archive.len() {
+        let mut file = archive.by_index(index).unwrap();
+        let name: String = file.name().to_string();
+        let mut contents: Vec<u8> = Vec::new();
+        std::io::Read::read_to_end(&mut file, &mut contents).unwrap();
+        if name == "xl/styles.xml" {
+            let text: String = String::from_utf8(contents).unwrap();
+            assert_eq!(text.matches("<sz val=").count(), 1, "one font in the probe");
+            contents = text
+                .replace("<sz val=\"20\"/>", &format!("<sz val=\"{size_pt}\"/>"))
+                .into_bytes();
+        }
+        writer
+            .start_file(name, zip::write::FileOptions::default())
+            .unwrap();
+        std::io::Write::write_all(&mut writer, &contents).unwrap();
+    }
+    writer.finish().unwrap().into_inner()
 }
 
 /// Remove every `<name .../>` or `<name ...>...</name>` element from the
@@ -1780,8 +1924,9 @@ fn test_empty_sheet_context_derives_metric_from_normal_font() {
     assert_eq!(calibri_ctx.normal_font, Some(calibri_11));
 
     // A smaller Normal font must shrink the metric with it:
-    // round(0.506836 × 8pt) = 4pt unit → 8 × 4 + 5 = 37pt default columns
-    // (issue #621 model).
+    // round(0.506836 × 8pt) = 4pt unit → 8 × 4 + 3 = 35pt default columns,
+    // the padding a 4pt unit's inset pair carries — the issue #1657 sweep's
+    // calibri8-unit4 and arial7-unit4 exports both print a 35pt pitch.
     let calibri_8 = NormalFont {
         family: "Calibri".to_string(),
         size_pt: 8.0,
@@ -1792,7 +1937,7 @@ fn test_empty_sheet_context_derives_metric_from_normal_font() {
     assert_eq!(resolve_column_unit_pt(sheet, Some(&calibri_8)), 4.0);
     assert_eq!(
         empty_sheet_context(sheet, Some(&calibri_8), None, None, true).default_column_width_pt,
-        37.0
+        35.0
     );
 
     // No readable Normal font: the shared cell-font fallback finds no cells

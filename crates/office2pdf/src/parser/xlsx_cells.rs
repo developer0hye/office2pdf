@@ -736,7 +736,18 @@ pub(super) fn column_unit_pt(family: &str, size_pt: f64, bold: bool) -> f64 {
 /// and size. [`aligned_cell_padding`] rebalances that asymmetric pair into
 /// equal sides for a centred cell while preserving its total width.
 pub(super) fn cell_right_inset_pt(family: &str, size_pt: f64, bold: bool) -> f64 {
-    (column_unit_pt(family, size_pt, bold) / 4.0).ceil()
+    right_inset_for_unit_pt(column_unit_pt(family, size_pt, bold))
+}
+
+/// [`cell_right_inset_pt`] priced straight on a column unit, for the callers
+/// that hold the unit rather than the font that produced it.
+fn right_inset_for_unit_pt(column_unit_pt: f64) -> f64 {
+    (column_unit_pt / 4.0).ceil()
+}
+
+/// [`cell_left_inset_pt`] priced straight on a column unit.
+fn left_inset_for_unit_pt(column_unit_pt: f64) -> f64 {
+    right_inset_for_unit_pt(column_unit_pt) + 1.0
 }
 
 /// Points Excel starts a cell's text right of the cell's own left gridline.
@@ -799,7 +810,7 @@ pub(super) fn cell_right_inset_pt(family: &str, size_pt: f64, bold: bool) -> f64
 /// where the rounded whole-point unit happens to land in the same
 /// `ceil(unit / 4)` bracket either way.
 pub(super) fn cell_left_inset_pt(family: &str, size_pt: f64, bold: bool) -> f64 {
-    cell_right_inset_pt(family, size_pt, bold) + 1.0
+    left_inset_for_unit_pt(column_unit_pt(family, size_pt, bold))
 }
 
 /// The box of a cell laid out in `style`: the font the cell states, else the
@@ -933,10 +944,12 @@ const EXCEL_MAC_BASE_COLUMN_WIDTH_CHARS: u32 = 10;
 /// worksheet wrote `<sheetFormatPr>` at all, which umya's model cannot tell
 /// apart. Measured one factor per native Excel-for-Mac export of
 /// `100-customers.xlsx` (issue #1656): with no element the default column
-/// prints 75pt on a 7pt unit (`10 × 7 + 5`), adding
-/// `<sheetFormatPr defaultRowHeight="15"/>` alone drops it to 61pt
-/// (`8 × 7 + 5`), and `baseColWidth="10"` restores 75pt; the same
-/// `base × unit + 5` held at the 6pt and 8pt units (65/85pt).
+/// prints 75pt on a 7pt unit, adding `<sheetFormatPr defaultRowHeight="15"/>`
+/// alone drops it to 61pt, and `baseColWidth="10"` restores 75pt; the 6pt and
+/// 8pt units answered 65 and 85pt. Those readings all sit in the bracket
+/// where the padding [`default_column_width_pt`] adds is 5pt, so they
+/// identify the base and not the padding — that function's doc comment
+/// carries the padding rule.
 pub(super) fn base_column_width_chars(
     declared_base_col_width_chars: Option<u32>,
     has_sheet_format_properties: bool,
@@ -951,9 +964,11 @@ pub(super) fn base_column_width_chars(
 /// Width in points of a column with no `<col>` entry.
 ///
 /// With no declared `defaultColWidth` either, Excel prints
-/// `baseColWidth × unit + 5` points — not 8.43 character units — with the
-/// base from `base_column_width_chars`. Measured by the issue #621 probes:
-/// base-8 workbooks print 45/53/61pt at unit 5/6/7, and the round-3 probes
+/// `baseColWidth × unit` points — not 8.43 character units — with the base
+/// from `base_column_width_chars`, plus the Normal font's own horizontal
+/// inset pair ([`cell_left_inset_pt`] + [`cell_right_inset_pt`], i.e.
+/// `2 × ceil(unit / 4) + 1`). Measured by the issue #621 probes: base-8
+/// workbooks print 45/53/61pt at unit 5/6/7, and the round-3 probes
 /// calibri11base10/calibri11base12 (`<sheetFormatPr baseColWidth="10|12"/>`,
 /// no defaultColWidth, 6pt Calibri-11 unit) print 65pt and 77pt default
 /// columns — killing the ignore-baseColWidth model (53pt). When the sheet
@@ -961,8 +976,35 @@ pub(super) fn base_column_width_chars(
 /// §18.3.1.81) and quantizes like any declared width: the issue #1656 probe
 /// declaring `defaultColWidth="8.43"` printed `round_half_up(8.43 × 7) = 59pt`.
 ///
-/// TODO(#1657): the flat 5pt padding is the Normal font's inset pair, which
-/// steps to 7pt at a 9pt unit; a units 9–12 sweep is needed before it moves.
+/// The padding reads as a constant 5pt only between the 5pt and 8pt units,
+/// which is all the #621 probes covered. The issue #1657 sweep — 17
+/// one-factor native Excel-for-Mac exports of
+/// `issue_1657_default_column_padding_probe.xlsx`, a base-8 sheet with no
+/// `<cols>` varying only the Normal font, each column pitch read from the
+/// five row-1 pen origins and identical across the page — carries it over
+/// all three brackets:
+///
+/// | Normal font | unit | default column | `8 × unit` | padding |
+/// | --- | ---: | ---: | ---: | ---: |
+/// | Arial 6 | 3 | 27 | 24 | 3 |
+/// | Arial 7, Calibri 8 | 4 | 35 | 32 | 3 |
+/// | Arial 9, Calibri 9 | 5 | 45 | 40 | 5 |
+/// | Arial 10, Arial 11 | 6 | 53 | 48 | 5 |
+/// | Arial 12, Courier New 11 | 7 | 61 | 56 | 5 |
+/// | Arial 14, Calibri 16 | 8 | 69 | 64 | 5 |
+/// | Arial 16, Malgun Gothic 16 | 9 | 79 | 72 | 7 |
+/// | Arial 18 | 10 | 87 | 80 | 7 |
+/// | Arial 20 | 11 | 95 | 88 | 7 |
+/// | Arial 22 | 12 | 103 | 96 | 7 |
+/// | Arial 24 | 13 | 113 | 104 | 9 |
+/// | Courier New 24 | 14 | 121 | 112 | 9 |
+///
+/// The unit drives it, not the point size: Calibri 16 and Arial 14 share the
+/// 8pt unit and both print 69pt, while Arial 16 and Malgun Gothic 16 share
+/// the 9pt unit and both print 79pt. The same exports step the first
+/// column's own text origin 52 → 53 → 54 → 55pt across the three bracket
+/// boundaries, which is [`cell_left_inset_pt`] itself (2 → 3 → 4 → 5) on a
+/// 50pt grid origin.
 pub(super) fn default_column_width_pt(
     declared_width_chars: Option<f64>,
     base_col_width_chars: u32,
@@ -970,7 +1012,11 @@ pub(super) fn default_column_width_pt(
 ) -> f64 {
     match declared_width_chars {
         Some(width_chars) => round_half_up_pt(width_chars * column_unit_pt),
-        None => f64::from(base_col_width_chars) * column_unit_pt + 5.0,
+        None => {
+            f64::from(base_col_width_chars) * column_unit_pt
+                + left_inset_for_unit_pt(column_unit_pt)
+                + right_inset_for_unit_pt(column_unit_pt)
+        }
     }
 }
 
@@ -2427,9 +2473,10 @@ const ICON_SET_VALUE_RESERVE_PT: f64 = 9.6;
 /// case, where Excel's own export puts the edge a whole point further out
 /// (issue #1157).
 ///
-/// The 5pt total is also the `+5` the default column-width formula carries at
-/// the Calibri 11 workbook default — the column formula and the text box are
-/// the same padding seen from two sides.
+/// The 5pt total is also the padding [`default_column_width_pt`] adds at the
+/// Calibri 11 workbook default, whose 6pt unit falls in the 5-8pt bracket
+/// where the pair is 5 — the column formula and the text box are the same
+/// padding seen from two sides, at every unit and not only this one.
 ///
 /// Neither side is a constant of Excel's: both step with the cell font's
 /// whole-point digit advance, and this pair is what that step gives a Calibri
