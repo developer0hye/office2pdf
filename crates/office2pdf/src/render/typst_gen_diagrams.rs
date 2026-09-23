@@ -5687,7 +5687,13 @@ fn generate_chart_line_plot(
     // puts it (issue #1184).
     let category_axis_y: f64 = plot_y + (1.0 - scale.zero_fraction()) * plot_h;
 
-    // Category axis labels.
+    // Category axis labels, each laid out in the band its point stands in the
+    // middle of — the width `generate_chart_axis` has always given its own
+    // labels. A fixed box wraps anything wider than itself whatever the axis
+    // has room for, which broke `Year 1` into `Year` over `1` on a band more
+    // than four times that box wide (issue #1650). The band is the layout and
+    // not a floor under it, so a crowded axis narrows the box with it and the
+    // label wraps only where the band itself is too narrow.
     if category_axis_drawn {
         for (index, category) in chart.categories.iter().enumerate() {
             let formatted_category: String = formatted_category_axis_label(chart, category);
@@ -5695,12 +5701,15 @@ fn generate_chart_line_plot(
                 continue;
             }
             let category: &str = &formatted_category;
-            let x: f64 = point_x(index);
+            // Centring the box on the band keeps the text centred on
+            // `point_x(index)` however wide the box grows.
+            let band_start: f64 = plot_x + index as f64 * band_w;
             let _ = writeln!(
                 out,
-                "#place(top + left, dx: {}pt, dy: {}pt, box(width: 24pt)[#align(center)[#text(size: {}pt{}{category_baseline_attrs})[{}]]])",
-                format_f64(x - 12.0),
+                "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt)[#align(center)[#text(size: {}pt{}{category_baseline_attrs})[{}]]])",
+                format_f64(band_start),
                 format_f64(category_label_y),
+                format_f64(band_w),
                 format_f64(chart_axis_text_pt(chart, chart.category_axis_text_style)),
                 chart_category_text_attrs(chart),
                 escape_category_axis_label(category)

@@ -11264,6 +11264,104 @@ fn the_reclaimed_line_legend_band_is_a_fixed_column() {
     );
 }
 
+/// A line chart's category label is laid out in its own category band, so a
+/// label wider than the retired fixed 24pt box stays on the one line every
+/// reference exporter prints it on.
+///
+/// On page 11 of the `GENERAL SERVICES.pptx` deck from #1220 the three
+/// `Year N` labels are set at 11.97pt over bands more than four times the old
+/// box wide, and both the LibreOffice reference and a native PowerPoint export
+/// print each on one line; the fixed box broke every one into `Year` over its
+/// digit. The column renderer has always laid its labels out in `row`, the
+/// band width, so this is the same law on the other renderer (issue #1650).
+#[test]
+fn a_line_chart_lays_each_category_label_out_in_its_band() {
+    // Two frame widths and two category counts: the band is the plot divided
+    // by the categories, so a renderer that merely widened the constant, or
+    // that scaled it with the frame alone, passes at most one of these.
+    for (frame_w, categories) in [(400.0_f64, 3usize), (560.0_f64, 4usize)] {
+        let mut chart: Chart = dual_axis_line_chart();
+        chart.categories = (1..=categories)
+            .map(|year| format!("Year {year}"))
+            .collect();
+        for series in &mut chart.series {
+            series.values = (0..categories).map(|index| index as f64).collect();
+        }
+        chart.category_axis_text_style.size_pt = Some(12.0);
+
+        let source: String = framed_chart_source(&chart, frame_w, 200.0);
+        let (plot_x, _, plot_w, _) = plot_rect(&emitted_lines(&source));
+        let band_w: f64 = plot_w / categories as f64;
+        assert!(
+            band_w > 24.0,
+            "the fixture must give each label a band wider than the retired box \
+             for this to distinguish them, got {band_w:.2}pt"
+        );
+
+        for (index, category) in chart.categories.iter().enumerate() {
+            let placed: PlacedBox = placed_box_holding(&source, category);
+            assert!(
+                same_length(placed.width, band_w),
+                "{categories} categories in a {frame_w}pt frame: `{category}` must be \
+                 laid out in its {band_w:.2}pt band, got a {:.2}pt box in:\n{source}",
+                placed.width
+            );
+            // The band starts where the previous one ends, so the label stays
+            // centred on its point while the box grows around it.
+            let band_start: f64 = plot_x + index as f64 * band_w;
+            assert!(
+                same_length(placed.dx, band_start),
+                "{categories} categories in a {frame_w}pt frame: `{category}`'s band \
+                 starts at {band_start:.2}pt, got {:.2}pt in:\n{source}",
+                placed.dx
+            );
+            // A height would hand Typst a second axis to centre in, moving the
+            // baseline `line_category_baseline_pt` seats (issue #672).
+            assert!(
+                same_length(placed.height, 0.0),
+                "a category label box states no height, got {:.2}pt in:\n{source}",
+                placed.height
+            );
+        }
+    }
+}
+
+/// The band is the layout, not a floor under it: a crowded axis gives each
+/// label a band narrower than the retired 24pt box, and the label is laid out
+/// in that narrower band — the same thing the column renderer does with `row`.
+#[test]
+fn a_crowded_line_axis_narrows_every_category_box_to_its_band() {
+    let categories: usize = 16;
+    let mut chart: Chart = dual_axis_line_chart();
+    chart.categories = (1..=categories).map(|week| format!("W{week}")).collect();
+    for series in &mut chart.series {
+        series.values = (0..categories).map(|index| index as f64).collect();
+    }
+
+    let source: String = framed_chart_source(&chart, 400.0, 200.0);
+    let (plot_x, _, plot_w, _) = plot_rect(&emitted_lines(&source));
+    let band_w: f64 = plot_w / categories as f64;
+    assert!(
+        band_w < 24.0,
+        "the fixture must crowd the axis below the retired box, got {band_w:.2}pt"
+    );
+
+    for (index, category) in chart.categories.iter().enumerate() {
+        let placed: PlacedBox = placed_box_holding(&source, category);
+        assert!(
+            same_length(placed.width, band_w),
+            "`{category}` must take its {band_w:.2}pt band rather than a floor, \
+             got a {:.2}pt box in:\n{source}",
+            placed.width
+        );
+        assert!(
+            same_length(placed.dx, plot_x + index as f64 * band_w),
+            "`{category}` must start on its own band boundary, got {:.2}pt in:\n{source}",
+            placed.dx
+        );
+    }
+}
+
 /// A switched-off secondary axis prints no labels and reserves no gutter, but
 /// its series still reads against its scale — hiding the axis is not the same
 /// as putting the series on the primary one.
