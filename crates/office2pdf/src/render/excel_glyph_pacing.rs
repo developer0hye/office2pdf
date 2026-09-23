@@ -20,6 +20,15 @@
 //! from that width — the right-aligned trailing reserve of issue #1233, the
 //! centred seat of issue #1600, wrapping, and the spill clip — is therefore
 //! untouched, and only the glyph origins inside the run move.
+//!
+//! A run that carries no such reservation is left exactly as the layout
+//! engine placed it. Codegen prices the correction on the face its own
+//! metric lookup resolves, and that is not always the face the run was
+//! shaped with: a host without the declared family substitutes one, and a
+//! lookup that resolves nothing prices no correction at all. Re-seating
+//! those gaps would move the run's last glyph off the width its frame was
+//! already measured with, so the pass compares the two sums and declines
+//! where they part.
 
 use typst::foundations::Content;
 use typst::introspection::Tag;
@@ -40,7 +49,23 @@ const SHEET_ADVANCE_GRID_PT: f64 = 1.0;
 /// left as the layout engine placed it.
 const UNIFORM_SPACING_TOLERANCE_PT: f64 = 1e-4;
 
-/// Seat every sheet glyph on Excel's whole-point advance grid.
+/// How far the run's rounded gap advances may sum from the gaps the layout
+/// engine placed and still count as the reservation this pass redistributes.
+///
+/// Codegen prices its `tracking` on the face its own metric lookup resolves,
+/// which is the shaped face whenever the workbook's family is installed: the
+/// two sums then agree to the last float, because `format_f64` round-trips
+/// the correction exactly. They part where no correction was priced at all,
+/// or where the host substituted a different face for the declared one, and
+/// re-seating those gaps would move the run's last glyph off the width its
+/// frame was already measured with — by up to 3.66pt on the Korean sheet of
+/// `office2pdf_repository_workbook.xlsx`, where 856 of its 4,014 runs carry
+/// no reservation.
+const RESERVED_WIDTH_TOLERANCE_PT: f64 = 1e-7;
+
+/// Seat every reserved sheet run on Excel's whole-point advance grid. A run
+/// whose gaps carry no such reservation keeps the placement the layout engine
+/// gave it.
 pub(super) fn pace_sheet_glyphs_on_whole_points(pages: &mut [Page]) {
     for page in pages.iter_mut() {
         if !carries_sheet_table(&page.frame) {
@@ -113,7 +138,9 @@ fn pace_frame(frame: &mut Frame, inherited: Option<f64>) {
     frame.push_multiple(items);
 }
 
-/// Seat `text`'s glyph origins on the grid without changing its width.
+/// Seat `text`'s glyph origins on the grid without changing its width, or
+/// leave the run exactly as placed when its gaps carry no reservation to
+/// redistribute.
 fn pace_run(text: &mut TextItem, scale: f64) {
     let size: Abs = text.size;
     if size <= Abs::zero() || text.glyphs.len() < 2 {
@@ -157,10 +184,25 @@ fn pace_run(text: &mut TextItem, scale: f64) {
     // float: the tracking already made the placed gaps sum to the rounded
     // ones, so redistributing them changes nothing the line was measured
     // from.
-    for (glyph, natural_pt) in text.glyphs.iter_mut().zip(gap_natural) {
-        let paced_pt: f64 =
-            round_half_up_to_grid(natural_pt / scale, SHEET_ADVANCE_GRID_PT) * scale;
-        glyph.x_advance = Em::from_abs(Abs::pt(paced_pt), size);
+    let paced_pt: Vec<f64> = gap_natural
+        .iter()
+        .map(|natural_pt: &f64| {
+            round_half_up_to_grid(natural_pt / scale, SHEET_ADVANCE_GRID_PT) * scale
+        })
+        .collect();
+
+    // Redistribution is free only where those rounded advances are what the
+    // placed gaps already sum to. Where they part, the run was placed from a
+    // width this grid never priced, so leave it as the layout engine placed
+    // it rather than paying for the grid with the run's own geometry.
+    let placed_sum_pt: f64 = gap_placed.iter().sum();
+    let paced_sum_pt: f64 = paced_pt.iter().sum();
+    if (paced_sum_pt - placed_sum_pt).abs() > RESERVED_WIDTH_TOLERANCE_PT {
+        return;
+    }
+
+    for (glyph, advance_pt) in text.glyphs.iter_mut().zip(&paced_pt) {
+        glyph.x_advance = Em::from_abs(Abs::pt(*advance_pt), size);
     }
 }
 
@@ -170,6 +212,9 @@ fn round_half_up_to_grid(value_pt: f64, grid_pt: f64) -> f64 {
     (value_pt / grid_pt).round() * grid_pt
 }
 
-#[cfg(test)]
+// The tests read a completed frame through `pdf.rs`'s compile helpers, which
+// are themselves native-only — the wasm build resolves neither the system
+// font paths they search nor the readers built on them.
+#[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "excel_glyph_pacing_tests.rs"]
 mod tests;
