@@ -1,0 +1,759 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 1158.1056,
+      "bbox_pt": {
+        "height": 23.28,
+        "width": 85.92,
+        "x": 154.8,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-5def88db136c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 361.0944,
+      "bbox_pt": {
+        "height": 23.04,
+        "width": 33.12,
+        "x": 107.28,
+        "y": 68.4
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-ddc0c44cc1cc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 141.0048,
+      "bbox_pt": {
+        "height": 23.04,
+        "width": 9.6,
+        "x": 93.36,
+        "y": 68.4
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-cc85b5b491c8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 139.968,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 25.44,
+        "x": 736.32,
+        "y": 406.56
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-be41276b49ed",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 137.4912,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 20.64,
+        "x": 688.32,
+        "y": 405.12
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-afeca45db4e2",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 134.6688,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 21.12,
+        "x": 665.52,
+        "y": 404.4
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-b2a207678adc",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 134.3808,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 25.2,
+        "x": 195.36,
+        "y": 406.8
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-33836b3013f0",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 113.8752,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 14.16,
+        "x": 477.36,
+        "y": 451.92
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-ed8d68ad60e7",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 99.5904,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 11.52,
+        "x": 225.36,
+        "y": 405.12
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-173a6a6741cd",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 95.5584,
+      "bbox_pt": {
+        "height": 11.76,
+        "width": 17.52,
+        "x": 288.96,
+        "y": 408.48
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-656be200d5bf",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 95.5584,
+      "bbox_pt": {
+        "height": 18.96,
+        "width": 5.04,
+        "x": 148.08,
+        "y": 72.48
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-5c7b5bb4cf4c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 95.1552,
+      "bbox_pt": {
+        "height": 15.6,
+        "width": 13.68,
+        "x": 505.68,
+        "y": 451.44
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-d87ff4e73f78",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 93.312,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 14.4,
+        "x": 274.56,
+        "y": 409.2
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-dc94b1ccce21",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 91.4112,
+      "bbox_pt": {
+        "height": 18.96,
+        "width": 7.68,
+        "x": 78.72,
+        "y": 72.48
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-5c86df655017",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 87.0336,
+      "bbox_pt": {
+        "height": 14.64,
+        "width": 10.8,
+        "x": 719.04,
+        "y": 405.12
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-ba8951c12c60",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 86.8032,
+      "bbox_pt": {
+        "height": 15.12,
+        "width": 12.48,
+        "x": 413.04,
+        "y": 451.92
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-a9a1e00823d7",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 80.4672,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 12.0,
+        "x": 165.6,
+        "y": 404.88
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-c5b9ed9f31bd",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 77.472,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 13.2,
+        "x": 459.6,
+        "y": 455.76
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-1677c832ded3",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 73.2672,
+      "bbox_pt": {
+        "height": 15.6,
+        "width": 15.84,
+        "x": 254.88,
+        "y": 409.2
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-66b43ed97f79",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 67.1616,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 11.04,
+        "x": 518.64,
+        "y": 455.76
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-ce37904d38c6",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 66.0672,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 13.68,
+        "x": 399.36,
+        "y": 451.92
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-c96d2d6e4fcd",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 63.4752,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 12.48,
+        "x": 151.68,
+        "y": 405.6
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-15b3975cb75b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 60.3648,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 12.48,
+        "x": 529.92,
+        "y": 456.0
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-634efb05674f",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 53.28,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 13.2,
+        "x": 773.04,
+        "y": 408.72
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-84198030b8eb",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 52.3584,
+      "bbox_pt": {
+        "height": 11.76,
+        "width": 9.12,
+        "x": 434.4,
+        "y": 455.28
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-a5df60b80857",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 50.8608,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 12.48,
+        "x": 756.24,
+        "y": 408.72
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-e8eb46ebb3c7",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 50.2848,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 10.56,
+        "x": 449.52,
+        "y": 455.76
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-e0efec146a74",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 45.9648,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.04,
+        "x": 107.28,
+        "y": 68.4
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-371007a1fcfd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 42.624,
+      "bbox_pt": {
+        "height": 8.88,
+        "width": 4.8,
+        "x": 98.16,
+        "y": 68.64
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-e79ed063f843",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.9168,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 7.92,
+        "x": 443.52,
+        "y": 456.0
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-ea67bec0cd66",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 9.12,
+        "x": 130.56,
+        "y": 77.04
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-6b06cf1104c7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.2096,
+      "bbox_pt": {
+        "height": 4.08,
+        "width": 9.12,
+        "x": 131.04,
+        "y": 68.64
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-caa846d84e7c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 8.88,
+        "x": 237.36,
+        "y": 408.96
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-f9b2efdadcd4",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 35.7696,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 7.92,
+        "x": 544.32,
+        "y": 460.08
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-0d96435deb65",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 35.424,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 4.8,
+        "x": 708.48,
+        "y": 409.44
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-5339250fc7f6",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 35.136,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 6.72,
+        "x": 553.2,
+        "y": 453.6
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-8345ab0d3872",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 34.9056,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 6.72,
+        "x": 307.68,
+        "y": 406.8
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-82424ab3c058",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.92,
+        "x": 177.6,
+        "y": 411.6
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-a1c46de1f354",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.4656,
+      "bbox_pt": {
+        "height": 15.6,
+        "width": 8.88,
+        "x": 178.56,
+        "y": 409.2
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-173122a4e93e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.6592,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 7.92,
+        "x": 188.4,
+        "y": 409.2
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-482db87acfb6",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.9104,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 7.68,
+        "x": 492.72,
+        "y": 455.76
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-1caea9828dc3",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 26.5536,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 7.44,
+        "x": 255.6,
+        "y": 410.16
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-750426716fd2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 8.4,
+        "x": 187.68,
+        "y": 415.92
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-12ebc8e63804",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.6944,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 5.28,
+        "x": 141.84,
+        "y": 68.4
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-d47205ee8c95",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 14.64,
+        "width": 3.36,
+        "x": 730.8,
+        "y": 405.12
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-ecd919a033fc",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 21.6,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 3.6,
+        "x": 770.64,
+        "y": 410.88
+      },
+      "disposition": {
+        "difference_id": "page-10-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Every material cluster lies inside the title or one of the three name labels. The LibreOffice reference embeds Noto Sans there, while native Microsoft PowerPoint and office2pdf both embed the source Gill Sans MT."
+      },
+      "id": "p10-cd0ee7ba7c46",
+      "region": "bottom-right"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 10,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 46,
+    "duplicate": 0,
+    "total": 46,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
