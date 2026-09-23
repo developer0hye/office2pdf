@@ -555,31 +555,19 @@ struct SpillContinuation<'a> {
     offset_pt: f64,
     /// Width the line still reaches past the boundary.
     remaining_pt: f64,
-    /// Whether the line's own text crosses the boundary, so the continuation
-    /// paints something rather than an empty clip box.
-    paints: bool,
 }
 
-/// Slack, in points, granted to the estimated line width when deciding
-/// whether a continuation paints. The ASCII-ratio estimate runs 0.6–9.1pt
-/// under the face's own advances on the 1,000 occupation strings of
-/// `1000-customers.xlsx` (mean 4.7pt at Malgun Gothic 12); with 6pt of slack
-/// no line the native export continues is taken for one that ends before
-/// the boundary on that corpus, while a line ending well inside its reach —
-/// row 1001's `Direct Creative Liaison`, 26pt short of it — still counts as
-/// painting nothing (issue #1714).
-const LINE_REACH_TOLERANCE_PT: f64 = 6.0;
-
 /// The continuation `cell`, starting at column `cell_start` before
-/// `boundary`, sends past that boundary — `None` when its reach ends first.
+/// `boundary`, sends past that boundary — `None` when it ends first.
 ///
-/// `spill_width` is the reach the line may paint across, in whole columns,
-/// and the continuation is redrawn whenever that reach crosses the boundary
-/// so the renderer clips the real glyphs rather than an estimate. The line
-/// itself is `spill_line_width_pt` and usually ends inside the reach;
-/// whether it crosses decides only `paints`, which the page-sequence rule
-/// reads (issue #1714). A cell carrying no line width — a synthetic table —
-/// is taken to fill its reach.
+/// Both the reach and the line have to cross. `spill_width` is the reach the
+/// line may paint across, in whole columns, and it bounds where the clip cuts
+/// the text off; `spill_line_extent` is the line itself, which usually ends
+/// inside that reach. Excel prints nothing on the next page-column for a line
+/// that ends on the boundary — `Customer Group Developer` reaches its
+/// page-column's last point exactly and stops (issue #1659) — so a line short
+/// of it is not redrawn there at all. A cell carrying no line extent — a
+/// synthetic table — is taken to fill its reach.
 ///
 /// A merged cell's spill is the merge's own width, so it never reaches past
 /// the merge and never continues this way; the straddling merge is handled
@@ -593,14 +581,13 @@ fn spill_continuation_past<'a>(
     let spill_width: f64 = cell.spill_width?;
     let offset_pt: f64 = column_widths[cell_start..boundary].iter().sum();
     let remaining_pt: f64 = spill_width - offset_pt;
-    let line_reach_pt: f64 = cell
-        .spill_line_width_pt
-        .map_or(spill_width, |line_width| line_width.min(spill_width));
-    (remaining_pt > 0.0).then_some(SpillContinuation {
+    let reach_pt: f64 = cell
+        .spill_line_extent
+        .map_or(spill_width, |extent| extent.reach_pt().min(spill_width));
+    (remaining_pt > 0.0 && reach_pt > offset_pt).then_some(SpillContinuation {
         source: cell,
         offset_pt,
         remaining_pt,
-        paints: line_reach_pt + LINE_REACH_TOLERANCE_PT > offset_pt,
     })
 }
 
@@ -712,7 +699,7 @@ fn slice_table_columns(table: &Table, start: usize, end: usize) -> ColumnGroupSl
                     sliced.spill_continuation_offset_pt = Some(continuation.offset_pt);
                     sliced.padding = continuation.source.padding;
                     sliced.vertical_align = continuation.source.vertical_align;
-                    cell_paints |= continuation.paints;
+                    cell_paints = true;
                 }
                 row_paints |= cell_paints;
                 cells.push(sliced);

@@ -1975,6 +1975,68 @@ fn structure_overflow_strip_carries_the_spilled_tails() {
     assert_eq!(fitting_cell.spill_width, None);
 }
 
+/// Excel redraws a spilled line on the next page-column only when the line
+/// itself crosses the boundary, and it prices that on the whole-point advance
+/// grid it paces sheet glyphs with. Before issue #1659 every line with the
+/// *reach* to cross was redrawn there and left to the clip, so
+/// `Customer Group Developer` — whose advances end exactly on the strip
+/// boundary — put a tail in the strip's text layer that the native Excel for
+/// Mac export does not print.
+///
+/// Which face a host resolves for the workbook's Malgun Gothic decides the
+/// widths, and a host without it prices the lines by estimate instead, so the
+/// assertion is the rule rather than the native export's own tail count: the
+/// strip carries a line's tail exactly when that line's recorded extent
+/// reaches past the boundary.
+#[test]
+fn structure_overflow_strip_redraws_only_the_lines_past_the_boundary() {
+    let pages = sheet_pages("customers_overflow_strip.xlsx");
+    assert_eq!(pages.len(), 2);
+    // The occupation column is E; its own gridline sits after A:D, and the
+    // first page-column ends after F.
+    const OCCUPATION_COLUMN: usize = 4;
+    let boundary_pt: f64 = pages[0].table.column_widths[OCCUPATION_COLUMN..]
+        .iter()
+        .sum();
+
+    let mut spilling_rows: usize = 0;
+    for (index, row) in pages[0].table.rows.iter().enumerate() {
+        let Some(extent) = row.cells[OCCUPATION_COLUMN].spill_line_extent else {
+            continue;
+        };
+        spilling_rows += 1;
+        // Every occupation value paints across E:G, a reach that crosses the
+        // boundary on every row, so the line alone decides its tail. The
+        // page-column's own copy of that reach is clamped to what it carries,
+        // which is why the assertion below reads the line and not the reach.
+        let source: String = cell_text(&row.cells[OCCUPATION_COLUMN]);
+        let tail: String = pages[1]
+            .table
+            .rows
+            .get(index)
+            .and_then(|strip_row| strip_row.cells.first())
+            .map_or_else(String::new, cell_text);
+        let reach_pt: f64 = extent.reach_pt();
+        if reach_pt > boundary_pt {
+            assert_eq!(
+                tail, source,
+                "row {index}: a line reaching {reach_pt}pt past the {boundary_pt}pt boundary is \
+                 redrawn on the strip"
+            );
+        } else {
+            assert_eq!(
+                tail, "",
+                "row {index}: {source:?} reaches {reach_pt}pt, short of the {boundary_pt}pt \
+                 boundary, so the strip carries no tail for it"
+            );
+        }
+    }
+    assert!(
+        spilling_rows > 0,
+        "the occupation column's values reach past their own column"
+    );
+}
+
 #[test]
 fn smoke_spill_reach_print_range() {
     assert_produces_valid_pdf("spill_reach_print_range.xlsx");

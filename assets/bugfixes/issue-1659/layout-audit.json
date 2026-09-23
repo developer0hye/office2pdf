@@ -124,15 +124,13 @@
   {
    "lines": {
     "gt": 9,
-    "out": 10,
+    "out": 9,
     "matched": 9,
     "missing": 0,
-    "extra": 1,
+    "extra": 0,
     "deviant": 0,
     "missing_text": [],
-    "extra_text": [
-     "CustomerGroupDeveloper"
-    ]
+    "extra_text": []
    },
    "baseline": {
     "mean_abs_dy": 0.0,

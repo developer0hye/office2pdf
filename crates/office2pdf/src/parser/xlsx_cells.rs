@@ -8,7 +8,7 @@ use super::xlsx_style::{
     apply_rich_run_font, extract_cell_alignment, extract_cell_background, extract_cell_borders,
     extract_cell_text_style, extract_style_background, resolve_style_color,
 };
-use crate::ir::{BorderSide, CellBorder, Color, Insets, TableCell, TextStyle};
+use crate::ir::{BorderSide, CellBorder, Color, Insets, SheetLineExtent, TableCell, TextStyle};
 
 /// The last addressable spreadsheet column (XFD), bounding how far a text
 /// overflow may extend the printed range.
@@ -1530,6 +1530,76 @@ const ASCII_ADVANCE_RATIO: [f64; 95] = [
     0.7749, // U+007D '}'
     1.1632, // U+007E '~'
 ];
+
+/// How far an unwrapped sheet line reaches from its cell's own left gridline,
+/// `start_pt` being the inset and indent its text begins after.
+///
+/// Excel paces a sheet glyph on a whole point, so the line ends at the sum of
+/// its glyph advances each rounded to one — the quantity that decides whether
+/// it crosses a page-column boundary. `Customer Group Developer` in
+/// `tests/fixtures/xlsx/customers_overflow_strip.xlsx` is the case that needs
+/// the exact figure: its whole-point advances sum to 147.0pt against the
+/// 147.0pt its page-column leaves, and the native Excel for Mac export stops
+/// it there while continuing every longer line of the same column (issue
+/// #1659).
+///
+/// A run whose face this host cannot resolve leaves nothing to round, so the
+/// line falls back to the face-independent estimate for the whole line rather
+/// than mixing the two: the estimate runs under the real advances, and the
+/// reader grants it slack for that (issue #1714).
+pub(super) fn sheet_line_extent(
+    runs: &[Run],
+    normal_font: Option<&NormalFont>,
+    start_pt: f64,
+) -> SheetLineExtent {
+    measured_text_width_pt(runs, normal_font).map_or_else(
+        || SheetLineExtent::Estimated(start_pt + estimate_text_width_pt(runs)),
+        |width_pt| SheetLineExtent::Measured(start_pt + width_pt),
+    )
+}
+
+/// The runs' width on Excel's whole-point advance grid, or `None` when any
+/// run's face does not resolve here.
+///
+/// The advances come from the same lookup codegen reserves the run's rounding
+/// against, so the decision this feeds and the line the renderer paints agree
+/// on where the text ends.
+fn measured_text_width_pt(runs: &[Run], normal_font: Option<&NormalFont>) -> Option<f64> {
+    runs.iter()
+        .map(|run| measured_run_width_pt(run, normal_font))
+        .sum()
+}
+
+/// One run's width on the whole-point advance grid, at the family and size it
+/// prints with.
+fn measured_run_width_pt(run: &Run, normal_font: Option<&NormalFont>) -> Option<f64> {
+    let style: &TextStyle = &run.style;
+    let family: &str = style
+        .font_family
+        .as_deref()
+        .or_else(|| normal_font.map(NormalFont::resolved_family))
+        .unwrap_or("Calibri");
+    let size_pt: f64 = style
+        .font_size
+        .or_else(|| normal_font.map(|font| font.size_pt))
+        .unwrap_or(11.0);
+    let bold: bool = style.bold.unwrap_or(false);
+    // A run that carries a separate East Asian family is measured on the face
+    // its glyphs actually come from; the Latin one reports nothing for them.
+    let advances: Vec<f64> = crate::render::pdf::glyph_advances_em(family, bold, &run.text)
+        .or_else(|| {
+            let east_asian: &str = style.east_asian_font_family.as_deref()?;
+            (!east_asian.eq_ignore_ascii_case(family))
+                .then(|| crate::render::pdf::glyph_advances_em(east_asian, bold, &run.text))
+                .flatten()
+        })?;
+    Some(
+        advances
+            .into_iter()
+            .map(|advance_em| round_half_up_pt(advance_em * size_pt))
+            .sum(),
+    )
+}
 
 /// Single-line text width estimate in points, summed over the runs' own
 /// families and sizes.
@@ -3179,11 +3249,14 @@ pub(super) fn build_rows_for_range(
             );
             // The line's own extent from the cell's left gridline, so
             // pagination can tell a line that crosses a page-column boundary
-            // from one that merely has the reach to (issue #1714).
-            let spill_line_width_pt: Option<f64> = spill_width.map(|_| {
-                cell_padding.left
-                    + ctx.cell_indent_pt(col_idx, row_idx)
-                    + estimate_text_width_pt(&runs)
+            // from one that merely has the reach to (issue #1714), priced on
+            // the advance grid Excel paces the line with (issue #1659).
+            let spill_line_extent: Option<SheetLineExtent> = spill_width.map(|_| {
+                sheet_line_extent(
+                    &runs,
+                    ctx.normal_font.as_ref(),
+                    cell_padding.left + ctx.cell_indent_pt(col_idx, row_idx),
+                )
             });
 
             row_wraps_past_one_line |= cell_wraps_past_one_line(
@@ -3252,7 +3325,7 @@ pub(super) fn build_rows_for_range(
                 icon_shading,
                 spill_width,
                 spill_continuation_offset_pt: None,
-                spill_line_width_pt,
+                spill_line_extent,
                 vertical_align: cell_vertical_align,
                 row_has_thick_bottom,
                 wraps_text: cell_wraps_text(umya_cell),

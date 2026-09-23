@@ -3,7 +3,7 @@ use crate::ir::ChartAreaOutline;
 use crate::ir::{
     AxisTickMark, Block, BorderLineStyle, BorderSide, CellBorder, Color, HFInline, HeaderFooter,
     HeaderFooterParagraph, LineJoin, Margins, PageSize, Paragraph, ParagraphStyle, Run,
-    TableBorderPaintModel, TextStyle,
+    SheetLineExtent, TableBorderPaintModel, TextStyle,
 };
 
 fn cell(text: &str) -> TableCell {
@@ -29,7 +29,7 @@ fn cell(text: &str) -> TableCell {
         icon_shading: None,
         spill_width: None,
         spill_continuation_offset_pt: None,
-        spill_line_width_pt: None,
+        spill_line_extent: None,
         vertical_align: None,
         padding: None,
         row_has_thick_bottom: false,
@@ -1532,22 +1532,21 @@ fn test_a_last_page_column_without_ink_is_not_emitted() {
 }
 
 /// A line with the reach to cross the boundary but whose own width ends
-/// before it paints nothing on the next page-column. On `1000-customers.xlsx`
-/// every occupation cell has a three-column reach (E:G), yet row 1001's
-/// `Direct Creative Liaison` is 122pt long and ends inside column F, so the
-/// native export prints no strip page for its band while the longer lines of
-/// the rows above continue (issue #1714). The continuation cell is still
-/// placed — the renderer clips the real glyphs — but it is not ink.
+/// before it carries nothing onto the next page-column. On
+/// `1000-customers.xlsx` every occupation cell has a three-column reach
+/// (E:G), yet row 1001's `Direct Creative Liaison` is 122pt long and ends
+/// inside column F, so the native export prints no strip page for its band
+/// while the longer lines of the rows above continue (issue #1714).
 #[test]
 fn test_a_line_ending_before_the_boundary_is_not_ink_despite_its_reach() {
     let short_line = TableCell {
         spill_width: Some(225.0),
-        spill_line_width_pt: Some(124.6),
+        spill_line_extent: Some(SheetLineExtent::Estimated(124.6)),
         ..cell("Direct Creative Liaison")
     };
     let long_line = TableCell {
         spill_width: Some(225.0),
-        spill_line_width_pt: Some(159.1),
+        spill_line_extent: Some(SheetLineExtent::Estimated(159.1)),
         ..cell("Corporate Data Orchestrator")
     };
     let page = make_page(
@@ -1583,7 +1582,7 @@ fn test_a_line_ending_before_the_boundary_is_not_ink_despite_its_reach() {
     // as painting: the estimate runs under the face's advances.
     let near_line = TableCell {
         spill_width: Some(225.0),
-        spill_line_width_pt: Some(146.0),
+        spill_line_extent: Some(SheetLineExtent::Estimated(146.0)),
         ..cell("Customer Group Developer")
     };
     let mut page = make_page(
@@ -1601,4 +1600,125 @@ fn test_a_line_ending_before_the_boundary_is_not_ink_despite_its_reach() {
         2,
         "a line 4pt short of the boundary keeps its strip"
     );
+}
+
+/// Excel decides a continuation on the whole-point advance grid it paces sheet
+/// glyphs with, and a line that ends exactly on the page-column boundary stops
+/// there. `Customer Group Developer` in
+/// `tests/fixtures/xlsx/customers_overflow_strip.xlsx` is that case: its
+/// advances sum to 147pt from a pen 3pt inside a gridline 150pt before the
+/// boundary, and the native Excel for Mac export prints no tail for it while
+/// printing one for `Legacy Solutions Developer`, 2pt longer (issue #1659).
+#[test]
+fn test_a_measured_line_is_continued_only_past_the_boundary() {
+    // Printable width 150pt over three 75pt columns: columns 0-1 print first,
+    // column 2 on the strip, so a line from column 0 crosses at 150pt.
+    let measured = |text: &str, width_pt: f64| TableCell {
+        spill_width: Some(225.0),
+        spill_line_extent: Some(SheetLineExtent::Measured(width_pt)),
+        ..cell(text)
+    };
+    let rows = vec![
+        TableRow {
+            minimum_height: None,
+            cells: vec![
+                measured("Legacy Solutions Developer", 152.0),
+                cell(""),
+                cell(""),
+            ],
+            height: None,
+        },
+        TableRow {
+            minimum_height: None,
+            cells: vec![
+                measured("Customer Group Developer", 150.0),
+                cell(""),
+                cell(""),
+            ],
+            height: None,
+        },
+        TableRow {
+            minimum_height: None,
+            cells: vec![
+                measured("Regional Intranet Associate", 148.0),
+                cell(""),
+                cell(""),
+            ],
+            height: None,
+        },
+        TableRow {
+            minimum_height: None,
+            cells: vec![
+                measured("Corporate Data Orchestrator", 163.0),
+                cell(""),
+                cell(""),
+            ],
+            height: None,
+        },
+    ];
+    let mut page = make_page(vec![75.0, 75.0, 75.0], rows);
+    page.size.width = 250.0;
+    let pages = split_sheet_page_by_width(page, None, SheetFit::default(), true);
+
+    assert_eq!(pages.len(), 2);
+    let tails: Vec<String> = pages[1]
+        .table
+        .rows
+        .iter()
+        .map(|row| cell_text(&row.cells[0]))
+        .collect();
+    assert_eq!(
+        tails,
+        vec![
+            "Legacy Solutions Developer".to_string(),
+            String::new(),
+            String::new(),
+            "Corporate Data Orchestrator".to_string(),
+        ],
+        "only the lines past the 150pt boundary are redrawn on the strip"
+    );
+}
+
+/// The line the boundary rule reads is the whole-point extent, not the reach:
+/// the same measured width continues or stops as the columns before the
+/// boundary grow, with no slack in either direction (issue #1659).
+#[test]
+fn test_the_measured_boundary_moves_with_the_page_column() {
+    for (columns_before, continues) in [(1usize, true), (2, false)] {
+        let boundary_pt: f64 = 75.0 * columns_before as f64;
+        let page = {
+            let mut page = make_page(
+                vec![75.0; 3],
+                vec![TableRow {
+                    minimum_height: None,
+                    cells: vec![
+                        TableCell {
+                            spill_width: Some(225.0),
+                            spill_line_extent: Some(SheetLineExtent::Measured(150.0)),
+                            ..cell("Customer Group Developer")
+                        },
+                        cell(""),
+                        cell(""),
+                    ],
+                    height: None,
+                }],
+            );
+            page.size.width = 100.0 + boundary_pt;
+            page
+        };
+        let pages = split_sheet_page_by_width(page, None, SheetFit::default(), true);
+        if continues {
+            assert_eq!(
+                cell_text(&pages[1].table.rows[0].cells[0]),
+                "Customer Group Developer",
+                "a 150pt line crosses a {boundary_pt}pt page-column"
+            );
+        } else {
+            assert_eq!(
+                pages.len(),
+                1,
+                "a 150pt line ends on the {boundary_pt}pt boundary and leaves the strip blank"
+            );
+        }
+    }
 }

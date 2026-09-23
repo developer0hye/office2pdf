@@ -1428,6 +1428,53 @@ pub struct Insets {
     pub left: f64,
 }
 
+/// How far an unwrapped worksheet line reaches, and what priced it.
+///
+/// Excel for Mac advances every sheet glyph a whole point, so a line's true
+/// extent is the sum of its glyph advances each rounded to one — the quantity
+/// that decides whether the line crosses a page-column boundary and continues
+/// on the next (issue #1659). Where every run's face resolves on this host the
+/// parser prices exactly that sum; where one does not it falls back to a
+/// face-independent estimate, which cannot settle a boundary case on its own
+/// and is marked so its reader can grant it the slack it needs (issue #1714).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SheetLineExtent {
+    /// The whole-point advance sum of the faces the line's runs resolve to.
+    Measured(f64),
+    /// The face-independent ASCII-ratio estimate, which runs under the
+    /// resolved face's own advances.
+    Estimated(f64),
+}
+
+/// Slack, in points, an [`SheetLineExtent::Estimated`] extent is granted
+/// before it is taken to reach a point. The ASCII-ratio estimate runs
+/// 0.6–9.1pt under the face's own advances on the 1,000 occupation strings of
+/// `1000-customers.xlsx` (mean 4.7pt at Malgun Gothic 12); with 6pt of slack
+/// no line the native export continues is taken for one that ends before the
+/// boundary on that corpus, while a line ending well inside its reach — row
+/// 1001's `Direct Creative Liaison`, 26pt short of it — still counts as
+/// reaching nothing (issue #1714).
+const ESTIMATED_LINE_REACH_TOLERANCE_PT: f64 = 6.0;
+
+impl SheetLineExtent {
+    /// How far the line may be taken to paint from its cell's own left
+    /// gridline.
+    ///
+    /// A measured extent is that distance outright: Excel's whole-point
+    /// advance grid ends the line exactly where the native export does, down
+    /// to a page-column boundary that grants no slack at all (issue #1659).
+    /// An estimate cannot settle such a case on its own, so it carries
+    /// [`ESTIMATED_LINE_REACH_TOLERANCE_PT`] for the width it is known to be
+    /// missing.
+    #[must_use]
+    pub fn reach_pt(self) -> f64 {
+        match self {
+            Self::Measured(width_pt) => width_pt,
+            Self::Estimated(width_pt) => width_pt + ESTIMATED_LINE_REACH_TOLERANCE_PT,
+        }
+    }
+}
+
 /// A table cell.
 #[derive(Debug, Clone)]
 pub struct TableCell {
@@ -1470,15 +1517,15 @@ pub struct TableCell {
     /// printed, and clips it at the page-column's edge (issue #1381). `None`
     /// on every cell that paints its own line.
     pub spill_continuation_offset_pt: Option<f64>,
-    /// Estimated width in points of the unwrapped line itself, from the
-    /// cell's own left gridline to the end of its text, inset included. Set
-    /// together with `spill_width`, which is the *reach* the line may paint
-    /// across — whole columns, so a short line in a wide reach ends well
-    /// before the reach does. Column pagination reads this to decide whether
-    /// the line actually crosses a page-column boundary and continues there;
-    /// `None` on a cell that paints no unwrapped line, and on table formats
-    /// that never spill.
-    pub spill_line_width_pt: Option<f64>,
+    /// How far the unwrapped line itself extends, in points, from the cell's
+    /// own left gridline to the end of its text, inset included. Set together
+    /// with `spill_width`, which is the *reach* the line may paint across —
+    /// whole columns, so a short line in a wide reach ends well before the
+    /// reach does. Column pagination reads this to decide whether the line
+    /// actually crosses a page-column boundary and continues there; `None` on
+    /// a cell that paints no unwrapped line, and on table formats that never
+    /// spill.
+    pub spill_line_extent: Option<SheetLineExtent>,
     /// Vertical alignment of cell content.
     pub vertical_align: Option<CellVerticalAlign>,
     /// Optional cell padding override in points.
@@ -1514,7 +1561,7 @@ impl Default for TableCell {
             icon_shading: None,
             spill_width: None,
             spill_continuation_offset_pt: None,
-            spill_line_width_pt: None,
+            spill_line_extent: None,
             vertical_align: None,
             padding: None,
             row_has_thick_bottom: false,

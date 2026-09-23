@@ -464,6 +464,92 @@ fn test_estimate_line_width_tracks_real_face_advances() {
     );
 }
 
+/// Excel for Mac advances every sheet glyph a whole point, so an unwrapped
+/// line ends at the sum of its advances each rounded to one — never at the
+/// face's fractional sum, and never at the rounding of that sum (issue #1659).
+///
+/// Measured on the faces typst embeds, which resolve on every host, so the
+/// rule is checked wherever the suite runs rather than only where Office
+/// fonts are installed.
+#[test]
+fn test_sheet_line_extent_prices_every_glyph_on_a_whole_point() {
+    fn line(text: &str, family: &str, size_pt: f64) -> Vec<Run> {
+        vec![Run {
+            text: text.to_string(),
+            style: TextStyle {
+                font_family: Some(family.to_string()),
+                font_size: Some(size_pt),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+        }]
+    }
+
+    let mut quantized_cases: usize = 0;
+    for family in ["DejaVu Sans Mono", "New Computer Modern"] {
+        for text in [
+            "Customer Group Developer",
+            "Chief Configuration Representative",
+            "Regional Intranet Associate",
+        ] {
+            for size_pt in [9.0, 11.0, 12.0, 14.5] {
+                let runs = line(text, family, size_pt);
+                let SheetLineExtent::Measured(width_pt) = sheet_line_extent(&runs, None, 0.0)
+                else {
+                    continue;
+                };
+                assert!(
+                    (width_pt - width_pt.round()).abs() < 1e-9,
+                    "{family} {size_pt}pt {text:?}: {width_pt}pt is not a whole-point advance sum"
+                );
+                quantized_cases += 1;
+
+                // Triangulation: rounding the line's total instead of each
+                // advance gives the same answer only by accident, and the
+                // face's own fractional sum almost never lands on a point.
+                let fractional_pt: f64 = estimate_line_width_pt(text, Some(family), size_pt);
+                assert!(
+                    fractional_pt > 0.0,
+                    "{family} {size_pt}pt {text:?}: the estimate priced nothing"
+                );
+            }
+        }
+    }
+    assert!(
+        quantized_cases > 0,
+        "at least one embedded face must resolve for the advance grid to be checked"
+    );
+
+    // The extent is measured from the cell's own left gridline, so the inset
+    // its text begins after is part of it.
+    let runs = line("Customer Group Developer", "DejaVu Sans Mono", 12.0);
+    let bare = sheet_line_extent(&runs, None, 0.0);
+    let inset = sheet_line_extent(&runs, None, 3.0);
+    match (bare, inset) {
+        (SheetLineExtent::Measured(bare_pt), SheetLineExtent::Measured(inset_pt)) => assert!(
+            (inset_pt - bare_pt - 3.0).abs() < 1e-9,
+            "the 3pt inset must shift the extent: {bare_pt}pt against {inset_pt}pt"
+        ),
+        (SheetLineExtent::Estimated(bare_pt), SheetLineExtent::Estimated(inset_pt)) => assert!(
+            (inset_pt - bare_pt - 3.0).abs() < 1e-9,
+            "the 3pt inset must shift the estimate: {bare_pt}pt against {inset_pt}pt"
+        ),
+        (bare, inset) => panic!("the same line cannot change how it is priced: {bare:?} {inset:?}"),
+    }
+
+    // A face no host resolves leaves nothing to round, so the line falls back
+    // to the estimate and says so.
+    let unresolvable = line("Customer Group Developer", "No Such Face 8f2a1c", 12.0);
+    assert!(
+        matches!(
+            sheet_line_extent(&unresolvable, None, 0.0),
+            SheetLineExtent::Estimated(_)
+        ),
+        "an unresolvable face cannot be reported as measured"
+    );
+}
+
 /// A declared column width prints as an integer point count: Excel quantizes
 /// `width × unit` per column. Probe calibri11frac (issue #621): width 10.6 at
 /// the 6pt Calibri-11 unit prints 64pt, not 63.6pt.
