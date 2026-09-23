@@ -1,0 +1,1663 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 1348.5312,
+      "bbox_pt": {
+        "height": 122.88,
+        "width": 49.44,
+        "x": 662.4,
+        "y": 348.48
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-aa8a9f477380",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 1324.1088,
+      "bbox_pt": {
+        "height": 157.44,
+        "width": 48.48,
+        "x": 558.72,
+        "y": 313.92
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-66c4269c57f7",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 1075.5072,
+      "bbox_pt": {
+        "height": 110.88,
+        "width": 48.0,
+        "x": 477.6,
+        "y": 360.48
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-fd751d84dbbf",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 995.0976,
+      "bbox_pt": {
+        "height": 52.32,
+        "width": 48.96,
+        "x": 610.56,
+        "y": 419.04
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-d80e37577182",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 973.9008,
+      "bbox_pt": {
+        "height": 152.16,
+        "width": 47.52,
+        "x": 373.92,
+        "y": 319.2
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-a03f5bd62eff",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 954.5472,
+      "bbox_pt": {
+        "height": 50.4,
+        "width": 48.0,
+        "x": 425.76,
+        "y": 420.96
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-a30e47e6a5e5",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 558.0288,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 34.56,
+        "x": 220.32,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-f40b81a23f4a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 504.576,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 42.24,
+        "x": 300.96,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-75c47b8ebd07",
+      "region": "top"
+    },
+    {
+      "area_pt2": 452.5056,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 34.56,
+        "x": 177.6,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-d73f0a47d034",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 446.976,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 46.56,
+        "x": 188.64,
+        "y": 461.76
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-1527b6112324",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 442.368,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 46.08,
+        "x": 292.8,
+        "y": 461.76
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-b2dbfa77eb8b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 442.368,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 46.08,
+        "x": 240.96,
+        "y": 461.76
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-90e5b8fdac98",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 402.2784,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 46.56,
+        "x": 241.44,
+        "y": 422.88
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-c50e983a75a9",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 363.8016,
+      "bbox_pt": {
+        "height": 22.56,
+        "width": 29.28,
+        "x": 146.4,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-ad708c4cdae6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 359.6544,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 28.8,
+        "x": 105.12,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-40734294339f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 357.5808,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 46.56,
+        "x": 293.28,
+        "y": 371.52
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-6a811cc69b09",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 335.232,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 46.56,
+        "x": 189.12,
+        "y": 332.16
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-d58748d542cb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 306.8928,
+      "bbox_pt": {
+        "height": 18.24,
+        "width": 31.2,
+        "x": 359.52,
+        "y": 275.04
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-b6a823096cc7",
+      "region": "center"
+    },
+    {
+      "area_pt2": 248.3712,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 20.16,
+        "x": 276.48,
+        "y": 69.12
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-0de38e298473",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 232.704,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 16.8,
+        "x": 133.44,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-463e590b4e02",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 197.2224,
+      "bbox_pt": {
+        "height": 22.08,
+        "width": 22.08,
+        "x": 344.64,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-34bb784284e9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 175.3344,
+      "bbox_pt": {
+        "height": 18.24,
+        "width": 19.2,
+        "x": 389.76,
+        "y": 274.56
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-1def0688b1f6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 123.4944,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 12.96,
+        "x": 143.04,
+        "y": 275.04
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-c48bdc6d426d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 117.504,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 14.4,
+        "x": 250.08,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-d696579540ec",
+      "region": "left"
+    },
+    {
+      "area_pt2": 93.5424,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 13.92,
+        "x": 301.44,
+        "y": 80.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-b518099366c1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 90.5472,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 12.96,
+        "x": 300.48,
+        "y": 274.56
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-3709540909bd",
+      "region": "left"
+    },
+    {
+      "area_pt2": 81.3312,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 15.84,
+        "x": 316.8,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-1484d2507b7f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 70.5024,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 12.0,
+        "x": 283.2,
+        "y": 279.84
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-fde106097c94",
+      "region": "left"
+    },
+    {
+      "area_pt2": 63.1296,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 9.12,
+        "x": 216.96,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-487c4408979e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 62.8992,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 744.0,
+        "y": 374.88
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-67c41be157ec",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 62.208,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 9.6,
+        "x": 631.68,
+        "y": 475.68
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-4ebcd8472baf",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 9.12,
+        "x": 180.48,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-93df3174c502",
+      "region": "left"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.68,
+        "x": 743.52,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-010c8e60ef35",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.68,
+        "x": 743.52,
+        "y": 360.96
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-ade2fb9a6b1a",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 55.9872,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 4.32,
+        "x": 211.68,
+        "y": 275.04
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-0c802748bc67",
+      "region": "left"
+    },
+    {
+      "area_pt2": 55.7568,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 12.0,
+        "x": 323.52,
+        "y": 285.12
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-09510b96afae",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.8352,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.56,
+        "x": 262.56,
+        "y": 72.0
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-e627208e1b07",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.9136,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 10.08,
+        "x": 90.72,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-4b276d38e405",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 52.992,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 10.56,
+        "x": 238.08,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-11592997d569",
+      "region": "left"
+    },
+    {
+      "area_pt2": 52.5312,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 10.56,
+        "x": 239.04,
+        "y": 285.12
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-426d244c8b9f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 50.688,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 7.68,
+        "x": 612.0,
+        "y": 475.68
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-3131261d5d63",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 228.0,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-7224287b8532",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.3104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 12.48,
+        "x": 301.92,
+        "y": 286.08
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-e3bc383217f3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 44.928,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.64,
+        "x": 167.52,
+        "y": 203.52
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-27d6705ab349",
+      "region": "left"
+    },
+    {
+      "area_pt2": 44.2368,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.64,
+        "x": 197.28,
+        "y": 173.76
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-b8c283d7329b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 43.0848,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 265.92,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-2b1716170ec2",
+      "region": "left"
+    },
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 12.48,
+        "x": 213.12,
+        "y": 84.96
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-d6bf30644d7c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 42.3936,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 168.48,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-ffc28a965707",
+      "region": "left"
+    },
+    {
+      "area_pt2": 42.1632,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.12,
+        "x": 228.96,
+        "y": 285.6
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-09b5b9c174be",
+      "region": "left"
+    },
+    {
+      "area_pt2": 41.9328,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.12,
+        "x": 156.96,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-d299ffb2fd4f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 4.32,
+        "x": 206.4,
+        "y": 73.92
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-be8ce4aaa525",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 10.08,
+        "x": 776.64,
+        "y": 391.2
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-12d0f2a6e702",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 8.64,
+        "x": 771.36,
+        "y": 372.0
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-ee88517b0787",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 3.84,
+        "x": 201.6,
+        "y": 275.04
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-1d469377641f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.16,
+        "x": 99.36,
+        "y": 73.44
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-dc7160259174",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.2,
+        "x": 257.28,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-2fcb5932d7d8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 176.16,
+        "y": 173.76
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-e5b018e5cf78",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 177.6,
+        "y": 203.04
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-5fd69df5d797",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.68,
+        "x": 212.64,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-120e9d963a9e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.16,
+        "x": 343.68,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-c389c7d8d029",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 334.56,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-45b5a9f13ec3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.16,
+        "x": 203.04,
+        "y": 67.68
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-81a27cf96520",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 5.76,
+        "x": 148.8,
+        "y": 385.44
+      },
+      "disposition": {
+        "issue": "#1860",
+        "kind": "issue",
+        "note": "Value tick label glyphs `800`, `600`, `400`, `200`, `0`. Their ink lands on the native PowerPoint export's, and the reference right-aligns the same column 7.30pt further right while placing the plot's own left edge within 0.107pt of native."
+      },
+      "id": "p8-43b5ffb995ee",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 204.96,
+        "y": 205.44
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-e622ff5e9bec",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 745.44,
+        "y": 413.28
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-bb1b66d7d27a",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.16,
+        "x": 333.6,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-d636d23a68bc",
+      "region": "center"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 3.84,
+        "x": 212.16,
+        "y": 74.4
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-48003d8b8671",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.08,
+        "x": 265.44,
+        "y": 85.92
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-21f8a8066377",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 261.12,
+        "y": 480.48
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-abd3894dd718",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 10.56,
+        "x": 80.64,
+        "y": 75.36
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-ec39a3feb1f8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 9.12,
+        "x": 191.52,
+        "y": 288.48
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-631eb83dfef3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.76,
+        "x": 155.04,
+        "y": 310.56
+      },
+      "disposition": {
+        "issue": "#1860",
+        "kind": "issue",
+        "note": "Value tick label glyphs `800`, `600`, `400`, `200`, `0`. Their ink lands on the native PowerPoint export's, and the reference right-aligns the same column 7.30pt further right while placing the plot's own left edge within 0.107pt of native."
+      },
+      "id": "p8-123d2749ca7f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 315.36,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-f5de99af67f6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.6432,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.12,
+        "x": 153.12,
+        "y": 85.92
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-40d3d7f64eab",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.64,
+        "x": 345.6,
+        "y": 287.52
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-2bf6cd8f7203",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 776.64,
+        "y": 410.4
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-07e5df5f0867",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.24,
+        "x": 291.36,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-8236f7b3cf81",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 168.0,
+        "y": 176.64
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-4c8a8bad1677",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 283.68,
+        "y": 274.56
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-38524ca32d74",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.64,
+        "x": 335.04,
+        "y": 287.52
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-ce15aaa70ffc",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.2,
+        "x": 281.76,
+        "y": 281.28
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-c96d9762a19e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 191.04,
+        "y": 278.4
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-dd96b6dd9ccb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 4.8,
+        "x": 624.0,
+        "y": 476.16
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-819d8bf29cd7",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 199.2,
+        "y": 205.44
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-4a722e0f361c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 4.32,
+        "x": 655.68,
+        "y": 476.16
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-82a28e149c23",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 6.72,
+        "x": 431.52,
+        "y": 475.68
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-eee1dd8ba622",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 267.36,
+        "y": 288.0
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-94634d9bc87c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 754.56,
+        "y": 391.2
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-07c27c7581f7",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.16,
+        "x": 438.24,
+        "y": 479.04
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-05508e37b1ee",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 254.4,
+        "y": 481.92
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-c601e44c5e2c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 3.84,
+        "x": 185.76,
+        "y": 203.04
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-eadadf2eb96f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 148.32,
+        "y": 310.56
+      },
+      "disposition": {
+        "issue": "#1860",
+        "kind": "issue",
+        "note": "Value tick label glyphs `800`, `600`, `400`, `200`, `0`. Their ink lands on the native PowerPoint export's, and the reference right-aligns the same column 7.30pt further right while placing the plot's own left edge within 0.107pt of native."
+      },
+      "id": "p8-a43439546710",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 4.32,
+        "x": 257.28,
+        "y": 80.64
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-9806356414ae",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.24,
+        "x": 402.72,
+        "y": 285.12
+      },
+      "disposition": {
+        "difference_id": "page-8-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-d5fa5fdf04c8",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 4.8,
+        "x": 447.84,
+        "y": 478.56
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-aa3c3cade376",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 141.6,
+        "y": 310.08
+      },
+      "disposition": {
+        "issue": "#1860",
+        "kind": "issue",
+        "note": "Value tick label glyphs `800`, `600`, `400`, `200`, `0`. Their ink lands on the native PowerPoint export's, and the reference right-aligns the same column 7.30pt further right while placing the plot's own left edge within 0.107pt of native."
+      },
+      "id": "p8-dd387599e358",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 5.28,
+        "x": 149.28,
+        "y": 422.4
+      },
+      "disposition": {
+        "issue": "#1860",
+        "kind": "issue",
+        "note": "Value tick label glyphs `800`, `600`, `400`, `200`, `0`. Their ink lands on the native PowerPoint export's, and the reference right-aligns the same column 7.30pt further right while placing the plot's own left edge within 0.107pt of native."
+      },
+      "id": "p8-7adecf0af44c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.76,
+        "x": 192.0,
+        "y": 205.44
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-bf562b70e072",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 141.12,
+        "y": 383.52
+      },
+      "disposition": {
+        "issue": "#1860",
+        "kind": "issue",
+        "note": "Value tick label glyphs `800`, `600`, `400`, `200`, `0`. Their ink lands on the native PowerPoint export's, and the reference right-aligns the same column 7.30pt further right while placing the plot's own left edge within 0.107pt of native."
+      },
+      "id": "p8-13a08461d3d1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.76,
+        "x": 276.96,
+        "y": 86.4
+      },
+      "disposition": {
+        "difference_id": "page-8-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p8-47a4b4ac6786",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 3.84,
+        "x": 267.84,
+        "y": 478.08
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-044826c7fdc2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 754.08,
+        "y": 360.0
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-d1c981fea1e9",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 4.32,
+        "x": 453.12,
+        "y": 478.08
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-e55b1136b2bc",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 2.4,
+        "x": 652.32,
+        "y": 478.08
+      },
+      "disposition": {
+        "issue": "#1676",
+        "kind": "issue",
+        "note": "Plot interior and the category band under it: the three bar groups, the gridline segments, the category axis rule and the `Year 1`/`Year 2`/`Net Profit` labels. The reference seats the plot rectangle on LibreOffice Impress's own automatic layout; our horizontal placement matches the native export and only its vertical seat is left against this reference."
+      },
+      "id": "p8-47c44979b6f6",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 8.16,
+        "x": 788.16,
+        "y": 375.84
+      },
+      "disposition": {
+        "issue": "#1670",
+        "kind": "issue",
+        "note": "Right-legend keys and label glyphs that do not overlap between the two exporters. The reference runs LibreOffice Impress's own side-legend layout - a 15.62pt row pitch against the native export's 19.15pt - so a different series' key and label fragment share each page box. Our legend sits within 0.5pt of the native export's."
+      },
+      "id": "p8-e2cf0b7a513d",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.28,
+        "x": 190.56,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#1862",
+        "kind": "issue",
+        "note": "The table's `Total Sales` and `Total Cogs` labels. All three exporters draw the same ArialMT; the reference and the native export both kern the `To` pair and place the second word's `S` at x 184.762pt, while we place it at 186.146pt. Binarised 150-DPI ink spans: reference 56.640/55.680pt, native 56.640/55.680pt, ours 58.080/57.120pt. `NET PROFIT`, which has no kern pair, matches within one 0.48pt pixel and produces no cluster."
+      },
+      "id": "p8-997a04d26a07",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 8,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 106,
+    "duplicate": 0,
+    "total": 106,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
