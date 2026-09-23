@@ -9,28 +9,23 @@ const EPSILON_PT: f64 = 1e-6;
 
 /// How far a glyph origin may sit from the whole sheet point Excel paces it
 /// on. Tight enough that a face's own fractional advance fails it: the
-/// smallest advance on the customer fixture's 12pt lines is 2.87pt, so a
-/// fractional pen is at least 0.1pt off a whole point.
+/// narrowest advance in the line below is 2.87pt at 12pt, so a fractional pen
+/// is at least 0.1pt off a whole point.
 const GRID_TOLERANCE_PT: f64 = 0.001;
 
-/// Workbooks whose cells name a family that ships inside this crate, so the
-/// face that shapes them is the same one on every host.
-///
-/// That matters because the grid correction is priced by codegen's own metric
-/// lookup: where a host has to substitute a face for the declared family, the
-/// run is placed from a width this grid never priced and the pass declines it
-/// (see `RESERVED_WIDTH_TOLERANCE_PT`). Only a workbook whose face travels
-/// with the crate can carry the assertion over *every* run.
-const EMBEDDED_FACE_SHEET: &str = "sheet_pacing_embedded_face.xlsx";
-const EMBEDDED_FACE_FITTED_SHEET: &str = "sheet_pacing_embedded_face_fitted.xlsx";
+/// The occupation this issue was measured on, and the size it prints at
+/// (`tests/fixtures/xlsx/customers_overflow_strip.xlsx`, row 17).
+const MEASURED_LINE: &str = "Chief Configuration Representative";
+const MEASURED_SIZE_PT: f64 = 12.0;
 
-/// Workbooks that name the families a real Excel user does. Whether a host
-/// has those installed decides how many of their runs the grid reaches, so
-/// they carry the assertions that hold either way.
+/// Workbooks that name the families a real Excel user does. Which face a host
+/// resolves for those decides how many of their runs codegen's reservation
+/// reaches, so they carry the invariants that hold either way rather than a
+/// count.
 ///
-/// The repository workbook is the one that priced no correction for 856 of
-/// its 4,014 runs even where every declared face is installed, so it is what
-/// holds the pass to the reservation it redistributes.
+/// The repository workbook prices no reservation for 856 of its 4,014 runs
+/// even where every declared face is installed, so it is what holds the pass
+/// to the reservation it redistributes (issue #1854).
 const INSTALLED_FACE_SHEETS: [&str; 3] = [
     "customers_overflow_strip.xlsx",
     "temperature.xlsx",
@@ -58,8 +53,8 @@ fn paced_runs(runs: Vec<PlacedGlyphRun>) -> Vec<PlacedGlyphRun> {
         .collect()
 }
 
-/// The glyph origins of `run` that do not sit on a whole point of the sheet's
-/// own coordinate space, as `(index, origin)`.
+/// The glyph origins of `run` that do not sit on a whole point of a sheet
+/// printed at `scale`, as `(index, origin)`.
 fn origins_off_grid(run: &PlacedGlyphRun, scale: f64) -> Vec<(usize, f64)> {
     run.glyph_origins_pt()
         .into_iter()
@@ -69,36 +64,125 @@ fn origins_off_grid(run: &PlacedGlyphRun, scale: f64) -> Vec<(usize, f64)> {
         .collect()
 }
 
-/// Excel for Mac advances every sheet glyph by a whole point, so each glyph
-/// after a run's first starts a whole number of points from its origin
-/// (issue #1659). Asserted over every multi-glyph run of the sheet rather
-/// than one measured string, so no per-string correction can satisfy it.
-#[test]
-fn sheet_glyph_origins_land_on_whole_points() {
-    let source = sheet_source(EMBEDDED_FACE_SHEET);
-    let runs =
-        paced_runs(compiled_glyph_runs(&source, 0, true).expect("the sheet source should compile"));
-    assert!(
-        runs.len() > 4,
-        "{EMBEDDED_FACE_SHEET} should paint several multi-glyph runs, got {}",
-        runs.len()
-    );
-    for run in &runs {
-        let off_grid: Vec<(usize, f64)> = origins_off_grid(run, 1.0);
-        assert!(
-            off_grid.is_empty(),
-            "{EMBEDDED_FACE_SHEET}: run {:?} places glyphs off the whole-point grid: \
-             {off_grid:?} (advances {:?})",
-            run.text,
-            run.advances_pt
-        );
-    }
+/// One worksheet cell as codegen emits it: a table carrying the sheet grid's
+/// label, whose trailing field is the print scale, holding one run spaced by
+/// `tracking_pt` with the shaper's own kerning and ligatures off.
+fn sheet_cell_source(tracking_pt: f64, scale: f64) -> String {
+    format!(
+        "#set page(width: 500pt, height: 120pt, margin: 10pt)\n\
+         #table(stroke: none, columns: (400pt))[\
+         #text(size: {MEASURED_SIZE_PT}pt, tracking: {tracking_pt}pt, kerning: false, \
+         ligatures: false)[{MEASURED_LINE}]]<{SHEET_TABLE_LABEL_PREFIX}0-{scale}>\n"
+    )
 }
 
-/// A workbook naming an installed family reaches the grid the same way, and
-/// where a host substitutes a face for it the run keeps exactly the pacing
-/// the layout engine gave it. Half-pacing a run — moving its glyphs onto the
-/// grid from a width the grid never priced — is what this forbids.
+/// The uniform correction codegen reserves for a run whose shaped advances are
+/// `natural_pt`: the rounding its gaps owe Excel's grid, spread over them.
+///
+/// Mirrors `sheet_advance_grid_tracking_pt`, including its stop before the
+/// last advance, which places no glyph of the run. Reading the advances off
+/// the face that actually shaped the run is what makes these tests say the
+/// same thing on every host, whatever face it resolves.
+fn reserved_tracking_pt(natural_pt: &[f64], scale: f64) -> f64 {
+    let gaps: &[f64] = natural_pt.split_last().expect("at least two glyphs").1;
+    let quantized_pt: f64 = gaps.iter().map(|pt| (pt / scale).round() * scale).sum();
+    let natural_sum_pt: f64 = gaps.iter().sum();
+    (quantized_pt - natural_sum_pt) / gaps.len() as f64
+}
+
+/// The one run a [`sheet_cell_source`] paints, laid out with or without the
+/// completed-frame passes.
+fn compiled_cell_run(source: &str, apply_frame_passes: bool) -> PlacedGlyphRun {
+    let mut runs = paced_runs(
+        compiled_glyph_runs(source, 0, apply_frame_passes).expect("the cell source should compile"),
+    );
+    assert_eq!(runs.len(), 1, "the source paints exactly one run");
+    runs.remove(0)
+}
+
+/// Excel for Mac advances every sheet glyph by a whole point, so each glyph
+/// after a run's first starts a whole number of points from its origin
+/// (issue #1659). Asserted over every glyph of the line this issue measured,
+/// so no single correction can satisfy it.
+#[test]
+fn a_reserved_sheet_run_seats_every_glyph_on_the_grid() {
+    let natural: PlacedGlyphRun = compiled_cell_run(&sheet_cell_source(0.0, 1.0), false);
+    assert!(
+        origins_off_grid(&natural, 1.0).len() > 20,
+        "the face's own advances must be fractional for this to test anything: {:?}",
+        natural.advances_pt
+    );
+
+    let source: String = sheet_cell_source(reserved_tracking_pt(&natural.advances_pt, 1.0), 1.0);
+    let paced: PlacedGlyphRun = compiled_cell_run(&source, true);
+    let off_grid: Vec<(usize, f64)> = origins_off_grid(&paced, 1.0);
+    assert!(
+        off_grid.is_empty(),
+        "the run places glyphs off the whole-point grid: {off_grid:?} (advances {:?})",
+        paced.advances_pt
+    );
+
+    let reserved: PlacedGlyphRun = compiled_cell_run(&source, false);
+    assert!(
+        (reserved.width_pt() - paced.width_pt()).abs() < EPSILON_PT,
+        "the pass changed the run's width from {} to {}",
+        reserved.width_pt(),
+        paced.width_pt()
+    );
+    assert!(
+        (reserved.left_pt - paced.left_pt).abs() < EPSILON_PT,
+        "the pass moved the run's origin from {} to {}",
+        reserved.left_pt,
+        paced.left_pt
+    );
+}
+
+/// A fitted sheet rounds at its declared size and scales that grid onto the
+/// page, the same way its column widths and its tracking correction do, so its
+/// glyph origins land on multiples of the print scale rather than on whole
+/// printed points.
+#[test]
+fn a_fitted_sheet_paces_on_whole_points_of_its_own_coordinate_space() {
+    const SCALE: f64 = 0.75;
+    let natural: PlacedGlyphRun = compiled_cell_run(&sheet_cell_source(0.0, SCALE), false);
+    let source: String =
+        sheet_cell_source(reserved_tracking_pt(&natural.advances_pt, SCALE), SCALE);
+    let paced: PlacedGlyphRun = compiled_cell_run(&source, true);
+
+    let off_sheet_grid: Vec<(usize, f64)> = origins_off_grid(&paced, SCALE);
+    assert!(
+        off_sheet_grid.is_empty(),
+        "the run places glyphs off the sheet's own grid: {off_sheet_grid:?} (advances {:?})",
+        paced.advances_pt
+    );
+    assert!(
+        !origins_off_grid(&paced, 1.0).is_empty(),
+        "the grid must be the sheet's declared one, not the printed one: {:?}",
+        paced.advances_pt
+    );
+}
+
+/// The grid is Excel's, so a table that is not a worksheet keeps the advances
+/// the layout engine placed. A DOCX or PPTX table reaches the same cell
+/// emission code and must not be paced on whole points.
+#[test]
+fn a_table_outside_a_worksheet_keeps_its_placed_advances() {
+    let natural: PlacedGlyphRun = compiled_cell_run(&sheet_cell_source(0.0, 1.0), false);
+    let label: String = format!("<{SHEET_TABLE_LABEL_PREFIX}0-1>");
+    let unlabelled: String =
+        sheet_cell_source(reserved_tracking_pt(&natural.advances_pt, 1.0), 1.0).replace(&label, "");
+    let placed: PlacedGlyphRun = compiled_cell_run(&unlabelled, true);
+    assert!(
+        !origins_off_grid(&placed, 1.0).is_empty(),
+        "an ordinary table must keep the advances the layout engine placed: {:?}",
+        placed.advances_pt
+    );
+}
+
+/// A workbook reaches the same grid through codegen, and a run whose
+/// reservation it never priced keeps exactly the pacing the layout engine gave
+/// it. Half-pacing a run — moving its glyphs onto the grid from a width the
+/// grid never priced — is what this forbids.
 #[test]
 fn a_sheet_run_is_either_seated_on_the_grid_or_left_as_placed() {
     for fixture in INSTALLED_FACE_SHEETS {
@@ -139,10 +223,7 @@ fn a_sheet_run_is_either_seated_on_the_grid_or_left_as_placed() {
 /// clip — keeps the geometry it was measured with.
 #[test]
 fn sheet_pacing_conserves_every_run_origin_and_width() {
-    for fixture in [EMBEDDED_FACE_SHEET, EMBEDDED_FACE_FITTED_SHEET]
-        .into_iter()
-        .chain(INSTALLED_FACE_SHEETS)
-    {
+    for fixture in INSTALLED_FACE_SHEETS {
         let source = sheet_source(fixture);
         let before =
             compiled_glyph_runs(&source, 0, false).expect("the sheet source should compile");
@@ -170,64 +251,6 @@ fn sheet_pacing_conserves_every_run_origin_and_width() {
             );
         }
     }
-}
-
-/// The grid is Excel's, so a table that is not a worksheet keeps the face's
-/// own fractional advances. A DOCX or PPTX table reaches the same cell
-/// emission code and must not be paced on whole points.
-#[test]
-fn a_table_outside_a_worksheet_keeps_its_fractional_advances() {
-    let source = "#set page(width: 300pt, height: 120pt, margin: 10pt)\n\
-                  #table(columns: (200pt), stroke: none)[\
-                  #text(font: \"Liberation Sans\", size: 12pt)[Configuration]]\n";
-    let runs = paced_runs(compiled_glyph_runs(source, 0, true).expect("source should compile"));
-    assert_eq!(runs.len(), 1, "the source paints exactly one run");
-    let fractional: bool = runs[0]
-        .glyph_origins_pt()
-        .iter()
-        .any(|origin| (origin - origin.round()).abs() > GRID_TOLERANCE_PT);
-    assert!(
-        fractional,
-        "an ordinary table must keep the face's advances: {:?}",
-        runs[0].advances_pt
-    );
-}
-
-/// A fitted sheet rounds at its declared size and scales that grid onto the
-/// page, the same way its column widths and its tracking correction do, so
-/// its glyph origins land on multiples of the print scale rather than on
-/// whole printed points.
-#[test]
-fn a_fitted_sheet_paces_on_whole_points_of_its_own_coordinate_space() {
-    let source = sheet_source(EMBEDDED_FACE_FITTED_SHEET);
-    let scale: f64 = fitted_sheet_scale(&source).expect("the fixture should print fitted");
-    assert!(
-        scale < 1.0,
-        "the fixture must actually scale for this to test anything, got {scale}"
-    );
-    let runs =
-        paced_runs(compiled_glyph_runs(&source, 0, true).expect("the sheet source should compile"));
-    assert!(runs.len() > 4, "the sheet should paint several runs");
-    let mut off_printed_grid: usize = 0;
-    for run in &runs {
-        let off_sheet_grid: Vec<(usize, f64)> = origins_off_grid(run, scale);
-        assert!(
-            off_sheet_grid.is_empty(),
-            "run {:?} places a glyph off the sheet's own grid: {off_sheet_grid:?} \
-             (advances {:?})",
-            run.text,
-            run.advances_pt
-        );
-        off_printed_grid += run
-            .glyph_origins_pt()
-            .into_iter()
-            .filter(|origin| (origin - origin.round()).abs() > GRID_TOLERANCE_PT)
-            .count();
-    }
-    assert!(
-        off_printed_grid > 0,
-        "the sheet grid must be the declared one, not the printed one"
-    );
 }
 
 /// The print scale the sheet's own table label states.
