@@ -15,7 +15,7 @@ use office2pdf::internal::XlsxParser;
 use office2pdf::internal::generate_typst;
 use office2pdf::ir::{
     Alignment, Block, BorderLineStyle, ChartAreaOutline, ChartHost, ChartLine, ChartPlotAreaLayout,
-    ChartUserShapeExtent, Color, HFInline, Page, SheetPage, TableCell,
+    ChartUserShapeExtent, Color, HFInline, Page, SheetLineExtent, SheetPage, TableCell,
 };
 
 // ---------------------------------------------------------------------------
@@ -1973,6 +1973,64 @@ fn structure_overflow_strip_carries_the_spilled_tails() {
     );
     assert_eq!(fitting_cell.spill_continuation_offset_pt, None);
     assert_eq!(fitting_cell.spill_width, None);
+}
+
+/// Excel redraws a spilled line on the next page-column only when the line
+/// itself crosses the boundary, and it prices that on the whole-point advance
+/// grid it paces sheet glyphs with. Before issue #1659 every line with the
+/// *reach* to cross was redrawn there and left to the clip, so
+/// `Customer Group Developer` — whose advances end exactly on the strip
+/// boundary — put a tail in the strip's text layer that the native Excel for
+/// Mac export does not print.
+///
+/// Which face a host resolves for the workbook's Malgun Gothic decides the
+/// measured widths, so the assertion is the rule rather than the native
+/// export's own tail count: no line that ends by the boundary is redrawn, and
+/// every line past it is.
+#[test]
+fn structure_overflow_strip_redraws_only_the_lines_past_the_boundary() {
+    let pages = sheet_pages("customers_overflow_strip.xlsx");
+    assert_eq!(pages.len(), 2);
+    // The occupation column is E; its own gridline sits after A:D, and the
+    // first page-column ends after F.
+    const OCCUPATION_COLUMN: usize = 4;
+    let boundary_pt: f64 = pages[0].table.column_widths[OCCUPATION_COLUMN..]
+        .iter()
+        .sum();
+
+    let mut measured_rows: usize = 0;
+    for (index, row) in pages[0].table.rows.iter().enumerate() {
+        let Some(SheetLineExtent::Measured(line_pt)) =
+            row.cells[OCCUPATION_COLUMN].spill_line_extent
+        else {
+            continue;
+        };
+        measured_rows += 1;
+        let source: String = cell_text(&row.cells[OCCUPATION_COLUMN]);
+        let tail: String = pages[1]
+            .table
+            .rows
+            .get(index)
+            .and_then(|strip_row| strip_row.cells.first())
+            .map_or_else(String::new, cell_text);
+        if line_pt > boundary_pt {
+            assert_eq!(
+                tail, source,
+                "row {index}: a {line_pt}pt line past the {boundary_pt}pt boundary is redrawn \
+                 on the strip"
+            );
+        } else {
+            assert_eq!(
+                tail, "",
+                "row {index}: {source:?} ends at {line_pt}pt, by the {boundary_pt}pt boundary, \
+                 so the strip carries no tail for it"
+            );
+        }
+    }
+    assert!(
+        measured_rows > 0,
+        "the occupation column's spilling lines are priced on their resolved face"
+    );
 }
 
 #[test]

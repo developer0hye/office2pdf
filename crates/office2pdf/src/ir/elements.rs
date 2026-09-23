@@ -1428,6 +1428,24 @@ pub struct Insets {
     pub left: f64,
 }
 
+/// How far an unwrapped worksheet line reaches, and what priced it.
+///
+/// Excel for Mac advances every sheet glyph a whole point, so a line's true
+/// extent is the sum of its glyph advances each rounded to one — the quantity
+/// that decides whether the line crosses a page-column boundary and continues
+/// on the next (issue #1659). Where every run's face resolves on this host the
+/// parser prices exactly that sum; where one does not it falls back to a
+/// face-independent estimate, which cannot settle a boundary case on its own
+/// and is marked so its reader can grant it the slack it needs (issue #1714).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SheetLineExtent {
+    /// The whole-point advance sum of the faces the line's runs resolve to.
+    Measured(f64),
+    /// The face-independent ASCII-ratio estimate, which runs under the
+    /// resolved face's own advances.
+    Estimated(f64),
+}
+
 /// A table cell.
 #[derive(Debug, Clone)]
 pub struct TableCell {
@@ -1470,15 +1488,15 @@ pub struct TableCell {
     /// printed, and clips it at the page-column's edge (issue #1381). `None`
     /// on every cell that paints its own line.
     pub spill_continuation_offset_pt: Option<f64>,
-    /// Estimated width in points of the unwrapped line itself, from the
-    /// cell's own left gridline to the end of its text, inset included. Set
-    /// together with `spill_width`, which is the *reach* the line may paint
-    /// across — whole columns, so a short line in a wide reach ends well
-    /// before the reach does. Column pagination reads this to decide whether
-    /// the line actually crosses a page-column boundary and continues there;
-    /// `None` on a cell that paints no unwrapped line, and on table formats
-    /// that never spill.
-    pub spill_line_width_pt: Option<f64>,
+    /// How far the unwrapped line itself extends, in points, from the cell's
+    /// own left gridline to the end of its text, inset included. Set together
+    /// with `spill_width`, which is the *reach* the line may paint across —
+    /// whole columns, so a short line in a wide reach ends well before the
+    /// reach does. Column pagination reads this to decide whether the line
+    /// actually crosses a page-column boundary and continues there; `None` on
+    /// a cell that paints no unwrapped line, and on table formats that never
+    /// spill.
+    pub spill_line_extent: Option<SheetLineExtent>,
     /// Vertical alignment of cell content.
     pub vertical_align: Option<CellVerticalAlign>,
     /// Optional cell padding override in points.
@@ -1514,7 +1532,7 @@ impl Default for TableCell {
             icon_shading: None,
             spill_width: None,
             spill_continuation_offset_pt: None,
-            spill_line_width_pt: None,
+            spill_line_extent: None,
             vertical_align: None,
             padding: None,
             row_has_thick_bottom: false,
