@@ -1,0 +1,16 @@
+{
+  "name": "issue-1663-column-legend-absent",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column chart c:legend present or removed",
+  "page": 1,
+  "variants": [
+    {
+      "value": "removed",
+      "find": "<c:barDir val=\"bar\"/>(.*?)<c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>(.*?)<c:legend><c:legendPos val=\"r\"/><c:layout/><c:overlay val=\"0\"/></c:legend>",
+      "replace": "<c:barDir val=\"col\"/>\\g<1><c:majorTickMark val=\"none\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>\\g<2>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "issue-1663-column-value-size",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column chart c:valAx c:txPr a:defRPr sz (1/100 pt), tick marks off, chart space held at 1800",
+  "page": 1,
+  "variants": [
+    {
+      "value": "900",
+      "find": "<c:barDir val=\"bar\"/>(.*?)<c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>",
+      "replace": "<c:barDir val=\"col\"/>\\g<1><c:majorTickMark val=\"none\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"900\"/></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "1200",
+      "find": "<c:barDir val=\"bar\"/>(.*?)<c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>",
+      "replace": "<c:barDir val=\"col\"/>\\g<1><c:majorTickMark val=\"none\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1200\"/></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "1800",
+      "find": "<c:barDir val=\"bar\"/>(.*?)<c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>",
+      "replace": "<c:barDir val=\"col\"/>\\g<1><c:majorTickMark val=\"none\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"/></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "2400",
+      "find": "<c:barDir val=\"bar\"/>(.*?)<c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>",
+      "replace": "<c:barDir val=\"col\"/>\\g<1><c:majorTickMark val=\"none\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"2400\"/></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

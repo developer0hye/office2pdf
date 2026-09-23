@@ -1652,6 +1652,13 @@ pub(super) const LEGEND_ENTRY_W: f64 = 78.0;
 /// [`PPTX_TITLE_BAND_PT`] and [`CHART_TICK_BAND_BASE_PT`] (issue #1437).
 const CHART_LABEL_EDGE_PAD_PT: f64 = 6.505;
 const CHART_LABEL_EDGE_PAD_EM: f64 = 0.927;
+///
+/// `CHART_LEGEND_BASE_PAD_PT` survives #1663's column measurements unchanged —
+/// the native band beside a column plot is the widest legend label plus
+/// 23.009pt plus twice the key's own side — while `CHART_LEGEND_PAD_EM` turns
+/// out to be a bar-family stand-in for that key term, which is a share of the
+/// *face's* line box rather than of the size. See
+/// [`powerpoint_column_legend_key_band_pt`].
 const CHART_LEGEND_BASE_PAD_PT: f64 = 23.008;
 const CHART_LEGEND_PAD_EM: f64 = 1.605;
 
@@ -1739,13 +1746,22 @@ const CHART_PLOT_TOP_PAD_EM: f64 = 1.465;
 const CHART_TICK_BAND_BASE_PT: f64 = 6.58;
 const CHART_TICK_BAND_EM: f64 = 1.855;
 
-/// Left gutter of a column plot whose value labels run down that edge.
+/// Left gutter of a column plot whose value labels run down that edge, where
+/// the labels themselves cannot be measured.
 ///
 /// Native PowerPoint exports of the #841 column chart reserve 40.805pt at
 /// 10pt, 47.064pt at 12pt, and 84.633pt at 24pt. (The 18pt export switches to
 /// another automatic layout regime, so it is deliberately not fitted here.)
 /// Unlike a bar plot's bottom band this is a text-width relationship, so it
 /// needs its own calibration.
+///
+/// #1663 identified what this pair was standing in for: the gutter is
+/// [`EXCEL_VALUE_LABEL_EDGE_PAD_PT`] plus the widest label's own advance plus a
+/// face clearance, and the #841 chart's three-glyph `80%` labels declare
+/// `spc="100"`, so its 6.5pt frame pad plus 3 x 1pt of tracking is exactly
+/// this 9.5. A PowerPoint column chart whose labels and face resolve now uses
+/// [`powerpoint_column_value_gutter`]; the fit stays for the Word host, which
+/// no probe covers, and for a build that can measure no face at all.
 const CHART_COLUMN_VALUE_GUTTER_PT: f64 = 9.5;
 const CHART_COLUMN_VALUE_GUTTER_EM: f64 = 3.13;
 
@@ -1755,6 +1771,11 @@ const CHART_COLUMN_VALUE_GUTTER_EM: f64 = 3.13;
 /// frame, while the top edge follows `5pt + 0.607em`. Excel worksheet charts
 /// use the separate native model below; the shared right inset already agrees
 /// with the audited Excel frame.
+///
+/// The right inset is the *legend-free* case, which
+/// `scripts/probes/issue-1663-column-legend-absent.json` measures at exactly
+/// 11.000pt. Where a legend runs down the right edge it spends the whole band
+/// instead — see [`powerpoint_column_legend_key_band_pt`] (issue #1663).
 const CHART_COLUMN_RIGHT_PAD_PT: f64 = 11.0;
 const CHART_COLUMN_TOP_PAD_PT: f64 = 5.0;
 const CHART_COLUMN_TOP_PAD_EM: f64 = 0.607;
@@ -2200,9 +2221,13 @@ pub(super) fn chart_tick_band_pt(chart: &Chart) -> f64 {
 /// 0.4981, which are 5/6 and 1/2 within the exports' own scatter. Every one of
 /// the 21 exports then sits within 0.015pt of the model.
 ///
-/// PowerPoint's own column layout is a different regime — the #841 deck
-/// reserves 46.98pt where this predicts 31.49 — so it keeps
-/// [`CHART_COLUMN_VALUE_GUTTER_PT`], which was fitted to it.
+/// PowerPoint measures the same composition. #1651 found it on the line
+/// family and #1663 on the column family: fifteen native exports of
+/// `tests/fixtures/pptx/bar-chart.pptx` repackaged as a column chart put the
+/// widest label's first glyph on this same 6.500pt and the plot one clearance
+/// past its end, matching the line family's gutters to the last emitted digit.
+/// The #841 deck reads 46.98pt where a first pass predicted 31.49 only because
+/// its `80%` labels carry a `%` and `spc="100"` that the pass left out.
 const EXCEL_VALUE_LABEL_EDGE_PAD_PT: f64 = 6.5;
 const EXCEL_VALUE_LABEL_ASCENT_FRACTION: f64 = 5.0 / 6.0;
 const EXCEL_VALUE_LABEL_DESCENT_FRACTION: f64 = 0.5;
@@ -2536,6 +2561,9 @@ fn chart_column_value_gutter_pt(chart: &Chart) -> f64 {
     {
         return gutter;
     }
+    if let Some(gutter) = powerpoint_column_value_gutter(chart) {
+        return gutter.total();
+    }
     CHART_COLUMN_VALUE_GUTTER_PT
         + CHART_COLUMN_VALUE_GUTTER_EM * chart_axis_text_pt(chart, chart.value_axis_text_style)
 }
@@ -2549,6 +2577,12 @@ fn chart_column_value_gutter_pt(chart: &Chart) -> f64 {
 /// export's, and would leave a short-labelled plot overlapping them once the
 /// gutter itself follows the labels.
 fn chart_column_value_label_box(chart: &Chart) -> (f64, f64) {
+    // PowerPoint seats the widest label on the frame pad and ends its box on
+    // the label's own advance, so the box moves with the gutter that measures
+    // it rather than with the flat band the pre-#1663 layout reserved.
+    if let Some(gutter) = powerpoint_column_value_gutter(chart) {
+        return (gutter.label_x, gutter.label_w);
+    }
     let left: f64 = chart_column_value_label_x(chart);
     if matches!(
         chart.host,
@@ -2570,6 +2604,11 @@ fn chart_column_value_label_box(chart: &Chart) -> (f64, f64) {
 /// needs that 6pt inset. Without it every tick label on slide 14 of the #841
 /// deck sits 6.087pt left of the native export while the plot differs by only
 /// 0.011pt (#1015).
+///
+/// This is now the fallback for a PowerPoint column chart whose face resolves
+/// to nothing measurable — notably a font-search-free wasm build. Where the
+/// labels can be measured, [`chart_column_value_label_box`] seats them on the
+/// 6.500pt every #1663 export puts them on instead.
 fn chart_column_value_label_x(chart: &Chart) -> f64 {
     let has_declared_size: bool =
         chart.text_style.size_pt.is_some() || chart.value_axis_text_style.size_pt.is_some();
@@ -3188,7 +3227,16 @@ fn axis_plot_insets(chart: &Chart, frame: Option<(f64, f64)>, title_h: f64) -> (
             Some(band) => band - title_h,
             None => top,
         };
-        (top, CHART_COLUMN_RIGHT_PAD_PT)
+        // A right legend already spends the whole band beside the plot — the
+        // native legend-free export leaves exactly 11.000pt there, and the
+        // legend sweeps leave none of it over — so the flat inset is the
+        // no-legend case rather than something added on top (issue #1663).
+        let right: f64 = if powerpoint_column_right_legend_band(chart) {
+            0.0
+        } else {
+            CHART_COLUMN_RIGHT_PAD_PT
+        };
+        (top, right)
     } else {
         (0.0, 0.0)
     }
@@ -4418,7 +4466,9 @@ fn axis_legend_box(chart: &Chart) -> LegendBox {
             .filter_map(|name| chart_text_advance_em(family, is_bold, &name))
             .fold(0.0_f64, f64::max)
             * size_pt;
-        let measured = widest_label + CHART_LEGEND_BASE_PAD_PT + CHART_LEGEND_PAD_EM * size_pt;
+        let measured = widest_label
+            + CHART_LEGEND_BASE_PAD_PT
+            + powerpoint_column_legend_key_band_pt(chart).unwrap_or(CHART_LEGEND_PAD_EM * size_pt);
         let side = if chart
             .text_style
             .resolved_size_pt(chart.legend_text_style)
@@ -4435,6 +4485,42 @@ fn axis_legend_box(chart: &Chart) -> LegendBox {
         }
     }
     legend
+}
+
+/// Whether a framed PowerPoint column plot's right edge is placed by the
+/// measured legend band rather than by the pre-#1663 fit plus a flat inset.
+///
+/// Scoped to the one arrangement the #1663 probes export: a column plot with
+/// its legend down the right edge and a stated text size. A `tr` legend, a
+/// bar plot and a chart stating no size at all keep what they had.
+fn powerpoint_column_right_legend_band(chart: &Chart) -> bool {
+    powerpoint_column_chrome(chart)
+        && chart.has_legend
+        && matches!(chart.legend_position, LegendPosition::Right)
+        && (chart.text_style.size_pt.is_some() || chart.legend_text_style.size_pt.is_some())
+}
+
+/// The size-scaled part of that band: twice the legend key's own side.
+///
+/// `frame width - plot right` on native PowerPoint 16.113.1 exports of
+/// `tests/fixtures/pptx/bar-chart.pptx` repackaged as a column chart measures
+/// 51.397, 60.870, 79.793 and 98.721pt at 9, 12, 18 and 24pt legend text
+/// (`scripts/probes/issue-1663-column-legend-size.json`), and 51.047pt when
+/// the series name shrinks to `S` at 18pt
+/// (`issue-1663-column-legend-label.json`). Every one of them is the widest
+/// label's advance plus [`CHART_LEGEND_BASE_PAD_PT`] plus two key sides,
+/// within 0.010pt, and page 8 of the #1220 deck measures the same band in
+/// Arial: 94.903pt against the 94.922 this predicts.
+///
+/// The key term is the *face's*, not a multiple of the size: substituting
+/// Calibri's own `PPTX_LEGEND_KEY_EM` share for Arial's line box on that page
+/// misses by 1.1pt. The old `CHART_LEGEND_PAD_EM` stand-in, fitted on the bar
+/// family, reserved 1.605 em where the column family spends 1.099 em of
+/// Calibri, and the plot then stopped 20.1pt short of the legend it was
+/// already drawing in the right place (issue #1663).
+fn powerpoint_column_legend_key_band_pt(chart: &Chart) -> Option<f64> {
+    powerpoint_column_right_legend_band(chart)
+        .then(|| 2.0 * axis_legend_entry_metrics(chart).width_pt)
 }
 
 /// Where the bars of one category sit inside the band it gets, in points along
@@ -5486,16 +5572,18 @@ pub(super) fn line_category_baseline_pt(
     natural.min(cap)
 }
 
-/// The value-label gutter of a framed PowerPoint line plot, split into the
-/// parts the labels and the plot each stand on.
+/// The value-label gutter of a framed PowerPoint plot, split into the parts
+/// the labels and the plot each stand on.
 ///
 /// PowerPoint spends the band on the labels themselves: the widest one starts
 /// [`EXCEL_VALUE_LABEL_EDGE_PAD_PT`] inside the chart frame and the plot
 /// begins one face-measured clearance past its end, which is the same
 /// composition the Excel column exports measure (issue #1166) rather than the
-/// pure `a + b * size` fit a slide chart used to reserve.
+/// pure `a + b * size` fit a slide chart used to reserve. The line family
+/// measured it first (#1651) and the column family measures the same
+/// composition (#1663), so one type serves both.
 #[derive(Clone, Copy)]
-struct LineValueGutter {
+struct PowerPointValueGutter {
     /// Frame inset the widest label's first glyph sits on.
     label_x: f64,
     /// Advance of the widest label, which is the label box's width.
@@ -5504,7 +5592,7 @@ struct LineValueGutter {
     clearance: f64,
 }
 
-impl LineValueGutter {
+impl PowerPointValueGutter {
     /// The whole band, from the frame edge to the plot's.
     fn total(self) -> f64 {
         self.label_x + self.label_w + self.clearance
@@ -5548,9 +5636,73 @@ fn chart_label_clearance_pt(family: &str, bold: bool, size_pt: f64) -> Option<f6
 /// `0.00` at 18pt. Every one of them is this model within 0.02pt, and page 11
 /// of the #1220 deck — 40.752pt for `20%` at 11.97pt in another face — lands
 /// within 0.005pt of it (issue #1651).
-fn powerpoint_line_value_gutter(chart: &Chart) -> Option<LineValueGutter> {
+fn powerpoint_line_value_gutter(chart: &Chart) -> Option<PowerPointValueGutter> {
     if !powerpoint_line_chrome(chart, chart.value_axis_text_style) {
         return None;
+    }
+    powerpoint_primary_value_gutter(chart)
+}
+
+/// The same gutter under a framed PowerPoint *column* plot, or `None` where
+/// the chart or the face is outside the measured regime.
+///
+/// Native PowerPoint 16.113.1 exports of `tests/fixtures/pptx/bar-chart.pptx`
+/// repackaged as a column chart reserve 19.409pt at 9pt, 23.713pt at 12pt and
+/// 32.326pt at 18pt for single-digit labels, and 55.121 and 73.371pt for
+/// `0.00` and `0.0000` at 18pt — the line family's own numbers to the last
+/// emitted digit (`scripts/probes/issue-1663-column-value-size.json` and
+/// `issue-1663-column-value-format.json`). Page 8 of the #1220 deck measures
+/// it in a second face: 36.762pt for `800` in Arial at 11.97pt, against the
+/// 36.770pt this predicts.
+///
+/// The pre-#1663 `9.5 + 3.13 em` fit read no labels at all, so it started the
+/// plot 10.2pt too far right there. Its 9.5pt intercept was the 6.5pt frame
+/// pad plus the tracking of the #841 deck it was fitted on — see
+/// [`powerpoint_value_label_widest_pt`] (issue #1663).
+fn powerpoint_column_value_gutter(chart: &Chart) -> Option<PowerPointValueGutter> {
+    if !powerpoint_column_chrome(chart)
+        || (chart.text_style.size_pt.is_none() && chart.value_axis_text_style.size_pt.is_none())
+    {
+        return None;
+    }
+    powerpoint_primary_value_gutter(chart)
+}
+
+/// The band either family gives its primary value labels, once the caller has
+/// established that the chart is inside the measured regime.
+fn powerpoint_primary_value_gutter(chart: &Chart) -> Option<PowerPointValueGutter> {
+    let bold: bool = chart
+        .text_style
+        .resolved_bold(chart.value_axis_text_style)
+        .unwrap_or(false);
+    let family: &str = chart
+        .value_axis_font_family()
+        .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_FAMILY);
+    let size_pt: f64 = chart_axis_text_pt(chart, chart.value_axis_text_style);
+    Some(PowerPointValueGutter {
+        label_x: EXCEL_VALUE_LABEL_EDGE_PAD_PT,
+        label_w: powerpoint_value_label_widest_pt(chart)?,
+        clearance: chart_label_clearance_pt(family, bold, size_pt)?,
+    })
+}
+
+/// Advance of the widest value tick label a PowerPoint plot prints, tracking
+/// included, or `None` where the face cannot be measured.
+///
+/// `a:defRPr@spc` widens each label by one step after *every* glyph, the last
+/// included: sweeping it over 0, 1 and 2pt on four-glyph `0.00` labels
+/// (`scripts/probes/issue-1663-column-value-tracking.json`) moves the native
+/// gutter by exactly 4.000pt per point of tracking. Excel's own worksheet
+/// gutter is left on the untracked advance its #1166 exports measured, since
+/// no Excel probe sweeps `spc` (issue #1663).
+fn powerpoint_value_label_widest_pt(chart: &Chart) -> Option<f64> {
+    let untracked_pt: f64 = chart_column_value_label_widest_pt(chart)?;
+    let tracking_pt: f64 = chart
+        .text_style
+        .resolved_letter_spacing(chart.value_axis_text_style)
+        .unwrap_or(0.0);
+    if tracking_pt == 0.0 {
+        return Some(untracked_pt);
     }
     let bold: bool = chart
         .text_style
@@ -5560,11 +5712,13 @@ fn powerpoint_line_value_gutter(chart: &Chart) -> Option<LineValueGutter> {
         .value_axis_font_family()
         .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_FAMILY);
     let size_pt: f64 = chart_axis_text_pt(chart, chart.value_axis_text_style);
-    Some(LineValueGutter {
-        label_x: EXCEL_VALUE_LABEL_EDGE_PAD_PT,
-        label_w: chart_column_value_label_widest_pt(chart)?,
-        clearance: chart_label_clearance_pt(family, bold, size_pt)?,
-    })
+    chart_value_axis_labels(chart)
+        .iter()
+        .filter_map(|label| {
+            chart_text_advance_em(family, bold, label)
+                .map(|advance_em| advance_em * size_pt + tracking_pt * label.chars().count() as f64)
+        })
+        .reduce(f64::max)
 }
 
 /// The same band mirrored onto a drawn secondary axis: its widest label ends
@@ -5579,7 +5733,7 @@ fn powerpoint_line_secondary_gutter(
     chart: &Chart,
     axis: &crate::ir::ChartSecondaryValueAxis,
     scale: ValueScale,
-) -> Option<LineValueGutter> {
+) -> Option<PowerPointValueGutter> {
     if !powerpoint_line_chrome(chart, axis.text_style) {
         return None;
     }
@@ -5607,7 +5761,7 @@ fn powerpoint_line_secondary_gutter(
         })
         .fold(0.0_f64, f64::max);
     (widest_em > 0.0).then_some(())?;
-    Some(LineValueGutter {
+    Some(PowerPointValueGutter {
         label_x: EXCEL_VALUE_LABEL_EDGE_PAD_PT,
         label_w: widest_em * size_pt,
         clearance: chart_label_clearance_pt(family, bold, size_pt)?,
@@ -5730,19 +5884,19 @@ fn generate_chart_line_plot(
     // probes only cover the automatic rectangle, so a chart stating its own
     // `c:plotArea/c:layout` keeps the geometry it had (#1265, #1568).
     let measured_chrome: bool = frame.is_some() && stated_plot.is_none();
-    let value_gutter: Option<LineValueGutter> = measured_chrome
+    let value_gutter: Option<PowerPointValueGutter> = measured_chrome
         .then(|| powerpoint_line_value_gutter(chart))
         .flatten();
-    let secondary_gutter: Option<LineValueGutter> = measured_chrome
+    let secondary_gutter: Option<PowerPointValueGutter> = measured_chrome
         .then(|| {
             secondary_axis
                 .zip(secondary_scale)
                 .and_then(|(axis, scale)| powerpoint_line_secondary_gutter(chart, axis, scale))
         })
         .flatten();
-    let left_gutter: f64 = value_gutter.map_or(VALUE_GAP + GAP, LineValueGutter::total);
+    let left_gutter: f64 = value_gutter.map_or(VALUE_GAP + GAP, PowerPointValueGutter::total);
     let right_gutter: f64 = if secondary_axis_drawn {
-        secondary_gutter.map_or(VALUE_GAP + GAP, LineValueGutter::total)
+        secondary_gutter.map_or(VALUE_GAP + GAP, PowerPointValueGutter::total)
     } else {
         0.0
     };

@@ -1,0 +1,23 @@
+{
+  "name": "issue-1663-column-legend-label",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column chart c:ser c:tx series name, the legend's only label",
+  "page": 1,
+  "variants": [
+    {
+      "value": "S",
+      "find": "<c:barDir val=\"bar\"/>(.*?)<c:v>Sales</c:v>(.*?)<c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>",
+      "replace": "<c:barDir val=\"col\"/>\\g<1><c:v>S</c:v>\\g<2><c:majorTickMark val=\"none\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Quarterly Revenue",
+      "find": "<c:barDir val=\"bar\"/>(.*?)<c:v>Sales</c:v>(.*?)<c:majorTickMark val=\"out\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>",
+      "replace": "<c:barDir val=\"col\"/>\\g<1><c:v>Quarterly Revenue</c:v>\\g<2><c:majorTickMark val=\"none\"/><c:minorTickMark val=\"none\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

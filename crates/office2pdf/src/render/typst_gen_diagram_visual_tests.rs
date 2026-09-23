@@ -5322,13 +5322,177 @@ fn a_powerpoint_bar_plot_keeps_its_own_measured_top_band() {
     );
 }
 
+/// The same probe chart in the theme's own Calibri, which is the face the
+/// #1663 exports measure the horizontal rectangle in.
+///
+/// `value_pt` is what the value axis states for itself; the chart space stays
+/// on the 18pt every probe holds it at, so the sweep moves the tick labels
+/// alone.
+fn powerpoint_column_horizontal_probe_chart(value_pt: f64) -> Chart {
+    let mut chart: Chart = powerpoint_column_probe_chart(18.0, None);
+    chart.text_font_family = Some("Calibri".to_string());
+    chart.value_axis_text_style.size_pt = Some(value_pt);
+    chart
+}
+
+/// A framed PowerPoint column plot spends its left gutter on the value tick
+/// labels themselves: the widest starts 6.5pt inside the chart frame and the
+/// plot begins one face-measured clearance past its end — the same composition
+/// the line family and Excel's worksheet columns measure.
+///
+/// The gutters are read off native PowerPoint 16.113.1 exports of
+/// `tests/fixtures/pptx/bar-chart.pptx` repackaged as a column chart, as the x
+/// of the gridline strokes in a `mutool draw -F trace` minus the frame's own
+/// 120pt origin. `scripts/probes/issue-1663-column-value-size.json` sweeps the
+/// label size with the format held and `issue-1663-column-value-format.json`
+/// sweeps the format with the size held, so a fit that drops either term fails
+/// here. `issue-1663-column-value-tickmark.json` separately holds the gutter at
+/// 32.326pt through `none`, `out` and `cross` major tick marks, which is why no
+/// tick term appears in the model (issue #1663).
+#[test]
+fn a_powerpoint_column_plot_reserves_the_native_value_label_gutter() {
+    for (value_pt, number_format, native_gutter_pt) in [
+        (9.0, None, 19.409),
+        (12.0, None, 23.713),
+        (18.0, None, 32.326),
+        (18.0, Some("0.00"), 55.121),
+        (18.0, Some("0.0000"), 73.371),
+    ] {
+        let mut chart: Chart = powerpoint_column_horizontal_probe_chart(value_pt);
+        chart.value_axis_number_format = number_format.map(str::to_string);
+        let (left, ..) = axis_plot_rect(&chart, PROBE_LINE_FRAME, true);
+        assert!(
+            (left - native_gutter_pt).abs() <= 0.1,
+            "{value_pt}pt labels in {number_format:?}: PowerPoint starts the plot \
+             {native_gutter_pt:.3}pt inside the frame, got {left:.3}pt"
+        );
+
+        // The gutter is spent on the labels, so they have to sit inside it on
+        // the 6.5pt frame inset every one of the fifteen exports measures.
+        let source: String = framed_chart_source(&chart, PROBE_LINE_FRAME.0, PROBE_LINE_FRAME.1);
+        let labels: Vec<(f64, String)> = emitted_value_labels_at_size(&source, value_pt);
+        // The category labels share the chart space's size, so the tick labels
+        // are the numeric ones.
+        let widest: &str = labels
+            .iter()
+            .map(|(_, label)| label.as_str())
+            .filter(|label| {
+                label
+                    .chars()
+                    .all(|character| character.is_ascii_digit() || ".,-%".contains(character))
+            })
+            .max_by(|left, right| left.len().cmp(&right.len()))
+            .expect("a drawn value axis prints its tick labels");
+        let placed: PlacedBox = placed_box_holding(&source, widest);
+        assert!(
+            (placed.dx - 6.5).abs() < 0.001,
+            "{value_pt}pt labels in {number_format:?}: the widest label `{widest}` starts \
+             6.5pt inside the frame, got {:.3}pt in:\n{source}",
+            placed.dx
+        );
+        assert!(
+            placed.dx + placed.width <= left,
+            "{value_pt}pt labels in {number_format:?}: the label box ends before the plot, \
+             got {:.3}pt against {left:.3}pt in:\n{source}",
+            placed.dx + placed.width
+        );
+    }
+}
+
+/// DrawingML tracking widens the labels, and the gutter follows it.
+///
+/// `scripts/probes/issue-1663-column-value-tracking.json` sweeps
+/// `c:valAx/.../a:defRPr@spc` over 0, 1 and 2pt on the four-glyph `0.00`
+/// labels: the native gutter moves by exactly 4.000pt per point of tracking,
+/// so PowerPoint adds one step after *every* glyph, the last included. That is
+/// what the pre-#1663 `9.5 + 3.13 em` column fit was carrying — the #841
+/// deck's three-glyph `80%` labels declare `spc="100"`, and 6.5 + 3 x 1pt is
+/// its 9.5 (issue #1663).
+#[test]
+fn a_powerpoint_column_value_gutter_follows_drawingml_tracking() {
+    for (tracking_hundredths, native_gutter_pt) in [(0, 55.121), (100, 59.121), (200, 63.121)] {
+        let mut chart: Chart = powerpoint_column_horizontal_probe_chart(18.0);
+        chart.value_axis_number_format = Some("0.00".to_string());
+        chart.value_axis_text_style.letter_spacing_hundredths = Some(tracking_hundredths);
+        let (left, ..) = axis_plot_rect(&chart, PROBE_LINE_FRAME, true);
+        assert!(
+            (left - native_gutter_pt).abs() <= 0.1,
+            "{tracking_hundredths} hundredths of tracking must start the plot \
+             {native_gutter_pt:.3}pt inside the frame, got {left:.3}pt"
+        );
+    }
+}
+
+/// A framed PowerPoint column plot stops a measured distance before the left
+/// edge of the legend it keeps on its right, rather than taking the flat 11pt
+/// inset a legend-free plot keeps.
+///
+/// The bands are `frame width - plot right` off the same native exports.
+/// `scripts/probes/issue-1663-column-legend-size.json` sweeps the legend's own
+/// size and `issue-1663-column-legend-label.json` sweeps the series name, so
+/// the key term and the label term are separated;
+/// `issue-1663-column-legend-absent.json` removes the legend and measures the
+/// 11.000pt that is left. The value axis cannot reach this edge: all fifteen
+/// value-side exports hold the band at 79.793pt (issue #1663).
+#[test]
+fn a_powerpoint_column_plot_stops_before_its_right_legend() {
+    for (legend_pt, series_name, native_band_pt) in [
+        (9.0, "Sales", 51.397),
+        (12.0, "Sales", 60.870),
+        (18.0, "Sales", 79.793),
+        (24.0, "Sales", 98.721),
+        (18.0, "S", 51.047),
+    ] {
+        let mut chart: Chart = powerpoint_column_horizontal_probe_chart(18.0);
+        chart.legend_text_style.size_pt = Some(legend_pt);
+        chart.series[0].name = Some(series_name.to_string());
+        let (.., right, _) = axis_plot_rect(&chart, PROBE_LINE_FRAME, true);
+        let band: f64 = PROBE_LINE_FRAME.0 - right;
+        assert!(
+            (band - native_band_pt).abs() <= 0.1,
+            "a {legend_pt}pt legend labelled `{series_name}` must leave \
+             {native_band_pt:.3}pt beside the plot, got {band:.3}pt"
+        );
+    }
+
+    let mut chart: Chart = powerpoint_column_horizontal_probe_chart(18.0);
+    chart.has_legend = false;
+    let (.., right, _) = axis_plot_rect(&chart, PROBE_LINE_FRAME, true);
+    assert!(
+        (PROBE_LINE_FRAME.0 - right - 11.0).abs() <= 0.1,
+        "a legend-free column plot keeps the flat 11pt right inset, got {:.3}pt",
+        PROBE_LINE_FRAME.0 - right
+    );
+}
+
+/// Reserving less for the legend must not move the legend: PowerPoint fits the
+/// drawn stack against the chart area's own right edge, so the key stays where
+/// #1435 and #1436 measured it whatever the plot gives back (issue #1663).
+#[test]
+fn a_shrinking_column_legend_band_leaves_the_drawn_legend_where_it_was() {
+    let chart: Chart = powerpoint_column_horizontal_probe_chart(18.0);
+    let source: String = framed_chart_source(&chart, PROBE_LINE_FRAME.0, PROBE_LINE_FRAME.1);
+    let placed: PlacedBox = placed_box_holding(&source, "Sales");
+    // Native key left edge 538.402pt inside the probe deck's own 120pt frame
+    // origin, read off the legend swatch's `fill_path` in a `mutool` trace.
+    assert!(
+        (placed.dx - (538.402 - 120.0)).abs() <= 0.1,
+        "the legend entry must stay on its native 418.402pt, got {:.3}pt in:\n{source}",
+        placed.dx
+    );
+}
+
 #[test]
 fn an_explicit_powerpoint_column_value_axis_keeps_the_native_label_inset() {
-    // The #841 chart's plot is already aligned, but each right-aligned tick
-    // label was 6.087pt left of PowerPoint. The calibrated plot gutter still
-    // needs the same 6pt inner inset the legacy `TICK_GAP + GAP` layout had.
+    // The #841 chart's plot was already aligned while each right-aligned tick
+    // label sat 6.087pt left of PowerPoint's (#1015). All fifteen #1663
+    // exports put the widest label's first glyph on 6.500pt, so the box is the
+    // label's own advance seated on that pad rather than the flat tick band —
+    // and the plot then starts one face clearance past its end, which is what
+    // keeps a short-labelled plot from overlapping the labels.
     let mut chart = crowded_column_chart();
     chart.host = crate::ir::ChartHost::Presentation;
+    chart.text_font_family = Some("Avenir Next LT Pro".to_string());
     chart.text_style.size_pt = Some(11.97);
     chart.value_axis_text_style.size_pt = Some(11.97);
     let source = framed_chart_source(&chart, 401.95, 344.25);
@@ -5336,10 +5500,15 @@ fn an_explicit_powerpoint_column_value_axis_keeps_the_native_label_inset() {
         .lines()
         .find(|line| line.contains("align(right + horizon)") && line.ends_with("[0]]])"))
         .expect("the zero value-axis label is emitted");
-    assert!(zero.contains("dx: 6pt"), "{zero}");
+    assert!(zero.contains("dx: 6.5pt"), "{zero}");
+
+    let box_right: f64 = placed_box_holding(&source, "0").width + 6.5;
+    let (plot_left, ..) = axis_plot_rect(&chart, (401.95, 344.25), false);
+    // 5/6 of Avenir Next LT Pro's ascent plus half its descent, at 11.97pt.
     assert!(
-        zero.contains("box(width: 28.784350000000003pt"),
-        "the fix must translate, not widen, the value-label box: {zero}"
+        (plot_left - box_right - 11.101).abs() <= 0.01,
+        "the plot must start one 11.101pt clearance past the label box's \
+         {box_right}pt right edge, got {plot_left}pt"
     );
 }
 
