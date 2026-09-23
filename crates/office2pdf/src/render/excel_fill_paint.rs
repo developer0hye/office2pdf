@@ -22,6 +22,12 @@ use typst::syntax::Span;
 use typst::visualize::Geometry;
 use typst_layout::Page;
 
+/// The label codegen gives the worksheet grid's table, with the printed-to-
+/// declared scale appended. It identifies the one table whose fills Excel
+/// clips this way, and the one whose text paces on Excel's whole-point
+/// advance grid (issue #1659).
+pub(super) const SHEET_TABLE_LABEL_PREFIX: &str = "o2p-excel-fill-";
+
 pub(super) fn adjust_cell_fills(pages: &mut [Page]) {
     let mut tables = HashMap::new();
     for page in pages.iter() {
@@ -50,7 +56,7 @@ fn collect_tables(frame: &Frame, tables: &mut HashMap<Span, f64>) {
                     continue;
                 };
                 let text = label.resolve();
-                if !text.starts_with("o2p-excel-fill-") {
+                if !text.starts_with(SHEET_TABLE_LABEL_PREFIX) {
                     continue;
                 }
                 let Some(scale) = text.rsplit('-').next().and_then(|s| s.parse::<f64>().ok())
