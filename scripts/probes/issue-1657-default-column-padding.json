@@ -1,0 +1,112 @@
+{
+  "name": "issue-1657-default-column-padding",
+  "base": "../../tests/fixtures/xlsx/issue_1657_default_column_padding_probe.xlsx",
+  "part": "xl/styles.xml",
+  "factor": "Normal font (family, size) -> column unit; base is Arial 20 (unit 11)",
+  "page": 1,
+  "noise_floor": 0.5,
+  "variants": [
+    {
+      "value": "arial6-unit3",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"6\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial7-unit4",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"7\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial9-unit5",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"9\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial10-unit6",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"10\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial11-unit6",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"11\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial12-unit7",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"12\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial14-unit8",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"14\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial16-unit9",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"16\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial18-unit10",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"18\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial22-unit12",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"22\"/>",
+      "count": 1
+    },
+    {
+      "value": "arial24-unit13",
+      "find": "<sz val=\"20\"/>",
+      "replace": "<sz val=\"24\"/>",
+      "count": 1
+    },
+    {
+      "value": "calibri8-unit4",
+      "find": "<sz val=\"20\"/><color theme=\"1\"/><name val=\"Arial\"/>",
+      "replace": "<sz val=\"8\"/><color theme=\"1\"/><name val=\"Calibri\"/>",
+      "count": 1
+    },
+    {
+      "value": "calibri9-unit5",
+      "find": "<sz val=\"20\"/><color theme=\"1\"/><name val=\"Arial\"/>",
+      "replace": "<sz val=\"9\"/><color theme=\"1\"/><name val=\"Calibri\"/>",
+      "count": 1
+    },
+    {
+      "value": "calibri16-unit8",
+      "find": "<sz val=\"20\"/><color theme=\"1\"/><name val=\"Arial\"/>",
+      "replace": "<sz val=\"16\"/><color theme=\"1\"/><name val=\"Calibri\"/>",
+      "count": 1
+    },
+    {
+      "value": "malgun16-unit9",
+      "find": "<sz val=\"20\"/><color theme=\"1\"/><name val=\"Arial\"/>",
+      "replace": "<sz val=\"16\"/><color theme=\"1\"/><name val=\"Malgun Gothic\"/>",
+      "count": 1
+    },
+    {
+      "value": "courier11-unit7",
+      "find": "<sz val=\"20\"/><color theme=\"1\"/><name val=\"Arial\"/>",
+      "replace": "<sz val=\"11\"/><color theme=\"1\"/><name val=\"Courier New\"/>",
+      "count": 1
+    },
+    {
+      "value": "courier24-unit14",
+      "find": "<sz val=\"20\"/><color theme=\"1\"/><name val=\"Arial\"/>",
+      "replace": "<sz val=\"24\"/><color theme=\"1\"/><name val=\"Courier New\"/>",
+      "count": 1
+    }
+  ]
+}

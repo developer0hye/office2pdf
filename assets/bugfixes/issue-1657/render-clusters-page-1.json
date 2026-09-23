@@ -1,0 +1,39 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 2.88,
+        "width": 10.08,
+        "x": 55.2,
+        "y": 83.52
+      },
+      "disposition": {
+        "issue": "#1850",
+        "kind": "issue",
+        "note": "Inspected the row-2 band at 400%: 'Ff' carries the same Arial glyphs at the same x as the native export, and the cluster is the horizontal edge band of a one-point downward baseline offset - the row-1 track prints 25pt where Excel prints 24pt (#1850). Row 1 shows no cluster at all, so the column origins this PR fixes are exact."
+      },
+      "id": "p1-f59a29a3409a",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 1,
+    "duplicate": 0,
+    "total": 1,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
