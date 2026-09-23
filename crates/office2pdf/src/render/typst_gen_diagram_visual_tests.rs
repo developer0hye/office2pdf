@@ -11179,6 +11179,91 @@ fn a_framed_chart_reserves_a_gutter_for_its_secondary_axis_labels() {
     }
 }
 
+/// A chart that declares no `<c:legend>` reserves no legend band, so its plot
+/// runs to the frame's right gutter.
+///
+/// The line renderer built its `LegendBox` from `<c:legendPos>` alone while
+/// `has_legend` only gated whether entries were drawn, so a legendless line
+/// chart still gave up the column a right legend would take and every
+/// right-hand element sat that far left — 94pt of it on page 11 of the #1220
+/// deck (issue #1649). The axis, radar and pie renderers already reclaimed it
+/// (issue #762).
+#[test]
+fn a_line_chart_without_a_legend_reserves_no_legend_band() {
+    // Both families the line renderer draws, at two frame widths: the band a
+    // legend would take is a fixed column, so a renderer that merely scaled
+    // the plot down would pass one width and fail the other.
+    for chart_type in [ChartType::Line, ChartType::Area] {
+        for frame_w in [400.0_f64, 560.0_f64] {
+            let frame_h: f64 = 200.0;
+
+            let mut legendless: Chart = dual_axis_line_chart();
+            legendless.chart_type = chart_type.clone();
+            legendless.legend_position = LegendPosition::Right;
+            assert!(
+                !legendless.has_legend,
+                "the #1220 `Success Ratios` fixture declares no legend"
+            );
+            let without: String = framed_chart_source(&legendless, frame_w, frame_h);
+            let (plot_x, _, plot_w, _) = plot_rect(&emitted_lines(&without));
+
+            // The only thing between the plot and the frame edge is the
+            // secondary axis' own label gutter, which mirrors the primary's on
+            // the left. Anything wider is a band reserved for a legend that
+            // does not exist.
+            let right_gutter: f64 = frame_w - (plot_x + plot_w);
+            assert!(
+                (right_gutter - plot_x).abs() < 1e-6,
+                "{chart_type:?} at {frame_w}pt: the right gutter is the secondary axis' \
+                 {plot_x:.2}pt label band, got {right_gutter:.2}pt in:\n{without}"
+            );
+
+            // Triangulation: a declared legend still takes its column, and it
+            // takes the same column at either frame width.
+            let mut legended: Chart = dual_axis_line_chart();
+            legended.chart_type = chart_type.clone();
+            legended.legend_position = LegendPosition::Right;
+            legended.has_legend = true;
+            let with: String = framed_chart_source(&legended, frame_w, frame_h);
+            let (_, _, legended_plot_w, _) = plot_rect(&emitted_lines(&with));
+            assert!(
+                plot_w > legended_plot_w,
+                "{chart_type:?} at {frame_w}pt: a declared right legend still reserves a \
+                 column: {plot_w:.2}pt vs {legended_plot_w:.2}pt"
+            );
+        }
+    }
+}
+
+/// The reclaimed band is the legend's own column, not a share of the frame:
+/// it is the same width whatever the frame measures.
+#[test]
+fn the_reclaimed_line_legend_band_is_a_fixed_column() {
+    let bands: Vec<f64> = [400.0_f64, 560.0_f64]
+        .into_iter()
+        .map(|frame_w| {
+            let mut legended: Chart = dual_axis_line_chart();
+            legended.legend_position = LegendPosition::Right;
+            legended.has_legend = true;
+            let with: String = framed_chart_source(&legended, frame_w, 200.0);
+            let without: String = framed_chart_source(&dual_axis_line_chart(), frame_w, 200.0);
+            plot_rect(&emitted_lines(&without)).2 - plot_rect(&emitted_lines(&with)).2
+        })
+        .collect();
+
+    assert!(
+        (bands[0] - bands[1]).abs() < 1e-6,
+        "the legend column is frame-independent, got {:.2}pt and {:.2}pt",
+        bands[0],
+        bands[1]
+    );
+    assert!(
+        bands[0] > 0.0,
+        "a declared right legend reserves a column, got {:.2}pt",
+        bands[0]
+    );
+}
+
 /// A switched-off secondary axis prints no labels and reserves no gutter, but
 /// its series still reads against its scale — hiding the axis is not the same
 /// as putting the series on the primary one.
