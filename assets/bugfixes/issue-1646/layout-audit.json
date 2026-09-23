@@ -1,0 +1,316 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 8,
+    "out": 6,
+    "matched": 6,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 3,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.46608624999999115,
+    "worst_dy": 1.0339500000000044,
+    "worst_dy_signed": -1.0339500000000044,
+    "worst_line": "AugustBergquist"
+   },
+   "dx0": {
+    "mean_abs": 3.9551899999999893,
+    "worst": 12.840519999999998
+   },
+   "width": {
+    "mean_abs_pct": 6.448740932965799,
+    "worst_pct": 15.625585527057273
+   },
+   "instances": {
+    "compared": 8,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 3,
+    "large_shifts": [
+     {
+      "label": "AllanMatson",
+      "gt_x": 665.291,
+      "gt_y": 419.981,
+      "out_x": 673.875,
+      "out_y": 418.97505,
+      "dx": 8.583999999999946,
+      "dy": -1.0059499999999844,
+      "width_pct": -13.858213038350476
+     },
+     {
+      "label": "AugustBergquist",
+      "gt_x": 151.597,
+      "gt_y": 420.009,
+      "out_x": 164.43752,
+      "out_y": 418.97505,
+      "dx": 12.840519999999998,
+      "dy": -1.0339500000000044,
+      "width_pct": -15.625585527057273
+     },
+     {
+      "label": "VictoriaLindqvist",
+      "gt_x": 399.515,
+      "gt_y": 466.80899999999997,
+      "out_x": 409.5,
+      "out_y": 465.7955,
+      "dx": 9.985000000000014,
+      "dy": -1.013499999999965,
+      "width_pct": -12.329797693066212
+     }
+    ],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 4,
+    "fine_shifts": [
+     {
+      "label": "THETEAM",
+      "gt_x": 72.113,
+      "gt_y": 91.30399999999997,
+      "out_x": 72.10488,
+      "out_y": 90.65753,
+      "dx": -0.008120000000005234,
+      "dy": -0.6464699999999794,
+      "width_pct": 8.173238148204899
+     },
+     {
+      "label": "AllanMatson",
+      "gt_x": 665.291,
+      "gt_y": 419.981,
+      "out_x": 673.875,
+      "out_y": 418.97505,
+      "dx": 8.583999999999946,
+      "dy": -1.0059499999999844,
+      "width_pct": -13.858213038350476
+     },
+     {
+      "label": "AugustBergquist",
+      "gt_x": 151.597,
+      "gt_y": 420.009,
+      "out_x": 164.43752,
+      "out_y": 418.97505,
+      "dx": 12.840519999999998,
+      "dy": -1.0339500000000044,
+      "width_pct": -15.625585527057273
+     },
+     {
+      "label": "VictoriaLindqvist",
+      "gt_x": 399.515,
+      "gt_y": 466.80899999999997,
+      "out_x": 409.5,
+      "out_y": 465.7955,
+      "dx": 9.985000000000014,
+      "dy": -1.013499999999965,
+      "width_pct": -12.329797693066212
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 2,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [
+     "Sensitivity:",
+     "Internal"
+    ],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 5,
+    "worst_delta": 1.0439999999999827
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 17,
+    "out_count": 9,
+    "canonical_gt_count": 3,
+    "canonical_out_count": 4,
+    "matched": 2,
+    "unmatched_gt": 1,
+    "unmatched_out": 2,
+    "mean_center_delta": 0.02103499999999059,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 1,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [
+     {
+      "kind": "stroke",
+      "geometry_kind": "line",
+      "gt_indices": [
+       15
+      ],
+      "out_indices": [
+       7
+      ],
+      "gt_bbox": [
+       72.028,
+       104.91000000000003,
+       242.05,
+       104.91000000000003
+      ],
+      "out_bbox": [
+       72.05094,
+       104.94757,
+       242.07604,
+       104.94757
+      ],
+      "dx": 0.0229399999999913,
+      "dy": 0.0375699999999739,
+      "dwidth": 0.003100000000017644,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.0229399999999913,
+       "top": 0.0375699999999739,
+       "right": 0.026039999999994734,
+       "bottom": 0.0375699999999739
+      },
+      "center_dx": 0.024489999999985912,
+      "center_dy": 0.0375699999999739,
+      "max_abs_delta": 0.0375699999999739
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0,
+       1
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       0.0,
+       0.0,
+       960.009,
+       540.0
+      ],
+      "out_bbox": [
+       0.0,
+       0.0,
+       960.0,
+       540.0
+      ],
+      "dx": 0.0,
+      "dy": 0.0,
+      "dwidth": -0.009000000000014552,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.0,
+       "top": 0.0,
+       "right": -0.009000000000014552,
+       "bottom": 0.0
+      },
+      "center_dx": -0.004500000000007276,
+      "center_dy": 0.0,
+      "max_abs_delta": 0.009000000000014552,
+      "visible_coverage": {
+       "status": "unmodeled",
+       "mismatch_area_pt2": 0.0,
+       "unmodeled_area_pt2": 518293.5514943291,
+       "unmodeled_samples": [
+        [
+         0.085,
+         0.0132751465,
+         72.721057,
+         68.40584349999999
+        ],
+        [
+         0.085,
+         68.40584349999999,
+         72.721057,
+         91.30399
+        ],
+        [
+         0.085,
+         91.30399,
+         72.721057,
+         121.58919999999998
+        ],
+        [
+         0.085,
+         121.58919999999998,
+         72.721057,
+         155.99547
+        ],
+        [
+         0.085,
+         155.99547,
+         72.721057,
+         157.82847500000003
+        ]
+       ],
+       "mismatch_samples": [],
+       "raw_edge_coverage": {
+        "left": "unchanged",
+        "right": "unchanged",
+        "top": "unchanged",
+        "bottom": "unchanged"
+       }
+      }
+     }
+    ],
+    "x": {
+     "mean_abs": 0.01146999999999565,
+     "worst": 0.0229399999999913
+    },
+    "y": {
+     "mean_abs": 0.01878499999998695,
+     "worst": 0.0375699999999739
+    },
+    "width": {
+     "mean_abs": 0.006050000000016098,
+     "worst": -0.009000000000014552
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.01146999999999565,
+      "worst": 0.0229399999999913
+     },
+     "top": {
+      "mean_abs": 0.01878499999998695,
+      "worst": 0.0375699999999739
+     },
+     "right": {
+      "mean_abs": 0.017520000000004643,
+      "worst": 0.026039999999994734
+     },
+     "bottom": {
+      "mean_abs": 0.01878499999998695,
+      "worst": 0.0375699999999739
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}

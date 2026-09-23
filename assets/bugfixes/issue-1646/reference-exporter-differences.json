@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://github.com/user-attachments/files/31185149/GENERAL.SERVICES.pptx",
+    "sha256": "17924ec3b27646a2c1b2bb711b845360b713cc7052b3cdde9df752f9ceded3a9"
+  },
+  "reference_export": {
+    "application": "LibreOffice Impress",
+    "version": "26.2.5.2 (X86_64)",
+    "platform": "Unspecified in supplied PDF metadata",
+    "pdf_sha256": "8c8f471d8baaf0abd79e752ef49951c240752d36e4512651f6cb9a7cfffb650f",
+    "evidence_path": "assets/bugfixes/issue-1646/gt.jpg",
+    "evidence_sha256": "8b3e351adce5d83df1cc0a86688e2180235d35bf115d0f1462ce038c0907721d"
+  },
+  "native_export": {
+    "application": "Microsoft PowerPoint",
+    "version": "16.113.1 (build 16.113.26091740)",
+    "platform": "macOS 26.6.2 build 25G83",
+    "pdf_sha256": "adec062605a45f1b6884252e9f4e199dee2da029e975845c258f4a7c38c820e1",
+    "evidence_path": "assets/bugfixes/issue-1646/native.jpg",
+    "evidence_sha256": "738922bba0dc0b7e032428eaa12d4f6218d658826d0b7ad75e16692e6d0e5cdc"
+  },
+  "verification_url": "https://github.com/developer0hye/office2pdf/issues/1646#issuecomment-5787359247",
+  "differences": [
+    {
+      "id": "page-10-substituted-face-native-match",
+      "page": 10,
+      "kind": "render-clusters",
+      "render_cluster_ids": [
+        "p10-0d96435deb65",
+        "p10-12ebc8e63804",
+        "p10-15b3975cb75b",
+        "p10-1677c832ded3",
+        "p10-173122a4e93e",
+        "p10-173a6a6741cd",
+        "p10-1caea9828dc3",
+        "p10-33836b3013f0",
+        "p10-371007a1fcfd",
+        "p10-482db87acfb6",
+        "p10-5339250fc7f6",
+        "p10-5c7b5bb4cf4c",
+        "p10-5c86df655017",
+        "p10-5def88db136c",
+        "p10-634efb05674f",
+        "p10-656be200d5bf",
+        "p10-66b43ed97f79",
+        "p10-6b06cf1104c7",
+        "p10-750426716fd2",
+        "p10-82424ab3c058",
+        "p10-8345ab0d3872",
+        "p10-84198030b8eb",
+        "p10-a1c46de1f354",
+        "p10-a5df60b80857",
+        "p10-a9a1e00823d7",
+        "p10-afeca45db4e2",
+        "p10-b2a207678adc",
+        "p10-ba8951c12c60",
+        "p10-be41276b49ed",
+        "p10-c5b9ed9f31bd",
+        "p10-c96d2d6e4fcd",
+        "p10-caa846d84e7c",
+        "p10-cc85b5b491c8",
+        "p10-cd0ee7ba7c46",
+        "p10-ce37904d38c6",
+        "p10-d47205ee8c95",
+        "p10-d87ff4e73f78",
+        "p10-dc94b1ccce21",
+        "p10-ddc0c44cc1cc",
+        "p10-e0efec146a74",
+        "p10-e79ed063f843",
+        "p10-e8eb46ebb3c7",
+        "p10-ea67bec0cd66",
+        "p10-ecd919a033fc",
+        "p10-ed8d68ad60e7",
+        "p10-f9b2efdadcd4"
+      ]
+    }
+  ]
+}
