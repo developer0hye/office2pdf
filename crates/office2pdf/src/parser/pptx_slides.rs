@@ -1723,6 +1723,9 @@ struct SlideXmlParser<'a> {
     para_level: u32,
     para_default_run_style: TextStyle,
     para_end_run_style: TextStyle,
+    /// Whether the open paragraph wrote an `<a:endParaRPr>` element.
+    /// An absent mark takes no inherited face onto the line (issue #1645).
+    para_declares_end_para_rpr: bool,
     para_bullet_definition: PptxBulletDefinition,
     in_ln_spc: bool,
     in_spc_bef: bool,
@@ -1792,6 +1795,7 @@ impl<'a> SlideXmlParser<'a> {
             para_level: 0,
             para_default_run_style: TextStyle::default(),
             para_end_run_style: TextStyle::default(),
+            para_declares_end_para_rpr: false,
             para_bullet_definition: PptxBulletDefinition::default(),
             in_ln_spc: false,
             in_spc_bef: false,
@@ -2120,6 +2124,7 @@ impl<'a> SlideXmlParser<'a> {
                     .text_body_style_defaults
                     .run_style_for_level(self.para_level);
                 self.para_end_run_style = self.para_default_run_style.clone();
+                self.para_declares_end_para_rpr = false;
                 self.para_bullet_definition = self
                     .text_body_style_defaults
                     .bullet_for_level(self.para_level);
@@ -2260,6 +2265,7 @@ impl<'a> SlideXmlParser<'a> {
                 self.rpr_applied_latin_typeface = false;
                 self.rpr_applied_east_asian_typeface = false;
                 self.para_end_run_style = self.para_default_run_style.clone();
+                self.para_declares_end_para_rpr = true;
                 extract_rpr_attributes(e, &mut self.para_end_run_style);
             }
             b"ln" if self.in_rpr || self.in_end_para_rpr => {
@@ -2692,6 +2698,7 @@ impl<'a> SlideXmlParser<'a> {
             }
             b"endParaRPr" if self.in_para && !self.in_run => {
                 self.para_end_run_style = self.para_default_run_style.clone();
+                self.para_declares_end_para_rpr = true;
                 extract_rpr_attributes(e, &mut self.para_end_run_style);
             }
             b"ln" if self.in_rpr || self.in_end_para_rpr => {
@@ -3025,10 +3032,16 @@ impl<'a> SlideXmlParser<'a> {
                     &self.para_default_run_style,
                 );
                 let mut paragraph_runs = std::mem::take(&mut self.runs);
-                insert_hangul_kinsoku_break_markers(&mut paragraph_runs);
                 let mut paragraph_style: ParagraphStyle = self.para_style.clone();
-                paragraph_style.paragraph_mark_font_family =
-                    pptx_paragraph_mark_font_family(&self.para_end_run_style, self.ctx.theme);
+                paragraph_style.paragraph_mark_font_family = pptx_paragraph_mark_font_family(
+                    &self.para_end_run_style,
+                    self.ctx.theme,
+                    PptxParagraphMark::for_paragraph(
+                        self.para_declares_end_para_rpr,
+                        &paragraph_runs,
+                    ),
+                );
+                insert_hangul_kinsoku_break_markers(&mut paragraph_runs);
                 // `a:tab pos` is measured from the text origin — the box edge
                 // plus `lIns` — not from the box edge itself: the native
                 // export of customGeo.pptx page 46 lands its value run at

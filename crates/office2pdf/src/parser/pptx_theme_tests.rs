@@ -1013,3 +1013,196 @@ fn a_paragraph_mark_keeps_the_typeface_it_declares() {
         "the mark's own typeface must beat the theme fallback"
     );
 }
+
+/// A text box whose body-level `<a:lstStyle>` names `list_style_face` for
+/// level 1, holding `paragraphs_xml` verbatim.
+///
+/// The list style is the only place that face appears, so anything set in it
+/// reached the paragraph through inheritance rather than from a run.
+fn text_box_with_list_style_face(list_style_face: &str, paragraphs_xml: &str) -> String {
+    format!(
+        r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="TextBox"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="6000000" cy="2000000"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:lstStyle><a:lvl1pPr><a:defRPr sz="2000"><a:latin typeface="{list_style_face}"/></a:defRPr></a:lvl1pPr></a:lstStyle>{paragraphs_xml}</p:txBody></p:sp>"#
+    )
+}
+
+/// The `paragraph_mark_font_family` of every paragraph of a slide built from
+/// one shape.
+fn paragraph_mark_families(shape_xml: &str, theme_xml: &str) -> Vec<Option<String>> {
+    let slide = make_slide_xml(&[shape_xml.to_string()]);
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], theme_xml);
+    let (doc, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page = first_fixed_page(&doc);
+    text_box_blocks(&page.elements[0])
+        .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph(para) => Some(
+                para.style
+                    .paragraph_mark_font_family
+                    .as_deref()
+                    .map(str::to_string),
+            ),
+            _ => None,
+        })
+        .collect()
+}
+
+/// A paragraph that writes no `<a:endParaRPr>` at all puts no inherited face
+/// on PowerPoint's shared line box (issue #1645).
+///
+/// Measured with two native one-factor probes over eight sizes from 11pt to
+/// 53pt, exported through `scripts/probe_harness.py --backend office`
+/// (`scripts/probes/issue-1645-paragraph-mark-list-style-face.json` and
+/// `issue-1645-absent-paragraph-mark-theme-face.json`): with the run naming
+/// its own typeface and no `<a:endParaRPr>` present, replacing the body list
+/// style's `<a:latin>` with Meiryo or Calibri — or the theme's minor Latin
+/// font with either — moves no baseline at all, while declaring
+/// `<a:endParaRPr><a:latin typeface="Meiryo"/></a:endParaRPr>` moves all eight
+/// by up to 5.04pt. The mark is typed in the face of the text it follows, so
+/// it contributes nothing the runs have not already put on the line.
+#[test]
+fn an_undeclared_paragraph_mark_adds_no_face_to_the_line() {
+    let paragraph = r#"<a:p><a:r><a:rPr sz="1600"><a:latin typeface="Verdana"/></a:rPr><a:t>Manager</a:t></a:r></a:p>"#;
+    let shape = text_box_with_list_style_face("Gill Sans MT", paragraph);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Gill Sans MT", "Calibri");
+
+    assert_eq!(
+        paragraph_mark_families(&shape, &theme_xml),
+        vec![Some("Verdana".to_string())],
+        "an absent mark must take the run's own face, not the list style's \
+         and not the theme's minor Latin font"
+    );
+}
+
+/// Triangulation for [`an_undeclared_paragraph_mark_adds_no_face_to_the_line`]
+/// with a different face triple, so no single family can be hard-coded.
+#[test]
+fn an_undeclared_paragraph_mark_adds_no_face_for_another_face_triple() {
+    let paragraph = r#"<a:p><a:r><a:rPr sz="1600"><a:latin typeface="Malgun Gothic"/></a:rPr><a:t>Key employee</a:t></a:r></a:p>"#;
+    let shape = text_box_with_list_style_face("Meiryo", paragraph);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Meiryo", "MS Gothic");
+
+    assert_eq!(
+        paragraph_mark_families(&shape, &theme_xml),
+        vec![Some("Malgun Gothic".to_string())],
+        "the rule is the run's own face, not one particular family"
+    );
+}
+
+/// The other branch of the same rule: an `<a:endParaRPr>` that is *present*
+/// but names no typeface does inherit the list style's face.
+///
+/// The `lst-meiryo-bare-mark` variant of the native probe moves all eight
+/// baselines by exactly what an explicitly declared Meiryo mark moves them,
+/// so presence — not a declared `<a:latin>` — is what puts the inherited face
+/// on the line.
+#[test]
+fn a_present_but_bare_paragraph_mark_inherits_the_list_style_face() {
+    let paragraph = r#"<a:p><a:r><a:rPr sz="1600"><a:latin typeface="Verdana"/></a:rPr><a:t>Manager</a:t></a:r><a:endParaRPr lang="en-US" sz="1600"/></a:p>"#;
+    let shape = text_box_with_list_style_face("Gill Sans MT", paragraph);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Gill Sans MT", "Calibri");
+
+    assert_eq!(
+        paragraph_mark_families(&shape, &theme_xml),
+        vec![Some("Gill Sans MT".to_string())],
+        "a mark element that is present inherits the list style's face"
+    );
+}
+
+/// The shape issue #1645 reports: a name paragraph in the major Latin font
+/// followed by a role paragraph that names the minor one, neither writing an
+/// `<a:endParaRPr>`.
+///
+/// The role line's box must be the minor font's alone. Sharing it with the
+/// major font seats the role baseline a point high, because the two models
+/// straddle the whole point PowerPoint rounds the story position to.
+#[test]
+fn neither_paragraph_of_a_name_and_role_pair_takes_the_others_face() {
+    let paragraphs = concat!(
+        r#"<a:p><a:r><a:rPr lang="en-US"/><a:t>August Bergquist</a:t></a:r></a:p>"#,
+        r#"<a:p><a:r><a:rPr lang="en-US" sz="1600" i="1"><a:latin typeface="+mn-lt"/></a:rPr><a:t>Manager</a:t></a:r></a:p>"#,
+    );
+    let shape = text_box_with_list_style_face("+mj-lt", paragraphs);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Gill Sans MT", "Arial");
+
+    assert_eq!(
+        paragraph_mark_families(&shape, &theme_xml),
+        vec![Some("Gill Sans MT".to_string()), Some("Arial".to_string())],
+        "each paragraph's mark stays on the face its own run is set in"
+    );
+}
+
+/// End to end for issue #1645: the role line of a name-and-role pair is
+/// seated by its own face alone.
+///
+/// The deck is the shape slide 10 of the #1220 deck uses — a placeholder list
+/// style naming `+mj-lt`, a name paragraph inheriting it, and a role
+/// paragraph naming `+mn-lt`, neither writing an `<a:endParaRPr>`. Both faces
+/// are Typst's own embedded ones so the test does not depend on what the host
+/// has installed, and the sizes are chosen as the first ones where sharing the
+/// box changes the whole point PowerPoint seats the baseline on — at a size
+/// where the two models agree the test would pass without the fix.
+#[test]
+fn a_role_paragraph_is_seated_by_its_own_face_alone() {
+    let major: &str = "Libertinus Serif";
+    let minor: &str = "DejaVu Sans Mono";
+    let (Some((major_em, _)), Some((minor_em, _)), Some((shared_em, _))) = (
+        crate::render::pdf::powerpoint_line_box_em(major),
+        crate::render::pdf::powerpoint_line_box_em(minor),
+        crate::render::pdf::powerpoint_line_box_em_for_families(&[major, minor]),
+    ) else {
+        return;
+    };
+    let name_size_pt: f64 = discriminating_size_pt(major_em, shared_em);
+    let role_size_pt: f64 = discriminating_size_pt(minor_em, shared_em);
+
+    let paragraphs = format!(
+        concat!(
+            r#"<a:p><a:r><a:rPr lang="en-US" sz="{name}"/><a:t>August Bergquist</a:t></a:r></a:p>"#,
+            r#"<a:p><a:r><a:rPr lang="en-US" sz="{role}"><a:latin typeface="+mn-lt"/></a:rPr>"#,
+            r#"<a:t>Manager</a:t></a:r></a:p>"#,
+        ),
+        name = (name_size_pt * 100.0) as i64,
+        role = (role_size_pt * 100.0) as i64,
+    );
+    let shape = text_box_with_list_style_face("+mj-lt", &paragraphs);
+    let slide = make_slide_xml(&[shape]);
+    let theme_xml = make_theme_xml(&standard_theme_colors(), major, minor);
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme_xml);
+
+    let (doc, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let source = crate::render::typst_gen::generate_typst(&doc)
+        .unwrap()
+        .source;
+    let seats: Vec<f64> = emitted_line_box_top_edges_pt(&source);
+
+    assert_eq!(
+        seats,
+        vec![
+            (major_em * name_size_pt).round(),
+            (minor_em * role_size_pt).round(),
+        ],
+        "each paragraph seats on its own face's share of the 1.2em box; \
+         sharing them would seat the role line at \
+         {shared:?}",
+        shared = (shared_em * role_size_pt).round(),
+    );
+}
+
+/// The smallest slide size at which two ascent shares seat the baseline on
+/// different whole points — the only sizes at which a test can tell them
+/// apart, because PowerPoint rounds the seat to a point.
+fn discriminating_size_pt(alone_em: f64, shared_em: f64) -> f64 {
+    (8..=72)
+        .map(f64::from)
+        .find(|size| (alone_em * size).round() != (shared_em * size).round())
+        .expect("the two models must round apart at some slide size")
+}
+
+/// Every `top-edge:` the generated source states, in points and in order.
+fn emitted_line_box_top_edges_pt(source: &str) -> Vec<f64> {
+    source
+        .split("top-edge: ")
+        .skip(1)
+        .filter_map(|rest| rest.split_once("pt")?.0.parse().ok())
+        .collect()
+}

@@ -2976,19 +2976,18 @@ fn the_contoso_scaled_attribution_lands_on_its_native_baseline() {
 /// `tests/fixtures/pptx/run-fill-alpha.pptx` seats its `txBox="1"` frame at
 /// `a:off y="2133600"` under the default `tIns` of 45720 EMU, putting the
 /// content top on 171.60pt, and sets all three of its paragraphs in 32pt Arial
-/// at a width none of them wraps at. None writes an `<a:endParaRPr>`, so each
-/// mark resolves through `presentation.xml`'s `<a:defaultTextStyle>`, whose
-/// `<a:latin typeface="+mn-lt"/>` names the theme's minor Latin font — here
-/// `Calisto MT` — and shares the line box with the run. A native PowerPoint
-/// 16.112 export puts the first baseline on 202.56pt.
+/// at a width none of them wraps at. None writes an `<a:endParaRPr>`, so no
+/// mark face joins the line and each is measured from its Arial run alone
+/// (issue #1645). A native PowerPoint 16.112 export puts the first baseline on
+/// 202.56pt.
 ///
-/// The two faces settle on 0.963654em, a 31pt seat at this size, which is also
-/// where Arial's own 0.972378em share rounds: a frame this shallow cannot tell
-/// the mark's contribution apart, and no claim about it is made here. What it
-/// does separate is the **metric source**. Folding Arial's 67/2048 hhea line
-/// gap into the descent gives 0.944713em and a 30pt seat, landing the line on
-/// 201.60pt — 0.96pt high, four times the export's 0.24pt position grid
-/// (issue #1179).
+/// Arial's own 0.972378em share rounds to a 31pt seat at this size, and so
+/// does the 0.963654em it used to share with the theme's minor Latin
+/// `Calisto MT`: a frame this shallow cannot tell the mark's contribution
+/// apart, and no claim about it is made here. What it does separate is the
+/// **metric source**. Folding Arial's 67/2048 hhea line gap into the descent
+/// gives 0.944713em and a 30pt seat, landing the line on 201.60pt — 0.96pt
+/// high, four times the export's 0.24pt position grid (issue #1179).
 #[test]
 fn the_unwrapped_label_lands_on_its_native_first_baseline() {
     const EMU_PER_PT: f64 = 12700.0;
