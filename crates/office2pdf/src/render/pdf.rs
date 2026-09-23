@@ -475,6 +475,7 @@ fn apply_completed_frame_passes(document: &mut PagedDocument) {
     let mut pages: Vec<Page> = document.pages().to_vec();
     super::powerpoint_line_paint::adjust_paragraph_marks(&mut pages);
     super::excel_fill_paint::adjust_cell_fills(&mut pages);
+    super::excel_glyph_pacing::pace_sheet_glyphs_on_whole_points(&mut pages);
     super::word_justified_gap_phases::spread_justified_gaps_as_word_does(&mut pages);
     let info: typst::model::DocumentInfo = typst::model::Document::info(document).clone();
     *document = PagedDocument::new(pages.into_iter().collect(), info);
@@ -645,6 +646,94 @@ fn compiled_text_runs_with_line_seating(
         ))
     })?;
     let mut runs: Vec<PlacedTextRun> = Vec::new();
+    collect(&page.frame, Transform::identity(), &mut runs);
+    Ok(runs)
+}
+
+/// One shaped run's glyph pacing as the layout engine actually placed it.
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[derive(Debug, Clone)]
+pub(crate) struct PlacedGlyphRun {
+    /// Distance from the page's left edge to the run's origin, in points.
+    pub left_pt: f64,
+    pub text: String,
+    /// The advance each glyph takes, in points and in layout order. The
+    /// run's glyph origins are this list's running sums from `left_pt`.
+    pub advances_pt: Vec<f64>,
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+impl PlacedGlyphRun {
+    /// Where each glyph after the first starts, relative to the run's origin.
+    pub fn glyph_origins_pt(&self) -> Vec<f64> {
+        let mut pen: f64 = 0.0;
+        self.advances_pt
+            .iter()
+            .take(self.advances_pt.len().saturating_sub(1))
+            .map(|advance| {
+                pen += advance;
+                pen
+            })
+            .collect()
+    }
+
+    pub fn width_pt(&self) -> f64 {
+        self.advances_pt.iter().sum()
+    }
+}
+
+/// Every shaped run's glyph advances on `page_index`, in layout order.
+///
+/// The completed-frame passes rewrite glyph advances rather than emitted
+/// source, so a pacing test has to read the frames. `apply_frame_passes`
+/// selects the placement before or after those passes, which is what lets a
+/// test assert that a pass conserved a run's width.
+#[cfg(all(test, not(target_arch = "wasm32")))]
+pub(crate) fn compiled_glyph_runs(
+    typst_source: &str,
+    page_index: usize,
+    apply_frame_passes: bool,
+) -> Result<Vec<PlacedGlyphRun>, ConvertError> {
+    use typst::layout::{Frame, FrameItem, Transform};
+
+    fn collect(frame: &Frame, transform: Transform, out: &mut Vec<PlacedGlyphRun>) {
+        for (position, item) in frame.items() {
+            let at: Transform = transform.pre_concat(Transform::translate(position.x, position.y));
+            match item {
+                FrameItem::Group(group) => {
+                    collect(&group.frame, at.pre_concat(group.transform), out);
+                }
+                FrameItem::Text(text) => out.push(PlacedGlyphRun {
+                    left_pt: at.tx.to_pt(),
+                    text: text.text.to_string(),
+                    advances_pt: text
+                        .glyphs
+                        .iter()
+                        .map(|glyph| glyph.x_advance.at(text.size).to_pt())
+                        .collect(),
+                }),
+                _ => {}
+            }
+        }
+    }
+
+    let font_paths: &[PathBuf] = super::font_context::default_font_search_paths();
+    let world = MinimalWorld::new_with_in_memory_fonts(typst_source, &[], font_paths, &[]);
+    let warned = typst::compile::<PagedDocument>(&world);
+    let mut document = warned.output.map_err(|errors| {
+        let messages: Vec<String> = errors.iter().map(|e| e.message.to_string()).collect();
+        ConvertError::Render(format!("Typst compilation failed: {}", messages.join("; ")))
+    })?;
+    if apply_frame_passes {
+        apply_completed_frame_passes(&mut document);
+    }
+    let page = document.pages().get(page_index).ok_or_else(|| {
+        ConvertError::Render(format!(
+            "page {page_index} is past the document's {} pages",
+            document.pages().len()
+        ))
+    })?;
+    let mut runs: Vec<PlacedGlyphRun> = Vec::new();
     collect(&page.frame, Transform::identity(), &mut runs);
     Ok(runs)
 }

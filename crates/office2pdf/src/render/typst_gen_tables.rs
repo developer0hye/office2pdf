@@ -63,7 +63,11 @@ fn generate_table_inner(
                 .sheet_print_scale()
                 .filter(|s| *s > 0.0 && *s < 1.0)
                 .unwrap_or(1.0);
-            format!("o2p-excel-fill-{id}-{}", format_f64(scale))
+            format!(
+                "{}{id}-{}",
+                crate::render::excel_fill_paint::SHEET_TABLE_LABEL_PREFIX,
+                format_f64(scale)
+            )
         });
     out.push_str("#table(\n");
 

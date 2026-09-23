@@ -5375,12 +5375,19 @@ pub(super) fn sheet_advance_grid_scale() -> Option<f64> {
 /// the grid applies to. A fitted cell rounds at its declared size and scales
 /// that grid onto the page (issue #1238).
 ///
-/// Typst lays a run out on the face's exact advances, and offers no per-glyph
-/// override; `tracking` is the one lever, and it is uniform. Spreading the
-/// run's rounding delta over its gaps stops the 5% deficit accumulating and
-/// leaves each glyph within the rounding noise: measured against the ten
-/// golden-mock exports, the worst origin lands 1.35pt from the native one and
-/// the median 0.13pt, where the unquantized line reached 19.5pt.
+/// Typst lays a run out on the face's exact advances, and its source language
+/// offers no per-glyph override; `tracking` is the one lever there, and it is
+/// uniform. What it buys is the *reservation*: spreading the run's rounding
+/// delta over its gaps makes the run measure the width Excel gives it, so
+/// wrapping, the spill clip and every seat placed from that width are the
+/// quantized ones, and the 5% deficit stops accumulating.
+///
+/// Where each glyph then lands inside that width is settled on the completed
+/// frame, which does carry one advance per glyph — see `excel_glyph_pacing`.
+/// The spread alone got the average right but not the individual origin:
+/// measured against the ten golden-mock exports, the worst landed 1.35pt from
+/// the native one and the median 0.13pt, where the unquantized line reached
+/// 19.5pt (issue #1659).
 ///
 /// The delta is summed over the advances that *carry a gap* — every glyph but
 /// the last — so the run's last origin lands exactly where Excel puts it. The
