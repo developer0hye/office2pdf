@@ -11059,7 +11059,13 @@ fn dual_axis_line_chart() -> Chart {
 /// gridline in a box of stated height; a category label's box states none,
 /// which is what tells the two apart.
 fn emitted_value_labels(source: &str) -> Vec<(f64, String)> {
-    let marker: String = format!("text(size: {}pt)[", format_f64(CHART_DEFAULT_TEXT_PT));
+    emitted_value_labels_at_size(source, CHART_DEFAULT_TEXT_PT)
+}
+
+/// The same census of one chart's value tick labels, for a chart whose axis
+/// states a size of its own.
+fn emitted_value_labels_at_size(source: &str, size_pt: f64) -> Vec<(f64, String)> {
+    let marker: String = format!("text(size: {}pt)[", format_f64(size_pt));
     source
         .lines()
         .filter(|line| {
@@ -11797,6 +11803,194 @@ fn a_turned_ring_keeps_its_centre_diameter_and_hole() {
             (inner / outer - 0.71).abs() < 1e-6,
             "{authored:?}: hole ratio {:.4}, expected 0.7100",
             inner / outer
+        );
+    }
+}
+
+/// The line chart `tests/fixtures/pptx/line-chart.pptx` draws, which the
+/// native PowerPoint probes of #1651 measured one factor at a time: a single
+/// Calibri series over four quarters whose automatic value axis runs 0..9,
+/// drawn in the deck's 480 x 320pt graphic frame.
+fn probe_line_chart(size_pt: f64) -> Chart {
+    let mut chart: Chart = dual_axis_line_chart();
+    chart.host = crate::ir::ChartHost::Presentation;
+    chart.has_legend = false;
+    chart.secondary_value_axis = None;
+    chart.categories = ["1st Qtr", "2nd Qtr", "3rd Qtr", "4th Qtr"]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    chart.series.truncate(1);
+    chart.series[0].name = Some("Sales".to_string());
+    chart.series[0].values = vec![8.2, 3.2, 1.4, 1.2];
+    chart.series[0].number_format = None;
+    chart.series[0].value_axis = crate::ir::ChartValueAxisRole::Primary;
+    chart.value_axis_max = None;
+    chart.value_axis_number_format = None;
+    chart.text_font_family = Some("Calibri".to_string());
+    chart.text_style.size_pt = Some(size_pt);
+    chart
+}
+
+/// The frame the #1651 probes exported the chart in.
+const PROBE_LINE_FRAME: (f64, f64) = (480.0, 320.0);
+
+/// PowerPoint reserves its line plot's value-label gutter from the labels
+/// themselves: the widest one starts 6.5pt inside the chart frame and the plot
+/// begins a face-measured clearance past its end.
+///
+/// The gutters below are read off native PowerPoint exports of
+/// `tests/fixtures/pptx/line-chart.pptx` — `scripts/probes/
+/// issue-1651-line-value-size.json` sweeps the label size with the format
+/// held, `issue-1651-line-value-format.json` sweeps the format with the size
+/// held — as the x of the value-axis line in a `mutool draw -F trace`, minus
+/// the frame's own 120pt origin. Size alone cannot explain the pair at 18pt,
+/// and label width alone cannot explain the three at one format, so a fit that
+/// drops either term fails here (issue #1651).
+#[test]
+fn a_powerpoint_line_plot_reserves_the_native_value_label_gutter() {
+    for (size_pt, number_format, native_gutter_pt) in [
+        (9.0, None, 19.409),
+        (12.0, None, 23.713),
+        (18.0, None, 32.326),
+        (18.0, Some("0.00"), 55.121),
+    ] {
+        let mut chart: Chart = probe_line_chart(size_pt);
+        chart.value_axis_number_format = number_format.map(str::to_string);
+        let (frame_w, frame_h) = PROBE_LINE_FRAME;
+        let source: String = framed_chart_source(&chart, frame_w, frame_h);
+        let (plot_x, ..) = plot_rect(&emitted_lines(&source));
+
+        assert!(
+            (plot_x - native_gutter_pt).abs() < 0.1,
+            "{size_pt}pt labels in {number_format:?}: PowerPoint starts the plot \
+             {native_gutter_pt:.3}pt inside the frame, got {plot_x:.3}pt in:\n{source}"
+        );
+
+        // The gutter is spent on the labels, so they have to sit in it: the
+        // widest starts on the 6.5pt frame inset every export measures.
+        let labels: Vec<(f64, String)> = emitted_value_labels_at_size(&source, size_pt);
+        let widest: &str = labels
+            .iter()
+            .map(|(_, label)| label.as_str())
+            .max_by(|left, right| left.len().cmp(&right.len()))
+            .expect("a drawn value axis prints its tick labels");
+        let placed: PlacedBox = placed_box_holding(&source, widest);
+        assert!(
+            (placed.dx - 6.5).abs() < 0.001,
+            "{size_pt}pt labels in {number_format:?}: the widest label `{widest}` starts \
+             6.5pt inside the frame, got {:.3}pt in:\n{source}",
+            placed.dx
+        );
+        assert!(
+            placed.dx + placed.width < plot_x,
+            "{size_pt}pt labels in {number_format:?}: the label box ends before the plot, \
+             got {:.3}pt against {plot_x:.3}pt in:\n{source}",
+            placed.dx + placed.width
+        );
+    }
+}
+
+/// A drawn secondary value axis takes the same gutter on the right, mirrored:
+/// its widest label ends 6.5pt inside the frame and the plot stops the same
+/// clearance before it.
+///
+/// Page 11 of the #1220 deck measures the mirror natively — its secondary
+/// labels `0`..`7` at 11.97pt end 6.500pt inside the frame with the plot
+/// 10.296pt before them, against the 10.299pt the primary gutter's clearance
+/// predicts — and the numbers below are that model in the probe fixture's
+/// Calibri, whose single-digit labels make the two gutters equal (#1651).
+#[test]
+fn a_powerpoint_line_plot_mirrors_the_gutter_on_a_secondary_axis() {
+    for (secondary_format, native_gutter_pt) in [(None, 32.326), (Some("0.00"), 55.121)] {
+        let mut chart: Chart = probe_line_chart(18.0);
+        chart.secondary_value_axis = Some(crate::ir::ChartSecondaryValueAxis {
+            side: crate::ir::ValueAxisSide::Right,
+            deleted: false,
+            number_format: secondary_format.map(str::to_string),
+            major_unit: None,
+            min: None,
+            max: None,
+            major_tick_mark: AxisTickMark::None,
+            line: crate::ir::ChartLine::Suppressed,
+            text_font_family: None,
+            text_style: crate::ir::ChartTextStyle::default(),
+        });
+        let mut second: crate::ir::ChartSeries = chart.series[0].clone();
+        second.name = Some("Share".to_string());
+        second.value_axis = crate::ir::ChartValueAxisRole::Secondary;
+        chart.series.push(second);
+
+        let (frame_w, frame_h) = PROBE_LINE_FRAME;
+        let source: String = framed_chart_source(&chart, frame_w, frame_h);
+        let (plot_x, _, plot_w, _) = plot_rect(&emitted_lines(&source));
+        let right_gutter: f64 = frame_w - (plot_x + plot_w);
+
+        assert!(
+            (right_gutter - native_gutter_pt).abs() < 0.1,
+            "secondary labels in {secondary_format:?}: PowerPoint stops the plot \
+             {native_gutter_pt:.3}pt inside the frame, got {right_gutter:.3}pt in:\n{source}"
+        );
+    }
+}
+
+/// The band below a PowerPoint line plot is twice the clearance its value
+/// labels take, plus the same 6.5pt frame pad — so it grows with the category
+/// label's face and size and with nothing else.
+///
+/// Measured on the native exports of `scripts/probes/
+/// issue-1651-line-category-size.json` as the frame's bottom edge minus the y
+/// of the category axis line in a `mutool draw -F trace` (issue #1651).
+#[test]
+fn a_powerpoint_line_plot_reserves_the_native_category_label_band() {
+    for (size_pt, native_band_pt) in [
+        (9.0, 23.198),
+        (12.0, 28.767),
+        (18.0, 39.902),
+        (24.0, 51.028),
+    ] {
+        let mut chart: Chart = probe_line_chart(18.0);
+        chart.category_axis_text_style.size_pt = Some(size_pt);
+        let (frame_w, frame_h) = PROBE_LINE_FRAME;
+        let source: String = framed_chart_source(&chart, frame_w, frame_h);
+        let (_, plot_y, _, plot_h) = plot_rect(&emitted_lines(&source));
+        let band: f64 = frame_h - (plot_y + plot_h);
+
+        assert!(
+            (band - native_band_pt).abs() < 0.1,
+            "{size_pt}pt category labels: PowerPoint keeps the plot {native_band_pt:.3}pt \
+             above the frame's bottom edge, got {band:.3}pt in:\n{source}"
+        );
+    }
+}
+
+/// The category label sits at the bottom of that band, its line box resting on
+/// the same 6.5pt pad the frame keeps everywhere else, so its baseline is a
+/// descent above the pad.
+///
+/// The baselines below are the native exports' own, frame-relative. PowerPoint
+/// rounds the label block itself, so they scatter by up to half a point around
+/// the model — which is still a quarter of the 2.35pt the fixed 3pt box left on
+/// page 11 of the #1220 deck (issue #1651).
+#[test]
+fn a_powerpoint_line_category_label_seats_on_the_native_baseline() {
+    for (size_pt, native_baseline_pt) in [
+        (9.0, 311.44),
+        (12.0, 309.76),
+        (18.0, 308.56),
+        (24.0, 307.12),
+    ] {
+        let mut chart: Chart = probe_line_chart(18.0);
+        chart.category_axis_text_style.size_pt = Some(size_pt);
+        let (frame_w, frame_h) = PROBE_LINE_FRAME;
+        let source: String = framed_chart_source(&chart, frame_w, frame_h);
+        let placed: PlacedBox = placed_box_holding(&source, "1st Qtr");
+
+        assert!(
+            (placed.dy - native_baseline_pt).abs() < 0.6,
+            "{size_pt}pt category labels: PowerPoint seats the baseline \
+             {native_baseline_pt:.2}pt below the frame's top edge, got {:.2}pt in:\n{source}",
+            placed.dy
         );
     }
 }

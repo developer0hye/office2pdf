@@ -1,0 +1,33 @@
+{
+  "name": "issue-1651-line-value-format",
+  "base": "../../tests/fixtures/pptx/line-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "line chart c:valAx c:numFmt formatCode, label size held at the chart space's 18pt",
+  "page": 1,
+  "variants": [
+    {
+      "value": "0",
+      "find": "<c:majorGridlines/><c:majorTickMark val=\"out\"/>",
+      "replace": "<c:majorGridlines/><c:numFmt formatCode=\"0\" sourceLinked=\"0\"/><c:majorTickMark val=\"out\"/>",
+      "count": 1
+    },
+    {
+      "value": "0.00",
+      "find": "<c:majorGridlines/><c:majorTickMark val=\"out\"/>",
+      "replace": "<c:majorGridlines/><c:numFmt formatCode=\"0.00\" sourceLinked=\"0\"/><c:majorTickMark val=\"out\"/>",
+      "count": 1
+    },
+    {
+      "value": "0.0000",
+      "find": "<c:majorGridlines/><c:majorTickMark val=\"out\"/>",
+      "replace": "<c:majorGridlines/><c:numFmt formatCode=\"0.0000\" sourceLinked=\"0\"/><c:majorTickMark val=\"out\"/>",
+      "count": 1
+    },
+    {
+      "value": "0.000000",
+      "find": "<c:majorGridlines/><c:majorTickMark val=\"out\"/>",
+      "replace": "<c:majorGridlines/><c:numFmt formatCode=\"0.000000\" sourceLinked=\"0\"/><c:majorTickMark val=\"out\"/>",
+      "count": 1
+    }
+  ]
+}
