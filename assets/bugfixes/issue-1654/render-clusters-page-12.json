@@ -1,0 +1,2213 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 654.1056,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 41.76,
+        "x": 106.08,
+        "y": 103.2
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-b2ff9fd32007",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 488.9088,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 31.2,
+        "x": 148.32,
+        "y": 103.2
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-2bf7c1367268",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 391.68,
+      "bbox_pt": {
+        "height": 18.72,
+        "width": 40.32,
+        "x": 606.72,
+        "y": 374.4
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-4ac21ffee733",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 391.68,
+      "bbox_pt": {
+        "height": 18.72,
+        "width": 40.32,
+        "x": 606.72,
+        "y": 149.28
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7e5fc736a880",
+      "region": "top"
+    },
+    {
+      "area_pt2": 266.8032,
+      "bbox_pt": {
+        "height": 24.0,
+        "width": 17.28,
+        "x": 87.84,
+        "y": 103.2
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-65bafcf83a61",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 244.6848,
+      "bbox_pt": {
+        "height": 22.56,
+        "width": 16.8,
+        "x": 297.6,
+        "y": 103.68
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-aca3dd325613",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 234.0864,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 23.52,
+        "x": 252.48,
+        "y": 103.2
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-60212fa7b927",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 192.384,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 14.4,
+        "x": 180.48,
+        "y": 103.2
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7358e76934d8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 168.6528,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 19.68,
+        "x": 270.24,
+        "y": 103.68
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-4cffa8c39237",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 167.2704,
+      "bbox_pt": {
+        "height": 20.16,
+        "width": 13.92,
+        "x": 78.72,
+        "y": 72.0
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-d13a53adf897",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 146.9952,
+      "bbox_pt": {
+        "height": 16.8,
+        "width": 16.8,
+        "x": 654.72,
+        "y": 376.32
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-62f79e710626",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 123.9552,
+      "bbox_pt": {
+        "height": 18.24,
+        "width": 10.56,
+        "x": 658.08,
+        "y": 149.28
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-a83d54413604",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 117.9648,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 15.36,
+        "x": 636.96,
+        "y": 155.04
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-5b07423ab4db",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 117.2736,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 15.36,
+        "x": 636.96,
+        "y": 380.16
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-52526bf94125",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 115.8912,
+      "bbox_pt": {
+        "height": 23.04,
+        "width": 13.92,
+        "x": 723.84,
+        "y": 315.36
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-32019dd00e71",
+      "region": "right"
+    },
+    {
+      "area_pt2": 110.3616,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 13.92,
+        "x": 583.68,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-025814dff446",
+      "region": "center"
+    },
+    {
+      "area_pt2": 108.288,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 14.4,
+        "x": 630.24,
+        "y": 322.08
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-0297a79c50cb",
+      "region": "center"
+    },
+    {
+      "area_pt2": 107.136,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 11.04,
+        "x": 649.92,
+        "y": 252.0
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7b8fc3e51acb",
+      "region": "right"
+    },
+    {
+      "area_pt2": 100.4544,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 12.0,
+        "x": 579.84,
+        "y": 154.08
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-d81cc51a0395",
+      "region": "top"
+    },
+    {
+      "area_pt2": 98.8416,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 12.0,
+        "x": 579.84,
+        "y": 379.2
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-5116e50d6407",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 93.5424,
+      "bbox_pt": {
+        "height": 19.2,
+        "width": 7.2,
+        "x": 205.92,
+        "y": 107.52
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-075dc0204b48",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 89.3952,
+      "bbox_pt": {
+        "height": 22.08,
+        "width": 4.8,
+        "x": 200.64,
+        "y": 103.68
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-5ad65c502252",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 88.2432,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 13.92,
+        "x": 773.28,
+        "y": 309.6
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-23f680888c52",
+      "region": "right"
+    },
+    {
+      "area_pt2": 77.184,
+      "bbox_pt": {
+        "height": 22.56,
+        "width": 6.24,
+        "x": 214.56,
+        "y": 103.2
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-343a2ce8b795",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 72.3456,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 3.84,
+        "x": 222.72,
+        "y": 103.2
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7a1a063a8616",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 67.5072,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 9.6,
+        "x": 671.52,
+        "y": 247.68
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-2ea6299257b4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 66.816,
+      "bbox_pt": {
+        "height": 21.12,
+        "width": 7.68,
+        "x": 174.72,
+        "y": 70.08
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-e619220fbd70",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 64.7424,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 11.04,
+        "x": 592.8,
+        "y": 381.6
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-f1036d604d74",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 64.7424,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 11.04,
+        "x": 592.8,
+        "y": 156.48
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-85ceb4f3fa9e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 60.3648,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 9.12,
+        "x": 661.92,
+        "y": 300.0
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-08d6812fdbef",
+      "region": "right"
+    },
+    {
+      "area_pt2": 59.6736,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 12.48,
+        "x": 239.52,
+        "y": 120.48
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-a97ef968fcbf",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 56.9088,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 7.68,
+        "x": 598.56,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-1a3c0b1a4ae7",
+      "region": "center"
+    },
+    {
+      "area_pt2": 51.3792,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 7.68,
+        "x": 630.72,
+        "y": 293.28
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-2e8b2f72b310",
+      "region": "center"
+    },
+    {
+      "area_pt2": 51.3792,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 7.68,
+        "x": 587.04,
+        "y": 309.12
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-204abf02afd2",
+      "region": "center"
+    },
+    {
+      "area_pt2": 51.1488,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 11.52,
+        "x": 591.84,
+        "y": 255.36
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-4077a7a5c38e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 51.1488,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.08,
+        "x": 167.04,
+        "y": 82.08
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-c6a0d0c23512",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.7664,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 2.88,
+        "x": 577.92,
+        "y": 247.68
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-e071e469f217",
+      "region": "center"
+    },
+    {
+      "area_pt2": 49.3056,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 7.68,
+        "x": 599.04,
+        "y": 291.36
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7f188ca67d07",
+      "region": "center"
+    },
+    {
+      "area_pt2": 48.6144,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.64,
+        "x": 650.4,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-738ec50581e1",
+      "region": "right"
+    },
+    {
+      "area_pt2": 47.6928,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 8.16,
+        "x": 665.28,
+        "y": 274.56
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-1ab6607c0fc1",
+      "region": "right"
+    },
+    {
+      "area_pt2": 47.6928,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 7.2,
+        "x": 287.52,
+        "y": 107.52
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-e301c34de752",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 47.232,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 9.6,
+        "x": 581.28,
+        "y": 251.52
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-9ac67f56a504",
+      "region": "center"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 8.64,
+        "x": 578.88,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-b3bb8d06277f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 44.928,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 10.56,
+        "x": 740.64,
+        "y": 322.08
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-324c78cd2506",
+      "region": "right"
+    },
+    {
+      "area_pt2": 44.6976,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 1.92,
+        "x": 95.52,
+        "y": 68.64
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-59716fc830e2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.7024,
+      "bbox_pt": {
+        "height": 21.12,
+        "width": 9.12,
+        "x": 98.4,
+        "y": 70.08
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-6176ec8a4568",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 24.96,
+        "width": 5.28,
+        "x": 121.44,
+        "y": 69.6
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-16d5f13cfbce",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 40.0896,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.2,
+        "x": 562.56,
+        "y": 312.48
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-156b6f96bc5b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 40.0896,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 9.6,
+        "x": 803.04,
+        "y": 298.08
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-5af9ff38ea8a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 8.16,
+        "x": 635.04,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7429d6bff530",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 8.16,
+        "x": 574.56,
+        "y": 309.12
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-75a813c344eb",
+      "region": "center"
+    },
+    {
+      "area_pt2": 38.9376,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 7.2,
+        "x": 648.0,
+        "y": 308.64
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-5d06faa8d893",
+      "region": "right"
+    },
+    {
+      "area_pt2": 38.7072,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.2,
+        "x": 611.52,
+        "y": 312.48
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-1945cf9b172e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.68,
+        "x": 821.28,
+        "y": 290.4
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-fccc8e807e8d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.2,
+        "x": 862.08,
+        "y": 312.48
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-6e127d1d59c7",
+      "region": "right"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.2,
+        "x": 706.56,
+        "y": 280.8
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-a779eb551c1a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 6.24,
+        "x": 751.68,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-1b03fc046297",
+      "region": "right"
+    },
+    {
+      "area_pt2": 36.6336,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 8.16,
+        "x": 878.88,
+        "y": 293.28
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-3827f4bb14a9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 35.712,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 7.68,
+        "x": 570.72,
+        "y": 283.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-6fb24fae659f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 7.2,
+        "x": 884.16,
+        "y": 286.08
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-c611dd247a0e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.08,
+        "x": 566.88,
+        "y": 383.52
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-3b7742d965d0",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.08,
+        "x": 566.88,
+        "y": 158.4
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-f2e53e9b34fa",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 1.44,
+        "x": 162.24,
+        "y": 68.64
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-757baf81c3d8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 778.56,
+        "y": 283.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7a77a1f64c5c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.76,
+        "x": 740.16,
+        "y": 309.12
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7c78b9fe2c5f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 562.56,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-6b5fc7c02f6b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.76,
+        "x": 679.2,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-d54f2d4c883c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 252.96,
+        "y": 119.52
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-2d49c534c209",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.76,
+        "x": 818.4,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-38b4e9dcd1a3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 642.24,
+        "y": 329.76
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7839a6bb0795",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 672.0,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-143186fbc4f4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.16,
+        "x": 595.2,
+        "y": 309.12
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-d633f13107fc",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 682.56,
+        "y": 331.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-4d6d91ef9739",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 732.0,
+        "y": 315.36
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-d5617a094f50",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 651.36,
+        "y": 315.36
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-05bd3a12ddbc",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.16,
+        "x": 884.64,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-700524acd06b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 640.32,
+        "y": 315.36
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-ebf532bfd4d9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 727.68,
+        "y": 283.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-8dd9abf2854d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 583.68,
+        "y": 283.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-d0ec8f61cc06",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 715.68,
+        "y": 315.36
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-f50643841d54",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 7.68,
+        "x": 699.36,
+        "y": 325.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-86531004fc7c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 667.2,
+        "y": 315.36
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-87d03e9c4fba",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 3.84,
+        "x": 156.48,
+        "y": 73.44
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-82336d6718a1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 6.24,
+        "x": 747.84,
+        "y": 284.64
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-da688f08e760",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 850.56,
+        "y": 299.52
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7f42160b04b9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 7.2,
+        "x": 638.4,
+        "y": 251.52
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-702573229bc6",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.68,
+        "x": 755.04,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-bb3a9c814c89",
+      "region": "right"
+    },
+    {
+      "area_pt2": 27.8784,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 3.84,
+        "x": 574.56,
+        "y": 374.4
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-515225594f62",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 27.8784,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 3.84,
+        "x": 574.56,
+        "y": 149.28
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-e630da3f71e6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 781.92,
+        "y": 299.52
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-68f2ec762418",
+      "region": "right"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 607.2,
+        "y": 287.52
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-11b786f70507",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.68,
+        "x": 756.48,
+        "y": 309.12
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-ab98165447f7",
+      "region": "right"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.68,
+        "x": 570.72,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-368f1e878944",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 562.56,
+        "y": 331.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-d88e99ffbc03",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 756.48,
+        "y": 315.36
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-2524dcdcc63f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 4.8,
+        "x": 708.96,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-6e111976c88f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.16,
+        "x": 642.24,
+        "y": 293.28
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-0ce8f57973d1",
+      "region": "right"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 752.16,
+        "y": 299.52
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-a6e4f9364d5a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 671.04,
+        "y": 283.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-d44cb1958eeb",
+      "region": "right"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 562.56,
+        "y": 299.52
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-ead38b1049a3",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 3.36,
+        "x": 611.04,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-7af773946716",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 715.2,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-2ded05b65fef",
+      "region": "right"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 575.04,
+        "y": 325.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-1757eb4be46c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.68,
+        "x": 592.32,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-a998dc2a153f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 3.36,
+        "x": 663.84,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-9f9b286f83c3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.2,
+        "x": 847.68,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-766a860895eb",
+      "region": "right"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 3.84,
+        "x": 695.52,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-580fb4c836b2",
+      "region": "right"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 798.24,
+        "y": 283.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-100b587f26ba",
+      "region": "right"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 631.68,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-ff0f97d64d97",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 3.84,
+        "x": 608.16,
+        "y": 277.92
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-357e387a79cf",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.68,
+        "x": 825.12,
+        "y": 300.0
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-82ebc0776379",
+      "region": "right"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 695.52,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-15b140a2d907",
+      "region": "right"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 3.36,
+        "x": 674.88,
+        "y": 309.6
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-fa217c979199",
+      "region": "right"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 3.84,
+        "x": 659.52,
+        "y": 309.6
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-e0b1b7c0bd4e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 3.84,
+        "x": 846.24,
+        "y": 287.04
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-f71e0860874d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 3.84,
+        "x": 870.24,
+        "y": 309.6
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-c853979010e8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 4.32,
+        "x": 632.16,
+        "y": 307.2
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-4830094910f8",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 815.04,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-be9c45f765ee",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 821.28,
+        "y": 309.12
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-b98b95891a00",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 690.72,
+        "y": 293.28
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-fabfc720e133",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 658.08,
+        "y": 293.28
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-2955ce6fb0b8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 749.28,
+        "y": 309.12
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-c90818e98868",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 703.68,
+        "y": 309.12
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-a247eeb3e206",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 3.84,
+        "x": 606.24,
+        "y": 296.64
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-4ed3f39ccf2a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 614.88,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-69f65db0e2eb",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 3.84,
+        "x": 827.52,
+        "y": 280.8
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-1d21125d4eef",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 6.72,
+        "x": 231.84,
+        "y": 103.68
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-676e09bdb16f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 882.72,
+        "y": 316.32
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-bea5b59ddc8f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 619.68,
+        "y": 277.44
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-c237bf38f6b8",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 732.0,
+        "y": 331.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-1be18691f718",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 713.76,
+        "y": 324.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-ba0b01c9fc1f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 712.32,
+        "y": 331.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-1b0bb33afcfa",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 3.36,
+        "width": 7.68,
+        "x": 655.2,
+        "y": 374.4
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-d7382f8a4d44",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 718.08,
+        "y": 300.96
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-240593f7ce11",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 595.2,
+        "y": 318.24
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-beb69df8d6d5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 833.76,
+        "y": 293.28
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-44a0f223ba5f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 590.4,
+        "y": 290.4
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-607322e02953",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 614.88,
+        "y": 331.68
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-3e486a5911e4",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 646.08,
+        "y": 262.56
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-f97880ad8763",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 562.56,
+        "y": 293.28
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-36b04d76f5ad",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.2,
+        "x": 567.36,
+        "y": 151.68
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-b84f44a176dd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.2,
+        "x": 567.36,
+        "y": 376.8
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-65b4b3b70db9",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 604.32,
+        "y": 154.08
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-a7cdb6c15690",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 604.32,
+        "y": 379.2
+      },
+      "disposition": {
+        "difference_id": "page-12-substituted-face-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-fa842ae2c25f",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 651.84,
+        "y": 284.64
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-fa88feb0ff33",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 683.52,
+        "y": 316.32
+      },
+      "disposition": {
+        "difference_id": "page-12-recomputed-autofit-body-seat-native-match",
+        "kind": "reference-exporter-difference"
+      },
+      "id": "p12-9e6c014c2d86",
+      "region": "right"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 12,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 146,
+    "duplicate": 0,
+    "total": 146,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

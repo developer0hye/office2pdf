@@ -1,0 +1,486 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 19,
+    "out": 19,
+    "matched": 19,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 16,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 1.4382573684210642,
+    "worst_dy": 4.627580000000023,
+    "worst_dy_signed": 4.627580000000023,
+    "worst_line": "euvarius.Morbiapurusdolor."
+   },
+   "dx0": {
+    "mean_abs": 0.008516315789457838,
+    "worst": 0.07998999999995249
+   },
+   "width": {
+    "mean_abs_pct": 1.3923826324025625,
+    "worst_pct": 8.849917453240574
+   },
+   "instances": {
+    "compared": 19,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 11,
+    "fine_shifts": [
+     {
+      "label": "MAJOR",
+      "gt_x": 69.761,
+      "gt_y": 91.899,
+      "out_x": 69.76591,
+      "out_y": 91.31427,
+      "dx": 0.004910000000009518,
+      "dy": -0.5847300000000075,
+      "width_pct": 2.545638994337955
+     },
+     {
+      "label": "COMPETITORS",
+      "gt_x": 69.761,
+      "gt_y": 126.48200000000003,
+      "out_x": 69.76591,
+      "out_y": 125.87427,
+      "dx": 0.004910000000009518,
+      "dy": -0.6077300000000321,
+      "width_pct": 8.849917453240574
+     },
+     {
+      "label": "Heading1",
+      "gt_x": 562.054,
+      "gt_y": 167.49900000000002,
+      "out_x": 562.0505,
+      "out_y": 164.90457,
+      "dx": -0.003499999999917236,
+      "dy": -2.594430000000017,
+      "width_pct": -5.398951358243696
+     },
+     {
+      "label": "Loremipsumdolorsitamet,consecteturadipiscing [2/3]",
+      "gt_x": 562.054,
+      "gt_y": 285.959,
+      "out_x": 562.0504,
+      "out_y": 290.03858,
+      "dx": -0.0036000000000058208,
+      "dy": 4.079580000000021,
+      "width_pct": -0.06663432647611119
+     },
+     {
+      "label": "elit.Etiamaliqueteumiquislacinia.Utfermentum [2/3]",
+      "gt_x": 562.054,
+      "gt_y": 301.776,
+      "out_x": 562.0504,
+      "out_y": 306.03858,
+      "dx": -0.0036000000000058208,
+      "dy": 4.262580000000014,
+      "width_pct": -0.07621849427000053
+     },
+     {
+      "label": "amagnauteleifend.Integerconvallissuscipitante [1/2]",
+      "gt_x": 562.054,
+      "gt_y": 317.594,
+      "out_x": 562.0504,
+      "out_y": 322.03858,
+      "dx": -0.0036000000000058208,
+      "dy": 4.44458000000003,
+      "width_pct": -0.07176508222875812
+     },
+     {
+      "label": "euvarius.Morbiapurusdolor. [1/2]",
+      "gt_x": 562.054,
+      "gt_y": 333.411,
+      "out_x": 562.0504,
+      "out_y": 338.03858,
+      "dx": -0.0036000000000058208,
+      "dy": 4.627580000000023,
+      "width_pct": -0.0662356962886775
+     },
+     {
+      "label": "Heading3",
+      "gt_x": 562.054,
+      "gt_y": 392.598,
+      "out_x": 562.0504,
+      "out_y": 389.98213,
+      "dx": -0.0036000000000058208,
+      "dy": -2.6158700000000294,
+      "width_pct": -5.398951358243696
+     },
+     {
+      "label": "euvarius.Morbiapurusdolor. [2/2]",
+      "gt_x": 562.054,
+      "gt_y": 462.586,
+      "out_x": 562.0504,
+      "out_y": 461.98213,
+      "dx": -0.0036000000000058208,
+      "dy": -0.603870000000029,
+      "width_pct": -0.0662356962886775
+     },
+     {
+      "label": "Sensitivity:",
+      "gt_x": 4.989,
+      "gt_y": 533.395,
+      "out_x": 5.0,
+      "out_y": 532.4,
+      "dx": 0.01100000000000012,
+      "dy": -0.9950000000000045,
+      "width_pct": 0.6200212929459954
+     },
+     {
+      "label": "Internal",
+      "gt_x": 4.989,
+      "gt_y": 542.976,
+      "out_x": 5.0,
+      "out_y": 542.4,
+      "dx": 0.01100000000000012,
+      "dy": -0.5760000000000218,
+      "width_pct": 0.2890144178173423
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 18,
+    "worst_delta": 7.243450000000053
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 47,
+    "out_count": 6,
+    "canonical_gt_count": 4,
+    "canonical_out_count": 4,
+    "matched": 4,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.027559750000008876,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 3,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [
+     {
+      "kind": "stroke",
+      "geometry_kind": "line",
+      "gt_indices": [
+       46
+      ],
+      "out_indices": [
+       5
+      ],
+      "gt_bbox": [
+       72.057,
+       136.40300000000002,
+       315.808,
+       136.40300000000002
+      ],
+      "out_bbox": [
+       72.098979,
+       136.42151,
+       315.862499,
+       136.42151
+      ],
+      "dx": 0.04197899999999777,
+      "dy": 0.018509999999992033,
+      "dwidth": 0.012520000000051823,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.04197899999999777,
+       "top": 0.018509999999992033,
+       "right": 0.05449900000002117,
+       "bottom": 0.018509999999992033
+      },
+      "center_dx": 0.04823899999999526,
+      "center_dy": 0.018509999999992033,
+      "max_abs_delta": 0.05449900000002117
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       5
+      ],
+      "out_indices": [
+       4
+      ],
+      "gt_bbox": [
+       -0.028,
+       191.36700000000002,
+       285.449,
+       462.076
+      ],
+      "out_bbox": [
+       0.0,
+       191.37094,
+       285.48,
+       462.11787000000004
+      ],
+      "dx": 0.028,
+      "dy": 0.003939999999971633,
+      "dwidth": 0.002999999999985903,
+      "dheight": 0.03793000000001712,
+      "edges": {
+       "left": 0.028,
+       "top": 0.003939999999971633,
+       "right": 0.03100000000000591,
+       "bottom": 0.04187000000001717
+      },
+      "center_dx": 0.02950000000001296,
+      "center_dy": 0.022905000000037035,
+      "max_abs_delta": 0.04187000000001717,
+      "visible_coverage": {
+       "status": "unmodeled",
+       "mismatch_area_pt2": 0.0,
+       "unmodeled_area_pt2": 61513.464086182525,
+       "unmodeled_samples": [
+        [
+         -0.014,
+         218.98924499999998,
+         285.46450000000004,
+         434.46419000000003
+        ]
+       ],
+       "mismatch_samples": [],
+       "raw_edge_coverage": {
+        "left": "unchanged",
+        "right": "unchanged",
+        "top": "unchanged",
+        "bottom": "unchanged"
+       }
+      }
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       3
+      ],
+      "out_indices": [
+       2
+      ],
+      "gt_bbox": [
+       416.891,
+       -0.02800000000002001,
+       959.924,
+       539.972
+      ],
+      "out_bbox": [
+       416.9,
+       0.0,
+       959.963,
+       540.0
+      ],
+      "dx": 0.008999999999957708,
+      "dy": 0.02800000000002001,
+      "dwidth": 0.030000000000086402,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.008999999999957708,
+       "top": 0.02800000000002001,
+       "right": 0.03899999999998727,
+       "bottom": 0.02800000000002001
+      },
+      "center_dx": 0.023999999999887223,
+      "center_dy": 0.02800000000002001,
+      "max_abs_delta": 0.03899999999998727,
+      "visible_coverage": {
+       "status": "unmodeled",
+       "mismatch_area_pt2": 0.0,
+       "unmodeled_area_pt2": 22872.193937629727,
+       "unmodeled_samples": [
+        [
+         416.89549999999997,
+         218.98924499999998,
+         474.36249,
+         232.136305
+        ],
+        [
+         416.89549999999997,
+         232.136305,
+         474.36249,
+         246.92213701850002
+        ],
+        [
+         416.89549999999997,
+         246.92213701850002,
+         474.36249,
+         247.91851064300005
+        ],
+        [
+         416.89549999999997,
+         247.91851064300005,
+         474.36249,
+         251.83197813200002
+        ],
+        [
+         416.89549999999997,
+         251.83197813200002,
+         474.36249,
+         265.301028815
+        ]
+       ],
+       "mismatch_samples": [],
+       "raw_edge_coverage": {
+        "left": "unchanged",
+        "right": "unchanged",
+        "top": "unchanged",
+        "bottom": "unchanged"
+       }
+      }
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0,
+       1
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       0.0,
+       0.0,
+       960.009,
+       540.0
+      ],
+      "out_bbox": [
+       0.0,
+       0.0,
+       960.0,
+       540.0
+      ],
+      "dx": 0.0,
+      "dy": 0.0,
+      "dwidth": -0.009000000000014552,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.0,
+       "top": 0.0,
+       "right": -0.009000000000014552,
+       "bottom": 0.0
+      },
+      "center_dx": -0.004500000000007276,
+      "center_dy": 0.0,
+      "max_abs_delta": 0.009000000000014552,
+      "visible_coverage": {
+       "status": "unmodeled",
+       "mismatch_area_pt2": 0.0,
+       "unmodeled_area_pt2": 119461.81601714477,
+       "unmodeled_samples": [
+        [
+         0.0,
+         218.98924499999998,
+         71.521165,
+         232.136305
+        ],
+        [
+         0.0,
+         232.136305,
+         71.521165,
+         246.92213701850002
+        ],
+        [
+         0.0,
+         246.92213701850002,
+         71.521165,
+         247.91851064300005
+        ],
+        [
+         0.0,
+         247.91851064300005,
+         71.521165,
+         251.83197813200002
+        ],
+        [
+         0.0,
+         251.83197813200002,
+         71.521165,
+         265.301028815
+        ]
+       ],
+       "mismatch_samples": [],
+       "raw_edge_coverage": {
+        "left": "unchanged",
+        "right": "unchanged",
+        "top": "unchanged",
+        "bottom": "unchanged"
+       }
+      }
+     }
+    ],
+    "x": {
+     "mean_abs": 0.01974474999998887,
+     "worst": 0.04197899999999777
+    },
+    "y": {
+     "mean_abs": 0.012612499999995919,
+     "worst": 0.02800000000002001
+    },
+    "width": {
+     "mean_abs": 0.01363000000003467,
+     "worst": 0.030000000000086402
+    },
+    "height": {
+     "mean_abs": 0.00948250000000428,
+     "worst": 0.03793000000001712
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.01974474999998887,
+      "worst": 0.04197899999999777
+     },
+     "top": {
+      "mean_abs": 0.012612499999995919,
+      "worst": 0.02800000000002001
+     },
+     "right": {
+      "mean_abs": 0.033374750000007225,
+      "worst": 0.05449900000002117
+     },
+     "bottom": {
+      "mean_abs": 0.022095000000007303,
+      "worst": 0.04187000000001717
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}
