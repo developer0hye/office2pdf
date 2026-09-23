@@ -1,0 +1,39 @@
+{
+  "name": "issue-1651-line-category-size",
+  "base": "../../tests/fixtures/pptx/line-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "line chart c:catAx c:txPr a:defRPr sz (1/100 pt), chart space held at 1800",
+  "page": 1,
+  "variants": [
+    {
+      "value": "900",
+      "find": "<c:crossAx val=\"-1004303696\"/>",
+      "replace": "<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"900\"/></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1004303696\"/>",
+      "count": 1
+    },
+    {
+      "value": "1200",
+      "find": "<c:crossAx val=\"-1004303696\"/>",
+      "replace": "<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1200\"/></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1004303696\"/>",
+      "count": 1
+    },
+    {
+      "value": "1800",
+      "find": "<c:crossAx val=\"-1004303696\"/>",
+      "replace": "<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"/></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1004303696\"/>",
+      "count": 1
+    },
+    {
+      "value": "2400",
+      "find": "<c:crossAx val=\"-1004303696\"/>",
+      "replace": "<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"2400\"/></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1004303696\"/>",
+      "count": 1
+    },
+    {
+      "value": "3600",
+      "find": "<c:crossAx val=\"-1004303696\"/>",
+      "replace": "<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"3600\"/></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1004303696\"/>",
+      "count": 1
+    }
+  ]
+}

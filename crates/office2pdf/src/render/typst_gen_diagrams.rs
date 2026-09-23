@@ -2507,11 +2507,10 @@ fn excel_value_label_plot_gap_pt(chart: &Chart) -> Option<f64> {
     let family: &str = chart
         .value_axis_font_family()
         .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_FAMILY);
-    let (ascent_em, descent_em) = chart_face_line_metrics_em(family, bold)?;
-    Some(
-        (EXCEL_VALUE_LABEL_ASCENT_FRACTION * ascent_em
-            + EXCEL_VALUE_LABEL_DESCENT_FRACTION * descent_em)
-            * chart_axis_text_pt(chart, chart.value_axis_text_style),
+    chart_label_clearance_pt(
+        family,
+        bold,
+        chart_axis_text_pt(chart, chart.value_axis_text_style),
     )
 }
 
@@ -5435,8 +5434,10 @@ fn generate_chart_bar(out: &mut String, chart: &Chart) {
 /// the natural gap, but not to the ink box used by the cap (Arial distinguishes
 /// those terms). A short plot therefore moves labels until the cap is reached.
 ///
-/// Other hosts, flowed charts and implicit sizes have no native calibration
-/// for this rule and retain their existing layout.
+/// A framed slide chart is seated by `powerpoint_line_category_baseline_pt`
+/// instead, on its own native probes (#1651). Flowed charts, implicit sizes and
+/// the remaining hosts have no native calibration for this rule and retain
+/// their existing layout.
 fn worksheet_line_category_baseline(
     chart: &Chart,
     frame: Option<(f64, f64)>,
@@ -5483,6 +5484,168 @@ pub(super) fn line_category_baseline_pt(
     let natural = (plot_bottom + pitch / 2.0 + 1.0).round() + above;
     let cap = (available_height - (ascent + descent) * size - 1.0).round() + above;
     natural.min(cap)
+}
+
+/// The value-label gutter of a framed PowerPoint line plot, split into the
+/// parts the labels and the plot each stand on.
+///
+/// PowerPoint spends the band on the labels themselves: the widest one starts
+/// [`EXCEL_VALUE_LABEL_EDGE_PAD_PT`] inside the chart frame and the plot
+/// begins one face-measured clearance past its end, which is the same
+/// composition the Excel column exports measure (issue #1166) rather than the
+/// pure `a + b * size` fit a slide chart used to reserve.
+#[derive(Clone, Copy)]
+struct LineValueGutter {
+    /// Frame inset the widest label's first glyph sits on.
+    label_x: f64,
+    /// Advance of the widest label, which is the label box's width.
+    label_w: f64,
+    /// Clearance between the labels and the plot's edge.
+    clearance: f64,
+}
+
+impl LineValueGutter {
+    /// The whole band, from the frame edge to the plot's.
+    fn total(self) -> f64 {
+        self.label_x + self.label_w + self.clearance
+    }
+}
+
+/// Whether a chart's line plot is laid out on the native PowerPoint
+/// measurements, or on the pre-#1651 constants.
+///
+/// A chart stating no text size at all keeps the old geometry, as the probes
+/// only cover charts that state one — the same gate
+/// [`chart_column_value_gutter_pt`] applies to the column family.
+fn powerpoint_line_chrome(chart: &Chart, axis: crate::ir::ChartTextStyle) -> bool {
+    chart.host == crate::ir::ChartHost::Presentation
+        && (chart.text_style.size_pt.is_some() || axis.size_pt.is_some())
+}
+
+/// Clearance one axis' tick labels keep between themselves and the plot.
+///
+/// The fractions are [`EXCEL_VALUE_LABEL_ASCENT_FRACTION`] and
+/// [`EXCEL_VALUE_LABEL_DESCENT_FRACTION`]: the quantity is the face's line box
+/// rather than a multiple of the size, which is what makes it differ by face
+/// at one size.
+fn chart_label_clearance_pt(family: &str, bold: bool, size_pt: f64) -> Option<f64> {
+    let (ascent_em, descent_em) = chart_face_line_metrics_em(family, bold)?;
+    Some(
+        (EXCEL_VALUE_LABEL_ASCENT_FRACTION * ascent_em
+            + EXCEL_VALUE_LABEL_DESCENT_FRACTION * descent_em)
+            * size_pt,
+    )
+}
+
+/// The gutter a framed PowerPoint line plot's primary value labels take down
+/// its left edge, or `None` where the chart or the face is outside the
+/// measured regime.
+///
+/// Native exports of `tests/fixtures/pptx/line-chart.pptx`, one factor per
+/// variant (`scripts/probes/issue-1651-line-value-size.json` and
+/// `issue-1651-line-value-format.json`), reserve 19.409pt at 9pt, 23.713pt at
+/// 12pt and 32.326pt at 18pt for single-digit labels, and 55.121pt for
+/// `0.00` at 18pt. Every one of them is this model within 0.02pt, and page 11
+/// of the #1220 deck — 40.752pt for `20%` at 11.97pt in another face — lands
+/// within 0.005pt of it (issue #1651).
+fn powerpoint_line_value_gutter(chart: &Chart) -> Option<LineValueGutter> {
+    if !powerpoint_line_chrome(chart, chart.value_axis_text_style) {
+        return None;
+    }
+    let bold: bool = chart
+        .text_style
+        .resolved_bold(chart.value_axis_text_style)
+        .unwrap_or(false);
+    let family: &str = chart
+        .value_axis_font_family()
+        .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_FAMILY);
+    let size_pt: f64 = chart_axis_text_pt(chart, chart.value_axis_text_style);
+    Some(LineValueGutter {
+        label_x: EXCEL_VALUE_LABEL_EDGE_PAD_PT,
+        label_w: chart_column_value_label_widest_pt(chart)?,
+        clearance: chart_label_clearance_pt(family, bold, size_pt)?,
+    })
+}
+
+/// The same band mirrored onto a drawn secondary axis: its widest label ends
+/// [`EXCEL_VALUE_LABEL_EDGE_PAD_PT`] inside the frame's right edge, and the
+/// plot stops the same clearance before it.
+///
+/// Page 11 of the #1220 deck measures the mirror natively: its `0`..`7`
+/// labels at 11.97pt end 6.500pt inside the frame with the plot 10.296pt
+/// before them, against the 10.299pt the primary gutter's clearance predicts
+/// (issue #1651).
+fn powerpoint_line_secondary_gutter(
+    chart: &Chart,
+    axis: &crate::ir::ChartSecondaryValueAxis,
+    scale: ValueScale,
+) -> Option<LineValueGutter> {
+    if !powerpoint_line_chrome(chart, axis.text_style) {
+        return None;
+    }
+    let bold: bool = chart
+        .text_style
+        .resolved_bold(axis.text_style)
+        .unwrap_or(false);
+    let family: &str = axis
+        .text_font_family
+        .as_deref()
+        .or_else(|| chart.value_axis_font_family())
+        .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_FAMILY);
+    let size_pt: f64 = chart_axis_text_pt(chart, axis.text_style);
+    let number_format: Option<&str> =
+        value_axis_number_format(chart, crate::ir::ChartValueAxisRole::Secondary);
+    let widest_em: f64 = scale
+        .ticks()
+        .into_iter()
+        .filter_map(|tick| {
+            chart_text_advance_em(
+                family,
+                bold,
+                &chart_value_label_formatted(tick, number_format),
+            )
+        })
+        .fold(0.0_f64, f64::max);
+    (widest_em > 0.0).then_some(())?;
+    Some(LineValueGutter {
+        label_x: EXCEL_VALUE_LABEL_EDGE_PAD_PT,
+        label_w: widest_em * size_pt,
+        clearance: chart_label_clearance_pt(family, bold, size_pt)?,
+    })
+}
+
+/// The band a framed PowerPoint line plot leaves below itself for its category
+/// labels: twice their clearance, over the same frame pad every other edge
+/// keeps.
+///
+/// Measured on `scripts/probes/issue-1651-line-category-size.json`, whose
+/// native exports keep 23.198pt at 9pt, 28.767pt at 12pt, 39.902pt at 18pt and
+/// 51.028pt at 24pt — all within 0.004pt of this, and page 11 of the #1220
+/// deck's 27.093pt in another face within 0.005pt. A label that wraps takes a
+/// further line of its face's line height per extra line, which this does not
+/// model (issue #1651).
+fn powerpoint_line_category_band_pt(chart: &Chart) -> Option<f64> {
+    if !powerpoint_line_chrome(chart, chart.category_axis_text_style) {
+        return None;
+    }
+    let (family, bold, size_pt) = chart_category_label_face(chart);
+    Some(EXCEL_VALUE_LABEL_EDGE_PAD_PT + 2.0 * chart_label_clearance_pt(family, bold, size_pt)?)
+}
+
+/// Where that band seats the category label's baseline.
+///
+/// The label's line box rests on the band's own frame pad, so the baseline is
+/// one descent above it. PowerPoint rounds the label block itself, so the
+/// native baselines scatter by up to half a point around this (issue #1651).
+fn powerpoint_line_category_baseline_pt(chart: &Chart, plot_bottom: f64) -> Option<f64> {
+    if !powerpoint_line_chrome(chart, chart.category_axis_text_style) {
+        return None;
+    }
+    let (family, bold, size_pt) = chart_category_label_face(chart);
+    let (_, descent_em) = chart_face_line_metrics_em(family, bold)?;
+    Some(
+        plot_bottom + 2.0 * chart_label_clearance_pt(family, bold, size_pt)? - descent_em * size_pt,
+    )
 }
 
 /// Render a line/area chart as a polyline plot over a value axis, matching
@@ -5534,11 +5697,6 @@ fn generate_chart_line_plot(
     // mirroring the primary's on the left. A switched-off one reserves
     // nothing, as Office reclaims that band.
     let secondary_axis_drawn: bool = secondary_axis.is_some_and(|axis| !axis.deleted);
-    let right_gutter: f64 = if secondary_axis_drawn {
-        VALUE_GAP + GAP
-    } else {
-        0.0
-    };
 
     // As in `generate_chart_axis`: the title takes a band from the content,
     // while the full chart-area outline stays around both (issue #1216).
@@ -5563,35 +5721,72 @@ fn generate_chart_line_plot(
     } else {
         LegendBox::hidden()
     };
+    // Line and scatter plots honour the same inner plot rectangle as the bar
+    // and column families. `stated_plot_rect` also translates chart-area y
+    // fractions into the title-reduced content box's coordinates (#1265).
+    let stated_plot: Option<(f64, f64, f64, f64)> = stated_plot_rect(chart, chart_area, title_h);
+    // A framed PowerPoint plot measures both gutters from the labels that
+    // stand in them; anything else keeps the flat pre-#1651 band. The native
+    // probes only cover the automatic rectangle, so a chart stating its own
+    // `c:plotArea/c:layout` keeps the geometry it had (#1265, #1568).
+    let measured_chrome: bool = frame.is_some() && stated_plot.is_none();
+    let value_gutter: Option<LineValueGutter> = measured_chrome
+        .then(|| powerpoint_line_value_gutter(chart))
+        .flatten();
+    let secondary_gutter: Option<LineValueGutter> = measured_chrome
+        .then(|| {
+            secondary_axis
+                .zip(secondary_scale)
+                .and_then(|(axis, scale)| powerpoint_line_secondary_gutter(chart, axis, scale))
+        })
+        .flatten();
+    let left_gutter: f64 = value_gutter.map_or(VALUE_GAP + GAP, LineValueGutter::total);
+    let right_gutter: f64 = if secondary_axis_drawn {
+        secondary_gutter.map_or(VALUE_GAP + GAP, LineValueGutter::total)
+    } else {
+        0.0
+    };
+    // The box one value tick label is right-aligned in, as `(left, width)`
+    // inside the chart frame.
+    let (value_label_x, value_label_w): (f64, f64) =
+        value_gutter.map_or((0.0, VALUE_GAP), |gutter| (gutter.label_x, gutter.label_w));
+
     // A framed chart fills its `<p:graphicFrame>`; a flowed one keeps the
     // intrinsic plot size (issue #548). Keep the automatic rectangle so the
     // value-label gutter can follow the same displacement when the part states
     // a different one below.
+    // The band below the plot is the category labels' own, measured from
+    // their face where the chart is a framed PowerPoint one (issue #1651).
+    let category_band: f64 = measured_chrome
+        .then(|| powerpoint_line_category_band_pt(chart))
+        .flatten()
+        .unwrap_or(CAT_GAP);
     let (automatic_plot_w, automatic_plot_h) = match frame {
         Some((frame_w, frame_h)) => (
-            (frame_w - (VALUE_GAP + GAP) - right_gutter - legend.left - legend.right)
-                .max(MIN_PLOT_PT),
-            (frame_h - CAT_GAP - legend.top - legend.bottom).max(MIN_PLOT_PT),
+            (frame_w - left_gutter - right_gutter - legend.left - legend.right).max(MIN_PLOT_PT),
+            (frame_h - category_band - legend.top - legend.bottom).max(MIN_PLOT_PT),
         ),
         None => (PLOT_W, PLOT_H),
     };
-    let automatic_plot_x: f64 = legend.left + VALUE_GAP + GAP;
+    let automatic_plot_x: f64 = legend.left + left_gutter;
     let automatic_plot_y: f64 = legend.top;
-    // Line and scatter plots honour the same inner plot rectangle as the bar
-    // and column families. `stated_plot_rect` also translates chart-area y
-    // fractions into the title-reduced content box's coordinates (#1265).
-    let (plot_x, plot_y, plot_w, plot_h): (f64, f64, f64, f64) =
-        stated_plot_rect(chart, chart_area, title_h).unwrap_or((
-            automatic_plot_x,
-            automatic_plot_y,
-            automatic_plot_w,
-            automatic_plot_h,
-        ));
+    let (plot_x, plot_y, plot_w, plot_h): (f64, f64, f64, f64) = stated_plot.unwrap_or((
+        automatic_plot_x,
+        automatic_plot_y,
+        automatic_plot_w,
+        automatic_plot_h,
+    ));
     let plot_dx: f64 = plot_x - automatic_plot_x;
     // The #1265 chart was already at the bottom cap; a shorter manual plot
     // can move explicitly sized worksheet labels above that cap (#1568).
     let category_baseline =
-        worksheet_line_category_baseline(chart, frame, plot_y + plot_h, legend.bottom);
+        worksheet_line_category_baseline(chart, frame, plot_y + plot_h, legend.bottom).or_else(
+            || {
+                measured_chrome
+                    .then(|| powerpoint_line_category_baseline_pt(chart, plot_y + plot_h))
+                    .flatten()
+            },
+        );
     let category_label_y: f64 =
         category_baseline.unwrap_or(automatic_plot_y + automatic_plot_h + 3.0);
     let category_baseline_attrs: &str = if category_baseline.is_some() {
@@ -5602,8 +5797,8 @@ fn generate_chart_line_plot(
     let (total_w, total_h) = match frame {
         Some(extent) => extent,
         None => (
-            legend.left + VALUE_GAP + GAP + PLOT_W + right_gutter + legend.right,
-            legend.top + PLOT_H + CAT_GAP + legend.bottom,
+            legend.left + left_gutter + PLOT_W + right_gutter + legend.right,
+            legend.top + PLOT_H + category_band + legend.bottom,
         ),
     };
     let wraps_title: bool = write_chart_area_start(
@@ -5642,12 +5837,12 @@ fn generate_chart_line_plot(
             let _ = writeln!(
                 out,
                 "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt, height: {}pt)[#align(right + horizon)[#text(size: {}pt{})[{}]]])",
-                format_f64(plot_dx),
+                format_f64(plot_dx + value_label_x),
                 format_f64(
                     y - chart_label_box_h(chart_axis_text_pt(chart, chart.value_axis_text_style))
                         / 2.0
                 ),
-                format_f64(VALUE_GAP),
+                format_f64(value_label_w),
                 format_f64(chart_label_box_h(chart_axis_text_pt(
                     chart,
                     chart.value_axis_text_style
@@ -5780,8 +5975,8 @@ fn generate_chart_line_plot(
                 plot_y,
                 plot_w,
                 plot_h,
-                label_gap: GAP,
-                label_w: VALUE_GAP,
+                label_gap: secondary_gutter.map_or(GAP, |gutter| gutter.clearance),
+                label_w: secondary_gutter.map_or(VALUE_GAP, |gutter| gutter.label_w),
             },
         );
     }
@@ -5837,10 +6032,10 @@ fn generate_chart_line_plot(
             s_index,
             series.len().max(1),
             (
-                plot_x - (VALUE_GAP + GAP),
+                plot_x - left_gutter,
                 plot_y,
-                VALUE_GAP + GAP + plot_w + right_gutter,
-                plot_h + CAT_GAP,
+                left_gutter + plot_w + right_gutter,
+                plot_h + category_band,
             ),
             LegendEntryLayout {
                 row_h: LINE_LEGEND_ROW_H,
