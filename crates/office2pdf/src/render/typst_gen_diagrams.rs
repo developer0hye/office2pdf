@@ -5553,7 +5553,16 @@ fn generate_chart_line_plot(
     let frame: Option<(f64, f64)> =
         frame.map(|(width, height)| (width, (height - title_h).max(MIN_PLOT_PT)));
 
-    let legend: LegendBox = LegendBox::new(chart.legend_position, LINE_LEGEND_ROW_H, LEGEND_W);
+    // `<c:legendPos>` says which edge a legend would take, not that the chart
+    // has one. Reserving the band from the position alone left a legendless
+    // line chart's plot 94pt short of its frame with nothing drawn in the gap
+    // (issue #1649); the axis, radar and pie renderers already reclaim it
+    // (issue #762).
+    let legend: LegendBox = if chart.has_legend {
+        LegendBox::new(chart.legend_position, LINE_LEGEND_ROW_H, LEGEND_W)
+    } else {
+        LegendBox::hidden()
+    };
     // A framed chart fills its `<p:graphicFrame>`; a flowed one keeps the
     // intrinsic plot size (issue #548). Keep the automatic rectangle so the
     // value-label gutter can follow the same displacement when the part states
