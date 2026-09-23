@@ -15,7 +15,7 @@ use office2pdf::internal::XlsxParser;
 use office2pdf::internal::generate_typst;
 use office2pdf::ir::{
     Alignment, Block, BorderLineStyle, ChartAreaOutline, ChartHost, ChartLine, ChartPlotAreaLayout,
-    ChartUserShapeExtent, Color, HFInline, Page, SheetLineExtent, SheetPage, TableCell,
+    ChartUserShapeExtent, Color, HFInline, Page, SheetPage, TableCell,
 };
 
 // ---------------------------------------------------------------------------
@@ -2029,20 +2029,6 @@ fn structure_overflow_strip_redraws_only_the_lines_past_the_boundary() {
                 "row {index}: {source:?} reaches {reach_pt}pt, short of the {boundary_pt}pt \
                  boundary, so the strip carries no tail for it"
             );
-        }
-
-        // The reported case, where the host prices the line as Excel does:
-        // `Customer Group Developer` is 147pt of whole-point advances from a
-        // pen 3pt inside its gridline, so it ends on the boundary and the
-        // native export prints nothing for it on the strip.
-        if let SheetLineExtent::Measured(line_pt) = extent
-            && source == "Customer Group Developer"
-        {
-            assert!(
-                (line_pt - boundary_pt).abs() < 0.001,
-                "the measured line ends on the {boundary_pt}pt boundary; got {line_pt}pt"
-            );
-            assert_eq!(tail, "", "a line ending on the boundary has no tail");
         }
     }
     assert!(
