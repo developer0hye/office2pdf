@@ -1446,6 +1446,35 @@ pub enum SheetLineExtent {
     Estimated(f64),
 }
 
+/// Slack, in points, an [`SheetLineExtent::Estimated`] extent is granted
+/// before it is taken to reach a point. The ASCII-ratio estimate runs
+/// 0.6–9.1pt under the face's own advances on the 1,000 occupation strings of
+/// `1000-customers.xlsx` (mean 4.7pt at Malgun Gothic 12); with 6pt of slack
+/// no line the native export continues is taken for one that ends before the
+/// boundary on that corpus, while a line ending well inside its reach — row
+/// 1001's `Direct Creative Liaison`, 26pt short of it — still counts as
+/// reaching nothing (issue #1714).
+const ESTIMATED_LINE_REACH_TOLERANCE_PT: f64 = 6.0;
+
+impl SheetLineExtent {
+    /// How far the line may be taken to paint from its cell's own left
+    /// gridline.
+    ///
+    /// A measured extent is that distance outright: Excel's whole-point
+    /// advance grid ends the line exactly where the native export does, down
+    /// to a page-column boundary that grants no slack at all (issue #1659).
+    /// An estimate cannot settle such a case on its own, so it carries
+    /// [`ESTIMATED_LINE_REACH_TOLERANCE_PT`] for the width it is known to be
+    /// missing.
+    #[must_use]
+    pub fn reach_pt(self) -> f64 {
+        match self {
+            Self::Measured(width_pt) => width_pt,
+            Self::Estimated(width_pt) => width_pt + ESTIMATED_LINE_REACH_TOLERANCE_PT,
+        }
+    }
+}
+
 /// A table cell.
 #[derive(Debug, Clone)]
 pub struct TableCell {

@@ -13,8 +13,8 @@
 //! issue #713).
 
 use crate::ir::{
-    Block, HFInline, HeaderFooter, SheetChart, SheetClipWindow, SheetLineExtent, SheetPage, Table,
-    TableCell, TableRow,
+    Block, HFInline, HeaderFooter, SheetChart, SheetClipWindow, SheetPage, Table, TableCell,
+    TableRow,
 };
 
 /// Upper bound on overflow pages per sheet chunk. Pathological sheets (used
@@ -557,28 +557,6 @@ struct SpillContinuation<'a> {
     remaining_pt: f64,
 }
 
-/// Slack, in points, granted to an estimated line extent before it is taken
-/// to cross a page-column boundary. The ASCII-ratio estimate runs 0.6–9.1pt
-/// under the face's own advances on the 1,000 occupation strings of
-/// `1000-customers.xlsx` (mean 4.7pt at Malgun Gothic 12); with 6pt of slack
-/// no line the native export continues is taken for one that ends before
-/// the boundary on that corpus, while a line ending well inside its reach —
-/// row 1001's `Direct Creative Liaison`, 26pt short of it — still counts as
-/// crossing nothing (issue #1714).
-///
-/// A [`SheetLineExtent::Measured`] extent needs none of it: Excel's own
-/// whole-point advance grid ends the line exactly where the native export
-/// does, down to the boundary case that grants no slack at all (issue #1659).
-const LINE_REACH_TOLERANCE_PT: f64 = 6.0;
-
-/// How far a line may be taken to paint, given how its extent was priced.
-fn line_reach_pt(extent: SheetLineExtent) -> f64 {
-    match extent {
-        SheetLineExtent::Measured(width_pt) => width_pt,
-        SheetLineExtent::Estimated(width_pt) => width_pt + LINE_REACH_TOLERANCE_PT,
-    }
-}
-
 /// The continuation `cell`, starting at column `cell_start` before
 /// `boundary`, sends past that boundary — `None` when it ends first.
 ///
@@ -605,7 +583,7 @@ fn spill_continuation_past<'a>(
     let remaining_pt: f64 = spill_width - offset_pt;
     let reach_pt: f64 = cell
         .spill_line_extent
-        .map_or(spill_width, |extent| line_reach_pt(extent).min(spill_width));
+        .map_or(spill_width, |extent| extent.reach_pt().min(spill_width));
     (remaining_pt > 0.0 && reach_pt > offset_pt).then_some(SpillContinuation {
         source: cell,
         offset_pt,

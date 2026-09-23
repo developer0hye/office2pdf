@@ -1984,9 +1984,10 @@ fn structure_overflow_strip_carries_the_spilled_tails() {
 /// Mac export does not print.
 ///
 /// Which face a host resolves for the workbook's Malgun Gothic decides the
-/// measured widths, so the assertion is the rule rather than the native
-/// export's own tail count: no line that ends by the boundary is redrawn, and
-/// every line past it is.
+/// widths, and a host without it prices the lines by estimate instead, so the
+/// assertion is the rule rather than the native export's own tail count: the
+/// strip carries a line's tail exactly when that line's recorded extent
+/// reaches past the boundary.
 #[test]
 fn structure_overflow_strip_redraws_only_the_lines_past_the_boundary() {
     let pages = sheet_pages("customers_overflow_strip.xlsx");
@@ -1998,14 +1999,16 @@ fn structure_overflow_strip_redraws_only_the_lines_past_the_boundary() {
         .iter()
         .sum();
 
-    let mut measured_rows: usize = 0;
+    let mut spilling_rows: usize = 0;
     for (index, row) in pages[0].table.rows.iter().enumerate() {
-        let Some(SheetLineExtent::Measured(line_pt)) =
-            row.cells[OCCUPATION_COLUMN].spill_line_extent
-        else {
+        let Some(extent) = row.cells[OCCUPATION_COLUMN].spill_line_extent else {
             continue;
         };
-        measured_rows += 1;
+        spilling_rows += 1;
+        // Every occupation value paints across E:G, a reach that crosses the
+        // boundary on every row, so the line alone decides its tail. The
+        // page-column's own copy of that reach is clamped to what it carries,
+        // which is why the assertion below reads the line and not the reach.
         let source: String = cell_text(&row.cells[OCCUPATION_COLUMN]);
         let tail: String = pages[1]
             .table
@@ -2013,23 +2016,38 @@ fn structure_overflow_strip_redraws_only_the_lines_past_the_boundary() {
             .get(index)
             .and_then(|strip_row| strip_row.cells.first())
             .map_or_else(String::new, cell_text);
-        if line_pt > boundary_pt {
+        let reach_pt: f64 = extent.reach_pt();
+        if reach_pt > boundary_pt {
             assert_eq!(
                 tail, source,
-                "row {index}: a {line_pt}pt line past the {boundary_pt}pt boundary is redrawn \
-                 on the strip"
+                "row {index}: a line reaching {reach_pt}pt past the {boundary_pt}pt boundary is \
+                 redrawn on the strip"
             );
         } else {
             assert_eq!(
                 tail, "",
-                "row {index}: {source:?} ends at {line_pt}pt, by the {boundary_pt}pt boundary, \
-                 so the strip carries no tail for it"
+                "row {index}: {source:?} reaches {reach_pt}pt, short of the {boundary_pt}pt \
+                 boundary, so the strip carries no tail for it"
             );
+        }
+
+        // The reported case, where the host prices the line as Excel does:
+        // `Customer Group Developer` is 147pt of whole-point advances from a
+        // pen 3pt inside its gridline, so it ends on the boundary and the
+        // native export prints nothing for it on the strip.
+        if let SheetLineExtent::Measured(line_pt) = extent
+            && source == "Customer Group Developer"
+        {
+            assert!(
+                (line_pt - boundary_pt).abs() < 0.001,
+                "the measured line ends on the {boundary_pt}pt boundary; got {line_pt}pt"
+            );
+            assert_eq!(tail, "", "a line ending on the boundary has no tail");
         }
     }
     assert!(
-        measured_rows > 0,
-        "the occupation column's spilling lines are priced on their resolved face"
+        spilling_rows > 0,
+        "the occupation column's values reach past their own column"
     );
 }
 

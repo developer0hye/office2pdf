@@ -3,7 +3,7 @@ use crate::ir::ChartAreaOutline;
 use crate::ir::{
     AxisTickMark, Block, BorderLineStyle, BorderSide, CellBorder, Color, HFInline, HeaderFooter,
     HeaderFooterParagraph, LineJoin, Margins, PageSize, Paragraph, ParagraphStyle, Run,
-    TableBorderPaintModel, TextStyle,
+    SheetLineExtent, TableBorderPaintModel, TextStyle,
 };
 
 fn cell(text: &str) -> TableCell {
