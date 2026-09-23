@@ -1,0 +1,1191 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 5150.592,
+      "bbox_pt": {
+        "height": 85.92,
+        "width": 511.2,
+        "x": 235.2,
+        "y": 342.72
+      },
+      "disposition": {
+        "issue": "#1844",
+        "kind": "issue",
+        "note": "The automatic line-plot rectangle and everything seated on it: the two series polylines, the primary and secondary value-axis labels and the three `Year N` category labels. The reference seats that rectangle on its own automatic layout; the native export reproduces our origins within 0.55pt. Tracked in #1844."
+      },
+      "id": "p11-a1eac2f0e903",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 660.096,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 46.08,
+        "x": 187.2,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-5171a1810269",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 376.9344,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 41.28,
+        "x": 248.16,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-1f6ba371fe46",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 251.136,
+      "bbox_pt": {
+        "height": 24.0,
+        "width": 22.08,
+        "x": 303.84,
+        "y": 67.68
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-37112448654b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 244.6848,
+      "bbox_pt": {
+        "height": 22.56,
+        "width": 16.8,
+        "x": 348.96,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-f5f0d2b3756c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 204.5952,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 22.56,
+        "x": 122.4,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-e8f51636e08a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 165.888,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 20.64,
+        "x": 325.92,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-d612c963ded1",
+      "region": "top"
+    },
+    {
+      "area_pt2": 161.5104,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 9.6,
+        "x": 235.68,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-ad08610e42f0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 143.3088,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 12.48,
+        "x": 153.6,
+        "y": 306.72
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-5ee5bf19e9d6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 115.8912,
+      "bbox_pt": {
+        "height": 16.32,
+        "width": 16.32,
+        "x": 152.64,
+        "y": 75.36
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-66acf84126de",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 109.9008,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 11.52,
+        "x": 176.16,
+        "y": 307.2
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-e89716212170",
+      "region": "left"
+    },
+    {
+      "area_pt2": 103.4496,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 13.44,
+        "x": 174.24,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-65505f4c9b6b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 95.3856,
+      "bbox_pt": {
+        "height": 22.08,
+        "width": 4.32,
+        "x": 168.96,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-e17e297c74f4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 91.4688,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 11.52,
+        "x": 72.48,
+        "y": 312.96
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-c822fe34a44a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 81.5616,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 12.0,
+        "x": 155.52,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-da2d4509cfab",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 74.88,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 10.08,
+        "x": 271.2,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-dcc5df6ced20",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 69.8112,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 4.8,
+        "x": 148.32,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-8215749855c4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 62.208,
+      "bbox_pt": {
+        "height": 20.16,
+        "width": 4.32,
+        "x": 111.84,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-1a7429da5f4a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 9.12,
+        "x": 85.92,
+        "y": 310.08
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-964e04b43f56",
+      "region": "left"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 18.24,
+        "width": 13.92,
+        "x": 117.12,
+        "y": 68.64
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-8728834874de",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 55.7568,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 3.36,
+        "x": 142.08,
+        "y": 71.04
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-8ca7c76a0aec",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 54.6048,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 12.0,
+        "x": 189.12,
+        "y": 316.8
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-6e9c3a90e8c4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 52.992,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 10.56,
+        "x": 188.16,
+        "y": 310.08
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-b961a31f9724",
+      "region": "left"
+    },
+    {
+      "area_pt2": 52.0704,
+      "bbox_pt": {
+        "height": 19.2,
+        "width": 11.04,
+        "x": 293.28,
+        "y": 72.48
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-ac7db60e56b8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 12.0,
+        "x": 179.52,
+        "y": 81.12
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-cbc724af0782",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 6.72,
+        "x": 280.32,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-dc3cb494668a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.3104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 96.0,
+        "y": 310.08
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-ca1123b4a7ae",
+      "region": "left"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 106.56,
+        "y": 310.08
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-f9b4737bdb27",
+      "region": "left"
+    },
+    {
+      "area_pt2": 43.5456,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 10.08,
+        "x": 72.48,
+        "y": 306.24
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-a3323b77e281",
+      "region": "left"
+    },
+    {
+      "area_pt2": 43.5456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.6,
+        "x": 117.12,
+        "y": 84.0
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-0798ddf76a68",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 42.624,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.08,
+        "x": 222.24,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-9b000f3582ed",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 42.624,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.12,
+        "x": 96.96,
+        "y": 317.28
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-7d5dd70f4869",
+      "region": "left"
+    },
+    {
+      "area_pt2": 41.7024,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 12.0,
+        "x": 335.04,
+        "y": 83.04
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-2bdd6ec3f72c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.16,
+        "x": 144.48,
+        "y": 185.28
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-52b56d631c49",
+      "region": "left"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.08,
+        "x": 120.48,
+        "y": 183.36
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-ce59689cdf89",
+      "region": "left"
+    },
+    {
+      "area_pt2": 40.5504,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.64,
+        "x": 107.52,
+        "y": 317.76
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-55a7cb78ef7c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 38.9376,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.12,
+        "x": 116.64,
+        "y": 310.08
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-44f1079c7983",
+      "region": "left"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 16.32,
+        "width": 2.4,
+        "x": 108.0,
+        "y": 68.16
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-ad888c4b18d4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.3248,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 523.2,
+        "y": 256.32
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-3d2b3c5cc30b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 155.52,
+        "y": 212.64
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-c1962a614d31",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.68,
+        "x": 526.56,
+        "y": 197.76
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-b8fbce97937a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.12,
+        "x": 200.64,
+        "y": 317.28
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-850fb22f9854",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 128.16,
+        "y": 317.28
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-bdc93710d74c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 9.12,
+        "x": 167.52,
+        "y": 320.16
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-c5f46a5a5622",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 1.92,
+        "x": 294.72,
+        "y": 72.0
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-fbc9532e590d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.64,
+        "x": 138.72,
+        "y": 319.2
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-7943800a1dcc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 490.08,
+        "y": 470.88
+      },
+      "disposition": {
+        "issue": "#1844",
+        "kind": "issue",
+        "note": "The automatic line-plot rectangle and everything seated on it: the two series polylines, the primary and secondary value-axis labels and the three `Year N` category labels. The reference seats that rectangle on its own automatic layout; the native export reproduces our origins within 0.55pt. Tracked in #1844."
+      },
+      "id": "p11-c47313e3a8fe",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 106.08,
+        "y": 272.64
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-60d945443b67",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 106.08,
+        "y": 214.56
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-3710a4a23098",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 236.64,
+        "y": 470.88
+      },
+      "disposition": {
+        "issue": "#1844",
+        "kind": "issue",
+        "note": "The automatic line-plot rectangle and everything seated on it: the two series polylines, the primary and secondary value-axis labels and the three `Year N` category labels. The reference seats that rectangle on its own automatic layout; the native export reproduces our origins within 0.55pt. Tracked in #1844."
+      },
+      "id": "p11-31eb1881a863",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 165.6,
+        "y": 212.64
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-d91a8a757687",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.8784,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 326.4,
+        "y": 84.0
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-a4e839e337f5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.16,
+        "x": 199.68,
+        "y": 310.08
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-320a3a3ca0f0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.12,
+        "x": 170.4,
+        "y": 243.84
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-917f72511e1c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.16,
+        "x": 137.28,
+        "y": 310.08
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-7b8e80b140ac",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.16,
+        "x": 127.2,
+        "y": 310.08
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-8dba12cd9c95",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 167.04,
+        "y": 310.08
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-33d58c7718ed",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 561.12,
+        "y": 259.68
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-d4e0bc4e0a74",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 117.6,
+        "y": 319.68
+      },
+      "disposition": {
+        "difference_id": "page-11-chart-title-seat-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "`Success Ratios` chart title. All three exports set it in Arial-BoldMT, so these clusters are the seat alone: the reference seats the line 4.33pt from the native export and 4.24pt from ours, while native and ours agree within 0.5pt."
+      },
+      "id": "p11-efdf86984968",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 3.84,
+        "x": 113.76,
+        "y": 183.84
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-ce68bf0a0556",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 3.36,
+        "x": 249.6,
+        "y": 468.48
+      },
+      "disposition": {
+        "issue": "#1844",
+        "kind": "issue",
+        "note": "The automatic line-plot rectangle and everything seated on it: the two series polylines, the primary and secondary value-axis labels and the three `Year N` category labels. The reference seats that rectangle on its own automatic layout; the native export reproduces our origins within 0.55pt. Tracked in #1844."
+      },
+      "id": "p11-2342162f108c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.8,
+        "x": 157.92,
+        "y": 272.64
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-8f7222f379fd",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 7.2,
+        "x": 335.04,
+        "y": 83.04
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-c5ced9f1c455",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 3.84,
+        "x": 537.6,
+        "y": 197.76
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-5f789be38f27",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 117.12,
+        "y": 245.28
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-313ec36aa66d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 883.68,
+        "y": 369.12
+      },
+      "disposition": {
+        "issue": "#1844",
+        "kind": "issue",
+        "note": "The automatic line-plot rectangle and everything seated on it: the two series polylines, the primary and secondary value-axis labels and the three `Year N` category labels. The reference seats that rectangle on its own automatic layout; the native export reproduces our origins within 0.55pt. Tracked in #1844."
+      },
+      "id": "p11-0cb289e9ccf0",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 331.2,
+        "y": 214.08
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-f3eb11a0a786",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 272.16,
+        "y": 183.36
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-5105f93391a4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 883.2,
+        "y": 386.4
+      },
+      "disposition": {
+        "issue": "#1844",
+        "kind": "issue",
+        "note": "The automatic line-plot rectangle and everything seated on it: the two series polylines, the primary and secondary value-axis labels and the three `Year N` category labels. The reference seats that rectangle on its own automatic layout; the native export reproduces our origins within 0.55pt. Tracked in #1844."
+      },
+      "id": "p11-079344044c5c",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 872.64,
+        "y": 394.56
+      },
+      "disposition": {
+        "issue": "#1844",
+        "kind": "issue",
+        "note": "The automatic line-plot rectangle and everything seated on it: the two series polylines, the primary and secondary value-axis labels and the three `Year N` category labels. The reference seats that rectangle on its own automatic layout; the native export reproduces our origins within 0.55pt. Tracked in #1844."
+      },
+      "id": "p11-1c2d54424435",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 873.6,
+        "y": 377.76
+      },
+      "disposition": {
+        "issue": "#1844",
+        "kind": "issue",
+        "note": "The automatic line-plot rectangle and everything seated on it: the two series polylines, the primary and secondary value-axis labels and the three `Year N` category labels. The reference seats that rectangle on its own automatic layout; the native export reproduces our origins within 0.55pt. Tracked in #1844."
+      },
+      "id": "p11-4684d981af75",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 3.84,
+        "x": 179.52,
+        "y": 72.48
+      },
+      "disposition": {
+        "difference_id": "page-11-substituted-face-native-match",
+        "kind": "reference-exporter-difference",
+        "note": "Text the reference sets in a face neither PowerPoint nor office2pdf uses. The `BUSINESS RATIOS` heading inherits the theme major latin Gill Sans MT: the reference draws NotoSans-Regular where the native export and we both embed and draw GillSansMT-Bold, with baselines within 0.5pt of each other. The two tables\u2019 body cells declare Lato: the reference substitutes NotoSans-Regular and emits an `fi` ligature for `Profit`, while we substitute ArialMT. The native export rasterizes those cells, so their six label ink widths measured off its 150 DPI raster arbitrate instead \u2014 they deviate 13px in total from ours against 32px from the reference."
+      },
+      "id": "p11-d58446250c46",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 741.12,
+        "y": 473.76
+      },
+      "disposition": {
+        "issue": "#1844",
+        "kind": "issue",
+        "note": "The automatic line-plot rectangle and everything seated on it: the two series polylines, the primary and secondary value-axis labels and the three `Year N` category labels. The reference seats that rectangle on its own automatic layout; the native export reproduces our origins within 0.55pt. Tracked in #1844."
+      },
+      "id": "p11-0e4c90c431e6",
+      "region": "bottom-right"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 11,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 73,
+    "duplicate": 0,
+    "total": 73,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
