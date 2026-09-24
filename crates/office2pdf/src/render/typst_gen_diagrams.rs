@@ -1743,6 +1743,13 @@ const CHART_PLOT_TOP_PAD_EM: f64 = 1.465;
 /// deck — 25.052, 28.767, 39.902 and 51.028pt at 10, 12, 18 and 24pt — gives
 /// `6.5009 + 1.8554 em`, which reproduces this pair to 0.08pt, so both
 /// families read it (issue #1437).
+///
+/// #1674 identified what that shared line is: `6.5pt` plus the label's own
+/// line and one clearance, both of them shares of the face. A column plot on
+/// a slide reads [`ChartFaceLineBox::category_band_pt`] instead wherever its
+/// face resolves, and this pair is what a build resolving none falls back to.
+/// The bar family and the spreadsheet hosts keep it outright: no face sweep
+/// covers either (issue #1674).
 const CHART_TICK_BAND_BASE_PT: f64 = 6.58;
 const CHART_TICK_BAND_EM: f64 = 1.855;
 
@@ -1776,6 +1783,12 @@ const CHART_COLUMN_VALUE_GUTTER_EM: f64 = 3.13;
 /// `scripts/probes/issue-1663-column-legend-absent.json` measures at exactly
 /// 11.000pt. Where a legend runs down the right edge it spends the whole band
 /// instead — see [`powerpoint_column_legend_key_band_pt`] (issue #1663).
+///
+/// The top inset's `0.607em` is half of Calibri's own line box, which is the
+/// only face the #841 exports carry. It is [`ChartFaceLineBox::plot_top_inset_pt`]
+/// wherever a face resolves, and stays here as that path's fallback and as the
+/// box [`powerpoint_right_legend_y_shift`]'s pair was fitted against
+/// (issue #1674).
 const CHART_COLUMN_RIGHT_PAD_PT: f64 = 11.0;
 const CHART_COLUMN_TOP_PAD_PT: f64 = 5.0;
 const CHART_COLUMN_TOP_PAD_EM: f64 = 0.607;
@@ -1935,6 +1948,11 @@ const SEGOE_UI_CHART_LINE_METRICS_EM: (f64, f64) = (2210.0 / 2048.0, 514.0 / 204
 /// part of the box one line occupies, and the seven faces this was measured
 /// across only agree once it is excluded (Arial is the one of them that
 /// declares a non-zero gap).
+///
+/// A chart-area title's own band is the one quantity that does include it —
+/// see [`ChartFaceLineBox::leaded_em`]. The two are not in conflict: a title
+/// band is a whole line of text with its leading, while a legend key and a
+/// label clearance are shares of the ink box (issue #1674).
 pub(super) fn chart_face_line_metrics_em(family: &str, bold: bool) -> Option<(f64, f64)> {
     if let Some((ascent, descent, _)) = calibrated_chart_line_metrics_em(family, bold) {
         return Some((ascent, descent));
@@ -1942,6 +1960,158 @@ pub(super) fn chart_face_line_metrics_em(family: &str, bold: bool) -> Option<(f6
     let ascent_em: f64 = crate::render::pdf::font_hhea_ascender_em(family)?;
     let (_, descent_em, _) = crate::render::pdf::font_line_metrics_em(family)?;
     Some((ascent_em, descent_em))
+}
+
+/// The line boxes a framed PowerPoint column plot's automatic vertical bands
+/// measure one face by, in em units.
+///
+/// Two boxes, because the three bands do not agree on one. The window box is
+/// OS/2's `usWin*` pair, which is what PowerPoint sizes a chart's line by;
+/// the leaded box adds `hhea`'s line gap, and is the greater of the two.
+#[derive(Clone, Copy, Debug)]
+pub(super) struct ChartFaceLineBox {
+    /// OS/2 `usWinAscent`.
+    pub(super) window_ascent_em: f64,
+    /// OS/2 `usWinDescent`, positive.
+    pub(super) window_descent_em: f64,
+    /// The greater of the window box and `hhea`'s ascent + descent + line gap.
+    pub(super) leaded_em: f64,
+}
+
+impl ChartFaceLineBox {
+    /// Assemble the pair from one face's own metrics.
+    pub(super) fn from_face_metrics_em(
+        window_ascent_em: f64,
+        window_descent_em: f64,
+        hhea_leaded_em: f64,
+    ) -> Self {
+        Self {
+            window_ascent_em,
+            window_descent_em,
+            leaded_em: (window_ascent_em + window_descent_em).max(hhea_leaded_em),
+        }
+    }
+
+    /// The whole window box.
+    fn window_em(self) -> f64 {
+        self.window_ascent_em + self.window_descent_em
+    }
+
+    /// The band a chart-area title takes above a framed column plot, in points.
+    ///
+    /// One whole leaded line of the title's own face, over
+    /// [`PPTX_COLUMN_TITLE_BAND_PT`].
+    pub(super) fn title_band_pt(self, title_pt: f64) -> f64 {
+        PPTX_COLUMN_TITLE_BAND_PT + self.leaded_em * title_pt
+    }
+
+    /// The inset the plot keeps above its own top edge, in points.
+    ///
+    /// Half a line of the value axis' face over [`CHART_COLUMN_TOP_PAD_PT`] —
+    /// the half of the topmost tick label's box that sits above the gridline
+    /// it is centred on.
+    pub(super) fn plot_top_inset_pt(self, value_axis_pt: f64) -> f64 {
+        CHART_COLUMN_TOP_PAD_PT + PPTX_COLUMN_PLOT_TOP_INSET_SHARE * self.window_em() * value_axis_pt
+    }
+
+    /// The band the flat category labels take under the plot, in points.
+    ///
+    /// Twice the clearance #1651 measured for a line plot's labels, over
+    /// [`PPTX_COLUMN_CATEGORY_BAND_PT`]: the label's own line plus the same
+    /// clearance again between it and the plot.
+    pub(super) fn category_band_pt(self, category_axis_pt: f64) -> f64 {
+        PPTX_COLUMN_CATEGORY_BAND_PT
+            + (PPTX_COLUMN_CATEGORY_ASCENT_SHARE * self.window_ascent_em + self.window_descent_em)
+                * category_axis_pt
+    }
+}
+
+/// Fixed part of the band a chart-area title takes above a framed PowerPoint
+/// column plot.
+///
+/// Eight title faces at a stated 18pt
+/// (`scripts/probes/issue-1674-column-title-face.json`) each put this at
+/// 9.000pt within 0.003, once the title's own leaded line and
+/// [`ChartFaceLineBox::plot_top_inset_pt`] are taken off. #1437 fitted
+/// `9.0253 + 1.22242 em` across its two Calibri series instead, which is the
+/// same line to 0.03pt in Calibri and nowhere else (issue #1674).
+const PPTX_COLUMN_TITLE_BAND_PT: f64 = 9.0;
+
+/// The share of the value axis' line box a framed column plot keeps above its
+/// own top edge, over [`CHART_COLUMN_TOP_PAD_PT`].
+///
+/// Eight value-axis faces at a stated 18pt
+/// (`scripts/probes/issue-1674-column-value-axis-face.json`) put it between
+/// 0.4990 and 0.5015, with the one outlier the face whose box is nearest
+/// Calibri's and therefore has almost no lever. It is half a line because the
+/// topmost tick label is centred on the plot's top gridline (issue #1674).
+const PPTX_COLUMN_PLOT_TOP_INSET_SHARE: f64 = 0.5;
+
+/// Fixed part of the band a framed PowerPoint column plot reserves under
+/// itself for one flat row of category labels.
+///
+/// This is [`EXCEL_VALUE_LABEL_EDGE_PAD_PT`]'s 6.5pt frame inset, which the
+/// line family's own gutter starts its labels at (#1651), and thirteen faces
+/// land on it within 0.006pt. The #1437 pair `6.5009 + 1.8554 em` is this
+/// model evaluated in Calibri: `5/3 x 1950/2048 + 550/2048` is 1.85546
+/// (issue #1674).
+const PPTX_COLUMN_CATEGORY_BAND_PT: f64 = 6.5;
+
+/// The share of the category face's ascent that band spends, alongside one
+/// whole descent.
+///
+/// The band is twice the `5/6 ascent + 1/2 descent` clearance #1651 measured
+/// between a line plot's value labels and its plot: the label's own line, and
+/// the same clearance again above it. Fitting ascent and descent freely across
+/// the thirteen faces gives 1.66566 and 0.99963 with no face further than
+/// 0.005pt out, which is `5/3` and `1` (issue #1674).
+const PPTX_COLUMN_CATEGORY_ASCENT_SHARE: f64 = 5.0 / 3.0;
+
+/// The line boxes the face `family` resolves to measures a column plot's bands
+/// by, or `None` where no face resolves at all.
+///
+/// The calibrated faces answer from [`calibrated_chart_face_line_box_em`]
+/// first: neither `Calibri` nor `Arial` is installed on every runner, and a
+/// substitute's box is not the box the native exports measured.
+pub(super) fn chart_face_line_box_em(family: &str) -> Option<ChartFaceLineBox> {
+    if let Some(metrics) = calibrated_chart_face_line_box_em(family) {
+        return Some(metrics);
+    }
+    let (window_ascent_em, window_descent_em, hhea_leaded_em) =
+        crate::render::pdf::font_chart_band_metrics_em(family)?;
+    Some(ChartFaceLineBox::from_face_metrics_em(
+        window_ascent_em,
+        window_descent_em,
+        hhea_leaded_em,
+    ))
+}
+
+/// `(usWinAscent, usWinDescent, hhea ascent + descent + line gap)` per 2048em
+/// for the faces this calibration itself rests on.
+///
+/// `Calibri` is the face every probe fixture's theme states and `Arial` is
+/// page 8 of the #1220 deck's, so a build resolving either to a substitute
+/// would be scoring the model against a face it was never measured on. Both
+/// weights are listed once because neither face's `usWin` pair nor its `hhea`
+/// line gap differs between regular and bold, and the sweep — whose title is
+/// bold and whose axes are not — cannot separate them anywhere.
+fn calibrated_chart_face_line_box_em(family: &str) -> Option<ChartFaceLineBox> {
+    let normalized: String = family
+        .chars()
+        .filter(|character| character.is_ascii_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect();
+    let (window_ascent, window_descent, leaded) = match normalized.as_str() {
+        "calibri" => (1950.0, 550.0, 2500.0),
+        "arial" => (1854.0, 434.0, 2355.0),
+        _ => return None,
+    };
+    let upem: f64 = 2048.0;
+    Some(ChartFaceLineBox::from_face_metrics_em(
+        window_ascent / upem,
+        window_descent / upem,
+        leaded / upem,
+    ))
 }
 
 /// Keep all three metrics on the calibrated source face; a substitute's gap
@@ -3043,8 +3213,20 @@ fn axis_label_gutters(chart: &Chart, frame: Option<(f64, f64)>) -> (f64, f64) {
             // [`chart_category_band_pt`] is the band one category takes *across*
             // the axis, not under it; using it here reserved 3.4em and put the
             // page-8 plot floor 13.6pt high (issue #1437).
-            CHART_TICK_BAND_BASE_PT
-                + CHART_TICK_BAND_EM * chart_axis_text_pt(chart, chart.category_axis_text_style)
+            //
+            // The label's face sets the band, not its size alone: thirteen
+            // faces through `scripts/probes/issue-1674-column-plot-face.json`
+            // put it on `6.5pt + 5/3 ascent + 1 descent` of the category
+            // face's window box within 0.006pt, and the #1437 line above is
+            // that model evaluated in Calibri (issue #1674).
+            let size_pt: f64 = chart_axis_text_pt(chart, chart.category_axis_text_style);
+            chart
+                .category_axis_font_family()
+                .and_then(chart_face_line_box_em)
+                .map_or(
+                    CHART_TICK_BAND_BASE_PT + CHART_TICK_BAND_EM * size_pt,
+                    |metrics| metrics.category_band_pt(size_pt),
+                )
         } else {
             chart_category_band_pt(chart)
         };
@@ -3245,10 +3427,11 @@ fn axis_plot_insets(chart: &Chart, frame: Option<(f64, f64)>, title_h: f64) -> (
 /// The whole distance a framed PowerPoint column plot keeps between the chart
 /// area's top edge and its own, in points.
 ///
-/// [`PPTX_TITLE_BAND_PT`] holds the two native sweeps this comes from. A chart
+/// [`ChartFaceLineBox::title_band_pt`] holds the face sweeps this comes from
+/// and [`PPTX_TITLE_BAND_PT`] the Calibri ones they generalise. A chart
 /// drawing no title spends only the plot's own inset, which is what the #841
 /// exports measured; one that declares no size at all keeps the pre-#1437
-/// geometry, since neither sweep covers it.
+/// geometry, since no sweep covers it.
 fn powerpoint_column_top_band_pt(chart: &Chart, title_h: f64) -> Option<f64> {
     if !powerpoint_column_chrome(chart)
         || (chart.title_text_style.size_pt.is_none() && chart.text_style.size_pt.is_none())
@@ -3259,7 +3442,22 @@ fn powerpoint_column_top_band_pt(chart: &Chart, title_h: f64) -> Option<f64> {
     if title_h <= 0.0 {
         return Some(inset);
     }
-    Some(PPTX_TITLE_BAND_PT + PPTX_TITLE_BAND_EM * chart_area_title_pt(chart) + inset)
+    let title_pt: f64 = chart_area_title_pt(chart);
+    // The title's own face carries the band. A build that resolves no face at
+    // all keeps #1437's Calibri fit, which is this model in that one face.
+    let band: f64 = chart_title_face_line_box(chart).map_or(
+        PPTX_TITLE_BAND_PT + PPTX_TITLE_BAND_EM * title_pt,
+        |metrics| metrics.title_band_pt(title_pt),
+    );
+    Some(band + inset)
+}
+
+/// The line boxes the chart-area title's face measures its band by.
+///
+/// The title has no face of its own in the tree: a `c:title/c:txPr` states
+/// only a size here, so it inherits the chart space's.
+fn chart_title_face_line_box(chart: &Chart) -> Option<ChartFaceLineBox> {
+    chart_face_line_box_em(chart.text_font_family.as_deref()?)
 }
 
 /// The top inset a framed column plot keeps on its own account, whatever sits
@@ -3268,8 +3466,14 @@ fn powerpoint_column_top_band_pt(chart: &Chart, title_h: f64) -> Option<f64> {
 /// Measured on the native #841 exports, whose chart draws no title at all, so
 /// this is the whole distance from the chart area's top edge there.
 fn column_plot_own_top_inset_pt(chart: &Chart) -> f64 {
-    CHART_COLUMN_TOP_PAD_PT
-        + CHART_COLUMN_TOP_PAD_EM * chart_axis_text_pt(chart, chart.value_axis_text_style)
+    let size_pt: f64 = chart_axis_text_pt(chart, chart.value_axis_text_style);
+    chart
+        .value_axis_font_family()
+        .and_then(chart_face_line_box_em)
+        .map_or(
+            CHART_COLUMN_TOP_PAD_PT + CHART_COLUMN_TOP_PAD_EM * size_pt,
+            |metrics| metrics.plot_top_inset_pt(size_pt),
+        )
 }
 
 /// What the full chart-area frame leaves its inner content box after the title
@@ -3650,6 +3854,13 @@ const CHART_TITLE_BAND_EM: f64 = 1.72912;
 /// constant carries a bar plot's top inset as well — see
 /// [`CHART_PLOT_TOP_PAD_PT`] — and re-splitting that needs bar-family exports
 /// this calibration does not have (issue #1437).
+///
+/// Both terms are Calibri quantities, because both sweeps export a Calibri
+/// deck: the fixed one is [`PPTX_COLUMN_TITLE_BAND_PT`] to 0.026pt and the
+/// scaled one is Calibri's own `1.2207em` line box to 0.0017. Thirteen faces
+/// separate them — see [`ChartFaceLineBox::title_band_pt`], which a column
+/// plot on a slide takes wherever its face resolves. This pair is what a
+/// build resolving no face falls back to (issue #1674).
 const PPTX_TITLE_BAND_PT: f64 = 9.0253;
 const PPTX_TITLE_BAND_EM: f64 = 1.22242;
 
@@ -4396,8 +4607,16 @@ pub(super) fn powerpoint_right_legend_y_shift(
             // re-placed the plot's top edge from a measured band, so the pair
             // fitted against the pre-#1437 box gives the difference back and
             // the native key tops it was fitted to stay put.
-            let moved: f64 =
-                axis_plot_insets(chart, frame, title_h).0 - column_plot_own_top_inset_pt(chart);
+            //
+            // What it gives back is measured against the box the pair was
+            // fitted on, which is why the inset subtracted here is the flat
+            // `5pt + 0.607em` of that fit rather than the face-measured one
+            // #1674 replaced it with. Subtracting the live inset instead would
+            // let every later refinement of it drag the legend along (#1674).
+            let moved: f64 = axis_plot_insets(chart, frame, title_h).0
+                - (CHART_COLUMN_TOP_PAD_PT
+                    + CHART_COLUMN_TOP_PAD_EM
+                        * chart_axis_text_pt(chart, chart.value_axis_text_style));
             PPTX_COLUMN_RIGHT_LEGEND_Y_SHIFT_PT + PPTX_COLUMN_RIGHT_LEGEND_Y_SHIFT_EM * size_pt
                 - moved / 2.0
         }
