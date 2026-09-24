@@ -1,0 +1,65 @@
+{
+  "name": "issue-1674-column-title-face",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column chart title a:latin typeface at a fixed 18pt, chart space held at Calibri 18pt",
+  "page": 1,
+  "variants": [
+    {
+      "value": "Calibri",
+      "find": "<c:title><c:layout/><c:overlay val=\"0\"/></c:title>(<c:autoTitleDeleted val=\"0\"/><c:plotArea><c:layout/><c:barChart><c:barDir val=\")bar(\")",
+      "replace": "<c:title><c:layout/><c:overlay val=\"0\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Calibri\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr></c:title>\\g<1>col\\g<2>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Arial",
+      "find": "<c:title><c:layout/><c:overlay val=\"0\"/></c:title>(<c:autoTitleDeleted val=\"0\"/><c:plotArea><c:layout/><c:barChart><c:barDir val=\")bar(\")",
+      "replace": "<c:title><c:layout/><c:overlay val=\"0\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Arial\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr></c:title>\\g<1>col\\g<2>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Times New Roman",
+      "find": "<c:title><c:layout/><c:overlay val=\"0\"/></c:title>(<c:autoTitleDeleted val=\"0\"/><c:plotArea><c:layout/><c:barChart><c:barDir val=\")bar(\")",
+      "replace": "<c:title><c:layout/><c:overlay val=\"0\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Times New Roman\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr></c:title>\\g<1>col\\g<2>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Courier New",
+      "find": "<c:title><c:layout/><c:overlay val=\"0\"/></c:title>(<c:autoTitleDeleted val=\"0\"/><c:plotArea><c:layout/><c:barChart><c:barDir val=\")bar(\")",
+      "replace": "<c:title><c:layout/><c:overlay val=\"0\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Courier New\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr></c:title>\\g<1>col\\g<2>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Georgia",
+      "find": "<c:title><c:layout/><c:overlay val=\"0\"/></c:title>(<c:autoTitleDeleted val=\"0\"/><c:plotArea><c:layout/><c:barChart><c:barDir val=\")bar(\")",
+      "replace": "<c:title><c:layout/><c:overlay val=\"0\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Georgia\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr></c:title>\\g<1>col\\g<2>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Trebuchet MS",
+      "find": "<c:title><c:layout/><c:overlay val=\"0\"/></c:title>(<c:autoTitleDeleted val=\"0\"/><c:plotArea><c:layout/><c:barChart><c:barDir val=\")bar(\")",
+      "replace": "<c:title><c:layout/><c:overlay val=\"0\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Trebuchet MS\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr></c:title>\\g<1>col\\g<2>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Verdana",
+      "find": "<c:title><c:layout/><c:overlay val=\"0\"/></c:title>(<c:autoTitleDeleted val=\"0\"/><c:plotArea><c:layout/><c:barChart><c:barDir val=\")bar(\")",
+      "replace": "<c:title><c:layout/><c:overlay val=\"0\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Verdana\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr></c:title>\\g<1>col\\g<2>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Comic Sans MS",
+      "find": "<c:title><c:layout/><c:overlay val=\"0\"/></c:title>(<c:autoTitleDeleted val=\"0\"/><c:plotArea><c:layout/><c:barChart><c:barDir val=\")bar(\")",
+      "replace": "<c:title><c:layout/><c:overlay val=\"0\"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Comic Sans MS\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr></c:title>\\g<1>col\\g<2>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

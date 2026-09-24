@@ -1,0 +1,65 @@
+{
+  "name": "issue-1674-column-value-axis-face",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column value-axis a:latin typeface at a fixed 18pt, chart space held at Calibri 18pt",
+  "page": 1,
+  "variants": [
+    {
+      "value": "Calibri",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<c:crossAx val=\"-1884094432\"/>",
+      "replace": "val=\"col\"\\g<1><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Calibri\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Arial",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<c:crossAx val=\"-1884094432\"/>",
+      "replace": "val=\"col\"\\g<1><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Arial\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Times New Roman",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<c:crossAx val=\"-1884094432\"/>",
+      "replace": "val=\"col\"\\g<1><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Times New Roman\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Courier New",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<c:crossAx val=\"-1884094432\"/>",
+      "replace": "val=\"col\"\\g<1><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Courier New\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Georgia",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<c:crossAx val=\"-1884094432\"/>",
+      "replace": "val=\"col\"\\g<1><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Georgia\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Trebuchet MS",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<c:crossAx val=\"-1884094432\"/>",
+      "replace": "val=\"col\"\\g<1><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Trebuchet MS\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Verdana",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<c:crossAx val=\"-1884094432\"/>",
+      "replace": "val=\"col\"\\g<1><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Verdana\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Comic Sans MS",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<c:crossAx val=\"-1884094432\"/>",
+      "replace": "val=\"col\"\\g<1><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1800\"><a:latin typeface=\"Comic Sans MS\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"en-US\"/></a:p></c:txPr><c:crossAx val=\"-1884094432\"/>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}
