@@ -3,15 +3,15 @@ use crate::ir::DataLabels;
 use crate::ir::MarkerSymbol;
 use crate::ir::{ChartAreaFill, ChartAreaOutline};
 use crate::render::typst_gen::diagrams::{
-    CHART_AREA_OUTLINE, CHART_AUTOMATIC_LINE, CHART_DEFAULT_TEXT_PT, GAP, LABEL_W, LEGEND_ENTRY_W,
-    LEGEND_KEY_BASELINE_PT, LEGEND_KEY_LEN_PT, PPTX_LEGEND_KEY_EM,
+    CHART_AREA_OUTLINE, CHART_AUTOMATIC_LINE, CHART_DEFAULT_TEXT_PT, ChartFaceLineBox, GAP,
+    LABEL_W, LEGEND_ENTRY_W, LEGEND_KEY_BASELINE_PT, LEGEND_KEY_LEN_PT, PPTX_LEGEND_KEY_EM,
     PPTX_LEGEND_KEY_LABEL_GAP_KEY_SHARE, PPTX_LEGEND_KEY_LABEL_GAP_PT,
     PPTX_RIGHT_LEGEND_Y_SHIFT_EM, PPTX_RIGHT_LEGEND_Y_SHIFT_PT, ROW, SERIES_LINE_PT,
     SERIES_MARKER_SIZE_PT, TICK_GAP, axis_plot_rect, chart_area_title_h, chart_category_band_pt,
     chart_category_gutter_pt, chart_category_rotated_label_x, chart_category_rotated_label_y,
-    ChartFaceLineBox, chart_face_line_box_em, chart_face_line_metrics_em, chart_text_advance_em,
-    chart_tick_band_pt, excel_legend_trailing_gutter_pt, legend_marker_cap_pt,
-    powerpoint_right_legend_y_shift, pptx_column_data_label_seat_pt,
+    chart_face_line_box_em, chart_face_line_metrics_em, chart_text_advance_em, chart_tick_band_pt,
+    excel_legend_trailing_gutter_pt, legend_marker_cap_pt, powerpoint_right_legend_y_shift,
+    pptx_column_data_label_seat_pt,
 };
 
 #[test]
@@ -5332,20 +5332,93 @@ fn a_powerpoint_bar_plot_keeps_its_own_measured_top_band() {
 /// above the frame's, on the deck's own 480 x 320pt graphic frame. Every
 /// variant holds the chart space at 18pt, so the automatic title is 21.6pt and
 /// both axes are 18pt throughout and only the face moves.
-const NATIVE_COLUMN_FACE_BANDS: [(&str, (f64, f64, f64), f64, f64); 13] = [
-    ("Calibri", (1950.0, 550.0, 2500.0), 51.3525, 39.9017),
-    ("Arial", (1854.0, 434.0, 2355.0), 48.8901, 37.4734),
-    ("Times New Roman", (1825.0, 443.0, 2268.0), 47.8874, 37.1283),
-    ("Courier New", (1705.0, 615.0, 2320.0), 48.6601, 36.8800),
-    ("Georgia", (1878.0, 449.0, 2327.0), 48.7650, 37.9534),
-    ("Trebuchet MS", (1923.0, 455.0, 2378.0), 49.5300, 38.6666),
-    ("Verdana", (2059.0, 430.0, 2489.0), 51.1875, 40.4383),
-    ("Comic Sans MS", (2257.0, 597.0, 2854.0), 56.6400, 44.8034),
-    ("Candara", (1950.0, 550.0, 2500.0), 51.3525, 39.9017),
-    ("Constantia", (1950.0, 550.0, 2500.0), 51.3525, 39.9017),
-    ("Corbel", (1950.0, 550.0, 2473.0), 51.3525, 39.9017),
-    ("Consolas", (1884.0, 514.0, 2398.0), 49.8300, 38.6200),
-    ("Goudy Old Style", (1792.0, 486.0, 2458.0), 49.9350, 37.0200),
+struct NativeColumnFaceBand {
+    face: &'static str,
+    /// `(usWinAscent, usWinDescent, hhea ascent + descent + line gap)`.
+    metrics_per_2048em: (f64, f64, f64),
+    top_band_pt: f64,
+    bottom_band_pt: f64,
+}
+
+const NATIVE_COLUMN_FACE_BANDS: [NativeColumnFaceBand; 13] = [
+    NativeColumnFaceBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        top_band_pt: 51.3525,
+        bottom_band_pt: 39.9017,
+    },
+    NativeColumnFaceBand {
+        face: "Arial",
+        metrics_per_2048em: (1854.0, 434.0, 2355.0),
+        top_band_pt: 48.8901,
+        bottom_band_pt: 37.4734,
+    },
+    NativeColumnFaceBand {
+        face: "Times New Roman",
+        metrics_per_2048em: (1825.0, 443.0, 2268.0),
+        top_band_pt: 47.8874,
+        bottom_band_pt: 37.1283,
+    },
+    NativeColumnFaceBand {
+        face: "Courier New",
+        metrics_per_2048em: (1705.0, 615.0, 2320.0),
+        top_band_pt: 48.6601,
+        bottom_band_pt: 36.8800,
+    },
+    NativeColumnFaceBand {
+        face: "Georgia",
+        metrics_per_2048em: (1878.0, 449.0, 2327.0),
+        top_band_pt: 48.7650,
+        bottom_band_pt: 37.9534,
+    },
+    NativeColumnFaceBand {
+        face: "Trebuchet MS",
+        metrics_per_2048em: (1923.0, 455.0, 2378.0),
+        top_band_pt: 49.5300,
+        bottom_band_pt: 38.6666,
+    },
+    NativeColumnFaceBand {
+        face: "Verdana",
+        metrics_per_2048em: (2059.0, 430.0, 2489.0),
+        top_band_pt: 51.1875,
+        bottom_band_pt: 40.4383,
+    },
+    NativeColumnFaceBand {
+        face: "Comic Sans MS",
+        metrics_per_2048em: (2257.0, 597.0, 2854.0),
+        top_band_pt: 56.6400,
+        bottom_band_pt: 44.8034,
+    },
+    NativeColumnFaceBand {
+        face: "Candara",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        top_band_pt: 51.3525,
+        bottom_band_pt: 39.9017,
+    },
+    NativeColumnFaceBand {
+        face: "Constantia",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        top_band_pt: 51.3525,
+        bottom_band_pt: 39.9017,
+    },
+    NativeColumnFaceBand {
+        face: "Corbel",
+        metrics_per_2048em: (1950.0, 550.0, 2473.0),
+        top_band_pt: 51.3525,
+        bottom_band_pt: 39.9017,
+    },
+    NativeColumnFaceBand {
+        face: "Consolas",
+        metrics_per_2048em: (1884.0, 514.0, 2398.0),
+        top_band_pt: 49.8300,
+        bottom_band_pt: 38.6200,
+    },
+    NativeColumnFaceBand {
+        face: "Goudy Old Style",
+        metrics_per_2048em: (1792.0, 486.0, 2458.0),
+        top_band_pt: 49.9350,
+        bottom_band_pt: 37.0200,
+    },
 ];
 
 /// A framed PowerPoint column plot sizes all three of its automatic vertical
@@ -5371,9 +5444,13 @@ const NATIVE_COLUMN_FACE_BANDS: [(&str, (f64, f64, f64), f64, f64); 13] = [
 /// same band to the last emitted digit (issue #1674).
 #[test]
 fn a_powerpoint_column_plot_sizes_its_bands_from_the_face_line_box() {
-    for (face, (window_ascent, window_descent, leaded), native_top, native_bottom) in
-        NATIVE_COLUMN_FACE_BANDS
-    {
+    for band in NATIVE_COLUMN_FACE_BANDS {
+        let NativeColumnFaceBand {
+            face,
+            metrics_per_2048em: (window_ascent, window_descent, leaded),
+            top_band_pt: native_top,
+            bottom_band_pt: native_bottom,
+        } = band;
         let upem: f64 = 2048.0;
         let metrics = ChartFaceLineBox::from_face_metrics_em(
             window_ascent / upem,

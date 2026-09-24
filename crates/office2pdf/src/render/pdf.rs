@@ -2384,9 +2384,8 @@ fn chart_band_face_metrics_em(font: &typst::text::Font) -> (f64, f64, f64) {
     let ttf = instance.ttf();
     let upem: f64 = f64::from(ttf.units_per_em()).max(1.0);
     let hhea = ttf.tables().hhea;
-    let leaded_em: f64 = (f64::from(hhea.ascender) - f64::from(hhea.descender)
-        + f64::from(hhea.line_gap))
-        / upem;
+    let leaded_em: f64 =
+        (f64::from(hhea.ascender) - f64::from(hhea.descender) + f64::from(hhea.line_gap)) / upem;
     (window_ascent_em, window_descent_em, leaded_em)
 }
 

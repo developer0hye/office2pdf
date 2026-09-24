@@ -2011,7 +2011,8 @@ impl ChartFaceLineBox {
     /// the half of the topmost tick label's box that sits above the gridline
     /// it is centred on.
     pub(super) fn plot_top_inset_pt(self, value_axis_pt: f64) -> f64 {
-        CHART_COLUMN_TOP_PAD_PT + PPTX_COLUMN_PLOT_TOP_INSET_SHARE * self.window_em() * value_axis_pt
+        CHART_COLUMN_TOP_PAD_PT
+            + PPTX_COLUMN_PLOT_TOP_INSET_SHARE * self.window_em() * value_axis_pt
     }
 
     /// The band the flat category labels take under the plot, in points.
