@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://github.com/user-attachments/files/31185149/GENERAL.SERVICES.pptx",
+    "sha256": "17924ec3b27646a2c1b2bb711b845360b713cc7052b3cdde9df752f9ceded3a9"
+  },
+  "reference_export": {
+    "application": "LibreOffice Impress",
+    "version": "26.2.5.2 (X86_64)",
+    "platform": "Unspecified in supplied PDF metadata",
+    "pdf_sha256": "8c8f471d8baaf0abd79e752ef49951c240752d36e4512651f6cb9a7cfffb650f",
+    "evidence_path": "assets/bugfixes/issue-1670/gt.jpg",
+    "evidence_sha256": "d8eab88a7c06eaccf0fa136ee01113326cbc7682be842186a73a57eb75280521"
+  },
+  "native_export": {
+    "application": "Microsoft PowerPoint",
+    "version": "16.113.1 (build 16.113.26091740)",
+    "platform": "macOS 26.6.2 build 25G83",
+    "pdf_sha256": "adec062605a45f1b6884252e9f4e199dee2da029e975845c258f4a7c38c820e1",
+    "evidence_path": "assets/bugfixes/issue-1670/native.jpg",
+    "evidence_sha256": "edd112334c35ec0260aee44d85e56421f0303a5ea8ebc6bb136daab3de1499a0"
+  },
+  "verification_url": "https://github.com/developer0hye/office2pdf/issues/1670#issuecomment-5806059697",
+  "differences": [
+    {
+      "id": "page-8-legend-seat-native-match",
+      "page": 8,
+      "kind": "render-clusters",
+      "render_cluster_ids": [
+        "p8-010c8e60ef35",
+        "p8-07c27c7581f7",
+        "p8-07e5df5f0867",
+        "p8-12d0f2a6e702",
+        "p8-67c41be157ec",
+        "p8-ade2fb9a6b1a",
+        "p8-bb1b66d7d27a",
+        "p8-d1c981fea1e9",
+        "p8-e2cf0b7a513d",
+        "p8-ee88517b0787"
+      ]
+    },
+    {
+      "id": "page-8-substituted-face-native-match",
+      "page": 8,
+      "kind": "render-clusters",
+      "render_cluster_ids": [
+        "p8-0de38e298473",
+        "p8-120e9d963a9e",
+        "p8-21f8a8066377",
+        "p8-2fcb5932d7d8",
+        "p8-34bb784284e9",
+        "p8-40734294339f",
+        "p8-40d3d7f64eab",
+        "p8-45b5a9f13ec3",
+        "p8-463e590b4e02",
+        "p8-47a4b4ac6786",
+        "p8-48003d8b8671",
+        "p8-4b276d38e405",
+        "p8-75c47b8ebd07",
+        "p8-81a27cf96520",
+        "p8-8236f7b3cf81",
+        "p8-9806356414ae",
+        "p8-ad708c4cdae6",
+        "p8-b518099366c1",
+        "p8-be8ce4aaa525",
+        "p8-d6bf30644d7c",
+        "p8-d73f0a47d034",
+        "p8-dc7160259174",
+        "p8-e627208e1b07",
+        "p8-ec39a3feb1f8",
+        "p8-f40b81a23f4a"
+      ]
+    },
+    {
+      "id": "page-8-chart-title-seat-native-match",
+      "page": 8,
+      "kind": "render-clusters",
+      "render_cluster_ids": [
+        "p8-09510b96afae",
+        "p8-09b5b9c174be",
+        "p8-0c802748bc67",
+        "p8-11592997d569",
+        "p8-1484d2507b7f",
+        "p8-1d469377641f",
+        "p8-1def0688b1f6",
+        "p8-2b1716170ec2",
+        "p8-2bf6cd8f7203",
+        "p8-3709540909bd",
+        "p8-38524ca32d74",
+        "p8-426d244c8b9f",
+        "p8-487c4408979e",
+        "p8-631eb83dfef3",
+        "p8-7224287b8532",
+        "p8-93df3174c502",
+        "p8-94634d9bc87c",
+        "p8-b6a823096cc7",
+        "p8-c389c7d8d029",
+        "p8-c48bdc6d426d",
+        "p8-c96d9762a19e",
+        "p8-ce15aaa70ffc",
+        "p8-d299ffb2fd4f",
+        "p8-d5fa5fdf04c8",
+        "p8-d636d23a68bc",
+        "p8-d696579540ec",
+        "p8-dd96b6dd9ccb",
+        "p8-e3bc383217f3",
+        "p8-f5de99af67f6",
+        "p8-fde106097c94",
+        "p8-ffc28a965707"
+      ]
+    }
+  ]
+}
