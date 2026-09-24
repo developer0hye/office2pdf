@@ -5113,11 +5113,17 @@ fn hard_broken_slide_baselines(family: &str, sizes_pt: &[f64], wraps: bool) -> V
     let mut runs: Vec<Run> = Vec::new();
     for (index, size_pt) in sizes_pt.iter().enumerate() {
         if index > 0 {
-            // What the parser emits for `<a:br/>`: the break marker on its
-            // own run, with no run properties of its own.
+            // What the parser emits for `<a:br/>`: the break marker typed as
+            // the run it follows (issue #1666). The sizes still differ from
+            // line to line, so the paragraph states no size every run agrees
+            // on — which is the case this helper is here to build.
             runs.push(Run {
                 text: "\u{000B}".to_string(),
-                style: TextStyle::default(),
+                style: TextStyle {
+                    font_size: Some(sizes_pt[index - 1]),
+                    font_family: Some(family.to_string()),
+                    ..TextStyle::default()
+                },
                 href: None,
                 footnote: None,
             });
@@ -5173,8 +5179,10 @@ fn hard_broken_slide_baselines(family: &str, sizes_pt: &[f64], wraps: bool) -> V
 /// A slide's hard-broken lines advance by the run's own 1.2em box, whatever
 /// the size — in a box that wraps and in one that does not.
 ///
-/// `<a:br/>` reaches the IR as a run carrying no size of its own, so the
-/// paragraph has no size every run agrees on and emits no `#set text(size:)`.
+/// Each line here declares its own size, so the paragraph has no size every
+/// run agrees on and emits no `#set text(size:)` — a `<a:br/>` cannot create
+/// that state by itself any more, since it is typed as the run it follows
+/// (issue #1666), but a mixed-size column still reaches it.
 /// The line box's `em` edges then resolved against Typst's 11pt default rather
 /// than against the size they were computed from, pinning every hard-broken
 /// line under 11pt to a flat `1.2 x 11pt` = 13.20pt — 89% too far apart for a

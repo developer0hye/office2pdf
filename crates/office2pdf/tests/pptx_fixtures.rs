@@ -574,8 +574,11 @@ fn custom_geo_slide_6_title_uses_its_saved_normal_autofit_scale() {
                 };
                 paragraph
                     .runs
+                    // The `<a:br>` that closes this paragraph carries the
+                    // title run's own style, so it merges into that run and
+                    // leaves the break character on its text (issue #1666).
                     .iter()
-                    .find(|run| run.text == "ELA Standards Framework")
+                    .find(|run| run.text.starts_with("ELA Standards Framework"))
                     .map(|run| (text_box, run))
             })
         })
@@ -1168,13 +1171,15 @@ fn structure_rotated_text_box_keeps_each_declared_angle() {
 // ---------------------------------------------------------------------------
 // hard_break_line_advance.pptx — one `wrap="none"` caption column per size
 // (6, 8, 9, 10, 11, 12 and 14pt Arial), each holding four single-word lines
-// separated by `<a:br/>` (issue #1115). A `<a:br/>` reaches the IR as a run
-// with no run properties, so the paragraph states no size every run agrees on;
-// the line box then has to carry the size it was derived from itself.
+// separated by `<a:br/>` (issue #1115). A `<a:br/>` takes the style of the run
+// it follows and merges into it (issue #1666), so each column's paragraph
+// states exactly one size and the line box has to carry that size rather than
+// anything the paragraph inherits.
 //
 // A native PowerPoint 16 export of this deck advances each column at
 // 1.16-1.21em — its per-baseline dither around 1.2em — while every column under
-// 11pt used to advance a flat 13.20pt.
+// 11pt used to advance a flat 13.20pt. That control export is also what
+// `scripts/probes/issue-1666-*.json` vary one factor against.
 // ---------------------------------------------------------------------------
 
 /// Every caption column states PowerPoint's `1.2 x size` line, whatever the
@@ -1220,6 +1225,71 @@ fn hard_break_line_advance_smoke() {
 }
 
 // ---------------------------------------------------------------------------
+// hard_break_ignores_inherited_size.pptx — three `wrap="none"` caption columns
+// whose paragraphs all inherit a 28pt `<a:lstStyle>/<a:lvl1pPr>/<a:defRPr>`
+// while their runs declare 14, 10 and 12pt. One factor separates the columns:
+// what the `<a:br>` between the runs states — `sz="2800"`, nothing at all
+// (`<a:br/>`), and a bare `<a:rPr lang="en-US"/>` (issue #1666).
+//
+// Two native PowerPoint 16 one-factor probes settle the rule this pins
+// (`scripts/probes/issue-1666-break-run-size.json` and
+// `issue-1666-paragraph-default-size.json`): neither the break's own `<a:rPr>`
+// — absent, bare, 4pt or 28pt — nor the inherited default size — 4pt or 28pt —
+// moves a single baseline. A native export of this deck advances each column
+// at `1.2 x` the size its *runs* declare.
+//
+// The break used to reach the IR carrying the paragraph's default run style,
+// so an inherited size larger than the runs' own inflated the line box the
+// break sits in and every line after it.
+// ---------------------------------------------------------------------------
+
+/// A hard break carries no line metrics of its own: the line it ends spans
+/// `1.2 x` the size of the runs that hold its text, whatever the break and the
+/// paragraph default declare.
+#[test]
+fn hard_break_takes_no_size_from_the_break_or_the_paragraph_default() {
+    let data = load_fixture("hard_break_ignores_inherited_size.pptx");
+    let (document, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let source = generate_typst(&document).unwrap().source;
+
+    let mut advances: Vec<f64> = source
+        .match_indices("text(top-edge: ")
+        .filter_map(|(offset, needle)| {
+            let rest: &str = &source[offset + needle.len()..];
+            let (top, rest) = rest.split_once("pt, bottom-edge: -")?;
+            let (bottom, _) = rest.split_once("pt)")?;
+            Some(top.parse::<f64>().ok()? + bottom.parse::<f64>().ok()?)
+        })
+        .collect();
+    advances.sort_by(f64::total_cmp);
+
+    // One line box per caption column, at the size that column's runs state.
+    let mut expected: Vec<f64> = [14.0_f64, 10.0, 12.0]
+        .into_iter()
+        .map(|size| 1.2 * size)
+        .collect();
+    expected.sort_by(f64::total_cmp);
+
+    assert_eq!(
+        advances.len(),
+        expected.len(),
+        "line boxes emitted: {advances:?}"
+    );
+    for (got, want) in advances.iter().zip(&expected) {
+        assert!(
+            (got - want).abs() < 0.001,
+            "a hard-broken line spans 1.2 x its runs' size, not the 28pt \
+             default it inherits: expected {expected:?}, got {advances:?}"
+        );
+    }
+}
+
+#[test]
+fn hard_break_ignores_inherited_size_smoke() {
+    assert_produces_valid_pdf("hard_break_ignores_inherited_size.pptx");
+}
+
+// ---------------------------------------------------------------------------
 // percentage_line_spacing_expanded.pptx — a minimal native PowerPoint probe
 // with a top-anchored 10pt Arial paragraph at 150% line spacing. Its four hard
 // broken lines isolate the above-100% baseline regime from wrapping and other
@@ -1245,8 +1315,13 @@ fn percentage_line_spacing_expanded_keeps_the_source_ratio_and_seat() {
         })
         .flat_map(|text_box| text_box.content.iter())
         .find_map(|block| match block {
+            // The hard breaks merge into the run they follow (issue #1666),
+            // so the column arrives as one run of `Hxg10a<VT>Hxg10b...`.
             Block::Paragraph(paragraph)
-                if paragraph.runs.iter().any(|run| run.text == "Hxg10a") =>
+                if paragraph
+                    .runs
+                    .iter()
+                    .any(|run| run.text.starts_with("Hxg10a")) =>
             {
                 Some(paragraph)
             }
