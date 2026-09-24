@@ -2363,6 +2363,66 @@ fn powerpoint_face_metrics_em(font: &typst::text::Font) -> (f64, f64) {
     )
 }
 
+/// The three quantities a PowerPoint chart band measures a face by, as
+/// positive em fractions read from one face: OS/2's `usWin*` ascent and
+/// descent, then `hhea`'s ascent + descent + line gap.
+///
+/// Both halves come from the same [`typst::text::Font`] deliberately. The
+/// Office app bundles its own copy of several faces, and the two copies do not
+/// always agree — `Times New Roman` declares an 87-unit `hhea` line gap in
+/// `/System/Library/Fonts/Supplemental` and none at all in Office's `DFonts` —
+/// so taking the window box from one copy and the gap from another would
+/// describe a face that exists nowhere (issue #1284).
+///
+/// `hhea`'s three fields are read from the table directly rather than through
+/// `ttf_parser::Face`'s accessors, which answer with OS/2's `sTypo*` values
+/// whenever `fsSelection` sets `USE_TYPO_METRICS` — see
+/// [`font_hhea_ascender_em`].
+fn chart_band_face_metrics_em(font: &typst::text::Font) -> (f64, f64, f64) {
+    let (window_ascent_em, window_descent_em) = powerpoint_face_metrics_em(font);
+    let instance = measured_instance(font);
+    let ttf = instance.ttf();
+    let upem: f64 = f64::from(ttf.units_per_em()).max(1.0);
+    let hhea = ttf.tables().hhea;
+    let leaded_em: f64 =
+        (f64::from(hhea.ascender) - f64::from(hhea.descender) + f64::from(hhea.line_gap)) / upem;
+    (window_ascent_em, window_descent_em, leaded_em)
+}
+
+/// [`chart_band_face_metrics_em`] for the best face resolved for `family`.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn font_chart_band_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+    type BandMetricsEm = Option<(f64, f64, f64)>;
+    static CACHE: OnceLock<Mutex<HashMap<String, BandMetricsEm>>> = OnceLock::new();
+
+    if super::font_subst::active_font_search_paths().is_some() {
+        return best_face(family).map(|font| chart_band_face_metrics_em(&font));
+    }
+
+    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    let key: String = family.to_lowercase();
+    if let Some(cached) = cache
+        .lock()
+        .expect("metrics cache mutex should not be poisoned")
+        .get(&key)
+    {
+        return *cached;
+    }
+    let metrics: BandMetricsEm = best_face(family).map(|font| chart_band_face_metrics_em(&font));
+    cache
+        .lock()
+        .expect("metrics cache mutex should not be poisoned")
+        .insert(key, metrics);
+    metrics
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn font_chart_band_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
+    best_face(family).map(|font| chart_band_face_metrics_em(&font))
+}
+
 /// The `(ascent, descent)` pair the best face resolved for `family` measures
 /// its line box by, as positive em fractions.
 #[cfg(not(target_arch = "wasm32"))]

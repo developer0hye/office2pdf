@@ -3,13 +3,13 @@ use crate::ir::DataLabels;
 use crate::ir::MarkerSymbol;
 use crate::ir::{ChartAreaFill, ChartAreaOutline};
 use crate::render::typst_gen::diagrams::{
-    CHART_AREA_OUTLINE, CHART_AUTOMATIC_LINE, CHART_DEFAULT_TEXT_PT, GAP, LABEL_W, LEGEND_ENTRY_W,
-    LEGEND_KEY_BASELINE_PT, LEGEND_KEY_LEN_PT, PPTX_LEGEND_KEY_EM,
+    CHART_AREA_OUTLINE, CHART_AUTOMATIC_LINE, CHART_DEFAULT_TEXT_PT, ChartFaceLineBox, GAP,
+    LABEL_W, LEGEND_ENTRY_W, LEGEND_KEY_BASELINE_PT, LEGEND_KEY_LEN_PT, PPTX_LEGEND_KEY_EM,
     PPTX_LEGEND_KEY_LABEL_GAP_KEY_SHARE, PPTX_LEGEND_KEY_LABEL_GAP_PT,
     PPTX_RIGHT_LEGEND_Y_SHIFT_EM, PPTX_RIGHT_LEGEND_Y_SHIFT_PT, ROW, SERIES_LINE_PT,
     SERIES_MARKER_SIZE_PT, TICK_GAP, axis_plot_rect, chart_area_title_h, chart_category_band_pt,
     chart_category_gutter_pt, chart_category_rotated_label_x, chart_category_rotated_label_y,
-    chart_face_line_metrics_em, chart_text_advance_em, chart_tick_band_pt,
+    chart_face_line_box_em, chart_face_line_metrics_em, chart_text_advance_em, chart_tick_band_pt,
     excel_legend_trailing_gutter_pt, legend_marker_cap_pt, powerpoint_right_legend_y_shift,
     pptx_column_data_label_seat_pt,
 };
@@ -5219,6 +5219,7 @@ fn powerpoint_column_probe_chart(chart_space_pt: f64, title_pt: Option<f64>) -> 
         .map(|category| (*category).to_string())
         .collect();
     chart.title = Some("Sales".to_string());
+    chart.text_font_family = Some("Calibri".to_string());
     chart.text_style.size_pt = Some(chart_space_pt);
     chart.title_text_style.size_pt = title_pt;
     chart
@@ -5319,6 +5320,209 @@ fn a_powerpoint_bar_plot_keeps_its_own_measured_top_band() {
     assert!(
         (top - 46.365).abs() <= 0.2,
         "the bar control must keep its 46.365pt top band; got {top}"
+    );
+}
+
+/// Every face `scripts/probes/issue-1674-column-plot-face.json` exports, as
+/// the `(usWinAscent, usWinDescent, hhea ascent + descent + line gap)` triple
+/// the band model reads, in units of the face's own em, with the bands a
+/// native PowerPoint 16.113.1 export of that variant measures.
+///
+/// The bands are the plot's top edge below the frame's, and its bottom edge
+/// above the frame's, on the deck's own 480 x 320pt graphic frame. Every
+/// variant holds the chart space at 18pt, so the automatic title is 21.6pt and
+/// both axes are 18pt throughout and only the face moves.
+struct NativeColumnFaceBand {
+    face: &'static str,
+    /// `(usWinAscent, usWinDescent, hhea ascent + descent + line gap)`.
+    metrics_per_2048em: (f64, f64, f64),
+    top_band_pt: f64,
+    bottom_band_pt: f64,
+}
+
+const NATIVE_COLUMN_FACE_BANDS: [NativeColumnFaceBand; 13] = [
+    NativeColumnFaceBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        top_band_pt: 51.3525,
+        bottom_band_pt: 39.9017,
+    },
+    NativeColumnFaceBand {
+        face: "Arial",
+        metrics_per_2048em: (1854.0, 434.0, 2355.0),
+        top_band_pt: 48.8901,
+        bottom_band_pt: 37.4734,
+    },
+    NativeColumnFaceBand {
+        face: "Times New Roman",
+        metrics_per_2048em: (1825.0, 443.0, 2268.0),
+        top_band_pt: 47.8874,
+        bottom_band_pt: 37.1283,
+    },
+    NativeColumnFaceBand {
+        face: "Courier New",
+        metrics_per_2048em: (1705.0, 615.0, 2320.0),
+        top_band_pt: 48.6601,
+        bottom_band_pt: 36.8800,
+    },
+    NativeColumnFaceBand {
+        face: "Georgia",
+        metrics_per_2048em: (1878.0, 449.0, 2327.0),
+        top_band_pt: 48.7650,
+        bottom_band_pt: 37.9534,
+    },
+    NativeColumnFaceBand {
+        face: "Trebuchet MS",
+        metrics_per_2048em: (1923.0, 455.0, 2378.0),
+        top_band_pt: 49.5300,
+        bottom_band_pt: 38.6666,
+    },
+    NativeColumnFaceBand {
+        face: "Verdana",
+        metrics_per_2048em: (2059.0, 430.0, 2489.0),
+        top_band_pt: 51.1875,
+        bottom_band_pt: 40.4383,
+    },
+    NativeColumnFaceBand {
+        face: "Comic Sans MS",
+        metrics_per_2048em: (2257.0, 597.0, 2854.0),
+        top_band_pt: 56.6400,
+        bottom_band_pt: 44.8034,
+    },
+    NativeColumnFaceBand {
+        face: "Candara",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        top_band_pt: 51.3525,
+        bottom_band_pt: 39.9017,
+    },
+    NativeColumnFaceBand {
+        face: "Constantia",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        top_band_pt: 51.3525,
+        bottom_band_pt: 39.9017,
+    },
+    NativeColumnFaceBand {
+        face: "Corbel",
+        metrics_per_2048em: (1950.0, 550.0, 2473.0),
+        top_band_pt: 51.3525,
+        bottom_band_pt: 39.9017,
+    },
+    NativeColumnFaceBand {
+        face: "Consolas",
+        metrics_per_2048em: (1884.0, 514.0, 2398.0),
+        top_band_pt: 49.8300,
+        bottom_band_pt: 38.6200,
+    },
+    NativeColumnFaceBand {
+        face: "Goudy Old Style",
+        metrics_per_2048em: (1792.0, 486.0, 2458.0),
+        top_band_pt: 49.9350,
+        bottom_band_pt: 37.0200,
+    },
+];
+
+/// A framed PowerPoint column plot sizes all three of its automatic vertical
+/// terms from the face, not from the declared size alone.
+///
+/// Twenty-nine native PowerPoint 16.113.1 exports settle the composition:
+/// `scripts/probes/issue-1674-column-plot-face.json` moves the chart space's
+/// face, which carries the title and both axes at once, while
+/// `issue-1674-column-title-face.json` and `issue-1674-column-value-axis-face.json`
+/// move one of them at a time so the terms separate. The model has no free
+/// parameter left once the three fixed points are read off #1437's Calibri
+/// series, and none of the forty-two bands they measure sits further than
+/// 0.006pt from it.
+///
+/// The metric source is OS/2's `usWin*` pair rather than `hhea`'s box, and only
+/// the title's term adds `hhea`'s line gap — taking the greater of the two
+/// boxes. Three faces settle that in both directions at once: `Corbel` has a
+/// 1.0em `hhea` box against a 1.2207em window pair and lands on the window
+/// pair, `Goudy Old Style` has the larger `hhea` box and lands on that, and
+/// `Arial`, whose two boxes differ by its 67-unit line gap alone, lands on the
+/// leaded one. `Candara` and `Constantia` share `Calibri`'s window pair while
+/// declaring a 1.0em `hhea` box, and the native export puts all three on the
+/// same band to the last emitted digit (issue #1674).
+#[test]
+fn a_powerpoint_column_plot_sizes_its_bands_from_the_face_line_box() {
+    for band in NATIVE_COLUMN_FACE_BANDS {
+        let NativeColumnFaceBand {
+            face,
+            metrics_per_2048em: (window_ascent, window_descent, leaded),
+            top_band_pt: native_top,
+            bottom_band_pt: native_bottom,
+        } = band;
+        let upem: f64 = 2048.0;
+        let metrics = ChartFaceLineBox::from_face_metrics_em(
+            window_ascent / upem,
+            window_descent / upem,
+            leaded / upem,
+        );
+        // The automatic title is the chart space's 18pt scaled by 1.2.
+        let top: f64 = metrics.title_band_pt(21.6) + metrics.plot_top_inset_pt(18.0);
+        assert!(
+            (top - native_top).abs() <= 0.01,
+            "{face}: PowerPoint starts the plot {native_top}pt below the frame, got {top:.4}"
+        );
+        let bottom: f64 = metrics.category_band_pt(18.0);
+        assert!(
+            (bottom - native_bottom).abs() <= 0.01,
+            "{face}: PowerPoint reserves {native_bottom}pt under the plot, got {bottom:.4}"
+        );
+    }
+}
+
+/// The faces the calibration itself rests on answer from the table rather than
+/// from whatever the runner has installed.
+///
+/// Neither `Calibri` nor `Arial` exists on the Linux CI image, and the band a
+/// substitute would size is not the band the native exports measured. The
+/// leaded box is the discriminating half: `Arial`'s 67-unit `hhea` line gap
+/// puts it at 2355/2048em against a 2288/2048em window pair (issue #1674).
+#[test]
+fn a_calibrated_chart_face_answers_its_own_line_box() {
+    for (face, window_ascent, window_descent, leaded) in [
+        ("Calibri", 1950.0, 550.0, 2500.0),
+        ("Arial", 1854.0, 434.0, 2355.0),
+    ] {
+        let upem: f64 = 2048.0;
+        let metrics = chart_face_line_box_em(face).expect("a calibrated face answers everywhere");
+        assert!(
+            (metrics.window_ascent_em - window_ascent / upem).abs() < 1e-9
+                && (metrics.window_descent_em - window_descent / upem).abs() < 1e-9
+                && (metrics.leaded_em - leaded / upem).abs() < 1e-9,
+            "{face}: expected {window_ascent}/{window_descent}/{leaded} per 2048em, got {metrics:?}"
+        );
+    }
+}
+
+/// Page 8 of the #1220 deck is the second face and the third pair of sizes the
+/// model meets, and it is the chart the band was 1.7-2.0pt long on.
+///
+/// Its chart frame is 689.187 x 221.058pt, its theme minor latin is `Arial`,
+/// its title states `sz="1862"` and both axes state `sz="1197"`. The native
+/// PowerPoint 16.112 export puts the plot 42.095pt below the frame's top edge
+/// and 27.093pt above its bottom one, for a 151.870pt plot (issue #1674).
+#[test]
+fn the_page_eight_column_plot_matches_its_native_bands() {
+    let mut chart: Chart = powerpoint_column_probe_chart(11.97, Some(18.62));
+    chart.text_font_family = Some("Arial".to_string());
+    chart.value_axis_text_style.size_pt = Some(11.97);
+    chart.category_axis_text_style.size_pt = Some(11.97);
+    let frame: (f64, f64) = (689.187, 221.058);
+    let (_, top, _, bottom) = axis_plot_rect(&chart, frame, true);
+    let band_below: f64 = frame.1 - bottom;
+    assert!(
+        (top - 42.095).abs() <= 0.05,
+        "page 8 starts its plot 42.095pt below the frame; got {top:.3}"
+    );
+    assert!(
+        (band_below - 27.093).abs() <= 0.05,
+        "page 8 reserves 27.093pt under its plot; got {band_below:.3}"
+    );
+    assert!(
+        (bottom - top - 151.870).abs() <= 0.1,
+        "page 8 plots 151.870pt tall; got {:.3}",
+        bottom - top
     );
 }
 
