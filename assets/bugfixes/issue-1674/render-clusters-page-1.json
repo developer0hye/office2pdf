@@ -1,0 +1,834 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 201.8304,
+      "bbox_pt": {
+        "height": 20.16,
+        "width": 12.96,
+        "x": 332.64,
+        "y": 120.96
+      },
+      "disposition": {
+        "issue": "#1678",
+        "kind": "issue",
+        "note": "The chart-area title's baseline sits 3.32pt below native's inside a band this PR does not change."
+      },
+      "id": "p1-52cc3690150b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 149.76,
+      "bbox_pt": {
+        "height": 26.88,
+        "width": 12.96,
+        "x": 199.68,
+        "y": 405.6
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-d123eaf93ae3",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 149.76,
+      "bbox_pt": {
+        "height": 26.88,
+        "width": 12.96,
+        "x": 471.36,
+        "y": 405.6
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-705c37884aef",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 149.76,
+      "bbox_pt": {
+        "height": 26.88,
+        "width": 12.96,
+        "x": 381.6,
+        "y": 405.6
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-0c564fb6d6d8",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 149.76,
+      "bbox_pt": {
+        "height": 26.88,
+        "width": 12.96,
+        "x": 292.8,
+        "y": 405.6
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-088e2efaf290",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 118.4256,
+      "bbox_pt": {
+        "height": 25.92,
+        "width": 8.64,
+        "x": 366.24,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-47718a210171",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 118.4256,
+      "bbox_pt": {
+        "height": 25.92,
+        "width": 8.64,
+        "x": 277.92,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-310e02c9e354",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 104.6016,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 8.64,
+        "x": 257.76,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-fc9dcbc0f1be",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 102.528,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 9.12,
+        "x": 441.12,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-4d94f2790b2c",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 101.376,
+      "bbox_pt": {
+        "height": 25.92,
+        "width": 8.16,
+        "x": 350.88,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-21df778bf361",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 99.5328,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 8.16,
+        "x": 456.96,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-139f589a8bb0",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 74.4192,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 8.16,
+        "x": 571.68,
+        "y": 282.24
+      },
+      "disposition": {
+        "issue": "#1871",
+        "kind": "issue",
+        "note": "The right legend's label baseline sits 1.83pt below native's."
+      },
+      "id": "p1-8e05c2542686",
+      "region": "right"
+    },
+    {
+      "area_pt2": 73.4976,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 7.68,
+        "x": 581.28,
+        "y": 282.24
+      },
+      "disposition": {
+        "issue": "#1871",
+        "kind": "issue",
+        "note": "The right legend's label baseline sits 1.83pt below native's."
+      },
+      "id": "p1-8deb23c47fc6",
+      "region": "right"
+    },
+    {
+      "area_pt2": 67.2768,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 9.6,
+        "x": 546.24,
+        "y": 278.4
+      },
+      "disposition": {
+        "issue": "#1871",
+        "kind": "issue",
+        "note": "The right legend's label baseline sits 1.83pt below native's."
+      },
+      "id": "p1-731715044260",
+      "region": "right"
+    },
+    {
+      "area_pt2": 62.8992,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 4.8,
+        "x": 213.12,
+        "y": 406.56
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-76ad0a59e096",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 62.8992,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 4.8,
+        "x": 484.8,
+        "y": 406.56
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-b1df0d652a6f",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 62.8992,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 4.8,
+        "x": 450.72,
+        "y": 406.56
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-f78d8dfc813b",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 62.8992,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 4.8,
+        "x": 395.04,
+        "y": 406.56
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-03363b4cec62",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 62.8992,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 4.8,
+        "x": 306.24,
+        "y": 406.56
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-e2322959d6a7",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 62.8992,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 4.8,
+        "x": 189.12,
+        "y": 406.56
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-0cac78f5a973",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 49.536,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 11.04,
+        "x": 364.32,
+        "y": 125.28
+      },
+      "disposition": {
+        "issue": "#1678",
+        "kind": "issue",
+        "note": "The chart-area title's baseline sits 3.32pt below native's inside a band this PR does not change."
+      },
+      "id": "p1-18a193c090d3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 48.1536,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.56,
+        "x": 346.56,
+        "y": 133.44
+      },
+      "disposition": {
+        "issue": "#1678",
+        "kind": "issue",
+        "note": "The chart-area title's baseline sits 3.32pt below native's inside a band this PR does not change."
+      },
+      "id": "p1-b2bac9129967",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.4624,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 557.28,
+        "y": 282.24
+      },
+      "disposition": {
+        "issue": "#1871",
+        "kind": "issue",
+        "note": "The right legend's label baseline sits 1.83pt below native's."
+      },
+      "id": "p1-7aed350894c6",
+      "region": "right"
+    },
+    {
+      "area_pt2": 46.08,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 180.48,
+        "y": 409.44
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-a30ca8e8b98b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 46.08,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 180.48,
+        "y": 421.92
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-b397c3a50cb5",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 268.32,
+        "y": 409.44
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-70e9116c5fd4",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 268.32,
+        "y": 421.92
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-bea7e64e2858",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.56,
+        "x": 364.32,
+        "y": 134.88
+      },
+      "disposition": {
+        "issue": "#1678",
+        "kind": "issue",
+        "note": "The chart-area title's baseline sits 3.32pt below native's inside a band this PR does not change."
+      },
+      "id": "p1-a4f61870b63c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.5504,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.64,
+        "x": 126.72,
+        "y": 338.88
+      },
+      "disposition": {
+        "issue": "#1869",
+        "kind": "issue",
+        "note": "The value tick labels sit about 1.0pt below their native gridline centring."
+      },
+      "id": "p1-4b253281be0e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.56,
+        "x": 376.32,
+        "y": 135.36
+      },
+      "disposition": {
+        "issue": "#1678",
+        "kind": "issue",
+        "note": "The chart-area title's baseline sits 3.32pt below native's inside a band this PR does not change."
+      },
+      "id": "p1-2420c8fa07a2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.9376,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.6,
+        "x": 347.52,
+        "y": 125.28
+      },
+      "disposition": {
+        "issue": "#1678",
+        "kind": "issue",
+        "note": "The chart-area title's baseline sits 3.32pt below native's inside a band this PR does not change."
+      },
+      "id": "p1-5d3114a3721d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 10.08,
+        "x": 545.76,
+        "y": 287.52
+      },
+      "disposition": {
+        "issue": "#1871",
+        "kind": "issue",
+        "note": "The right legend's label baseline sits 1.83pt below native's."
+      },
+      "id": "p1-cb97ccd91fd3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 376.8,
+        "y": 125.28
+      },
+      "disposition": {
+        "issue": "#1678",
+        "kind": "issue",
+        "note": "The chart-area title's baseline sits 3.32pt below native's inside a band this PR does not change."
+      },
+      "id": "p1-4ee9d2c05292",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 10.56,
+        "x": 376.8,
+        "y": 131.04
+      },
+      "disposition": {
+        "issue": "#1678",
+        "kind": "issue",
+        "note": "The chart-area title's baseline sits 3.32pt below native's inside a band this PR does not change."
+      },
+      "id": "p1-c166a848e932",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 4.8,
+        "x": 171.84,
+        "y": 419.04
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-ae96a417d97a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 4.8,
+        "x": 171.84,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-69f4286322bd",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 400.8,
+        "y": 421.92
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-d09944f805ad",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 491.04,
+        "y": 421.92
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-ac4ea380af9a",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 312.48,
+        "y": 409.44
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-9a045ccd2ece",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 360.96,
+        "y": 409.44
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-8df820e00b26",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 400.8,
+        "y": 409.44
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-0c2ad256a908",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 218.88,
+        "y": 421.92
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-03d3ba0bfd40",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 491.04,
+        "y": 409.44
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-08afb4a3cddd",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 312.48,
+        "y": 421.92
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-e388f2e40477",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 360.96,
+        "y": 421.92
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-9e11ac32f9ca",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 218.88,
+        "y": 409.44
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The flat category labels seat 12.29pt below native under a plot whose rectangle now matches."
+      },
+      "id": "p1-43e7058caba8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 8.16,
+        "x": 557.76,
+        "y": 289.92
+      },
+      "disposition": {
+        "issue": "#1871",
+        "kind": "issue",
+        "note": "The right legend's label baseline sits 1.83pt below native's."
+      },
+      "id": "p1-03d2dc66325e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 2.88,
+        "width": 8.64,
+        "x": 531.84,
+        "y": 291.36
+      },
+      "disposition": {
+        "issue": "#1680",
+        "kind": "issue",
+        "note": "The legend key's own seat inside the entry row, seen here as its top and bottom fill edges."
+      },
+      "id": "p1-4473bf85e6d8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 2.88,
+        "width": 8.64,
+        "x": 531.84,
+        "y": 282.24
+      },
+      "disposition": {
+        "issue": "#1680",
+        "kind": "issue",
+        "note": "The legend key's own seat inside the entry row, seen here as its top and bottom fill edges."
+      },
+      "id": "p1-c95bfd87bdd9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 3.36,
+        "width": 9.12,
+        "x": 126.72,
+        "y": 203.04
+      },
+      "disposition": {
+        "issue": "#1869",
+        "kind": "issue",
+        "note": "The value tick labels sit about 1.0pt below their native gridline centring."
+      },
+      "id": "p1-215c441c6ec9",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [
+    {
+      "bbox_pt": {
+        "height": 236.0,
+        "width": 364.0,
+        "x": 151.0,
+        "y": 158.0
+      },
+      "class": "shape-edge-antialiasing",
+      "note": "Inspected the plot rectangle in the 5% diff and the side-by-side at 150 DPI: the gridlines, the value axis line and the four bar edges leave only single-device-pixel outlines, all below the material-cluster floor."
+    }
+  ],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 50,
+    "duplicate": 0,
+    "total": 50,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
