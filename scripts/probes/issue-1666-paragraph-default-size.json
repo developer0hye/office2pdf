@@ -1,0 +1,21 @@
+{
+  "name": "issue-1666-paragraph-default-size",
+  "base": "../../tests/fixtures/pptx/hard_break_line_advance.pptx",
+  "part": "ppt/slides/slide1.xml",
+  "factor": "the paragraph's inherited default size (<a:lstStyle>/<a:lvl1pPr>/<a:defRPr sz>), with every <a:r> and every <a:br> left at its column size",
+  "page": 1,
+  "variants": [
+    {
+      "value": "default-2800",
+      "find": "<a:lstStyle/>",
+      "replace": "<a:lstStyle><a:lvl1pPr><a:defRPr sz=\"2800\"/></a:lvl1pPr></a:lstStyle>",
+      "count": 14
+    },
+    {
+      "value": "default-400",
+      "find": "<a:lstStyle/>",
+      "replace": "<a:lstStyle><a:lvl1pPr><a:defRPr sz=\"400\"/></a:lvl1pPr></a:lstStyle>",
+      "count": 14
+    }
+  ]
+}

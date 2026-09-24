@@ -1,0 +1,37 @@
+{
+  "name": "issue-1666-break-run-size",
+  "base": "../../tests/fixtures/pptx/hard_break_line_advance.pptx",
+  "part": "ppt/slides/slide1.xml",
+  "factor": "the <a:br> element's own <a:rPr>, with every <a:r> left at its column size and no <a:lstStyle>/defaultTextStyle to inherit from",
+  "page": 1,
+  "variants": [
+    {
+      "value": "br-sz-2800",
+      "find": "<a:br><a:rPr lang=\"en-US\" sz=\"[0-9]+\">",
+      "replace": "<a:br><a:rPr lang=\"en-US\" sz=\"2800\">",
+      "regex": true,
+      "count": 21
+    },
+    {
+      "value": "br-sz-400",
+      "find": "<a:br><a:rPr lang=\"en-US\" sz=\"[0-9]+\">",
+      "replace": "<a:br><a:rPr lang=\"en-US\" sz=\"400\">",
+      "regex": true,
+      "count": 21
+    },
+    {
+      "value": "br-rpr-absent",
+      "find": "<a:br><a:rPr lang=\"en-US\" sz=\"[0-9]+\"><a:latin typeface=\"Arial\"/></a:rPr></a:br>",
+      "replace": "<a:br/>",
+      "regex": true,
+      "count": 21
+    },
+    {
+      "value": "br-rpr-bare",
+      "find": "<a:br><a:rPr lang=\"en-US\" sz=\"[0-9]+\"><a:latin typeface=\"Arial\"/></a:rPr></a:br>",
+      "replace": "<a:br><a:rPr lang=\"en-US\"/></a:br>",
+      "regex": true,
+      "count": 21
+    }
+  ]
+}

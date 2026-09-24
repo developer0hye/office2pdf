@@ -889,11 +889,15 @@ fn powerpoint_line_box_from_seat_em(
 /// An `em` in a `#set text` edge resolves against whatever size is in force
 /// where the rule applies, not against the size the box was derived from. The
 /// paragraph emits a `#set text(size:)` of its own only when every one of its
-/// runs declares the same size, and a `<a:br/>` reaches the IR as a run with no
-/// run properties at all — so one hard break is enough to strip that rule and
-/// leave the edges resolving against Typst's 11pt default. Every hard-broken
-/// line under 11pt then advanced a flat `1.2 x 11pt` = 13.20pt, 89% too far for
-/// a 6pt caption (issue #1115).
+/// runs declares the same size, and a `<a:br/>` used to reach the IR as a run
+/// with no run properties at all — so one hard break was enough to strip that
+/// rule and leave the edges resolving against Typst's 11pt default. Every
+/// hard-broken line under 11pt then advanced a flat `1.2 x 11pt` = 13.20pt, 89%
+/// too far for a 6pt caption (issue #1115). The break now carries the style of
+/// the run it follows (issue #1666), so it no longer strips the rule on its
+/// own; a column whose lines declare different sizes still states no agreed
+/// size, and a break that opens its paragraph still falls back to the
+/// paragraph's default run style.
 ///
 /// Restating the box in points pins it to the size it was computed from — the
 /// paragraph's largest declared size, which is the one PowerPoint's line keys
