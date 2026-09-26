@@ -1,0 +1,44 @@
+{
+  "name": "issue-1675-column-label-floor",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column chart-space c:defRPr sz over five-word category labels",
+  "page": 1,
+  "variants": [
+    {
+      "value": "18pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>First Quarter Net Sales Revenue\\g<2>Second Quarter Net Sales Revenue\\g<3>Third Quarter Net Sales Revenue\\g<4>Fourth Quarter Net Sales Revenue\\g<5>1800\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "22pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>First Quarter Net Sales Revenue\\g<2>Second Quarter Net Sales Revenue\\g<3>Third Quarter Net Sales Revenue\\g<4>Fourth Quarter Net Sales Revenue\\g<5>2200\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "26pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>First Quarter Net Sales Revenue\\g<2>Second Quarter Net Sales Revenue\\g<3>Third Quarter Net Sales Revenue\\g<4>Fourth Quarter Net Sales Revenue\\g<5>2600\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "30pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>First Quarter Net Sales Revenue\\g<2>Second Quarter Net Sales Revenue\\g<3>Third Quarter Net Sales Revenue\\g<4>Fourth Quarter Net Sales Revenue\\g<5>3000\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "36pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>First Quarter Net Sales Revenue\\g<2>Second Quarter Net Sales Revenue\\g<3>Third Quarter Net Sales Revenue\\g<4>Fourth Quarter Net Sales Revenue\\g<5>3600\\g<6>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

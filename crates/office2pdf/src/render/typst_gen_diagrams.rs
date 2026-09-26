@@ -1712,9 +1712,10 @@ pub(super) const PPTX_RIGHT_LEGEND_Y_SHIFT_EM: f64 = -0.357249;
 /// 24pt, where it holds every key top to 0.002pt (#1435).
 ///
 /// The 36pt export is deliberately outside the fit. There PowerPoint wraps the
-/// category labels onto a second line and drops the value axis to three ticks,
-/// while we slant them and keep ten; our plot rectangle, not the legend rule,
-/// then carries the residual, and it is tracked by #1675.
+/// category labels onto a second line and labels only `0`, `5` and `10` on the
+/// plot that leaves it. We wrap them the same way since #1675, but still label
+/// every unit, so our plot rectangle, not the legend rule, carries what is left
+/// of the residual, and that is tracked by #1873.
 ///
 /// The pair is fitted against the content box as #1435 measured it, so
 /// [`powerpoint_right_legend_y_shift`] gives back half of whatever #1437's
@@ -2024,6 +2025,29 @@ impl ChartFaceLineBox {
         PPTX_COLUMN_CATEGORY_BAND_PT
             + (PPTX_COLUMN_CATEGORY_ASCENT_SHARE * self.window_ascent_em + self.window_descent_em)
                 * category_axis_pt
+    }
+
+    /// The band flat category labels take when each is wrapped over `lines`
+    /// lines, in points.
+    ///
+    /// Every line past the first costs one whole leaded line of the label's own
+    /// face, and nothing else: the one-line band already holds the clearance on
+    /// both sides of the block, and the block grows downwards from the first
+    /// baseline, which stays where a single line would have put it.
+    ///
+    /// Twelve native PowerPoint 16.113.1 exports settle both halves
+    /// (`scripts/probes/issue-1675-column-label-wrap.json`,
+    /// `issue-1675-column-label-lines.json`, `issue-1675-column-label-floor.json`,
+    /// `issue-1675-column-label-share.json` and `issue-1675-column-wrap-face.json`),
+    /// over four faces, seven sizes and one to four lines, with no residual past
+    /// 0.011pt. The leaded box is the discriminating half and `Calibri` cannot
+    /// see it — its two boxes are the same 2500/2048em — so `Arial` and
+    /// `Goudy Old Style`, whose boxes differ by a line gap and by 180 units,
+    /// are what say the extra line is leaded rather than the window box the
+    /// one-line band is built from (issue #1675).
+    pub(super) fn wrapped_category_band_pt(self, category_axis_pt: f64, lines: usize) -> f64 {
+        self.category_band_pt(category_axis_pt)
+            + lines.saturating_sub(1) as f64 * self.leaded_em * category_axis_pt
     }
 }
 
@@ -3028,35 +3052,188 @@ fn chart_category_label_text(chart: &Chart, label: &str, box_w: f64) -> String {
     }
 }
 
-/// Whether the category labels have to slant to fit the bands they own.
+/// How a category axis lays its labels out under the plot it owns.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum CategoryLabelLayout {
+    /// Flat, each label wrapped over this many lines — at least one.
+    Flat { lines: usize },
+    /// Slanted by [`CATEGORY_LABEL_ROTATION_DEG`], one line each.
+    Rotated,
+}
+
+/// The width one category label has to fit into: its own band across the axis.
+///
+/// The plot's *width* depends only on the left gutter, which neither wrapping
+/// nor rotating a category label moves, so asking this question inside
+/// [`axis_label_gutters`] is not circular. The gutter is the one the column
+/// family actually reserves, so this is the same band the render divides the
+/// plot into — a label wrapped to fit here fits the box it is drawn in.
+fn chart_category_label_band_pt(chart: &Chart, frame: Option<(f64, f64)>) -> f64 {
+    let categories: usize = chart.categories.len();
+    match frame {
+        Some((frame_w, _)) if categories > 0 => {
+            let legend: LegendBox = axis_legend_box(chart);
+            let (title_left, _) = axis_title_gutters(chart);
+            let gutter_w: f64 = chart_column_value_gutter_pt(chart) + title_left;
+            (frame_w - gutter_w - legend.left - legend.right).max(MIN_PLOT_PT) / categories as f64
+        }
+        _ => chart_category_band_pt(chart),
+    }
+}
+
+/// Break one category label into the lines PowerPoint breaks it into.
+///
+/// Greedy at the spaces, never inside a word: `None` says one word is wider
+/// than the band, which is the case PowerPoint answers by slanting the whole
+/// axis instead. A label carrying no measurable text keeps its single line
+/// rather than claiming to overflow.
+fn wrap_category_label(chart: &Chart, label: &str, band_pt: f64) -> Option<Vec<String>> {
+    let mut lines: Vec<String> = Vec::new();
+    let mut line: String = String::new();
+    for word in label.split_whitespace() {
+        if chart_category_label_advance_pt(chart, word)? > band_pt {
+            return None;
+        }
+        let candidate: String = if line.is_empty() {
+            word.to_string()
+        } else {
+            format!("{line} {word}")
+        };
+        if chart_category_label_advance_pt(chart, &candidate)? <= band_pt {
+            line = candidate;
+        } else {
+            lines.push(std::mem::take(&mut line));
+            line = word.to_string();
+        }
+    }
+    if !line.is_empty() {
+        lines.push(line);
+    }
+    if lines.is_empty() {
+        lines.push(label.to_string());
+    }
+    Some(lines)
+}
+
+/// Share of the frame left under the title that a wrapped category band may
+/// take before PowerPoint abandons the wrap.
+///
+/// Past it the labels go back to one flat line each and simply overlap, which
+/// is what `1st Qtr Net` does natively at 32pt and above on the #1675 frame —
+/// not a slant, which PowerPoint keeps for a label no wrapping could fit.
+///
+/// Bracketed, not derived: `scripts/probes/issue-1675-column-label-share.json`
+/// sweeps that label's size and flips the native export between 30pt, whose
+/// three-line band takes 0.5285 of the frame left under the title, and 32pt,
+/// whose would have taken 0.5685. This constant is the midpoint of that gap.
+/// Every accepted band the probes measured sits below it — the deepest is
+/// 0.5285 — and both refused ones above. A plot-height floor near a third of
+/// the whole frame fits the same exports equally well; the probes do not
+/// separate the two forms, so this is the simpler of the two rather than the
+/// proven one.
+const PPTX_COLUMN_WRAPPED_CATEGORY_BAND_SHARE: f64 = 0.548;
+
+/// How the category labels have to sit to fit the bands they own.
 ///
 /// Only a column plot asks: a bar chart's categories run down the left edge,
 /// where a label's length costs width and is already measured by
 /// [`chart_category_gutter_pt`].
-fn chart_category_labels_rotated(chart: &Chart, frame: Option<(f64, f64)>) -> bool {
+///
+/// A label wider than its band wraps at its spaces where PowerPoint wraps it,
+/// and slants only where one word alone cannot fit (issue #1675). Every other
+/// host keeps the slant it has had since #884: no native Excel or Word export
+/// has measured a wrapped band there, and reserving one on a guess would move
+/// every crowded worksheet chart's plot floor.
+fn chart_category_label_layout(chart: &Chart, frame: Option<(f64, f64)>) -> CategoryLabelLayout {
+    const ONE_LINE: CategoryLabelLayout = CategoryLabelLayout::Flat { lines: 1 };
     if matches!(chart.chart_type, ChartType::Bar) || chart.category_axis_deleted {
-        return false;
+        return ONE_LINE;
     }
-    let categories: usize = chart.categories.len();
+    if chart.categories.is_empty() {
+        return ONE_LINE;
+    }
+    // A face that cannot be measured — wasm has no font search — must not guess
+    // that its labels crowd.
     let Some(widest_pt) = chart_category_label_widest_pt(chart) else {
-        return false;
+        return ONE_LINE;
     };
-    if categories == 0 {
-        return false;
+    let band_pt: f64 = chart_category_label_band_pt(chart, frame);
+    if widest_pt <= band_pt {
+        return ONE_LINE;
     }
-    // The band is the plot divided by the categories. The plot's *width* here
-    // depends only on the left gutter, which no category rotation moves, so
-    // asking this question inside `axis_label_gutters` is not circular.
-    let band: f64 = match frame {
-        Some((frame_w, _)) => {
-            let legend: LegendBox = axis_legend_box(chart);
-            let (title_left, _) = axis_title_gutters(chart);
-            let gutter_w: f64 = chart_tick_band_pt(chart) + GAP + title_left;
-            (frame_w - gutter_w - legend.left - legend.right).max(MIN_PLOT_PT) / categories as f64
-        }
-        None => chart_category_band_pt(chart),
-    };
-    widest_pt > band
+    powerpoint_wrapped_category_layout(chart, frame, band_pt)
+        .unwrap_or(CategoryLabelLayout::Rotated)
+}
+
+/// The wrapped layout a framed PowerPoint column axis takes, or `None` where
+/// this chart is outside the regime those exports measured.
+fn powerpoint_wrapped_category_layout(
+    chart: &Chart,
+    frame: Option<(f64, f64)>,
+    band_pt: f64,
+) -> Option<CategoryLabelLayout> {
+    if !powerpoint_column_chrome(chart) {
+        return None;
+    }
+    // The same guard the measured band itself carries: an undeclared size keeps
+    // the legacy chrome, and the growth term has nothing to grow.
+    if chart.text_style.size_pt.is_none() && chart.category_axis_text_style.size_pt.is_none() {
+        return None;
+    }
+    // `<a:bodyPr vertOverflow="ellipsis">` asks for a truncated label instead of
+    // a wrapped one, and every package behind the wrap law writes a bare
+    // `<a:bodyPr/>`, so no native export says which policy PowerPoint applies
+    // when the two meet. Such an axis keeps the slant and the ellipsis of #884.
+    if chart.category_axis_text_style.ellipsis_overflow {
+        return None;
+    }
+    let (_, frame_h) = frame?;
+    let metrics: ChartFaceLineBox = chart
+        .category_axis_font_family()
+        .and_then(chart_face_line_box_em)?;
+    let mut lines: usize = 1;
+    for category in &chart.categories {
+        // The raw label, which is what the flat branch paints: reserving the
+        // band for a truncated form the render never writes would leave the
+        // break and the reserve disagreeing.
+        let wrapped: Vec<String> = wrap_category_label(chart, category, band_pt)?;
+        lines = lines.max(wrapped.len());
+    }
+    let size_pt: f64 = chart_axis_text_pt(chart, chart.category_axis_text_style);
+    let band_h: f64 = metrics.wrapped_category_band_pt(size_pt, lines);
+    Some(CategoryLabelLayout::Flat {
+        lines: if band_h > frame_h * PPTX_COLUMN_WRAPPED_CATEGORY_BAND_SHARE {
+            1
+        } else {
+            lines
+        },
+    })
+}
+
+/// Whether the category labels have to slant to fit the bands they own.
+fn chart_category_labels_rotated(chart: &Chart, frame: Option<(f64, f64)>) -> bool {
+    chart_category_label_layout(chart, frame) == CategoryLabelLayout::Rotated
+}
+
+/// How many lines each flat category label takes.
+fn chart_category_label_line_count(chart: &Chart, frame: Option<(f64, f64)>) -> usize {
+    match chart_category_label_layout(chart, frame) {
+        CategoryLabelLayout::Flat { lines } => lines,
+        CategoryLabelLayout::Rotated => 1,
+    }
+}
+
+/// Advance between two lines of one wrapped flat category label, in points.
+///
+/// One whole leaded line of the label's own face; zero where that face cannot
+/// be measured, which is also where nothing wraps.
+fn category_label_line_pitch_pt(chart: &Chart) -> f64 {
+    chart
+        .category_axis_font_family()
+        .and_then(chart_face_line_box_em)
+        .map_or(0.0, |metrics| {
+            metrics.leaded_em * chart_axis_text_pt(chart, chart.category_axis_text_style)
+        })
 }
 
 /// Height slanted category labels reserve below the axis.
@@ -3220,13 +3397,18 @@ fn axis_label_gutters(chart: &Chart, frame: Option<(f64, f64)>) -> (f64, f64) {
             // put it on `6.5pt + 5/3 ascent + 1 descent` of the category
             // face's window box within 0.006pt, and the #1437 line above is
             // that model evaluated in Calibri (issue #1674).
+            //
+            // A label wider than its band wraps instead of slanting, and every
+            // line past the first adds one leaded line of its own face to the
+            // band (issue #1675).
             let size_pt: f64 = chart_axis_text_pt(chart, chart.category_axis_text_style);
+            let lines: usize = chart_category_label_line_count(chart, frame);
             chart
                 .category_axis_font_family()
                 .and_then(chart_face_line_box_em)
                 .map_or(
                     CHART_TICK_BAND_BASE_PT + CHART_TICK_BAND_EM * size_pt,
-                    |metrics| metrics.category_band_pt(size_pt),
+                    |metrics| metrics.wrapped_category_band_pt(size_pt, lines),
                 )
         } else {
             chart_category_band_pt(chart)
@@ -5037,8 +5219,14 @@ fn generate_chart_axis(
     // grow from, and the line the category axis stands on.
     let zero_frac: f64 = scale.zero_fraction();
     // Decided once for the whole axis: labels all slant or none do, so a short
-    // label in a crowded axis still hangs with its neighbours (issue #884).
-    let category_labels_rotated: bool = chart_category_labels_rotated(chart, frame);
+    // label in a crowded axis still hangs with its neighbours (issue #884), and
+    // they all reserve the deepest one's line count (issue #1675).
+    let category_layout: CategoryLabelLayout = chart_category_label_layout(chart, frame);
+    let category_labels_rotated: bool = category_layout == CategoryLabelLayout::Rotated;
+    let category_label_lines: usize = match category_layout {
+        CategoryLabelLayout::Flat { lines } => lines,
+        CategoryLabelLayout::Rotated => 1,
+    };
     // Pitch of one category along the category axis. `ROW` is the intrinsic
     // value; a framed chart divides the axis it actually got, so widening the
     // frame widens the bars rather than leaving them stranded at one end.
@@ -5383,17 +5571,43 @@ fn generate_chart_axis(
                 rotated_category_label_content(chart, category, &label)
             );
         } else {
-            let _ = writeln!(
-                out,
-                "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt, height: {}pt)[#align(center + horizon)[#text(size: {}pt{})[{}]]])",
-                format_f64(plot_x + group_start),
-                format_f64(plot_y + plot_h + 2.0 + excel_category_label_y_shift_pt(chart)),
-                format_f64(row),
-                format_f64(chart_category_band_pt(chart)),
-                format_f64(chart_axis_text_pt(chart, chart.category_axis_text_style)),
-                chart_category_text_attrs(chart),
-                escape_category_axis_label(category)
-            );
+            // A wrapped label grows downwards from the seat one flat line would
+            // have taken, one whole leaded line of its own face at a time, and
+            // the band [`axis_label_gutters`] reserved already holds them
+            // (issue #1675). The lines are broken here rather than left to
+            // Typst so that the break and the reserve cannot disagree.
+            let size_pt: f64 = chart_axis_text_pt(chart, chart.category_axis_text_style);
+            let lines: Vec<String> = if category_label_lines > 1 {
+                wrap_category_label(chart, category, chart_category_label_band_pt(chart, frame))
+                    .unwrap_or_else(|| vec![category.to_string()])
+            } else {
+                vec![category.to_string()]
+            };
+            let pitch: f64 = category_label_line_pitch_pt(chart);
+            for (index, line) in lines.iter().enumerate() {
+                // The inner `box` is what stops Typst breaking the line
+                // again: past the measured share PowerPoint abandons the wrap
+                // and lets one flat line overlap its neighbours, and a label
+                // Typst re-broke there would reserve one band and paint
+                // another (issue #1675).
+                let _ = writeln!(
+                    out,
+                    "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt, height: {}pt)[#align(center + horizon)[#box[#text(size: {}pt{})[{}]]]])",
+                    format_f64(plot_x + group_start),
+                    format_f64(
+                        plot_y
+                            + plot_h
+                            + 2.0
+                            + excel_category_label_y_shift_pt(chart)
+                            + index as f64 * pitch
+                    ),
+                    format_f64(row),
+                    format_f64(chart_category_band_pt(chart)),
+                    format_f64(size_pt),
+                    chart_category_text_attrs(chart),
+                    escape_category_axis_label(line)
+                );
+            }
         }
     }
 

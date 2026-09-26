@@ -1,0 +1,919 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 3382.0416,
+      "bbox_pt": {
+        "height": 103.68,
+        "width": 50.88,
+        "x": 195.84,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#1873",
+        "kind": "issue",
+        "note": "Native labels two intervals (0/5/10) in this shortened plot and we label nine (0..9); the wider `10` also moves the plot's left edge 18.245pt, which carries the gridlines and every bar with it."
+      },
+      "id": "p1-b4b6a7131271",
+      "region": "left"
+    },
+    {
+      "area_pt2": 1078.272,
+      "bbox_pt": {
+        "height": 114.72,
+        "width": 16.8,
+        "x": 126.72,
+        "y": 209.76
+      },
+      "disposition": {
+        "issue": "#1873",
+        "kind": "issue",
+        "note": "Native labels two intervals (0/5/10) in this shortened plot and we label nine (0..9); the wider `10` also moves the plot's left edge 18.245pt, which carries the gridlines and every bar with it."
+      },
+      "id": "p1-11104125de3f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 987.9552,
+      "bbox_pt": {
+        "height": 40.32,
+        "width": 46.08,
+        "x": 267.36,
+        "y": 272.16
+      },
+      "disposition": {
+        "issue": "#1873",
+        "kind": "issue",
+        "note": "Native labels two intervals (0/5/10) in this shortened plot and we label nine (0..9); the wider `10` also moves the plot's left edge 18.245pt, which carries the gridlines and every bar with it."
+      },
+      "id": "p1-b28e90f6b079",
+      "region": "center"
+    },
+    {
+      "area_pt2": 538.2144,
+      "bbox_pt": {
+        "height": 44.16,
+        "width": 38.4,
+        "x": 190.56,
+        "y": 390.24
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-485683addee8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 467.2512,
+      "bbox_pt": {
+        "height": 44.16,
+        "width": 34.08,
+        "x": 333.12,
+        "y": 390.24
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-8845d8c9b730",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 456.192,
+      "bbox_pt": {
+        "height": 42.72,
+        "width": 33.12,
+        "x": 288.48,
+        "y": 344.64
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-b351af64933d",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 390.0672,
+      "bbox_pt": {
+        "height": 44.16,
+        "width": 31.68,
+        "x": 262.08,
+        "y": 390.24
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-1a42e2e5e21a",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 366.336,
+      "bbox_pt": {
+        "height": 44.16,
+        "width": 24.96,
+        "x": 404.64,
+        "y": 390.24
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-e02bcc9c2a9b",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 342.144,
+      "bbox_pt": {
+        "height": 42.72,
+        "width": 22.08,
+        "x": 363.36,
+        "y": 344.64
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-1673c9ca4826",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 326.4768,
+      "bbox_pt": {
+        "height": 41.28,
+        "width": 19.2,
+        "x": 403.2,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-c351ad345cca",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 299.7504,
+      "bbox_pt": {
+        "height": 42.72,
+        "width": 15.84,
+        "x": 435.84,
+        "y": 344.64
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-ddbb5939b067",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 285.696,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 41.76,
+        "x": 338.4,
+        "y": 295.2
+      },
+      "disposition": {
+        "issue": "#1873",
+        "kind": "issue",
+        "note": "Native labels two intervals (0/5/10) in this shortened plot and we label nine (0..9); the wider `10` also moves the plot's left edge 18.245pt, which carries the gridlines and every bar with it."
+      },
+      "id": "p1-2b3cf7d84add",
+      "region": "center"
+    },
+    {
+      "area_pt2": 281.5488,
+      "bbox_pt": {
+        "height": 40.8,
+        "width": 25.92,
+        "x": 258.72,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-8e303c206fa0",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 276.9408,
+      "bbox_pt": {
+        "height": 41.28,
+        "width": 21.6,
+        "x": 333.12,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-0079cd8b67d9",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 216.3456,
+      "bbox_pt": {
+        "height": 23.04,
+        "width": 15.36,
+        "x": 127.68,
+        "y": 186.72
+      },
+      "disposition": {
+        "issue": "#1873",
+        "kind": "issue",
+        "note": "Native labels two intervals (0/5/10) in this shortened plot and we label nine (0..9); the wider `10` also moves the plot's left edge 18.245pt, which carries the gridlines and every bar with it."
+      },
+      "id": "p1-00541d42132f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 202.9824,
+      "bbox_pt": {
+        "height": 39.36,
+        "width": 12.96,
+        "x": 421.44,
+        "y": 348.0
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-94d3200001c3",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 196.5312,
+      "bbox_pt": {
+        "height": 39.36,
+        "width": 10.56,
+        "x": 430.08,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-357b12f4f661",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 185.472,
+      "bbox_pt": {
+        "height": 35.52,
+        "width": 13.92,
+        "x": 224.16,
+        "y": 351.84
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-cb75aa1edc14",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 185.0112,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 16.32,
+        "x": 145.44,
+        "y": 300.48
+      },
+      "disposition": {
+        "issue": "#1873",
+        "kind": "issue",
+        "note": "Native labels two intervals (0/5/10) in this shortened plot and we label nine (0..9); the wider `10` also moves the plot's left edge 18.245pt, which carries the gridlines and every bar with it."
+      },
+      "id": "p1-e8ecffdedc5e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 185.0112,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 16.32,
+        "x": 145.44,
+        "y": 186.72
+      },
+      "disposition": {
+        "issue": "#1873",
+        "kind": "issue",
+        "note": "Native labels two intervals (0/5/10) in this shortened plot and we label nine (0..9); the wider `10` also moves the plot's left edge 18.245pt, which carries the gridlines and every bar with it."
+      },
+      "id": "p1-e3c5f3cf79c6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 180.1728,
+      "bbox_pt": {
+        "height": 39.36,
+        "width": 12.48,
+        "x": 296.16,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-f3526fb25e08",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 176.7168,
+      "bbox_pt": {
+        "height": 39.36,
+        "width": 12.0,
+        "x": 228.0,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-8070251e8d36",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 156.2112,
+      "bbox_pt": {
+        "height": 35.52,
+        "width": 15.84,
+        "x": 352.32,
+        "y": 351.84
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-17db11eb8b21",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 156.2112,
+      "bbox_pt": {
+        "height": 35.52,
+        "width": 15.84,
+        "x": 370.56,
+        "y": 396.0
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-8dab16144bc8",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 155.52,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 14.88,
+        "x": 145.92,
+        "y": 243.36
+      },
+      "disposition": {
+        "issue": "#1873",
+        "kind": "issue",
+        "note": "Native labels two intervals (0/5/10) in this shortened plot and we label nine (0..9); the wider `10` also moves the plot's left edge 18.245pt, which carries the gridlines and every bar with it."
+      },
+      "id": "p1-4cabbd6f33ec",
+      "region": "left"
+    },
+    {
+      "area_pt2": 128.1024,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 13.92,
+        "x": 277.44,
+        "y": 369.6
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-86e1cc99f486",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 117.2736,
+      "bbox_pt": {
+        "height": 23.04,
+        "width": 13.44,
+        "x": 210.24,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-5635b1d3d8d3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 117.2736,
+      "bbox_pt": {
+        "height": 23.04,
+        "width": 13.44,
+        "x": 194.4,
+        "y": 363.84
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-6324dd17b37e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 103.68,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 11.52,
+        "x": 211.2,
+        "y": 369.6
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-a477e83033e0",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 102.0672,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 10.56,
+        "x": 240.0,
+        "y": 348.0
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-3618961d9a3a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 102.0672,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 10.56,
+        "x": 362.88,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-64fa98999d00",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 100.224,
+      "bbox_pt": {
+        "height": 20.16,
+        "width": 11.52,
+        "x": 285.12,
+        "y": 411.36
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-cf3d8a11bb89",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 96.3072,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 35.52,
+        "x": 409.92,
+        "y": 297.6
+      },
+      "disposition": {
+        "issue": "#1873",
+        "kind": "issue",
+        "note": "Native labels two intervals (0/5/10) in this shortened plot and we label nine (0..9); the wider `10` also moves the plot's left edge 18.245pt, which carries the gridlines and every bar with it."
+      },
+      "id": "p1-fddafd944536",
+      "region": "center"
+    },
+    {
+      "area_pt2": 78.1056,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 9.6,
+        "x": 310.08,
+        "y": 396.0
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-43c42af95cca",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 78.1056,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 9.6,
+        "x": 243.36,
+        "y": 396.0
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-8138e2986e28",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 78.1056,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 9.6,
+        "x": 444.0,
+        "y": 396.0
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-51e1c6772480",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 78.1056,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 9.6,
+        "x": 441.6,
+        "y": 413.76
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-a1a6d77ab43e",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 43.3152,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.12,
+        "x": 411.84,
+        "y": 408.0
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "The wrapped block is the right size and breaks where PowerPoint breaks it, but its baselines seat 17.756pt below native inside that band. The 15.96pt horizontal component is #1873's plot-left shift."
+      },
+      "id": "p1-14ba91d477d1",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 16.8,
+        "x": 315.36,
+        "y": 155.04
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-888070423810",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 16.32,
+        "x": 336.96,
+        "y": 156.48
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-2618ee4f3518",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 16.32,
+        "x": 369.12,
+        "y": 155.52
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-6582980f4b67",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 15.84,
+        "x": 369.12,
+        "y": 137.28
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-f96805b903dd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 14.88,
+        "x": 316.32,
+        "y": 130.08
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-2354809add29",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 15.36,
+        "x": 336.96,
+        "y": 137.28
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-bcb2d7e071b2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 2.4,
+        "width": 13.44,
+        "x": 372.96,
+        "y": 148.8
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-b1ce6d836d6d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 13.92,
+        "x": 389.76,
+        "y": 156.0
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-261c0d933c3f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 12.48,
+        "x": 314.88,
+        "y": 151.68
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-1903af454a86",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 12.48,
+        "x": 390.72,
+        "y": 137.28
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-37c2b8edc1f0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 3.36,
+        "width": 11.52,
+        "x": 373.92,
+        "y": 153.12
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-09596988fcd6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 11.52,
+        "x": 336.48,
+        "y": 145.92
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-c2ad17bd08dd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 11.04,
+        "x": 321.12,
+        "y": 139.2
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-5fc11986ee0d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 11.04,
+        "x": 336.96,
+        "y": 141.12
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-811334f868c6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.56,
+        "x": 316.32,
+        "y": 142.56
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-d48765e126b9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 10.08,
+        "x": 321.6,
+        "y": 134.4
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-31513d095ab4",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 9.6,
+        "x": 389.76,
+        "y": 152.64
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-dfb5d19c349c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.12,
+        "x": 390.24,
+        "y": 146.88
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "The chart-area title prints at 43.2pt against native PowerPoint's whole-point 43.0, so every glyph of `Sales` is a fraction wider and one baseline step low."
+      },
+      "id": "p1-411ad8ef0984",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 56,
+    "duplicate": 0,
+    "total": 56,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

@@ -1,0 +1,37 @@
+{
+  "name": "issue-1675-column-wrap-face",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column chart-space a:latin typeface at a wrapping 36pt",
+  "page": 1,
+  "variants": [
+    {
+      "value": "Calibri",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<a:defRPr sz=\"1800\"/>",
+      "replace": "val=\"col\"\\g<1><a:defRPr sz=\"3600\"><a:latin typeface=\"Calibri\"/></a:defRPr>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Arial",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<a:defRPr sz=\"1800\"/>",
+      "replace": "val=\"col\"\\g<1><a:defRPr sz=\"3600\"><a:latin typeface=\"Arial\"/></a:defRPr>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Corbel",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<a:defRPr sz=\"1800\"/>",
+      "replace": "val=\"col\"\\g<1><a:defRPr sz=\"3600\"><a:latin typeface=\"Corbel\"/></a:defRPr>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "Goudy Old Style",
+      "find": "val=\"bar\"(/>[\\s\\S]*?)<a:defRPr sz=\"1800\"/>",
+      "replace": "val=\"col\"\\g<1><a:defRPr sz=\"3600\"><a:latin typeface=\"Goudy Old Style\"/></a:defRPr>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

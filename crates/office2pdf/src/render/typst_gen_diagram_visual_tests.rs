@@ -5278,14 +5278,14 @@ fn a_powerpoint_column_plot_takes_the_native_automatic_top_band() {
 #[test]
 fn a_powerpoint_column_plot_reserves_the_native_category_band() {
     // The same exports, plot bottom read off the category axis line. The 36pt
-    // chart space is left out: PowerPoint wraps `4th Qtr` onto a second line
-    // there and we slant it instead, so neither side is drawing one flat band
-    // (issue #1675).
+    // chart space wraps `1st Qtr` onto a second line natively, and reserves the
+    // extra leaded line for it (issue #1675).
     for (chart_space_pt, native_band) in [
         (10.0, 25.052),
         (12.0, 28.767),
         (18.0, 39.902),
         (24.0, 51.028),
+        (36.0, 117.240),
     ] {
         let chart = powerpoint_column_probe_chart(chart_space_pt, None);
         let (_, band) = powerpoint_column_probe_bands(&chart);
@@ -7946,6 +7946,320 @@ fn a_stated_major_unit_sets_the_tick_interval() {
     assert!(
         stated.len() >= 2,
         "the axis still needs its ticks: {stated:?}"
+    );
+}
+
+// ----- Crowded category labels wrap (issue #1675) -----
+
+/// One native PowerPoint 16.113.1 export of the #1675 probe frame: the face the
+/// chart space states, the size it states, the labels it carries, the lines
+/// PowerPoint broke them into and the band it reserved under the plot.
+struct NativeWrappedBand {
+    face: &'static str,
+    /// `usWinAscent`, `usWinDescent` and `hhea` ascent + descent + line gap,
+    /// per 2048em.
+    metrics_per_2048em: (f64, f64, f64),
+    chart_space_pt: f64,
+    lines: usize,
+    band_pt: f64,
+}
+
+/// Every wrapped band the #1675 probes measured, over four faces, seven sizes
+/// and one to four lines.
+///
+/// `Calibri` cannot see which line box the extra line takes — its window pair
+/// and its leaded box are the same 2500/2048em, as `Corbel`'s max() is — so
+/// `Arial` (a 67-unit line gap apart) and `Goudy Old Style` (180 units apart)
+/// are the two rows that settle it.
+const NATIVE_WRAPPED_BANDS: &[NativeWrappedBand] = &[
+    // scripts/probes/issue-1675-column-label-wrap.json — `Q1`..`Q4` fit flat,
+    // `1st Qtr`..`4th Qtr` wrap at the space.
+    NativeWrappedBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        chart_space_pt: 36.0,
+        lines: 1,
+        band_pt: 73.2950,
+    },
+    NativeWrappedBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        chart_space_pt: 36.0,
+        lines: 2,
+        band_pt: 117.2400,
+    },
+    // scripts/probes/issue-1675-column-label-lines.json — `First Quarter` and
+    // `First Quarter Net Sales Revenue` at 18pt.
+    NativeWrappedBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        chart_space_pt: 18.0,
+        lines: 2,
+        band_pt: 61.8767,
+    },
+    NativeWrappedBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        chart_space_pt: 18.0,
+        lines: 4,
+        band_pt: 105.8268,
+    },
+    // scripts/probes/issue-1675-column-label-floor.json — the same five words
+    // at 22pt.
+    NativeWrappedBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        chart_space_pt: 22.0,
+        lines: 4,
+        band_pt: 127.8835,
+    },
+    // scripts/probes/issue-1675-column-label-share.json — `1st Qtr Net`, which
+    // takes three lines up to 30pt and none at all from 32pt.
+    NativeWrappedBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        chart_space_pt: 28.0,
+        lines: 3,
+        band_pt: 126.8132,
+    },
+    NativeWrappedBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        chart_space_pt: 30.0,
+        lines: 3,
+        band_pt: 135.4036,
+    },
+    NativeWrappedBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        chart_space_pt: 32.0,
+        lines: 1,
+        band_pt: 65.8783,
+    },
+    NativeWrappedBand {
+        face: "Calibri",
+        metrics_per_2048em: (1950.0, 550.0, 2500.0),
+        chart_space_pt: 34.0,
+        lines: 1,
+        band_pt: 69.5884,
+    },
+    // scripts/probes/issue-1675-column-wrap-face.json — `1st Qtr`..`4th Qtr`
+    // wrapped at 36pt in four faces.
+    NativeWrappedBand {
+        face: "Arial",
+        metrics_per_2048em: (1854.0, 434.0, 2355.0),
+        chart_space_pt: 36.0,
+        lines: 2,
+        band_pt: 109.8466,
+    },
+    NativeWrappedBand {
+        face: "Corbel",
+        metrics_per_2048em: (1950.0, 550.0, 2473.0),
+        chart_space_pt: 36.0,
+        lines: 2,
+        band_pt: 117.2400,
+    },
+    NativeWrappedBand {
+        face: "Goudy Old Style",
+        metrics_per_2048em: (1792.0, 486.0, 2458.0),
+        chart_space_pt: 36.0,
+        lines: 2,
+        band_pt: 110.7551,
+    },
+];
+
+#[test]
+fn a_wrapped_category_band_adds_one_leaded_line_per_extra_line() {
+    for band in NATIVE_WRAPPED_BANDS {
+        let NativeWrappedBand {
+            face,
+            metrics_per_2048em: (window_ascent, window_descent, leaded),
+            chart_space_pt,
+            lines,
+            band_pt: native,
+        } = band;
+        let upem: f64 = 2048.0;
+        let metrics = ChartFaceLineBox::from_face_metrics_em(
+            window_ascent / upem,
+            window_descent / upem,
+            leaded / upem,
+        );
+        let actual: f64 = metrics.wrapped_category_band_pt(*chart_space_pt, *lines);
+        assert!(
+            (actual - native).abs() <= 0.02,
+            "{face} at {chart_space_pt}pt over {lines} line(s): PowerPoint \
+             reserves {native}pt, got {actual:.4}"
+        );
+    }
+}
+
+/// The probe chart with its categories replaced, which is the one factor the
+/// #1675 probes move.
+fn powerpoint_column_labelled_chart(chart_space_pt: f64, categories: &[&str]) -> Chart {
+    let mut chart = powerpoint_column_probe_chart(chart_space_pt, None);
+    chart.categories = categories
+        .iter()
+        .map(|category| (*category).to_string())
+        .collect();
+    chart.series[0].values = vec![8.2, 3.2, 1.4, 1.2];
+    chart.series[0].values.truncate(categories.len());
+    chart
+}
+
+/// The `dy` of every category-label box the generator placed, in the order
+/// written, keyed by the text inside it.
+fn category_label_seats(source: &str) -> Vec<(String, f64)> {
+    let mut seats: Vec<(String, f64)> = Vec::new();
+    for line in source.lines() {
+        let Some(rest) = line.strip_prefix("#place(top + left, dx: ") else {
+            continue;
+        };
+        if !line.contains("align(center + horizon)") {
+            continue;
+        }
+        let Some((_, after_dy)) = rest.split_once(", dy: ") else {
+            continue;
+        };
+        let Some((dy, _)) = after_dy.split_once("pt,") else {
+            continue;
+        };
+        let Some((_, tail)) = line.rsplit_once(")[") else {
+            continue;
+        };
+        let text: String = tail.trim_end_matches(')').trim_end_matches(']').to_string();
+        if let Ok(dy) = dy.parse::<f64>() {
+            seats.push((text, dy));
+        }
+    }
+    seats
+}
+
+#[test]
+fn a_powerpoint_column_label_wider_than_its_band_wraps_at_its_spaces() {
+    let chart =
+        powerpoint_column_labelled_chart(36.0, &["1st Qtr", "2nd Qtr", "3rd Qtr", "4th Qtr"]);
+    let source: String = framed_chart_source(&chart, 480.0, 320.0);
+    assert!(
+        !source.contains("rotate(-45deg"),
+        "a label PowerPoint wraps must not slant, got:\n{source}"
+    );
+    let seats = category_label_seats(&source);
+    let words: Vec<&str> = seats.iter().map(|(text, _)| text.as_str()).collect();
+    assert_eq!(
+        words,
+        ["1st", "Qtr", "2nd", "Qtr", "3rd", "Qtr", "4th", "Qtr"],
+        "each label breaks at its own space, got:\n{source}"
+    );
+    // The second line sits one whole leaded line of Calibri below the first.
+    let pitch: f64 = 2500.0 / 2048.0 * 36.0;
+    for pair in seats.chunks(2) {
+        let dy: f64 = pair[1].1 - pair[0].1;
+        assert!(
+            (dy - pitch).abs() <= 0.01,
+            "the wrapped line advances {dy}pt, expected {pitch}pt"
+        );
+    }
+}
+
+#[test]
+fn a_powerpoint_column_label_inside_its_band_stays_on_one_line() {
+    // Triangulation: the same chart at the same size, with labels that fit.
+    let chart = powerpoint_column_labelled_chart(36.0, &["Q1", "Q2", "Q3", "Q4"]);
+    let source: String = framed_chart_source(&chart, 480.0, 320.0);
+    let words: Vec<String> = category_label_seats(&source)
+        .into_iter()
+        .map(|(text, _)| text)
+        .collect();
+    assert_eq!(words, ["Q1", "Q2", "Q3", "Q4"], "got:\n{source}");
+}
+
+#[test]
+fn a_powerpoint_column_label_whose_word_overflows_its_band_still_slants() {
+    // `1stQtr`..`4thQtr` carry the same letters with no space to break at, and
+    // the native export slants and ellipsizes them instead of wrapping.
+    let chart = powerpoint_column_labelled_chart(36.0, &["1stQtr", "2ndQtr", "3rdQtr", "4thQtr"]);
+    let source: String = framed_chart_source(&chart, 480.0, 320.0);
+    assert!(
+        source.contains("rotate(-45deg, origin: top + right"),
+        "a label no wrap can fit must still slant, got:\n{source}"
+    );
+}
+
+#[test]
+fn a_wrapped_band_past_the_measured_share_goes_back_to_one_line() {
+    // `1st Qtr Net` takes three lines natively up to 30pt; from 32pt the band
+    // that would need is more of the frame than PowerPoint will give it, and
+    // the export puts every label back on one overlapping line rather than
+    // slanting it — every one of its words fits the band on its own.
+    for (chart_space_pt, native_band) in [
+        (28.0, 126.8132),
+        (30.0, 135.4036),
+        (32.0, 65.8783),
+        (34.0, 69.5884),
+        (36.0, 73.2950),
+    ] {
+        let chart = powerpoint_column_labelled_chart(
+            chart_space_pt,
+            &["1st Qtr Net", "2nd Qtr Net", "3rd Qtr Net", "4th Qtr Net"],
+        );
+        let source: String = framed_chart_source(&chart, 480.0, 320.0);
+        assert!(
+            !source.contains("rotate(-45deg"),
+            "a label whose every word fits its band must not slant at \
+             {chart_space_pt}pt, got:\n{source}"
+        );
+        let (_, band) = powerpoint_column_probe_bands(&chart);
+        assert!(
+            (band - native_band).abs() <= 0.1,
+            "at {chart_space_pt}pt PowerPoint reserves {native_band}pt under \
+             the plot; got {band}"
+        );
+        // Refused, every label is back on the one line it started with.
+        if native_band < 100.0 {
+            let seats = category_label_seats(&source);
+            assert_eq!(
+                seats.len(),
+                4,
+                "a refused wrap draws one line per label at {chart_space_pt}pt, \
+                 got {seats:?}"
+            );
+        }
+    }
+}
+
+/// Only a framed PowerPoint column axis wraps: no native Excel or Word export
+/// has measured a wrapped band, so those hosts keep the slant of #884.
+#[test]
+fn a_crowded_worksheet_column_axis_keeps_its_slant() {
+    for host in [
+        crate::ir::ChartHost::Spreadsheet,
+        crate::ir::ChartHost::SpreadsheetChartsheet,
+        crate::ir::ChartHost::WordProcessing,
+    ] {
+        let mut chart =
+            powerpoint_column_labelled_chart(36.0, &["1st Qtr", "2nd Qtr", "3rd Qtr", "4th Qtr"]);
+        chart.host = host;
+        let source: String = framed_chart_source(&chart, 480.0, 320.0);
+        assert!(
+            source.contains("rotate(-45deg, origin: top + right"),
+            "{host:?} must keep slanting its crowded labels, got:\n{source}"
+        );
+    }
+}
+
+/// An axis asking for a truncated label keeps the slant of #884 too: every
+/// package behind the wrap law writes a bare `<a:bodyPr/>`, so no native export
+/// says what PowerPoint does when a `vertOverflow="ellipsis"` policy meets a
+/// label it would otherwise wrap.
+#[test]
+fn an_ellipsising_category_axis_keeps_its_slant() {
+    let mut chart =
+        powerpoint_column_labelled_chart(36.0, &["1st Qtr", "2nd Qtr", "3rd Qtr", "4th Qtr"]);
+    chart.category_axis_text_style.ellipsis_overflow = true;
+    let source: String = framed_chart_source(&chart, 480.0, 320.0);
+    assert!(
+        source.contains("rotate(-45deg, origin: top + right"),
+        "an ellipsising axis keeps the slant it had, got:\n{source}"
     );
 }
 

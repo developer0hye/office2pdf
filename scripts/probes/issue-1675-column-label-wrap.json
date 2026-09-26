@@ -1,0 +1,37 @@
+{
+  "name": "issue-1675-column-label-wrap",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column category label text at a fixed 36pt",
+  "page": 1,
+  "variants": [
+    {
+      "value": "short one word",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st Qtr(</c:v>[\\s\\S]*?<c:v>)2nd Qtr(</c:v>[\\s\\S]*?<c:v>)3rd Qtr(</c:v>[\\s\\S]*?<c:v>)4th Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>Q1\\g<2>Q2\\g<3>Q3\\g<4>Q4\\g<5>3600\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "two words",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>1st Qtr</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>3600\\g<2>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "long one word",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st Qtr(</c:v>[\\s\\S]*?<c:v>)2nd Qtr(</c:v>[\\s\\S]*?<c:v>)3rd Qtr(</c:v>[\\s\\S]*?<c:v>)4th Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>1stQtr\\g<2>2ndQtr\\g<3>3rdQtr\\g<4>4thQtr\\g<5>3600\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "three words",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st Qtr(</c:v>[\\s\\S]*?<c:v>)2nd Qtr(</c:v>[\\s\\S]*?<c:v>)3rd Qtr(</c:v>[\\s\\S]*?<c:v>)4th Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>1st Qtr Net\\g<2>2nd Qtr Net\\g<3>3rd Qtr Net\\g<4>4th Qtr Net\\g<5>3600\\g<6>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}
