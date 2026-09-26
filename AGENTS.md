@@ -138,9 +138,10 @@ This project follows a **6-month rolling MSRV policy** (aligned with [tokio](htt
 ### Visual check discipline (harness rules)
 
 - **Enumerate before fixing.** For every compared page, walk this checklist and record each deviation before touching code: page count/order; element presence; position; size; rotation/flip; fill; stroke/border (incl. dash style); shape outline geometry (corner rounding, curved edges — a panel drawn as its bounding box, #1029); text content; font family/weight/style; text color; alignment; line/paragraph spacing; clipping/overflow.
-- **One issue per root cause.** When one image reveals multiple independent defects, file a separate issue for each — never bundle them into one issue or one PR. Fix them sequentially.
-- **Closing condition.** An issue may be closed only when a fresh GT comparison shows its specific defect gone. Every remaining visible deviation on that comparison must already have its own open issue or a verified exact-ID reference-exporter disposition — file the missing issue for every other unresolved deviation before closing.
-- **After images are re-audited.** When posting an after image, re-run the checklist on it; each still-visible deviation gets an issue reference in the PR body ("remaining, tracked in #N") or the verified reference-exporter identifier (`ref:<id>`).
+- **One issue per root cause.** When one image reveals multiple independent material defects, file a separate issue for each — never bundle them into one issue or one PR. Fix them sequentially. Sub-material findings follow the Materiality rule below.
+- **Materiality.** File an issue only for a deviation a reader would notice without overlaying the reference; judge each by its kind, not one fixed number. Anything that changes the outcome (wrap, page count, missing/overlapping/clipped text, wrong face or colour) is always material. Placement against the reference matters only at the order of a couple of points — the native apps themselves drift near a point; misalignment *within our own output* (a column, a border joint, text against its cell) matters from about a device pixel; stroke and size matter in proportion, roughly a quarter. These are orders of magnitude to calibrate per case, not gates. Choose `--fine-shift PT` accordingly, and disposition sub-material findings to the standing tracker #1874 with their numbers in the PR body instead of filing one issue each.
+- **Closing condition.** An issue may be closed only when a fresh GT comparison shows its specific defect gone. Every remaining material deviation on that comparison must already have its own open issue or a verified exact-ID reference-exporter disposition — file the missing issue for every other unresolved deviation before closing.
+- **After images are re-audited.** When posting an after image, re-run the checklist on it; each still-visible material deviation gets an issue reference in the PR body ("remaining, tracked in #N") or the verified reference-exporter identifier (`ref:<id>`).
 
 ### Fine-level difference analysis (reported files)
 
@@ -159,7 +160,7 @@ just the pages a screenshot shows.
    Run the geometry axis with `--audit --fine-shift PT`; every fine/large
    text-instance shift, rectangle geometry deviation, painted-text visibility
    mismatch, or visible-fill occlusion it names must be fixed or recorded as a
-   remaining deviation with an open issue.
+   remaining deviation with an open issue (#1874 when below the Materiality bar).
    Do not classify the pixel diff as antialiasing while this audit is failing.
    Source/XML inspection and numeric reports only route attention; they never
    constitute a visual pass. The acting Codex or Claude agent must use its image

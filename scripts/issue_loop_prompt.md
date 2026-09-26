@@ -22,5 +22,7 @@ replace those documents.
   request body the contract check expects.
 - Never name anything under `tests/classified_fixtures/` in a commit message, pull
   request, or issue comment.
-- Re-run the audit on the fixed output before closing an issue. Every deviation still
-  visible must already have its own open issue — file the missing ones first.
+- Re-run the audit on the fixed output before closing an issue. Every material deviation
+  still visible must already have its own open issue — file the missing ones first.
+- Apply the Materiality rule in `AGENTS.md`: spend effort on what a reader would
+  notice, not on sub-point drift; send sub-material findings to #1874.
