@@ -1,0 +1,30 @@
+{
+  "name": "issue-1675-column-label-lines",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column category label word count at a fixed 18pt",
+  "page": 1,
+  "variants": [
+    {
+      "value": "two lines",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>First Quarter\\g<2>Second Quarter\\g<3>Third Quarter\\g<4>Fourth Quarter\\g<5>1800\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "three lines",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>First Quarter Net\\g<2>Second Quarter Net\\g<3>Third Quarter Net\\g<4>Fourth Quarter Net\\g<5>1800\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "four lines",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>First Quarter Net Sales Revenue\\g<2>Second Quarter Net Sales Revenue\\g<3>Third Quarter Net Sales Revenue\\g<4>Fourth Quarter Net Sales Revenue\\g<5>1800\\g<6>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

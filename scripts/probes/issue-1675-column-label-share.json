@@ -1,0 +1,44 @@
+{
+  "name": "issue-1675-column-label-share",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "column chart-space c:defRPr sz over three-word category labels",
+  "page": 1,
+  "variants": [
+    {
+      "value": "28pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>1st Qtr Net\\g<2>2nd Qtr Net\\g<3>3rd Qtr Net\\g<4>4th Qtr Net\\g<5>2800\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "30pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>1st Qtr Net\\g<2>2nd Qtr Net\\g<3>3rd Qtr Net\\g<4>4th Qtr Net\\g<5>3000\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "32pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>1st Qtr Net\\g<2>2nd Qtr Net\\g<3>3rd Qtr Net\\g<4>4th Qtr Net\\g<5>3200\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "34pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>1st Qtr Net\\g<2>2nd Qtr Net\\g<3>3rd Qtr Net\\g<4>4th Qtr Net\\g<5>3400\\g<6>",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "36pt",
+      "find": "val=\"bar\"(/>[\\s\\S]*?<c:v>)1st\\ Qtr(</c:v>[\\s\\S]*?<c:v>)2nd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)3rd\\ Qtr(</c:v>[\\s\\S]*?<c:v>)4th\\ Qtr(</c:v>[\\s\\S]*?sz=\")1800(\")",
+      "replace": "val=\"col\"\\g<1>1st Qtr Net\\g<2>2nd Qtr Net\\g<3>3rd Qtr Net\\g<4>4th Qtr Net\\g<5>3600\\g<6>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}
