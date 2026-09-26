@@ -1267,9 +1267,23 @@ pub(super) fn chart_axis_text_weight(
 /// the colour it has always been drawn in rather than being forced to a
 /// default this crate invented (issue #916).
 pub(super) fn chart_axis_text_fill(chart: &Chart, axis: crate::ir::ChartTextStyle) -> String {
-    match chart.text_style.resolved_color(axis) {
-        Some(color) => format!(", fill: {}", fmt::rgb(&color)),
-        None => String::new(),
+    match chart.text_style.resolved_fill(axis) {
+        (Some(color), alpha) => format!(", fill: {}", chart_text_paint(&color, alpha)),
+        (None, _) => String::new(),
+    }
+}
+
+/// A chart text colour as a Typst paint, composited at the opacity its
+/// `<a:alpha>` declared.
+///
+/// Without this the 70%-opaque axis labels of the deck in #1220 printed at
+/// their colour's own full strength, which reads as a heavier and darker axis
+/// than either PowerPoint or LibreOffice draws (issue #1677). This is the same
+/// treatment #1274 gave a chart line and #1180 gave a shape run.
+fn chart_text_paint(color: &Color, alpha: Option<f64>) -> String {
+    match alpha {
+        Some(alpha) => fmt::rgb_with_alpha(color, (alpha.clamp(0.0, 1.0) * 255.0).round() as u8),
+        None => fmt::rgb(color),
     }
 }
 
@@ -1296,7 +1310,7 @@ pub(super) fn chart_axis_text_tracking(chart: &Chart, axis: crate::ir::ChartText
 /// existing output moves (issue #916).
 pub(super) fn chart_data_label_fill(chart: &Chart) -> String {
     match chart.text_style.color {
-        Some(color) => fmt::rgb(&color),
+        Some(color) => chart_text_paint(&color, chart.text_style.alpha),
         None => "white".to_string(),
     }
 }
@@ -4132,9 +4146,9 @@ fn chart_area_title_attrs(chart: &Chart) -> String {
         .or(chart.text_style.bold)
         .unwrap_or(true);
     let weight: &str = if bold { ", weight: \"bold\"" } else { "" };
-    let fill: String = match chart.text_style.resolved_color(chart.title_text_style) {
-        Some(color) => format!(", fill: {}", fmt::rgb(&color)),
-        None => String::new(),
+    let fill: String = match chart.text_style.resolved_fill(chart.title_text_style) {
+        (Some(color), alpha) => format!(", fill: {}", chart_text_paint(&color, alpha)),
+        (None, _) => String::new(),
     };
     format!("{weight}{fill}")
 }
