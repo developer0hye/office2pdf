@@ -4119,3 +4119,118 @@ fn the_secondary_axis_typeface_resolves_through_the_theme() {
         assert!(chart.value_axis_text_font_family.is_none());
     }
 }
+
+/// A `c:txPr` colour's `<a:alpha>` is the opacity its strings are composited
+/// at, and it has to survive parsing separately from the colour itself.
+///
+/// The deck in issue #1220 states `<a:schemeClr val="tx2"><a:alpha
+/// val="70000"/>` on both of `chart8.xml`'s axes; reading only the resolved
+/// colour printed tick and category labels fully opaque, which is a visibly
+/// heavier axis than either PowerPoint or LibreOffice draws (issue #1677).
+#[test]
+fn an_axis_text_colour_keeps_the_opacity_it_declares() {
+    let colors = std::collections::HashMap::from([
+        ("dk1".to_string(), Color::new(0, 0, 0)),
+        ("dk2".to_string(), Color::new(0, 41, 46)),
+    ]);
+    let aliases = std::collections::HashMap::new();
+    let scheme = SchemeColors {
+        colors: &colors,
+        aliases: &aliases,
+    };
+
+    // Every declared percentage maps to its own fraction, so no single
+    // hardcoded opacity can pass this.
+    for (declared, expected) in [
+        ("70000", Some(0.7)),
+        ("25000", Some(0.25)),
+        ("100000", Some(1.0)),
+        ("0", Some(0.0)),
+    ] {
+        let tx_pr = format!(
+            r#"<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1197"><a:solidFill><a:schemeClr val="tx2"><a:alpha val="{declared}"/></a:schemeClr></a:solidFill></a:defRPr></a:pPr></a:p></c:txPr>"#
+        );
+        let xml = chart_space_with("").replace(
+            "</c:plotArea>",
+            &format!(
+                "<c:catAx><c:axId val=\"1\"/>{tx_pr}</c:catAx><c:valAx><c:axId val=\"2\"/>{tx_pr}</c:valAx></c:plotArea>"
+            ),
+        );
+
+        let chart = parse_chart_xml(&xml, &scheme).expect("chart parses");
+
+        for style in [chart.category_axis_text_style, chart.value_axis_text_style] {
+            assert_eq!(
+                style.color,
+                Some(Color::new(0, 41, 46)),
+                "alpha {declared} must not disturb the colour"
+            );
+            assert_eq!(style.alpha, expected, "alpha {declared}");
+        }
+    }
+}
+
+/// Triangulation: a colour that declares no `<a:alpha>` stays opaque, and an
+/// `<a:alpha>` on the glyph outline inside the same `c:txPr` is not the text's
+/// own opacity — the guard issue #916 put on the colour covers it too.
+#[test]
+fn a_chart_text_colour_without_alpha_stays_opaque() {
+    let (colors, aliases) = black_text_slot_scheme();
+    let scheme = SchemeColors {
+        colors: &colors,
+        aliases: &aliases,
+    };
+
+    for fill in [
+        r#"<a:solidFill><a:srgbClr val="C6FC15"/></a:solidFill>"#,
+        r#"<a:solidFill><a:srgbClr val="C6FC15"><a:lumMod val="65000"/></a:srgbClr></a:solidFill>"#,
+        r#"<a:solidFill><a:srgbClr val="C6FC15"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="123456"><a:alpha val="40000"/></a:srgbClr></a:solidFill></a:ln>"#,
+    ] {
+        let xml = chart_space_with(&format!(
+            "<c:txPr><a:p><a:pPr><a:defRPr sz=\"900\">{fill}</a:defRPr></a:pPr></a:p></c:txPr>"
+        ));
+        let chart = parse_chart_xml(&xml, &scheme).expect("chart parses");
+        assert_eq!(chart.text_style.alpha, None, "fill {fill}");
+    }
+}
+
+/// Opacity belongs to the colour element that carries it, so it resolves with
+/// that colour rather than on its own: an axis restating an opaque colour over
+/// a translucent chart-space default prints opaque, not at the chart space's
+/// opacity (issue #1677).
+#[test]
+fn axis_text_opacity_resolves_with_the_colour_that_wins() {
+    let colors = std::collections::HashMap::from([
+        ("dk1".to_string(), Color::new(0, 0, 0)),
+        ("dk2".to_string(), Color::new(0, 41, 46)),
+    ]);
+    let aliases = std::collections::HashMap::new();
+    let scheme = SchemeColors {
+        colors: &colors,
+        aliases: &aliases,
+    };
+    let space_tx_pr = r#"<c:txPr><a:p><a:pPr><a:defRPr sz="900"><a:solidFill><a:schemeClr val="tx2"><a:alpha val="70000"/></a:schemeClr></a:solidFill></a:defRPr></a:pPr></a:p></c:txPr>"#;
+    let axis_tx_pr = r#"<c:txPr><a:p><a:pPr><a:defRPr><a:solidFill><a:srgbClr val="C6FC15"/></a:solidFill></a:defRPr></a:pPr></a:p></c:txPr>"#;
+    let xml = chart_space_with(space_tx_pr).replace(
+        "</c:plotArea>",
+        &format!("<c:catAx><c:axId val=\"1\"/>{axis_tx_pr}</c:catAx></c:plotArea>"),
+    );
+
+    let chart = parse_chart_xml(&xml, &scheme).expect("chart parses");
+
+    assert_eq!(chart.text_style.alpha, Some(0.7));
+    assert_eq!(
+        chart
+            .text_style
+            .resolved_fill(chart.category_axis_text_style),
+        (Some(Color::new(0xC6, 0xFC, 0x15)), None),
+        "the axis' own opaque colour wins, and takes its own absent opacity with it"
+    );
+    assert_eq!(
+        chart
+            .text_style
+            .resolved_fill(crate::ir::ChartTextStyle::default()),
+        (Some(Color::new(0, 41, 46)), Some(0.7)),
+        "an element stating no colour inherits both halves of the chart space's"
+    );
+}

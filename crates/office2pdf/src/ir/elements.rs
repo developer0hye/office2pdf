@@ -567,6 +567,13 @@ pub struct ChartTextStyle {
     pub letter_spacing_hundredths: Option<i32>,
     /// `a:defRPr/a:solidFill` — the colour the runs are set in (issue #916).
     pub color: Option<Color>,
+    /// Opacity from the `<a:alpha>` inside that colour: 0.0 is transparent and
+    /// 1.0 is opaque. `None` paints [`Self::color`] opaque.
+    ///
+    /// DrawingML writes it as a child of the colour element, so it travels
+    /// with [`Self::color`] through inheritance instead of resolving on its
+    /// own (issue #1677).
+    pub alpha: Option<f64>,
     /// `a:bodyPr@vertOverflow="ellipsis"`. This body property is kept beside
     /// the run properties because every chart text scope already owns one
     /// `ChartTextStyle` (issue #1012).
@@ -597,8 +604,26 @@ impl ChartTextStyle {
     }
 
     /// This style's colour where `override_style` states none.
+    ///
+    /// Half of [`Self::resolved_fill`], and not the value to paint with: a
+    /// caller that drops the opacity beside it prints a translucent chart
+    /// string fully opaque (issue #1677).
     pub fn resolved_color(self, override_style: Self) -> Option<Color> {
-        override_style.color.or(self.color)
+        self.resolved_fill(override_style).0
+    }
+
+    /// The colour and opacity that win, resolved as one unit.
+    ///
+    /// `<a:alpha>` is a child of the colour element rather than a sibling
+    /// property, so the two cannot be inherited independently: an axis that
+    /// restates an opaque colour over a translucent chart-space default must
+    /// print opaque rather than keep the default's opacity (issue #1677).
+    pub fn resolved_fill(self, override_style: Self) -> (Option<Color>, Option<f64>) {
+        if override_style.color.is_some() {
+            (override_style.color, override_style.alpha)
+        } else {
+            (self.color, self.alpha)
+        }
     }
 
     /// This style with every property `override_style` states replacing it.
@@ -609,13 +634,15 @@ impl ChartTextStyle {
     /// one style per scope, so the more specific element is merged in as it is
     /// read rather than at the rendering edge (issue #1424).
     pub fn overridden_by(self, override_style: Self) -> Self {
+        let (color, alpha) = self.resolved_fill(override_style);
         Self {
             size_pt: self.resolved_size_pt(override_style),
             bold: self.resolved_bold(override_style),
             letter_spacing_hundredths: override_style
                 .letter_spacing_hundredths
                 .or(self.letter_spacing_hundredths),
-            color: self.resolved_color(override_style),
+            color,
+            alpha,
             ellipsis_overflow: self.ellipsis_overflow || override_style.ellipsis_overflow,
         }
     }

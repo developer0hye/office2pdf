@@ -619,7 +619,12 @@ fn parse_chart_text_properties(
                 // to be consumed either way to leave the reader on its sibling
                 // — `<a:latin>` follows `<a:solidFill>` inside `<a:defRPr>`.
                 let parsed = drawingml::parse_color_from_start(reader, e, scheme);
-                style.color = style.color.or(parsed.color);
+                // `<a:alpha>` is this colour's own child, so it is taken with
+                // the colour it modifies and never on its own (issue #1677).
+                if style.color.is_none() && parsed.color.is_some() {
+                    style.color = parsed.color;
+                    style.alpha = parsed.alpha;
+                }
             }
             Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
                 match e.local_name().as_ref() {
@@ -638,6 +643,8 @@ fn parse_chart_text_properties(
                         in_def_rpr = true;
                     }
                     b"solidFill" if in_def_rpr => in_solid_fill = true,
+                    // A self-closing colour element has no `<a:alpha>` child,
+                    // so this arm leaves the opacity alone (issue #1677).
                     _ if in_solid_fill && style.color.is_none() => {
                         style.color = drawingml::parse_color_from_empty(e, scheme).color;
                     }
@@ -1146,7 +1153,12 @@ fn parse_chart_rich_text(
             {
                 let parsed = drawingml::parse_color_from_start(reader, e, scheme);
                 if let Some(target) = rich_scope_style(scope, &mut paragraph, &mut run) {
-                    target.color = target.color.or(parsed.color);
+                    // The colour and its `<a:alpha>` child move together
+                    // (issue #1677).
+                    if target.color.is_none() && parsed.color.is_some() {
+                        target.color = parsed.color;
+                        target.alpha = parsed.alpha;
+                    }
                 }
             }
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {

@@ -1301,6 +1301,7 @@ fn every_legend_family_uses_the_legends_own_run_properties() {
         bold: Some(true),
         letter_spacing_hundredths: Some(125),
         color: Some(Color::new(0xC0, 0x2A, 0x7A)),
+        alpha: None,
         ellipsis_overflow: false,
     };
     for (chart_type, label) in [
@@ -4123,6 +4124,7 @@ fn sized_bar_chart(size_pt: f64) -> Chart {
         bold: None,
         letter_spacing_hundredths: None,
         color: None,
+        alpha: None,
         ellipsis_overflow: false,
     };
     chart
@@ -4179,6 +4181,7 @@ fn title_run_style(
         bold,
         letter_spacing_hundredths: None,
         color,
+        alpha: None,
         ellipsis_overflow: false,
     }
 }
@@ -4402,6 +4405,7 @@ fn category_labels_take_the_axis_weight() {
         bold: Some(true),
         letter_spacing_hundredths: None,
         color: None,
+        alpha: None,
         ellipsis_overflow: false,
     };
     let source: String = chart_source(chart);
@@ -4419,6 +4423,7 @@ fn an_axis_size_overrides_the_chart_space_size_for_that_axis_only() {
         bold: None,
         letter_spacing_hundredths: None,
         color: None,
+        alpha: None,
         ellipsis_overflow: false,
     };
     let source: String = chart_source(chart);
@@ -4527,6 +4532,7 @@ fn bar_chart_at(size_pt: Option<f64>, categories: &[&str]) -> Chart {
         bold: None,
         letter_spacing_hundredths: None,
         color: None,
+        alpha: None,
         ellipsis_overflow: false,
     };
     chart
@@ -12678,6 +12684,85 @@ fn a_powerpoint_line_category_label_seats_on_the_native_baseline() {
             "{size_pt}pt category labels: PowerPoint seats the baseline \
              {native_baseline_pt:.2}pt below the frame's top edge, got {:.2}pt in:\n{source}",
             placed.dy
+        );
+    }
+}
+
+/// A declared axis-label opacity has to reach the generated source as an alpha
+/// channel, and has to leave the chart's geometry and strings untouched.
+///
+/// `chart8.xml` of the deck in #1220 asks for `tx2` at 70%, which composites
+/// to gray 97 over the white slide; dropping the alpha printed the tick and
+/// category labels at the opaque colour's own gray 29 (issue #1677).
+#[test]
+fn axis_labels_keep_their_declared_opacity() {
+    let colors = std::collections::HashMap::from([
+        ("dk1".to_string(), Color::new(0, 0, 0)),
+        ("dk2".to_string(), Color::new(0, 41, 46)),
+    ]);
+    let aliases = std::collections::HashMap::new();
+    let scheme = crate::parser::drawingml::SchemeColors {
+        colors: &colors,
+        aliases: &aliases,
+    };
+    let chart_xml = |fill: &str| -> String {
+        let tx_pr = format!(
+            r#"<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1197"><a:solidFill>{fill}</a:solidFill></a:defRPr></a:pPr></a:p></c:txPr>"#
+        );
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+            <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"
+                          xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+              <c:chart><c:plotArea><c:barChart><c:barDir val="col"/>
+                <c:ser><c:idx val="0"/><c:order val="0"/>
+                  <c:cat><c:strRef><c:strCache>
+                    <c:pt idx="0"><c:v>Year 1</c:v></c:pt>
+                    <c:pt idx="1"><c:v>Year 2</c:v></c:pt>
+                  </c:strCache></c:strRef></c:cat>
+                  <c:val><c:numRef><c:numCache>
+                    <c:pt idx="0"><c:v>800</c:v></c:pt>
+                    <c:pt idx="1"><c:v>400</c:v></c:pt>
+                  </c:numCache></c:numRef></c:val>
+                </c:ser>
+              </c:barChart>
+              <c:catAx><c:axId val="1"/>{tx_pr}</c:catAx>
+              <c:valAx><c:axId val="2"/>{tx_pr}</c:valAx>
+              </c:plotArea></c:chart>
+            </c:chartSpace>"#
+        )
+    };
+
+    let opaque_chart =
+        crate::parser::chart::parse_chart_xml(&chart_xml(r#"<a:schemeClr val="tx2"/>"#), &scheme)
+            .expect("chart parses");
+    let opaque_source = framed_chart_source(&opaque_chart, 480.0, 240.0);
+    assert!(
+        opaque_source.contains("fill: rgb(0, 41, 46)"),
+        "the opaque control must paint the declared colour"
+    );
+
+    // Each declared percentage maps to its own alpha byte, so no single
+    // hardcoded value passes.
+    for (declared, byte) in [(70000, 179), (25000, 64), (50000, 128), (100000, 255)] {
+        let source = framed_chart_source(
+            &crate::parser::chart::parse_chart_xml(
+                &chart_xml(&format!(
+                    r#"<a:schemeClr val="tx2"><a:alpha val="{declared}"/></a:schemeClr>"#
+                )),
+                &scheme,
+            )
+            .expect("chart parses"),
+            480.0,
+            240.0,
+        );
+        assert!(
+            source.contains(&format!("fill: rgb(0, 41, 46, {byte})")),
+            "alpha {declared} must reach the axis labels as rgb(0, 41, 46, {byte})"
+        );
+        assert_eq!(
+            source.replace(&format!("rgb(0, 41, 46, {byte})"), "rgb(0, 41, 46)"),
+            opaque_source,
+            "alpha {declared} must not move the chart's geometry or strings"
         );
     }
 }
