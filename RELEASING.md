@@ -102,3 +102,4 @@ Only then remove the worktree and delete the merged local and remote branch.
 - Low disk space: inspect `target/` first and reuse or clean only known build outputs; never delete fixtures or user files.
 - Failed version validation: fix the version PR. Never move an existing public tag to a different commit.
 - Failed publish/build job: inspect that job, fix the cause if needed, then re-dispatch the same tag. The workflow is designed for safe recovery.
+
