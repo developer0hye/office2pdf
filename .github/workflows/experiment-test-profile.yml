@@ -1,0 +1,52 @@
+name: EXPERIMENT test profile timing
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  timing:
+    name: timing (${{ matrix.os }}, ${{ matrix.variant }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        variant: [dev, ci, ci-opt, nextest-ci]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: exp-${{ matrix.variant }}
+      - name: Install qpdf
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y qpdf
+      - uses: taiki-e/install-action@v2
+        if: matrix.variant == 'nextest-ci'
+        with:
+          tool: cargo-nextest@0.9.145
+      - name: Build
+        shell: bash
+        run: |
+          case "${{ matrix.variant }}" in
+            dev) cargo test --locked --workspace --no-run ;;
+            nextest-ci) cargo nextest run --locked --workspace --cargo-profile ci --no-run ;;
+            *) cargo test --locked --workspace --profile "${{ matrix.variant }}" --no-run ;;
+          esac
+      - name: Run
+        shell: bash
+        env:
+          OFFICE2PDF_VALIDATE_PDF: "1"
+        run: |
+          case "${{ matrix.variant }}" in
+            dev) cargo test --locked --workspace ;;
+            nextest-ci) cargo nextest run --locked --workspace --cargo-profile ci ;;
+            *) cargo test --locked --workspace --profile "${{ matrix.variant }}" ;;
+          esac
+      - name: Doctests
+        if: matrix.variant == 'nextest-ci'
+        run: cargo test --locked --workspace --doc

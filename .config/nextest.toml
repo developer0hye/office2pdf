@@ -1,0 +1,5 @@
+# perf_validation asserts wall-clock ceilings, so each of its tests claims
+# every test thread and runs with nothing else on the machine.
+[[profile.default.overrides]]
+filter = "binary(perf_validation)"
+threads-required = "num-test-threads"
