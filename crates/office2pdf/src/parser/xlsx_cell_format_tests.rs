@@ -497,6 +497,34 @@ fn a_single_section_prefixes_a_negative_sign_before_its_leading_literal() {
 }
 
 #[test]
+fn a_selected_negative_section_keeps_its_leading_quoted_literal() {
+    for (value, format_code, expected) in [
+        (-123.0, r#"0.00;"[Red]"0.00"#, "[Red]123.00"),
+        (-42.5, r#"0.00;"USD "0.00"#, "USD 42.50"),
+        (-42.5, r#""positive "0.00;0.00"#, "42.50"),
+        (42.5, r#""positive "0.00;0.00"#, "positive 42.50"),
+    ] {
+        let data = build_xlsx_formatted(|sheet| {
+            sheet.get_column_dimension_by_number_mut(&1).set_width(20.0);
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value_number(value);
+            cell.get_style_mut()
+                .get_number_format_mut()
+                .set_format_code(format_code);
+        });
+        let parser = XlsxParser;
+        let (document, _) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = get_sheet_page(&document, 0);
+        assert_eq!(
+            cell_text(&page.table.rows[0].cells[0]),
+            expected,
+            "format {format_code:?} with value {value}"
+        );
+    }
+}
+
+#[test]
 fn test_number_format_rounds_half_away_from_zero() {
     // Excel rounds display values; the formatter truncated 107310.6 with
     // #,##0 to 107,310 (issue #363).
