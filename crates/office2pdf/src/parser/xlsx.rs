@@ -133,13 +133,18 @@ fn sheet_print_margins(
 /// The footer margin Excel prints a sheet at when it states none: 0.3".
 const DEFAULT_PRINT_FOOTER_MARGIN_PT: f64 = 21.6;
 
+/// Excel for Mac's measured minimum for a declared worksheet footer margin.
+const MIN_PRINT_FOOTER_MARGIN_IN: f64 = 0.25;
+
 /// The footer margin a sheet prints with, in paper points:
 /// `<pageMargins>/@footer`, or Excel's default when the sheet states none.
 ///
-/// A declared zero still falls through to the default here: the value test
-/// #1812 replaced for the four body margins needs a native sweep of a
-/// declared `footer="0"` before it can be replaced for this one, and none has
-/// been taken (issue #1931).
+/// Presence comes from the package part because umya maps a declared zero and
+/// a missing attribute to the same value. Excel for Mac clamps a declared
+/// footer margin to at least 0.25in: the native sweep for issue #1931 put
+/// values from 0 through 0.26in at the same printed position, 3pt below 0.3in.
+/// The renderer floors the resulting margin in sheet coordinates, so keep
+/// fractional points here for fitted sheets (issue #1552).
 ///
 /// Excel measures a printed footer up from the paper through this margin, and
 /// neither the bottom margin nor the sheet's own body height moves it — both
@@ -147,12 +152,27 @@ const DEFAULT_PRINT_FOOTER_MARGIN_PT: f64 = 21.6;
 /// value is carried as stated: the renderer floors it to a whole point of the
 /// sheet's own coordinate space, which a fitted sheet scales, and a margin
 /// floored here on paper could not be re-floored there (issue #1552).
-fn sheet_footer_margin_pt(sheet: &umya_spreadsheet::Worksheet) -> f64 {
-    let declared_in: f64 = *sheet.get_page_margins().get_footer();
-    if declared_in > 0.0 {
-        declared_in * 72.0
-    } else {
-        DEFAULT_PRINT_FOOTER_MARGIN_PT
+fn sheet_footer_margin_pt(
+    sheet: &umya_spreadsheet::Worksheet,
+    declared: Option<&margin_state::DeclaredPrintMargins>,
+) -> f64 {
+    match declared.map(|margins| margins.footer) {
+        Some(false) => DEFAULT_PRINT_FOOTER_MARGIN_PT,
+        Some(true) => {
+            sheet
+                .get_page_margins()
+                .get_footer()
+                .max(MIN_PRINT_FOOTER_MARGIN_IN)
+                * 72.0
+        }
+        None => {
+            let footer_in: f64 = *sheet.get_page_margins().get_footer();
+            if footer_in > 0.0 {
+                footer_in * 72.0
+            } else {
+                DEFAULT_PRINT_FOOTER_MARGIN_PT
+            }
+        }
     }
 }
 
@@ -160,6 +180,7 @@ fn sheet_footer_margin_pt(sheet: &umya_spreadsheet::Worksheet) -> f64 {
 fn sheet_print_footer(
     sheet: &umya_spreadsheet::Worksheet,
     sheet_name: &str,
+    declared_margins: Option<&margin_state::DeclaredPrintMargins>,
     normal_font: Option<&xlsx_cells::NormalFont>,
     warnings: &mut Vec<ConvertWarning>,
 ) -> Option<crate::ir::HeaderFooter> {
@@ -169,7 +190,7 @@ fn sheet_print_footer(
         normal_font,
         warnings,
     )?;
-    footer.distance_from_edge = Some(sheet_footer_margin_pt(sheet));
+    footer.distance_from_edge = Some(sheet_footer_margin_pt(sheet, declared_margins));
     Some(footer)
 }
 
@@ -1035,8 +1056,13 @@ impl XlsxParser {
                 normal_font.as_ref(),
                 &mut warnings,
             );
-            let sheet_footer =
-                sheet_print_footer(sheet, &sheet_name, normal_font.as_ref(), &mut warnings);
+            let sheet_footer = sheet_print_footer(
+                sheet,
+                &sheet_name,
+                declared_print_margins.get(&sheet_name),
+                normal_font.as_ref(),
+                &mut warnings,
+            );
 
             // Pull charts for this sheet
             let mut sheet_charts: Vec<crate::ir::SheetChart> = chart_map
@@ -1438,8 +1464,13 @@ impl Parser for XlsxParser {
                 normal_font.as_ref(),
                 &mut warnings,
             );
-            let sheet_footer =
-                sheet_print_footer(sheet, &sheet_name, normal_font.as_ref(), &mut warnings);
+            let sheet_footer = sheet_print_footer(
+                sheet,
+                &sheet_name,
+                declared_print_margins.get(&sheet_name),
+                normal_font.as_ref(),
+                &mut warnings,
+            );
 
             // Pull charts for this sheet (if any)
             let mut sheet_charts: Vec<crate::ir::SheetChart> = chart_map
