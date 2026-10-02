@@ -5,6 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use super::font_subst::TextScript;
 
@@ -31,6 +32,9 @@ pub(crate) struct FontSearchContext {
     /// — is only that member where the base family actually holds a face at
     /// the weight the name states (issue #1286).
     family_weights: HashMap<String, HashSet<u16>>,
+    /// Native fallback-book metadata and Unicode coverage. The active
+    /// conversion context is cloned, so this index is shared.
+    font_book: Arc<typst::text::FontBook>,
     /// Filesystem-free faces available to WASM metric lookups while codegen is
     /// running under this context.
     in_memory_book: typst::text::FontBook,
@@ -105,6 +109,30 @@ impl FontSearchContext {
 
     pub(crate) fn last_resort_font_family(&self) -> Option<&str> {
         self.last_resort_font_family.as_deref()
+    }
+
+    /// Whether any indexed face under `family` has a glyph for `character`.
+    pub(crate) fn family_covers_character(&self, family: &str, character: char) -> bool {
+        font_book_family_covers_character(&self.in_memory_book, family, character)
+            || font_book_family_covers_character(&self.font_book, family, character)
+    }
+
+    /// Families in the native fallback book that cover `character`, with
+    /// duplicate names removed and higher-priority sources first.
+    pub(crate) fn families_covering_character(&self, character: char) -> Vec<String> {
+        let mut families: Vec<String> =
+            font_book_families_covering_character(&self.font_book, character);
+        families.sort_by_key(|family| {
+            (
+                self.family_source_rank(family),
+                normalize_family_name(family),
+            )
+        });
+        families.dedup_by(|left, right| left.eq_ignore_ascii_case(right));
+        if let Some(last_resort) = self.last_resort_font_family.as_deref() {
+            families.retain(|family| !family.eq_ignore_ascii_case(last_resort));
+        }
+        families
     }
 
     /// Attach a final fallback family, ignoring an empty or whitespace-only
@@ -220,6 +248,7 @@ impl FontSearchContext {
             italic_families: HashSet::new(),
             family_scripts: HashMap::new(),
             family_weights: HashMap::new(),
+            font_book: Arc::new(typst::text::FontBook::new()),
             in_memory_book: typst::text::FontBook::new(),
             in_memory_fonts: Vec::new(),
             last_resort_font_family: None,
@@ -250,10 +279,57 @@ impl FontSearchContext {
             .collect();
         self
     }
+
+    #[cfg(test)]
+    pub(crate) fn with_test_character_coverage(mut self, family: &str, characters: &str) -> Self {
+        use typst::text::{FontFlags, FontInfo, FontVariant};
+
+        self.available_families
+            .insert(normalize_family_name(family));
+        Arc::make_mut(&mut self.font_book).push(FontInfo {
+            family: family.to_string(),
+            variant: FontVariant::default(),
+            flags: FontFlags::empty(),
+            axes: Vec::new(),
+            coverage: typst::text::Coverage::from_vec(
+                characters
+                    .chars()
+                    .map(|character| character as u32)
+                    .collect(),
+            ),
+        });
+        self
+    }
 }
 
 fn normalize_family_name(family: &str) -> String {
     family.trim().to_ascii_lowercase()
+}
+
+fn font_book_family_covers_character(
+    font_book: &typst::text::FontBook,
+    family: &str,
+    character: char,
+) -> bool {
+    font_book
+        .select_family(&normalize_family_name(family))
+        .filter_map(|index| font_book.info(index))
+        .any(|info| info.coverage.contains(character as u32))
+}
+
+fn font_book_families_covering_character(
+    font_book: &typst::text::FontBook,
+    character: char,
+) -> Vec<String> {
+    font_book
+        .families()
+        .filter_map(|(family, indices)| {
+            indices
+                .filter_map(|index| font_book.info(index))
+                .any(|info| !info.is_last_resort() && info.coverage.contains(character as u32))
+                .then(|| family.to_string())
+        })
+        .collect()
 }
 
 /// The flag [`FontSearchContext::family_scripts`] stores `script` under.
@@ -322,12 +398,13 @@ pub(crate) fn resolve_font_search_context(user_font_paths: &[PathBuf]) -> FontSe
     let search_paths = merge_prioritized_paths(office_paths, &user_paths);
     let office_families = available_families_from_paths(office_paths, false);
     let user_families = available_families_from_paths(&user_paths, false);
+    let font_book = super::pdf::discover_font_book(&search_paths, true, true);
     let FamilyIndex {
         available_families,
         italic_families,
         family_scripts,
         family_weights,
-    } = index_families_from_paths(&search_paths, true);
+    } = index_families_from_book(&font_book);
 
     debug!(
         office_path_count = office_paths.len(),
@@ -346,6 +423,7 @@ pub(crate) fn resolve_font_search_context(user_font_paths: &[PathBuf]) -> FontSe
         italic_families,
         family_scripts,
         family_weights,
+        font_book: Arc::new(font_book),
         in_memory_book: typst::text::FontBook::new(),
         in_memory_fonts: Vec::new(),
         last_resort_font_family: None,
