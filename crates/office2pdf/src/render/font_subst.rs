@@ -1347,9 +1347,9 @@ fn latin_family_chain(
     families
 }
 
-/// Add indexed faces for characters the declared and named fallback chain
-/// cannot paint. An explicit LastResort family is tried before Typst searches
-/// its discovered fallback index, so known covering families must precede it.
+/// Add native fallback-book families for characters the declared and named
+/// chain cannot paint. An explicit LastResort family is tried before Typst
+/// searches that book, so known covering families must precede it.
 fn append_character_coverage_fallbacks(
     text: &str,
     families: &mut Vec<String>,

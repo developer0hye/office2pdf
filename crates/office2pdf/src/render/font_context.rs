@@ -32,8 +32,8 @@ pub(crate) struct FontSearchContext {
     /// — is only that member where the base family actually holds a face at
     /// the weight the name states (issue #1286).
     family_weights: HashMap<String, HashSet<u16>>,
-    /// Discovered font metadata and Unicode coverage. The active conversion
-    /// context is cloned, so this index is shared.
+    /// Native fallback-book metadata and Unicode coverage. The active
+    /// conversion context is cloned, so this index is shared.
     font_book: Arc<typst::text::FontBook>,
     /// Filesystem-free faces available to WASM metric lookups while codegen is
     /// running under this context.
@@ -117,17 +117,11 @@ impl FontSearchContext {
             || font_book_family_covers_character(&self.font_book, family, character)
     }
 
-    /// Indexed families that cover `character`, with duplicate family names
-    /// removed and higher-priority sources first.
+    /// Families in the native fallback book that cover `character`, with
+    /// duplicate names removed and higher-priority sources first.
     pub(crate) fn families_covering_character(&self, character: char) -> Vec<String> {
         let mut families: Vec<String> =
-            font_book_families_covering_character(&self.in_memory_book, character)
-                .into_iter()
-                .chain(font_book_families_covering_character(
-                    &self.font_book,
-                    character,
-                ))
-                .collect();
+            font_book_families_covering_character(&self.font_book, character);
         families.sort_by_key(|family| {
             (
                 self.family_source_rank(family),
