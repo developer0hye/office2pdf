@@ -20,6 +20,9 @@ from scripts.check_visual_pr import (
     validate_reference_exporter_differences,
     validate_render_cluster_audits,
 )
+from scripts.reference_exporter_differences import (
+    validate_reference_difference_document,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -103,6 +106,8 @@ def layout_report(
     visibility=0,
     visible_fills=0,
     rect_geometry=0,
+    large_shift_entries=None,
+    fine_shift_entries=None,
 ):
     return {
         "pages": [
@@ -112,7 +117,9 @@ def layout_report(
                 "reflow": {"gt_lines": reflow_gt, "out_lines": reflow_out},
                 "instances": {
                     "large_shift_count": large_shifts,
+                    "large_shifts": large_shift_entries or [],
                     "fine_shift_count": fine_shifts,
+                    "fine_shifts": fine_shift_entries or [],
                     "fine_shift_threshold": fine_threshold,
                 },
                 "visibility": {"mismatch_count": visibility},
@@ -208,7 +215,7 @@ def validate_cluster_reports(body, reports, reference_differences=None):
         )
 
 
-def reference_difference_document(*, cluster_ids=None):
+def reference_difference_document(*, cluster_ids=None, shift_differences=None):
     differences = [
         {
             "id": "page-9-slide-number-visibility",
@@ -231,6 +238,7 @@ def reference_difference_document(*, cluster_ids=None):
                 "render_cluster_ids": cluster_ids,
             }
         )
+    differences.extend(shift_differences or [])
     return {
         "schema_version": 1,
         "source": {
@@ -572,6 +580,52 @@ class ReferenceExporterDifferenceTests(unittest.TestCase):
 
         self.assertTrue(any("decoded-pixel difference" in error for error in errors))
 
+    def test_text_shift_difference_has_an_exact_finite_selector(self):
+        document = reference_difference_document(
+            shift_differences=[
+                {
+                    "id": "page-10-august-bergquist-shift",
+                    "page": 10,
+                    "kind": "text-shift",
+                    "layout_finding": {
+                        "label": "AugustBergquist",
+                        "occurrence": 1,
+                        "dx": 12.840519999999998,
+                        "dy": -1.0339500000000044,
+                    },
+                }
+            ]
+        )
+
+        registry, errors = validate_reference_difference_document(document)
+
+        self.assertEqual(errors, [])
+        self.assertEqual(
+            registry["page-10-august-bergquist-shift"]["kind"], "text-shift"
+        )
+
+    def test_text_shift_rejects_non_finite_measurements_and_duplicate_selectors(self):
+        shift = {
+            "id": "page-10-august-bergquist-shift",
+            "page": 10,
+            "kind": "text-shift",
+            "layout_finding": {
+                "label": "AugustBergquist",
+                "occurrence": 1,
+                "dx": float("inf"),
+                "dy": -1.0,
+            },
+        }
+        duplicate = {**shift, "id": "page-10-august-bergquist-shift-copy"}
+        document = reference_difference_document(shift_differences=[shift, duplicate])
+
+        _, errors = validate_reference_difference_document(document)
+
+        self.assertTrue(any("dx must be finite" in error for error in errors))
+        self.assertTrue(
+            any("selector appears more than once" in error for error in errors)
+        )
+
 
 class LayoutAuditTests(unittest.TestCase):
     def test_clean_report_accepts_pass_dispositions(self):
@@ -611,6 +665,273 @@ class LayoutAuditTests(unittest.TestCase):
             "Layout audit fine shifts: #328",
         )
         self.assertEqual(validate_report(body, layout_report(fine_shifts=2)), [])
+
+    def test_exact_reference_shift_is_accepted_for_large_and_fine_categories(self):
+        difference = {
+            "id": "page-10-august-bergquist-shift",
+            "page": 10,
+            "kind": "text-shift",
+            "layout_finding": {
+                "label": "AugustBergquist",
+                "occurrence": 1,
+                "dx": 12.840519999999998,
+                "dy": -1.0339500000000044,
+            },
+        }
+        body = (
+            visual_body()
+            .replace("- Page(s): 1", "- Page(s): 10")
+            .replace(
+                "Reference exporter differences: None",
+                "Reference exporter differences: "
+                "`assets/bugfixes/issue-186/reference-exporter-differences.json`",
+            )
+            .replace(
+                "Layout audit large shifts: Pass",
+                "Layout audit large shifts: ref:page-10-august-bergquist-shift",
+            )
+            .replace(
+                "Layout audit fine shifts: Pass",
+                "Layout audit fine shifts: ref:page-10-august-bergquist-shift",
+            )
+        )
+        finding = {
+            "label": "AugustBergquist",
+            "dx": 12.840519999999998,
+            "dy": -1.0339500000000044,
+        }
+        report = layout_report(
+            large_shifts=1,
+            fine_shifts=1,
+            large_shift_entries=[finding],
+            fine_shift_entries=[finding],
+        )
+
+        self.assertEqual(
+            validate_report(
+                body,
+                report,
+                reference_difference_document(shift_differences=[difference]),
+            ),
+            [],
+        )
+
+    def test_reference_shift_must_match_page_label_occurrence_and_measurements(self):
+        difference = {
+            "id": "page-10-sales-second-shift",
+            "page": 10,
+            "kind": "text-shift",
+            "layout_finding": {
+                "label": "Sales",
+                "occurrence": 2,
+                "dx": -27.0,
+                "dy": 0.0,
+            },
+        }
+        body = (
+            visual_body()
+            .replace("- Page(s): 1", "- Page(s): 10")
+            .replace(
+                "Reference exporter differences: None",
+                "Reference exporter differences: "
+                "`assets/bugfixes/issue-186/reference-exporter-differences.json`",
+            )
+            .replace(
+                "Layout audit large shifts: Pass",
+                "Layout audit large shifts: ref:page-10-sales-second-shift",
+            )
+        )
+        report = layout_report(
+            large_shifts=1,
+            large_shift_entries=[{"label": "Sales [2/2]", "dx": -27.0, "dy": 0.0}],
+        )
+
+        self.assertEqual(
+            validate_report(
+                body,
+                report,
+                reference_difference_document(shift_differences=[difference]),
+            ),
+            [],
+        )
+
+        wrong_findings = []
+        for name, value in (
+            ("page", 11),
+            ("label", "Other label"),
+            ("occurrence", 1),
+            ("dx", -26.999),
+            ("dy", 0.001),
+        ):
+            wrong_difference = json.loads(json.dumps(difference))
+            field_name = "page" if name == "page" else "layout_finding"
+            target_name = name if name == "page" else name
+            if name == "page":
+                wrong_difference[field_name] = value
+            else:
+                wrong_difference[field_name][target_name] = value
+            errors = validate_report(
+                body,
+                report,
+                reference_difference_document(shift_differences=[wrong_difference]),
+            )
+            wrong_findings.append(
+                any(
+                    "does not match an exact current shift" in error
+                    for error in errors
+                )
+            )
+
+        self.assertEqual(wrong_findings, [True] * 5)
+
+    def test_reference_shift_does_not_cover_unreferenced_shift_without_issue(self):
+        difference = {
+            "id": "page-10-august-bergquist-shift",
+            "page": 10,
+            "kind": "text-shift",
+            "layout_finding": {
+                "label": "AugustBergquist",
+                "occurrence": 1,
+                "dx": 12.840519999999998,
+                "dy": -1.0339500000000044,
+            },
+        }
+        body = (
+            visual_body()
+            .replace("- Page(s): 1", "- Page(s): 10")
+            .replace(
+                "Reference exporter differences: None",
+                "Reference exporter differences: "
+                "`assets/bugfixes/issue-186/reference-exporter-differences.json`",
+            )
+            .replace(
+                "Layout audit large shifts: Pass",
+                "Layout audit large shifts: ref:page-10-august-bergquist-shift",
+            )
+        )
+        report = layout_report(
+            large_shifts=2,
+            large_shift_entries=[
+                {
+                    "label": "AugustBergquist",
+                    "dx": 12.840519999999998,
+                    "dy": -1.0339500000000044,
+                },
+                {"label": "VictoriaLindqvist", "dx": 9.985, "dy": -1.0135},
+            ],
+        )
+
+        errors = validate_report(
+            body,
+            report,
+            reference_difference_document(shift_differences=[difference]),
+        )
+
+        self.assertTrue(
+            any("not covered by exact reference" in error for error in errors)
+        )
+
+    def test_reference_shift_can_coexist_with_an_open_issue_for_another_shift(self):
+        difference = {
+            "id": "page-10-august-bergquist-shift",
+            "page": 10,
+            "kind": "text-shift",
+            "layout_finding": {
+                "label": "AugustBergquist",
+                "occurrence": 1,
+                "dx": 12.840519999999998,
+                "dy": -1.0339500000000044,
+            },
+        }
+        body = (
+            visual_body({"Position/size": "Remaining: #328"})
+            .replace("- Page(s): 1", "- Page(s): 10")
+            .replace(
+                "Reference exporter differences: None",
+                "Reference exporter differences: "
+                "`assets/bugfixes/issue-186/reference-exporter-differences.json`",
+            )
+            .replace(
+                "Layout audit large shifts: Pass",
+                "Layout audit large shifts: ref:page-10-august-bergquist-shift, #328",
+            )
+        )
+        report = layout_report(
+            large_shifts=2,
+            large_shift_entries=[
+                {
+                    "label": "AugustBergquist",
+                    "dx": 12.840519999999998,
+                    "dy": -1.0339500000000044,
+                },
+                {"label": "VictoriaLindqvist", "dx": 9.985, "dy": -1.0135},
+            ],
+        )
+
+        self.assertEqual(
+            validate_report(
+                body,
+                report,
+                reference_difference_document(shift_differences=[difference]),
+            ),
+            [],
+        )
+
+    def test_shift_reference_requires_text_shift_manifest_kind(self):
+        body = (
+            visual_body()
+            .replace(
+                "Reference exporter differences: None",
+                "Reference exporter differences: "
+                "`assets/bugfixes/issue-186/reference-exporter-differences.json`",
+            )
+            .replace(
+                "Layout audit large shifts: Pass",
+                "Layout audit large shifts: ref:page-9-slide-number-visibility",
+            )
+        )
+        report = layout_report(
+            large_shifts=1,
+            large_shift_entries=[{"label": "9", "dx": 12.0, "dy": 0.0}],
+        )
+
+        errors = validate_report(body, report, reference_difference_document())
+
+        self.assertTrue(any("not a text-shift difference" in error for error in errors))
+
+    def test_shift_reference_cannot_disposition_geometry_or_wrong_difference_kind(self):
+        difference = {
+            "id": "page-10-august-bergquist-shift",
+            "page": 10,
+            "kind": "text-shift",
+            "layout_finding": {
+                "label": "AugustBergquist",
+                "occurrence": 1,
+                "dx": 12.840519999999998,
+                "dy": -1.0339500000000044,
+            },
+        }
+        body = (
+            visual_body()
+            .replace("- Page(s): 1", "- Page(s): 10")
+            .replace(
+                "Reference exporter differences: None",
+                "Reference exporter differences: "
+                "`assets/bugfixes/issue-186/reference-exporter-differences.json`",
+            )
+            .replace(
+                "Layout audit rectangle geometry: Pass",
+                "Layout audit rectangle geometry: ref:page-10-august-bergquist-shift",
+            )
+        )
+        document = reference_difference_document(shift_differences=[difference])
+        report = layout_report(rect_geometry=1)
+
+        errors = validate_report(body, report, document)
+
+        self.assertTrue(
+            any("does not support reference exporter" in error for error in errors)
+        )
 
     def test_fine_detail_threshold_is_required_in_pr_metadata(self):
         body = visual_body().replace("- Fine-detail threshold: 0.5pt\n", "")

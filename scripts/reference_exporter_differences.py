@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 
 
@@ -28,6 +29,13 @@ def _validate_sha(value: object, field: str, errors: list[str]) -> None:
 def _validate_nonempty(value: object, field: str, errors: list[str]) -> None:
     if not isinstance(value, str) or not value.strip():
         errors.append(f"{field} must be non-empty text")
+
+
+def _is_finite_number(value: int | float) -> bool:
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
 
 
 def _validate_export(
@@ -163,6 +171,7 @@ def validate_reference_difference_document(
         raw_differences = []
 
     registry: dict[str, dict[str, object]] = {}
+    shift_selectors: set[tuple[int, str, int]] = set()
     for index, difference in enumerate(raw_differences, start=1):
         prefix = f"difference {index}"
         if not isinstance(difference, dict):
@@ -233,9 +242,61 @@ def validate_reference_difference_document(
                 )
             elif len(cluster_ids) != len(set(cluster_ids)):
                 errors.append(f"{prefix} render_cluster_ids must be unique")
+        elif kind == "text-shift":
+            allowed = {"id", "page", "kind", "layout_finding"}
+            extra_difference = _unexpected_fields(difference, allowed)
+            if extra_difference:
+                errors.append(
+                    f"{prefix} has unsupported fields for {kind}: "
+                    + ", ".join(extra_difference)
+                )
+            finding = difference.get("layout_finding")
+            if not isinstance(finding, dict):
+                errors.append(f"{prefix} layout_finding must be an object")
+            else:
+                expected_fields = {"label", "occurrence", "dx", "dy"}
+                if set(finding) != expected_fields:
+                    errors.append(
+                        f"{prefix} layout_finding must contain exactly label, "
+                        "occurrence, dx, and dy"
+                    )
+                label = finding.get("label")
+                _validate_nonempty(label, f"{prefix} layout_finding.label", errors)
+                occurrence = finding.get("occurrence")
+                if type(occurrence) is not int or occurrence <= 0:
+                    errors.append(
+                        f"{prefix} layout_finding.occurrence must be positive"
+                    )
+                if (
+                    type(page) is int
+                    and page > 0
+                    and isinstance(label, str)
+                    and label.strip()
+                    and type(occurrence) is int
+                    and occurrence > 0
+                ):
+                    selector = (page, label, occurrence)
+                    if selector in shift_selectors:
+                        errors.append(
+                            f"{prefix} text-shift selector appears more than once"
+                        )
+                    shift_selectors.add(selector)
+                for coordinate in ("dx", "dy"):
+                    measurement = finding.get(coordinate)
+                    if isinstance(measurement, bool) or not isinstance(
+                        measurement, (int, float)
+                    ):
+                        errors.append(
+                            f"{prefix} layout_finding.{coordinate} must be numeric"
+                        )
+                    elif not _is_finite_number(measurement):
+                        errors.append(
+                            f"{prefix} layout_finding.{coordinate} must be finite"
+                        )
         else:
             errors.append(
-                f"{prefix} kind must be painted-text-visibility or render-clusters"
+                f"{prefix} kind must be painted-text-visibility, render-clusters, "
+                "or text-shift"
             )
 
         registry[difference_id] = difference

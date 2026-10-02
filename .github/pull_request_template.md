@@ -30,7 +30,7 @@ by applicable law.
 
 ## Visual audit
 
-<!-- Required when rendered output changes or assets/bugfixes/ is modified. Delete only when "No rendered PDF change" is selected. -->
+<!-- Required when rendered output changes or visual evidence assets under assets/bugfixes/ change; Markdown and text bookkeeping are exempt. Delete only when "No rendered PDF change" is selected. -->
 
 - Issue: #<!-- N -->
 - Fixture: <!-- repository path -->
@@ -45,8 +45,8 @@ by applicable law.
 - Layout audit text flow: <!-- Pass, #N, or ref:<id> for an exact verified painted-text visibility difference -->
 - Layout audit visible fills: <!-- Pass, or #N references for visible-fill occlusions -->
 - Layout audit rectangle geometry: <!-- Pass, or #N references for matched rectangle position/size/edge findings -->
-- Layout audit large shifts: <!-- Pass, or #N references for shifts above the report threshold -->
-- Layout audit fine shifts: <!-- Pass, or #N references for shifts above the fine-detail threshold -->
+- Layout audit large shifts: <!-- Pass, #N open-issue references, or ref:<id> for an exact text-shift record (page/label/occurrence/dx/dy) above the report threshold -->
+- Layout audit fine shifts: <!-- Pass, #N open-issue references, or ref:<id> for an exact text-shift record (page/label/occurrence/dx/dy) above the fine-detail threshold -->
 - New follow-up issues found in this audit: <!-- #N, #N or None; create issues before completing the audit -->
 - Model vision findings: <!-- Describe what Codex/Claude saw in the full pages, diff, and crops. Numeric output is insufficient. -->
 - GT: `assets/bugfixes/issue-<!-- N -->/gt.jpg`
