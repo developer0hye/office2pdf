@@ -2119,30 +2119,43 @@ fn a_face_shadowing_another_designs_family_is_refiled_under_its_own_name() {
 }
 
 #[test]
-fn a_family_no_face_claims_by_name_keeps_every_member_where_the_book_filed_it() {
+fn an_unowned_family_routes_requests_through_each_members_declared_name() {
     use typst::text::FontStyle::Normal;
 
-    // `Franklin Gothic Demi`, `Heavy` and `Medium` all declare 400 and all
-    // trim to `Franklin Gothic`, which no installed face declares. Emptying
-    // that key would leave a request for it with no face at all rather than
-    // the wrong weight of the right one, so the rule declines to act.
-    let infos: Vec<typst::text::FontInfo> = vec![
+    // Word itself leaves a bare request for `Franklin Gothic` unresolved and
+    // reaches each 400-weight face by its declared member name. Keeping all
+    // three under the trimmed key makes scan order decide which one wins.
+    let mut infos: Vec<typst::text::FontInfo> = vec![
         filed_as("Franklin Gothic", 400, Normal),
         filed_as("Franklin Gothic", 400, Normal),
         filed_as("Franklin Gothic", 400, Normal),
     ];
+    let declared: [&str; 3] = [
+        "Franklin Gothic Demi",
+        "Franklin Gothic Heavy",
+        "Franklin Gothic Medium",
+    ];
     assert_eq!(
-        families_after_refiling(
-            infos,
-            &[
-                "Franklin Gothic Demi",
-                "Franklin Gothic Heavy",
-                "Franklin Gothic Medium",
-            ],
-        ),
-        vec!["Franklin Gothic".to_string(); 3],
-        "a family with no face claiming its name must keep every member"
+        refile_faces_shadowing_their_family(&mut infos, |index| {
+            declared.get(index).map(|name| (*name).to_string())
+        }),
+        3,
+        "every suffix-trimmed member must leave the unowned key"
     );
+
+    let book: typst::text::FontBook = typst::text::FontBook::from_infos(infos);
+    assert_eq!(
+        book.select("franklin gothic", typst::text::FontVariant::default()),
+        None,
+        "a bare name Word leaves unresolved must not acquire an arbitrary member"
+    );
+    for (index, name) in declared.iter().enumerate() {
+        assert_eq!(
+            book.select(&name.to_lowercase(), typst::text::FontVariant::default()),
+            Some(index),
+            "a member request must reach the face declaring {name}"
+        );
+    }
 }
 
 #[test]

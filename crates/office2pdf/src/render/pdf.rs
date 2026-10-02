@@ -112,10 +112,9 @@ fn discover_fonts(
 /// The family a discovered face declares in its own `name` table.
 ///
 /// Neither the slot's cache nor a full [`Font`] is built, and the file is not
-/// read whole: the refiling pass asks this of every installed face, and a
-/// `Font` computes a coverage bitmap and memoizes a rustybuzz face once
-/// instantiated. Over a thousand faces that cost 5.3 seconds a process, and
-/// reading their files whole still cost one.
+/// read whole. The refiling pass asks this only for faces in repeated-variant
+/// collision candidates; a `Font` would also compute a coverage bitmap and
+/// memoize a rustybuzz face for each one.
 fn declared_family_of(slot: &FontSlot) -> Option<String> {
     if let Some(Some(font)) = slot.font.get() {
         return super::font_subst::declared_family_name(font);
