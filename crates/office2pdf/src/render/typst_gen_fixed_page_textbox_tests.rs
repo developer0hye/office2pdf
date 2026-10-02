@@ -4662,6 +4662,150 @@ fn a_short_box_without_autofit_does_not_scale_its_text() {
     );
 }
 
+/// A fallback width correction keeps this known one-line label from wrapping
+/// in the fixed box used by the #1712 regression.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn unembedded_aptos_uses_its_reference_width_for_wrapping() {
+    use crate::render::font_context::FontSearchContext;
+
+    let context = FontSearchContext::for_test(Vec::new(), &["Aptos", "Noto Sans"], &["Aptos"], &[]);
+    let doc: crate::ir::Document = aptos_text_box_document("Sensitivity: Internal", 67.38);
+
+    let source = generate_typst_with_options_and_font_context(
+        &doc,
+        &crate::config::ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+    let runs = crate::render::pdf::compiled_text_runs_with_fonts(
+        &source,
+        0,
+        crate::bundled_fonts::noto_sans_fonts(),
+    )
+    .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    let resolved_families: Vec<&str> = runs.iter().map(|run| run.family.as_str()).collect();
+    assert!(
+        !resolved_families.is_empty()
+            && resolved_families
+                .iter()
+                .all(|family| family.eq_ignore_ascii_case("Noto Sans")),
+        "the regression must exercise the deterministic Aptos stand-in; got {resolved_families:?}\n{source}"
+    );
+    let mut baselines: Vec<f64> = runs
+        .iter()
+        .filter(|run| run.text.chars().any(|character| !character.is_whitespace()))
+        .map(|run| run.baseline_pt)
+        .collect();
+    baselines.sort_by(f64::total_cmp);
+    baselines.dedup_by(|left, right| (*left - *right).abs() < 0.01);
+
+    assert_eq!(
+        baselines.len(),
+        1,
+        "the label must stay on one line with the fallback correction; got {baselines:?}\n{source}"
+    );
+}
+
+/// The width correction applies to Aptos paragraphs generally, not one label.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn unembedded_aptos_reference_width_handles_a_different_phrase() {
+    use crate::render::font_context::FontSearchContext;
+
+    let text: &str = "Confidential use";
+    // Exercise the correction with a different phrase and a narrower box.
+    let context = FontSearchContext::for_test(Vec::new(), &["Aptos", "Noto Sans"], &["Aptos"], &[]);
+    let source = generate_typst_with_options_and_font_context(
+        &aptos_text_box_document(text, 58.468),
+        &crate::config::ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+    let runs = crate::render::pdf::compiled_text_runs_with_fonts(
+        &source,
+        0,
+        crate::bundled_fonts::noto_sans_fonts(),
+    )
+    .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    let mut baselines: Vec<f64> = runs
+        .iter()
+        .filter(|run| run.text.chars().any(|character| !character.is_whitespace()))
+        .map(|run| run.baseline_pt)
+        .collect();
+    baselines.sort_by(f64::total_cmp);
+    baselines.dedup_by(|left, right| (*left - *right).abs() < 0.01);
+
+    assert_eq!(
+        baselines.len(),
+        1,
+        "the second Aptos phrase must stay on one line with the correction; got {baselines:?}\n{source}"
+    );
+}
+
+/// Do not apply Noto Sans width correction when a different fallback is active.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn unembedded_aptos_without_noto_sans_does_not_use_noto_width_correction() {
+    use crate::render::font_context::FontSearchContext;
+
+    let context = FontSearchContext::for_test(Vec::new(), &["Aptos"], &["Aptos"], &[]);
+    let source = generate_typst_with_options_and_font_context(
+        &aptos_text_box_document("Sensitivity: Internal", 67.38),
+        &crate::config::ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+
+    assert!(
+        !source.contains("text_box_content_0 = scale(x:"),
+        "the Noto Sans correction must not affect a conversion whose font context has no Noto Sans face:\n{source}"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn aptos_text_box_document(text: &str, width_pt: f64) -> crate::ir::Document {
+    make_doc(vec![make_fixed_page(
+        960.0,
+        540.0,
+        vec![FixedElement {
+            x: 5.0,
+            y: 525.0,
+            width: width_pt,
+            height: 9.6,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: text.to_string(),
+                        style: TextStyle {
+                            font_family: Some("Aptos".to_string()),
+                            font_size: Some(8.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                })],
+                padding: Insets::default(),
+                vertical_align: TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: false,
+                auto_fit: false,
+                text_rotation_deg: None,
+                shape_rotation_deg: None,
+            }),
+        }],
+    )])
+}
+
 /// A slide text box carrying one paragraph, for the trailing letter-space
 /// probes below. The box spans the #841 deck's `sldNum` placeholder: 59.76pt
 /// wide with PowerPoint's default 7.2pt side insets, so its content measure is
