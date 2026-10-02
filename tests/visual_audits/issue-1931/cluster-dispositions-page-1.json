@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1874",
+      "cluster_ids": [
+        "p1-7c4b6340f53c",
+        "p1-80cf6b5380df",
+        "p1-446d980317bb",
+        "p1-c96d1f5c207d",
+        "p1-db6297b242db",
+        "p1-2a3a221cc9c6"
+      ]
+    }
+  ]
+}

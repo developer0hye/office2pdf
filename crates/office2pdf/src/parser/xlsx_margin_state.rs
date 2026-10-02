@@ -5,7 +5,7 @@ use quick_xml::events::{BytesStart, Event};
 
 use super::cond_fmt_raw::worksheets_map;
 
-/// Which of a worksheet's four body print margins its `<pageMargins>` states,
+/// Which print margin attributes a worksheet's `<pageMargins>` states,
 /// whatever value each one states.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct DeclaredPrintMargins {
@@ -13,9 +13,11 @@ pub(crate) struct DeclaredPrintMargins {
     pub(crate) right: bool,
     pub(crate) top: bool,
     pub(crate) bottom: bool,
+    pub(crate) header: bool,
+    pub(crate) footer: bool,
 }
 
-/// Each worksheet name against the body margins its own part declares.
+/// Each worksheet name against the print margins its own part declares.
 ///
 /// Excel writes `left="0"` for a sheet printed flush against the paper, and
 /// crates.io umya-spreadsheet maps both that zero and a missing attribute to
@@ -34,7 +36,7 @@ pub(crate) fn declared_print_margins(data: &[u8]) -> HashMap<String, DeclaredPri
     worksheets_map(data, worksheet_declared_print_margins)
 }
 
-/// The body margins one worksheet declares, or `None` when its part is
+/// The print margins one worksheet declares, or `None` when its part is
 /// malformed.
 ///
 /// Only a direct child of `<worksheet>` counts. A saved custom view carries
@@ -71,7 +73,7 @@ fn worksheet_declared_print_margins(worksheet_xml: &str) -> Option<DeclaredPrint
     }
 }
 
-/// The edges one `<pageMargins>` element names.
+/// The margin attributes one `<pageMargins>` element names.
 ///
 /// Attribute keys are matched on their local name so a worksheet serialized
 /// with a namespace prefix — which the reader itself accepts (issue #1803) —
@@ -84,6 +86,8 @@ fn declared_edges(element: &BytesStart<'_>) -> DeclaredPrintMargins {
             b"right" => declared.right = true,
             b"top" => declared.top = true,
             b"bottom" => declared.bottom = true,
+            b"header" => declared.header = true,
+            b"footer" => declared.footer = true,
             _ => {}
         }
     }
@@ -99,12 +103,16 @@ mod tests {
         right: true,
         top: true,
         bottom: true,
+        header: true,
+        footer: true,
     };
     const NONE: DeclaredPrintMargins = DeclaredPrintMargins {
         left: false,
         right: false,
         top: false,
         bottom: false,
+        header: false,
+        footer: false,
     };
 
     #[test]
@@ -139,15 +147,30 @@ mod tests {
                 right: false,
                 top: false,
                 bottom: true,
+                header: false,
+                footer: false,
             }),
             "an edge the element omits is not declared by its siblings"
         );
         assert_eq!(
+            worksheet_declared_print_margins("<worksheet><pageMargins/></worksheet>"),
+            Some(NONE),
+            "an empty pageMargins element declares no margins"
+        );
+    }
+
+    #[test]
+    fn header_and_footer_presence_is_tracked_separately_from_body_margins() {
+        assert_eq!(
             worksheet_declared_print_margins(
                 "<worksheet><pageMargins header=\"0\" footer=\"0\"/></worksheet>"
             ),
-            Some(NONE),
-            "the header and footer margins are not body margins"
+            Some(DeclaredPrintMargins {
+                header: true,
+                footer: true,
+                ..NONE
+            }),
+            "declared zero header/footer values must remain distinguishable from omissions"
         );
     }
 
@@ -172,6 +195,8 @@ mod tests {
                 right: false,
                 top: true,
                 bottom: false,
+                header: false,
+                footer: false,
             }),
             "a namespace prefix must not hide a declared edge"
         );

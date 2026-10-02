@@ -1,0 +1,16 @@
+{
+  "name": "issue1931-visual-source",
+  "base": "visual-source.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "factor": "pageMargins@footer inches",
+  "page": 1,
+  "noise_floor": 0.5,
+  "variants": [
+    {
+      "value": "0",
+      "find": "footer=\"0\"",
+      "replace": "footer=\"0\"",
+      "count": 1
+    }
+  ]
+}

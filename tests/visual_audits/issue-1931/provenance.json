@@ -1,0 +1,14 @@
+{
+  "source": "Synthetic one-page workbook derived from issue 1812 public alignment fixture; three alignment labels, odd footer, Letter page, explicit pageMargins/footer=0 and left=0.3in",
+  "source_sha256": "147d249768723afcaaeed49b5ab9117c9ef8fe897de64e64d7048aefb0b4bfac",
+  "reference": "Microsoft Excel 16.113.3 on macOS 26.6.2 build 25G83, exported through scripts/probe_harness.py --backend office; re-zip control layout-identical",
+  "page": 1,
+  "dpi": 150,
+  "render_audit_dpi": 300,
+  "fine_shift_pt": 0.5,
+  "pdf_sha256": {
+    "gt": "83010e0788a687eb4c399bba05d10574dba867ac25a63f072e2c79343818ba01",
+    "before": "6b8f3544d748f84413a03e78b90b3fc807acb38db3b8947c579efa1979c7bdd2",
+    "after": "9690980379bc2c63c6ffbf1b2ea03b733a954682e0fac8c22dba6fb52a4871a5"
+  }
+}

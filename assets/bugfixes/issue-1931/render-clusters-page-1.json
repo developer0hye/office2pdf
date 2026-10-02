@@ -1,0 +1,113 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 71.0784,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 17.28,
+        "x": 35.52,
+        "y": 760.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-7c4b6340f53c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 69.4656,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 18.48,
+        "x": 110.88,
+        "y": 759.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-80cf6b5380df",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 39.744,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 11.04,
+        "x": 73.68,
+        "y": 762.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-446d980317bb",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 9.84,
+        "x": 96.24,
+        "y": 762.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-c96d1f5c207d",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.88,
+        "width": 5.04,
+        "x": 21.84,
+        "y": 760.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-db6297b242db",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.5632,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.4,
+        "x": 86.16,
+        "y": 762.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-2a3a221cc9c6",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 6,
+    "duplicate": 0,
+    "total": 6,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

@@ -1,0 +1,76 @@
+{
+  "name": "issue1931-footer-margin",
+  "base": "base.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "factor": "pageMargins@footer inches",
+  "page": 1,
+  "noise_floor": 0.5,
+  "variants": [
+    {
+      "value": "0",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0\"",
+      "count": 1
+    },
+    {
+      "value": "0.05",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.05\"",
+      "count": 1
+    },
+    {
+      "value": "0.1",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.1\"",
+      "count": 1
+    },
+    {
+      "value": "0.2",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.2\"",
+      "count": 1
+    },
+    {
+      "value": "0.22",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.22\"",
+      "count": 1
+    },
+    {
+      "value": "0.24",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.24\"",
+      "count": 1
+    },
+    {
+      "value": "0.25",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.25\"",
+      "count": 1
+    },
+    {
+      "value": "0.26",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.26\"",
+      "count": 1
+    },
+    {
+      "value": "0.28",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.28\"",
+      "count": 1
+    },
+    {
+      "value": "0.3",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.3\"",
+      "count": 1
+    },
+    {
+      "value": "0.5",
+      "find": "footer=\"0.3\"",
+      "replace": "footer=\"0.5\"",
+      "count": 1
+    }
+  ]
+}

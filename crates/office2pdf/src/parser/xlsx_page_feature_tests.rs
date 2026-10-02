@@ -863,6 +863,53 @@ fn a_sheet_footer_is_seated_from_the_page_bottom_edge() {
     );
 }
 
+/// Excel clamps a declared footer margin to 0.25in before seating it on the
+/// paper edge. A sheet with no `<pageMargins>` takes Excel's 0.3in default
+/// (issue #1931).
+#[test]
+fn a_declared_footer_margin_uses_excels_quarter_inch_floor() {
+    let parser = XlsxParser;
+    for (footer_in, expected_pt) in [(0.0, 18.0), (0.1, 18.0), (0.26, 18.72), (0.3, 21.6)] {
+        let original = build_xlsx_with_footer_margins("&LSensitivity: Internal", 0.3, 0.75);
+        let data = rewrite_zip_parts(
+            &original,
+            |name| name == "xl/worksheets/sheet1.xml",
+            |xml| {
+                let needle: &str = "footer=\"0.3\"";
+                assert!(xml.contains(needle), "writer emitted {needle}");
+                xml.replace(needle, &format!("footer=\"{footer_in}\""))
+            },
+        );
+
+        let (document, _) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let footer = get_sheet_page(&document, 0)
+            .footer
+            .as_ref()
+            .expect("the sheet states a footer");
+        assert!(
+            (footer.distance_from_edge.expect("margin was parsed") - expected_pt).abs() < 1e-9,
+            "declared footer={footer_in}in"
+        );
+
+        let (chunks, _) = parser
+            .parse_streaming(&data, &ConvertOptions::default(), 100)
+            .unwrap();
+        let footer = get_sheet_page(&chunks[0], 0)
+            .footer
+            .as_ref()
+            .expect("the streaming sheet states a footer");
+        assert!(
+            (footer
+                .distance_from_edge
+                .expect("streaming margin was parsed")
+                - expected_pt)
+                .abs()
+                < 1e-9,
+            "streaming declared footer={footer_in}in"
+        );
+    }
+}
+
 /// Triangulation for the seat: it tracks `@footer`, and nothing else on the
 /// page moves it (issue #1142).
 #[test]
