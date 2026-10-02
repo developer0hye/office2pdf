@@ -1882,6 +1882,10 @@ fn generate_fixed_text_box(
 
     let inner_width_pt: f64 =
         (outer_width_pt - text_box.padding.left - text_box.padding.right).max(0.0);
+    let aptos_width_scale: Option<f64> = unembedded_aptos_width_scale(text_box);
+    let text_layout_width_pt: f64 = aptos_width_scale
+        .map(|scale| inner_width_pt / scale)
+        .unwrap_or(inner_width_pt);
     // The frame's own content region, which PowerPoint allows to be negative:
     // nothing stops `<a:bodyPr>` from declaring insets deeper than the shape's
     // `<a:ext cy>`. Keep the signed value — the seat below is measured from it.
@@ -2032,11 +2036,24 @@ fn generate_fixed_text_box(
         out.push_str("    ]\n");
         out.push_str("  }\n");
     } else {
-        let _ = writeln!(
-            out,
-            "  #let text_box_content_{text_box_id} = block(width: {}pt)[",
-            format_f64(inner_width_pt),
-        );
+        if let Some(scale) = aptos_width_scale {
+            let _ = writeln!(
+                out,
+                "  #let text_box_content_{text_box_id} = scale(x: {}%, y: 100%, origin: top + left, reflow: true)[",
+                format_f64(scale * 100.0),
+            );
+            let _ = writeln!(
+                out,
+                "    #block(width: {}pt)[",
+                format_f64(text_layout_width_pt),
+            );
+        } else {
+            let _ = writeln!(
+                out,
+                "  #let text_box_content_{text_box_id} = block(width: {}pt)[",
+                format_f64(inner_width_pt),
+            );
+        }
         write_powerpoint_relative_baseline_scope_open(out);
         for (index, block) in text_box.content.iter().enumerate() {
             if index > 0 {
@@ -2047,7 +2064,7 @@ fn generate_fixed_text_box(
                 out,
                 block,
                 ctx,
-                Some(inner_width_pt),
+                Some(text_layout_width_pt),
                 text_box.no_wrap,
                 if matches!(text_box.vertical_align, TextBoxVerticalAlign::Top) {
                     PowerPointBaselineMode::Top
@@ -2058,6 +2075,9 @@ fn generate_fixed_text_box(
         }
         out.push_str("] }\n");
         out.push_str("  ]\n");
+        if aptos_width_scale.is_some() {
+            out.push_str("  ]\n");
+        }
     }
 
     if insets_exceed_frame {
@@ -4659,6 +4679,53 @@ fn single_line_fit_paragraph(text_box: &TextBoxData, inner_height_pt: f64) -> Op
     // dynamic fallback for `<a:normAutofit/>` without saved `fontScale` or
     // `lnSpcReduction`; the parser has already applied saved results.
     text_box.auto_fit.then_some(paragraph)
+}
+
+/// Width correction for the deterministic Noto Sans fallback used when Aptos
+/// is unavailable. The expanded layout width and x-only paint scale keep the
+/// fallback from adding a wrap or changing the line height.
+const UNEMBEDDED_APTOS_WIDTH_SCALE: f64 = 0.916;
+
+fn unembedded_aptos_width_scale(text_box: &TextBoxData) -> Option<f64> {
+    if text_box.no_wrap
+        || text_box.auto_fit
+        || !matches!(text_box.vertical_align, TextBoxVerticalAlign::Top)
+    {
+        return None;
+    }
+
+    let [Block::Paragraph(paragraph)] = text_box.content.as_slice() else {
+        return None;
+    };
+    if paragraph.runs.is_empty() || paragraph_has_forced_breaks(paragraph) {
+        return None;
+    }
+
+    let has_only_plain_aptos_runs: bool = paragraph.runs.iter().all(|run| {
+        run.footnote.is_none()
+            && run.inline_box.is_none()
+            && run
+                .style
+                .font_family
+                .as_deref()
+                .is_some_and(|family| family.trim().eq_ignore_ascii_case("Aptos"))
+            && !matches!(run.style.bold, Some(true))
+            && !matches!(run.style.italic, Some(true))
+            && !matches!(run.style.small_caps, Some(true))
+            && !matches!(run.style.all_caps, Some(true))
+            && run
+                .style
+                .letter_spacing
+                .is_none_or(|letter_spacing| letter_spacing == 0.0)
+    });
+    if !has_only_plain_aptos_runs
+        || crate::render::font_subst::is_primary_font_available("Aptos")
+        || !crate::render::font_subst::is_primary_font_available("Noto Sans")
+    {
+        return None;
+    }
+
+    Some(UNEMBEDDED_APTOS_WIDTH_SCALE)
 }
 
 fn wrapped_fit_paragraph(
