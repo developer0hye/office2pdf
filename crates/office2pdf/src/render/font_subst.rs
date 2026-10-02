@@ -371,9 +371,9 @@ pub(crate) fn declared_family_name(font: &typst::text::Font) -> Option<String> {
 ///
 /// Read straight off the face rather than through
 /// [`super::pdf::measured_instance`], because instantiating a face builds a
-/// rustybuzz face and memoizes it. Answering this for every installed font, as
-/// [`refile_faces_shadowing_their_family`] does, cost 5.3 seconds a process
-/// and pinned every one of those faces in the memo cache.
+/// rustybuzz face and memoizes it. Refiling only needs names for collision
+/// candidates — families with repeated variants — so opening full faces would
+/// pin each inspected candidate in the memo cache for no benefit.
 pub(crate) fn declared_family_names(names: ttf_parser::name::Names<'_>) -> Vec<String> {
     /// `name` table record holding the font family name.
     const FAMILY_NAME_ID: u16 = 1;
@@ -413,8 +413,8 @@ fn ascii_string(bytes: &[u8]) -> String {
     bytes.iter().map(|&byte| byte as char).collect()
 }
 
-/// Refile every face the book filed under a family another design owns, under
-/// the name it declares itself. Answers how many faces moved.
+/// Refile suffix-trimmed faces when their shared family key is ambiguous.
+/// Answers how many faces moved.
 ///
 /// Typst keys its book on `name` ID 1 with style suffixes trimmed, so Word's
 /// `GillSansUltraBold.ttf` — whose own name is `Gill Sans Ultra Bold` — is
@@ -427,27 +427,19 @@ fn ascii_string(bytes: &[u8]) -> String {
 /// paced in Ultra Bold, 24.922pt lines against a native Word 16 export's
 /// 22.975pt (issue #1837).
 ///
-/// A face is moved only when all four hold:
+/// For a repeated-variant family, when a face declares the key only a name
+/// group tied at the owner's variant moves; the key stays available to family
+/// requests. When no face claims the key, every suffix-trimmed group moves
+/// under its declared name, leaving bare-family requests to the ordinary
+/// fallback and member-name requests to the named face. This matches Word's
+/// native behavior for Franklin Gothic and Arial Rounded MT (issue #1935).
 ///
-/// 1. its own name is not the family key it was filed under, so the key was
-///    reached by trimming a suffix rather than declared;
-/// 2. trimming that name does reach the key, so the two are the same reading of
-///    the same string and not a Typst name-table exception;
-/// 3. another face under that key declares the key as its own name, so the
-///    family has an owner the key rightfully belongs to;
-/// 4. some face sharing the intruder's own name sits at a
-///    [`typst::text::FontVariant`] the owner also occupies, so the key plus a
-///    variant cannot tell the two designs apart.
-///
-/// Without (3) nothing is moved: `Arial Rounded MT Bold` and the three
-/// `Franklin Gothic` members declare no `Arial Rounded MT` or `Franklin Gothic`
-/// between them, so emptying their key would leave those requests with no face
-/// at all rather than the wrong weight of the right one.
-///
-/// Without (4) nothing is moved either: `calibril.ttf` is filed as `Calibri` at
-/// 300 against Calibri's own 400, and a nearest-weight search tells those two
-/// apart perfectly well — which is how `Calibri Light` has reached its member
-/// since issue #1286.
+/// A family with an owner but no repeated variant is left alone: `calibril.ttf`
+/// is filed as `Calibri` at 300 against Calibri's own 400, and nearest-weight
+/// selection can already distinguish them — which is how `Calibri Light` has
+/// reached its member since issue #1286. Names that do not trim back to the
+/// family key remain untouched because Typst may have filed them there through
+/// a name-table exception rather than suffix trimming.
 ///
 /// The whole name group moves together, not just the tied face. A family whose
 /// upright intruder ties and whose italic sibling does not would otherwise be
@@ -491,10 +483,6 @@ pub(crate) fn refile_faces_shadowing_their_family(
             })
             .map(|(&index, _)| infos[index].variant)
             .collect();
-        if owned_variants.is_empty() {
-            continue;
-        }
-
         let mut group_members: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         let mut group_name: BTreeMap<String, String> = BTreeMap::new();
         for (&index, name) in members.iter().zip(&declared) {
@@ -513,10 +501,11 @@ pub(crate) fn refile_faces_shadowing_their_family(
         }
 
         for (key, group) in group_members {
-            if !group
-                .iter()
-                .any(|&index| owned_variants.contains(&infos[index].variant))
-            {
+            let should_refile = owned_variants.is_empty()
+                || group
+                    .iter()
+                    .any(|&index| owned_variants.contains(&infos[index].variant));
+            if !should_refile {
                 continue;
             }
             let name: &String = &group_name[&key];
