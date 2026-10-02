@@ -1282,6 +1282,93 @@ fn test_korean_text_still_reaches_korean_faces_first() {
     }
 }
 
+#[test]
+fn installed_font_coverage_precedes_last_resort_for_unclassified_unicode() {
+    let characters = "𐌲𐌿";
+    let context = FontSearchContext::for_test(
+        Vec::new(),
+        &["Arial", "Noto Sans Gothic", "LastResort"],
+        &[],
+        &[],
+    )
+    .with_last_resort_family(Some("LastResort"))
+    .with_test_character_coverage("Noto Sans Gothic", characters)
+    .with_test_character_coverage("LastResort", characters);
+
+    let chain = with_font_search_context(Some(&context), || {
+        font_with_fallbacks_for_text("Arial", characters)
+    });
+    let gothic = chain
+        .find("Noto Sans Gothic")
+        .expect("the face covering the requested characters must be listed");
+    let last_resort = chain
+        .find("LastResort")
+        .expect("the configured final face must remain available");
+
+    assert!(
+        gothic < last_resort,
+        "an installed face with the requested Unicode coverage must precede LastResort: {chain}"
+    );
+}
+
+#[test]
+fn declared_unicode_coverage_does_not_append_unneeded_fallback_families() {
+    let characters = "𐌲𐌿";
+    let context = FontSearchContext::for_test(
+        Vec::new(),
+        &["Arial", "Noto Sans Gothic", "LastResort"],
+        &[],
+        &[],
+    )
+    .with_last_resort_family(Some("LastResort"))
+    .with_test_character_coverage("Arial", characters)
+    .with_test_character_coverage("Noto Sans Gothic", characters)
+    .with_test_character_coverage("LastResort", characters);
+
+    let chain = with_font_search_context(Some(&context), || {
+        font_with_fallbacks_for_text("Arial", characters)
+    });
+
+    assert!(
+        !chain.contains("Noto Sans Gothic"),
+        "a declared family with full character coverage remains sufficient: {chain}"
+    );
+}
+
+#[test]
+fn installed_unicode_coverage_is_available_to_split_and_mixed_script_chains() {
+    let characters = "𐌲𐌿";
+    let context = FontSearchContext::for_test(
+        Vec::new(),
+        &["Arial", "Times New Roman", "Noto Sans Gothic", "LastResort"],
+        &[],
+        &[],
+    )
+    .with_last_resort_family(Some("LastResort"))
+    .with_test_character_coverage("Noto Sans Gothic", characters)
+    .with_test_character_coverage("LastResort", characters);
+
+    let chains = with_font_search_context(Some(&context), || {
+        vec![
+            font_for_mixed_script_text("Arial", characters),
+            font_with_east_asian_fallbacks("Arial", "Times New Roman", characters),
+        ]
+    });
+
+    for chain in chains {
+        let gothic = chain
+            .find("Noto Sans Gothic")
+            .expect("the selected font chain must include the covering face");
+        let last_resort = chain
+            .find("LastResort")
+            .expect("the selected font chain must preserve its final face");
+        assert!(
+            gothic < last_resort,
+            "the covering face must precede LastResort: {chain}"
+        );
+    }
+}
+
 /// The eastAsia path needs the same detour.
 ///
 /// A DOCX run that names both `w:ascii` and `w:eastAsia` goes through

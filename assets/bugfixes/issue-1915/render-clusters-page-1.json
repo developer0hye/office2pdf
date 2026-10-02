@@ -1,0 +1,455 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 111.9744,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 19.68,
+        "x": 71.04,
+        "y": 49.44
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-4ca7423ec04e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 65.4336,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 16.8,
+        "x": 78.24,
+        "y": 140.16
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-274b238a37bf",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 55.9872,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 12.48,
+        "x": 78.24,
+        "y": 102.72
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-905bbe67e6c2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 10.56,
+        "x": 126.24,
+        "y": 24.48
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-a26cabc8bf2b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.7072,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.08,
+        "x": 96.96,
+        "y": 12.0
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-725bc535d031",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.12,
+        "x": 103.68,
+        "y": 140.16
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-a491137e7e92",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 137.76,
+        "y": 274.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue",
+        "note": "Inspected each second-row table cell and border in the matched crop; the row sits 2.42pt low and makes the table 3.78pt too tall."
+      },
+      "id": "p1-1656450c0f23",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 456.96,
+        "y": 274.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue",
+        "note": "Inspected each second-row table cell and border in the matched crop; the row sits 2.42pt low and makes the table 3.78pt too tall."
+      },
+      "id": "p1-18f9692a4509",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 9.12,
+        "x": 16.32,
+        "y": 46.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected the footnote reference cluster in the y=44-58pt matched band; its 1.59pt anchor shift is below the materiality bar."
+      },
+      "id": "p1-1be8ab731a46",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 72.48,
+        "y": 138.24
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-8375cb634c56",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 146.88,
+        "y": 12.0
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-cb00bb0bcbba",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.6,
+        "x": 151.68,
+        "y": 51.84
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-223178561d48",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 295.68,
+        "y": 274.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue",
+        "note": "Inspected each second-row table cell and border in the matched crop; the row sits 2.42pt low and makes the table 3.78pt too tall."
+      },
+      "id": "p1-09f25115e0ce",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 184.32,
+        "y": 50.88
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-f6a7e0332157",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 165.12,
+        "y": 51.84
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-6b3f369bb5e9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 72.48,
+        "y": 75.36
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-f79b36207aa5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 7.2,
+        "x": 62.88,
+        "y": 50.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected the footnote reference cluster in the y=44-58pt matched band; its 1.59pt anchor shift is below the materiality bar."
+      },
+      "id": "p1-20ed72fd4766",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 127.68,
+        "y": 140.16
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-bfe3a635d5db",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 72.48,
+        "y": 114.72
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-24229cfab49b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 84.48,
+        "y": 91.2
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-f5323f92e610",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 95.52,
+        "y": 138.24
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-a914e697d9f6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 3.84,
+        "x": 24.96,
+        "y": 48.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected the footnote reference cluster in the y=44-58pt matched band; its 1.59pt anchor shift is below the materiality bar."
+      },
+      "id": "p1-45cb6825c325",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 139.68,
+        "y": 10.08
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-c89c30f8b0a1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.32,
+        "x": 138.72,
+        "y": 138.24
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-7af39a5d9df0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 84.96,
+        "y": 37.92
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-5dac92b59de0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 72.48,
+        "y": 88.32
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-98733cbb5e38",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 90.72,
+        "y": 9.6
+      },
+      "disposition": {
+        "issue": "#1917",
+        "kind": "issue",
+        "note": "Inspected the full-page diff and every matched text crop. This cluster belongs to the overflowing Rectangle 3 text block; remaining paragraph gaps shift it, with list spacing and the fullwidth CJK line separately tracked in #1913 and #1916."
+      },
+      "id": "p1-5d9a7446fcbc",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 27,
+    "duplicate": 0,
+    "total": 27,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

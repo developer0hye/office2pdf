@@ -1342,8 +1342,57 @@ fn latin_family_chain(
         context,
         ChainPurpose::Paint,
     ));
+    append_character_coverage_fallbacks(text, &mut families, context);
     append_last_resort(&mut families, context);
     families
+}
+
+/// Add indexed faces for characters the declared and named fallback chain
+/// cannot paint. An explicit LastResort family is tried before Typst searches
+/// its discovered fallback index, so known covering families must precede it.
+fn append_character_coverage_fallbacks(
+    text: &str,
+    families: &mut Vec<String>,
+    context: Option<&FontSearchContext>,
+) {
+    let Some(context) = context else {
+        return;
+    };
+
+    let mut examined_characters: HashSet<char> = HashSet::new();
+    let mut coverage_fallbacks: Vec<(u32, Vec<String>)> = Vec::new();
+    for character in text
+        .chars()
+        .filter(|character| !character.is_whitespace() && !character.is_control())
+    {
+        if !examined_characters.insert(character)
+            || families
+                .iter()
+                .any(|family| context.family_covers_character(family, character))
+        {
+            continue;
+        }
+
+        let covering_families: Vec<String> = context.families_covering_character(character);
+        if !covering_families.is_empty() {
+            coverage_fallbacks.push((character as u32, covering_families.clone()));
+        }
+        for family in covering_families {
+            if !families
+                .iter()
+                .any(|existing| existing.eq_ignore_ascii_case(&family))
+            {
+                families.push(family);
+            }
+        }
+    }
+
+    if !coverage_fallbacks.is_empty() {
+        debug!(
+            coverage_fallbacks = ?coverage_fallbacks,
+            "added cmap-backed font fallback families"
+        );
+    }
 }
 
 /// The font list for one face that has to cover text in several scripts at
@@ -1384,6 +1433,7 @@ pub(crate) fn font_for_mixed_script_text(font_family: &str, text: &str) -> Strin
                 .iter()
                 .map(|face| (*face).to_string()),
         );
+        append_character_coverage_fallbacks(text, &mut families, context.as_ref());
         append_last_resort(&mut families, context.as_ref());
         join_font_list(families)
     })
@@ -1765,6 +1815,7 @@ fn east_asian_family_chain(
             ChainPurpose::Paint,
         ));
     }
+    append_character_coverage_fallbacks(text, &mut families, context);
     append_last_resort(&mut families, context);
     families
 }
