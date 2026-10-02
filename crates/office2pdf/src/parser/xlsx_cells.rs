@@ -14,14 +14,18 @@ use crate::ir::{BorderSide, CellBorder, Color, Insets, SheetLineExtent, TableCel
 /// overflow may extend the printed range.
 const MAX_XLSX_COLUMNS: u32 = 16384;
 
-/// Return a cell's displayed text, preserving whitespace from a literal-only
-/// zero section that `umya-spreadsheet` currently trims.
+/// Return a cell's displayed text, correcting two narrow number-format
+/// differences in `umya-spreadsheet`.
 ///
 /// The workspace patch can select `\-\ \ ` instead of falling back to the
 /// positive section, but its width-independent string formatter returns `-`.
 /// Excel keeps both escaped spaces; they matter when the text is right-aligned.
 /// Keep this narrow compatibility layer until a released dependency carries
 /// the complete behavior (issue #1262).
+///
+/// For a single-section format, Excel prefixes a negative sign to the whole
+/// formatted result. `umya-spreadsheet` places that sign beside the digits,
+/// after a leading quoted literal (issue #1925).
 fn formatted_cell_value(cell: &umya_spreadsheet::Cell) -> String {
     if cell.get_value_number().is_some_and(|value| value == 0.0)
         && let Some(number_format) = cell.get_style().get_number_format()
@@ -29,7 +33,19 @@ fn formatted_cell_value(cell: &umya_spreadsheet::Cell) -> String {
     {
         return literal;
     }
-    cell.get_formatted_value()
+
+    let formatted: String = cell.get_formatted_value();
+    if let Some(value) = cell.get_value_number()
+        && let Some(number_format) = cell.get_style().get_number_format()
+        && let Some(corrected) = single_section_negative_sign_before_literal(
+            &formatted,
+            number_format.get_format_code(),
+            value,
+        )
+    {
+        return corrected;
+    }
+    formatted
 }
 
 /// Split a number format into its one-to-four value sections.
@@ -83,6 +99,62 @@ fn selected_number_format_section(format: &str, value: f64) -> Option<&str> {
         3 | 4 if value < 0.0 => sections.get(1).copied(),
         3 | 4 => sections.get(2).copied(),
         _ => None,
+    }
+}
+
+/// Relocate the sign before a leading literal when a one-section number
+/// format applies the same section to a negative value.
+fn single_section_negative_sign_before_literal(
+    formatted: &str,
+    format: &str,
+    value: f64,
+) -> Option<String> {
+    if value >= 0.0 || number_format_sections(format)?.len() != 1 {
+        return None;
+    }
+    let section: &str = selected_number_format_section(format, value)?;
+    let prefix: String = number_format_leading_literal(section)?;
+    if prefix.is_empty() {
+        return None;
+    }
+
+    let after_prefix: &str = formatted.strip_prefix(&prefix)?;
+    let unsigned_value: &str = after_prefix.strip_prefix('-')?;
+    unsigned_value
+        .chars()
+        .next()
+        .is_some_and(|character| character.is_ascii_digit())
+        .then(|| format!("-{prefix}{unsigned_value}"))
+}
+
+/// Read a quoted or escaped literal prefix before the first numeric
+/// placeholder. Other section shapes stay with the dependency formatter.
+fn number_format_leading_literal(section: &str) -> Option<String> {
+    let mut characters: std::iter::Peekable<std::str::Chars<'_>> = section.chars().peekable();
+    let mut literal: String = String::new();
+    loop {
+        match characters.peek().copied()? {
+            '"' => {
+                characters.next();
+                let mut closed: bool = false;
+                for character in characters.by_ref() {
+                    if character == '"' {
+                        closed = true;
+                        break;
+                    }
+                    literal.push(character);
+                }
+                if !closed {
+                    return None;
+                }
+            }
+            '\\' => {
+                characters.next();
+                literal.push(characters.next()?);
+            }
+            '0' | '#' | '?' => return (!literal.is_empty()).then_some(literal),
+            _ => return None,
+        }
     }
 }
 
