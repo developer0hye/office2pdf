@@ -146,6 +146,17 @@ shape:
       "page": 9,
       "kind": "render-clusters",
       "render_cluster_ids": ["p9-0123456789ab"]
+    },
+    {
+      "id": "page-10-august-bergquist-shift",
+      "page": 10,
+      "kind": "text-shift",
+      "layout_finding": {
+        "label": "AugustBergquist",
+        "occurrence": 1,
+        "dx": 12.840519999999998,
+        "dy": -1.0339500000000044
+      }
     }
   ]
 }
@@ -164,14 +175,20 @@ Set these PR fields when the report is used:
 Reference exporter differences: assets/bugfixes/issue-123/reference-exporter-differences.json
 Native: assets/bugfixes/issue-123/native.jpg
 Layout audit text flow: ref:page-9-slide-number-visibility
+Layout audit large shifts: ref:page-10-august-bergquist-shift
+Layout audit fine shifts: ref:page-10-august-bergquist-shift
 ```
 
 Render `![Native](...)` with a stable image URL. In the deviation table, use
 `Reference difference: ref:<id>` once for every difference in the report.
-Layout reference differences currently cover only one exact occurrence of a
-`painted-text-visibility` finding. Missing/extra text, wrap/reflow, geometry,
-fill, or shift findings still need an open issue. A category containing both a
-verified visibility difference and another finding must also name that issue.
+Layout reference differences can cover one exact occurrence of a
+`painted-text-visibility` finding or a `text-shift` finding. A shift records its
+page, base label, occurrence, and exact `dx`/`dy` values from the current layout
+report; repeated labels use the occurrence number shown in its `[N/M]` label.
+Use the same shift ID in both large- and fine-shift fields when it appears in
+both lists. Missing/extra text, wrap/reflow, geometry, fill, and any unmatched
+shift still need an open issue. If a category contains other findings beside
+verified reference differences, also name the issue that tracks those findings.
 
 Generate the cluster IDs once without strict mode, inspect every cluster in the
 full-resolution diff and matched crops, then create a disposition file whose

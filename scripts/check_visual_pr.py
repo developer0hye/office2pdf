@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -515,6 +516,125 @@ def _reference_visibility_key(
         return None
 
 
+def _shift_label_occurrence(label: str) -> tuple[str, int]:
+    """Split compare_layout's repeated-label suffix into text and occurrence."""
+
+    match = re.fullmatch(
+        r"(?P<label>.+?) \[(?P<index>[1-9]\d*)/(?P<count>[1-9]\d*)\]",
+        label,
+    )
+    if match is None:
+        return label, 1
+    occurrence = int(match.group("index"))
+    if occurrence > int(match.group("count")):
+        raise ValueError(f"invalid repeated shift label: {label}")
+    return match.group("label"), occurrence
+
+
+def _current_shift_findings(
+    report: dict[str, object], declared_pages: set[int], category: str
+) -> set[tuple[int, str, int, float, float]]:
+    """Return exact, occurrence-bounded shifts from the requested audit list."""
+
+    pages = report.get("pages")
+    if not isinstance(pages, list) or len(pages) != len(declared_pages):
+        raise ValueError(
+            "declared Page(s) must map one-to-one to the layout report page vectors"
+        )
+    if category not in {"large shifts", "fine shifts"}:
+        raise ValueError(f"unsupported shift category: {category}")
+    list_name = "large_shifts" if category == "large shifts" else "fine_shifts"
+    count_name = (
+        "large_shift_count" if category == "large shifts" else "fine_shift_count"
+    )
+    findings: set[tuple[int, str, int, float, float]] = set()
+    selectors: set[tuple[int, str, int]] = set()
+    for page_number, page_report in zip(sorted(declared_pages), pages, strict=True):
+        if not isinstance(page_report, dict):
+            raise ValueError(f"page {page_number} must be an object")
+        instances = page_report.get("instances")
+        if not isinstance(instances, dict):
+            raise ValueError(f"page {page_number} instances must be an object")
+        raw_findings = instances.get(list_name)
+        count = instances.get(count_name)
+        if not isinstance(raw_findings, list):
+            raise ValueError(f"page {page_number} instances.{list_name} must be a list")
+        if type(count) is not int or count != len(raw_findings):
+            raise ValueError(
+                f"page {page_number} instances.{count_name} must match {list_name}"
+            )
+        for index, finding in enumerate(raw_findings, start=1):
+            if not isinstance(finding, dict):
+                raise ValueError(
+                    f"page {page_number} {list_name} entry {index} must be an object"
+                )
+            label = finding.get("label")
+            if not isinstance(label, str) or not label.strip():
+                raise ValueError(
+                    f"page {page_number} {list_name} entry {index} needs a label"
+                )
+            coordinates: list[float] = []
+            for coordinate in ("dx", "dy"):
+                value = finding.get(coordinate)
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    raise ValueError(
+                        f"page {page_number} {list_name} entry {index} "
+                        f"{coordinate} must be numeric"
+                    )
+                try:
+                    numeric_value = float(value)
+                except OverflowError as exc:
+                    raise ValueError(
+                        f"page {page_number} {list_name} entry {index} "
+                        f"{coordinate} must be finite"
+                    ) from exc
+                if not math.isfinite(numeric_value):
+                    raise ValueError(
+                        f"page {page_number} {list_name} entry {index} "
+                        f"{coordinate} must be finite"
+                    )
+                coordinates.append(numeric_value)
+            base_label, occurrence = _shift_label_occurrence(label)
+            selector = (page_number, base_label, occurrence)
+            if selector in selectors:
+                raise ValueError(
+                    f"page {page_number} {list_name} repeats an exact label occurrence"
+                )
+            selectors.add(selector)
+            findings.add((page_number, base_label, occurrence, *coordinates))
+    return findings
+
+
+def _reference_shift_key(
+    difference: dict[str, object],
+) -> tuple[int, str, int, float, float] | None:
+    finding = difference.get("layout_finding")
+    page = difference.get("page")
+    if type(page) is not int or not isinstance(finding, dict):
+        return None
+    label = finding.get("label")
+    occurrence = finding.get("occurrence")
+    dx = finding.get("dx")
+    dy = finding.get("dy")
+    if (
+        not isinstance(label, str)
+        or type(occurrence) is not int
+        or isinstance(dx, bool)
+        or not isinstance(dx, (int, float))
+        or isinstance(dy, bool)
+        or not isinstance(dy, (int, float))
+    ):
+        return None
+    try:
+        dx_value = float(dx)
+        dy_value = float(dy)
+    except OverflowError:
+        return None
+    if not math.isfinite(dx_value) or not math.isfinite(dy_value):
+        return None
+    return page, label, occurrence, dx_value, dy_value
+
+
 def decoded_pixel_delta(before: Path, after: Path) -> int:
     """Return ImageMagick's exact decoded-pixel AE count for two images."""
 
@@ -754,6 +874,7 @@ def validate_layout_audit(
     errors.extend(f"Reference exporter differences: {error}." for error in reference_errors)
     declared_pages = compared_pages(field(audit, "Page(s)"))
     current_visibility: set[tuple[int, str, str, str, int]] | None = None
+    current_shifts: dict[str, set[tuple[int, str, int, float, float]]] = {}
     fields = {
         "page count": "Layout audit page count",
         "text flow": "Layout audit text flow",
@@ -782,7 +903,12 @@ def validate_layout_audit(
                 )
             if not disposition_references:
                 continue
-            if category != "text flow":
+            reference_kind = {
+                "text flow": "painted-text-visibility",
+                "large shifts": "text-shift",
+                "fine shifts": "text-shift",
+            }.get(category)
+            if reference_kind is None:
                 errors.append(
                     f"Visual audit > {field_name} does not support reference exporter "
                     "differences; use an open issue."
@@ -794,15 +920,28 @@ def validate_layout_audit(
                     "differences can be matched."
                 )
                 continue
-            if current_visibility is None:
-                try:
-                    current_visibility = _current_visibility_findings(
-                        report, declared_pages
-                    )
-                except ValueError as exc:
-                    errors.append(f"{expected_path}: {exc}.")
-                    current_visibility = set()
-            referenced_keys: set[tuple[int, str, str, str, int]] = set()
+            current_findings: set[tuple[object, ...]]
+            if category == "text flow":
+                if current_visibility is None:
+                    try:
+                        current_visibility = _current_visibility_findings(
+                            report, declared_pages
+                        )
+                    except ValueError as exc:
+                        errors.append(f"{expected_path}: {exc}.")
+                        current_visibility = set()
+                current_findings = set(current_visibility)
+            else:
+                if category not in current_shifts:
+                    try:
+                        current_shifts[category] = _current_shift_findings(
+                            report, declared_pages, category
+                        )
+                    except ValueError as exc:
+                        errors.append(f"{expected_path}: {exc}.")
+                        current_shifts[category] = set()
+                current_findings = set(current_shifts[category])
+            referenced_keys: set[tuple[object, ...]] = set()
             for difference_id in sorted(disposition_references):
                 difference = reference_registry.get(difference_id)
                 if difference is None:
@@ -811,41 +950,49 @@ def validate_layout_audit(
                         "a validated reference exporter difference."
                     )
                     continue
-                if difference.get("kind") != "painted-text-visibility":
+                if difference.get("kind") != reference_kind:
                     errors.append(
                         f"Visual audit > {field_name} ref:{difference_id} is not a "
-                        "painted-text-visibility difference."
+                        f"{reference_kind} difference."
                     )
                     continue
-                reference_key = _reference_visibility_key(difference)
-                if reference_key is None or reference_key not in current_visibility:
+                if category == "text flow":
+                    reference_key = _reference_visibility_key(difference)
+                else:
+                    reference_key = _reference_shift_key(difference)
+                if reference_key is None or reference_key not in current_findings:
+                    finding_name = "visibility" if category == "text flow" else "shift"
                     errors.append(
                         f"Visual audit > {field_name} ref:{difference_id} does not match "
-                        "an exact current visibility finding."
+                        f"an exact current {finding_name} finding."
                     )
                     continue
                 referenced_keys.add(reference_key)
 
             if not disposition_issues:
-                other_text_flow_count = 0
-                for page in report["pages"]:
-                    other_text_flow_count += (
-                        page["lines"]["missing"]
-                        + page["lines"]["extra"]
-                        + page["wraps"]["count"]
-                        + page["reflow"]["gt_lines"]
-                        + page["reflow"]["out_lines"]
-                    )
-                if other_text_flow_count:
-                    errors.append(
-                        f"Visual audit > {field_name} has text-flow findings outside "
-                        "the verified visibility differences and requires an open issue."
-                    )
-                uncovered = current_visibility - referenced_keys
+                if category == "text flow":
+                    other_text_flow_count = 0
+                    for page in report["pages"]:
+                        other_text_flow_count += (
+                            page["lines"]["missing"]
+                            + page["lines"]["extra"]
+                            + page["wraps"]["count"]
+                            + page["reflow"]["gt_lines"]
+                            + page["reflow"]["out_lines"]
+                        )
+                    if other_text_flow_count:
+                        errors.append(
+                            f"Visual audit > {field_name} has text-flow findings "
+                            "outside the verified visibility differences and requires "
+                            "an open issue."
+                        )
+                uncovered = current_findings - referenced_keys
                 if uncovered:
+                    finding_name = "visibility" if category == "text flow" else "shifts"
                     errors.append(
-                        f"Visual audit > {field_name} has visibility findings not covered "
-                        "by exact reference exporter differences; use an open issue."
+                        f"Visual audit > {field_name} has {finding_name} findings not "
+                        "covered by exact reference exporter differences; use an "
+                        "open issue."
                     )
         elif disposition != (set(), set()):
             errors.append(

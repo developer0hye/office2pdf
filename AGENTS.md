@@ -204,9 +204,10 @@ material-cluster floor, but never dispositions a cluster inside that bbox.
 For a proven non-native GT difference, pass the issue-local manifest with
 `--reference-differences`; its `reference-exporter-difference` group must name
 the manifest's exact cluster set. The PR body names each ID as
-`Reference difference: ref:<id>`. Layout `ref:<id>` dispositions are limited to
-an exact painted-text visibility occurrence; every other finding needs an open
-issue. See `assets/bugfixes/README.md` for the required hashes and fields.
+`Reference difference: ref:<id>`. Layout `ref:<id>` dispositions may cover an
+exact painted-text visibility occurrence or an exact `(page, label, occurrence,
+dx, dy)` text shift in the large/fine shift fields; all other findings need an
+open issue. See `assets/bugfixes/README.md` for the required hashes and fields.
 
 For layout defects, run `python3 scripts/compare_layout.py <GT.pdf> <output.pdf> --audit --fine-shift PT`
 first: it matches text lines from `mutool` traces and reports missing/extra/
