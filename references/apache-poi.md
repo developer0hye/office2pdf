@@ -14,11 +14,14 @@ Java OOXML implementation for Word, Excel, and PowerPoint.
 - `XSLFTableRow#getHeight()` and `setHeight()` map directly to `CTTableRow.h`.
 - Useful as a control sample: it exposes PPTX row height as raw OOXML data, not a rendered layout result.
 - Confirms that object-model libraries generally do not resolve PowerPoint's final table reflow for us.
+- `IndexedColors` uses zero-based palette slots and documents that a modified
+  XLSX palette supplies the complete table instead of adding to defaults.
 
 ## Key files to study
 
 - `poi-ooxml/src/main/java/org/apache/poi/xslf/usermodel/XSLFTableRow.java`
 - `poi-ooxml/src/main/java/org/apache/poi/xslf/usermodel/XSLFTableCell.java`
+- `poi/src/main/java/org/apache/poi/ss/usermodel/IndexedColors.java`
 
 ## When to consult
 
