@@ -14,7 +14,7 @@ use crate::ir::{BorderSide, CellBorder, Color, Insets, SheetLineExtent, TableCel
 /// overflow may extend the printed range.
 const MAX_XLSX_COLUMNS: u32 = 16384;
 
-/// Return a cell's displayed text, correcting two narrow number-format
+/// Return a cell's displayed text, correcting a few narrow number-format
 /// differences in `umya-spreadsheet`.
 ///
 /// The workspace patch can select `\-\ \ ` instead of falling back to the
@@ -42,6 +42,13 @@ fn formatted_cell_value(cell: &umya_spreadsheet::Cell) -> String {
             number_format.get_format_code(),
             value,
         )
+    {
+        return corrected;
+    }
+    if let Some(value) = cell.get_value_number()
+        && let Some(number_format) = cell.get_style().get_number_format()
+        && let Some(corrected) =
+            selected_section_leading_literal(&formatted, number_format.get_format_code(), value)
     {
         return corrected;
     }
@@ -156,6 +163,16 @@ fn number_format_leading_literal(section: &str) -> Option<String> {
             _ => return None,
         }
     }
+}
+
+/// Restore a leading quoted or escaped literal omitted from the selected
+/// section's formatted value by `umya-spreadsheet` (issue #1924).
+fn selected_section_leading_literal(formatted: &str, format: &str, value: f64) -> Option<String> {
+    let section: &str = selected_number_format_section(format, value)?;
+    let prefix: String = number_format_leading_literal(section)?;
+    let value_after_sign: &str = formatted.strip_prefix('-').unwrap_or(formatted);
+    (!prefix.is_empty() && !value_after_sign.starts_with(&prefix))
+        .then(|| format!("{prefix}{formatted}"))
 }
 
 /// Glyphs whose advance an Excel `_x` number-format control reserves.
