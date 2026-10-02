@@ -379,7 +379,8 @@ pub(crate) fn literal_number_format_text(format: &str, value: f64) -> Option<Str
 /// The ink a number-format section's bracketed colour control names.
 ///
 /// Excel's number-format grammar lets each section name one of eight colours,
-/// and the name wins over the colour the cell's own font declares. Measured on
+/// or select a legacy palette entry with `Color N`; either wins over the
+/// colour the cell's own font declares. Measured on
 /// a native Excel 16 for Mac export (2026-09-28) of a one-factor probe
 /// workbook — ten cells differing only in their selected section's colour
 /// control — whose traces print every name as the fully saturated primary and
@@ -391,12 +392,13 @@ pub(crate) fn literal_number_format_text(format: &str, value: f64) -> Option<Str
 ///
 /// Quoted text and escaped/skip-width arguments are literal, matching
 /// [`number_format_skip_width_glyphs`]: a `"[Red]"` section prints the name
-/// and names no colour.
-///
-/// TODO(#1923): the indexed `[Color N]` form is a separate palette lookup —
-/// measured as `indexedColors[N + 7]` — and is not applied here, so such a
-/// section still paints the cell's own ink.
-fn number_format_section_color(section: &str) -> Option<Color> {
+/// and names no colour. Excel also accepts `[Color N]`, which indexes the
+/// legacy palette at `N + 7`; Apache POI documents that a modified workbook
+/// palette replaces the whole implicit default table.
+fn number_format_section_color(
+    section: &str,
+    indexed_colors: Option<&[Option<Color>]>,
+) -> Option<Color> {
     let mut chars = section.chars();
     let mut in_quotes = false;
     while let Some(ch) = chars.next() {
@@ -413,7 +415,9 @@ fn number_format_section_color(section: &str) -> Option<Color> {
             }
             '[' => {
                 let control: String = chars.by_ref().take_while(|ch| *ch != ']').collect();
-                if let Some(color) = named_number_format_color(&control) {
+                if let Some(color) = named_number_format_color(&control)
+                    .or_else(|| indexed_number_format_color(&control, indexed_colors))
+                {
                     return Some(color);
                 }
             }
@@ -422,6 +426,90 @@ fn number_format_section_color(section: &str) -> Option<Color> {
     }
     None
 }
+
+/// Resolve a `Color1`–`Color56` control through the workbook palette, or the
+/// implied Office palette when the workbook has no custom table.
+fn indexed_number_format_color(
+    control: &str,
+    indexed_colors: Option<&[Option<Color>]>,
+) -> Option<Color> {
+    let control = control.trim().to_ascii_lowercase();
+    let number: usize = control.strip_prefix("color")?.trim().parse().ok()?;
+    if !(1..=56).contains(&number) {
+        return None;
+    }
+
+    match indexed_colors {
+        Some(colors) => colors.get(number + 7).copied().flatten(),
+        None => DEFAULT_INDEXED_COLORS
+            .get(number - 1)
+            .map(|(red, green, blue)| Color::new(*red, *green, *blue)),
+    }
+}
+
+/// Default OOXML indexed palette entries 8–63. Entries 0–7 duplicate the
+/// eight compatibility colors; `Color N` starts at entry 8 (issue #1923).
+/// The zero-based slots match Apache POI's compatibility table, the RGB values
+/// follow openpyxl's `COLOR_INDEX`, and indexes 10, 17, 53, and 63 were also
+/// measured against native Excel.
+const DEFAULT_INDEXED_COLORS: [(u8, u8, u8); 56] = [
+    (0, 0, 0),
+    (255, 255, 255),
+    (255, 0, 0),
+    (0, 255, 0),
+    (0, 0, 255),
+    (255, 255, 0),
+    (255, 0, 255),
+    (0, 255, 255),
+    (128, 0, 0),
+    (0, 128, 0),
+    (0, 0, 128),
+    (128, 128, 0),
+    (128, 0, 128),
+    (0, 128, 128),
+    (192, 192, 192),
+    (128, 128, 128),
+    (153, 153, 255),
+    (153, 51, 102),
+    (255, 255, 204),
+    (204, 255, 255),
+    (102, 0, 102),
+    (255, 128, 128),
+    (0, 102, 204),
+    (204, 204, 255),
+    (0, 0, 128),
+    (255, 0, 255),
+    (255, 255, 0),
+    (0, 255, 255),
+    (128, 0, 128),
+    (128, 0, 0),
+    (0, 128, 128),
+    (0, 0, 255),
+    (0, 204, 255),
+    (204, 255, 255),
+    (204, 255, 204),
+    (255, 255, 153),
+    (153, 204, 255),
+    (255, 153, 204),
+    (204, 153, 255),
+    (255, 204, 153),
+    (51, 102, 255),
+    (51, 204, 204),
+    (153, 204, 0),
+    (255, 204, 0),
+    (255, 153, 0),
+    (255, 102, 0),
+    (102, 102, 153),
+    (150, 150, 150),
+    (0, 51, 102),
+    (51, 153, 102),
+    (0, 51, 0),
+    (51, 51, 0),
+    (153, 51, 0),
+    (153, 51, 102),
+    (51, 51, 153),
+    (51, 51, 51),
+];
 
 /// The primary a number-format colour name paints, or `None` for any other
 /// bracketed control (a locale, a condition, an elapsed-time unit).
@@ -446,8 +534,20 @@ fn named_number_format_color(control: &str) -> Option<Color> {
 /// [`selected_number_format_section`] cannot pick one without a complete
 /// predicate evaluator, and guessing the wrong section would paint the wrong
 /// colour rather than merely mis-measure a width.
+#[cfg(test)]
 fn number_format_text_color(format_code: &str, value: f64) -> Option<Color> {
-    number_format_section_color(selected_number_format_section(format_code, value)?)
+    number_format_text_color_with_palette(format_code, value, None)
+}
+
+fn number_format_text_color_with_palette(
+    format_code: &str,
+    value: f64,
+    indexed_colors: Option<&[Option<Color>]>,
+) -> Option<Color> {
+    number_format_section_color(
+        selected_number_format_section(format_code, value)?,
+        indexed_colors,
+    )
 }
 
 fn section_has_condition(section: &str) -> bool {
@@ -579,6 +679,51 @@ pub(super) fn extract_normal_font(
         theme_scheme,
         theme_ui_script_faces,
     })
+}
+
+/// Read an explicit workbook indexed-colour palette. With no such table,
+/// Excel uses the legacy default palette encoded below; once the table exists,
+/// its complete indexed sequence is authoritative (issue #1923).
+pub(super) fn extract_indexed_colors(data: &[u8]) -> Option<Vec<Option<Color>>> {
+    use quick_xml::events::Event;
+    use std::io::Read;
+
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data)).ok()?;
+    let mut file = archive.by_name("xl/styles.xml").ok()?;
+    let mut xml = String::new();
+    file.read_to_string(&mut xml).ok()?;
+
+    let mut reader = quick_xml::Reader::from_str(&xml);
+    let mut in_indexed_colors: bool = false;
+    let mut indexed_colors: Vec<Option<Color>> = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref element)) if element.local_name().as_ref() == b"indexedColors" => {
+                in_indexed_colors = true;
+            }
+            Ok(Event::End(ref element))
+                if element.local_name().as_ref() == b"indexedColors" && in_indexed_colors =>
+            {
+                return Some(indexed_colors);
+            }
+            Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"indexedColors" => {
+                return Some(Vec::new());
+            }
+            Ok(Event::Empty(ref element)) | Ok(Event::Start(ref element))
+                if in_indexed_colors && element.local_name().as_ref() == b"rgbColor" =>
+            {
+                let color = element
+                    .try_get_attribute("rgb")
+                    .ok()
+                    .flatten()
+                    .and_then(|attribute| String::from_utf8(attribute.value.into_owned()).ok())
+                    .and_then(|argb| crate::parser::xml_util::parse_argb_color(&argb));
+                indexed_colors.push(color);
+            }
+            Ok(Event::Eof) | Err(_) => return None,
+            _ => {}
+        }
+    }
 }
 
 /// Match umya's ordinary style-color precedence without invoking its mutually
@@ -1448,6 +1593,9 @@ pub(super) struct SheetContext {
     /// (issue #853). Cloned rather than borrowed so the context stays free of
     /// the workbook's lifetime; it is twelve colours and a font scheme.
     pub(super) theme: Option<umya_spreadsheet::structs::drawing::Theme>,
+    /// An explicit legacy indexed palette from `styles.xml`; `None` means the
+    /// workbook uses Excel's implicit default table (issue #1923).
+    pub(super) indexed_colors: Option<Vec<Option<Color>>>,
     /// The alignment indent level of every cell that declares one, read from
     /// the raw package because umya drops the attribute (issue #1109).
     pub(super) cell_indents: super::indent::CellIndentLevels,
@@ -3260,8 +3408,11 @@ pub(super) fn build_rows_for_range(
             if let Some(cell) = umya_cell
                 && let Some(number) = cell.get_value_number()
                 && let Some(number_format) = cell.get_style().get_number_format()
-                && let Some(section_ink) =
-                    number_format_text_color(number_format.get_format_code(), number)
+                && let Some(section_ink) = number_format_text_color_with_palette(
+                    number_format.get_format_code(),
+                    number,
+                    ctx.indexed_colors.as_deref(),
+                )
             {
                 text_style.color = Some(section_ink);
             }
@@ -3715,6 +3866,7 @@ pub(super) fn prepare_sheet_context(
     cell_indents: Option<&super::indent::CellIndentLevels>,
     row_boundary_points: Option<&super::row_boundaries::RowBoundaryPoints>,
     sparklines: Option<&HashMap<(u32, u32), crate::ir::SparklineInfo>>,
+    indexed_colors: Option<&[Option<Color>]>,
     has_sheet_format_properties: bool,
 ) -> Option<(SheetContext, u32, u32)> {
     let (worksheet_max_col, mut max_row) = sheet.get_highest_column_and_row();
@@ -3808,6 +3960,7 @@ pub(super) fn prepare_sheet_context(
             normal_font: normal_font.cloned(),
             table_styles,
             theme: theme.cloned(),
+            indexed_colors: indexed_colors.map(|colors| colors.to_vec()),
             cell_indents,
             row_boundary_points,
             indent_unit_pt,
@@ -3820,8 +3973,8 @@ pub(super) fn prepare_sheet_context(
 #[cfg(test)]
 mod number_format_tests {
     use super::{
-        literal_zero_section_text, number_format_text_color, numeric_overflow_replacement,
-        right_aligned_number_format_reserve_glyphs,
+        literal_zero_section_text, number_format_text_color, number_format_text_color_with_palette,
+        numeric_overflow_replacement, right_aligned_number_format_reserve_glyphs,
     };
     use crate::ir::{Color, Insets, TextStyle};
 
@@ -3863,6 +4016,50 @@ mod number_format_tests {
         assert_eq!(
             number_format_text_color("[>100][Red]0.00;0.00", -123.0),
             None
+        );
+    }
+
+    #[test]
+    fn indexed_colour_controls_use_custom_or_default_palette_entries() {
+        assert_eq!(
+            number_format_text_color("[Color3]0.00", -123.0),
+            Some(Color::new(255, 0, 0))
+        );
+        assert_eq!(
+            number_format_text_color("[color 10]0.00", 123.0),
+            Some(Color::new(0, 128, 0))
+        );
+        assert_eq!(
+            number_format_text_color("[Color0]0.00", 123.0),
+            None,
+            "Excel's indexed color controls begin at 1"
+        );
+        assert_eq!(
+            number_format_text_color("[Color57]0.00", 123.0),
+            None,
+            "Excel's indexed color controls end at 56"
+        );
+
+        let mut custom_palette: Vec<Option<Color>> = vec![None; 64];
+        custom_palette[10] = Some(Color::new(18, 52, 86));
+        assert_eq!(
+            number_format_text_color_with_palette("[Color3]0.00", -123.0, Some(&custom_palette),),
+            Some(Color::new(18, 52, 86))
+        );
+        custom_palette[10] = None;
+        assert_eq!(
+            number_format_text_color_with_palette("[Color3]0.00", -123.0, Some(&custom_palette),),
+            None,
+            "a present custom table does not silently fall back to defaults"
+        );
+        assert_eq!(
+            number_format_text_color_with_palette(
+                r#""[Color3]"0.00"#,
+                -123.0,
+                Some(&custom_palette),
+            ),
+            None,
+            "quoted bracket text is not a palette control"
         );
     }
 

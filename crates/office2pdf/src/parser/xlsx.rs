@@ -619,6 +619,7 @@ fn empty_sheet_context(
         normal_font: normal_font.cloned(),
         table_styles: Vec::new(),
         theme: theme.cloned(),
+        indexed_colors: None,
         // A sheet with no used cells has no cell to indent; drawings anchor
         // to the grid, which the indent never moves.
         cell_indents: std::collections::HashMap::new(),
@@ -919,6 +920,7 @@ impl XlsxParser {
         let print_options_by_sheet = print_options::sheets_print_options(data);
         let mut table_styles = tables::extract_table_styles(data);
         let normal_font = extract_normal_font(data, Some(book.get_theme()));
+        let indexed_colors = extract_indexed_colors(data);
 
         let chartsheet_setups = chartsheet::chartsheet_print_setups(data);
         let mut warnings = Vec::new();
@@ -964,6 +966,7 @@ impl XlsxParser {
                 cell_indents.get(sheet.get_name()),
                 row_boundary_points.get(sheet.get_name()),
                 sparklines_by_sheet.get(sheet.get_name()),
+                indexed_colors.as_deref(),
                 !format_properties_less_sheets.contains(sheet.get_name()),
             ) else {
                 // A sheet without used cells can still carry drawings; give
@@ -1297,6 +1300,7 @@ impl Parser for XlsxParser {
         let print_options_by_sheet = print_options::sheets_print_options(data);
         let mut table_styles = tables::extract_table_styles(data);
         let normal_font = extract_normal_font(data, Some(book.get_theme()));
+        let indexed_colors = extract_indexed_colors(data);
 
         let chartsheet_setups = chartsheet::chartsheet_print_setups(data);
         let mut warnings = Vec::new();
@@ -1340,6 +1344,7 @@ impl Parser for XlsxParser {
                 cell_indents.get(sheet.get_name()),
                 row_boundary_points.get(sheet.get_name()),
                 sparklines_by_sheet.get(sheet.get_name()),
+                indexed_colors.as_deref(),
                 !format_properties_less_sheets.contains(sheet.get_name()),
             ) else {
                 // A sheet without used cells can still carry drawings; give

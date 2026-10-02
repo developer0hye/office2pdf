@@ -746,6 +746,93 @@ fn a_number_format_section_colour_overrides_the_cell_font_colour() {
     }
 }
 
+/// Excel maps `[Color N]` to indexed palette entry `N + 7`; named color
+/// controls and the indexed legacy palette are separate number-format forms
+/// (issue #1923).
+#[test]
+fn indexed_number_format_colors_override_the_cell_font_color() {
+    let cases = [
+        ("A1", "0.00;[Color3]0.00", Color::new(255, 0, 0)),
+        ("B1", "0.00;[Color10]0.00", Color::new(0, 128, 0)),
+        ("C1", "0.00;[Color46]0.00", Color::new(255, 102, 0)),
+        ("D1", "0.00;[Color56]0.00", Color::new(51, 51, 51)),
+    ];
+    let data = build_xlsx_formatted(|sheet| {
+        sheet.get_column_dimension_by_number_mut(&1).set_width(20.0);
+        for (coordinate, format_code, _) in cases {
+            let cell = sheet.get_cell_mut(coordinate);
+            cell.set_value_number(-123.0f64);
+            let style = cell.get_style_mut();
+            style.get_number_format_mut().set_format_code(format_code);
+            style.get_font_mut().get_color_mut().set_argb("FF0000FF");
+        }
+    });
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let row = &get_sheet_page(&doc, 0).table.rows[0];
+    for (index, (coordinate, _, expected)) in cases.iter().enumerate() {
+        assert_eq!(
+            first_run_style(&row.cells[index]).color,
+            Some(*expected),
+            "{coordinate} must use its selected indexed palette color"
+        );
+    }
+
+    let (chunks, _warnings) = parser
+        .parse_streaming(&data, &ConvertOptions::default(), 1)
+        .unwrap();
+    assert_eq!(
+        first_run_style(&get_sheet_page(&chunks[0], 0).table.rows[0].cells[0]).color,
+        Some(Color::new(255, 0, 0)),
+        "streaming parsing must use the same indexed palette"
+    );
+}
+
+/// Once a workbook declares an indexed palette, Excel resolves `[Color N]`
+/// through that table. A custom entry replaces the corresponding default
+/// color rather than acting as an additive override (issue #1923).
+#[test]
+fn indexed_number_format_color_uses_a_custom_workbook_palette() {
+    let data = build_xlsx_formatted(|sheet| {
+        sheet.get_column_dimension_by_number_mut(&1).set_width(20.0);
+        let cell = sheet.get_cell_mut("A1");
+        cell.set_value_number(-123.0f64);
+        let style = cell.get_style_mut();
+        style
+            .get_number_format_mut()
+            .set_format_code("0.00;[Color3]0.00");
+        style.get_font_mut().get_color_mut().set_argb("FF0000FF");
+    });
+    let data = rewrite_zip_parts(
+        &data,
+        |name| name == "xl/styles.xml",
+        |xml| {
+            let indexed_colors: String = (0..64)
+                .map(|index| {
+                    let argb = if index == 10 { "FF123456" } else { "FF000000" };
+                    format!("<rgbColor rgb=\"{argb}\"/>")
+                })
+                .collect();
+            let colors =
+                format!("<colors><indexedColors>{indexed_colors}</indexedColors></colors>");
+            let end = xml
+                .find("</styleSheet>")
+                .expect("styles.xml closes its root element");
+            format!("{}{colors}{}", &xml[..end], &xml[end..])
+        },
+    );
+    let parser = XlsxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let cell = &get_sheet_page(&doc, 0).table.rows[0].cells[0];
+    assert_eq!(
+        first_run_style(cell).color,
+        Some(Color::new(18, 52, 86)),
+        "[Color3] must resolve to the custom indexedColors[10] value"
+    );
+}
+
 /// Only the section Excel selects contributes its colour: the same
 /// `0.00;[Red]0.00` that reddens a negative value leaves a positive one on the
 /// ink a control cell under a colourless `0.00` prints (issue #1776).
