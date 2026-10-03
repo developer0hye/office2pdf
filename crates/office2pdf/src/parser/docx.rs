@@ -803,7 +803,7 @@ struct RunChildrenMedia {
 
 /// The ordered pieces of a run around structural layout breaks.
 enum RunLayoutPart {
-    Content(docx_rs::Run),
+    Content(Box<docx_rs::Run>),
     PageBreak,
     ColumnBreak,
 }
@@ -825,7 +825,7 @@ fn split_run_at_layout_breaks(run: &docx_rs::Run) -> Vec<RunLayoutPart> {
             if !content_children.is_empty() {
                 let mut content_run: docx_rs::Run = run.clone();
                 content_run.children = std::mem::take(&mut content_children);
-                parts.push(RunLayoutPart::Content(content_run));
+                parts.push(RunLayoutPart::Content(Box::new(content_run)));
             }
             parts.push(layout_break);
         } else {
@@ -836,7 +836,7 @@ fn split_run_at_layout_breaks(run: &docx_rs::Run) -> Vec<RunLayoutPart> {
     if !content_children.is_empty() {
         let mut content_run: docx_rs::Run = run.clone();
         content_run.children = content_children;
-        parts.push(RunLayoutPart::Content(content_run));
+        parts.push(RunLayoutPart::Content(Box::new(content_run)));
     }
 
     parts
