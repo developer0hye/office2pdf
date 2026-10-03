@@ -1,0 +1,311 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 25.9776,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.72,
+        "x": 110.4,
+        "y": 92.16
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-96192a703c12",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.7472,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.72,
+        "x": 110.4,
+        "y": 104.88
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-064fc32da7f7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.9408,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 7.92,
+        "x": 136.32,
+        "y": 106.8
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-2b9c618f2d67",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.8256,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.28,
+        "x": 205.44,
+        "y": 94.08
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-d93700988901",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.768,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.28,
+        "x": 205.44,
+        "y": 106.8
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-7bc6a6dbc77e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 7.92,
+        "x": 136.08,
+        "y": 94.08
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-782a9bd53af7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.24,
+        "x": 72.72,
+        "y": 92.16
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-4289c51d4b26",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.24,
+        "x": 72.72,
+        "y": 104.88
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-39e8c53d251d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.312,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 245.28,
+        "y": 104.88
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-419451f43cd5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.312,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 245.28,
+        "y": 92.16
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-f3ff45e8c40f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 211.44,
+        "y": 94.08
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-844ee2f45834",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 233.04,
+        "y": 94.08
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-0c47d9d05a29",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 144.96,
+        "y": 94.08
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-3fa3695d2308",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 92.4,
+        "y": 94.08
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-e654d6501aed",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.1024,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 233.04,
+        "y": 106.8
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-e1ae3a3818e1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.1024,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 211.68,
+        "y": 106.8
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-be16c0cdfdf1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.1024,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 144.96,
+        "y": 106.8
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-fe7cb64dd23e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.1024,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.52,
+        "x": 92.4,
+        "y": 106.8
+      },
+      "disposition": {
+        "issue": "#1892",
+        "kind": "issue",
+        "note": "The continuous section break moves this content from Word page 1 to converter page 2."
+      },
+      "id": "p1-a7cf337c1d6d",
+      "region": "left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 18,
+    "duplicate": 0,
+    "total": 18,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
