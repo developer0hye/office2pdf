@@ -1,0 +1,16 @@
+{
+  "name": "issue-1916-cjk-hanging-punct-probe",
+  "base": "../../tests/fixtures/pptx/with_japanese.pptx",
+  "part": "ppt/slides/slide1.xml",
+  "factor": "Rectangle 3 target a:pPr/@hangingPunct",
+  "page": 1,
+  "variants": [
+    {
+      "value": "true",
+      "find": "(<a:p><a:pPr[^>]*\\bhangingPunct=\")0(\"[^>]*>[\\s\\S]*?<a:t>（ＧＨＱ）</a:t>[\\s\\S]*?</a:p>)",
+      "replace": "\\g<1>1\\g<2>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

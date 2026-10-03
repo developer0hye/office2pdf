@@ -6128,6 +6128,128 @@ fn the_reported_zero_height_frame_centres_its_block_on_the_frame() {
     );
 }
 
+/// PowerPoint keeps an opening fullwidth parenthesis inside the paragraph's
+/// left inset. Typst's CJK line composer otherwise moves it left by half an em
+/// before placing the remaining fullwidth glyphs.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn pptx_opening_cjk_punctuation_stays_inside_its_text_box_inset() {
+    use crate::config::ConvertOptions;
+    use crate::parser::Parser;
+    use crate::parser::pptx::PptxParser;
+    use typst::foundations::Bytes;
+    use typst::text::Font;
+
+    const FIXTURE: &[u8] = include_bytes!("../../../../tests/fixtures/pptx/poi/with_japanese.pptx");
+    const CJK_FONT: &[u8] = include_bytes!("../../fonts/NotoSansCJKsc-GB2312.otf");
+    const TARGET_TEXT: &str = "（ＧＨＱ）";
+    let cjk_font: Font = Font::new(Bytes::new(CJK_FONT.to_vec()), 0)
+        .expect("the bundled CJK test font should parse");
+    let cjk_family: String = cjk_font.info().family.clone();
+
+    let (mut document, _warnings) = PptxParser
+        .parse(FIXTURE, &ConvertOptions::default())
+        .expect("fixture should parse");
+    let mut target_origin_pt: Option<f64> = None;
+    for page in &mut document.pages {
+        let crate::ir::Page::Fixed(page) = page else {
+            continue;
+        };
+        for element in &mut page.elements {
+            let frame_left_pt: f64 = element.x;
+            let crate::ir::FixedElementKind::TextBox(text_box) = &mut element.kind else {
+                continue;
+            };
+            if !text_box.content.iter().any(|block| match block {
+                Block::Paragraph(paragraph) => paragraph
+                    .runs
+                    .iter()
+                    .any(|run| run.text.contains(TARGET_TEXT)),
+                _ => false,
+            }) {
+                continue;
+            }
+            target_origin_pt = Some(frame_left_pt + text_box.padding.left);
+            text_box.vertical_align = crate::ir::TextBoxVerticalAlign::Top;
+            for block in &mut text_box.content {
+                let Block::Paragraph(paragraph) = block else {
+                    continue;
+                };
+                for run in &mut paragraph.runs {
+                    if run.text.contains(TARGET_TEXT) {
+                        run.style.font_family = Some(cjk_family.clone());
+                        run.style.east_asian_font_family = Some(cjk_family.clone());
+                    }
+                }
+            }
+            break;
+        }
+    }
+    let expected_left_pt: f64 = target_origin_pt.expect("the target text box must be present");
+
+    let punctuation_cases: [(&str, char); 3] = [
+        ("（ＧＨＱ）", '（'),
+        ("「ＧＨＱ」", '「'),
+        ("【ＧＨＱ】", '【'),
+    ];
+    for (target_text, opening_character) in punctuation_cases {
+        for no_wrap in [true, false] {
+            let mut variant_document = document.clone();
+            let mut found_target_text_box: bool = false;
+            for page in &mut variant_document.pages {
+                let crate::ir::Page::Fixed(page) = page else {
+                    continue;
+                };
+                for element in &mut page.elements {
+                    let crate::ir::FixedElementKind::TextBox(text_box) = &mut element.kind else {
+                        continue;
+                    };
+                    for block in &mut text_box.content {
+                        let Block::Paragraph(paragraph) = block else {
+                            continue;
+                        };
+                        for run in &mut paragraph.runs {
+                            if run.text.contains(TARGET_TEXT) {
+                                run.text = run.text.replace(TARGET_TEXT, target_text);
+                                text_box.no_wrap = no_wrap;
+                                found_target_text_box = true;
+                            }
+                        }
+                    }
+                }
+            }
+            assert!(found_target_text_box, "the target text box must be present");
+
+            let generated = generate_typst(&variant_document).expect("fixture should generate");
+            let placed_runs = crate::render::pdf::compiled_text_runs_with_fonts(
+                &generated.source,
+                0,
+                std::slice::from_ref(&cjk_font),
+            )
+            .expect("generated fixture should compile");
+            let opening_punctuation = placed_runs
+                .iter()
+                .find(|run| run.text.starts_with(opening_character))
+                .expect("the target paragraph must retain its opening punctuation");
+            let first_glyph_x_pt: f64 = opening_punctuation.left_pt
+                + opening_punctuation
+                    .glyph_x_offsets_pt
+                    .first()
+                    .copied()
+                    .unwrap_or(0.0);
+            let all_text: String = placed_runs.iter().map(|run| run.text.as_str()).collect();
+            assert!(
+                (first_glyph_x_pt - expected_left_pt).abs() < 0.1,
+                "{target_text}, no_wrap={no_wrap}: PowerPoint starts the line at the text inset {expected_left_pt:.3}pt, but Typst placed its opening punctuation at {first_glyph_x_pt:.3}pt",
+            );
+            assert!(
+                all_text.contains(target_text),
+                "{target_text}, no_wrap={no_wrap}: the layout guard must leave the searchable text unchanged"
+            );
+        }
+    }
+}
+
 /// A `ctr` or `b` frame holding a single wrapping paragraph takes the
 /// shrink-to-fit path, whose scale is the content region over the block's own
 /// height. With no region left there is nothing to fit, and scaling by it

@@ -654,6 +654,8 @@ pub(crate) struct PlacedTextRun {
     /// the source asked for.
     pub family: String,
     pub text: String,
+    /// Per-glyph horizontal offsets from the run origin, in run-local points.
+    pub glyph_x_offsets_pt: Vec<f64>,
 }
 
 /// Every text run the compiled document places on `page_index`, in layout order.
@@ -719,6 +721,11 @@ fn compiled_text_runs_with_line_seating(
                     font_size_pt: text.size.to_pt(),
                     family: text.font.info().family.clone(),
                     text: text.text.to_string(),
+                    glyph_x_offsets_pt: text
+                        .glyphs
+                        .iter()
+                        .map(|glyph| glyph.x_offset.at(text.size).to_pt())
+                        .collect(),
                 }),
                 _ => {}
             }
