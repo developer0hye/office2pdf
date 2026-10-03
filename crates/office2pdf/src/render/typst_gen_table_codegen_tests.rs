@@ -1558,12 +1558,14 @@ fn test_prints_headings_paints_the_black_exterior_frame_without_gridlines() {
     );
 }
 
-/// A slide's table cell paces on PowerPoint's flat 1.2em line, not Word's.
+/// A slide table cell with no explicit line spacing uses PowerPoint's flat 1.2em line.
 ///
 /// A `<a:tbl>` reaches the shared table codegen, which gave its cells Word's
 /// hhea line box. Measured on `office2pdf_introduction_ko` slide 16: an 11pt
 /// cell advanced 17.46pt (1.587em) against PowerPoint's documented 1.2em, so
 /// multi-line cells grew and the table's bottom border moved down with them.
+/// Explicit proportional spacing above 100% uses a separate PowerPoint table
+/// line-box rule; this test covers the plain `a:lnSpc`-absent case.
 /// A LibreOffice render of the same slide advances 13.58pt (1.235em) — a
 /// corroborating reference, not a native export (issue #663).
 #[test]
@@ -1612,9 +1614,8 @@ fn test_slide_table_cell_uses_the_powerpoint_line_box() {
         .unwrap()
         .source;
 
-    // PowerPoint's line is a flat 1.2em box, so the two edges sum to 1.2
-    // regardless of the face — only where inside it the baseline sits is the
-    // face's business. Word's line is the face's own hhea pitch.
+    // With no explicit line spacing, PowerPoint's plain table-cell line is a
+    // flat 1.2em box. Word's line is the face's own hhea pitch.
     let (top, bottom) =
         emitted_slide_line_box_em(&slide, 11.0).expect("slide cell emits a line box");
     assert!(

@@ -911,18 +911,65 @@ pub(super) fn powerpoint_line_height_settings(
     style: &ParagraphStyle,
 ) -> Option<String> {
     let (ascent_em, descent_em) = powerpoint_paragraph_line_box_em(runs, style)?;
+    Some(powerpoint_line_height_settings_for_box(
+        runs, ascent_em, descent_em,
+    ))
+}
+
+/// PowerPoint table rows grow by the expanded paragraph ascent plus the
+/// plain line's below-baseline gap, with a 1.2em floor. Its horizontal rules
+/// sit on row boundaries and do not consume that line box. Native probes of
+/// Calibri and Arial table cells across 105–125% spacing establish this row
+/// model; slide text boxes retain their separate 1.2em-scaled line.
+pub(super) fn powerpoint_table_line_height_settings(
+    runs: &[Run],
+    style: &ParagraphStyle,
+) -> Option<String> {
+    let line_box: Option<(f64, f64)> = match style.line_spacing {
+        Some(LineSpacing::Proportional(factor)) if powerpoint_whole_percent(factor) > 1.0 => {
+            let families: Vec<&str> = powerpoint_line_families(runs, style);
+            let (_, plain_bottom_em) =
+                crate::render::pdf::powerpoint_line_box_em_for_families(&families)?;
+            let font_size_pt: f64 = paragraph_font_size_pt(runs);
+            let percent: f64 = powerpoint_whole_percent(factor);
+            let advance_em: f64 = (POWERPOINT_EXPANDED_PERCENTAGE_ASCENT_EM * percent
+                + plain_bottom_em)
+                .max(crate::render::pdf::POWERPOINT_LINE_HEIGHT_FACTOR);
+            let advance_pt: f64 = advance_em * font_size_pt;
+            let ascent_pt: f64 =
+                (POWERPOINT_EXPANDED_PERCENTAGE_ASCENT_EM * percent * font_size_pt)
+                    .round()
+                    .clamp(0.0, advance_pt);
+            Some((
+                ascent_pt / font_size_pt,
+                (advance_pt - ascent_pt) / font_size_pt,
+            ))
+        }
+        _ => powerpoint_paragraph_line_box_em(runs, style),
+    };
+    let (ascent_em, descent_em) = line_box?;
+    Some(powerpoint_line_height_settings_for_box(
+        runs, ascent_em, descent_em,
+    ))
+}
+
+fn powerpoint_line_height_settings_for_box(
+    runs: &[Run],
+    ascent_em: f64,
+    descent_em: f64,
+) -> String {
     let Some(font_size_pt) = declared_paragraph_font_size_pt(runs) else {
-        return Some(format!(
+        return format!(
             "#set text(top-edge: {}em, bottom-edge: -{}em)\n#set par(leading: 0pt)\n",
             format_f64(ascent_em),
             format_f64(descent_em)
-        ));
+        );
     };
-    Some(format!(
+    format!(
         "#set text(top-edge: {}pt, bottom-edge: -{}pt)\n#set par(leading: 0pt)\n",
         format_f64(ascent_em * font_size_pt),
         format_f64(descent_em * font_size_pt)
-    ))
+    )
 }
 
 /// Explicit breaks already have a separate line-stack model.

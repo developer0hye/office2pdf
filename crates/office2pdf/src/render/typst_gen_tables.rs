@@ -1085,6 +1085,7 @@ fn generate_table_cell(
             clamped_colspan,
             default_cell_padding,
             paints_boundary_bands,
+            ctx.table_uses_powerpoint_line_box,
             seats_on_row_line.then_some(CellVerticalAlign::Center),
         );
         out.push_str(")[");
@@ -1862,7 +1863,9 @@ pub(super) fn format_geometry(value: f64) -> String {
 /// Typst draws our per-cell strokes without reserving room for them, but Word
 /// counts a border's width in the row height. Each horizontal border is shared
 /// between the rows above and below it, so each cell takes half (issues #500,
-/// #503).
+/// #503). PowerPoint table borders sit on row boundaries and do not add to the
+/// row track; that path emits the cell padding without this border adjustment
+/// (issue #1914).
 fn cell_inset_with_border(cell: &TableCell, default_cell_padding: Insets) -> Insets {
     let padding: Insets = cell.padding.unwrap_or(default_cell_padding);
     let Some(border) = &cell.border else {
@@ -3044,6 +3047,7 @@ fn write_cell_params(
     clamped_colspan: u32,
     default_cell_padding: Insets,
     paints_boundary_bands: bool,
+    uses_powerpoint_table_layout: bool,
     // `Some` replaces whatever vertical alignment the cell declares or
     // inherits: a tight spreadsheet row anchors every cell on its one centred
     // line (issue #839). Emitted even for a cell declaring nothing, because
@@ -3070,7 +3074,11 @@ fn write_cell_params(
         );
         write_param(out, &mut first, &fill);
     }
-    let inset: Insets = cell_inset_with_border(cell, default_cell_padding);
+    let inset: Insets = if uses_powerpoint_table_layout {
+        cell.padding.unwrap_or(default_cell_padding)
+    } else {
+        cell_inset_with_border(cell, default_cell_padding)
+    };
     if cell.padding.is_some() || cell.border.is_some() {
         write_param(
             out,
@@ -3529,9 +3537,10 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
         _ => None,
     };
     let line_height_settings: Option<String> = if cell.uses_powerpoint_line_box {
-        // A slide's table cell paces on PowerPoint's flat 1.2em line, the same
-        // model its own text boxes use, not on Word's hhea line (issue #663).
-        powerpoint_line_height_settings(&para.runs, style)
+        // PowerPoint table rows retain the plain line's descent gap as their
+        // horizontal rules sit on track boundaries; slide text boxes scale a
+        // full 1.2em line instead (issues #663 and #1914).
+        powerpoint_table_line_height_settings(&para.runs, style)
     } else {
         // Off-slide, table-cell text occupies the font's full single-spacing
         // (hhea) line as a fixed box: a single-line cell must fill the whole

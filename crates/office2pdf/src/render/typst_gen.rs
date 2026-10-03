@@ -240,7 +240,9 @@ struct GenCtx {
     /// `None` outside a sheet table cell.
     sheet_cell_box: Option<SheetCellBox>,
     /// Whether the table being generated is a slide's, and so paces its cell
-    /// text on PowerPoint's flat 1.2em line rather than Word's hhea one.
+    /// text on PowerPoint's line box rather than Word's hhea one. Plain slide
+    /// table lines use 1.2em; explicit proportional lines use the table's
+    /// measured descent-gap rule (issue #1914).
     ///
     /// A slide's own text boxes already route through
     /// [`powerpoint_line_height_settings`], but a `<a:tbl>` reaches the shared
@@ -248,10 +250,11 @@ struct GenCtx {
     /// `office2pdf_introduction_ko` slide 16, so multi-line cells grew and the
     /// table's bottom border moved down with them (issue #663).
     ///
-    /// The target is PowerPoint's documented 1.2em, the same factor the slide's
-    /// text boxes already use. No native PowerPoint export of that fixture is
-    /// committed; a **LibreOffice** render of it advances 1.235em, which
-    /// corroborates the direction and magnitude without being ground truth.
+    /// The plain-line target is PowerPoint's documented 1.2em, the same factor
+    /// the slide's text boxes already use. No native PowerPoint export of that
+    /// fixture is committed; a **LibreOffice** render of it advances 1.235em,
+    /// which corroborates the direction and magnitude without being ground
+    /// truth.
     table_uses_powerpoint_line_box: bool,
 }
 
