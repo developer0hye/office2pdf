@@ -139,6 +139,135 @@ fn build_docx_with_numbering(
 }
 
 #[test]
+fn body_bookmark_and_comment_range_markers_preserve_list_continuity() {
+    #[derive(Debug, Clone, Copy)]
+    enum MarkerPosition {
+        BookmarkStartBetweenItems,
+        BookmarkEndBetweenItems,
+        CommentStartBetweenItems,
+        CommentEndBetweenItems,
+    }
+
+    let markers: [MarkerPosition; 4] = [
+        MarkerPosition::BookmarkStartBetweenItems,
+        MarkerPosition::BookmarkEndBetweenItems,
+        MarkerPosition::CommentStartBetweenItems,
+        MarkerPosition::CommentEndBetweenItems,
+    ];
+
+    for marker in markers {
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+            0,
+            docx_rs::Start::new(1),
+            docx_rs::NumberFormat::new("decimal"),
+            docx_rs::LevelText::new("%1."),
+            docx_rs::LevelJc::new("left"),
+        ));
+        let numberings = docx_rs::Numberings::new()
+            .add_abstract_numbering(abstract_num)
+            .add_numbering(docx_rs::Numbering::new(1, 0));
+        let first_item = || {
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("First item"))
+                .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0))
+        };
+        let second_item = || {
+            docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Second item"))
+                .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0))
+        };
+        let document = docx_rs::Docx::new().numberings(numberings);
+        let document = match marker {
+            MarkerPosition::BookmarkStartBetweenItems => document
+                .add_paragraph(first_item())
+                .add_bookmark_start(9, "marker")
+                .add_paragraph(second_item())
+                .add_bookmark_end(9),
+            MarkerPosition::BookmarkEndBetweenItems => document
+                .add_bookmark_start(9, "marker")
+                .add_paragraph(first_item())
+                .add_bookmark_end(9)
+                .add_paragraph(second_item()),
+            MarkerPosition::CommentStartBetweenItems => {
+                let mut document = document.add_paragraph(first_item());
+                document.document = document
+                    .document
+                    .add_comment_start(docx_rs::Comment::new(9));
+                document = document.add_paragraph(second_item());
+                document.document = document.document.add_comment_end(9);
+                document
+            }
+            MarkerPosition::CommentEndBetweenItems => {
+                let mut document = document;
+                document.document = document
+                    .document
+                    .add_comment_start(docx_rs::Comment::new(9));
+                document = document.add_paragraph(first_item());
+                document.document = document.document.add_comment_end(9);
+                document.add_paragraph(second_item())
+            }
+        };
+        let mut cursor = Cursor::new(Vec::new());
+        document.build().pack(&mut cursor).unwrap();
+
+        let parser = DocxParser;
+        let (parsed, _warnings) = parser
+            .parse(&cursor.into_inner(), &ConvertOptions::default())
+            .unwrap();
+        let page = match &parsed.pages[0] {
+            Page::Flow(page) => page,
+            _ => panic!("Expected FlowPage"),
+        };
+        let lists: Vec<&List> = page
+            .content
+            .iter()
+            .filter_map(|block| match block {
+                Block::List(list) => Some(list),
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(
+            lists.len(),
+            1,
+            "body range marker {marker:?} split one numbered list into separate blocks"
+        );
+        assert_eq!(lists[0].items.len(), 2);
+        assert_eq!(lists[0].items[0].start_at, Some(1));
+        assert_eq!(
+            lists[0].items[1].start_at, None,
+            "the second item should continue numbering through {marker:?}"
+        );
+    }
+}
+
+#[test]
+fn bookmark_end_in_real_libreoffice_fixture_preserves_the_four_item_list() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf149711.docx");
+    let parser = DocxParser;
+    let (parsed, _warnings) = parser.parse(data, &ConvertOptions::default()).unwrap();
+    let page = match &parsed.pages[0] {
+        Page::Flow(page) => page,
+        _ => panic!("Expected FlowPage"),
+    };
+    let lists: Vec<&List> = page
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            Block::List(list) => Some(list),
+            _ => None,
+        })
+        .collect();
+
+    assert_eq!(
+        lists.len(),
+        1,
+        "the bookmark end between list paragraphs must not split the list"
+    );
+    assert_eq!(lists[0].items.len(), 4);
+}
+
+#[test]
 fn test_parse_simple_bulleted_list() {
     // Create a bullet list: abstractNum with format "bullet", numId=1, ilvl=0
     let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
