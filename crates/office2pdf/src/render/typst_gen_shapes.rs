@@ -989,9 +989,17 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
 
 /// Write stroke parameter for shapes, handling dash patterns.
 pub(super) fn write_shape_stroke(out: &mut String, stroke: &Option<BorderSide>) {
-    if let Some(stroke) = stroke {
-        // DrawingML dashes scale with the line width (issue #678).
-        let _ = write!(out, ", stroke: {}", drawingml_stroke_value(stroke));
+    match stroke {
+        Some(stroke) if stroke.style == BorderLineStyle::None => {
+            out.push_str(", stroke: none");
+        }
+        Some(stroke) => {
+            // DrawingML dashes scale with the line width (issue #678).
+            let _ = write!(out, ", stroke: {}", drawingml_stroke_value(stroke));
+        }
+        // An omitted source line keeps Typst's existing default behavior.
+        // Explicit no-line is carried by `BorderLineStyle::None` instead.
+        None => {}
     }
 }
 
@@ -1571,13 +1579,18 @@ fn write_polyline(out: &mut String, stroke: &Option<BorderSide>, points: &[(f64,
 }
 
 /// Draw a triangle arrowhead at `tip`, pointing in the direction from `from` → `tip`.
-fn write_arrowhead_at(
+pub(super) fn write_arrowhead_at(
     out: &mut String,
     stroke: &Option<BorderSide>,
     from: (f64, f64),
     tip: (f64, f64),
 ) {
-    let Some(stroke) = stroke else { return };
+    let Some(stroke) = stroke
+        .as_ref()
+        .filter(|stroke| stroke.style != BorderLineStyle::None)
+    else {
+        return;
+    };
     let dx: f64 = tip.0 - from.0;
     let dy: f64 = tip.1 - from.1;
     let len: f64 = (dx * dx + dy * dy).sqrt();

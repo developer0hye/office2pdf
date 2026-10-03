@@ -1,5 +1,57 @@
 use super::*;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn explicit_pptx_no_fill_line_does_not_emit_a_default_rectangle_outline() {
+    use crate::parser::Parser;
+    use crate::parser::pptx::PptxParser;
+    use crate::render::pdf::PaintedKind;
+
+    const FIXTURE: &[u8] = include_bytes!("../../../../tests/fixtures/pptx/poi/with_japanese.pptx");
+
+    let (document, _warnings) = PptxParser
+        .parse(FIXTURE, &crate::config::ConvertOptions::default())
+        .expect("the reported fixture should parse");
+    let output = generate_typst(&document).expect("the reported fixture should render");
+    let paints = crate::render::pdf::compiled_paint_sequence(&output.source, &output.images, 0)
+        .expect("the first slide should compile");
+
+    let rectangle_paints: Vec<_> = paints
+        .iter()
+        .filter(|paint| {
+            paint.kind == PaintedKind::Shape
+                && (paint.bounds.0 - 0.0).abs() < 0.01
+                && (paint.bounds.1 - 0.0).abs() < 0.01
+                && (paint.bounds.2 - 720.0).abs() < 0.01
+                && (paint.bounds.3 - 36.0).abs() < 0.01
+        })
+        .collect();
+
+    assert!(
+        rectangle_paints.is_empty(),
+        "Rectangle 2 has no fill or line and must paint nothing, got {rectangle_paints:?}"
+    );
+}
+
+#[test]
+fn explicit_no_line_does_not_emit_an_arrowhead() {
+    let stroke: Option<BorderSide> = Some(BorderSide {
+        width: 0.0,
+        color: Color::black(),
+        style: BorderLineStyle::None,
+        join: LineJoin::Round,
+        cap: LineCap::Flat,
+    });
+    let mut output: String = String::new();
+
+    super::super::shapes::write_arrowhead_at(&mut output, &stroke, (0.0, 0.0), (10.0, 0.0));
+
+    assert!(
+        output.is_empty(),
+        "an explicitly disabled line must not leave an arrowhead, got {output}"
+    );
+}
+
 // ── Floating image codegen tests ──
 
 #[test]

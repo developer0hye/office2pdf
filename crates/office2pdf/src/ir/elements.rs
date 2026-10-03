@@ -1680,6 +1680,8 @@ pub enum BorderLineStyle {
     /// No DrawingML preset maps here; Word `dotDotDash` and its Excel kin do.
     DashDotDot,
     Double,
+    /// The source explicitly disables the outline. Shape codegen preserves
+    /// this separately from an omitted stroke, which retains Typst defaults.
     None,
     /// DrawingML `sysDot`.
     SystemDot,

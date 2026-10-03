@@ -1936,7 +1936,7 @@ fn test_fixed_page_text_box_no_fill_no_stroke() {
     );
     assert!(
         !output.source.contains("stroke:"),
-        "Expected no stroke in output, got:\n{}",
+        "Expected no explicit stroke override for a text box, got:\n{}",
         output.source,
     );
 }

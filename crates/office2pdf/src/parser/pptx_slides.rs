@@ -912,13 +912,23 @@ fn finalize_shape(
     } else {
         shape.ln_color.or(shape.style_ln_color)
     };
-    let stroke: Option<BorderSide> = effective_ln_color.map(|color| BorderSide {
-        width: effective_ln_width_pt,
-        color,
-        style: shape.ln_dash_style,
-        join: effective_ln_join,
-        cap: effective_ln_cap,
-    });
+    let stroke: Option<BorderSide> = if shape.explicit_no_line {
+        Some(BorderSide {
+            width: 0.0,
+            color: Color::black(),
+            style: BorderLineStyle::None,
+            join: effective_ln_join,
+            cap: effective_ln_cap,
+        })
+    } else {
+        effective_ln_color.map(|color| BorderSide {
+            width: effective_ln_width_pt,
+            color,
+            style: shape.ln_dash_style,
+            join: effective_ln_join,
+            cap: effective_ln_cap,
+        })
+    };
     let mut picture_fill: Option<FixedElement> = if shape.blip_embed.is_some() {
         let picture = PictureState {
             x: shape.x,
