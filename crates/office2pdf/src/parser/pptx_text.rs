@@ -1154,39 +1154,59 @@ pub(super) fn insert_hangul_kinsoku_break_markers(runs: &mut [Run]) {
     }
 }
 
-/// Appends the break `<a:br>` states, styled as the run it follows.
+/// Appends an `<a:br>` as a run inheriting the preceding run or paragraph default.
 ///
-/// A hard break contributes no line metrics of its own. Two native
-/// PowerPoint 16 one-factor probes settle that
+/// In paragraphs with visible text, a hard break contributes no line metrics
+/// of its own. Two native PowerPoint 16 one-factor probes settle that
 /// (`scripts/probes/issue-1666-break-run-size.json` and
 /// `issue-1666-paragraph-default-size.json`, both over
 /// `hard_break_line_advance.pptx`): setting the break's own `<a:rPr>` to 4 or
 /// 28pt, emptying it, or dropping it altogether moves no baseline, and neither
 /// does moving the paragraph's inherited `<a:defRPr sz>` to 4 or 28pt while
 /// every run states its own size. The line a break ends is sized by the runs
-/// that carry its text.
+/// that carry its text, so visible paragraphs inherit the preceding run's
+/// style instead of an oversized paragraph default (issue #1666).
 ///
-/// So the break takes the preceding run's style rather than
-/// `paragraph_default`, which it used to take unconditionally: on a paragraph
-/// inheriting a size larger than its runs declare, that default inflated the
-/// line box the break sits in and pushed every line after it down the slide
-/// (issue #1666). `paragraph_default` still stands in for a break that opens
-/// its paragraph, where there is no preceding run to inherit from.
+/// The primary slide XML parser applies a blank-paragraph exception: because
+/// no text run sizes its empty lines, it keeps the break's own formatting and
+/// the paragraph-mark style (issue #1917).
 pub(super) fn push_pptx_soft_line_break(runs: &mut Vec<Run>, paragraph_default: &TextStyle) {
     let style: TextStyle = runs.last().map_or_else(
         || paragraph_default.clone(),
         |previous| previous.style.clone(),
     );
+    push_pptx_soft_line_break_with_style(runs, &style);
+}
+
+pub(super) fn push_pptx_soft_line_break_with_style(runs: &mut Vec<Run>, style: &TextStyle) {
     push_pptx_run(
         runs,
         Run {
             text: PPTX_SOFT_LINE_BREAK_CHAR.to_string(),
-            style,
+            style: style.clone(),
             href: None,
             footnote: None,
             inline_box: None,
         },
     );
+}
+
+/// Restore break-run inheritance on paragraphs whose text determines line
+/// metrics. A blank paragraph instead keeps each `<a:br>` style because its
+/// empty line has no visible run to supply those metrics (#1917).
+pub(super) fn restore_pptx_soft_line_break_styles(runs: &mut [Run], paragraph_default: &TextStyle) {
+    let mut preceding_style: TextStyle = paragraph_default.clone();
+    for run in runs {
+        if run
+            .text
+            .chars()
+            .all(|character| character == PPTX_SOFT_LINE_BREAK_CHAR)
+        {
+            run.style = preceding_style.clone();
+        } else {
+            preceding_style = run.style.clone();
+        }
+    }
 }
 
 pub(super) fn decode_pptx_text_event(text: &quick_xml::events::BytesText<'_>) -> Option<String> {
@@ -1515,7 +1535,7 @@ fn preserve_blank_pptx_list_item(entry: &mut PptxParagraphEntry) {
     });
 }
 
-fn pptx_paragraph_has_visible_content(paragraph: &Paragraph) -> bool {
+pub(super) fn pptx_paragraph_has_visible_content(paragraph: &Paragraph) -> bool {
     if pptx_paragraph_is_blank_list_item(paragraph) {
         return false;
     }

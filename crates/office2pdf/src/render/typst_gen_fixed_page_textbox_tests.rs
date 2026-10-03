@@ -415,6 +415,150 @@ fn embedded_paragraph_mark_changes_only_the_final_wrapped_baseline() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn blank_powerpoint_hard_break_uses_paragraph_mark_size_for_its_final_line() {
+    let family = "Libertinus Serif";
+    let compile = |mark_size_pt: f64| {
+        let make_run = |text: &str, size_pt: f64| Run {
+            text: text.to_string(),
+            style: TextStyle {
+                font_family: Some(family.to_string()),
+                font_size: Some(size_pt),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+            inline_box: None,
+        };
+        let blank_paragraph = Paragraph {
+            style: ParagraphStyle {
+                line_spacing: Some(LineSpacing::Proportional(1.0)),
+                paragraph_mark_font_family: Some(family.into()),
+                paragraph_mark_text_style: Some(Box::new(TextStyle {
+                    font_family: Some(family.to_string()),
+                    font_size: Some(mark_size_pt),
+                    ..TextStyle::default()
+                })),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![make_run("\u{000B}", 11.0)],
+        };
+        let document = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_fixed_text_box(
+                72.0,
+                72.0,
+                480.0,
+                200.0,
+                Insets::default(),
+                crate::ir::TextBoxVerticalAlign::Top,
+                vec![
+                    Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![make_run("Caption", 9.0)],
+                    }),
+                    Block::Paragraph(blank_paragraph),
+                    Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![make_run("Row 1", 11.0)],
+                    }),
+                ],
+            )],
+        )]);
+        let output = generate_typst(&document).unwrap();
+        crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap()
+    };
+
+    let baseline_for = |runs: &[crate::render::pdf::PlacedTextRun]| {
+        runs.iter()
+            .find(|run| run.text.contains("Row"))
+            .expect("the row text is painted")
+            .baseline_pt
+    };
+    let small_mark_baseline = baseline_for(&compile(10.0));
+    let large_mark_baseline = baseline_for(&compile(24.0));
+    let advance = large_mark_baseline - small_mark_baseline;
+
+    assert!(
+        (15.0..18.5).contains(&advance),
+        "the empty final line should gain about 1.2em when its mark grows from 10pt to 24pt, got {advance}pt"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn blank_powerpoint_paragraph_uses_its_mark_as_its_only_line() {
+    let family = "Libertinus Serif";
+    let render_row_baseline = |include_blank_paragraph: bool| {
+        let make_run = |text: &str| Run {
+            text: text.to_string(),
+            style: TextStyle {
+                font_family: Some(family.to_string()),
+                font_size: Some(11.0),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+            inline_box: None,
+        };
+        let mut paragraphs: Vec<Block> = vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![make_run("Caption")],
+        })];
+        if include_blank_paragraph {
+            paragraphs.push(Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    line_spacing: Some(LineSpacing::Proportional(1.0)),
+                    paragraph_mark_font_family: Some(family.into()),
+                    paragraph_mark_text_style: Some(Box::new(TextStyle {
+                        font_family: Some(family.to_string()),
+                        font_size: Some(10.0),
+                        ..TextStyle::default()
+                    })),
+                    ..ParagraphStyle::default()
+                },
+                runs: Vec::new(),
+            }));
+        }
+        paragraphs.push(Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![make_run("Row 1")],
+        }));
+        let document = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_fixed_text_box(
+                72.0,
+                72.0,
+                480.0,
+                200.0,
+                Insets::default(),
+                crate::ir::TextBoxVerticalAlign::Top,
+                paragraphs,
+            )],
+        )]);
+        let output = generate_typst(&document).unwrap();
+        let text_runs: Vec<crate::render::pdf::PlacedTextRun> =
+            crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+        text_runs
+            .iter()
+            .find(|run| run.text.contains("Row"))
+            .expect("the row text is painted")
+            .baseline_pt
+    };
+
+    let baseline_without_blank: f64 = render_row_baseline(false);
+    let baseline_with_blank: f64 = render_row_baseline(true);
+    let advance_pt: f64 = baseline_with_blank - baseline_without_blank;
+
+    assert!(
+        (10.5..13.5).contains(&advance_pt),
+        "an empty paragraph should reserve its 10pt mark line, got {advance_pt}pt"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn wrapped_powerpoint_paragraph_mark_only_seats_the_last_line() {
     let compile = |mark: &str, width: f64| {
         compile_paragraph_mark_probe(
@@ -5913,10 +6057,10 @@ fn a_frame_taller_than_its_insets_keeps_the_measured_slack_path() {
 /// regions stacked thousands of points above the slide, so none of them was
 /// visible (issue #1706).
 ///
-/// Equal top and bottom insets put the inner region's centre on the frame's
-/// own origin, y = 36pt, whatever the block's natural height turns out to be.
-/// That midpoint is what the native PowerPoint for Mac export shows, and it is
-/// the one quantity this fixture pins independently of our line-height model.
+/// Its paragraphs include empty marks at the start and end, so visible text
+/// baselines are not a symmetric proxy for the full story's bounds. Keep the
+/// parsed story fixed and verify that its measured height seats all three
+/// anchors in equal half-height steps.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn the_reported_zero_height_frame_centres_its_block_on_the_frame() {
@@ -5929,31 +6073,58 @@ fn the_reported_zero_height_frame_centres_its_block_on_the_frame() {
     let (document, _warnings) = PptxParser
         .parse(FIXTURE, &ConvertOptions::default())
         .expect("fixture should parse");
-    let source = generate_typst(&document).unwrap();
-    let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+    let first_baseline_for = |vertical_align: crate::ir::TextBoxVerticalAlign| {
+        let mut anchored_document = document.clone();
+        let text_box = anchored_document
+            .pages
+            .iter_mut()
+            .find_map(|page| match page {
+                crate::ir::Page::Fixed(page) => {
+                    page.elements
+                        .iter_mut()
+                        .find_map(|element| match &mut element.kind {
+                            crate::ir::FixedElementKind::TextBox(text_box)
+                                if text_box.content.iter().any(|block| match block {
+                                    Block::Paragraph(paragraph) => paragraph
+                                        .runs
+                                        .iter()
+                                        .any(|run| run.text.contains("Footnote")),
+                                    _ => false,
+                                }) =>
+                            {
+                                Some(text_box)
+                            }
+                            _ => None,
+                        })
+                }
+                _ => None,
+            })
+            .expect("the fixture's Rectangle 3 text box must be present");
+        text_box.vertical_align = vertical_align;
 
-    // `Footnote` opens the frame's first paragraph and `column` appears only in
-    // its last four; the slide's other text uses neither spelling.
-    let first: f64 = runs
-        .iter()
-        .filter(|run| run.text == "Footnote")
-        .map(|run| run.baseline_pt)
-        .fold(f64::INFINITY, f64::min);
-    let last: f64 = runs
-        .iter()
-        .filter(|run| run.text == "column")
-        .map(|run| run.baseline_pt)
-        .fold(f64::NEG_INFINITY, f64::max);
+        let source = generate_typst(&anchored_document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+        runs.iter()
+            .filter(|run| run.text == "Footnote")
+            .map(|run| run.baseline_pt)
+            .fold(f64::INFINITY, f64::min)
+    };
+    let top: f64 = first_baseline_for(crate::ir::TextBoxVerticalAlign::Top);
+    let centre: f64 = first_baseline_for(crate::ir::TextBoxVerticalAlign::Center);
+    let bottom: f64 = first_baseline_for(crate::ir::TextBoxVerticalAlign::Bottom);
     assert!(
-        first.is_finite() && last.is_finite(),
-        "the frame's first and last paragraphs must be drawn: {runs:?}"
+        top.is_finite() && centre.is_finite() && bottom.is_finite(),
+        "the frame's first paragraph must be drawn at every anchor"
     );
-    // Baselines sit an ascender below the block's top and a descender above its
-    // bottom, so their midpoint trails the block's by a few points.
-    let midpoint: f64 = (first + last) / 2.0;
+    let top_to_centre: f64 = centre - top;
+    let centre_to_bottom: f64 = bottom - centre;
     assert!(
-        (midpoint - 36.0).abs() < 15.0,
-        "the block must stay centred on the frame at 36pt, drawn {first}pt to {last}pt"
+        top_to_centre < -1.0,
+        "centering must lift the block off the top seat line, moved {top_to_centre}pt"
+    );
+    assert!(
+        (centre_to_bottom - top_to_centre).abs() < 0.01,
+        "the anchors must step evenly: top -> centre {top_to_centre}pt, centre -> bottom {centre_to_bottom}pt"
     );
 }
 

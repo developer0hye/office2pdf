@@ -1751,6 +1751,7 @@ struct SlideXmlParser<'a> {
 
     // ── Run state (`<a:r>`, `<a:fld>`) ──────────────────────────────
     in_run: bool,
+    in_soft_line_break: bool,
     run_style: TextStyle,
     run_text: String,
     run_has_explicit_underline: bool,
@@ -1819,6 +1820,7 @@ impl<'a> SlideXmlParser<'a> {
             runs: Vec::new(),
 
             in_run: false,
+            in_soft_line_break: false,
             run_field_type: None,
             run_style: TextStyle::default(),
             run_text: String::new(),
@@ -2132,6 +2134,8 @@ impl<'a> SlideXmlParser<'a> {
             }
             b"p" if self.in_txbody => {
                 self.in_para = true;
+                self.in_run = false;
+                self.in_soft_line_break = false;
                 self.para_level = 0;
                 self.para_style = self
                     .text_body_style_defaults
@@ -2242,7 +2246,16 @@ impl<'a> SlideXmlParser<'a> {
                 }
             }
             b"br" if self.in_para && !self.in_run => {
-                push_pptx_soft_line_break(&mut self.runs, &self.para_default_run_style);
+                self.in_run = true;
+                self.in_soft_line_break = true;
+                self.run_field_type = None;
+                self.run_style = self.runs.last().map_or_else(
+                    || self.para_default_run_style.clone(),
+                    |previous| previous.style.clone(),
+                );
+                self.run_text.clear();
+                self.run_has_explicit_underline = false;
+                self.run_marker_style_before_hyperlink = None;
             }
             b"r" if self.in_para => {
                 self.in_run = true;
@@ -3014,6 +3027,12 @@ impl<'a> SlideXmlParser<'a> {
             b"txBody" if self.in_txbody => {
                 self.in_txbody = false;
             }
+            b"br" if self.in_soft_line_break => {
+                push_pptx_soft_line_break_with_style(&mut self.runs, &self.run_style);
+                self.in_run = false;
+                self.in_soft_line_break = false;
+                self.run_field_type = None;
+            }
             b"p" if self.in_para => {
                 let resolved_list_marker = resolve_pptx_list_marker(
                     &self.para_bullet_definition,
@@ -3039,11 +3058,21 @@ impl<'a> SlideXmlParser<'a> {
                 // export of customGeo.pptx page 46 lands its value run at
                 // exactly text_origin + pos, 7.2pt (one default lIns) right
                 // of where the former inset subtraction put it (issue #785).
+                let mut paragraph: Paragraph = Paragraph {
+                    style: paragraph_style,
+                    runs: paragraph_runs,
+                };
+                if pptx_paragraph_has_visible_content(&paragraph) {
+                    super::text::restore_pptx_soft_line_break_styles(
+                        &mut paragraph.runs,
+                        &self.para_default_run_style,
+                    );
+                } else if self.para_declares_end_para_rpr {
+                    paragraph.style.paragraph_mark_text_style =
+                        Some(Box::new(self.para_end_run_style.clone()));
+                }
                 self.paragraphs.push(PptxParagraphEntry {
-                    paragraph: Paragraph {
-                        style: paragraph_style,
-                        runs: paragraph_runs,
-                    },
+                    paragraph,
                     list_marker: resolved_list_marker,
                     paragraph_mark_font_size_pt: self.para_end_run_style.font_size,
                 });
