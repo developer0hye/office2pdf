@@ -450,6 +450,88 @@ fn test_number_format_currency() {
 }
 
 #[test]
+fn accounting_number_format_separates_currency_prefix_from_value() {
+    let data = build_xlsx_formatted(|sheet| {
+        sheet.get_column_dimension_by_number_mut(&1).set_width(20.0);
+        let cell = sheet.get_cell_mut("A1");
+        cell.set_value_number(1234.56f64);
+        cell.get_style_mut()
+            .get_number_format_mut()
+            .set_format_code(r#"_("$"* #,##0.00_);_("$"* \(#,##0.00_);_("$"* "-"??_);_(@_)"#);
+    });
+    let parser = XlsxParser;
+    let (document, _) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = get_sheet_page(&document, 0);
+    let Block::Paragraph(paragraph) = &page.table.rows[0].cells[0].content[0] else {
+        unreachable!("a formatted numeric cell emits one paragraph")
+    };
+    assert_eq!(
+        paragraph.runs.len(),
+        2,
+        "accounting format should keep its left currency prefix separate from the right-aligned value: {:?}",
+        paragraph
+            .runs
+            .iter()
+            .map(|run| run.text.as_str())
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(paragraph.runs[0].text, "$");
+    assert_eq!(paragraph.runs[1].text, "1,234.56");
+    assert_eq!(
+        paragraph
+            .style
+            .sheet_number_format_accounting_leading_reserved_glyphs
+            .as_deref(),
+        Some("(")
+    );
+    assert_eq!(
+        paragraph
+            .style
+            .sheet_number_format_reserved_glyphs
+            .as_deref(),
+        Some(")")
+    );
+}
+
+#[test]
+fn accounting_number_format_splits_negative_and_zero_sections() {
+    let format_code: &str = r#"_("$"* #,##0.00_);_("$"* \(#,##0.00_);_("$"* "-"??_);_(@_)"#;
+    for (value, expected_value) in [(-1234.56, "(1,234.56"), (0.0, "-")] {
+        let data = build_xlsx_formatted(|sheet| {
+            sheet.get_column_dimension_by_number_mut(&1).set_width(20.0);
+            let cell = sheet.get_cell_mut("A1");
+            cell.set_value_number(value);
+            cell.get_style_mut()
+                .get_number_format_mut()
+                .set_format_code(format_code);
+        });
+        let parser = XlsxParser;
+        let (document, _) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        let page = get_sheet_page(&document, 0);
+        let Block::Paragraph(paragraph) = &page.table.rows[0].cells[0].content[0] else {
+            unreachable!("a formatted numeric cell emits one paragraph")
+        };
+        assert_eq!(paragraph.runs.len(), 2, "value {value}");
+        assert_eq!(paragraph.runs[0].text, "$", "value {value}");
+        assert!(
+            paragraph.runs[1].text.contains(expected_value),
+            "value {value} should remain intact after the accounting prefix is split: {:?}",
+            paragraph.runs[1].text
+        );
+        assert_eq!(
+            paragraph
+                .style
+                .sheet_number_format_accounting_leading_reserved_glyphs
+                .as_deref(),
+            Some("("),
+            "value {value}"
+        );
+    }
+}
+
+#[test]
 fn test_number_format_keeps_quoted_currency_suffix() {
     // The quoted euro literal after the digits was dropped, printing
     // "1,240.00" instead of Excel's "1,240.00 €" (issue #365).

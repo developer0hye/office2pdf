@@ -214,6 +214,7 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
         paragraph_mark_font_family: None,
         paragraph_mark_text_style: None,
         sheet_number_format_reserved_glyphs: None,
+        sheet_number_format_accounting_leading_reserved_glyphs: None,
     };
     let original: ParagraphStyle = target.clone();
     let source = ParagraphStyle::default();
@@ -264,6 +265,7 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
         paragraph_mark_font_family: None,
         paragraph_mark_text_style: None,
         sheet_number_format_reserved_glyphs: None,
+        sheet_number_format_accounting_leading_reserved_glyphs: None,
         tab_stops: Some(vec![TabStop {
             position: 144.0,
             alignment: TabAlignment::Right,

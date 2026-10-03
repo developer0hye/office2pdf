@@ -3537,6 +3537,48 @@ fn empty_cell_paragraph_metric_runs(blocks: &[Block], index: usize) -> Option<&[
     })
 }
 
+/// Put an accounting-format prefix at the cell's left edge and its value at
+/// the right edge, leaving Excel's repeat-fill region between them.
+fn generate_sheet_accounting_number_format(
+    out: &mut String,
+    style: &ParagraphStyle,
+    runs: &[Run],
+    leading_reserved_glyphs: &str,
+    default_tab_width_pt: f64,
+    eojeol_wrap: EojeolWrap,
+) {
+    let Some((prefix_run, value_runs)) = runs.split_first() else {
+        return;
+    };
+
+    out.push_str("#grid(columns: (auto, 1fr), gutter: 0pt, align: (left, right),\n  [");
+    if !leading_reserved_glyphs.is_empty()
+        && let Some(reserved_width_pt) =
+            sheet_number_format_reserved_width_pt(&prefix_run.style, leading_reserved_glyphs)
+    {
+        let _ = write!(out, "#h({}pt)", format_geometry(reserved_width_pt));
+    }
+    generate_runs_with_tabs(
+        out,
+        std::slice::from_ref(prefix_run),
+        style.tab_stops.as_deref(),
+        default_tab_width_pt,
+        eojeol_wrap,
+    );
+    out.push_str("],\n  [");
+    generate_runs_with_tabs(
+        out,
+        value_runs,
+        style.tab_stops.as_deref(),
+        default_tab_width_pt,
+        eojeol_wrap,
+    );
+    if let Some(space_pt) = sheet_trailing_advance_space_pt(style, value_runs) {
+        let _ = write!(out, "#h({}pt)", format_geometry(space_pt));
+    }
+    out.push_str("],\n)\n");
+}
+
 fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagraphCtx) {
     let style: &ParagraphStyle = &para.style;
     let alignment = style.alignment;
@@ -3716,7 +3758,21 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
                     cell.available_measure_pt,
                 )
             };
-            if cell.uses_powerpoint_line_box {
+            if !cell.uses_powerpoint_line_box
+                && para.runs.len() >= 2
+                && let Some(leading_reserved_glyphs) = style
+                    .sheet_number_format_accounting_leading_reserved_glyphs
+                    .as_deref()
+            {
+                generate_sheet_accounting_number_format(
+                    out,
+                    style,
+                    &para.runs,
+                    leading_reserved_glyphs,
+                    paragraph_default_tab_width_pt(style, cell.default_tab_width_pt),
+                    eojeol_wrap,
+                );
+            } else if cell.uses_powerpoint_line_box {
                 generate_powerpoint_runs_with_tabs(
                     out,
                     &para.runs,

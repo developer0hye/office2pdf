@@ -153,6 +153,11 @@ pub struct ParagraphStyle {
     /// cell whose selected section reserves nothing, a non-worksheet
     /// paragraph, or a cell already replaced with overflow hashes.
     pub sheet_number_format_reserved_glyphs: Option<Box<str>>,
+    /// A left-aligned accounting-format prefix whose numeric value remains
+    /// right-aligned across the cell (issue #1969). The string contains the
+    /// glyphs whose hidden advance precedes that prefix; `Some("")` still
+    /// selects the split layout when no leading glyph is reserved.
+    pub sheet_number_format_accounting_leading_reserved_glyphs: Option<Box<str>>,
 }
 
 /// A custom tab stop definition.
@@ -405,9 +410,9 @@ impl TextStyle {
 }
 
 impl ParagraphStyle {
-    /// Merge fields from `other` into `self`. For each field, if `other` has
-    /// `Some(value)`, it overwrites `self`'s value. Fields that are `None` in
-    /// `other` are left unchanged.
+    /// Merge inheritable paragraph formatting fields from `other` into `self`.
+    /// For each field, `Some(value)` overwrites `self`; `None` leaves it
+    /// unchanged. Worksheet-only number-format annotations are not inherited.
     pub fn merge_from(&mut self, other: &ParagraphStyle) {
         if other.alignment.is_some() {
             self.alignment = other.alignment;

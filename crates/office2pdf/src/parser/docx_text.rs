@@ -88,6 +88,7 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         paragraph_mark_text_style: None,
         // Worksheet-cell-only (issue #1631); Word paragraphs never carry one.
         sheet_number_format_reserved_glyphs: None,
+        sheet_number_format_accounting_leading_reserved_glyphs: None,
     }
 }
 
