@@ -436,9 +436,9 @@ impl Parser for DocxParser {
         let mut pages: Vec<Page> = Vec::new();
         let mut section_layout_index: usize = 0;
         for (idx, child) in docx.document.children.iter().enumerate() {
-            // A paragraph a removed mark withheld merges into the next
-            // paragraph, and a bookmark or comment marker between the two does
-            // not interrupt that. Anything else ends the merge (issue #1710).
+            // A removed paragraph mark merges into the next paragraph; zero-width
+            // bookmark/comment markers leave it pending. Tables, TOCs, and
+            // section boundaries start separate flow blocks, so flush it here.
             if matches!(
                 child,
                 docx_rs::DocumentChild::Table(_)
@@ -485,6 +485,10 @@ impl Parser for DocxParser {
                 docx_rs::DocumentChild::StructuredDataTag(sdt) => {
                     convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &ctx, &docx.styles)
                 }
+                docx_rs::DocumentChild::BookmarkStart(_)
+                | docx_rs::DocumentChild::BookmarkEnd(_)
+                | docx_rs::DocumentChild::CommentStart(_)
+                | docx_rs::DocumentChild::CommentEnd(_) => vec![],
                 _ => vec![TaggedElement::Plain(vec![])],
             }));
 
