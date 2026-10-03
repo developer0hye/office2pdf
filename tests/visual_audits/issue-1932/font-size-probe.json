@@ -1,0 +1,58 @@
+{
+  "name": "issue1932-font-size-scale-sweep",
+  "base": "font-size-base.xlsx",
+  "part": "xl/worksheets/sheet1.xml",
+  "factor": "pageSetup@scale (%)",
+  "page": 1,
+  "noise_floor": 0.5,
+  "variants": [
+    {
+      "value": "50",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"50\" />",
+      "count": 1
+    },
+    {
+      "value": "60",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"60\" />",
+      "count": 1
+    },
+    {
+      "value": "70",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"70\" />",
+      "count": 1
+    },
+    {
+      "value": "78",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"78\" />",
+      "count": 1
+    },
+    {
+      "value": "85",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"85\" />",
+      "count": 1
+    },
+    {
+      "value": "90",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"90\" />",
+      "count": 1
+    },
+    {
+      "value": "95",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"95\" />",
+      "count": 1
+    },
+    {
+      "value": "100",
+      "find": "<pageSetup paperSize=\"1\" orientation=\"portrait\" />",
+      "replace": "<pageSetup paperSize=\"1\" orientation=\"portrait\" scale=\"100\" />",
+      "count": 1
+    }
+  ]
+}

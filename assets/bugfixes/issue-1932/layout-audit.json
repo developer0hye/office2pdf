@@ -1,0 +1,184 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 33,
+    "out": 30,
+    "matched": 27,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 24,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.4868421052631579,
+    "worst_dy": 1.0,
+    "worst_dy_signed": -1.0,
+    "worst_line": "Toprow5"
+   },
+   "dx0": {
+    "mean_abs": 0.0,
+    "worst": 0.0
+   },
+   "width": {
+    "mean_abs_pct": 0.01971138270654905,
+    "worst_pct": 0.04351355778904425
+   },
+   "instances": {
+    "compared": 38,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 5,
+    "fine_shifts": [
+     {
+      "label": "Toprow5",
+      "gt_x": 105.5,
+      "gt_y": 127.5,
+      "out_x": 105.5,
+      "out_y": 126.5,
+      "dx": 0.0,
+      "dy": -1.0,
+      "width_pct": 0.016902142400106075
+     },
+     {
+      "label": "Bottomrow5",
+      "gt_x": 51.5,
+      "gt_y": 129.0,
+      "out_x": 51.5,
+      "out_y": 130.0,
+      "dx": 0.0,
+      "dy": 1.0,
+      "width_pct": 0.02341913766324688
+     },
+     {
+      "label": "Toprow6",
+      "gt_x": 105.5,
+      "gt_y": 137.0,
+      "out_x": 105.5,
+      "out_y": 136.0,
+      "dx": 0.0,
+      "dy": -1.0,
+      "width_pct": 0.016902142400106075
+     },
+     {
+      "label": "Centerrow6",
+      "gt_x": 159.5,
+      "gt_y": 141.0,
+      "out_x": 159.5,
+      "out_y": 140.0,
+      "dx": 0.0,
+      "dy": -1.0,
+      "width_pct": 0.03594327265703644
+     },
+     {
+      "label": "Bottomrow6",
+      "gt_x": 51.5,
+      "gt_y": 144.0,
+      "out_x": 51.5,
+      "out_y": 145.0,
+      "dx": 0.0,
+      "dy": 1.0,
+      "width_pct": 0.02341913766324688
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 29,
+    "worst_delta": 2.0
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 3,
+    "gt_lines": 5,
+    "out_lines": 4,
+    "samples": [
+     "Bottomrow5 + Centerrow5",
+     "Toprow8 + Centerrow8",
+     "Bottomrow13 + Centerrow13"
+    ]
+   },
+   "reflow": {
+    "gt_lines": 4,
+    "out_lines": 2,
+    "samples": [
+     "Bottomrow1Centerrow1",
+     "Toprow1",
+     "Bottomrow10"
+    ]
+   },
+   "rects": {
+    "gt_count": 16,
+    "out_count": 48,
+    "canonical_gt_count": 16,
+    "canonical_out_count": 48,
+    "matched": 0,
+    "unmatched_gt": 16,
+    "unmatched_out": 48,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}
