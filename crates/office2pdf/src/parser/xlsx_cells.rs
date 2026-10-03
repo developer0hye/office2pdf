@@ -230,6 +230,115 @@ fn right_aligned_number_format_reserve_glyphs(format_code: &str, value: f64) -> 
     (!reserved.is_empty()).then_some(reserved)
 }
 
+/// The left prefix and hidden edge advances of a whitespace-filled accounting
+/// section such as `_("$"* #,##0.00_)`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct AccountingNumberFormatFill {
+    prefix: String,
+    fill_character: char,
+    leading_reserved_glyphs: String,
+    trailing_reserved_glyphs: String,
+}
+
+/// Recognize a prefix, space repeat-fill, and numeric placeholder in one
+/// selected number-format section. Other repeat-fill patterns stay on the
+/// existing formatter path because their repeated glyphs are visible.
+fn accounting_number_format_fill(section: &str) -> Option<AccountingNumberFormatFill> {
+    let mut prefix: String = String::new();
+    let mut leading_reserved_glyphs: String = String::new();
+    let mut trailing_reserved_glyphs: String = String::new();
+    let mut fill_character: Option<char> = None;
+    let mut has_numeric_placeholder: bool = false;
+    let mut is_inside_quoted_literal: bool = false;
+    let mut characters: std::iter::Peekable<std::str::Chars<'_>> = section.chars().peekable();
+
+    while let Some(character) = characters.next() {
+        if is_inside_quoted_literal {
+            if character == '"' {
+                is_inside_quoted_literal = false;
+            } else if fill_character.is_none() {
+                prefix.push(character);
+            }
+            continue;
+        }
+
+        match character {
+            '"' => is_inside_quoted_literal = true,
+            '\\' => {
+                let literal: char = characters.next()?;
+                if fill_character.is_none() {
+                    prefix.push(literal);
+                }
+            }
+            '_' => {
+                let reserved_glyph: char = characters.next()?;
+                if fill_character.is_some() {
+                    trailing_reserved_glyphs.push(reserved_glyph);
+                } else {
+                    leading_reserved_glyphs.push(reserved_glyph);
+                }
+            }
+            '*' => {
+                let repeated_glyph: char = characters.next()?;
+                if fill_character.is_some()
+                    || has_numeric_placeholder
+                    || repeated_glyph != ' '
+                    || prefix.trim().is_empty()
+                {
+                    return None;
+                }
+                fill_character = Some(repeated_glyph);
+            }
+            '[' => {
+                for control_character in characters.by_ref() {
+                    if control_character == ']' {
+                        break;
+                    }
+                }
+            }
+            '0' | '#' | '?' => {
+                if fill_character.is_none() {
+                    return None;
+                }
+                has_numeric_placeholder = true;
+            }
+            _ if fill_character.is_none() => prefix.push(character),
+            _ => {}
+        }
+    }
+
+    if is_inside_quoted_literal || !has_numeric_placeholder {
+        return None;
+    }
+    Some(AccountingNumberFormatFill {
+        prefix,
+        fill_character: fill_character?,
+        leading_reserved_glyphs,
+        trailing_reserved_glyphs,
+    })
+}
+
+/// Return the selected section's accounting fill when it matches the narrow
+/// left-prefix/right-value shape handled by the worksheet renderer.
+fn selected_accounting_number_format_fill(
+    format_code: &str,
+    value: f64,
+) -> Option<AccountingNumberFormatFill> {
+    let section: &str = selected_number_format_section(format_code, value)?;
+    accounting_number_format_fill(section)
+}
+
+/// Split the dependency's width-independent result at its one retained fill
+/// character, leaving the repeat-fill gap to the cell's full width.
+fn split_accounting_formatted_value(
+    formatted: &str,
+    fill: &AccountingNumberFormatFill,
+) -> Option<(String, String)> {
+    let after_prefix: &str = formatted.strip_prefix(&fill.prefix)?;
+    let value: &str = after_prefix.strip_prefix(fill.fill_character)?;
+    (!value.is_empty()).then(|| (fill.prefix.clone(), value.to_string()))
+}
+
 /// Reference advances for the issue #1263 face, from the macOS-shipped
 /// Trebuchet MS `hmtx` tables. This keeps the width gate deterministic on
 /// wasm and hosts without that Office face; other strings use the resolved
@@ -3651,6 +3760,7 @@ pub(super) fn build_rows_for_range(
             };
 
             let mut sheet_number_format_reserved_glyphs: Option<String> = None;
+            let mut sheet_number_format_accounting_leading_reserved_glyphs: Option<String> = None;
             if let Some(cell) = umya_cell
                 && let Some(number) = cell.get_value_number()
                 && let Some(number_format) = cell.get_style().get_number_format()
@@ -3680,8 +3790,26 @@ pub(super) fn build_rows_for_range(
                 } else if overflow_replacement.is_none()
                     && matches!(paragraph_alignment, Some(crate::ir::Alignment::Right))
                 {
-                    sheet_number_format_reserved_glyphs =
-                        right_aligned_number_format_reserve_glyphs(format_code, number);
+                    let accounting_fill: Option<AccountingNumberFormatFill> =
+                        selected_accounting_number_format_fill(format_code, number);
+                    if let Some(fill) = accounting_fill
+                        && runs.len() == 1
+                        && let Some((prefix, numeric_value)) =
+                            split_accounting_formatted_value(&value, &fill)
+                    {
+                        let mut prefix_run: Run = runs[0].clone();
+                        prefix_run.text = prefix;
+                        runs[0].text = numeric_value;
+                        runs.insert(0, prefix_run);
+                        sheet_number_format_accounting_leading_reserved_glyphs =
+                            Some(fill.leading_reserved_glyphs);
+                        sheet_number_format_reserved_glyphs =
+                            (!fill.trailing_reserved_glyphs.is_empty())
+                                .then_some(fill.trailing_reserved_glyphs);
+                    } else {
+                        sheet_number_format_reserved_glyphs =
+                            right_aligned_number_format_reserve_glyphs(format_code, number);
+                    }
                 }
             }
 
@@ -3726,6 +3854,9 @@ pub(super) fn build_rows_for_range(
                         alignment: paragraph_alignment,
                         sheet_number_format_reserved_glyphs: sheet_number_format_reserved_glyphs
                             .map(String::into_boxed_str),
+                        sheet_number_format_accounting_leading_reserved_glyphs:
+                            sheet_number_format_accounting_leading_reserved_glyphs
+                                .map(String::into_boxed_str),
                         ..ParagraphStyle::default()
                     },
                     runs,

@@ -5671,6 +5671,26 @@ pub(super) fn sheet_trailing_advance_space_pt(style: &ParagraphStyle, runs: &[Ru
     (space_pt != 0.0).then_some(space_pt)
 }
 
+/// The full sheet-grid advance for glyphs reserved but not painted by a
+/// number-format control at a cell edge.
+pub(super) fn sheet_number_format_reserved_width_pt(
+    style: &TextStyle,
+    reserved_glyphs: &str,
+) -> Option<f64> {
+    let scale: f64 = sheet_advance_grid_scale()?;
+    let size_pt: f64 = style.font_size.filter(|size| *size > 0.0)?;
+    let sheet_size_pt: f64 = size_pt / scale;
+    let advances_em: Vec<f64> = sheet_advance_grid_glyph_advances_em(style, reserved_glyphs)?;
+    Some(
+        advances_em
+            .iter()
+            .map(|advance| {
+                round_half_up_to_grid(advance * sheet_size_pt, SHEET_ADVANCE_GRID_PT) * scale
+            })
+            .sum(),
+    )
+}
+
 /// The gridline-to-gridline box of a spreadsheet cell, in printed points,
 /// with the inset pair its text is laid out inside and the cell's `wrapText`
 /// flag.

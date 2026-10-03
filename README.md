@@ -13,7 +13,7 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 
 - **DOCX** — paragraphs, inline formatting (bold/italic/underline/color), tables, images, drawing shapes, ordered/nested lists, syntax-highlighted code, headers/footers, page setup
 - **PPTX** — slides, text boxes, shapes, tables (with theme-based table styles), images, slide masters, speaker notes, gradient backgrounds, shadow/reflection effects; hidden slides are omitted by default and can be included explicitly
-- **XLSX** — sheets (hidden ones skipped, as Excel does), chartsheets (one page-sized chart each), cell formatting, merged cells, column widths, row heights, print scaling, Excel tables (built-in style banding, header/foot rules, bold header), conditional formatting (DataBar, IconSet, and formula rules)
+- **XLSX** — sheets (hidden ones skipped, as Excel does), chartsheets (one page-sized chart each), cell formatting including accounting currency alignment, merged cells, column widths, row heights, print scaling, Excel tables (built-in style banding, header/foot rules, bold header), conditional formatting (DataBar, IconSet, and formula rules)
 - **PDF/A-2b** — archival-compliant output via `--pdf-a`
 - **Embedded font extraction** — fonts embedded in PPTX/DOCX are automatically extracted, deobfuscated, and used during conversion
 - **macOS Office font auto-discovery** — PowerPoint/Word/Excel bundled fonts are searched automatically; mutable per-user Office cloud caches require an explicit font path

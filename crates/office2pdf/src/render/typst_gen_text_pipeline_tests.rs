@@ -3133,6 +3133,51 @@ fn test_right_aligned_sheet_cell_adds_the_number_format_reserved_glyph_advance()
     );
 }
 
+#[test]
+fn accounting_number_format_emits_left_prefix_and_right_value_tracks() {
+    let mut page = sheet_page_with_aligned_cell(
+        "$1,234.56",
+        TextStyle {
+            font_family: Some("Libertinus Serif".to_string()),
+            font_size: Some(10.0),
+            ..TextStyle::default()
+        },
+        Some(Alignment::Right),
+    );
+    let Page::Sheet(sheet) = &mut page else {
+        unreachable!("sheet_page_with_aligned_cell returns a sheet")
+    };
+    let Block::Paragraph(paragraph) = &mut sheet.table.rows[0].cells[0].content[0] else {
+        unreachable!("sheet_page_with_aligned_cell always emits a paragraph")
+    };
+    let mut prefix_run: Run = paragraph.runs[0].clone();
+    prefix_run.text = "$".to_string();
+    let mut value_run: Run = prefix_run.clone();
+    value_run.text = "1,234.56".to_string();
+    paragraph.runs = vec![prefix_run, value_run];
+    paragraph
+        .style
+        .sheet_number_format_accounting_leading_reserved_glyphs =
+        Some("(".to_string().into_boxed_str());
+    paragraph.style.sheet_number_format_reserved_glyphs = Some(")".to_string().into_boxed_str());
+
+    let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+    assert!(
+        source.contains("#grid(columns: (auto, 1fr), gutter: 0pt, align: (left, right),"),
+        "the accounting prefix and value need independent cell-edge tracks: {source}"
+    );
+    let prefix_position: usize = source.find("\\$").expect("currency prefix is emitted");
+    let value_position: usize = source.find("1,234.56").expect("numeric value is emitted");
+    assert!(
+        prefix_position < value_position,
+        "prefix precedes the value: {source}"
+    );
+    assert!(
+        source[value_position..].contains("#h("),
+        "the right edge keeps the selected section's reserved glyph advance: {source}"
+    );
+}
+
 /// A cell with no number-format reserve keeps only its own trailing-advance
 /// delta — an empty reserve must not silently add a spurious `#h`.
 #[test]
