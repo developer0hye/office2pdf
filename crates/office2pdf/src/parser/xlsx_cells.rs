@@ -297,9 +297,7 @@ fn accounting_number_format_fill(section: &str) -> Option<AccountingNumberFormat
                 }
             }
             '0' | '#' | '?' => {
-                if fill_character.is_none() {
-                    return None;
-                }
+                fill_character?;
                 has_numeric_placeholder = true;
             }
             _ if fill_character.is_none() => prefix.push(character),
