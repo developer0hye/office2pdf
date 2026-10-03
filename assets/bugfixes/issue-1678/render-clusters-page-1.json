@@ -1,0 +1,615 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 156.816,
+      "bbox_pt": {
+        "height": 23.04,
+        "width": 16.92,
+        "x": 477.0,
+        "y": 406.8
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-2022208315d2",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 156.6864,
+      "bbox_pt": {
+        "height": 23.04,
+        "width": 16.92,
+        "x": 384.84,
+        "y": 406.8
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-e457ddca9e90",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 86.9616,
+      "bbox_pt": {
+        "height": 22.32,
+        "width": 7.92,
+        "x": 281.16,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-da82ff14a19a",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 20.88,
+        "width": 7.2,
+        "x": 209.16,
+        "y": 407.52
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-a2c29fa07f09",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 20.88,
+        "width": 7.2,
+        "x": 304.2,
+        "y": 407.52
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-095a7bc2991a",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 54.1728,
+      "bbox_pt": {
+        "height": 20.88,
+        "width": 5.04,
+        "x": 456.84,
+        "y": 407.52
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-d6eb17d79158",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 53.0064,
+      "bbox_pt": {
+        "height": 20.88,
+        "width": 5.4,
+        "x": 189.0,
+        "y": 407.52
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-908bcbaab5be",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 49.3776,
+      "bbox_pt": {
+        "height": 11.88,
+        "width": 11.88,
+        "x": 294.84,
+        "y": 417.96
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-6b6ebc11da2a",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 49.3776,
+      "bbox_pt": {
+        "height": 11.88,
+        "width": 11.88,
+        "x": 199.8,
+        "y": 417.96
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-b6f5546ed539",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 45.7488,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 10.44,
+        "x": 199.44,
+        "y": 406.8
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-f0881eaee9f2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 45.7488,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 10.44,
+        "x": 294.48,
+        "y": 406.8
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-8f4cd3188a63",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 44.712,
+      "bbox_pt": {
+        "height": 12.6,
+        "width": 7.56,
+        "x": 371.16,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-b99f144c6c09",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 42.768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.56,
+        "x": 371.52,
+        "y": 418.32
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-b0e0a5ecdddb",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 39.6576,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.28,
+        "x": 447.84,
+        "y": 406.8
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-36574341da95",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 11.16,
+        "width": 8.28,
+        "x": 447.84,
+        "y": 416.88
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-a544d7c60222",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 37.7136,
+      "bbox_pt": {
+        "height": 9.72,
+        "width": 7.2,
+        "x": 463.68,
+        "y": 418.32
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-acf6406af2d1",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 37.7136,
+      "bbox_pt": {
+        "height": 12.24,
+        "width": 7.2,
+        "x": 463.68,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-5d1bc5f7efea",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 35.5104,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 271.8,
+        "y": 409.68
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-e2ed516fcf20",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 35.5104,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 272.16,
+        "y": 419.4
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-ddad62b9770d",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 32.0112,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 7.56,
+        "x": 356.4,
+        "y": 417.6
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-22fa5be843cc",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.7152,
+      "bbox_pt": {
+        "height": 10.44,
+        "width": 7.2,
+        "x": 356.4,
+        "y": 406.8
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-fd87c0b09e35",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 29.2896,
+      "bbox_pt": {
+        "height": 11.16,
+        "width": 7.2,
+        "x": 262.8,
+        "y": 416.88
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-32855a318ca8",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 27.4752,
+      "bbox_pt": {
+        "height": 9.0,
+        "width": 5.76,
+        "x": 182.88,
+        "y": 419.4
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-231ba31ab512",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.4752,
+      "bbox_pt": {
+        "height": 9.0,
+        "width": 5.76,
+        "x": 182.52,
+        "y": 409.68
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-2963e105c33f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.216,
+      "bbox_pt": {
+        "height": 10.44,
+        "width": 6.48,
+        "x": 262.8,
+        "y": 406.8
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-5a81b765df6c",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 24.4944,
+      "bbox_pt": {
+        "height": 9.72,
+        "width": 6.84,
+        "x": 174.24,
+        "y": 418.32
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-022340e15569",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.032,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.32,
+        "x": 174.24,
+        "y": 406.8
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-ca23cd82ef0f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 313.2,
+        "y": 419.4
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-e557e3bb2671",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 365.76,
+        "y": 419.4
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-95e8dd948bbd",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 403.56,
+        "y": 419.4
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-a7c4e4d7322c",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 217.8,
+        "y": 409.68
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-14d999e03dcc",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 495.36,
+        "y": 419.4
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-4320f40e40fb",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 312.84,
+        "y": 409.68
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-f72052183909",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 365.4,
+        "y": 409.68
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-5c1f067f0e58",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 403.56,
+        "y": 409.68
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-d4a9eb14d3c5",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 495.72,
+        "y": 409.68
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-7f6d7b6ca813",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 21.384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.04,
+        "x": 218.16,
+        "y": 419.4
+      },
+      "disposition": {
+        "issue": "#1868",
+        "kind": "issue",
+        "note": "All 37 clusters are category-label glyphs below the native baselines; the measured 9.828pt seat difference is tracked in #1868."
+      },
+      "id": "p1-12e7b52a73a0",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 200,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 37,
+    "duplicate": 0,
+    "total": 37,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

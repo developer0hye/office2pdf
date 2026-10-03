@@ -4356,6 +4356,95 @@ fn a_stated_title_size_takes_the_band_excel_gives_it() {
     }
 }
 
+#[test]
+fn a_powerpoint_column_title_takes_its_native_band() {
+    for (size_pt, band_pt) in [
+        (10.0, 21.2495),
+        (14.0, 26.13918),
+        (18.0, 31.02886),
+        (24.0, 38.36338),
+        (36.0, 53.03242),
+    ] {
+        let mut chart = own_title_style_chart(title_run_style(Some(size_pt), Some(false), None));
+        chart.chart_type = ChartType::Column;
+        chart.host = crate::ir::ChartHost::Presentation;
+
+        let measured_pt: f64 = chart_area_title_h(&chart);
+
+        assert!(
+            (measured_pt - band_pt).abs() < 0.001,
+            "PowerPoint's {size_pt}pt column title takes a {band_pt}pt band, got {measured_pt}pt"
+        );
+    }
+}
+
+#[test]
+fn a_powerpoint_column_title_inherits_the_scaled_chart_space_size() {
+    let mut chart = sized_bar_chart(18.0);
+    chart.chart_type = ChartType::Column;
+    chart.host = crate::ir::ChartHost::Presentation;
+    let measured_band_pt: f64 = chart_area_title_h(&chart);
+    let source: String = framed_chart_source(&chart, 480.0, 320.0);
+    let title: &str = source
+        .lines()
+        .find(|line| line.contains("[Sales]"))
+        .expect("the PowerPoint column title is emitted");
+    let baseline_text: &str = title
+        .split_once("top-edge: ")
+        .expect("the title baseline starts after top-edge")
+        .1
+        .split_once("pt, bottom-edge: \"baseline\"")
+        .expect("the title baseline is measured in points")
+        .0;
+    let baseline_pt: f64 = baseline_text
+        .parse()
+        .expect("the emitted title baseline is numeric");
+
+    assert!(
+        (measured_band_pt - 35.429572).abs() < 0.001,
+        "an 18pt chart space scales its title before sizing the band, got {measured_band_pt}pt"
+    );
+    assert!(
+        (baseline_pt - 28.1468).abs() < 0.001,
+        "the inherited title size must also drive the native baseline seat: {title}"
+    );
+}
+
+#[test]
+fn a_powerpoint_column_title_uses_its_native_baseline_seat() {
+    for (size_pt, baseline_pt) in [
+        (10.0, 17.44),
+        (14.0, 21.132),
+        (18.0, 24.824),
+        (24.0, 30.362),
+        (36.0, 41.438),
+    ] {
+        let mut chart = own_title_style_chart(title_run_style(Some(size_pt), Some(false), None));
+        chart.chart_type = ChartType::Column;
+        chart.host = crate::ir::ChartHost::Presentation;
+        let source: String = framed_chart_source(&chart, 480.0, 320.0);
+        let title: &str = source
+            .lines()
+            .find(|line| line.contains("[Sales]"))
+            .expect("the PowerPoint column title is emitted");
+        let baseline_text: &str = title
+            .split_once("top-edge: ")
+            .expect("the title baseline starts after top-edge")
+            .1
+            .split_once("pt, bottom-edge: \"baseline\"")
+            .expect("the title baseline is measured in points")
+            .0;
+        let actual_baseline_pt: f64 = baseline_text
+            .parse()
+            .expect("the emitted title baseline is numeric");
+
+        assert!(
+            (actual_baseline_pt - baseline_pt).abs() < 0.001,
+            "PowerPoint's {size_pt}pt column title baseline is {baseline_pt}pt below the chart-area top, got {actual_baseline_pt}pt in: {title}"
+        );
+    }
+}
+
 /// A chartsheet title's baseline is seated from the chart area's top edge,
 /// independently of whichever face Typst resolves for the title.
 ///
@@ -4913,11 +5002,91 @@ fn a_powerpoint_column_right_legend_uses_the_native_vertical_center_at_multiple_
 
         let source = framed_chart_source(&chart, 480.0, 320.0);
         let actual_y = legend_entry_y(&source, "Sales");
+        let prior_title_h: f64 = 19.84 + 1.465 * size_pt;
+        let expected_y: f64 = expected_y + prior_title_h - chart_area_title_h(&chart);
         assert!(
             (actual_y - expected_y).abs() <= 0.01,
             "{size_pt}pt PowerPoint column legend key starts at y={actual_y}pt, expected {expected_y}pt; got:\n{source}"
         );
     }
+}
+
+#[test]
+fn a_powerpoint_column_right_legend_tracks_a_title_specific_native_band() {
+    // The #1435 chart-space and #1437 title-size PowerPoint sweeps both verify
+    // that the legend follows the title-specific band; PDF measurements are
+    // recorded in tests/visual_audits/issue-1678/legend-key-measurements.json.
+    for title_size_pt in [10.0, 14.0, 18.0, 24.0, 36.0] {
+        let mut chart = bar_chart_at(Some(18.0), &["1st Qtr", "2nd Qtr", "3rd Qtr", "4th Qtr"]);
+        chart.chart_type = ChartType::Column;
+        chart.series.truncate(1);
+        chart.series[0].name = Some("Sales".to_string());
+        chart.host = crate::ir::ChartHost::Presentation;
+        chart.text_font_family = Some("Calibri".to_string());
+        chart.title_text_style.size_pt = Some(title_size_pt);
+
+        let with_title_band: f64 = powerpoint_right_legend_y_shift(
+            &chart,
+            Some((480.0, 320.0)),
+            chart_area_title_h(&chart),
+        );
+        let without_title_band: f64 =
+            powerpoint_right_legend_y_shift(&chart, Some((480.0, 320.0)), 0.0);
+        let actual_y_shift: f64 = with_title_band - without_title_band;
+        assert!(
+            (actual_y_shift - 5.422).abs() <= 0.002,
+            "{title_size_pt}pt PowerPoint column title shifts the native legend key by {actual_y_shift}pt, expected 5.422pt"
+        );
+    }
+}
+
+#[test]
+fn a_powerpoint_column_without_a_measured_title_band_keeps_its_legend_seat() {
+    let mut chart = bar_chart_at(None, &["1st Qtr", "2nd Qtr", "3rd Qtr", "4th Qtr"]);
+    chart.chart_type = ChartType::Column;
+    chart.series.truncate(1);
+    chart.series[0].name = Some("Sales".to_string());
+    chart.title = Some("Quarterly sales".to_string());
+    chart.host = crate::ir::ChartHost::Presentation;
+    chart.text_font_family = Some("Calibri".to_string());
+
+    let frame: Option<(f64, f64)> = Some((480.0, 320.0));
+    let title_h: f64 = chart_area_title_h(&chart);
+    let existing_y_shift: f64 = powerpoint_right_legend_y_shift(&chart, frame, 0.0);
+    let actual_y_shift: f64 = powerpoint_right_legend_y_shift(&chart, frame, title_h);
+
+    assert!(title_h > 0.0, "the chart title is drawn");
+    assert!(
+        (actual_y_shift - existing_y_shift).abs() <= 0.001,
+        "an unmeasured title must keep the existing legend seat: got {actual_y_shift}pt, expected {existing_y_shift}pt"
+    );
+}
+
+#[test]
+fn a_powerpoint_column_with_its_automatic_title_deleted_keeps_its_legend_seat() {
+    let mut chart = bar_chart_at(Some(18.0), &["1st Qtr", "2nd Qtr", "3rd Qtr", "4th Qtr"]);
+    chart.chart_type = ChartType::Column;
+    chart.series.truncate(1);
+    chart.series[0].name = Some("Sales".to_string());
+    chart.host = crate::ir::ChartHost::Presentation;
+    chart.text_font_family = Some("Calibri".to_string());
+    chart.has_automatic_title = true;
+
+    let frame: Option<(f64, f64)> = Some((480.0, 320.0));
+    let drawn_title_h: f64 = chart_area_title_h(&chart);
+    chart.auto_title_deleted = true;
+    let drawn_title_shift: f64 = powerpoint_right_legend_y_shift(&chart, frame, drawn_title_h);
+    let deleted_title_shift: f64 = powerpoint_right_legend_y_shift(&chart, frame, 0.0);
+
+    assert!(drawn_title_h > 0.0, "the stated size measures a title band");
+    assert!(
+        chart.title.is_none(),
+        "only the automatic title is available"
+    );
+    assert!(
+        (drawn_title_shift - deleted_title_shift - 5.422).abs() <= 0.002,
+        "deleting the title must also remove its legend correction: with title {drawn_title_shift}pt, without {deleted_title_shift}pt"
+    );
 }
 
 #[test]

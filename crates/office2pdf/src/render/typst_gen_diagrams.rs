@@ -1824,6 +1824,11 @@ pub(super) const PPTX_RIGHT_LEGEND_Y_SHIFT_EM: f64 = -0.357249;
 /// those differently.
 const PPTX_COLUMN_RIGHT_LEGEND_Y_SHIFT_PT: f64 = -7.920088;
 const PPTX_COLUMN_RIGHT_LEGEND_Y_SHIFT_EM: f64 = 0.139188;
+/// Downward correction after a PowerPoint column's title takes its measured
+/// title band. The corrected key bounds match the native exports from the
+/// #1435 chart-space and #1437 title-size sweeps; PDF hashes and measurements
+/// are recorded in `tests/visual_audits/issue-1678/legend-key-measurements.json`.
+const PPTX_COLUMN_TITLE_LEGEND_Y_SHIFT_PT: f64 = 5.422;
 
 /// Band a chart-area title takes when the chart space states a size and the
 /// title does not, *plus* the top inset a bar plot keeps on its own account.
@@ -3219,14 +3224,13 @@ fn wrap_category_label(chart: &Chart, label: &str, band_pt: f64) -> Option<Vec<S
 ///
 /// Bracketed, not derived: `scripts/probes/issue-1675-column-label-share.json`
 /// sweeps that label's size and flips the native export between 30pt, whose
-/// three-line band takes 0.5285 of the frame left under the title, and 32pt,
-/// whose would have taken 0.5685. This constant is the midpoint of that gap.
-/// Every accepted band the probes measured sits below it — the deepest is
-/// 0.5285 — and both refused ones above. A plot-height floor near a third of
-/// the whole frame fits the same exports equally well; the probes do not
-/// separate the two forms, so this is the simpler of the two rather than the
-/// proven one.
-const PPTX_COLUMN_WRAPPED_CATEGORY_BAND_SHARE: f64 = 0.548;
+/// three-line band takes 0.507 of the title-reduced frame after #1678, and
+/// 32pt, whose would have taken 0.545. This is the midpoint of that gap. Every
+/// accepted band the probes measured sits below it and both refused ones
+/// above. A plot-height floor near a third of the whole frame fits the same
+/// exports equally well; the probes do not separate the two forms, so this is
+/// the simpler of the two rather than the proven one.
+const PPTX_COLUMN_WRAPPED_CATEGORY_BAND_SHARE: f64 = 0.526;
 
 /// How the category labels have to sit to fit the bands they own.
 ///
@@ -3711,23 +3715,32 @@ fn axis_plot_insets(chart: &Chart, frame: Option<(f64, f64)>, title_h: f64) -> (
 /// exports measured; one that declares no size at all keeps the pre-#1437
 /// geometry, since no sweep covers it.
 fn powerpoint_column_top_band_pt(chart: &Chart, title_h: f64) -> Option<f64> {
+    let band: f64 = powerpoint_column_title_band_pt(chart)?;
+    let inset: f64 = column_plot_own_top_inset_pt(chart);
+    if title_h <= 0.0 {
+        return Some(inset);
+    }
+    Some(band + inset)
+}
+
+/// The title band a framed PowerPoint column plot reserves above its content.
+///
+/// A title stating no size of its own inherits the chart space's scaled size.
+/// The same band sizes the title block and the plot's top edge, so the two do
+/// not drift apart when PowerPoint and Excel use different text-scaled terms
+/// (issue #1678).
+fn powerpoint_column_title_band_pt(chart: &Chart) -> Option<f64> {
     if !powerpoint_column_chrome(chart)
         || (chart.title_text_style.size_pt.is_none() && chart.text_style.size_pt.is_none())
     {
         return None;
     }
-    let inset: f64 = column_plot_own_top_inset_pt(chart);
-    if title_h <= 0.0 {
-        return Some(inset);
-    }
     let title_pt: f64 = chart_area_title_pt(chart);
-    // The title's own face carries the band. A build that resolves no face at
-    // all keeps #1437's Calibri fit, which is this model in that one face.
-    let band: f64 = chart_title_face_line_box(chart).map_or(
+    // A build that resolves no face keeps the Calibri fit measured by #1437.
+    Some(chart_title_face_line_box(chart).map_or(
         PPTX_TITLE_BAND_PT + PPTX_TITLE_BAND_EM * title_pt,
         |metrics| metrics.title_band_pt(title_pt),
-    );
-    Some(band + inset)
+    ))
 }
 
 /// The line boxes the chart-area title's face measures its band by.
@@ -4101,7 +4114,7 @@ const CHART_TITLE_BAND_PT: f64 = 8.994;
 const CHART_TITLE_BAND_EM: f64 = 1.72912;
 
 /// The title's share of the band a framed PowerPoint column plot keeps above
-/// itself — which is not [`CHART_TITLE_BAND_EM`]'s Excel figure.
+/// itself — unlike [`CHART_TITLE_BAND_EM`], this is the PowerPoint fit.
 ///
 /// Two one-factor native PowerPoint 16.112 sweeps of
 /// `tests/fixtures/pptx/bar-chart.pptx` repackaged as a column chart on its
@@ -4123,15 +4136,13 @@ const CHART_TITLE_BAND_EM: f64 = 1.72912;
 /// [`CHART_TITLE_BAND_PT`] to 0.032pt, so the two hosts differ in the
 /// text-scaled term alone.
 ///
-/// This pair sizes the plot's top edge only, through
-/// [`powerpoint_column_top_band_pt`]. [`chart_area_title_h`] still gives the
-/// title *block* Excel's height and centres the title text in it: correcting
-/// the block without re-seating the text moves the baseline from about 1.9pt
-/// low to about 3.4pt high across these same exports, so the two belong
-/// together and are #1678. The bar family keeps its own #706 band, whose
-/// constant carries a bar plot's top inset as well — see
-/// [`CHART_PLOT_TOP_PAD_PT`] — and re-splitting that needs bar-family exports
-/// this calibration does not have (issue #1437).
+/// The same measured band sizes the title block and the plot top through
+/// [`chart_area_title_h`] and [`powerpoint_column_top_band_pt`]. Its baseline
+/// is separately seated from the same exports by
+/// [`PPTX_COLUMN_TITLE_BASELINE_PT`] and `_EM` (#1678). The bar family keeps
+/// its own #706 band, whose constant carries a bar plot's top inset as well —
+/// see [`CHART_PLOT_TOP_PAD_PT`] — and re-splitting that needs bar-family
+/// exports this calibration does not have (issue #1437).
 ///
 /// Both terms are Calibri quantities, because both sweeps export a Calibri
 /// deck: the fixed one is [`PPTX_COLUMN_TITLE_BAND_PT`] to 0.026pt and the
@@ -4157,6 +4168,15 @@ const PPTX_CHART_TITLE_LEFT_INSET_PT: f64 = 3.0;
 /// descent of whatever fallback face Typst happens to resolve.
 const CHARTSHEET_TITLE_BASELINE_PT: f64 = 8.251;
 const CHARTSHEET_TITLE_BASELINE_EM: f64 = 1.26390;
+
+/// PowerPoint column-title baseline below the chart area's top edge.
+///
+/// Native PowerPoint 16.112 exports from the two `#1437` one-factor sweeps
+/// put the baseline within 0.6pt of `8.21 + 0.923em` across title sizes 10,
+/// 14, 18, 24, and 36pt. The title uses this seat inside its measured band
+/// rather than being centred in the block (issue #1678).
+const PPTX_COLUMN_TITLE_BASELINE_PT: f64 = 8.21;
+const PPTX_COLUMN_TITLE_BASELINE_EM: f64 = 0.923;
 
 /// The chart-area title's size.
 ///
@@ -4187,19 +4207,18 @@ fn chart_area_title_pt(chart: &Chart) -> f64 {
 
 /// Height the chart-area title block takes.
 ///
-/// A title stating its own size is measured directly against Excel — see
-/// [`CHART_TITLE_BAND_PT`]. [`AREA_TITLE_H`] preserves charts that declare no
-/// text size at all. Native PowerPoint 16.112 exports at 10, 12, 18, 24, and
-/// 36pt establish the explicit chart-space size relationship in between (#706).
-/// It changes only the title/plot chrome, not the horizontal PowerPoint
-/// automatic axis scale resolved by [`powerpoint_nice_axis`].
-///
-/// The band a framed PowerPoint column plot's *top edge* sits below is measured
-/// separately and in full — see [`PPTX_TITLE_BAND_PT`] — so that family's plot
-/// does not inherit this height. Moving the title text with it needs the seat
-/// inside the band re-derived, which is #1678.
+/// A framed PowerPoint column with a stated title or chart-space size uses the
+/// host's measured band, shared with its plot top. Other charts retain their
+/// existing title sizing rules: a title's own size uses the Excel-fit band,
+/// chart-space-only sizes use the prior plot-top fit, and [`AREA_TITLE_H`]
+/// preserves charts with no stated text size. Native PowerPoint 16.112 exports
+/// at 10, 12, 18, 24, and 36pt establish the explicit chart-space size
+/// relationship in between (#706). This changes only title/plot chrome, not
+/// the horizontal automatic axis scale resolved by [`powerpoint_nice_axis`].
 pub(super) fn chart_area_title_h(chart: &Chart) -> f64 {
-    if chart.title_text_style.size_pt.is_some() {
+    if let Some(band) = powerpoint_column_title_band_pt(chart) {
+        band
+    } else if chart.title_text_style.size_pt.is_some() {
         CHART_TITLE_BAND_PT + CHART_TITLE_BAND_EM * chart_area_title_pt(chart)
     } else if chart.text_style.size_pt.is_some() {
         CHART_PLOT_TOP_PAD_PT + CHART_PLOT_TOP_PAD_EM * chart_text_pt(chart)
@@ -4250,9 +4269,25 @@ fn write_chart_title(
     let escaped_title: String = escape_typst(title);
     let title_size: String = format_f64(chart_area_title_pt(chart));
     let attrs: String = chart_area_title_attrs(chart);
+    let powerpoint_column_baseline: Option<f64> = if fixed_height.is_some() {
+        powerpoint_column_title_band_pt(chart).map(|_| {
+            PPTX_COLUMN_TITLE_BASELINE_PT
+                + PPTX_COLUMN_TITLE_BASELINE_EM * chart_area_title_pt(chart)
+        })
+    } else {
+        None
+    };
     let fixed_title: String = if chart.host == crate::ir::ChartHost::SpreadsheetChartsheet {
         let baseline_pt: f64 = CHARTSHEET_TITLE_BASELINE_PT
             + CHARTSHEET_TITLE_BASELINE_EM * chart_area_title_pt(chart);
+        format!(
+            "#align(center + top)[#text(top-edge: {}pt, bottom-edge: \"baseline\", size: {}pt{})[{}]]",
+            format_f64(baseline_pt),
+            title_size,
+            attrs,
+            escaped_title,
+        )
+    } else if let Some(baseline_pt) = powerpoint_column_baseline {
         format!(
             "#align(center + top)[#text(top-edge: {}pt, bottom-edge: \"baseline\", size: {}pt{})[{}]]",
             format_f64(baseline_pt),
@@ -4895,8 +4930,15 @@ pub(super) fn powerpoint_right_legend_y_shift(
                 - (CHART_COLUMN_TOP_PAD_PT
                     + CHART_COLUMN_TOP_PAD_EM
                         * chart_axis_text_pt(chart, chart.value_axis_text_style));
+            let title_band_shift: f64 =
+                if title_h > 0.0 && powerpoint_column_title_band_pt(chart).is_some() {
+                    PPTX_COLUMN_TITLE_LEGEND_Y_SHIFT_PT
+                } else {
+                    0.0
+                };
             PPTX_COLUMN_RIGHT_LEGEND_Y_SHIFT_PT + PPTX_COLUMN_RIGHT_LEGEND_Y_SHIFT_EM * size_pt
                 - moved / 2.0
+                + title_band_shift
         }
         _ => 0.0,
     }
