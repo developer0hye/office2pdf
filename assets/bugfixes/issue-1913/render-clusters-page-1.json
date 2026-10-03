@@ -1,0 +1,231 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 11.04,
+        "x": 135.84,
+        "y": 274.08
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue",
+        "note": "The clusters lie on Table 3 second-row text; its row pitch and bottom rule remain low as measured in #1914."
+      },
+      "id": "p1-2bb782452cce",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.08,
+        "x": 182.4,
+        "y": 242.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "This Japanese-script text cluster differs only at glyph edges; both PDFs embed MS-Mincho and trace geometry matches."
+      },
+      "id": "p1-40c25fdff5ff",
+      "region": "left"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 78.24,
+        "y": 98.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These small top-frame and marker-position clusters stay below the materiality bar; the output text layer carries seven ordinary spaces after bullet markers, while its token multiset matches the slide XML."
+      },
+      "id": "p1-e2ee9a4ebca6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 78.24,
+        "y": 112.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These small top-frame and marker-position clusters stay below the materiality bar; the output text layer carries seven ordinary spaces after bullet markers, while its token multiset matches the slide XML."
+      },
+      "id": "p1-3212fb2dc2e2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 456.96,
+        "y": 274.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue",
+        "note": "The clusters lie on Table 3 second-row text; its row pitch and bottom rule remain low as measured in #1914."
+      },
+      "id": "p1-18f9692a4509",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 295.68,
+        "y": 274.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue",
+        "note": "The clusters lie on Table 3 second-row text; its row pitch and bottom rule remain low as measured in #1914."
+      },
+      "id": "p1-09f25115e0ce",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 125.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These small top-frame and marker-position clusters stay below the materiality bar; the output text layer carries seven ordinary spaces after bullet markers, while its token multiset matches the slide XML."
+      },
+      "id": "p1-a9fc36d6d383",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 10.08,
+        "x": 186.24,
+        "y": 72.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These small top-frame and marker-position clusters stay below the materiality bar; the output text layer carries seven ordinary spaces after bullet markers, while its token multiset matches the slide XML."
+      },
+      "id": "p1-2bf3559fe6ab",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 74.4,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These small top-frame and marker-position clusters stay below the materiality bar; the output text layer carries seven ordinary spaces after bullet markers, while its token multiset matches the slide XML."
+      },
+      "id": "p1-b8b9c0750b4a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 8.64,
+        "x": 78.24,
+        "y": 52.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These small top-frame and marker-position clusters stay below the materiality bar; the output text layer carries seven ordinary spaces after bullet markers, while its token multiset matches the slide XML."
+      },
+      "id": "p1-e39db5cf7214",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 148.8,
+        "y": 55.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These small top-frame and marker-position clusters stay below the materiality bar; the output text layer carries seven ordinary spaces after bullet markers, while its token multiset matches the slide XML."
+      },
+      "id": "p1-16f9b0856041",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 188.64,
+        "y": 55.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These small top-frame and marker-position clusters stay below the materiality bar; the output text layer carries seven ordinary spaces after bullet markers, while its token multiset matches the slide XML."
+      },
+      "id": "p1-3d39f06e5508",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 2.4,
+        "x": 95.52,
+        "y": 256.32
+      },
+      "disposition": {
+        "issue": "#1916",
+        "kind": "issue",
+        "note": "The cluster is on the fullwidth CJK punctuation paragraph whose left edge remains 5.50pt outside its text inset in #1916."
+      },
+      "id": "p1-ecda5cf3c303",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 13,
+    "duplicate": 0,
+    "total": 13,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

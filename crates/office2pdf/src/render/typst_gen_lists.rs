@@ -697,6 +697,10 @@ pub(super) fn generate_fixed_text_list(
         out.push_str(")[\n");
         write_fixed_text_list_par_settings(out, style, &paragraph.runs, line_gap_pt);
     }
+    // Item advances and paragraph gaps are emitted explicitly below. Typst's
+    // default paragraph spacing otherwise sits between the metadata-wrapped
+    // item blocks as an unrequested extra line (issue #1913).
+    out.push_str("#context { set par(spacing: 0pt); [\n");
 
     let align_str: Option<&str> = fixed_text_list_alignment(style.alignment);
     let mut current_number: u32 = list
@@ -813,6 +817,7 @@ pub(super) fn generate_fixed_text_list(
     if use_stack {
         out.push_str("\n)");
     }
+    out.push_str("] }\n");
     if has_para_style {
         out.push_str("\n]");
     }
