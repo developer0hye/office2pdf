@@ -2100,11 +2100,22 @@ fn generate_fixed_text_box(
         }
         TextBoxVerticalAlign::Center | TextBoxVerticalAlign::Bottom => {
             out.push_str("  #context {\n");
-            let _ = writeln!(
-                out,
-                "    let text_box_slack_{text_box_id} = calc.max({}pt - measure(text_box_content_{text_box_id}).height, 0pt)",
-                format_f64(inner_height_pt),
-            );
+            if !text_box.auto_fit && matches!(text_box.vertical_align, TextBoxVerticalAlign::Center)
+            {
+                // DrawingML's center anchor stays centered when no autofit
+                // reduces content that overflows the text frame (#1963).
+                let _ = writeln!(
+                    out,
+                    "    let text_box_slack_{text_box_id} = {}pt - measure(text_box_content_{text_box_id}).height",
+                    format_f64(inner_height_pt),
+                );
+            } else {
+                let _ = writeln!(
+                    out,
+                    "    let text_box_slack_{text_box_id} = calc.max({}pt - measure(text_box_content_{text_box_id}).height, 0pt)",
+                    format_f64(inner_height_pt),
+                );
+            }
             let spacer_expr = match text_box.vertical_align {
                 TextBoxVerticalAlign::Center => format!("text_box_slack_{text_box_id} / 2"),
                 TextBoxVerticalAlign::Bottom => format!("text_box_slack_{text_box_id}"),
@@ -4735,7 +4746,12 @@ fn wrapped_fit_paragraph(
     text_box: &TextBoxData,
     content_region_height_pt: f64,
 ) -> Option<&Paragraph> {
-    if text_box.no_wrap || matches!(text_box.vertical_align, TextBoxVerticalAlign::Top) {
+    // Wrapping and a short centered frame do not opt a file into smaller text
+    // when it omitted `<a:normAutofit/>` (#1963).
+    if !text_box.auto_fit
+        || text_box.no_wrap
+        || matches!(text_box.vertical_align, TextBoxVerticalAlign::Top)
+    {
         return None;
     }
     // The scale this path emits is the content region over the block's own
