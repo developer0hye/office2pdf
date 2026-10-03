@@ -1,0 +1,1239 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 116.928,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 27.36,
+        "x": 731.04,
+        "y": 698.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-648916df2ebc",
+      "region": "right"
+    },
+    {
+      "area_pt2": 113.8752,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 158.16,
+        "x": 419.28,
+        "y": 269.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-a63413a3576b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 108.1728,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 27.36,
+        "x": 731.04,
+        "y": 1098.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-ed8184335e87",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 107.136,
+      "bbox_pt": {
+        "height": 11.76,
+        "width": 11.76,
+        "x": 391.2,
+        "y": 305.28
+      },
+      "disposition": {
+        "issue": "#1804",
+        "kind": "issue",
+        "note": "The selected-period scatter marker remains extra in the native Excel comparison; issue #1804 tracks its suppression rule."
+      },
+      "id": "p2-a00e0dbe0bc9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 102.9888,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 27.36,
+        "x": 731.04,
+        "y": 757.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-6a7566fb8f8d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 101.4336,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 27.6,
+        "x": 730.8,
+        "y": 816.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-ddff5c0a6b7a",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 99.8208,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 27.36,
+        "x": 731.04,
+        "y": 446.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-2293f94d940d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 90.72,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 126.0,
+        "x": 152.64,
+        "y": 214.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-710043a479db",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 90.72,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 126.0,
+        "x": 152.64,
+        "y": 200.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-22e4c839641d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 85.0176,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 27.36,
+        "x": 731.04,
+        "y": 1024.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-4beed2e82c94",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 83.4624,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 27.36,
+        "x": 731.04,
+        "y": 905.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-b1c3ec89330e",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 81.5616,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 113.28,
+        "x": 152.64,
+        "y": 250.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-9f250e359b25",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 81.5616,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 113.28,
+        "x": 152.64,
+        "y": 236.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-f37f135e6247",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 74.3616,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 27.6,
+        "x": 730.8,
+        "y": 461.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-a6c896952314",
+      "region": "right"
+    },
+    {
+      "area_pt2": 72.1728,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 27.36,
+        "x": 731.04,
+        "y": 579.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-6c02c84f4ebe",
+      "region": "right"
+    },
+    {
+      "area_pt2": 70.3872,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 17.04,
+        "x": 572.16,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-cf21d03a3401",
+      "region": "right"
+    },
+    {
+      "area_pt2": 64.1088,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 13.68,
+        "x": 450.24,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-67df1e29340d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 64.1088,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 13.68,
+        "x": 450.24,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-c08da1ea196c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 62.784,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 16.08,
+        "x": 354.48,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-c247dbe2166a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 62.784,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 16.08,
+        "x": 354.48,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-0b8991a39d39",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.4016,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 15.12,
+        "x": 324.24,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-b34c80345b6c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.4016,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 15.12,
+        "x": 324.24,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-2e0479f5a1e5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.4064,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 15.36,
+        "x": 636.24,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-354b8d4d9685",
+      "region": "right"
+    },
+    {
+      "area_pt2": 58.4064,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 15.36,
+        "x": 636.24,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-2767deb441bd",
+      "region": "right"
+    },
+    {
+      "area_pt2": 58.1184,
+      "bbox_pt": {
+        "height": 2.16,
+        "width": 27.12,
+        "x": 731.04,
+        "y": 624.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-bf29d8db6fb0",
+      "region": "right"
+    },
+    {
+      "area_pt2": 56.1024,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 13.44,
+        "x": 388.08,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-2dbadf4d4826",
+      "region": "center"
+    },
+    {
+      "area_pt2": 55.872,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 13.68,
+        "x": 294.24,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-fa6d252dd42f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 55.872,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 13.68,
+        "x": 294.24,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-88048e177a9f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 48.2688,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 11.52,
+        "x": 635.52,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-176823b99adf",
+      "region": "right"
+    },
+    {
+      "area_pt2": 48.2112,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 66.96,
+        "x": 419.28,
+        "y": 223.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-626d3097a571",
+      "region": "top"
+    },
+    {
+      "area_pt2": 48.2112,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 66.96,
+        "x": 419.28,
+        "y": 211.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-b2baf88a144e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.4048,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 11.76,
+        "x": 602.88,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-2820a7e9c7c4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 45.4464,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 11.76,
+        "x": 416.4,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-0448d81d46f0",
+      "region": "center"
+    },
+    {
+      "area_pt2": 45.4464,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 11.76,
+        "x": 416.4,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-a7af42115e6b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 43.8912,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 10.32,
+        "x": 391.44,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-bd94d90e2e48",
+      "region": "center"
+    },
+    {
+      "area_pt2": 43.8912,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 10.32,
+        "x": 391.44,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-6407a7861c65",
+      "region": "center"
+    },
+    {
+      "area_pt2": 43.5456,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 12.0,
+        "x": 546.0,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-067bcc5c5a77",
+      "region": "center"
+    },
+    {
+      "area_pt2": 43.5456,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 12.0,
+        "x": 546.0,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-8e617dea8a8a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 37.8432,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.08,
+        "x": 573.6,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-17ac92b9b5e6",
+      "region": "right"
+    },
+    {
+      "area_pt2": 37.8432,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.08,
+        "x": 573.6,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-36e7a68edd3a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 36.288,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 50.4,
+        "x": 152.64,
+        "y": 232.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-1f4426ec4dba",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.288,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 50.4,
+        "x": 152.64,
+        "y": 218.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-af946bc4b767",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.1568,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 6.72,
+        "x": 482.4,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-daf6e2790889",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.1568,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 6.72,
+        "x": 482.4,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-d590eeb9e4b1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 9.6,
+        "x": 296.64,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-bed41c9d72a8",
+      "region": "center"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 8.16,
+        "x": 604.32,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-2a605c0e0764",
+      "region": "right"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 8.16,
+        "x": 604.32,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-fab68ed1c4d8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 32.1408,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 332.88,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-0a6e6924f025",
+      "region": "center"
+    },
+    {
+      "area_pt2": 32.0832,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 7.68,
+        "x": 171.84,
+        "y": 433.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-104f326e152c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.8528,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.36,
+        "x": 670.32,
+        "y": 1102.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-00acb0adc3cd",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 31.8528,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.36,
+        "x": 660.96,
+        "y": 1102.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-00ace65c6323",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 31.8528,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.36,
+        "x": 660.96,
+        "y": 583.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-61fabdca59a7",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.8528,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.36,
+        "x": 670.32,
+        "y": 583.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-c53f340e3cc5",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.1616,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.64,
+        "x": 361.68,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-4874ddc3b615",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.9312,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 7.92,
+        "x": 518.64,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-1f0ffe33f06e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.1456,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.04,
+        "x": 708.48,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-74ee22c651b9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.3968,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 7.68,
+        "x": 512.16,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-d5e0c6c2429b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 5.76,
+        "x": 208.08,
+        "y": 433.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-2f681d9efba3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 5.76,
+        "x": 226.8,
+        "y": 433.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-557156e95f0e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.6112,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 4.8,
+        "x": 143.52,
+        "y": 433.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-f0a9cba0ba60",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.3232,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.52,
+        "x": 409.68,
+        "y": 133.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-4c0806feed89",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.056,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 488.16,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-59c5be5caf67",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 25.68,
+        "x": 672.96,
+        "y": 240.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-26ecff2f74b9",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.3072,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 188.4,
+        "y": 433.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-db3d364492b6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.48,
+        "x": 420.0,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-0e448ea68b96",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.48,
+        "x": 551.52,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-96cc6b18c05a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 5.52,
+        "x": 86.16,
+        "y": 431.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-00567c029a02",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.0608,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 5.52,
+        "x": 519.12,
+        "y": 494.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-5c7f905c3444",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.0608,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 5.52,
+        "x": 519.12,
+        "y": 613.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-15b9a49a868d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.0032,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.52,
+        "x": 618.24,
+        "y": 133.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-80d4eb688e14",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.0032,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.52,
+        "x": 92.4,
+        "y": 133.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-1e5ac2e4e0ce",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.0032,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.52,
+        "x": 379.44,
+        "y": 133.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-2395007094c9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.0032,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.52,
+        "x": 110.4,
+        "y": 133.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-b71e6f1d5b62",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.0032,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.52,
+        "x": 659.52,
+        "y": 133.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-d41b9f63b03b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 5.04,
+        "x": 181.92,
+        "y": 405.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-09b693b78e8a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.96,
+        "x": 424.56,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "These sub-material chart, text, and fill differences were present before this fix; the before/after probe changed only the selected-period marker."
+      },
+      "id": "p2-3d95974bf831",
+      "region": "center"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 76,
+    "duplicate": 0,
+    "total": 76,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

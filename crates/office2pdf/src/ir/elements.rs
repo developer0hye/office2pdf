@@ -1010,7 +1010,8 @@ pub struct ChartStrokeGeometry {
 pub struct ChartSeries {
     /// Optional series name.
     pub name: Option<String>,
-    /// Data values for this series.
+    /// Data values for this series; non-finite entries represent missing cache
+    /// points and keep later points at their declared indices.
     pub values: Vec<f64>,
     /// Colour read from the series' `<c:spPr>`, also used by line and marker
     /// renderers. `None` falls back to the palette; `fill_mode` determines
@@ -1084,6 +1085,23 @@ pub struct ChartSeries {
 }
 
 impl ChartSeries {
+    /// The finite value at this point, or `None` when the cache leaves the
+    /// slot empty or marks it with a non-numeric value such as `#N/A`.
+    pub fn value_at_point(&self, point_index: usize) -> Option<f64> {
+        self.values
+            .get(point_index)
+            .copied()
+            .filter(|value| value.is_finite())
+    }
+
+    /// All finite values in their original point order.
+    pub fn present_values(&self) -> impl Iterator<Item = f64> + '_ {
+        self.values
+            .iter()
+            .copied()
+            .filter(|value| value.is_finite())
+    }
+
     /// Whether this point paints its fill; this does not hide its labels,
     /// outline, value, or contribution to a stack.
     pub fn paints_fill_for_point(&self, point_index: usize) -> bool {

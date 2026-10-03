@@ -5,7 +5,7 @@
 
 use crate::parser::xml_util::OOXML_XML_VERSION;
 use quick_xml::Reader;
-use quick_xml::events::Event;
+use quick_xml::events::{BytesStart, Event};
 
 use super::drawingml::{self, SchemeColors};
 use super::xml_util;
@@ -2135,20 +2135,125 @@ fn parse_series_text(reader: &mut Reader<&[u8]>) -> Option<String> {
     }
 }
 
-/// Parse category labels from `<c:cat>` (either `<c:strRef>` or `<c:strLit>`).
+/// Worksheet-backed Office charts cannot address more than this many rows.
+/// Capping cache expansion prevents a malformed `idx` from allocating an
+/// attacker-sized vector while preserving every valid Excel row index.
+const MAX_CHART_CACHE_POINTS: usize = 1_048_576;
+
+/// Read a cached point's declared index, falling back to sequence order for a
+/// malformed point that omits the schema-required `idx` attribute.
+fn chart_cache_point_index(element: &BytesStart<'_>, next_index: usize) -> Option<usize> {
+    let index: usize = xml_util::get_attr_str(element, b"idx")
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(next_index);
+    if index < MAX_CHART_CACHE_POINTS {
+        Some(index)
+    } else {
+        tracing::warn!(
+            point_index = index,
+            maximum_points = MAX_CHART_CACHE_POINTS,
+            "ignoring chart cache point outside the worksheet row limit"
+        );
+        None
+    }
+}
+
+/// Read `<c:ptCount>` without allowing it to expand a cache past Excel's row
+/// limit.
+fn chart_cache_point_count(element: &BytesStart<'_>) -> Option<usize> {
+    let count: usize = xml_util::get_attr_str(element, b"val")?.parse().ok()?;
+    if count > MAX_CHART_CACHE_POINTS {
+        tracing::warn!(
+            declared_points = count,
+            maximum_points = MAX_CHART_CACHE_POINTS,
+            "capping chart cache point count at the worksheet row limit"
+        );
+        Some(MAX_CHART_CACHE_POINTS)
+    } else {
+        Some(count)
+    }
+}
+
+/// Place a cached point at its declared slot, filling unlisted slots as gaps.
+fn set_chart_cache_point<T: Clone>(
+    points: &mut Vec<T>,
+    index: usize,
+    value: T,
+    missing_value: T,
+) -> bool {
+    let Some(required_len) = index.checked_add(1) else {
+        return false;
+    };
+    if required_len > MAX_CHART_CACHE_POINTS {
+        return false;
+    }
+    if required_len > points.len() {
+        let additional: usize = required_len - points.len();
+        if points.try_reserve(additional).is_err() {
+            tracing::warn!(
+                requested_points = required_len,
+                "could not reserve memory for indexed chart cache points"
+            );
+            return false;
+        }
+        points.resize(required_len, missing_value);
+    }
+    points[index] = value;
+    true
+}
+
+/// Extend a cache to its declared point count so trailing gaps remain present.
+fn resize_chart_cache_to_count<T: Clone>(
+    points: &mut Vec<T>,
+    point_count: Option<usize>,
+    missing_value: T,
+) {
+    let Some(point_count) = point_count else {
+        return;
+    };
+    if point_count <= points.len() {
+        return;
+    }
+    let additional: usize = point_count - points.len();
+    if points.try_reserve(additional).is_ok() {
+        points.resize(point_count, missing_value);
+    } else {
+        tracing::warn!(
+            requested_points = point_count,
+            "could not reserve memory for declared chart cache points"
+        );
+    }
+}
+
+/// Parse category labels or scatter x-values from `<c:cat>` / `<c:xVal>` caches.
 fn parse_category_data(reader: &mut Reader<&[u8]>) -> Vec<String> {
     let mut categories: Vec<String> = Vec::new();
     let mut current_text = String::new();
     let mut in_v = false;
+    let mut in_point = false;
+    let mut current_point_index: Option<usize> = None;
+    let mut next_point_index: usize = 0;
+    let mut point_count: Option<usize> = None;
+    let mut in_multi_level_cache = false;
 
     loop {
         match reader.read_event() {
-            Ok(Event::Start(ref e)) => {
-                if e.local_name().as_ref() == b"v" {
+            Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
+                b"multiLvlStrCache" => in_multi_level_cache = true,
+                b"ptCount" if !in_multi_level_cache => {
+                    point_count = chart_cache_point_count(e);
+                }
+                b"pt" if !in_multi_level_cache => {
+                    in_point = true;
+                    current_point_index = chart_cache_point_index(e, next_point_index);
+                    current_text.clear();
+                }
+                b"v" => {
                     in_v = true;
                     current_text.clear();
                 }
-            }
+                _ => {}
+            },
             // One label is one `<c:v>`, not one text event. The reader splits a
             // text node at every entity reference, so a label collected event by
             // event turned `room &amp; board` into the two labels `room ` and
@@ -2164,17 +2269,51 @@ fn parse_category_data(reader: &mut Reader<&[u8]>) -> Vec<String> {
                     current_text.push_str(&s);
                 }
             }
+            Ok(Event::Empty(ref e)) => match e.local_name().as_ref() {
+                b"ptCount" if !in_multi_level_cache => {
+                    point_count = chart_cache_point_count(e);
+                }
+                b"pt" if !in_multi_level_cache => {
+                    if let Some(index) = chart_cache_point_index(e, next_point_index)
+                        && set_chart_cache_point(
+                            &mut categories,
+                            index,
+                            String::new(),
+                            String::new(),
+                        )
+                    {
+                        next_point_index = next_point_index.max(index.saturating_add(1));
+                    }
+                }
+                _ => {}
+            },
             Ok(Event::End(ref e)) => match e.local_name().as_ref() {
                 b"v" => {
                     in_v = false;
-                    // A `<c:v>` holding nothing names no label. Excel writes a
-                    // blank category as a gap in the `<c:pt idx>` sequence
-                    // rather than an empty element, so this only guards a
-                    // hand-written part.
-                    if !current_text.is_empty() {
+                    if !in_point && !in_multi_level_cache && !current_text.is_empty() {
+                        categories.push(std::mem::take(&mut current_text));
+                        next_point_index = categories.len();
+                    } else if in_multi_level_cache && !current_text.is_empty() {
+                        // Multi-level caches are flattened by this parser; keep
+                        // their existing order until the IR models level paths.
                         categories.push(std::mem::take(&mut current_text));
                     }
                 }
+                b"pt" if in_point => {
+                    if let Some(index) = current_point_index
+                        && set_chart_cache_point(
+                            &mut categories,
+                            index,
+                            std::mem::take(&mut current_text),
+                            String::new(),
+                        )
+                    {
+                        next_point_index = next_point_index.max(index.saturating_add(1));
+                    }
+                    current_point_index = None;
+                    in_point = false;
+                }
+                b"multiLvlStrCache" => in_multi_level_cache = false,
                 b"cat" | b"xVal" => break,
                 _ => {}
             },
@@ -2183,6 +2322,9 @@ fn parse_category_data(reader: &mut Reader<&[u8]>) -> Vec<String> {
         }
     }
 
+    if !in_multi_level_cache {
+        resize_chart_cache_to_count(&mut categories, point_count, String::new());
+    }
     categories
 }
 
@@ -2196,11 +2338,22 @@ fn parse_value_data(reader: &mut Reader<&[u8]>) -> (Vec<f64>, Option<String>) {
     let mut format_code: Option<String> = None;
     let mut in_v = false;
     let mut in_format_code = false;
+    let mut in_point = false;
+    let mut current_point_index: Option<usize> = None;
+    let mut current_point_value: Option<f64> = None;
+    let mut next_point_index: usize = 0;
+    let mut point_count: Option<usize> = None;
     let mut current_text = String::new();
 
     loop {
         match reader.read_event() {
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
+                b"ptCount" => point_count = chart_cache_point_count(e),
+                b"pt" => {
+                    in_point = true;
+                    current_point_index = chart_cache_point_index(e, next_point_index);
+                    current_point_value = None;
+                }
                 b"v" => {
                     in_v = true;
                     current_text.clear();
@@ -2221,12 +2374,45 @@ fn parse_value_data(reader: &mut Reader<&[u8]>) -> (Vec<f64>, Option<String>) {
                     current_text.push_str(&s);
                 }
             }
+            Ok(Event::Empty(ref e)) => match e.local_name().as_ref() {
+                b"ptCount" => point_count = chart_cache_point_count(e),
+                b"pt" => {
+                    if let Some(index) = chart_cache_point_index(e, next_point_index)
+                        && set_chart_cache_point(&mut values, index, f64::NAN, f64::NAN)
+                    {
+                        next_point_index = next_point_index.max(index.saturating_add(1));
+                    }
+                }
+                _ => {}
+            },
             Ok(Event::End(ref e)) => match e.local_name().as_ref() {
                 b"v" => {
                     in_v = false;
-                    if let Ok(v) = current_text.trim().parse::<f64>() {
-                        values.push(v);
+                    let parsed_value: Option<f64> = current_text
+                        .trim()
+                        .parse::<f64>()
+                        .ok()
+                        .filter(|value| value.is_finite());
+                    if in_point {
+                        current_point_value = parsed_value;
+                    } else {
+                        values.push(parsed_value.unwrap_or(f64::NAN));
                     }
+                }
+                b"pt" if in_point => {
+                    if let Some(index) = current_point_index
+                        && set_chart_cache_point(
+                            &mut values,
+                            index,
+                            current_point_value.unwrap_or(f64::NAN),
+                            f64::NAN,
+                        )
+                    {
+                        next_point_index = next_point_index.max(index.saturating_add(1));
+                    }
+                    current_point_index = None;
+                    current_point_value = None;
+                    in_point = false;
                 }
                 b"formatCode" => {
                     in_format_code = false;
@@ -2243,6 +2429,7 @@ fn parse_value_data(reader: &mut Reader<&[u8]>) -> (Vec<f64>, Option<String>) {
         }
     }
 
+    resize_chart_cache_to_count(&mut values, point_count, f64::NAN);
     (values, format_code)
 }
 
