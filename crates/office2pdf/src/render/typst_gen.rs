@@ -5025,8 +5025,18 @@ fn generate_fixed_text_paragraph(
         );
     }
 
+    let needs_cjk_line_start_guard: bool =
+        starts_with_cjk_line_start_shrinkable_punctuation(&para.runs);
+
     if no_wrap {
         out.push_str("#box[");
+        if needs_cjk_line_start_guard {
+            // Typst shortens some CJK punctuation at a line start. PowerPoint
+            // keeps these glyphs on the text origin, so an empty inline box
+            // keeps Typst from treating the punctuation as the first glyph
+            // without adding anything to the searchable text layer (#1916).
+            out.push_str("#box[]");
+        }
         generate_runs_with_tabs_no_wrap(
             out,
             &para.runs,
@@ -5034,6 +5044,9 @@ fn generate_fixed_text_paragraph(
             paragraph_default_tab_width_pt(style, DEFAULT_TAB_WIDTH_PT),
         );
     } else {
+        if needs_cjk_line_start_guard {
+            out.push_str("#box[]");
+        }
         generate_powerpoint_runs_with_tabs(
             out,
             &para.runs,
@@ -5088,6 +5101,22 @@ fn generate_fixed_text_paragraph(
 
     out.push('\n');
     Ok(())
+}
+
+fn starts_with_cjk_line_start_shrinkable_punctuation(runs: &[Run]) -> bool {
+    for run in runs {
+        if run.inline_box.is_some() {
+            return false;
+        }
+        let Some(character) = run.text.chars().next() else {
+            continue;
+        };
+        return matches!(
+            character,
+            '‘' | '“' | '《' | '（' | '『' | '「' | '【' | '〖' | '〔' | '〈' | '［' | '｛'
+        );
+    }
+    false
 }
 
 /// The vertical advance of a DrawingML paragraph with no visible runs.

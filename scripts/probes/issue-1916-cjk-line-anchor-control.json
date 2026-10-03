@@ -1,0 +1,16 @@
+{
+  "name": "issue-1916-cjk-line-anchor-control",
+  "base": "../../tests/fixtures/pptx/with_japanese.pptx",
+  "part": "ppt/slides/slide1.xml",
+  "factor": "Rectangle 3 a:bodyPr/@anchor",
+  "page": 1,
+  "variants": [
+    {
+      "value": "t",
+      "find": "(<p:cNvPr id=\"2051\" name=\"Rectangle 3\"/>[\\s\\S]*?<a:bodyPr[^>]*\\banchor=\")ctr(\")",
+      "replace": "\\1t\\2",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}
