@@ -408,6 +408,14 @@ fn scale_sheet_page(
     for width in &mut page.table.column_widths {
         *width *= scale;
     }
+    // Normal-font XLSX cells inherit this value instead of carrying an own
+    // padding override, so it has to follow the same print scale explicitly.
+    if let Some(padding) = page.table.default_cell_padding.as_mut() {
+        padding.top *= scale;
+        padding.right *= scale;
+        padding.bottom *= scale;
+        padding.left *= scale;
+    }
     // An anchored chart is measured against the sheet's own columns and rows,
     // so the scale that shrinks those has to shrink the chart with them —
     // otherwise the fitted grid slides out from under a full-size chart. On

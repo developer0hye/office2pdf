@@ -2,8 +2,8 @@ use super::*;
 use crate::ir::ChartAreaOutline;
 use crate::ir::{
     AxisTickMark, Block, BorderLineStyle, BorderSide, CellBorder, Color, HFInline, HeaderFooter,
-    HeaderFooterParagraph, LineCap, LineJoin, Margins, PageSize, Paragraph, ParagraphStyle, Run,
-    SheetLineExtent, TableBorderPaintModel, TextStyle,
+    HeaderFooterParagraph, Insets, LineCap, LineJoin, Margins, PageSize, Paragraph, ParagraphStyle,
+    Run, SheetLineExtent, TableBorderPaintModel, TextStyle,
 };
 
 fn cell(text: &str) -> TableCell {
@@ -1799,6 +1799,76 @@ fn test_explicit_print_percentage_scales_the_whole_sheet() {
             "{percentage}% must scale the type with the grid"
         );
     }
+}
+
+/// XLSX carries the inherited cell inset at table level when a cell uses the
+/// workbook Normal font, so an explicit print percentage must scale it with
+/// the grid just as it scales a cell's own padding.
+#[test]
+fn test_explicit_print_percentage_scales_table_default_cell_padding() {
+    for (percentage, factor) in [(85_u32, 0.85), (50, 0.50), (150, 1.50)] {
+        let mut page: SheetPage = print_scale_page();
+        page.table.default_cell_padding = Some(Insets {
+            top: 2.0,
+            right: 4.0,
+            bottom: 6.0,
+            left: 8.0,
+        });
+        let fit = SheetFit {
+            print_percentage: Some(percentage),
+            ..SheetFit::default()
+        };
+
+        let pages: Vec<SheetPage> = split_sheet_page_by_width(page, None, fit, true);
+
+        assert_eq!(pages.len(), 1, "{percentage}% still prints one page");
+        assert_eq!(
+            pages[0].table.default_cell_padding,
+            Some(Insets {
+                top: 2.0 * factor,
+                right: 4.0 * factor,
+                bottom: 6.0 * factor,
+                left: 8.0 * factor,
+            }),
+            "{percentage}% must scale every inherited cell inset"
+        );
+    }
+}
+
+/// A fit-to-page percentage uses the same sheet scaler as an explicit print
+/// percentage, including for the table-level padding inherited by default-font
+/// cells.
+#[test]
+fn test_fit_to_page_scales_table_default_cell_padding() {
+    let mut page: SheetPage = make_page(
+        vec![300.0, 300.0],
+        vec![TableRow {
+            minimum_height: None,
+            cells: vec![sized_cell("left", 11.0), sized_cell("right", 11.0)],
+            height: Some(20.0),
+        }],
+    );
+    page.table.default_cell_padding = Some(Insets {
+        top: 2.0,
+        right: 4.0,
+        bottom: 6.0,
+        left: 8.0,
+    });
+
+    let pages: Vec<SheetPage> = split_sheet_page_by_width(page, None, fit_to_width(1), true);
+
+    assert_eq!(pages.len(), 1, "the scaled columns fit one page");
+    assert_eq!(pages[0].table.print_scale, Some(0.66));
+    assert_eq!(
+        pages[0].table.default_cell_padding,
+        Some(Insets {
+            top: 1.32,
+            right: 2.64,
+            bottom: 3.96,
+            left: 5.28,
+        }),
+        "fit-to-page must scale every inherited cell inset"
+    );
 }
 
 /// An explicit percentage above 100 enlarges the sheet. This is the one place

@@ -35,9 +35,9 @@ Current before/after evidence for the fix lives in
 
 ## Remaining deviations after the fix
 
-The explicit percentage now reaches the columns, rows and type: the 39 large
-text shifts and the 17.7% width error are gone and the rectangle census matches
-with zero geometry deviation. What is left on the 85% comparison is tracked
-elsewhere — the horizontal cell inset does not scale (#1932), and the
-bottom/top cell seat differs by whole points independently of print scale
-(#1721, #1814, #1815, and #1874 for the sub-material remainder).
+The explicit percentage now reaches the columns, rows, type and table-inherited
+cell inset (#1932): the 39 large text shifts and the 17.7% width error are gone,
+and the rectangle census matches with zero geometry deviation. What is left on
+the 85% comparison is the bottom/top cell seat, which differs by whole points
+independently of print scale (#1721, #1814, #1815, and #1874 for the
+sub-material remainder).
