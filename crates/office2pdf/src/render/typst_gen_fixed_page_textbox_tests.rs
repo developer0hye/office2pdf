@@ -752,7 +752,7 @@ fn test_fixed_page_text_box_uses_padding_and_center_vertical_align() {
     );
     assert!(output.source.contains("width: 285.6pt"));
     assert!(output.source.contains(
-        "#context {\n    let text_box_slack_0 = calc.max(42.8pt - measure(text_box_content_0).height, 0pt)"
+        "#context {\n    let text_box_slack_0 = 42.8pt - measure(text_box_content_0).height"
     ));
     assert!(output.source.contains("#v(text_box_slack_0 / 2)"));
     assert!(output.source.contains("let text_box_aligned_0 = ["));
@@ -2717,7 +2717,7 @@ fn test_fixed_page_text_box_wrapped_centered_paragraph_scales_to_fit_height() {
                 }),
                 shape_kind: None,
                 no_wrap: false,
-                auto_fit: false,
+                auto_fit: true,
                 text_rotation_deg: None,
                 shape_rotation_deg: None,
             }),
@@ -6294,5 +6294,233 @@ fn a_single_paragraph_in_a_frame_shorter_than_its_insets_keeps_its_natural_width
             "{vertical_align:?}: the line must keep its own width, drew every run \
              between {first}pt and {last}pt: {runs:?}"
         );
+    }
+}
+
+/// A wrapped centered title without `<a:normAutofit/>` keeps its declared size.
+/// Inspect the emitted PDF text matrices so an enclosing shrink transform
+/// cannot pass by leaving the source `font_size_pt` unchanged (#1963).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn pptx_centered_wrapped_title_without_norm_autofit_keeps_26pt_glyphs() {
+    use crate::parser::Parser;
+
+    const FIXTURE: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/pptx/issue_1963_centered_wrapped_title_no_autofit.pptx"
+    );
+    const TITLE: &str = "A centered title retains size without autofit";
+
+    let (document, _warnings) = crate::parser::pptx::PptxParser
+        .parse(FIXTURE, &crate::ConvertOptions::default())
+        .expect("the public synthetic title fixture should parse");
+    let fixed_page = match &document.pages[0] {
+        Page::Fixed(page) => page,
+        other => panic!("the PPTX fixture should parse to a fixed page, got {other:?}"),
+    };
+    let text_box = fixed_page
+        .elements
+        .iter()
+        .find_map(|element| match &element.kind {
+            FixedElementKind::TextBox(text_box) => Some(text_box),
+            _ => None,
+        })
+        .expect("the synthetic slide should contain its title box");
+    assert!(
+        !text_box.auto_fit,
+        "the fixture must not request text autofit"
+    );
+    assert_eq!(
+        text_box.vertical_align,
+        crate::ir::TextBoxVerticalAlign::Center
+    );
+
+    let pdf_bytes = crate::convert_bytes(
+        FIXTURE,
+        crate::Format::Pptx,
+        &crate::ConvertOptions::default(),
+    )
+    .expect("the public synthetic title fixture should convert to PDF")
+    .pdf;
+    let extracted_text = pdf_extract::extract_text_from_mem(&pdf_bytes)
+        .expect("the compiled PDF should retain searchable title text");
+    let normalized_extracted_text: String = extracted_text
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect();
+    let normalized_title: String = TITLE
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect();
+    assert!(
+        normalized_extracted_text.contains(&normalized_title),
+        "the converted PDF should preserve the full title, got {extracted_text:?}"
+    );
+
+    let pdf_document = pdf_extract::Document::load_mem(&pdf_bytes)
+        .expect("the conversion output should be a valid PDF");
+    let mut probe = PdfGlyphTransformProbe::default();
+    pdf_extract::output_doc_page(&pdf_document, &mut probe, 1)
+        .expect("the title glyph transforms should be readable from the PDF");
+
+    let title_glyphs: Vec<&PdfGlyphObservation> = probe
+        .glyphs
+        .iter()
+        .filter(|glyph| !glyph.character.chars().all(char::is_whitespace))
+        .collect();
+    assert_eq!(
+        title_glyphs.len(),
+        TITLE.chars().filter(|ch| !ch.is_whitespace()).count()
+    );
+
+    for glyph in title_glyphs {
+        assert!(
+            (glyph.effective_font_size_x_pt - 26.0).abs() < 0.1
+                && (glyph.effective_font_size_y_pt - 26.0).abs() < 0.1,
+            "the no-autofit title must keep 26pt glyphs; '{}' is {:.3}x{:.3}pt at PDF y={:.3}pt",
+            glyph.character,
+            glyph.effective_font_size_x_pt,
+            glyph.effective_font_size_y_pt,
+            glyph.baseline_y_pt,
+        );
+    }
+
+    let mut baselines_pt: Vec<f64> = probe
+        .glyphs
+        .iter()
+        .map(|glyph| glyph.baseline_y_pt)
+        .collect();
+    baselines_pt.sort_by(f64::total_cmp);
+    baselines_pt.dedup_by(|left, right| (*left - *right).abs() < 0.1);
+    assert_eq!(
+        baselines_pt.len(),
+        2,
+        "the fixture title must wrap to two physical lines, got {baselines_pt:?}"
+    );
+    // pdf_extract reports bottom-origin coordinates; these are PowerPoint's
+    // 65.04pt and 34.08pt baselines measured from the slide top.
+    for (actual_baseline_pt, expected_baseline_pt) in
+        baselines_pt.iter().zip([474.96_f64, 505.92_f64])
+    {
+        assert!(
+            (actual_baseline_pt - expected_baseline_pt).abs() < 0.5,
+            "the centered overflow should keep PowerPoint's baseline at {expected_baseline_pt:.2}pt, got {actual_baseline_pt:.3}pt"
+        );
+    }
+}
+
+/// The same centered wrapped paragraph still shrinks when the parsed IR says
+/// the input requested `normAutofit`.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn pptx_centered_wrapped_title_with_norm_autofit_still_shrinks() {
+    use crate::parser::Parser;
+
+    const FIXTURE: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/pptx/issue_1963_centered_wrapped_title_no_autofit.pptx"
+    );
+    let (mut document, _warnings) = crate::parser::pptx::PptxParser
+        .parse(FIXTURE, &crate::ConvertOptions::default())
+        .expect("the public synthetic title fixture should parse");
+    let text_box = document.pages.iter_mut().find_map(|page| match page {
+        Page::Fixed(page) => page
+            .elements
+            .iter_mut()
+            .find_map(|element| match &mut element.kind {
+                FixedElementKind::TextBox(text_box) => Some(text_box),
+                _ => None,
+            }),
+        _ => None,
+    });
+    text_box
+        .expect("the synthetic slide should contain its title box")
+        .auto_fit = true;
+
+    let pdf_bytes = crate::render_document(&document)
+        .expect("the auto-fit title document should convert to PDF");
+    let pdf_document = pdf_extract::Document::load_mem(&pdf_bytes)
+        .expect("the conversion output should be a valid PDF");
+    let mut probe = PdfGlyphTransformProbe::default();
+    pdf_extract::output_doc_page(&pdf_document, &mut probe, 1)
+        .expect("the title glyph transforms should be readable from the PDF");
+
+    let title_glyphs: Vec<&PdfGlyphObservation> = probe
+        .glyphs
+        .iter()
+        .filter(|glyph| !glyph.character.chars().all(char::is_whitespace))
+        .collect();
+    assert!(
+        !title_glyphs.is_empty(),
+        "the title should produce PDF glyphs"
+    );
+    assert!(
+        title_glyphs.iter().all(|glyph| {
+            glyph.effective_font_size_x_pt < 25.9
+                && glyph.effective_font_size_x_pt > 10.0
+                && glyph.effective_font_size_y_pt < 25.9
+                && glyph.effective_font_size_y_pt > 10.0
+        }),
+        "an explicit normAutofit request should still shrink the wrapped title: {title_glyphs:?}"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Debug)]
+struct PdfGlyphObservation {
+    character: String,
+    effective_font_size_x_pt: f64,
+    effective_font_size_y_pt: f64,
+    baseline_y_pt: f64,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Default)]
+struct PdfGlyphTransformProbe {
+    glyphs: Vec<PdfGlyphObservation>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl pdf_extract::OutputDev for PdfGlyphTransformProbe {
+    fn begin_page(
+        &mut self,
+        _page_num: u32,
+        _media_box: &pdf_extract::MediaBox,
+        _art_box: Option<(f64, f64, f64, f64)>,
+    ) -> Result<(), pdf_extract::OutputError> {
+        Ok(())
+    }
+
+    fn end_page(&mut self) -> Result<(), pdf_extract::OutputError> {
+        Ok(())
+    }
+
+    fn output_character(
+        &mut self,
+        transform: &pdf_extract::Transform,
+        _width: f64,
+        _spacing: f64,
+        font_size_pt: f64,
+        character: &str,
+    ) -> Result<(), pdf_extract::OutputError> {
+        let horizontal_scale: f64 = transform.m11.hypot(transform.m12);
+        let vertical_scale: f64 = transform.m21.hypot(transform.m22);
+        self.glyphs.push(PdfGlyphObservation {
+            character: character.to_owned(),
+            effective_font_size_x_pt: font_size_pt * horizontal_scale,
+            effective_font_size_y_pt: font_size_pt * vertical_scale,
+            baseline_y_pt: transform.m32,
+        });
+        Ok(())
+    }
+
+    fn begin_word(&mut self) -> Result<(), pdf_extract::OutputError> {
+        Ok(())
+    }
+
+    fn end_word(&mut self) -> Result<(), pdf_extract::OutputError> {
+        Ok(())
+    }
+
+    fn end_line(&mut self) -> Result<(), pdf_extract::OutputError> {
+        Ok(())
     }
 }
