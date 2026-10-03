@@ -1,0 +1,15 @@
+{
+  "name": "issue-1680-legend-seat-visual",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "chart-space a:latin typeface at a fixed 18pt",
+  "page": 1,
+  "variants": [
+    {
+      "value": "Arial",
+      "find": "<a:defRPr sz=\"1800\"/>",
+      "replace": "<a:defRPr sz=\"1800\"><a:latin typeface=\"Arial\"/></a:defRPr>",
+      "count": 1
+    }
+  ]
+}

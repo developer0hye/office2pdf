@@ -10,8 +10,8 @@ use crate::render::typst_gen::diagrams::{
     SERIES_MARKER_SIZE_PT, TICK_GAP, axis_plot_rect, chart_area_title_h, chart_category_band_pt,
     chart_category_gutter_pt, chart_category_rotated_label_x, chart_category_rotated_label_y,
     chart_face_line_box_em, chart_face_line_metrics_em, chart_text_advance_em, chart_tick_band_pt,
-    excel_legend_trailing_gutter_pt, legend_marker_cap_pt, powerpoint_right_legend_y_shift,
-    pptx_column_data_label_seat_pt,
+    excel_legend_trailing_gutter_pt, legend_marker_cap_pt, powerpoint_right_legend_key_baseline_pt,
+    powerpoint_right_legend_y_shift, pptx_column_data_label_seat_pt,
 };
 
 #[test]
@@ -5142,6 +5142,130 @@ fn a_powerpoint_column_right_legend_correction_translates_the_whole_stack() {
 }
 
 #[test]
+fn a_powerpoint_right_legend_key_uses_its_measured_row_seat() {
+    // The values are key-bottom minus label-baseline measurements from the
+    // native one-factor exports in the #1680 report and its extra size/face
+    // probes. A negative Typst baseline moves the square up by this amount.
+    let measured_seats: [(&str, f64, f64); 18] = [
+        ("Calibri", 18.0, 0.1732),
+        ("Arial", 10.0, 0.4832),
+        ("Arial", 12.0, 0.7654),
+        ("Arial", 14.0, 1.2810),
+        ("Arial", 16.0, 0.5983),
+        ("Arial", 18.0, 0.8778),
+        ("Arial", 20.0, 1.3949),
+        ("Arial", 24.0, 2.1903),
+        ("Arial", 30.0, 2.2993),
+        ("Arial", 36.0, 3.3706),
+        ("Times New Roman", 18.0, 0.8947),
+        ("Courier New", 18.0, -0.4401),
+        ("Georgia", 18.0, 1.6688),
+        ("Trebuchet MS", 18.0, 1.2977),
+        ("Verdana", 18.0, 1.4532),
+        ("Helvetica Neue", 18.0, 1.5968),
+        ("Avenir Next", 18.0, -0.3052),
+        ("Palatino", 18.0, 0.2851),
+    ];
+
+    for (family, size_pt, native_above_baseline_pt) in measured_seats {
+        let mut chart = bar_chart_at(Some(size_pt), &["Sales"]);
+        chart.chart_type = ChartType::Bar;
+        chart.host = crate::ir::ChartHost::Presentation;
+        chart.legend_position = LegendPosition::Right;
+        chart.text_font_family = Some(family.to_string());
+
+        // Some CI hosts lack optional Microsoft fonts. On those hosts the
+        // converter uses its normal fallback metrics, which cannot be compared
+        // to this source-face measurement.
+        if chart_face_line_metrics_em(family, false).is_none() {
+            continue;
+        }
+        let typst_baseline_pt =
+            powerpoint_right_legend_key_baseline_pt(&chart).expect("native PPTX legend seat");
+        assert!(
+            (typst_baseline_pt + native_above_baseline_pt).abs() < 0.5,
+            "{family} at {size_pt}pt needs baseline {:+.4}pt to match the native {:+.4}pt seat; got {typst_baseline_pt:+.4}pt",
+            -native_above_baseline_pt,
+            native_above_baseline_pt,
+        );
+    }
+}
+
+#[test]
+fn a_native_legend_key_seat_is_limited_to_powerpoint_side_axis_legends() {
+    let seat_of = |host: crate::ir::ChartHost,
+                   chart_type: ChartType,
+                   position: LegendPosition|
+     -> Option<f64> {
+        let mut chart = bar_chart_at(Some(18.0), &["Sales"]);
+        chart.chart_type = chart_type;
+        chart.host = host;
+        chart.legend_position = position;
+        chart.text_font_family = Some("Calibri".to_string());
+        powerpoint_right_legend_key_baseline_pt(&chart)
+    };
+
+    assert!(
+        seat_of(
+            crate::ir::ChartHost::Presentation,
+            ChartType::Bar,
+            LegendPosition::Right,
+        )
+        .is_some()
+    );
+    assert!(
+        seat_of(
+            crate::ir::ChartHost::Presentation,
+            ChartType::Column,
+            LegendPosition::Right,
+        )
+        .is_some()
+    );
+    assert!(
+        seat_of(
+            crate::ir::ChartHost::Spreadsheet,
+            ChartType::Column,
+            LegendPosition::Right,
+        )
+        .is_none()
+    );
+    assert!(
+        seat_of(
+            crate::ir::ChartHost::Presentation,
+            ChartType::Line,
+            LegendPosition::Right,
+        )
+        .is_none()
+    );
+    assert!(
+        seat_of(
+            crate::ir::ChartHost::Presentation,
+            ChartType::Column,
+            LegendPosition::Bottom,
+        )
+        .is_none()
+    );
+}
+
+#[test]
+fn a_powerpoint_right_legend_emits_the_measured_filled_key_baseline() {
+    let mut chart = bar_chart_at(Some(18.0), &["Sales"]);
+    chart.host = crate::ir::ChartHost::Presentation;
+    chart.legend_position = LegendPosition::Right;
+    chart.text_font_family = Some("Calibri".to_string());
+
+    let expected_baseline_pt: f64 =
+        powerpoint_right_legend_key_baseline_pt(&chart).expect("native PPTX legend seat");
+    let expected_markup: String = format!(
+        "baseline: {}pt",
+        crate::render::typst_gen::format_f64(expected_baseline_pt)
+    );
+    let source: String = chart_source(chart);
+
+    assert!(source.contains(&expected_markup), "{expected_markup}");
+}
+
+#[test]
 fn only_a_powerpoint_column_right_legend_takes_the_column_block_correction() {
     // The correction is a PowerPoint automatic-layout figure measured on
     // column exports, so it must not reach an Excel column chart, a legend on
@@ -9425,19 +9549,16 @@ fn sparse_chart_points_keep_their_plot_slots_and_break_lines_at_gaps() {
 /// as a filled box, in the order written.
 ///
 /// A line series' key is a stroke and a marker rather than a box, so it is not
-/// collected here — [`LEGEND_KEY_LEN_PT`] is what sizes that one.
+/// collected here — [`LEGEND_KEY_LEN_PT`] is what sizes that one. A filled
+/// PowerPoint right-legend key may also carry a baseline, before its fill.
 fn emitted_legend_key_boxes(source: &str) -> Vec<(f64, f64, f64)> {
     source
         .lines()
         .filter_map(|line| {
             let after: &str = line.split_once("box[#box(width: ")?.1;
-            // A line series' key opens the same way but takes a `baseline:`
-            // after its height and paints its marker inside a nested block, so
-            // the filled keys are the ones whose height is followed *directly*
-            // by the colour. Merely containing a fill is not enough — the
-            // nested marker carries one of its own.
             let height: &str = after.split_once("height: ")?.1;
-            if !height.split_once("pt")?.1.starts_with(", fill: ") {
+            let box_arguments: &str = after.split_once(")[")?.0;
+            if !box_arguments.contains(", fill: ") {
                 return None;
             }
             Some((

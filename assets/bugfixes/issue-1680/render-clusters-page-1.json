@@ -1,0 +1,599 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 2333.664,
+      "bbox_pt": {
+        "height": 243.36,
+        "width": 253.2,
+        "x": 196.56,
+        "y": 154.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-cf9b7d8318ec",
+      "region": "center"
+    },
+    {
+      "area_pt2": 389.8368,
+      "bbox_pt": {
+        "height": 243.12,
+        "width": 60.24,
+        "x": 444.0,
+        "y": 154.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-b2a44c773c3f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 189.2736,
+      "bbox_pt": {
+        "height": 19.92,
+        "width": 12.96,
+        "x": 332.4,
+        "y": 121.2
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "Automatic chart-area title Sales retains the 18 pt chart-space scaling and baseline residual measured in #1870."
+      },
+      "id": "p1-db29b53870a8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 72.8064,
+      "bbox_pt": {
+        "height": 11.76,
+        "width": 8.88,
+        "x": 571.2,
+        "y": 282.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The horizontal bar-chart legend label remains 1.827 pt below the native baseline; its absolute key shift follows that sub-material label-seat residual and is recorded with the #1874 audit findings."
+      },
+      "id": "p1-9ae9e45c5e4c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 70.9632,
+      "bbox_pt": {
+        "height": 11.76,
+        "width": 7.92,
+        "x": 581.28,
+        "y": 282.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The horizontal bar-chart legend label remains 1.827 pt below the native baseline; its absolute key shift follows that sub-material label-seat residual and is recorded with the #1874 audit findings."
+      },
+      "id": "p1-cd451e6ae606",
+      "region": "right"
+    },
+    {
+      "area_pt2": 69.8688,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 10.8,
+        "x": 376.56,
+        "y": 131.04
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "Automatic chart-area title Sales retains the 18 pt chart-space scaling and baseline residual measured in #1870."
+      },
+      "id": "p1-181689835e60",
+      "region": "top"
+    },
+    {
+      "area_pt2": 48.96,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 10.8,
+        "x": 364.8,
+        "y": 125.52
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "Automatic chart-area title Sales retains the 18 pt chart-space scaling and baseline residual measured in #1870."
+      },
+      "id": "p1-924440fcceda",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.2528,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 9.36,
+        "x": 257.76,
+        "y": 408.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-bbaee95431bb",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 44.064,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 10.56,
+        "x": 346.8,
+        "y": 133.44
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "Automatic chart-area title Sales retains the 18 pt chart-space scaling and baseline residual measured in #1870."
+      },
+      "id": "p1-5f4887bd5965",
+      "region": "top"
+    },
+    {
+      "area_pt2": 43.8912,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 8.4,
+        "x": 557.28,
+        "y": 282.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The horizontal bar-chart legend label remains 1.827 pt below the native baseline; its absolute key shift follows that sub-material label-seat residual and is recorded with the #1874 audit findings."
+      },
+      "id": "p1-d72280972839",
+      "region": "right"
+    },
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 59.52,
+        "x": 383.52,
+        "y": 389.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-8584ef941e5e",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 42.6816,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 59.28,
+        "x": 383.52,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-c7bba5dbd73e",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 42.6816,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 59.28,
+        "x": 323.52,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-e8e1938186a9",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 42.6816,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 59.28,
+        "x": 263.52,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-cb84d0c3d7af",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 42.6816,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 59.28,
+        "x": 443.52,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-e8c908192d03",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 42.6816,
+      "bbox_pt": {
+        "height": 0.72,
+        "width": 59.28,
+        "x": 323.28,
+        "y": 389.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-b8869f81d3a8",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 42.5664,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 12.24,
+        "x": 162.48,
+        "y": 184.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-4c06507c5c91",
+      "region": "left"
+    },
+    {
+      "area_pt2": 42.2784,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 12.24,
+        "x": 162.0,
+        "y": 176.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-8c19e246f1ef",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 6.48,
+        "width": 10.32,
+        "x": 364.56,
+        "y": 134.4
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "Automatic chart-area title Sales retains the 18 pt chart-space scaling and baseline residual measured in #1870."
+      },
+      "id": "p1-5c65e811bbf6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 39.3408,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.84,
+        "x": 347.28,
+        "y": 125.52
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "Automatic chart-area title Sales retains the 18 pt chart-space scaling and baseline residual measured in #1870."
+      },
+      "id": "p1-0c9b1a8e31cf",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.9584,
+      "bbox_pt": {
+        "height": 6.48,
+        "width": 10.32,
+        "x": 545.52,
+        "y": 287.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The horizontal bar-chart legend label remains 1.827 pt below the native baseline; its absolute key shift follows that sub-material label-seat residual and is recorded with the #1874 audit findings."
+      },
+      "id": "p1-07e44d91961d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 36.9216,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 6.48,
+        "x": 197.52,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-545b2750d5cd",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 36.576,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 6.72,
+        "x": 200.64,
+        "y": 408.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-c9ae857bc23a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 34.272,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 317.76,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-d94fe00d5768",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 33.9264,
+      "bbox_pt": {
+        "height": 6.0,
+        "width": 9.6,
+        "x": 546.0,
+        "y": 278.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The horizontal bar-chart legend label remains 1.827 pt below the native baseline; its absolute key shift follows that sub-material label-seat residual and is recorded with the #1874 audit findings."
+      },
+      "id": "p1-aebdadc3cac7",
+      "region": "right"
+    },
+    {
+      "area_pt2": 32.3136,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 9.84,
+        "x": 546.0,
+        "y": 283.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The horizontal bar-chart legend label remains 1.827 pt below the native baseline; its absolute key shift follows that sub-material label-seat residual and is recorded with the #1874 audit findings."
+      },
+      "id": "p1-8c8409734635",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.4496,
+      "bbox_pt": {
+        "height": 6.48,
+        "width": 11.76,
+        "x": 162.96,
+        "y": 244.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-0a1d47170ca0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.5488,
+      "bbox_pt": {
+        "height": 6.48,
+        "width": 11.52,
+        "x": 162.0,
+        "y": 235.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-45d3344b37c4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.2,
+        "x": 131.52,
+        "y": 176.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-daaf9b7d1328",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 29.28,
+        "width": 0.96,
+        "x": 244.32,
+        "y": 229.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-971190f81cdf",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.7632,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 9.6,
+        "x": 377.04,
+        "y": 125.52
+      },
+      "disposition": {
+        "issue": "#1870",
+        "kind": "issue",
+        "note": "Automatic chart-area title Sales retains the 18 pt chart-space scaling and baseline residual measured in #1870."
+      },
+      "id": "p1-72be1f9a8aa9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.6688,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.72,
+        "x": 506.4,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-f0807190d3eb",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 26.5536,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.48,
+        "x": 503.76,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-1f01f827fcb5",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.464,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 8.64,
+        "x": 557.28,
+        "y": 289.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The horizontal bar-chart legend label remains 1.827 pt below the native baseline; its absolute key shift follows that sub-material label-seat residual and is recorded with the #1874 audit findings."
+      },
+      "id": "p1-0821ac6810f1",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 8.4,
+        "x": 131.04,
+        "y": 245.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-a8a82d8d6e8a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.2176,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 8.64,
+        "x": 439.2,
+        "y": 409.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Full-resolution crops show only sub-material bar, plot-line, category-label, and value-tick alignment residuals; exact shift values are in the committed layout audit."
+      },
+      "id": "p1-d5d6a6e9aa0b",
+      "region": "bottom"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 36,
+    "duplicate": 0,
+    "total": 36,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
