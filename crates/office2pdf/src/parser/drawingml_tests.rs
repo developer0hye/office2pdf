@@ -348,6 +348,21 @@ fn parse_sys_color_uses_last_clr() {
 }
 
 #[test]
+fn theme_color_scheme_parses_non_empty_color_elements() {
+    let theme_xml = r#"<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <a:themeElements>
+    <a:clrScheme name="Office">
+      <a:dk1><a:sysClr val="windowText" lastClr="000000"></a:sysClr></a:dk1>
+      <a:accent1><a:srgbClr val="4F81BD"></a:srgbClr></a:accent1>
+    </a:clrScheme>
+  </a:themeElements>
+</a:theme>"#;
+    let colors = parse_theme_color_scheme(theme_xml);
+    assert_eq!(colors.get("dk1"), Some(&Color::new(0, 0, 0)));
+    assert_eq!(colors.get("accent1"), Some(&Color::new(0x4f, 0x81, 0xbd)));
+}
+
+#[test]
 fn theme_accent_palette_returns_all_six_in_order() {
     // The Office 2007 palette both audited fixtures declare (issue #670).
     let colors: ColorsMap = [

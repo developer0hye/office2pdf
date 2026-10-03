@@ -25,9 +25,11 @@ pub(super) struct TableStyleRange {
     /// First body row — the table's first row plus its header rows.
     first_body_row: u32,
     end_row: u32,
+    totals_row_count: u32,
     /// The fill every body row takes, where the style paints one.
     body: Option<Color>,
     stripe: Option<Color>,
+    total_row: Option<Color>,
     rule: Option<TableRule>,
     header: Option<HeaderPaint>,
 }
@@ -41,6 +43,7 @@ impl TableStyleRange {
     pub(super) fn painted_end_col(&self) -> Option<u32> {
         (self.body.is_some()
             || self.stripe.is_some()
+            || self.total_row.is_some()
             || self.rule.is_some()
             || self.header.is_some())
         .then_some(self.end_col)
@@ -48,11 +51,11 @@ impl TableStyleRange {
 
     /// The fill at `(col, row)`, or `None` where the table paints none.
     ///
-    /// A header row takes the style's own fill. Below it Excel shades the
-    /// first body row and every second one after it, so the band alternates
-    /// from the top of the body rather than from row 1. The rows between them
-    /// take the style's whole-table fill where it declares one — the later
-    /// Medium bands fill every row, in two tints (issue #1189).
+    /// A header row takes the style's own fill. Declared totals rows take
+    /// their separately measured fill; the remaining body rows shade the
+    /// first row and every second one after it, alternating from the top of
+    /// the body rather than from row 1. Later Medium bands also fill every
+    /// body row in two tints (issue #1189).
     pub(super) fn fill_at(&self, col: u32, row: u32) -> Option<Color> {
         if !(self.start_col..=self.end_col).contains(&col)
             || !(self.start_row..=self.end_row).contains(&row)
@@ -63,6 +66,9 @@ impl TableStyleRange {
         }
         if row < self.first_body_row {
             return self.header.map(|header| header.fill);
+        }
+        if self.totals_row_count > 0 && row > self.end_row.saturating_sub(self.totals_row_count) {
+            return self.total_row;
         }
         if (row - self.first_body_row).is_multiple_of(2) {
             self.stripe.or(self.body)
@@ -189,6 +195,8 @@ struct TableStylePaint {
     body: Option<Color>,
     /// The banded-row fill, painted where `showRowStripes` asks for it.
     stripe: Option<Color>,
+    /// The fill on a totals row, where a measured style defines one.
+    total_row: Option<Color>,
     /// The rules the style lays over the table's boundaries.
     rule: Option<TableRule>,
     /// The header row's own paint, where the style gives it one.
@@ -431,6 +439,7 @@ fn built_in_table_style(style_name: &str, palette: &StylePalette) -> Option<Tabl
         return Some(TableStylePaint {
             body: None,
             stripe: Some(colors.light_band),
+            total_row: None,
             // A Light table rules in its own colour, not at the 40% tint the
             // Medium band takes.
             rule: Some(TableRule {
@@ -451,6 +460,7 @@ fn built_in_table_style(style_name: &str, palette: &StylePalette) -> Option<Tabl
         0 => Some(TableStylePaint {
             body: None,
             stripe: Some(colors.light_band),
+            total_row: None,
             rule: Some(TableRule {
                 color: colors.rule,
                 extent: MEDIUM_BAND_ONE_RULES,
@@ -460,6 +470,10 @@ fn built_in_table_style(style_name: &str, palette: &StylePalette) -> Option<Tabl
         1 => Some(TableStylePaint {
             body: Some(colors.light_band),
             stripe: Some(colors.dark_band),
+            // The native Excel export for issue #1970 shows Medium9's total
+            // row in its accent color. Keep other total-row mappings unset
+            // until their built-in styles are measured as well.
+            total_row: (index == 9).then_some(colors.strong),
             // The seams are the sheet's own background showing between the
             // filled rows, which both measured members print `#FFFFFF`.
             rule: Some(TableRule {
@@ -473,6 +487,7 @@ fn built_in_table_style(style_name: &str, palette: &StylePalette) -> Option<Tabl
             // Band 3 bands in `lt1` shaded 15% under an accent header as well
             // as under a dark one: both measured members print `#D9D9D9`.
             stripe: Some(tint(palette.light, NEUTRAL_BAND_TINT)),
+            total_row: None,
             rule: Some(TableRule {
                 color: palette.dark,
                 extent: if accent.is_some() {
@@ -486,6 +501,7 @@ fn built_in_table_style(style_name: &str, palette: &StylePalette) -> Option<Tabl
         3 => Some(TableStylePaint {
             body: Some(colors.light_band),
             stripe: Some(colors.dark_band),
+            total_row: None,
             rule: Some(TableRule {
                 color: colors.rule,
                 extent: MEDIUM_BAND_FOUR_RULES,
@@ -604,6 +620,7 @@ fn parse_table_part(xml: &str, palette: &StylePalette) -> Option<TableStyleRange
     let mut reader = Reader::from_str(xml);
     let mut range: Option<(u32, u32, u32, u32)> = None;
     let mut header_rows: u32 = 0;
+    let mut totals_row_count: u32 = 0;
     let mut paint: Option<TableStylePaint> = None;
     let mut shows_row_stripes: bool = false;
 
@@ -623,6 +640,9 @@ fn parse_table_part(xml: &str, palette: &StylePalette) -> Option<TableStyleRange
                     .and_then(|value| value.parse::<u32>().ok())
                     // ECMA-376 defaults headerRowCount to 1.
                     .unwrap_or(1);
+                totals_row_count = get_attr_str(&element, b"totalsRowCount")
+                    .and_then(|value| value.parse::<u32>().ok())
+                    .unwrap_or(0);
             }
             b"tableStyleInfo" => {
                 // `showRowStripes` governs the banding alone: a `Light1` table
@@ -641,23 +661,35 @@ fn parse_table_part(xml: &str, palette: &StylePalette) -> Option<TableStyleRange
     let (start_col, start_row, end_col, end_row) = range?;
     let paint: TableStylePaint = paint?;
     let first_body_row: u32 = start_row + header_rows;
-    let has_body_rows: bool = first_body_row <= end_row;
+    let table_data_rows: u32 = end_row
+        .checked_sub(first_body_row)
+        .map_or(0, |rows_before_last| rows_before_last.saturating_add(1));
+    totals_row_count = totals_row_count.min(table_data_rows);
+    let body_end_row: u32 = end_row.saturating_sub(totals_row_count);
+    let has_body_rows: bool = first_body_row <= body_end_row;
     // `showRowStripes` scopes the banded tint alone: a band-2 table with it
     // off keeps the whole-table fill under it, as it keeps its rules.
     let stripe: Option<Color> = paint.stripe.filter(|_| shows_row_stripes && has_body_rows);
     let body: Option<Color> = paint.body.filter(|_| has_body_rows);
-    (stripe.is_some() || body.is_some() || paint.rule.is_some() || paint.header.is_some())
-        .then_some(TableStyleRange {
-            start_col,
-            end_col,
-            start_row,
-            first_body_row,
-            end_row,
-            body,
-            stripe,
-            rule: paint.rule,
-            header: paint.header,
-        })
+    let total_row: Option<Color> = paint.total_row.filter(|_| totals_row_count > 0);
+    (stripe.is_some()
+        || body.is_some()
+        || total_row.is_some()
+        || paint.rule.is_some()
+        || paint.header.is_some())
+    .then_some(TableStyleRange {
+        start_col,
+        end_col,
+        start_row,
+        first_body_row,
+        end_row,
+        totals_row_count,
+        body,
+        stripe,
+        total_row,
+        rule: paint.rule,
+        header: paint.header,
+    })
 }
 
 /// Parse an `A4:H175`-style range into `(start_col, start_row, end_col, end_row)`.
