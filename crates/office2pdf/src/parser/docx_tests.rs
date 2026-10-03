@@ -142,17 +142,17 @@ fn build_docx_with_numbering(
 fn body_bookmark_and_comment_range_markers_preserve_list_continuity() {
     #[derive(Debug, Clone, Copy)]
     enum MarkerPosition {
-        BookmarkStartBetweenItems,
-        BookmarkEndBetweenItems,
-        CommentStartBetweenItems,
-        CommentEndBetweenItems,
+        BookmarkStart,
+        BookmarkEnd,
+        CommentStart,
+        CommentEnd,
     }
 
     let markers: [MarkerPosition; 4] = [
-        MarkerPosition::BookmarkStartBetweenItems,
-        MarkerPosition::BookmarkEndBetweenItems,
-        MarkerPosition::CommentStartBetweenItems,
-        MarkerPosition::CommentEndBetweenItems,
+        MarkerPosition::BookmarkStart,
+        MarkerPosition::BookmarkEnd,
+        MarkerPosition::CommentStart,
+        MarkerPosition::CommentEnd,
     ];
 
     for marker in markers {
@@ -178,17 +178,17 @@ fn body_bookmark_and_comment_range_markers_preserve_list_continuity() {
         };
         let document = docx_rs::Docx::new().numberings(numberings);
         let document = match marker {
-            MarkerPosition::BookmarkStartBetweenItems => document
+            MarkerPosition::BookmarkStart => document
                 .add_paragraph(first_item())
                 .add_bookmark_start(9, "marker")
                 .add_paragraph(second_item())
                 .add_bookmark_end(9),
-            MarkerPosition::BookmarkEndBetweenItems => document
+            MarkerPosition::BookmarkEnd => document
                 .add_bookmark_start(9, "marker")
                 .add_paragraph(first_item())
                 .add_bookmark_end(9)
                 .add_paragraph(second_item()),
-            MarkerPosition::CommentStartBetweenItems => {
+            MarkerPosition::CommentStart => {
                 let mut document = document.add_paragraph(first_item());
                 document.document = document
                     .document
@@ -197,7 +197,7 @@ fn body_bookmark_and_comment_range_markers_preserve_list_continuity() {
                 document.document = document.document.add_comment_end(9);
                 document
             }
-            MarkerPosition::CommentEndBetweenItems => {
+            MarkerPosition::CommentEnd => {
                 let mut document = document;
                 document.document = document
                     .document
