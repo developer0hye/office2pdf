@@ -2417,7 +2417,7 @@ dependencies = [
 
 [[package]]
 name = "office2pdf"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "comemo",
  "criterion",
@@ -2449,7 +2449,7 @@ dependencies = [
 
 [[package]]
 name = "office2pdf-cli"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "clap",

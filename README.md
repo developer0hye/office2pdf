@@ -28,7 +28,7 @@ DOCX packages with conflicting ASCII ZIP part names are rejected.
 
 ```toml
 [dependencies]
-office2pdf = "0.8.0"
+office2pdf = "0.8.1"
 ```
 
 ### Native builds without Typst's bundled fonts
@@ -39,7 +39,7 @@ default features (available since 0.8.0):
 
 ```toml
 [dependencies]
-office2pdf = { version = "0.8.0", default-features = false }
+office2pdf = { version = "0.8.1", default-features = false }
 ```
 
 For the CLI:
@@ -81,7 +81,7 @@ Every [GitHub release](https://github.com/developer0hye/office2pdf/releases) shi
 On Linux and macOS, download, extract, and place the binary on your `PATH`:
 
 ```sh
-VERSION=v0.8.0
+VERSION=v0.8.1
 TARGET=x86_64-unknown-linux-gnu  # pick your platform's target from the table above
 curl -L "https://github.com/developer0hye/office2pdf/releases/download/${VERSION}/office2pdf-${VERSION}-${TARGET}.tar.gz" | tar xz
 sudo install "office2pdf-${VERSION}-${TARGET}/office2pdf" /usr/local/bin/
