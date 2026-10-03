@@ -1,0 +1,343 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 281.5488,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 147.12,
+        "x": 54.0,
+        "y": 100.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-a0775ba61961",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 280.6272,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 146.16,
+        "x": 54.96,
+        "y": 113.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-7057be1689a8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 175.392,
+      "bbox_pt": {
+        "height": 1.2,
+        "width": 146.16,
+        "x": 54.96,
+        "y": 127.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-92db7b23b976",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 171.7632,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 62.88,
+        "x": 281.04,
+        "y": 118.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-11e1c1550e77",
+      "region": "top"
+    },
+    {
+      "area_pt2": 160.3008,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 78.0,
+        "x": 202.08,
+        "y": 122.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-d6f847ea1273",
+      "region": "top"
+    },
+    {
+      "area_pt2": 157.1328,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 78.0,
+        "x": 202.08,
+        "y": 109.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-0c31deda5879",
+      "region": "top"
+    },
+    {
+      "area_pt2": 152.5824,
+      "bbox_pt": {
+        "height": 3.36,
+        "width": 146.16,
+        "x": 54.96,
+        "y": 122.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-8ce587659945",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 149.76,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 78.0,
+        "x": 202.08,
+        "y": 100.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-7baac3b039f8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 140.3136,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 146.16,
+        "x": 54.96,
+        "y": 138.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-6cbd70d52311",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 129.0816,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 52.8,
+        "x": 345.12,
+        "y": 122.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-97badba79130",
+      "region": "top"
+    },
+    {
+      "area_pt2": 128.1024,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 62.88,
+        "x": 281.04,
+        "y": 109.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-b00c8e241ac3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 123.0336,
+      "bbox_pt": {
+        "height": 3.12,
+        "width": 62.88,
+        "x": 281.04,
+        "y": 98.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-976fc2527bfd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 109.0944,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 21.12,
+        "x": 286.56,
+        "y": 42.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-4651918b8f8d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 108.7488,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 52.8,
+        "x": 345.12,
+        "y": 109.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-cd14cce97bc8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 102.7584,
+      "bbox_pt": {
+        "height": 3.12,
+        "width": 52.8,
+        "x": 345.12,
+        "y": 98.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-3da97be5257a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 74.88,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 78.0,
+        "x": 202.08,
+        "y": 139.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-3eb19a8a361d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 60.3648,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 62.88,
+        "x": 281.04,
+        "y": 139.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-266c596b1d61",
+      "region": "top"
+    },
+    {
+      "area_pt2": 50.688,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 52.8,
+        "x": 345.12,
+        "y": 139.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-95f028cb8794",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.9248,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 91.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-b1038462af09",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.04,
+        "x": 77.04,
+        "y": 131.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The inspected text and fill-edge differences are approximately one point and fall below the repository materiality threshold; tracked for bulk review."
+      },
+      "id": "p1-4e8b21fe59f4",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 20,
+    "duplicate": 0,
+    "total": 20,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

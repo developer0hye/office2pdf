@@ -410,11 +410,20 @@ pub(crate) fn apply_image_alpha(data: &[u8], alpha: f64) -> Option<(Vec<u8>, Ima
     Some((out.into_inner(), ImageFormat::Png))
 }
 
+fn theme_color_element(element: &BytesStart<'_>) -> Option<Color> {
+    match element.local_name().as_ref() {
+        b"srgbClr" => get_attr_str(element, b"val").and_then(|hex| parse_hex_color(&hex)),
+        b"sysClr" => get_attr_str(element, b"lastClr").and_then(|hex| parse_hex_color(&hex)),
+        _ => None,
+    }
+}
+
 /// Parse just the `<a:clrScheme>` palette out of a theme part
 /// (`theme1.xml`) into a scheme-name → color map.
 ///
 /// `srgbClr` uses `val`; `sysClr` uses the application-resolved `lastClr`.
-/// The pptx parser keeps its own combined single-pass reader because it also
+/// Color entries may be serialized as self-closing elements or as start/end
+/// pairs. The pptx parser keeps its own combined reader because it also
 /// collects fonts and fill styles from the same document.
 pub(crate) fn parse_theme_color_scheme(xml: &str) -> HashMap<String, Color> {
     let mut colors: HashMap<String, Color> = HashMap::new();
@@ -428,21 +437,17 @@ pub(crate) fn parse_theme_color_scheme(xml: &str) -> HashMap<String, Color> {
                 let name = std::str::from_utf8(local.as_ref()).unwrap_or("");
                 if CLR_SCHEME_SLOTS.contains(&name) {
                     current_slot = Some(name.to_string());
+                } else if let Some(slot) = current_slot.as_ref()
+                    && let Some(color) = theme_color_element(e)
+                {
+                    colors.insert(slot.clone(), color);
                 }
             }
             Ok(Event::Empty(ref e)) => {
-                if let Some(ref slot) = current_slot {
-                    let local = e.local_name();
-                    let color = match local.as_ref() {
-                        b"srgbClr" => get_attr_str(e, b"val").and_then(|hex| parse_hex_color(&hex)),
-                        b"sysClr" => {
-                            get_attr_str(e, b"lastClr").and_then(|hex| parse_hex_color(&hex))
-                        }
-                        _ => None,
-                    };
-                    if let Some(color) = color {
-                        colors.insert(slot.clone(), color);
-                    }
+                if let Some(slot) = current_slot.as_ref()
+                    && let Some(color) = theme_color_element(e)
+                {
+                    colors.insert(slot.clone(), color);
                 }
             }
             Ok(Event::End(ref e)) => {

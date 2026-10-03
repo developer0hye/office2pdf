@@ -2436,6 +2436,54 @@ fn structure_medium9_table_style_fills_every_row_and_seams_them_in_white() {
     );
 }
 
+/// Excel extends the totals-row band over blank cells omitted from the sheet
+/// XML, while preserving the explicit fill on the row label (issue #1970).
+#[test]
+fn structure_medium9_table_totals_row_fills_blank_cells() {
+    let pages = sheet_pages("issue_1970_totals_row_blank_cells.xlsx");
+    let cell_contains_text = |cell: &TableCell, expected: &str| -> bool {
+        cell.content.iter().any(|block| match block {
+            Block::Paragraph(paragraph) => paragraph.runs.iter().any(|run| run.text == expected),
+            _ => false,
+        })
+    };
+    let total_row = pages
+        .iter()
+        .flat_map(|page| page.table.rows.iter())
+        .find(|row| {
+            row.cells
+                .iter()
+                .any(|cell| cell_contains_text(cell, "Price/lb"))
+        })
+        .expect("the table's totals row is present");
+    let label_column = total_row
+        .cells
+        .iter()
+        .position(|cell| cell_contains_text(cell, "Price/lb"))
+        .expect("the totals row has its label");
+    let expected_fill = Some(Color {
+        r: 0x4f,
+        g: 0x81,
+        b: 0xbd,
+    });
+    assert_eq!(
+        total_row.cells[label_column].background, expected_fill,
+        "the explicit totals label keeps its blue fill"
+    );
+    assert!(
+        total_row.cells.len() >= label_column + 4,
+        "the totals row includes the label and all three table columns"
+    );
+    assert_eq!(
+        total_row.cells[label_column..label_column + 4]
+            .iter()
+            .map(|cell| cell.background)
+            .collect::<Vec<_>>(),
+        vec![expected_fill; 4],
+        "the totals-row band spans blank cells through the end of the table"
+    );
+}
+
 /// `<printOptions horizontalCentered="1"/>` centres the printed grid between
 /// the print margins; without it the grid prints flush to the left one.
 ///

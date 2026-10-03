@@ -150,6 +150,23 @@ fn stripes_start_at_the_first_body_row_and_alternate() {
 }
 
 #[test]
+fn medium9_totals_row_uses_its_own_fill() {
+    let xml = r#"<table xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+                   ref="G1:I4" headerRowCount="1" totalsRowCount="1">
+      <tableStyleInfo name="TableStyleMedium9" showRowStripes="1"/>
+    </table>"#;
+
+    let style = parse_table_part(xml, &palette()).unwrap();
+
+    assert_eq!(style.fill_at(7, 3), Some(accent_light_band()));
+    assert_eq!(
+        style.fill_at(7, 4),
+        Some(accent()),
+        "the declared totals row uses its measured total-row fill"
+    );
+}
+
+#[test]
 fn stripes_stay_inside_the_tables_columns() {
     let xml =
         module_inventory_table(r#"<tableStyleInfo name="TableStyleMedium2" showRowStripes="1"/>"#);
@@ -495,6 +512,7 @@ fn medium_band_one_opens_on_the_dark_style() {
         Some(TableStylePaint {
             body: None,
             stripe: Some(Color::new(0xd9, 0xd9, 0xd9)),
+            total_row: None,
             rule: Some(TableRule {
                 color: Color::black(),
                 extent: MEDIUM_BAND_ONE_RULES,
@@ -611,6 +629,7 @@ fn light_band_one_walks_the_accents_like_medium_does() {
         Some(TableStylePaint {
             body: None,
             stripe: Some(Color::new(0xd9, 0xd9, 0xd9)),
+            total_row: None,
             rule: Some(TableRule {
                 color: Color::black(),
                 extent: LIGHT_BAND_ONE_RULES,
@@ -629,6 +648,7 @@ fn light_band_one_walks_the_accents_like_medium_does() {
             Some(TableStylePaint {
                 body: None,
                 stripe: Some(tint(accent, 0.8)),
+                total_row: None,
                 rule: Some(TableRule {
                     color: accent,
                     extent: LIGHT_BAND_ONE_RULES,
