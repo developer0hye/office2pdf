@@ -2436,8 +2436,8 @@ fn structure_medium9_table_style_fills_every_row_and_seams_them_in_white() {
     );
 }
 
-/// Excel extends the totals-row band over blank cells omitted from the sheet
-/// XML, while preserving the explicit fill on the row label (issue #1970).
+/// Excel extends the totals-row band over blank cells omitted from this
+/// synthetic sheet XML, while preserving the explicit label fill (issue #1970).
 #[test]
 fn structure_medium9_table_totals_row_fills_blank_cells() {
     let pages = sheet_pages("issue_1970_totals_row_blank_cells.xlsx");
@@ -2453,13 +2453,13 @@ fn structure_medium9_table_totals_row_fills_blank_cells() {
         .find(|row| {
             row.cells
                 .iter()
-                .any(|cell| cell_contains_text(cell, "Price/lb"))
+                .any(|cell| cell_contains_text(cell, "Total"))
         })
         .expect("the table's totals row is present");
     let label_column = total_row
         .cells
         .iter()
-        .position(|cell| cell_contains_text(cell, "Price/lb"))
+        .position(|cell| cell_contains_text(cell, "Total"))
         .expect("the totals row has its label");
     let expected_fill = Some(Color {
         r: 0x4f,

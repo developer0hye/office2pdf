@@ -275,6 +275,6 @@ by the project's own license:
 `test.pptx`
 
 **XLSX:** `any_sheets.xlsx`, `date.xlsx`, `merge_cells.xlsx`,
-`office2pdf_repository_workbook.xlsx`, `SH001-Table.xlsx`,
+`issue_1970_totals_row_blank_cells.xlsx`, `office2pdf_repository_workbook.xlsx`, `SH001-Table.xlsx`,
 `SH002-TwoTablesTwoSheets.xlsx`, `SH106-Formatted.xlsx`, `SH109-CellWithBorder.xlsx`,
 `temperature.xlsx`

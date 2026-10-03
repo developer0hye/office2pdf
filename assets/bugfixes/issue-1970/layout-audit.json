@@ -2,206 +2,76 @@
  "pages": [
   {
    "lines": {
-    "gt": 5,
-    "out": 5,
-    "matched": 5,
+    "gt": 4,
+    "out": 4,
+    "matched": 4,
     "missing": 0,
     "extra": 0,
-    "deviant": 5,
+    "deviant": 1,
     "missing_text": [],
     "extra_text": []
    },
    "baseline": {
-    "mean_abs_dy": 1.0352925882352944,
-    "worst_dy": 1.5999740000000031,
-    "worst_dy_signed": -1.5999740000000031,
-    "worst_line": "Data"
+    "mean_abs_dy": 0.3076923076923077,
+    "worst_dy": 1.0,
+    "worst_dy_signed": -1.0,
+    "worst_line": "Desc"
    },
    "dx0": {
-    "mean_abs": 0.06364588235293876,
-    "worst": 1.0785000000000196
+    "mean_abs": 0.0001161538461557344,
+    "worst": 0.00035000000002582965
    },
    "width": {
-    "mean_abs_pct": 0.12768353960559697,
-    "worst_pct": 2.04081161258584
+    "mean_abs_pct": 0.013876851085659107,
+    "worst_pct": 0.02998052001010799
    },
    "instances": {
-    "compared": 17,
+    "compared": 13,
     "large_shift_threshold": 5.0,
     "large_shift_count": 0,
     "large_shifts": [],
     "fine_shift_threshold": 0.5,
-    "fine_shift_count": 17,
+    "fine_shift_count": 4,
     "fine_shifts": [
-     {
-      "label": "Data",
-      "gt_x": 286.0,
-      "gt_y": 52.0,
-      "out_x": 287.0785,
-      "out_y": 50.400026,
-      "dx": 1.0785000000000196,
-      "dy": -1.5999740000000031,
-      "width_pct": -2.04081161258584
-     },
      {
       "label": "Desc",
       "gt_x": 57.0,
       "gt_y": 98.0,
       "out_x": 57.0,
-      "out_y": 99.0,
+      "out_y": 97.0,
       "dx": 0.0,
-      "dy": 1.0,
+      "dy": -1.0,
       "width_pct": -0.008015195898472842
      },
      {
-      "label": "Corn",
-      "gt_x": 228.0,
+      "label": "Alpha",
+      "gt_x": 226.0,
       "gt_y": 98.0,
-      "out_x": 228.00038,
-      "out_y": 99.0,
-      "dx": 0.00038000000000693035,
-      "dy": 1.0,
-      "width_pct": 0.00876466448130816
+      "out_x": 226.00017,
+      "out_y": 97.0,
+      "dx": 0.0001699999999971169,
+      "dy": -1.0,
+      "width_pct": 0.02998052001010799
      },
      {
-      "label": "Hay",
-      "gt_x": 302.0,
+      "label": "Beta",
+      "gt_x": 301.0,
       "gt_y": 98.0,
-      "out_x": 302.00016,
-      "out_y": 99.0,
+      "out_x": 301.00016,
+      "out_y": 97.0,
       "dx": 0.00015999999999394277,
-      "dy": 1.0,
-      "width_pct": -0.010539607584750619
+      "dy": -1.0,
+      "width_pct": 0.006204662395142632
      },
      {
-      "label": "Soy",
-      "gt_x": 361.0,
+      "label": "Gamma",
+      "gt_x": 356.0,
       "gt_y": 98.0,
-      "out_x": 361.00016,
-      "out_y": 99.0,
+      "out_x": 356.00016,
+      "out_y": 97.0,
       "dx": 0.00015999999999394277,
-      "dy": 1.0,
-      "width_pct": 0.005209575847672506
-     },
-     {
-      "label": "Price",
-      "gt_x": 57.0,
-      "gt_y": 111.0,
-      "out_x": 57.0,
-      "out_y": 112.0,
-      "dx": 0.0,
-      "dy": 1.0,
-      "width_pct": -0.007437942998646934
-     },
-     {
-      "label": "$ [1/3]",
-      "gt_x": 207.0,
-      "gt_y": 111.0,
-      "out_x": 207.0,
-      "out_y": 112.0,
-      "dx": 0.0,
-      "dy": 1.0,
-      "width_pct": 0.0
-     },
-     {
-      "label": "1.00",
-      "gt_x": 254.0,
-      "gt_y": 111.0,
-      "out_x": 254.00048,
-      "out_y": 112.0,
-      "dx": 0.00048000000001025,
-      "dy": 1.0,
-      "width_pct": -0.006648832426055561
-     },
-     {
-      "label": "$ [2/3]",
-      "gt_x": 286.0,
-      "gt_y": 111.0,
-      "out_x": 286.0,
-      "out_y": 112.0,
-      "dx": 0.0,
-      "dy": 1.0,
-      "width_pct": 0.0
-     },
-     {
-      "label": "2.00",
-      "gt_x": 318.0,
-      "gt_y": 111.0,
-      "out_x": 318.0005,
-      "out_y": 112.0,
-      "dx": 0.0004999999999881766,
-      "dy": 1.0,
-      "width_pct": -0.006648832426193799
-     },
-     {
-      "label": "$ [3/3]",
-      "gt_x": 350.0,
-      "gt_y": 111.0,
-      "out_x": 350.0,
-      "out_y": 112.0,
-      "dx": 0.0,
-      "dy": 1.0,
-      "width_pct": 0.0
-     },
-     {
-      "label": "3.00",
-      "gt_x": 371.0,
-      "gt_y": 111.0,
-      "out_x": 371.0005,
-      "out_y": 112.0,
-      "dx": 0.0004999999999881766,
-      "dy": 1.0,
-      "width_pct": -0.006648832426193799
-     },
-     {
-      "label": "Unit",
-      "gt_x": 57.0,
-      "gt_y": 124.0,
-      "out_x": 57.0,
-      "out_y": 125.0,
-      "dx": 0.0,
-      "dy": 1.0,
-      "width_pct": -0.027457817155026296
-     },
-     {
-      "label": "ton",
-      "gt_x": 263.0,
-      "gt_y": 124.0,
-      "out_x": 263.0005,
-      "out_y": 125.0,
-      "dx": 0.0004999999999881766,
-      "dy": 1.0,
-      "width_pct": 0.0010714285125866317
-     },
-     {
-      "label": "bushel",
-      "gt_x": 311.0,
-      "gt_y": 124.0,
-      "out_x": 311.0003,
-      "out_y": 125.0,
-      "dx": 0.00029999999998153726,
-      "dy": 1.0,
-      "width_pct": -0.019513132482375007
-     },
-     {
-      "label": "pound",
-      "gt_x": 365.0,
-      "gt_y": 124.0,
-      "out_x": 365.0005,
-      "out_y": 125.0,
-      "dx": 0.0004999999999881766,
-      "dy": 1.0,
-      "width_pct": -0.02060893043014986
-     },
-     {
-      "label": "Price/lb",
-      "gt_x": 57.0,
-      "gt_y": 137.0,
-      "out_x": 57.0,
-      "out_y": 138.0,
-      "dx": 0.0,
-      "dy": 1.0,
-      "width_pct": 0.001243768039876612
+      "dy": -1.0,
+      "width_pct": -0.007661288197203405
      }
     ]
    },
@@ -218,8 +88,8 @@
     "mismatches": []
    },
    "pitch": {
-    "pairs": 4,
-    "worst_delta": 2.599974000000003
+    "pairs": 3,
+    "worst_delta": 1.0
    },
    "wraps": {
     "count": 0,
@@ -237,14 +107,14 @@
     "samples": []
    },
    "rects": {
-    "gt_count": 20,
-    "out_count": 44,
-    "canonical_gt_count": 20,
-    "canonical_out_count": 32,
+    "gt_count": 21,
+    "out_count": 49,
+    "canonical_gt_count": 18,
+    "canonical_out_count": 37,
     "matched": 4,
-    "unmatched_gt": 16,
-    "unmatched_out": 28,
-    "mean_center_delta": 0.875,
+    "unmatched_gt": 14,
+    "unmatched_out": 33,
+    "mean_center_delta": 0.5,
     "geometry_threshold": 0.5,
     "raw_geometry_mismatch_count": 4,
     "raw_geometry_mismatch_samples": [
@@ -262,44 +132,44 @@
       ],
       "gt_bbox": [
        54.0,
-       85.0,
-       398.0,
+       86.0,
+       409.0,
        101.0
       ],
       "out_bbox": [
        55.0,
-       85.0,
-       398.0,
-       102.0
+       86.0,
+       409.0,
+       101.0
       ],
       "dx": 1.0,
       "dy": 0.0,
       "dwidth": -1.0,
-      "dheight": 1.0,
+      "dheight": 0.0,
       "edges": {
        "left": 1.0,
        "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 0.5,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 568.0,
+       "mismatch_area_pt2": 775.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
         [
          54.0,
-         85.0,
+         86.0,
          55.0,
-         86.0
+         87.0
         ],
         [
          54.0,
-         86.0,
+         87.0,
          55.0,
          100.0
         ],
@@ -311,9 +181,9 @@
         ],
         [
          55.0,
-         85.0,
+         86.0,
          201.0,
-         86.0
+         87.0
         ],
         [
          55.0,
@@ -326,7 +196,7 @@
         "left": "different",
         "right": "unchanged",
         "top": "unchanged",
-        "bottom": "different"
+        "bottom": "unchanged"
        }
       }
      },
@@ -345,31 +215,31 @@
       "gt_bbox": [
        54.0,
        100.0,
-       398.0,
+       409.0,
        114.0
       ],
       "out_bbox": [
        55.0,
-       101.0,
-       398.0,
-       115.0
+       100.0,
+       409.0,
+       114.0
       ],
       "dx": 1.0,
-      "dy": 1.0,
+      "dy": 0.0,
       "dwidth": -1.0,
       "dheight": 0.0,
       "edges": {
        "left": 1.0,
-       "top": 1.0,
+       "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 1.0,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 727.0,
+       "mismatch_area_pt2": 758.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
@@ -407,8 +277,8 @@
        "raw_edge_coverage": {
         "left": "different",
         "right": "unchanged",
-        "top": "different",
-        "bottom": "different"
+        "top": "unchanged",
+        "bottom": "unchanged"
        }
       }
      },
@@ -427,31 +297,31 @@
       "gt_bbox": [
        54.0,
        113.0,
-       398.0,
+       409.0,
        127.0
       ],
       "out_bbox": [
        55.0,
-       114.0,
-       398.0,
-       128.0
+       113.0,
+       409.0,
+       127.0
       ],
       "dx": 1.0,
-      "dy": 1.0,
+      "dy": 0.0,
       "dwidth": -1.0,
       "dheight": 0.0,
       "edges": {
        "left": 1.0,
-       "top": 1.0,
+       "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 1.0,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 1409.0,
+       "mismatch_area_pt2": 758.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
@@ -463,34 +333,34 @@
         ],
         [
          54.0,
-         125.0,
-         55.0,
-         126.0
-        ],
-        [
-         54.0,
          126.0,
          55.0,
          127.0
-        ],
-        [
-         54.0,
-         127.0,
-         55.0,
-         128.0
         ],
         [
          55.0,
          113.0,
          201.0,
          114.0
+        ],
+        [
+         55.0,
+         126.0,
+         201.0,
+         127.0
+        ],
+        [
+         201.0,
+         113.0,
+         202.0,
+         114.0
         ]
        ],
        "raw_edge_coverage": {
         "left": "different",
         "right": "unchanged",
-        "top": "different",
-        "bottom": "different"
+        "top": "unchanged",
+        "bottom": "unchanged"
        }
       }
      },
@@ -498,7 +368,8 @@
       "kind": "fill",
       "geometry_kind": "rectangle",
       "gt_indices": [
-       3
+       3,
+       4
       ],
       "out_indices": [
        12,
@@ -509,31 +380,31 @@
       "gt_bbox": [
        54.0,
        126.0,
-       398.0,
+       409.0,
        140.0
       ],
       "out_bbox": [
        55.0,
-       127.0,
-       398.0,
-       141.0
+       126.0,
+       409.0,
+       140.0
       ],
       "dx": 1.0,
-      "dy": 1.0,
+      "dy": 0.0,
       "dwidth": -1.0,
       "dheight": 0.0,
       "edges": {
        "left": 1.0,
-       "top": 1.0,
+       "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 1.0,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 1214.0,
+       "mismatch_area_pt2": 541.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
@@ -542,12 +413,6 @@
          126.0,
          55.0,
          127.0
-        ],
-        [
-         54.0,
-         127.0,
-         55.0,
-         128.0
         ],
         [
          54.0,
@@ -563,16 +428,22 @@
         ],
         [
          55.0,
-         127.0,
+         139.0,
          201.0,
-         128.0
+         140.0
+        ],
+        [
+         201.0,
+         126.0,
+         202.0,
+         127.0
         ]
        ],
        "raw_edge_coverage": {
         "left": "different",
         "right": "unchanged",
-        "top": "different",
-        "bottom": "different"
+        "top": "unchanged",
+        "bottom": "unchanged"
        }
       }
      }
@@ -595,44 +466,44 @@
       ],
       "gt_bbox": [
        54.0,
-       85.0,
-       398.0,
+       86.0,
+       409.0,
        101.0
       ],
       "out_bbox": [
        55.0,
-       85.0,
-       398.0,
-       102.0
+       86.0,
+       409.0,
+       101.0
       ],
       "dx": 1.0,
       "dy": 0.0,
       "dwidth": -1.0,
-      "dheight": 1.0,
+      "dheight": 0.0,
       "edges": {
        "left": 1.0,
        "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 0.5,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 568.0,
+       "mismatch_area_pt2": 775.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
         [
          54.0,
-         85.0,
+         86.0,
          55.0,
-         86.0
+         87.0
         ],
         [
          54.0,
-         86.0,
+         87.0,
          55.0,
          100.0
         ],
@@ -644,9 +515,9 @@
         ],
         [
          55.0,
-         85.0,
+         86.0,
          201.0,
-         86.0
+         87.0
         ],
         [
          55.0,
@@ -659,7 +530,7 @@
         "left": "different",
         "right": "unchanged",
         "top": "unchanged",
-        "bottom": "different"
+        "bottom": "unchanged"
        }
       }
      },
@@ -678,31 +549,31 @@
       "gt_bbox": [
        54.0,
        100.0,
-       398.0,
+       409.0,
        114.0
       ],
       "out_bbox": [
        55.0,
-       101.0,
-       398.0,
-       115.0
+       100.0,
+       409.0,
+       114.0
       ],
       "dx": 1.0,
-      "dy": 1.0,
+      "dy": 0.0,
       "dwidth": -1.0,
       "dheight": 0.0,
       "edges": {
        "left": 1.0,
-       "top": 1.0,
+       "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 1.0,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 727.0,
+       "mismatch_area_pt2": 758.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
@@ -740,8 +611,8 @@
        "raw_edge_coverage": {
         "left": "different",
         "right": "unchanged",
-        "top": "different",
-        "bottom": "different"
+        "top": "unchanged",
+        "bottom": "unchanged"
        }
       }
      },
@@ -760,31 +631,31 @@
       "gt_bbox": [
        54.0,
        113.0,
-       398.0,
+       409.0,
        127.0
       ],
       "out_bbox": [
        55.0,
-       114.0,
-       398.0,
-       128.0
+       113.0,
+       409.0,
+       127.0
       ],
       "dx": 1.0,
-      "dy": 1.0,
+      "dy": 0.0,
       "dwidth": -1.0,
       "dheight": 0.0,
       "edges": {
        "left": 1.0,
-       "top": 1.0,
+       "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 1.0,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 1409.0,
+       "mismatch_area_pt2": 758.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
@@ -796,34 +667,34 @@
         ],
         [
          54.0,
-         125.0,
-         55.0,
-         126.0
-        ],
-        [
-         54.0,
          126.0,
          55.0,
          127.0
-        ],
-        [
-         54.0,
-         127.0,
-         55.0,
-         128.0
         ],
         [
          55.0,
          113.0,
          201.0,
          114.0
+        ],
+        [
+         55.0,
+         126.0,
+         201.0,
+         127.0
+        ],
+        [
+         201.0,
+         113.0,
+         202.0,
+         114.0
         ]
        ],
        "raw_edge_coverage": {
         "left": "different",
         "right": "unchanged",
-        "top": "different",
-        "bottom": "different"
+        "top": "unchanged",
+        "bottom": "unchanged"
        }
       }
      },
@@ -831,7 +702,8 @@
       "kind": "fill",
       "geometry_kind": "rectangle",
       "gt_indices": [
-       3
+       3,
+       4
       ],
       "out_indices": [
        12,
@@ -842,31 +714,31 @@
       "gt_bbox": [
        54.0,
        126.0,
-       398.0,
+       409.0,
        140.0
       ],
       "out_bbox": [
        55.0,
-       127.0,
-       398.0,
-       141.0
+       126.0,
+       409.0,
+       140.0
       ],
       "dx": 1.0,
-      "dy": 1.0,
+      "dy": 0.0,
       "dwidth": -1.0,
       "dheight": 0.0,
       "edges": {
        "left": 1.0,
-       "top": 1.0,
+       "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 1.0,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 1214.0,
+       "mismatch_area_pt2": 541.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
@@ -875,12 +747,6 @@
          126.0,
          55.0,
          127.0
-        ],
-        [
-         54.0,
-         127.0,
-         55.0,
-         128.0
         ],
         [
          54.0,
@@ -896,16 +762,22 @@
         ],
         [
          55.0,
-         127.0,
+         139.0,
          201.0,
-         128.0
+         140.0
+        ],
+        [
+         201.0,
+         126.0,
+         202.0,
+         127.0
         ]
        ],
        "raw_edge_coverage": {
         "left": "different",
         "right": "unchanged",
-        "top": "different",
-        "bottom": "different"
+        "top": "unchanged",
+        "bottom": "unchanged"
        }
       }
      }
@@ -925,44 +797,44 @@
       ],
       "gt_bbox": [
        54.0,
-       85.0,
-       398.0,
+       86.0,
+       409.0,
        101.0
       ],
       "out_bbox": [
        55.0,
-       85.0,
-       398.0,
-       102.0
+       86.0,
+       409.0,
+       101.0
       ],
       "dx": 1.0,
       "dy": 0.0,
       "dwidth": -1.0,
-      "dheight": 1.0,
+      "dheight": 0.0,
       "edges": {
        "left": 1.0,
        "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 0.5,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 568.0,
+       "mismatch_area_pt2": 775.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
         [
          54.0,
-         85.0,
+         86.0,
          55.0,
-         86.0
+         87.0
         ],
         [
          54.0,
-         86.0,
+         87.0,
          55.0,
          100.0
         ],
@@ -974,9 +846,9 @@
         ],
         [
          55.0,
-         85.0,
+         86.0,
          201.0,
-         86.0
+         87.0
         ],
         [
          55.0,
@@ -989,7 +861,7 @@
         "left": "different",
         "right": "unchanged",
         "top": "unchanged",
-        "bottom": "different"
+        "bottom": "unchanged"
        }
       }
      },
@@ -1008,31 +880,31 @@
       "gt_bbox": [
        54.0,
        100.0,
-       398.0,
+       409.0,
        114.0
       ],
       "out_bbox": [
        55.0,
-       101.0,
-       398.0,
-       115.0
+       100.0,
+       409.0,
+       114.0
       ],
       "dx": 1.0,
-      "dy": 1.0,
+      "dy": 0.0,
       "dwidth": -1.0,
       "dheight": 0.0,
       "edges": {
        "left": 1.0,
-       "top": 1.0,
+       "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 1.0,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 727.0,
+       "mismatch_area_pt2": 758.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
@@ -1070,8 +942,8 @@
        "raw_edge_coverage": {
         "left": "different",
         "right": "unchanged",
-        "top": "different",
-        "bottom": "different"
+        "top": "unchanged",
+        "bottom": "unchanged"
        }
       }
      },
@@ -1090,31 +962,31 @@
       "gt_bbox": [
        54.0,
        113.0,
-       398.0,
+       409.0,
        127.0
       ],
       "out_bbox": [
        55.0,
-       114.0,
-       398.0,
-       128.0
+       113.0,
+       409.0,
+       127.0
       ],
       "dx": 1.0,
-      "dy": 1.0,
+      "dy": 0.0,
       "dwidth": -1.0,
       "dheight": 0.0,
       "edges": {
        "left": 1.0,
-       "top": 1.0,
+       "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 1.0,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 1409.0,
+       "mismatch_area_pt2": 758.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
@@ -1126,34 +998,34 @@
         ],
         [
          54.0,
-         125.0,
-         55.0,
-         126.0
-        ],
-        [
-         54.0,
          126.0,
          55.0,
          127.0
-        ],
-        [
-         54.0,
-         127.0,
-         55.0,
-         128.0
         ],
         [
          55.0,
          113.0,
          201.0,
          114.0
+        ],
+        [
+         55.0,
+         126.0,
+         201.0,
+         127.0
+        ],
+        [
+         201.0,
+         113.0,
+         202.0,
+         114.0
         ]
        ],
        "raw_edge_coverage": {
         "left": "different",
         "right": "unchanged",
-        "top": "different",
-        "bottom": "different"
+        "top": "unchanged",
+        "bottom": "unchanged"
        }
       }
      },
@@ -1161,7 +1033,8 @@
       "kind": "fill",
       "geometry_kind": "rectangle",
       "gt_indices": [
-       3
+       3,
+       4
       ],
       "out_indices": [
        12,
@@ -1172,31 +1045,31 @@
       "gt_bbox": [
        54.0,
        126.0,
-       398.0,
+       409.0,
        140.0
       ],
       "out_bbox": [
        55.0,
-       127.0,
-       398.0,
-       141.0
+       126.0,
+       409.0,
+       140.0
       ],
       "dx": 1.0,
-      "dy": 1.0,
+      "dy": 0.0,
       "dwidth": -1.0,
       "dheight": 0.0,
       "edges": {
        "left": 1.0,
-       "top": 1.0,
+       "top": 0.0,
        "right": 0.0,
-       "bottom": 1.0
+       "bottom": 0.0
       },
       "center_dx": 0.5,
-      "center_dy": 1.0,
+      "center_dy": 0.0,
       "max_abs_delta": 1.0,
       "visible_coverage": {
        "status": "different",
-       "mismatch_area_pt2": 1214.0,
+       "mismatch_area_pt2": 541.0,
        "unmodeled_area_pt2": 0.0,
        "unmodeled_samples": [],
        "mismatch_samples": [
@@ -1205,12 +1078,6 @@
          126.0,
          55.0,
          127.0
-        ],
-        [
-         54.0,
-         127.0,
-         55.0,
-         128.0
         ],
         [
          54.0,
@@ -1226,16 +1093,22 @@
         ],
         [
          55.0,
-         127.0,
+         139.0,
          201.0,
-         128.0
+         140.0
+        ],
+        [
+         201.0,
+         126.0,
+         202.0,
+         127.0
         ]
        ],
        "raw_edge_coverage": {
         "left": "different",
         "right": "unchanged",
-        "top": "different",
-        "bottom": "different"
+        "top": "unchanged",
+        "bottom": "unchanged"
        }
       }
      }
@@ -1245,16 +1118,16 @@
      "worst": 1.0
     },
     "y": {
-     "mean_abs": 0.75,
-     "worst": 1.0
+     "mean_abs": 0.0,
+     "worst": 0.0
     },
     "width": {
      "mean_abs": 1.0,
      "worst": -1.0
     },
     "height": {
-     "mean_abs": 0.25,
-     "worst": 1.0
+     "mean_abs": 0.0,
+     "worst": 0.0
     },
     "edges": {
      "left": {
@@ -1262,16 +1135,16 @@
       "worst": 1.0
      },
      "top": {
-      "mean_abs": 0.75,
-      "worst": 1.0
+      "mean_abs": 0.0,
+      "worst": 0.0
      },
      "right": {
       "mean_abs": 0.0,
       "worst": 0.0
      },
      "bottom": {
-      "mean_abs": 1.0,
-      "worst": 1.0
+      "mean_abs": 0.0,
+      "worst": 0.0
      }
     }
    },
