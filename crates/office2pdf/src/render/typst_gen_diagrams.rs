@@ -38,7 +38,7 @@ fn chart_variant(chart: &Chart) -> ChartVariant {
         && chart
             .series
             .iter()
-            .any(|series| series.values.iter().any(|value| *value > 0.0))
+            .any(|series| series.present_values().any(|value| value > 0.0))
     {
         return ChartVariant::RadarPlot;
     }
@@ -46,7 +46,7 @@ fn chart_variant(chart: &Chart) -> ChartVariant {
         && chart
             .series
             .first()
-            .is_some_and(|series| series.values.iter().any(|value| *value > 0.0))
+            .is_some_and(|series| series.present_values().any(|value| value > 0.0))
     {
         return ChartVariant::PiePlot;
     }
@@ -2422,7 +2422,7 @@ fn data_label_text(
     if labels.is_empty() {
         return None;
     }
-    let value: f64 = series.values.get(category_index).copied()?;
+    let value: f64 = series.value_at_point(category_index)?;
     let mut parts: Vec<String> = Vec::new();
     if labels.show_series
         && let Some(name) = series.name.as_deref()
@@ -2463,7 +2463,7 @@ fn category_total<'a>(
 ) -> f64 {
     series
         .into_iter()
-        .filter_map(|s| s.values.get(category_index))
+        .filter_map(|s| s.value_at_point(category_index))
         .sum()
 }
 
@@ -2714,8 +2714,7 @@ fn chart_auto_min_value(chart: &Chart, role: crate::ir::ChartValueAxisRole) -> f
     let overlay_min: f64 = axis_series(chart, role)
         .zip(&overlaid)
         .filter(|(_, is_line)| **is_line)
-        .flat_map(|(series, _)| series.values.iter())
-        .copied()
+        .flat_map(|(series, _)| series.present_values())
         .fold(0.0_f64, f64::min);
     match chart.grouping {
         // Every stack is rescaled to fill the axis, so the scale is the
@@ -2726,14 +2725,13 @@ fn chart_auto_min_value(chart: &Chart, role: crate::ir::ChartValueAxisRole) -> f
                 axis_series(chart, role)
                     .zip(&overlaid)
                     .filter(|(_, is_line)| !**is_line)
-                    .filter_map(|(series, _)| series.values.get(index).copied())
+                    .filter_map(|(series, _)| series.value_at_point(index))
                     .filter(|value| *value < 0.0)
                     .sum::<f64>()
             })
             .fold(overlay_min, f64::min),
         ChartGrouping::Clustered => axis_series(chart, role)
-            .flat_map(|series| series.values.iter())
-            .copied()
+            .flat_map(|series| series.present_values())
             .fold(0.0_f64, f64::min),
     }
 }
@@ -2753,8 +2751,7 @@ fn chart_auto_max_value(chart: &Chart, role: crate::ir::ChartValueAxisRole) -> f
     let overlay_max: f64 = axis_series(chart, role)
         .zip(&overlaid)
         .filter(|(_, is_line)| **is_line)
-        .flat_map(|(series, _)| series.values.iter())
-        .copied()
+        .flat_map(|(series, _)| series.present_values())
         .fold(0.0_f64, f64::max);
     let bar_series = || {
         axis_series(chart, role)
@@ -2768,8 +2765,7 @@ fn chart_auto_max_value(chart: &Chart, role: crate::ir::ChartValueAxisRole) -> f
             .map(|index| category_total(bar_series(), index))
             .fold(overlay_max, f64::max),
         ChartGrouping::Clustered => axis_series(chart, role)
-            .flat_map(|series| series.values.iter())
-            .copied()
+            .flat_map(|series| series.present_values())
             .fold(0.0_f64, f64::max),
     }
 }
@@ -5469,7 +5465,7 @@ fn generate_chart_axis(
         let category_total: f64 = category_total(bar_series(), cat_index);
         for (band_slot, s_index) in bar_slots.iter().copied().enumerate() {
             let s: &crate::ir::ChartSeries = &series[s_index];
-            let value: f64 = s.values.get(cat_index).copied().unwrap_or(0.0);
+            let value: f64 = s.value_at_point(cat_index).unwrap_or(0.0);
             // Percent stacking rescales each stack to fill the axis, so an
             // XLSX column totalling 6 reads the same height as a DOCX one
             // totalling 9.
@@ -5825,30 +5821,40 @@ fn generate_chart_axis(
     for s_index in overlay_slots.iter().copied() {
         let s: &crate::ir::ChartSeries = &series[s_index];
         let color: String = series_color(s, s_index, 0, &chart.theme_accent_colors);
-        let points: Vec<(f64, f64)> = s
-            .values
-            .iter()
-            .take(categories)
-            .enumerate()
-            .map(|(cat_index, value)| {
-                let frac: f64 = series_value_scale(s, scale, secondary_scale).fraction(*value);
-                if horizontal {
-                    // Bar charts run their categories bottom-up and place from
-                    // the plot box's own top edge, as the column loop above does.
-                    (
-                        plot_x + frac * plot_w,
-                        plot.dy + plot_h - (cat_index as f64 + 0.5) * row,
-                    )
-                } else {
-                    (
-                        plot_x + (cat_index as f64 + 0.5) * row,
-                        plot_y + plot_h - frac * plot_h,
-                    )
+        let mut paths: Vec<Vec<(f64, f64)>> = Vec::new();
+        let mut path: Vec<(f64, f64)> = Vec::new();
+        for cat_index in 0..categories {
+            let Some(value) = s.value_at_point(cat_index) else {
+                if !path.is_empty() {
+                    paths.push(std::mem::take(&mut path));
                 }
-            })
-            .collect();
-        if points.len() >= 2 {
-            let segments: String = polyline_curve_segments(&points);
+                continue;
+            };
+            let frac: f64 = series_value_scale(s, scale, secondary_scale).fraction(value);
+            if horizontal {
+                // Bar charts run their categories bottom-up and place from
+                // the plot box's own top edge, as the column loop above does.
+                path.push((
+                    plot_x + frac * plot_w,
+                    plot.dy + plot_h - (cat_index as f64 + 0.5) * row,
+                ));
+            } else {
+                path.push((
+                    plot_x + (cat_index as f64 + 0.5) * row,
+                    plot_y + plot_h - frac * plot_h,
+                ));
+            }
+        }
+        if !path.is_empty() {
+            paths.push(path);
+        }
+        // A missing cached value breaks the line into separate paths; joining
+        // its neighbours would invent a segment across a point Office omits.
+        for points in &paths {
+            if points.len() < 2 {
+                continue;
+            }
+            let segments: String = polyline_curve_segments(points);
             write_plotted(
                 out,
                 plot_clip,
@@ -5858,7 +5864,7 @@ fn generate_chart_axis(
                 ),
             );
         }
-        for (x, y) in &points {
+        for (x, y) in paths.iter().flatten() {
             write_series_marker(out, s_index, s, *x, *y, &color, worksheet_markers);
         }
     }
@@ -6002,8 +6008,7 @@ fn generate_chart_bar(out: &mut String, chart: &Chart) {
     let max_value: f64 = chart
         .series
         .iter()
-        .flat_map(|series| series.values.iter())
-        .copied()
+        .flat_map(|series| series.present_values())
         .fold(0.0_f64, f64::max);
     let max_value: f64 = if max_value == 0.0 { 1.0 } else { max_value };
 
@@ -6013,7 +6018,7 @@ fn generate_chart_bar(out: &mut String, chart: &Chart) {
         let escaped_category: String = escape_typst(category);
         let _ = writeln!(out, "#text(weight: \"bold\")[{escaped_category}]");
         for (series_index, series) in chart.series.iter().enumerate() {
-            let value: f64 = series.values.get(row_index).copied().unwrap_or(0.0);
+            let value: f64 = series.value_at_point(row_index).unwrap_or(0.0);
             let percent: u32 = (value / max_value * 100.0).round().min(100.0) as u32;
             // The fallback here indexes by series, not by point, because each
             // row of this table is one category across all series.
@@ -6687,14 +6692,26 @@ fn generate_chart_line_plot(
         WorksheetPlotClip::snapped(worksheet_markers, plot_x, plot_y, plot_w, plot_h);
     for (s_index, s) in series.iter().enumerate() {
         let color: String = series_color(s, s_index, 0, &chart.theme_accent_colors);
-        let points: Vec<(f64, f64)> = s
-            .values
-            .iter()
-            .enumerate()
-            .map(|(index, value)| (point_x(index), point_y(s, *value)))
-            .collect();
-        if points.len() >= 2 {
-            let segments: String = polyline_curve_segments(&points);
+        let mut paths: Vec<Vec<(f64, f64)>> = Vec::new();
+        let mut path: Vec<(f64, f64)> = Vec::new();
+        for index in 0..categories {
+            if let Some(value) = s.value_at_point(index) {
+                path.push((point_x(index), point_y(s, value)));
+            } else if !path.is_empty() {
+                paths.push(std::mem::take(&mut path));
+            }
+        }
+        if !path.is_empty() {
+            paths.push(path);
+        }
+
+        // A missing cached value breaks the line into separate paths; joining
+        // its neighbours would invent a segment across a point Office omits.
+        for points in &paths {
+            if points.len() < 2 {
+                continue;
+            }
+            let segments: String = polyline_curve_segments(points);
             write_plotted(
                 out,
                 plot_clip,
@@ -6705,7 +6722,7 @@ fn generate_chart_line_plot(
             );
         }
         // Point markers: the symbol the series names, else the shape cycle.
-        for (x, y) in &points {
+        for (x, y) in paths.iter().flatten() {
             write_series_marker(out, s_index, s, *x, *y, &color, worksheet_markers);
         }
     }
@@ -6825,8 +6842,7 @@ fn generate_chart_radar_plot(
     let max_value: f64 = chart
         .series
         .iter()
-        .flat_map(|series| series.values.iter())
-        .cloned()
+        .flat_map(|series| series.present_values())
         .fold(0.0_f64, f64::max);
     let (nice_max, step) = axis_with_stated_unit(nice_axis(max_value), chart.value_axis_major_unit);
     if nice_max <= 0.0 {
@@ -6951,7 +6967,7 @@ fn generate_chart_radar_plot(
     for (series_index, series) in chart.series.iter().enumerate() {
         let color: String = series_color(series, series_index, 0, &chart.theme_accent_colors);
         let points: Vec<(f64, f64)> = (0..category_count)
-            .map(|index| point(index, series.values.get(index).copied().unwrap_or(0.0)))
+            .map(|index| point(index, series.value_at_point(index).unwrap_or(0.0)))
             .collect();
         let coords: String = points
             .iter()
@@ -6963,8 +6979,10 @@ fn generate_chart_radar_plot(
             "#place(top + left, polygon(stroke: {}, {coords}))",
             series_stroke(series, &color)
         );
-        for (x, y) in &points {
-            write_series_marker(out, series_index, series, *x, *y, &color, worksheet_markers);
+        for (index, (x, y)) in points.iter().enumerate() {
+            if series.value_at_point(index).is_some() {
+                write_series_marker(out, series_index, series, *x, *y, &color, worksheet_markers);
+            }
         }
     }
 
@@ -7102,7 +7120,7 @@ fn generate_chart_pie_plot(out: &mut String, chart: &Chart, frame: Option<(f64, 
     let Some(series) = chart.series.first() else {
         return;
     };
-    let total: f64 = series.values.iter().filter(|value| **value > 0.0).sum();
+    let total: f64 = series.present_values().sum();
     if total <= 0.0 {
         return;
     }
@@ -7155,8 +7173,11 @@ fn generate_chart_pie_plot(out: &mut String, chart: &Chart, frame: Option<(f64, 
     // Office sweeps clockwise from the boundary `<c:firstSliceAng>` names,
     // which is twelve o'clock for the chart that declares nothing.
     let mut start: f64 = -std::f64::consts::FRAC_PI_2 + first_slice_offset_radians(chart);
-    for (index, value) in series.values.iter().enumerate() {
-        if *value <= 0.0 {
+    for index in 0..series.values.len() {
+        let Some(value) = series.value_at_point(index) else {
+            continue;
+        };
+        if value <= 0.0 {
             continue;
         }
         let sweep: f64 = value / total * std::f64::consts::TAU;
@@ -7485,7 +7506,7 @@ fn generate_chart_pie(out: &mut String, chart: &Chart) {
         return;
     };
 
-    let total: f64 = series.values.iter().sum();
+    let total: f64 = series.present_values().filter(|value| *value > 0.0).sum();
     let total: f64 = if total == 0.0 { 1.0 } else { total };
 
     let colors: &[&str] = &CHART_CATEGORY_COLORS;
@@ -7495,9 +7516,12 @@ fn generate_chart_pie(out: &mut String, chart: &Chart) {
     let _ = writeln!(out, "  [*Slice*], [*Value*], [*%*],");
 
     for (index, category) in chart.categories.iter().enumerate() {
-        let value: f64 = series.values.get(index).copied().unwrap_or(0.0);
-        let percent: f64 = value / total * 100.0;
         let escaped_category: String = escape_typst(category);
+        let Some(value) = series.value_at_point(index) else {
+            let _ = writeln!(out, "  [{escaped_category}], [], [],");
+            continue;
+        };
+        let percent: f64 = value / total * 100.0;
         // Each pie slice is one data point of the single series, so a
         // `<c:dPt>` fill names the wedge's colour directly.
         let color: String = category_color(series, index, colors, &chart.theme_accent_colors);
@@ -7532,20 +7556,24 @@ fn generate_chart_line(out: &mut String, chart: &Chart) {
         let escaped_category: String = escape_typst(category);
         let _ = write!(out, "  [{escaped_category}], ");
         for (series_index, series) in chart.series.iter().enumerate() {
-            let value: f64 = series.values.get(row_index).copied().unwrap_or(0.0);
-            let trend: &str = if row_index > 0 {
-                let previous: f64 = series.values.get(row_index - 1).copied().unwrap_or(0.0);
-                if value > previous {
-                    " ↑"
-                } else if value < previous {
-                    " ↓"
+            if let Some(value) = series.value_at_point(row_index) {
+                let trend: &str = if row_index > 0 {
+                    series.value_at_point(row_index - 1).map_or("", |previous| {
+                        if value > previous {
+                            " ↑"
+                        } else if value < previous {
+                            " ↓"
+                        } else {
+                            " →"
+                        }
+                    })
                 } else {
-                    " →"
-                }
+                    ""
+                };
+                let _ = write!(out, "[{}{}]", format_f64(value), trend);
             } else {
-                ""
-            };
-            let _ = write!(out, "[{}{}]", format_f64(value), trend);
+                out.push_str("[]");
+            }
             if series_index + 1 < chart.series.len() {
                 out.push_str(", ");
             }
@@ -7576,15 +7604,18 @@ fn generate_chart_table(out: &mut String, chart: &Chart) {
         let escaped_category: String = escape_typst(category);
         let _ = write!(out, "  [{escaped_category}], ");
         for (index, series) in chart.series.iter().enumerate() {
-            let value: f64 = series.values.get(row_index).copied().unwrap_or(0.0);
-            let _ = write!(
-                out,
-                "[{}]",
-                escape_typst(&chart_value_label_formatted(
-                    value,
-                    series.number_format.as_deref()
-                ))
-            );
+            if let Some(value) = series.value_at_point(row_index) {
+                let _ = write!(
+                    out,
+                    "[{}]",
+                    escape_typst(&chart_value_label_formatted(
+                        value,
+                        series.number_format.as_deref()
+                    ))
+                );
+            } else {
+                out.push_str("[]");
+            }
             if index + 1 < chart.series.len() {
                 out.push_str(", ");
             }

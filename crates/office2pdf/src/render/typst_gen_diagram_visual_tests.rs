@@ -8941,6 +8941,55 @@ fn a_line_series_over_columns_draws_a_line_not_a_column() {
 }
 
 #[test]
+fn a_sparse_line_series_over_columns_keeps_gaps_and_category_positions() {
+    let mut chart: Chart = combo_budget_chart();
+    chart.categories.push("Jul".to_string());
+    let line_series: &mut ChartSeries = chart.series.last_mut().expect("the line series");
+    line_series.values = vec![25.0, f64::NAN, 75.0];
+    line_series.marker_symbol = Some(MarkerSymbol::Circle);
+    chart.has_legend = false;
+
+    let source: String = chart_source(chart);
+
+    assert!(
+        !source.to_ascii_lowercase().contains("nan"),
+        "missing cache slots must not reach Typst as numbers; got:\n{source}"
+    );
+    assert_eq!(
+        source.matches("curve(stroke:").count(),
+        0,
+        "the two one-point paths around a gap must not be joined; got:\n{source}"
+    );
+    let marker_lines: Vec<&str> = source
+        .lines()
+        .filter(|line| line.contains("circle(radius:"))
+        .collect();
+    assert_eq!(
+        marker_lines.len(),
+        2,
+        "only present line points draw markers"
+    );
+    let marker_xs: Vec<f64> = marker_lines
+        .iter()
+        .map(|line| {
+            line.split_once("dx: ")
+                .expect("marker x placement")
+                .1
+                .split_once("pt")
+                .expect("marker x unit")
+                .0
+                .parse()
+                .expect("numeric marker x")
+        })
+        .collect();
+    let plot_width: f64 = plot_rect(&emitted_lines(&source)).2;
+    assert!(
+        ((marker_xs[1] - marker_xs[0]) - 2.0 * plot_width / 3.0).abs() < 0.001,
+        "the second marker must stay two category bands after the first; got {marker_xs:?}"
+    );
+}
+
+#[test]
 fn a_line_series_reads_against_the_same_axis_as_the_columns() {
     // The line is not part of the stack: its 75 in June is half of that
     // month's 150 stack, so its point sits midway up the column.
@@ -9157,6 +9206,49 @@ fn a_one_point_scatter_series_draws_its_marker_and_no_polyline() {
     assert_eq!(
         circles, 1,
         "the scatter series draws the circle it declares on its one point; got:\n{source}"
+    );
+}
+
+#[test]
+fn sparse_chart_points_keep_their_plot_slots_and_break_lines_at_gaps() {
+    let mut chart: Chart = combo_line_and_scatter_chart();
+    chart.categories = ["jan", "feb", "mar", "apr", "may", "jun"]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    chart.series[0].values = vec![169.0, 69.0, f64::NAN, 192.0, 169.0, 69.0];
+    chart.series[1].values = vec![f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN, 69.0];
+
+    let source: String = chart_source(chart);
+
+    assert!(
+        !source.contains("NaN") && !source.contains("nan"),
+        "missing cached points must not produce invalid Typst numbers; got:\n{source}"
+    );
+    assert_eq!(
+        source.matches("curve(stroke:").count(),
+        2,
+        "the line must split around its missing March point, and the one-point scatter series has no curve; got:\n{source}"
+    );
+    let final_line_points: Vec<(f64, f64)> = emitted_path_points_of(&source, 1);
+    let final_line_x: f64 = final_line_points.last().expect("line has June point").0;
+    let marker_line: &str = source
+        .lines()
+        .find(|line| line.contains("circle(radius:"))
+        .expect("one selected-period marker");
+    let marker_left: f64 = marker_line
+        .split_once("dx: ")
+        .expect("marker placement x")
+        .1
+        .split_once("pt")
+        .expect("marker placement unit")
+        .0
+        .parse()
+        .expect("numeric marker placement");
+    let marker_center_x: f64 = marker_left + SERIES_MARKER_SIZE_PT / 2.0;
+    assert!(
+        (marker_center_x - final_line_x).abs() < 0.001,
+        "the sparse marker must stay on its sixth category, at {final_line_x}; got:\n{marker_line}"
     );
 }
 

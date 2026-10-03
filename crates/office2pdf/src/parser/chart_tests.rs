@@ -66,6 +66,55 @@ fn test_parse_bar_chart() {
 }
 
 #[test]
+fn sparse_scatter_cache_points_keep_their_declared_indices() {
+    let xml = r#"<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">
+        <c:chart><c:plotArea><c:scatterChart><c:ser>
+            <c:xVal><c:numRef><c:numCache><c:ptCount val="6"/>
+                <c:pt idx="0"><c:v>1</c:v></c:pt>
+                <c:pt idx="5"><c:v>6</c:v></c:pt>
+            </c:numCache></c:numRef></c:xVal>
+            <c:yVal><c:numRef><c:numCache><c:ptCount val="6"/>
+                <c:pt idx="0"><c:v>#N/A</c:v></c:pt>
+                <c:pt idx="5"><c:v>69</c:v></c:pt>
+            </c:numCache></c:numRef></c:yVal>
+        </c:ser></c:scatterChart></c:plotArea></c:chart>
+    </c:chartSpace>"#;
+
+    let chart = parse_chart_xml(xml, &SchemeColors::empty()).unwrap();
+
+    assert_eq!(chart.categories, ["1", "", "", "", "", "6"]);
+    let values = &chart.series[0].values;
+    assert_eq!(values.len(), 6);
+    assert!(values[..5].iter().all(|value| value.is_nan()));
+    assert_eq!(values[5], 69.0);
+}
+
+#[test]
+fn sparse_category_cache_points_keep_their_declared_indices() {
+    let xml = r#"<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">
+        <c:chart><c:plotArea><c:lineChart><c:ser>
+            <c:cat><c:strRef><c:strCache><c:ptCount val="3"/>
+                <c:pt idx="0"><c:v>January</c:v></c:pt>
+                <c:pt idx="2"><c:v>March</c:v></c:pt>
+            </c:strCache></c:strRef></c:cat>
+            <c:val><c:numRef><c:numCache><c:ptCount val="3"/>
+                <c:pt idx="0"><c:v>10</c:v></c:pt>
+                <c:pt idx="2"><c:v>30</c:v></c:pt>
+            </c:numCache></c:numRef></c:val>
+        </c:ser></c:lineChart></c:plotArea></c:chart>
+    </c:chartSpace>"#;
+
+    let chart = parse_chart_xml(xml, &SchemeColors::empty()).unwrap();
+
+    assert_eq!(chart.categories, ["January", "", "March"]);
+    let values = &chart.series[0].values;
+    assert_eq!(values.len(), 3);
+    assert_eq!(values[0], 10.0);
+    assert!(values[1].is_nan());
+    assert_eq!(values[2], 30.0);
+}
+
+#[test]
 fn test_parse_pie_chart() {
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
         <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">

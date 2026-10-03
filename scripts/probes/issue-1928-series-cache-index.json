@@ -1,0 +1,17 @@
+{
+  "name": "issue-1928-series-cache-index",
+  "base": "../../tests/fixtures/xlsx/two_line_sheet_footer.xlsx",
+  "part": "xl/charts/chart2.xml",
+  "factor": "Positive Selected Period cached point index",
+  "page": 2,
+  "noise_floor": 0.12,
+  "variants": [
+    {
+      "value": "5",
+      "find": "(?s)(<c:pt idx=\"0\"><c:v>)69(</c:v></c:pt>.*?<c:pt idx=\"5\"><c:v>)#N/A(</c:v></c:pt>)",
+      "replace": "\\g<1>#N/A\\g<2>69\\g<3>",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}
