@@ -1564,6 +1564,112 @@ fn two_slide_list_items_sit_one_line_advance_apart() {
     );
 }
 
+/// An explicit 100% DrawingML line spacing is still one PowerPoint line per
+/// list item. Keeping zero paragraph gaps explicit must not add Typst's
+/// ambient block spacing on top of that line box (issue #1913).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn slide_list_items_with_explicit_single_spacing_sit_one_line_apart() {
+    use crate::internal::{Parser, PptxParser};
+    use crate::ir::{Insets, LineSpacing, List};
+
+    let fixture: std::path::PathBuf = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tests/fixtures/pptx/poi/with_japanese.pptx");
+    let data: Vec<u8> = std::fs::read(fixture).expect("with_japanese fixture");
+    let (document, _warnings) = PptxParser
+        .parse(&data, &crate::config::ConvertOptions::default())
+        .expect("with_japanese must parse");
+    let Page::Fixed(page) = &document.pages[0] else {
+        panic!("slide 1 must be fixed")
+    };
+    for item_text in ["Bullet 1", "Number bullet 1"] {
+        let mut list: List = page
+            .elements
+            .iter()
+            .filter_map(|element| match &element.kind {
+                FixedElementKind::TextBox(text_box) => Some(&text_box.content),
+                _ => None,
+            })
+            .flatten()
+            .find_map(|block| match block {
+                Block::List(list)
+                    if list.items.iter().any(|item| {
+                        item.content.iter().any(|paragraph| {
+                            paragraph
+                                .runs
+                                .iter()
+                                .any(|run| run.text.contains(item_text))
+                        })
+                    }) =>
+                {
+                    Some(list.clone())
+                }
+                _ => None,
+            })
+            .unwrap_or_else(|| panic!("the fixture's first slide has {item_text}"));
+        assert_eq!(list.items.len(), 3, "the target list has three items");
+        for paragraph in list
+            .items
+            .iter_mut()
+            .flat_map(|item| item.content.iter_mut())
+        {
+            assert!(
+                matches!(paragraph.style.line_spacing, Some(LineSpacing::Proportional(factor)) if (factor - 1.0).abs() < f64::EPSILON),
+                "the fixture declares 100% DrawingML line spacing"
+            );
+            assert_eq!(paragraph.style.space_before, Some(0.0));
+            assert_eq!(paragraph.style.space_after, Some(0.0));
+            paragraph.style.paragraph_mark_font_family = Some("Libertinus Serif".into());
+            for run in &mut paragraph.runs {
+                run.style.font_family = Some("Libertinus Serif".into());
+            }
+        }
+        let font_size_pt: f64 = list.items[0].content[0].runs[0]
+            .style
+            .font_size
+            .expect("the fixture declares its list font size");
+        let expected_line_advance_pt: f64 =
+            crate::render::pdf::POWERPOINT_LINE_HEIGHT_FACTOR * font_size_pt;
+
+        // The fixture's text box has unrelated malformed geometry. Isolate the
+        // parsed list in a visible slide box while keeping its original paragraphs.
+        let isolated_document = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_fixed_text_box(
+                72.0,
+                72.0,
+                540.0,
+                400.0,
+                Insets::default(),
+                crate::ir::TextBoxVerticalAlign::Top,
+                vec![Block::List(list)],
+            )],
+        )]);
+        let source: String = generate_typst(&isolated_document).unwrap().source;
+        let compiled_runs = crate::render::pdf::compiled_text_runs(&source, 0)
+            .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+        let mut item_baselines: Vec<f64> = compiled_runs
+            .iter()
+            .filter(|run| run.text.to_lowercase().contains("bullet"))
+            .map(|run| run.baseline_pt)
+            .collect();
+        item_baselines.sort_by(f64::total_cmp);
+
+        assert_eq!(
+            item_baselines.len(),
+            3,
+            "each fixture item must paint once, got {compiled_runs:?}; source:\n{source}"
+        );
+        for gap in item_baselines.windows(2).map(|pair| pair[1] - pair[0]) {
+            assert!(
+                (gap - expected_line_advance_pt).abs() < 1.0,
+                "100% spacing advances one PowerPoint line ({expected_line_advance_pt}pt), got {gap}pt; source:\n{source}"
+            );
+        }
+    }
+}
+
 /// `customGeo.pptx` slide 2 gives every real body item a 12pt `a:spcAft`.
 /// PowerPoint applies that gap after the paragraph, while the wrapped
 /// `Curriculum` and `system` lines keep the paragraph's ordinary line advance
