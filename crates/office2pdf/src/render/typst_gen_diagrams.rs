@@ -1827,7 +1827,7 @@ const PPTX_COLUMN_RIGHT_LEGEND_Y_SHIFT_EM: f64 = 0.139188;
 /// Downward correction after a PowerPoint column's title takes its measured
 /// title band. The corrected key bounds match the native exports from the
 /// #1435 chart-space and #1437 title-size sweeps; PDF hashes and measurements
-/// are recorded in `assets/bugfixes/issue-1678/legend-key-measurements.json`.
+/// are recorded in `tests/visual_audits/issue-1678/legend-key-measurements.json`.
 const PPTX_COLUMN_TITLE_LEGEND_Y_SHIFT_PT: f64 = 5.422;
 
 /// Band a chart-area title takes when the chart space states a size and the

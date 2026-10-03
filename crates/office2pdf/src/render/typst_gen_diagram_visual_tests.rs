@@ -5015,7 +5015,7 @@ fn a_powerpoint_column_right_legend_uses_the_native_vertical_center_at_multiple_
 fn a_powerpoint_column_right_legend_tracks_a_title_specific_native_band() {
     // The #1435 chart-space and #1437 title-size PowerPoint sweeps both verify
     // that the legend follows the title-specific band; PDF measurements are
-    // recorded in assets/bugfixes/issue-1678/legend-key-measurements.json.
+    // recorded in tests/visual_audits/issue-1678/legend-key-measurements.json.
     for title_size_pt in [10.0, 14.0, 18.0, 24.0, 36.0] {
         let mut chart = bar_chart_at(Some(18.0), &["1st Qtr", "2nd Qtr", "3rd Qtr", "4th Qtr"]);
         chart.chart_type = ChartType::Column;
