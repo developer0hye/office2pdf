@@ -181,9 +181,11 @@ fn east_asian_auto_space(run: &Run) -> String {
         None => format!("{EAST_ASIAN_AUTO_SPACE_EM}em"),
     };
     let mut params: String = String::new();
+    let mut spacing_style: TextStyle = run.style.clone();
+    spacing_style.baseline_shift = None;
     write_text_params_for_run(
         &mut params,
-        &run.style,
+        &spacing_style,
         EAST_ASIAN_AUTO_SPACE_GLYPH,
         EAST_ASIAN_AUTO_SPACE_GLYPH,
     );
@@ -4740,7 +4742,14 @@ fn write_run_segment(
     opens_line: bool,
     seat_bottom_pt: Option<f64>,
 ) {
-    let style = &run.style;
+    let baseline_move: Option<String> = baseline_shift_move(&run.style);
+    let paint_style: Option<TextStyle> = baseline_move.as_ref().map(|_| {
+        let mut style: TextStyle = run.style.clone();
+        style.baseline_shift = None;
+        style
+    });
+    let style: &TextStyle = paint_style.as_ref().unwrap_or(&run.style);
+    let has_baseline_displacement: bool = baseline_move.is_some();
 
     let needs_all_caps: bool = matches!(style.all_caps, Some(true));
     let source: String = if needs_all_caps {
@@ -4761,6 +4770,16 @@ fn write_run_segment(
 
     let wrappers: Vec<String> = collect_formatting_wrappers(run);
 
+    if has_baseline_displacement {
+        // PowerPoint's baseline displacement changes the glyph position but
+        // does not enlarge the paragraph line box. The zero-height inline
+        // shell keeps the run's width while `move` relocates its paint.
+        out.push_str("#box(height: 0pt, baseline: 0pt)[");
+        let shift: &str = baseline_move
+            .as_deref()
+            .expect("a nonzero baseline shift has a paint offset");
+        let _ = write!(out, "#move(dy: {shift})[");
+    }
     for wrapper in &wrappers {
         out.push_str(wrapper);
     }
@@ -4789,6 +4808,24 @@ fn write_run_segment(
     for _ in &wrappers {
         out.push(']');
     }
+    if has_baseline_displacement {
+        out.push(']');
+        out.push(']');
+    }
+}
+
+/// Convert DrawingML's relative displacement into the paint-only movement
+/// held outside Typst's inline line metrics.
+fn baseline_shift_move(style: &TextStyle) -> Option<String> {
+    let BaselineShiftEm(shift_em) = style.baseline_shift?;
+    if shift_em == 0.0 {
+        return None;
+    }
+
+    Some(match style.font_size {
+        Some(font_size_pt) => format!("{}pt", format_f64(-shift_em * font_size_pt)),
+        None => format!("{}em", format_f64(-shift_em)),
+    })
 }
 
 /// Whether this run can take the PowerPoint advance-grid treatment without

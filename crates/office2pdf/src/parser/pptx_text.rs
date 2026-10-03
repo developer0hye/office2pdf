@@ -1393,6 +1393,7 @@ fn pptx_auto_numbering_pattern(numbering_type: &str) -> Option<&'static str> {
 pub(super) fn group_pptx_text_blocks(entries: Vec<PptxParagraphEntry>) -> Vec<Block> {
     let mut entries = entries;
     for entry in &mut entries {
+        scale_pptx_baseline_shifted_runs(entry);
         resolve_pptx_percentage_paragraph_spacing(entry);
         preserve_blank_pptx_list_item(entry);
     }
@@ -1429,6 +1430,36 @@ pub(super) fn group_pptx_text_blocks(entries: Vec<PptxParagraphEntry>) -> Vec<Bl
     }
 
     blocks
+}
+
+/// PowerPoint renders DrawingML baseline-shifted runs at two-thirds of their
+/// declared size, rounded to a whole point. Preserve their source baseline
+/// distance in points as the smaller visual size enters the IR.
+fn scale_pptx_baseline_shifted_runs(entry: &mut PptxParagraphEntry) {
+    const BASELINE_SHIFT_FONT_SCALE: f64 = 2.0 / 3.0;
+
+    for run in &mut entry.paragraph.runs {
+        let Some(declared_font_size_pt) = run.style.font_size else {
+            continue;
+        };
+        let Some(BaselineShiftEm(baseline_shift_em)) = run
+            .style
+            .baseline_shift
+            .filter(|BaselineShiftEm(value)| *value != 0.0)
+        else {
+            continue;
+        };
+        let scaled_font_size_pt: f64 =
+            round_pptx_scaled_font_size(declared_font_size_pt, BASELINE_SHIFT_FONT_SCALE);
+        if scaled_font_size_pt <= 0.0 {
+            continue;
+        }
+
+        run.style.font_size = Some(scaled_font_size_pt);
+        run.style.baseline_shift = Some(BaselineShiftEm(
+            baseline_shift_em * declared_font_size_pt / scaled_font_size_pt,
+        ));
+    }
 }
 
 /// Resolve DrawingML's percentage before/after spacing against the

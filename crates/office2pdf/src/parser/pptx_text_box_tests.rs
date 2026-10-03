@@ -217,13 +217,16 @@ fn test_text_box_run_baseline_preserves_positive_and_negative_offsets() {
     };
 
     assert_eq!(paragraph.runs.len(), 5);
+    assert_eq!(paragraph.runs[0].style.font_size, Some(18.0));
+    assert_eq!(paragraph.runs[1].style.font_size, Some(7.0));
+    assert_eq!(paragraph.runs[3].style.font_size, Some(7.0));
     assert_eq!(
         paragraph.runs[1].style.baseline_shift,
-        Some(BaselineShiftEm(0.3))
+        Some(BaselineShiftEm(3.0 / 7.0))
     );
     assert_eq!(
         paragraph.runs[3].style.baseline_shift,
-        Some(BaselineShiftEm(-0.25))
+        Some(BaselineShiftEm(-2.5 / 7.0))
     );
     assert!(paragraph.runs[0].style.baseline_shift.is_none());
     assert!(paragraph.runs[2].style.baseline_shift.is_none());
@@ -264,10 +267,10 @@ fn test_with_master_page_2_keeps_the_raised_ordinal_as_a_separate_run() {
     assert_eq!(paragraph.runs.len(), 3);
     assert_eq!(paragraph.runs[0].text, "2");
     assert_eq!(paragraph.runs[1].text, "nd");
-    assert_eq!(paragraph.runs[1].style.font_size, Some(32.0));
+    assert_eq!(paragraph.runs[1].style.font_size, Some(21.0));
     assert_eq!(
         paragraph.runs[1].style.baseline_shift,
-        Some(BaselineShiftEm(0.3))
+        Some(BaselineShiftEm(0.3 * 32.0 / 21.0))
     );
     assert_eq!(paragraph.runs[2].text, " page subtitle");
 }
