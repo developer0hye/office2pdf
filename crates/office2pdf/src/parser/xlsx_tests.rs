@@ -1388,8 +1388,9 @@ fn a_theme_scheme_normal_font_paints_and_prices_columns_in_the_ui_script_face() 
 
 /// Triangulation across sizes and themes: the face follows the theme, so
 /// the same declared Calibri prices its unit as Malgun Gothic over an Office
-/// theme and as Calibri over a theme that lists no script faces — the bare
-/// theme LibreOffice writes, which issue #1141 measured keeping Calibri.
+/// theme and as Calibri over a theme with neither a usable Hang nor `ea` face
+/// — the bare theme LibreOffice writes, which issue #1141 measured keeping
+/// Calibri.
 #[test]
 fn a_theme_scheme_normal_font_resolves_through_the_theme_it_ships_with() {
     for (size_pt, ui_face_unit_pt, declared_face_unit_pt) in [
@@ -1429,6 +1430,59 @@ fn a_theme_scheme_normal_font_resolves_through_the_theme_it_ships_with() {
     }
 }
 
+/// When a theme omits a Hang font entry, Excel resolves a scheme font through
+/// the East Asian face before falling back to the font's declared family.
+/// A Hang-specific entry still takes precedence when both are present.
+#[test]
+fn a_theme_scheme_normal_font_falls_back_to_the_east_asian_theme_face() {
+    let office_theme: Vec<u8> = build_xlsx_with_theme_scheme_normal_font("Calibri", 11.0);
+    let east_asian_fallback: Vec<u8> = rewrite_theme_minor_font_ea_face(
+        &strip_theme_minor_font_script_faces(&office_theme),
+        "Arial",
+    );
+    let explicit_hang_face: Vec<u8> = rewrite_theme_minor_font_ea_face(&office_theme, "Arial");
+
+    for (data, expected_face) in [
+        (&east_asian_fallback, "Arial"),
+        (&explicit_hang_face, "맑은 고딕"),
+    ] {
+        let book = umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(data.as_slice()), true)
+            .expect("the built workbook should load");
+        let normal_font: NormalFont =
+            extract_normal_font(data, Some(book.get_theme())).expect("a Normal font");
+
+        assert_eq!(normal_font.resolved_family(), expected_face);
+        assert_eq!(
+            first_cell_text_style(data).font_family.as_deref(),
+            Some(expected_face),
+            "the cell should paint in {expected_face}"
+        );
+    }
+}
+
+/// Some Office exports retain an old theme part beside the active one. The
+/// workbook relationship, not archive order, identifies the theme Excel uses.
+#[test]
+fn a_theme_scheme_font_uses_the_theme_named_by_the_workbook_relationship() {
+    let office_theme: Vec<u8> = build_xlsx_with_theme_scheme_normal_font("Calibri", 11.0);
+    let stale_theme_xml: Vec<u8> = read_zip_part(&office_theme, "xl/theme/theme1.xml");
+    let active_theme: Vec<u8> = rewrite_theme_minor_font_ea_face(
+        &strip_theme_minor_font_script_faces(&office_theme),
+        "Arial",
+    );
+    let data: Vec<u8> = prepend_zip_part(&active_theme, "xl/theme/theme.xml", &stale_theme_xml);
+    let book = umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(data.as_slice()), true)
+        .expect("the built workbook should load");
+    let normal_font: NormalFont =
+        extract_normal_font(&data, Some(book.get_theme())).expect("a Normal font");
+
+    assert_eq!(normal_font.resolved_family(), "Arial");
+    assert_eq!(
+        first_cell_text_style(&data).font_family.as_deref(),
+        Some("Arial")
+    );
+}
+
 /// A cell font that itself defers to the theme — `<scheme val="major"/>` on
 /// a heading style, `minor` on body text — resolves through the same list,
 /// slot by slot; a cell font naming its face outright keeps it (issue #1380).
@@ -1462,6 +1516,17 @@ fn a_cell_font_with_its_own_theme_scheme_resolves_through_its_slot() {
         vec![
             Some("Batang".to_string()),
             Some("맑은 고딕".to_string()),
+            Some("Georgia".to_string()),
+        ]
+    );
+
+    let east_asian_fallback: Vec<u8> =
+        rewrite_theme_minor_font_ea_face(&strip_theme_minor_font_script_faces(&data), "Arial");
+    assert_eq!(
+        cell_run_font_families(&east_asian_fallback),
+        vec![
+            Some("Batang".to_string()),
+            Some("Arial".to_string()),
             Some("Georgia".to_string()),
         ]
     );
@@ -1603,6 +1668,34 @@ fn rewrite_zip_parts(
             let xml = String::from_utf8(bytes).expect("part is utf-8");
             bytes = rewrite(&xml).into_bytes();
         }
+        out.start_file(name, zip::write::FileOptions::default())
+            .expect("writable entry");
+        std::io::Write::write_all(&mut out, &bytes).expect("writable entry body");
+    }
+    out.finish().expect("finished zip").into_inner()
+}
+
+/// Read one package part into memory for a controlled fixture rewrite.
+fn read_zip_part(data: &[u8], part_name: &str) -> Vec<u8> {
+    let mut archive = zip::ZipArchive::new(Cursor::new(data)).expect("readable zip");
+    let mut entry = archive.by_name(part_name).expect("package part exists");
+    let mut bytes = Vec::new();
+    std::io::Read::read_to_end(&mut entry, &mut bytes).expect("readable part body");
+    bytes
+}
+
+/// Put a package part before the existing entries without changing their data.
+fn prepend_zip_part(data: &[u8], part_name: &str, contents: &[u8]) -> Vec<u8> {
+    let mut archive = zip::ZipArchive::new(Cursor::new(data)).expect("readable zip");
+    let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    out.start_file(part_name, zip::write::FileOptions::default())
+        .expect("writable new entry");
+    std::io::Write::write_all(&mut out, contents).expect("writable new entry body");
+    for index in 0..archive.len() {
+        let mut entry = archive.by_index(index).expect("readable entry");
+        let name = entry.name().to_string();
+        let mut bytes = Vec::new();
+        std::io::Read::read_to_end(&mut entry, &mut bytes).expect("readable entry body");
         out.start_file(name, zip::write::FileOptions::default())
             .expect("writable entry");
         std::io::Write::write_all(&mut out, &bytes).expect("writable entry body");
@@ -2848,8 +2941,8 @@ fn sheet_with_one_named_cell_font(
 }
 
 /// The Normal font of `issue_1181_fit_to_height.xlsx`: Trebuchet MS 10
-/// deferring to a minor scheme whose theme names no per-script faces, so it
-/// resolves to Trebuchet MS itself — a face with no measured series.
+/// deferring to a minor scheme with neither a usable Hang nor `ea` face, so
+/// it resolves to Trebuchet MS itself — a face with no measured series.
 fn bare_theme_trebuchet_normal_font() -> NormalFont {
     NormalFont {
         family: "Trebuchet MS".to_string(),
@@ -3391,10 +3484,10 @@ fn a_script_face_theme_font_floors_the_bottom_aligned_seat_at_four_points() {
     );
 }
 
-/// A Normal font Excel neither remaps nor resolves by script — a face the
-/// reference machine has, named outright or reached through a theme that
-/// lists no script faces — takes no floor at all: the seat is the bare
-/// rounded descent. Native one-factor exports of the budget workbook of
+/// A Normal font Excel neither remaps nor resolves through a theme — a face
+/// the reference machine has, named outright or reached through a theme with
+/// neither usable Hang nor `ea` face — takes no floor at all: the seat is the
+/// bare rounded descent. Native one-factor exports of the budget workbook of
 /// issue #1545 (Trebuchet MS 10 Normal) rest 8, 10, 12, 14 and 16pt cells
 /// 2, 2, 3, 3 and 4pt above their fixed row's bottom boundary, one and two
 /// points under the 3pt and 4pt floors of the other two families.
@@ -3655,9 +3748,9 @@ fn printed_row_heights_over_all_pages(data: &[u8]) -> Vec<Option<f64>> {
         .collect()
 }
 
-/// Drop the `<a:font script="..."/>` faces from a theme's minor font scheme,
-/// leaving its `<a:latin>` typeface alone — the difference between an Office
-/// theme and the bare one LibreOffice writes.
+/// Drop the script-font entries from a theme's minor scheme. This probe's
+/// `a:ea` typeface is empty, so the remaining fallback is the declared Calibri
+/// family on its Normal font.
 fn strip_theme_minor_font_script_faces(data: &[u8]) -> Vec<u8> {
     let mut archive = zip::ZipArchive::new(Cursor::new(data)).expect("readable zip");
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
@@ -3683,6 +3776,32 @@ fn strip_theme_minor_font_script_faces(data: &[u8]) -> Vec<u8> {
     out.finish().expect("finished zip").into_inner()
 }
 
+/// Set only the East Asian fallback face on the theme's minor font scheme.
+fn rewrite_theme_minor_font_ea_face(data: &[u8], face: &str) -> Vec<u8> {
+    rewrite_zip_parts(
+        data,
+        |name| name.starts_with("xl/theme/") && name.ends_with(".xml"),
+        |xml| {
+            let start: usize = xml.find("<a:minorFont>").expect("theme has a minor font");
+            let end: usize = xml[start..]
+                .find("</a:minorFont>")
+                .expect("minor font is closed")
+                + start;
+            let block: &str = &xml[start..end];
+            let ea_start: usize = block.find("<a:ea ").expect("minor font has ea face");
+            let ea_end: usize =
+                block[ea_start..].find("/>").expect("ea face is closed") + ea_start + 2;
+            format!(
+                "{}{}<a:ea typeface=\"{face}\"/>{}{}",
+                &xml[..start],
+                &block[..ea_start],
+                &block[ea_end..],
+                &xml[end..]
+            )
+        },
+    )
+}
+
 /// Remove every `<a:font script=... />` element from one XML fragment.
 fn strip_script_font_elements(fragment: &str) -> String {
     let mut kept = String::with_capacity(fragment.len());
@@ -3698,8 +3817,8 @@ fn strip_script_font_elements(fragment: &str) -> String {
 
 /// A Normal font that defers its face to the theme scheme is laid out
 /// against whatever that scheme resolves to, and a full Office theme gives
-/// the minor scheme a per-script face list Excel resolves through — not the
-/// Calibri its `<a:latin>` names. The grid then keeps every declared height.
+/// the minor scheme a Hang face Excel resolves through instead of the Normal
+/// font's declared Calibri family. The grid then keeps every declared height.
 ///
 /// Native Excel-for-Mac export of the probe workbook, baselines read with
 /// `mutool draw -F trace`: its 16 `ht="36"` rows print a 36.00pt track and
@@ -3727,11 +3846,11 @@ fn a_theme_resolved_scheme_normal_font_prints_declared_heights_whole() {
 }
 
 /// The theme is what makes the difference, not the scheme flag on its own.
-/// Stripping the same workbook's per-script faces — one factor, nothing else
-/// touched — leaves the minor scheme on its Calibri `<a:latin>`, and the
-/// export compacts every track: 36 -> 33 and 12 -> 11 (issue #1094).
+/// Stripping the same workbook's script-font entries leaves `a:ea` empty, so
+/// the minor scheme resolves to the Normal font's declared Calibri family.
+/// The export compacts every track: 36 -> 33 and 12 -> 11 (issue #1094).
 #[test]
-fn a_scheme_normal_font_over_a_theme_without_script_faces_compacts() {
+fn a_scheme_normal_font_over_a_theme_without_usable_ui_face_compacts() {
     let bare_theme: Vec<u8> = strip_theme_minor_font_script_faces(THEME_SCHEME_PROBE);
 
     let heights: Vec<Option<f64>> = printed_row_heights_over_all_pages(&bare_theme);
