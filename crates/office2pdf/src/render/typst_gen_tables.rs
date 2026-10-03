@@ -2523,15 +2523,25 @@ fn auto_row_frame_height_estimate_pt(
     row.cells
         .iter()
         .filter_map(|cell| {
-            let paragraph: &Paragraph = cell.content.iter().find_map(|block| match block {
-                Block::Paragraph(paragraph) => Some(paragraph),
-                _ => None,
-            })?;
+            let (paragraph_index, paragraph): (usize, &Paragraph) = cell
+                .content
+                .iter()
+                .enumerate()
+                .find_map(|(index, block)| match block {
+                    Block::Paragraph(paragraph) => Some((index, paragraph)),
+                    _ => None,
+                })?;
             // Auto rows never seat text on the descender — the seating gate
             // keys on a fixed row height — so the estimate must not either,
             // and no shared row line exists for it to resolve against.
+            let metric_runs: Option<Cow<'_, [Run]>> = if paragraph.runs.is_empty() {
+                cell_paragraph_mark_metric_runs(&cell.content, paragraph_index, &paragraph.style)
+            } else {
+                None
+            };
+            let runs: &[Run] = metric_runs.as_deref().unwrap_or(&paragraph.runs);
             let line_box: CellLineBox = word_cell_line_box(
-                &paragraph.runs,
+                runs,
                 &paragraph.style,
                 ctx.line_grid_pitch,
                 ctx.row_east_asian,

@@ -1128,6 +1128,81 @@ fn test_word_auto_row_bottom_twin_anchors_at_the_cell_boundary() {
 }
 
 #[test]
+fn test_word_auto_row_vertical_bands_use_blank_paragraph_mark_metrics() {
+    let mark_style: TextStyle = TextStyle {
+        font_family: Some("Libertinus Serif".to_string()),
+        font_size: Some(24.0),
+        ..TextStyle::default()
+    };
+    let paragraph_style: ParagraphStyle = ParagraphStyle {
+        paragraph_mark_text_style: Some(Box::new(mark_style.clone())),
+        ..ParagraphStyle::default()
+    };
+    let metric_run: Run = Run {
+        text: String::new(),
+        style: mark_style,
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let Some(line_box) = word_cell_line_box(
+        &[metric_run],
+        &paragraph_style,
+        None,
+        RowEastAsianMetrics {
+            has_east_asian_text: false,
+            takes_east_asian_metrics: false,
+        },
+        None,
+        false,
+        None,
+        None,
+        None,
+    ) else {
+        return; // no font book available (e.g. exotic CI sandbox)
+    };
+    let cell: TableCell = TableCell {
+        content: vec![Block::Paragraph(Paragraph {
+            style: paragraph_style,
+            runs: Vec::new(),
+        })],
+        border: Some(CellBorder {
+            top: Some(solid_side(0.5)),
+            bottom: Some(solid_side(0.5)),
+            left: Some(solid_side(0.5)),
+            right: Some(solid_side(0.5)),
+        }),
+        ..TableCell::default()
+    };
+    let table: Table = Table {
+        rows: vec![TableRow {
+            minimum_height: None,
+            cells: vec![cell.clone()],
+            height: None,
+        }],
+        column_widths: vec![100.0],
+        border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+        ..Table::default()
+    };
+    let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+    let result: String = generate_typst(&doc).unwrap().source;
+
+    // The default 5pt vertical padding plus half of each 0.5pt horizontal
+    // border is included in the row frame estimate.
+    let vertical_inset_pt: f64 = 10.5;
+    let expected_band_height: String = tables::format_geometry(
+        (line_box.top_em + line_box.bottom_em) * line_box.font_size_pt + vertical_inset_pt,
+    );
+    let expected_vertical_bands: String =
+        format!("rect(width: 0.48pt, height: {expected_band_height}pt");
+    assert_eq!(
+        result.matches(&expected_vertical_bands).count(),
+        4,
+        "both vertical borders must use the 24pt paragraph-mark frame for their top and bottom twins: {result}"
+    );
+}
+
+#[test]
 fn test_word_repeating_header_boundary_starts_inside_the_body_row() {
     let upper = bordered_text_cell(
         "Header",
