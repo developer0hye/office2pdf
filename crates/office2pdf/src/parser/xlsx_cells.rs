@@ -864,10 +864,10 @@ fn read_theme_ui_script_faces(
                 b"majorFont" => open_slot = Some(ThemeFontSlot::Major),
                 b"minorFont" => open_slot = Some(ThemeFontSlot::Minor),
                 b"font" => {
-                    if theme_font_names_ui_script(e) {
-                        if let Some(slot) = open_slot {
-                            set_theme_font_face(&mut hang_faces, slot, theme_font_typeface(e));
-                        }
+                    if theme_font_names_ui_script(e)
+                        && let Some(slot) = open_slot
+                    {
+                        set_theme_font_face(&mut hang_faces, slot, theme_font_typeface(e));
                     }
                 }
                 b"ea" => {
@@ -884,10 +884,10 @@ fn read_theme_ui_script_faces(
             }
             Ok(Event::Empty(ref e)) => match e.local_name().as_ref() {
                 b"font" => {
-                    if theme_font_names_ui_script(e) {
-                        if let Some(slot) = open_slot {
-                            set_theme_font_face(&mut hang_faces, slot, theme_font_typeface(e));
-                        }
+                    if theme_font_names_ui_script(e)
+                        && let Some(slot) = open_slot
+                    {
+                        set_theme_font_face(&mut hang_faces, slot, theme_font_typeface(e));
                     }
                 }
                 b"ea" => {
