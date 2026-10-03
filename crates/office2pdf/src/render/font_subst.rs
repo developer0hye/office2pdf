@@ -708,6 +708,12 @@ fn table_entry(normalized_family: &str) -> Option<(FamilyClass, &'static [&'stat
         // design, which is also the face Word substitutes when Liberation
         // Serif is absent (issue #1707).
         "liberation serif" => (Serif, &["Times New Roman", "Tinos"]),
+        // Liberation Sans and Mono are metric-compatible LibreOffice faces for
+        // Office's Arial and Courier New. When a host lacks them, lead with the
+        // corresponding metric twin rather than the broader class fallback
+        // (issue #1911).
+        "liberation sans" => (SansSerif, &["Arial", "Arimo"]),
+        "liberation mono" => (Monospace, &["Courier New", "Cousine"]),
         "courier new" => (Monospace, &["Liberation Mono", "Cousine"]),
         "comic sans ms" => (SansSerif, &["Comic Neue"]),
         "verdana" => (SansSerif, &["DejaVu Sans"]),

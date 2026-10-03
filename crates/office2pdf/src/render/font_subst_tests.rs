@@ -78,6 +78,59 @@ fn test_courier_new_substitutes() {
 }
 
 #[test]
+fn liberation_sans_substitutes_lead_with_its_metric_twin() {
+    let substitutes =
+        substitutes("Liberation Sans").expect("Liberation Sans should have substitutes");
+    assert_eq!(substitutes, &["Arial", "Arimo"]);
+}
+
+#[test]
+fn liberation_mono_substitutes_lead_with_its_metric_twin() {
+    let substitutes =
+        substitutes("Liberation Mono").expect("Liberation Mono should have substitutes");
+    assert_eq!(substitutes, &["Courier New", "Cousine"]);
+}
+
+#[test]
+fn liberation_sans_paint_chain_uses_arial_before_broad_sans_fallbacks() {
+    let context = FontSearchContext::for_test(Vec::new(), &["Arial", "Helvetica"], &[], &[]);
+    let paint_chain = with_font_search_context(Some(&context), || {
+        font_with_fallbacks_for_text("Liberation Sans", "Read-only protection")
+    });
+    let arial_index = paint_chain
+        .find("\"Arial\"")
+        .expect("Arial should be in Liberation Sans' metric-twin chain");
+    let broad_fallback_index = paint_chain
+        .find("\"Helvetica\"")
+        .expect("Helvetica should remain available as a broad sans fallback");
+
+    assert!(
+        arial_index < broad_fallback_index,
+        "the metric twin must precede broad sans fallbacks: {paint_chain}"
+    );
+}
+
+#[test]
+fn liberation_mono_paint_chain_uses_courier_new_before_broad_mono_fallbacks() {
+    let context =
+        FontSearchContext::for_test(Vec::new(), &["Courier New", "DejaVu Sans Mono"], &[], &[]);
+    let paint_chain = with_font_search_context(Some(&context), || {
+        font_with_fallbacks_for_text("Liberation Mono", "0123456789 ABCDEF")
+    });
+    let courier_new_index = paint_chain
+        .find("\"Courier New\"")
+        .expect("Courier New should be in Liberation Mono's metric-twin chain");
+    let broad_fallback_index = paint_chain
+        .find("\"DejaVu Sans Mono\"")
+        .expect("DejaVu Sans Mono should remain available as a broad mono fallback");
+
+    assert!(
+        courier_new_index < broad_fallback_index,
+        "the metric twin must precede broad monospace fallbacks: {paint_chain}"
+    );
+}
+
+#[test]
 fn named_monospace_families_get_a_monospace_fallback_chain() {
     for family in ["Lucida Sans Typewriter", "JetBrains Mono", "IBM Plex Mono"] {
         let substitutes = substitutes(family)
