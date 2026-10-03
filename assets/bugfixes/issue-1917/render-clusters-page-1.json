@@ -1,1175 +1,1537 @@
 {
   "clusters": [
     {
-      "area_pt2": 100.4544,
+      "area_pt2": 841.8816,
       "bbox_pt": {
-        "height": 25.92,
-        "width": 8.16,
-        "x": 218.88,
-        "y": 39.84
+        "height": 36.48,
+        "width": 720.0,
+        "x": 0.0,
+        "y": 0.0
       },
       "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
+        "issue": "#1956",
+        "kind": "issue"
       },
-      "id": "p1-e9bf019b8c2c",
-      "region": "top-left"
+      "id": "p1-d0f961aa756c",
+      "region": "top"
     },
     {
-      "area_pt2": 94.2336,
+      "area_pt2": 805.536,
       "bbox_pt": {
-        "height": 13.44,
-        "width": 18.24,
-        "x": 158.88,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-deadcc38a567",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 73.728,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 16.32,
-        "x": 120.48,
-        "y": 244.8
-      },
-      "disposition": {
-        "issue": "#1916",
-        "kind": "issue",
-        "note": "This cluster is in the Japanese/fullwidth CJK section; the fullwidth run remains 5.50pt left of its frame inset, tracked by #1916."
-      },
-      "id": "p1-eb298eb24266",
-      "region": "left"
-    },
-    {
-      "area_pt2": 72.576,
-      "bbox_pt": {
-        "height": 13.44,
-        "width": 14.4,
-        "x": 77.76,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-4ddc8cc99e73",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 65.4336,
-      "bbox_pt": {
-        "height": 27.36,
-        "width": 4.8,
-        "x": 127.68,
-        "y": 40.32
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-f8d9b03bc5bb",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 64.7424,
-      "bbox_pt": {
-        "height": 10.56,
-        "width": 13.44,
-        "x": 148.32,
-        "y": 271.68
+        "height": 9.84,
+        "width": 480.0,
+        "x": 120.0,
+        "y": 282.96
       },
       "disposition": {
         "issue": "#1914",
-        "kind": "issue",
-        "note": "This cluster is in Table 3; its second-row text and bottom border remain low as measured in #1914."
+        "kind": "issue"
       },
-      "id": "p1-3ce14a8c543d",
+      "id": "p1-5f0c0f469cca",
+      "region": "center"
+    },
+    {
+      "area_pt2": 152.064,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 158.4,
+        "x": 280.8,
+        "y": 268.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-f7f1e6114e65",
+      "region": "center"
+    },
+    {
+      "area_pt2": 152.064,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 158.4,
+        "x": 440.4,
+        "y": 282.96
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-2bed65afcda6",
+      "region": "right"
+    },
+    {
+      "area_pt2": 152.064,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 158.4,
+        "x": 440.4,
+        "y": 270.48
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-dbdc00cb5593",
+      "region": "right"
+    },
+    {
+      "area_pt2": 152.064,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 158.4,
+        "x": 280.8,
+        "y": 270.48
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-305199ba485c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 152.064,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 158.4,
+        "x": 280.8,
+        "y": 282.96
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-0629c28c7dd9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 152.064,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 158.4,
+        "x": 440.4,
+        "y": 268.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-e6e6b4ec4b5b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 152.064,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 158.4,
+        "x": 121.2,
+        "y": 268.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-28efac6dc373",
       "region": "left"
     },
     {
-      "area_pt2": 58.9824,
+      "area_pt2": 150.6816,
       "bbox_pt": {
-        "height": 11.52,
-        "width": 9.12,
-        "x": 148.8,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-7c38009be472",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 56.9088,
-      "bbox_pt": {
-        "height": 12.96,
-        "width": 8.64,
-        "x": 158.88,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-17e11df36d56",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 56.9088,
-      "bbox_pt": {
-        "height": 12.96,
-        "width": 8.64,
-        "x": 168.48,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-7f5ca9c12b8d",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 56.2176,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 8.64,
-        "x": 148.32,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-acb6737dbd1c",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 56.2176,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 8.64,
-        "x": 188.16,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-ac5b1e8f42d2",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 55.0656,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 9.12,
-        "x": 244.32,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-73add55be639",
-      "region": "top"
-    },
-    {
-      "area_pt2": 55.0656,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 9.12,
-        "x": 228.0,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-6bf22434242e",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 54.8352,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 9.12,
-        "x": 228.0,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-cdf4caf01e6c",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 54.8352,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 9.12,
-        "x": 178.08,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-20cab6fcbc4b",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 54.8352,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 9.12,
-        "x": 133.44,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-17651ca9ff67",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 54.8352,
-      "bbox_pt": {
-        "height": 22.56,
-        "width": 4.8,
-        "x": 102.72,
-        "y": 40.32
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-a86b0ed7c24e",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 54.8352,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 9.12,
-        "x": 244.32,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-99c369b7f6eb",
-      "region": "top"
-    },
-    {
-      "area_pt2": 52.3008,
-      "bbox_pt": {
-        "height": 8.64,
-        "width": 11.52,
-        "x": 72.48,
-        "y": 151.2
+        "height": 9.84,
+        "width": 78.96,
+        "x": 72.0,
+        "y": 204.24
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-b08617497cfb",
-      "region": "top-left"
+      "id": "p1-d9a17a2ac843",
+      "region": "left"
     },
     {
-      "area_pt2": 51.84,
+      "area_pt2": 127.1232,
       "bbox_pt": {
-        "height": 7.2,
-        "width": 12.48,
+        "height": 7.44,
+        "width": 113.76,
+        "x": 165.84,
+        "y": 270.48
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-d2023c5d8ed4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 73.44,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 27.12,
+        "x": 121.2,
+        "y": 270.48
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-2672589645a6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 70.0992,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 23.52,
+        "x": 147.6,
+        "y": 270.48
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-4cd456230118",
+      "region": "left"
+    },
+    {
+      "area_pt2": 68.256,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 16.8,
+        "x": 90.48,
+        "y": 230.4
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-9520b8a4e2ce",
+      "region": "left"
+    },
+    {
+      "area_pt2": 65.088,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 13.68,
+        "x": 134.64,
+        "y": 323.52
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-8812c5d33349",
+      "region": "left"
+    },
+    {
+      "area_pt2": 62.0352,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 12.96,
+        "x": 78.24,
+        "y": 373.44
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-903ce93faab3",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 58.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 13.92,
+        "x": 78.0,
+        "y": 204.24
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-723aab5b084c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 56.5056,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 13.68,
+        "x": 120.0,
+        "y": 323.52
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-1017a86e9ad7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 56.448,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 12.24,
         "x": 78.24,
         "y": 323.52
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-03ee3e0f9b86",
+      "id": "p1-a0d27a6eacdd",
       "region": "left"
     },
     {
-      "area_pt2": 51.6096,
+      "area_pt2": 53.7984,
       "bbox_pt": {
-        "height": 13.92,
-        "width": 9.12,
-        "x": 72.96,
-        "y": 39.84
+        "height": 6.72,
+        "width": 13.2,
+        "x": 121.44,
+        "y": 373.44
       },
       "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
+        "issue": "#1913",
+        "kind": "issue"
       },
-      "id": "p1-32922f7b234e",
-      "region": "top-left"
+      "id": "p1-d3bd13b1edb8",
+      "region": "bottom-left"
     },
     {
-      "area_pt2": 50.4576,
+      "area_pt2": 51.4944,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.56,
+        "x": 183.12,
+        "y": 323.52
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-62d474f7e42c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 48.2688,
       "bbox_pt": {
         "height": 9.12,
-        "width": 10.08,
-        "x": 80.16,
-        "y": 269.76
+        "width": 13.92,
+        "x": 75.6,
+        "y": 308.88
       },
       "disposition": {
         "issue": "#1916",
-        "kind": "issue",
-        "note": "This cluster is in the Japanese/fullwidth CJK section; the fullwidth run remains 5.50pt left of its frame inset, tracked by #1916."
+        "kind": "issue"
       },
-      "id": "p1-f4c7635ccabe",
+      "id": "p1-1cd47ad5a9b1",
       "region": "left"
     },
     {
-      "area_pt2": 50.4576,
+      "area_pt2": 47.2896,
       "bbox_pt": {
-        "height": 12.0,
+        "height": 7.2,
         "width": 9.6,
-        "x": 78.24,
-        "y": 56.16
+        "x": 78.0,
+        "y": 151.68
       },
       "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
+        "issue": "#1913",
+        "kind": "issue"
       },
-      "id": "p1-dbb545b966df",
+      "id": "p1-293a9f7487dd",
       "region": "top-left"
     },
     {
-      "area_pt2": 47.232,
+      "area_pt2": 42.9696,
       "bbox_pt": {
-        "height": 10.08,
-        "width": 9.12,
-        "x": 93.12,
-        "y": 43.2
+        "height": 6.48,
+        "width": 9.84,
+        "x": 102.48,
+        "y": 373.44
       },
       "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
+        "issue": "#1913",
+        "kind": "issue"
       },
-      "id": "p1-5e886138d562",
-      "region": "top-left"
+      "id": "p1-f4ae1cab07e0",
+      "region": "bottom-left"
     },
     {
-      "area_pt2": 47.232,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 9.12,
-        "x": 118.08,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-bf118818279c",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 46.5408,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 11.04,
-        "x": 105.6,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-42e83624a11f",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 46.08,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 8.16,
-        "x": 204.0,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-705286f6ff08",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 46.08,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 8.16,
-        "x": 204.0,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-a0e17cb18640",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 45.1584,
+      "area_pt2": 42.8544,
       "bbox_pt": {
         "height": 9.12,
-        "width": 9.12,
-        "x": 93.12,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-15c3414688e8",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 43.776,
-      "bbox_pt": {
-        "height": 8.16,
         "width": 10.08,
-        "x": 72.48,
-        "y": 72.48
+        "x": 146.16,
+        "y": 230.64
       },
       "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
+        "issue": "#1913",
+        "kind": "issue"
       },
-      "id": "p1-1f8f6a665fca",
+      "id": "p1-d3ae8200a270",
+      "region": "left"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 14.64,
+        "x": 110.88,
+        "y": 164.4
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-f6d94d2b95a5",
       "region": "top-left"
     },
     {
-      "area_pt2": 43.776,
+      "area_pt2": 39.168,
       "bbox_pt": {
-        "height": 9.6,
-        "width": 8.16,
-        "x": 108.48,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-6bfcaffa1e55",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 42.8544,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 8.16,
-        "x": 188.64,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-1353645de81d",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 42.8544,
-      "bbox_pt": {
-        "height": 7.2,
+        "height": 8.64,
         "width": 10.56,
-        "x": 102.24,
-        "y": 360.48
+        "x": 90.72,
+        "y": 371.52
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-bdb8573f8441",
+      "id": "p1-884f7923f9cc",
       "region": "bottom-left"
     },
     {
-      "area_pt2": 39.8592,
+      "area_pt2": 38.304,
       "bbox_pt": {
-        "height": 11.04,
-        "width": 8.64,
-        "x": 72.48,
-        "y": 56.64
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-764ba384ed20",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 39.6288,
-      "bbox_pt": {
-        "height": 6.72,
-        "width": 8.64,
-        "x": 79.2,
-        "y": 139.68
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-66486febaa0b",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 37.5552,
-      "bbox_pt": {
-        "height": 9.6,
-        "width": 5.28,
-        "x": 72.48,
-        "y": 358.08
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-c9b5410de681",
-      "region": "bottom-left"
-    },
-    {
-      "area_pt2": 37.0944,
-      "bbox_pt": {
-        "height": 7.68,
-        "width": 8.64,
-        "x": 78.24,
-        "y": 361.92
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-f4b4a0049cc5",
-      "region": "bottom-left"
-    },
-    {
-      "area_pt2": 36.864,
-      "bbox_pt": {
-        "height": 7.2,
-        "width": 9.12,
-        "x": 133.44,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-9bb92a7f3b63",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 35.4816,
-      "bbox_pt": {
-        "height": 7.68,
-        "width": 7.2,
-        "x": 456.96,
-        "y": 274.56
-      },
-      "disposition": {
-        "issue": "#1914",
-        "kind": "issue",
-        "note": "This cluster is in Table 3; its second-row text and bottom border remain low as measured in #1914."
-      },
-      "id": "p1-18f9692a4509",
-      "region": "center"
-    },
-    {
-      "area_pt2": 34.0992,
-      "bbox_pt": {
-        "height": 6.24,
-        "width": 8.64,
-        "x": 79.2,
-        "y": 86.4
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-0a9e62ca1b43",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 33.8688,
-      "bbox_pt": {
-        "height": 7.2,
-        "width": 9.12,
-        "x": 80.64,
-        "y": 192.48
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-bc1e1db27f65",
-      "region": "left"
-    },
-    {
-      "area_pt2": 33.8688,
-      "bbox_pt": {
-        "height": 7.2,
-        "width": 7.2,
-        "x": 84.0,
-        "y": 397.44
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-b9d4ca8f1f46",
-      "region": "bottom-left"
-    },
-    {
-      "area_pt2": 33.6384,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 9.12,
-        "x": 118.08,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-76ed524a0750",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 33.408,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 10.08,
-        "x": 134.4,
-        "y": 274.08
-      },
-      "disposition": {
-        "issue": "#1914",
-        "kind": "issue",
-        "note": "This cluster is in Table 3; its second-row text and bottom border remain low as measured in #1914."
-      },
-      "id": "p1-64f472270403",
-      "region": "left"
-    },
-    {
-      "area_pt2": 32.7168,
-      "bbox_pt": {
-        "height": 5.76,
-        "width": 9.12,
-        "x": 178.08,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-5edd21dcac37",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 31.104,
-      "bbox_pt": {
-        "height": 9.12,
-        "width": 5.76,
-        "x": 109.44,
-        "y": 191.04
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-68a84802edca",
-      "region": "left"
-    },
-    {
-      "area_pt2": 30.8736,
-      "bbox_pt": {
-        "height": 7.68,
-        "width": 8.64,
-        "x": 295.68,
-        "y": 274.56
-      },
-      "disposition": {
-        "issue": "#1914",
-        "kind": "issue",
-        "note": "This cluster is in Table 3; its second-row text and bottom border remain low as measured in #1914."
-      },
-      "id": "p1-09f25115e0ce",
-      "region": "center"
-    },
-    {
-      "area_pt2": 30.4128,
-      "bbox_pt": {
-        "height": 5.76,
+        "height": 7.92,
         "width": 7.68,
-        "x": 84.48,
-        "y": 62.4
+        "x": 297.12,
+        "y": 274.56
       },
       "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
+        "issue": "#1914",
+        "kind": "issue"
       },
-      "id": "p1-5389e7822cf6",
-      "region": "top-left"
+      "id": "p1-48535b710de3",
+      "region": "center"
     },
     {
-      "area_pt2": 29.7216,
+      "area_pt2": 38.304,
       "bbox_pt": {
-        "height": 7.2,
-        "width": 7.2,
-        "x": 84.48,
-        "y": 218.4
+        "height": 7.92,
+        "width": 7.68,
+        "x": 456.72,
+        "y": 274.56
       },
       "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "issue": "#1914",
+        "kind": "issue"
       },
-      "id": "p1-e3418cb20a7d",
-      "region": "left"
+      "id": "p1-7b35b7207809",
+      "region": "center"
     },
     {
-      "area_pt2": 29.4912,
+      "area_pt2": 37.9008,
       "bbox_pt": {
-        "height": 7.2,
-        "width": 5.76,
-        "x": 72.48,
-        "y": 138.24
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-284a1cb592fb",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 29.2608,
-      "bbox_pt": {
-        "height": 9.12,
-        "width": 5.28,
-        "x": 86.88,
-        "y": 72.0
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-65b127fbc360",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 26.9568,
-      "bbox_pt": {
-        "height": 7.2,
-        "width": 5.76,
-        "x": 72.48,
+        "height": 7.68,
+        "width": 13.68,
+        "x": 105.84,
         "y": 295.2
       },
       "disposition": {
-        "issue": "#1916",
-        "kind": "issue",
-        "note": "This cluster is in the Japanese/fullwidth CJK section; the fullwidth run remains 5.50pt left of its frame inset, tracked by #1916."
-      },
-      "id": "p1-39db1b6cb4e1",
-      "region": "left"
-    },
-    {
-      "area_pt2": 26.496,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 6.24,
-        "x": 90.72,
-        "y": 229.92
-      },
-      "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-407d58f1d3c0",
+      "id": "p1-3464838ecef2",
       "region": "left"
     },
     {
-      "area_pt2": 25.5744,
-      "bbox_pt": {
-        "height": 9.6,
-        "width": 5.28,
-        "x": 238.56,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-8f1e9cd1aba7",
-      "region": "top"
-    },
-    {
-      "area_pt2": 25.5744,
-      "bbox_pt": {
-        "height": 9.6,
-        "width": 5.28,
-        "x": 198.72,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-0fd346eb4203",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 25.5744,
-      "bbox_pt": {
-        "height": 9.6,
-        "width": 5.28,
-        "x": 198.72,
-        "y": 43.2
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-39f6da76519e",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 25.5744,
-      "bbox_pt": {
-        "height": 9.6,
-        "width": 5.28,
-        "x": 238.56,
-        "y": 56.16
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-368cbbdc1879",
-      "region": "top"
-    },
-    {
-      "area_pt2": 25.1136,
-      "bbox_pt": {
-        "height": 6.72,
-        "width": 7.68,
-        "x": 146.4,
-        "y": 232.8
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-2ae89364d238",
-      "region": "left"
-    },
-    {
-      "area_pt2": 25.1136,
+      "area_pt2": 37.3248,
       "bbox_pt": {
         "height": 6.24,
-        "width": 4.8,
-        "x": 105.12,
-        "y": 153.6
+        "width": 12.0,
+        "x": 125.28,
+        "y": 272.4
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-16654ed4b748",
+      "region": "left"
+    },
+    {
+      "area_pt2": 34.9056,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 8.16,
+        "x": 145.44,
+        "y": 164.64
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-a3ac280f8305",
+      "id": "p1-c57161019e6e",
       "region": "top-left"
+    },
+    {
+      "area_pt2": 34.0416,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.0,
+        "x": 148.32,
+        "y": 272.4
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-c6ae6fc39ef8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.696,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 11.04,
+        "x": 102.96,
+        "y": 151.68
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-f18705a83db8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 10.56,
+        "x": 72.0,
+        "y": 270.72
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-671a87b48d40",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 8.88,
+        "width": 6.0,
+        "x": 72.0,
+        "y": 322.08
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-17051c13af9e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.4288,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 164.88,
+        "y": 321.6
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-2ed8108eb162",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.3712,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 72.24,
+        "y": 371.76
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-4af16f38faee",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.3136,
+      "bbox_pt": {
+        "height": 8.88,
+        "width": 7.92,
+        "x": 90.72,
+        "y": 271.2
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-80808079926a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.92,
+        "x": 83.04,
+        "y": 230.4
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-0ea89ea39814",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.68,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 11.52,
+        "x": 128.88,
+        "y": 294.96
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-4e11b4496dcf",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.3552,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 7.92,
+        "x": 92.88,
+        "y": 206.4
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-155b74e5a396",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.664,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.4,
+        "x": 90.72,
+        "y": 358.8
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-d9ffe76515e7",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.52,
+        "x": 146.64,
+        "y": 204.24
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-017d4a1682fc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.9152,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 90.96,
+        "y": 151.44
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-f68b01ccc00a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 7.44,
+        "x": 90.72,
+        "y": 310.08
+      },
+      "disposition": {
+        "issue": "#1916",
+        "kind": "issue"
+      },
+      "id": "p1-6e8d5bbe4652",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.1296,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.44,
+        "x": 83.76,
+        "y": 257.52
+      },
+      "disposition": {
+        "issue": "#1916",
+        "kind": "issue"
+      },
+      "id": "p1-54b22134bd6a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.1296,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 88.8,
+        "y": 283.44
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-29de97ea2d42",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.784,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 4.56,
+        "x": 178.08,
+        "y": 322.08
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-3bd1f6c00192",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.6688,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.52,
+        "x": 78.0,
+        "y": 164.88
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-463406beb383",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.8624,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.0,
+        "x": 148.32,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-737567724ae2",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 4.8,
+        "x": 135.84,
+        "y": 204.24
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-5d6328e6fc72",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.4592,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 125.52,
+        "y": 206.4
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-41c97f76a18e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.2864,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 8.4,
+        "x": 244.8,
+        "y": 60.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-4f48fbc984b9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.2864,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 8.4,
+        "x": 228.72,
+        "y": 60.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-011db0966206",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.2864,
+      "bbox_pt": {
+        "height": 8.88,
+        "width": 5.28,
+        "x": 132.0,
+        "y": 257.52
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-028fab13d0b9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.2864,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 8.4,
+        "x": 178.8,
+        "y": 60.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-07c5822d72e6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.2864,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 8.4,
+        "x": 133.92,
+        "y": 60.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-c91412933512",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.2288,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 4.56,
+        "x": 107.76,
+        "y": 321.6
+      },
+      "disposition": {
+        "issue": "#1916",
+        "kind": "issue"
+      },
+      "id": "p1-632ba7f23c81",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.1712,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 4.8,
+        "x": 332.64,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-d48a081bfee0",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.1712,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.24,
+        "x": 81.12,
+        "y": 270.48
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-5c96857e28f4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.1712,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 4.8,
+        "x": 307.92,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-c6460e5f04fe",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.1712,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 4.8,
+        "x": 467.52,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue"
+      },
+      "id": "p1-9923da07f887",
+      "region": "center"
     },
     {
       "area_pt2": 24.8832,
       "bbox_pt": {
         "height": 7.2,
-        "width": 5.28,
-        "x": 127.68,
+        "width": 7.92,
+        "x": 75.84,
+        "y": 295.68
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-ee5012278a6f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.5376,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.96,
+        "x": 99.36,
         "y": 360.48
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-348703d2eb1b",
+      "id": "p1-5f8722b8adc6",
       "region": "bottom-left"
     },
     {
-      "area_pt2": 24.6528,
+      "area_pt2": 24.48,
       "bbox_pt": {
-        "height": 6.24,
-        "width": 5.76,
-        "x": 74.88,
-        "y": 272.16
+        "height": 9.12,
+        "width": 6.0,
+        "x": 102.24,
+        "y": 322.08
       },
       "disposition": {
-        "issue": "#1916",
-        "kind": "issue",
-        "note": "This cluster is in the Japanese/fullwidth CJK section; the fullwidth run remains 5.50pt left of its frame inset, tracked by #1916."
+        "issue": "#1913",
+        "kind": "issue"
       },
-      "id": "p1-29f1e6bd3c02",
+      "id": "p1-958223fdd088",
       "region": "left"
     },
     {
       "area_pt2": 24.4224,
       "bbox_pt": {
-        "height": 5.28,
-        "width": 7.2,
-        "x": 104.16,
-        "y": 75.36
-      },
-      "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
-      },
-      "id": "p1-852014447a3e",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 24.192,
-      "bbox_pt": {
-        "height": 7.2,
-        "width": 5.76,
-        "x": 72.48,
-        "y": 336.48
+        "height": 7.68,
+        "width": 4.8,
+        "x": 102.0,
+        "y": 204.48
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-150a6cddcd60",
+      "id": "p1-4e2eb3e981e8",
       "region": "left"
     },
     {
-      "area_pt2": 24.192,
+      "area_pt2": 24.3648,
       "bbox_pt": {
-        "height": 6.24,
-        "width": 6.72,
-        "x": 133.92,
-        "y": 219.84
+        "height": 8.88,
+        "width": 4.56,
+        "x": 96.72,
+        "y": 322.08
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-a4de966c5822",
+      "id": "p1-c9d6af3a13ce",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.3072,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.96,
+        "x": 145.2,
+        "y": 178.56
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-57d8dbc27cba",
       "region": "left"
     },
     {
       "area_pt2": 23.9616,
       "bbox_pt": {
-        "height": 7.2,
+        "height": 8.88,
         "width": 4.8,
-        "x": 78.24,
-        "y": 125.28
+        "x": 127.68,
+        "y": 243.36
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-5c3eada195fa",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 23.9616,
-      "bbox_pt": {
-        "height": 7.2,
-        "width": 4.8,
-        "x": 78.24,
-        "y": 98.4
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-cb73486a565a",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 23.04,
-      "bbox_pt": {
-        "height": 9.12,
-        "width": 7.68,
-        "x": 91.68,
-        "y": 269.76
-      },
-      "disposition": {
-        "issue": "#1916",
-        "kind": "issue",
-        "note": "This cluster is in the Japanese/fullwidth CJK section; the fullwidth run remains 5.50pt left of its frame inset, tracked by #1916."
-      },
-      "id": "p1-4f7c4a78aa20",
+      "id": "p1-679bcb4efeaf",
       "region": "left"
     },
     {
-      "area_pt2": 22.5792,
+      "area_pt2": 23.8464,
       "bbox_pt": {
-        "height": 6.24,
-        "width": 7.2,
-        "x": 162.24,
-        "y": 272.16
-      },
-      "disposition": {
-        "issue": "#1914",
-        "kind": "issue",
-        "note": "This cluster is in Table 3; its second-row text and bottom border remain low as measured in #1914."
-      },
-      "id": "p1-dbc81a3f8dfb",
-      "region": "left"
-    },
-    {
-      "area_pt2": 22.3488,
-      "bbox_pt": {
-        "height": 7.2,
-        "width": 5.76,
-        "x": 78.24,
-        "y": 112.32
+        "height": 10.32,
+        "width": 6.96,
+        "x": 105.12,
+        "y": 360.48
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-8b66d94e6670",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 21.888,
-      "bbox_pt": {
-        "height": 9.12,
-        "width": 3.84,
-        "x": 139.2,
-        "y": 358.56
-      },
-      "disposition": {
-        "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
-      },
-      "id": "p1-77b80090b225",
+      "id": "p1-642dd6254d2b",
       "region": "bottom-left"
     },
     {
-      "area_pt2": 20.5056,
+      "area_pt2": 23.7312,
       "bbox_pt": {
-        "height": 5.76,
-        "width": 4.8,
-        "x": 93.6,
-        "y": 219.36
+        "height": 6.96,
+        "width": 6.48,
+        "x": 78.0,
+        "y": 98.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-26dd405b8c87",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.48,
+        "x": 78.0,
+        "y": 125.76
       },
       "disposition": {
         "issue": "#1913",
-        "kind": "issue",
-        "note": "This cluster is in the list or downstream text shifted by the extra item-to-item advances tracked in #1913."
+        "kind": "issue"
       },
-      "id": "p1-725d80bb0a76",
+      "id": "p1-c4a91168ee45",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.9248,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 4.8,
+        "x": 109.44,
+        "y": 257.52
+      },
+      "disposition": {
+        "issue": "#1916",
+        "kind": "issue"
+      },
+      "id": "p1-39018b121bb0",
       "region": "left"
     },
     {
-      "area_pt2": 20.5056,
+      "area_pt2": 22.0032,
       "bbox_pt": {
-        "height": 6.72,
-        "width": 5.76,
-        "x": 72.48,
-        "y": 85.92
+        "height": 7.44,
+        "width": 3.84,
+        "x": 131.28,
+        "y": 204.48
       },
       "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
+        "issue": "#1913",
+        "kind": "issue"
       },
-      "id": "p1-b1bc68ac8acb",
+      "id": "p1-6feed824e52f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.04,
+        "x": 101.04,
+        "y": 256.8
+      },
+      "disposition": {
+        "issue": "#1916",
+        "kind": "issue"
+      },
+      "id": "p1-6385b13f0c00",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 121.44,
+        "y": 386.4
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-dcd4941a9d07",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 121.44,
+        "y": 360.48
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-e650369dcb84",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 121.44,
+        "y": 399.36
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-08274675fc01",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 125.28,
+        "y": 140.4
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-68185c936e74",
       "region": "top-left"
     },
     {
-      "area_pt2": 20.2752,
+      "area_pt2": 21.4272,
       "bbox_pt": {
-        "height": 7.68,
+        "height": 6.96,
         "width": 4.8,
-        "x": 98.4,
-        "y": 73.44
+        "x": 78.0,
+        "y": 112.8
       },
       "disposition": {
-        "issue": "#1917",
-        "kind": "issue",
-        "note": "This top-frame cluster shows the superscript/subscript paragraph spacing or frame-origin difference still recorded in the open #1917 audit."
+        "issue": "#1913",
+        "kind": "issue"
       },
-      "id": "p1-a0b8ad49e279",
+      "id": "p1-92fb6402d96b",
       "region": "top-left"
+    },
+    {
+      "area_pt2": 21.3696,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 4.32,
+        "x": 138.72,
+        "y": 371.76
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-b95428da54a2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.2544,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 121.44,
+        "y": 452.64
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-03e7057a4969",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.2544,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 121.44,
+        "y": 439.68
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-584786f83b13",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.2544,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 121.44,
+        "y": 426.72
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-54c4968da545",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.2544,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 121.44,
+        "y": 412.56
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-3ba2396d2e49",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.1392,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.2,
+        "x": 190.08,
+        "y": 72.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-cfbc52f1170b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.9088,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.56,
+        "x": 99.36,
+        "y": 310.56
+      },
+      "disposition": {
+        "issue": "#1916",
+        "kind": "issue"
+      },
+      "id": "p1-91b1ca269fbc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.7936,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 78.0,
+        "y": 257.52
+      },
+      "disposition": {
+        "issue": "#1916",
+        "kind": "issue"
+      },
+      "id": "p1-516eb8b4a4f8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 6.48,
+        "x": 106.8,
+        "y": 98.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-b6bbec26c9b2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 5.28,
+        "x": 72.48,
+        "y": 164.88
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-e7547cc97b9f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.448,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 154.08,
+        "y": 323.52
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-7a73b3554e6b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.3328,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 4.32,
+        "x": 159.12,
+        "y": 323.52
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-1895150cb483",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 83.76,
+        "y": 439.68
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-7443d09f59ad",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 83.76,
+        "y": 426.72
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-bfea0e1dfdd2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 83.76,
+        "y": 452.64
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-506d58055db7",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 3.84,
+        "x": 133.68,
+        "y": 230.4
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-5e108bbd0aa6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 83.76,
+        "y": 386.4
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-8c24f7e625e2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 83.76,
+        "y": 399.36
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-6461d9b306f0",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 83.76,
+        "y": 412.56
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-56bc10ed2ad5",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 90.96,
+        "y": 193.44
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-237a8ed3d8c9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 138.48,
+        "y": 193.44
+      },
+      "disposition": {
+        "issue": "#1913",
+        "kind": "issue"
+      },
+      "id": "p1-b48ad22bf8ca",
+      "region": "left"
     }
   ],
-  "dpi": 150,
+  "dpi": 300,
   "duplicate_disposition_cluster_ids": [],
   "errors": [],
   "fuzz_percent": 5,
@@ -1180,9 +1542,9 @@
   "schema_version": 1,
   "strict": true,
   "summary": {
-    "dispositioned": 73,
+    "dispositioned": 102,
     "duplicate": 0,
-    "total": 73,
+    "total": 102,
     "undispositioned": 0,
     "unknown": 0
   },

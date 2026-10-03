@@ -564,6 +564,59 @@ fn test_text_box_paragraph_preserves_soft_line_breaks() {
 }
 
 #[test]
+fn test_text_box_blank_soft_break_keeps_break_and_paragraph_mark_sizes() {
+    let paragraphs_xml = concat!(
+        r#"<a:p><a:r><a:rPr sz="900"/><a:t>Caption</a:t></a:r></a:p>"#,
+        r#"<a:p><a:endParaRPr sz="1000"/></a:p>"#,
+        r#"<a:p><a:br><a:rPr sz="1100"/></a:br><a:endParaRPr sz="1000"/></a:p>"#,
+        r#"<a:p><a:r><a:rPr sz="1100"/><a:t>Row 1</a:t></a:r></a:p>"#,
+    );
+    let shape = make_multi_para_text_box(0, 0, 1_000_000, 500_000, paragraphs_xml);
+    let slide = make_slide_xml(&[shape]);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide]);
+    let parser = PptxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    let page = first_fixed_page(&doc);
+    let blocks = text_box_blocks(&page.elements[0]);
+    let leading_blank_paragraph = match &blocks[1] {
+        Block::Paragraph(paragraph) => paragraph,
+        other => panic!("Expected the leading blank paragraph, got {other:?}"),
+    };
+    assert!(leading_blank_paragraph.runs.is_empty());
+    assert_eq!(
+        leading_blank_paragraph
+            .style
+            .paragraph_mark_text_style
+            .as_deref()
+            .and_then(|style| style.font_size),
+        Some(10.0),
+        "a paragraph with no runs uses its declared paragraph-mark size"
+    );
+
+    let blank_paragraph = match &blocks[2] {
+        Block::Paragraph(paragraph) => paragraph,
+        other => panic!("Expected the blank paragraph, got {other:?}"),
+    };
+    assert_eq!(blank_paragraph.runs.len(), 1);
+    assert_eq!(blank_paragraph.runs[0].text, "\u{000B}");
+    assert_eq!(
+        blank_paragraph.runs[0].style.font_size,
+        Some(11.0),
+        "the empty line uses the size declared on its <a:br>"
+    );
+    assert_eq!(
+        blank_paragraph
+            .style
+            .paragraph_mark_text_style
+            .as_deref()
+            .and_then(|style| style.font_size),
+        Some(10.0),
+        "the final empty line uses the size declared on <a:endParaRPr>"
+    );
+}
+
+#[test]
 fn test_text_box_plain_paragraph_between_bullets_breaks_list_sequence() {
     let paragraphs_xml = concat!(
         r#"<a:p><a:pPr marL="742950" lvl="1" indent="-285750"><a:buFontTx/><a:buChar char="-"/></a:pPr><a:r><a:t>1) First bullet</a:t></a:r></a:p>"#,

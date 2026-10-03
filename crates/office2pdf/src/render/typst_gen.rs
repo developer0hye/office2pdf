@@ -4923,6 +4923,16 @@ fn generate_fixed_text_paragraph(
     baseline_mode: PowerPointBaselineMode,
 ) -> Result<(), ConvertError> {
     let style: &ParagraphStyle = &para.style;
+    if let Some(line_height_pt) = powerpoint_blank_paragraph_height_pt(para) {
+        let _ = writeln!(
+            out,
+            "#block(above: {}pt, below: {}pt, height: {}pt)[]",
+            format_f64(style.space_before.unwrap_or(0.0)),
+            format_f64(style.space_after.unwrap_or(0.0)),
+            format_f64(line_height_pt),
+        );
+        return Ok(());
+    }
     let inset: Insets = fixed_text_paragraph_inset(style);
     let has_inset: bool = inset.left > 0.0 || inset.right > 0.0;
     let hanging_indent_pt: Option<f64> = fixed_text_paragraph_hanging_indent_pt(style);
@@ -5078,6 +5088,61 @@ fn generate_fixed_text_paragraph(
 
     out.push('\n');
     Ok(())
+}
+
+/// The vertical advance of a DrawingML paragraph with no visible runs.
+///
+/// Each trailing `<a:br>` reserves the empty line it ends, and the paragraph
+/// mark reserves the final empty line. Emitting both line heights explicitly
+/// avoids Typst collapsing one of the blank physical lines in a text box. A
+/// paragraph with no hard break uses only the mark's line height (#1917).
+fn powerpoint_blank_paragraph_height_pt(paragraph: &Paragraph) -> Option<f64> {
+    let mark_style: &TextStyle = paragraph.style.paragraph_mark_text_style.as_deref()?;
+    let has_visible_content: bool = paragraph.runs.iter().any(|run| {
+        run.footnote.is_some()
+            || run.inline_box.is_some()
+            || run
+                .text
+                .chars()
+                .any(|character| character != '\u{000B}' && !character.is_whitespace())
+    });
+    if has_visible_content {
+        return None;
+    }
+
+    let mut height_pt: f64 = 0.0;
+    for run in &paragraph.runs {
+        for character in run.text.chars() {
+            if character == '\u{000B}' {
+                height_pt += powerpoint_paragraph_line_advance_pt(&run.style, &paragraph.style);
+            }
+        }
+    }
+    height_pt += powerpoint_paragraph_line_advance_pt(mark_style, &paragraph.style);
+    Some(height_pt)
+}
+
+fn powerpoint_paragraph_line_advance_pt(
+    text_style: &TextStyle,
+    paragraph_style: &ParagraphStyle,
+) -> f64 {
+    let metric_run: Run = Run {
+        text: String::new(),
+        style: text_style.clone(),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let fallback_font_size_pt: f64 = text_style
+        .font_size
+        .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT);
+    let plain_line_height_pt: f64 = powerpoint_line_box_pt(std::slice::from_ref(&metric_run))
+        .unwrap_or(crate::render::pdf::POWERPOINT_LINE_HEIGHT_FACTOR * fallback_font_size_pt);
+    match paragraph_style.line_spacing {
+        Some(LineSpacing::Proportional(factor)) if factor > 0.0 => plain_line_height_pt * factor,
+        Some(LineSpacing::Exact(points)) if points > 0.0 => points,
+        _ => plain_line_height_pt,
+    }
 }
 
 #[cfg(test)]
