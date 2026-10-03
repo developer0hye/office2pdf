@@ -4831,6 +4831,38 @@ fn legend_key_line_box_pt(chart: &Chart) -> Option<f64> {
     Some(LEGEND_KEY_LINE_BOX_SHARE * (ascent_em + descent_em) * chart_legend_text_pt(chart))
 }
 
+/// Typst baseline offset that seats a PowerPoint right-legend square in its
+/// measured row instead of pinning its bottom to the label baseline.
+///
+/// Native one-factor exports fit a seat halfway through the font's line box,
+/// the square key, and a 1pt row term. PowerPoint rounds the label ascent to a
+/// whole point; expressing the difference from that baseline reproduces the
+/// measured key-bottom clearance across the face and size probes (#1680).
+pub(super) fn powerpoint_right_legend_key_baseline_pt(chart: &Chart) -> Option<f64> {
+    if !matches!(chart.host, crate::ir::ChartHost::Presentation)
+        || !matches!(chart_variant(chart), ChartVariant::AxisPlot)
+        || !chart.has_legend
+        || chart.legend_position != LegendPosition::Right
+    {
+        return None;
+    }
+
+    let family: &str = chart
+        .text_font_family
+        .as_deref()
+        .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_FAMILY);
+    let is_bold: bool = chart_legend_text_is_bold(chart);
+    let size_pt: f64 = chart_legend_text_pt(chart);
+    let (ascent_em, descent_em): (f64, f64) =
+        chart_face_line_metrics_em(family, is_bold).unwrap_or(CALIBRI_CHART_LINE_METRICS_EM);
+    let label_baseline_from_row_top_pt: f64 = (ascent_em * size_pt).round();
+    let key_bottom_from_row_top_pt: f64 =
+        ((ascent_em + descent_em) * size_pt + 1.0 + axis_legend_entry_metrics(chart).height_pt)
+            / 2.0;
+
+    Some(key_bottom_from_row_top_pt - label_baseline_from_row_top_pt)
+}
+
 /// Width of the widest entry in a PowerPoint right-side axis legend, and the
 /// clearance that entry keeps beyond the content box the stack is measured
 /// against.
@@ -6018,10 +6050,14 @@ fn generate_chart_axis(
             } else {
                 &color
             };
+            let baseline: String = powerpoint_right_legend_key_baseline_pt(chart)
+                .map(|value| format!(", baseline: {}pt", format_f64(value)))
+                .unwrap_or_default();
             format!(
-                "#box(width: {}pt, height: {}pt, fill: {})",
+                "#box(width: {}pt, height: {}pt{}, fill: {})",
                 format_f64(key.width_pt),
                 format_f64(key.height_pt),
+                baseline,
                 fill
             )
         };

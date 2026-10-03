@@ -1,0 +1,27 @@
+{
+  "name": "issue-1680-legend-seat-face-generalization",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "chart-space a:latin typeface at a fixed 18pt",
+  "page": 1,
+  "variants": [
+    {
+      "value": "Helvetica Neue",
+      "find": "<a:defRPr sz=\"1800\"/>",
+      "replace": "<a:defRPr sz=\"1800\"><a:latin typeface=\"Helvetica Neue\"/></a:defRPr>",
+      "count": 1
+    },
+    {
+      "value": "Avenir Next",
+      "find": "<a:defRPr sz=\"1800\"/>",
+      "replace": "<a:defRPr sz=\"1800\"><a:latin typeface=\"Avenir Next\"/></a:defRPr>",
+      "count": 1
+    },
+    {
+      "value": "Palatino",
+      "find": "<a:defRPr sz=\"1800\"/>",
+      "replace": "<a:defRPr sz=\"1800\"><a:latin typeface=\"Palatino\"/></a:defRPr>",
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "issue-1680-legend-seat-arial-generalization",
+  "base": "../../tests/fixtures/pptx/bar-chart.pptx",
+  "part": "ppt/charts/chart1.xml",
+  "factor": "chart-space c:defRPr sz (1/100 pt), held at Arial",
+  "page": 1,
+  "variants": [
+    {
+      "value": "1400",
+      "find": "<a:defRPr sz=\"1800\"/>",
+      "replace": "<a:defRPr sz=\"1400\"><a:latin typeface=\"Arial\"/></a:defRPr>",
+      "count": 1
+    },
+    {
+      "value": "1600",
+      "find": "<a:defRPr sz=\"1800\"/>",
+      "replace": "<a:defRPr sz=\"1600\"><a:latin typeface=\"Arial\"/></a:defRPr>",
+      "count": 1
+    },
+    {
+      "value": "2000",
+      "find": "<a:defRPr sz=\"1800\"/>",
+      "replace": "<a:defRPr sz=\"2000\"><a:latin typeface=\"Arial\"/></a:defRPr>",
+      "count": 1
+    },
+    {
+      "value": "3000",
+      "find": "<a:defRPr sz=\"1800\"/>",
+      "replace": "<a:defRPr sz=\"3000\"><a:latin typeface=\"Arial\"/></a:defRPr>",
+      "count": 1
+    }
+  ]
+}
