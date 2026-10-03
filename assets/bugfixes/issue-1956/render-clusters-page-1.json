@@ -1,0 +1,71 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 137.76,
+        "y": 274.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue",
+        "note": "The three clusters are the shifted bottom-row cell labels; the 3.78pt row-height difference is tracked in #1914."
+      },
+      "id": "p1-1656450c0f23",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 456.96,
+        "y": 274.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue",
+        "note": "The three clusters are the shifted bottom-row cell labels; the 3.78pt row-height difference is tracked in #1914."
+      },
+      "id": "p1-18f9692a4509",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 295.68,
+        "y": 274.56
+      },
+      "disposition": {
+        "issue": "#1914",
+        "kind": "issue",
+        "note": "The three clusters are the shifted bottom-row cell labels; the 3.78pt row-height difference is tracked in #1914."
+      },
+      "id": "p1-09f25115e0ce",
+      "region": "center"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 3,
+    "duplicate": 0,
+    "total": 3,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

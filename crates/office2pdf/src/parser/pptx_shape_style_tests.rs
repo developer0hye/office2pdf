@@ -979,8 +979,11 @@ fn test_no_fill_line_suppresses_style_outline_fallback() {
         other => panic!("Expected shape, got {other:?}"),
     };
     assert!(
-        shape.stroke.is_none(),
-        "a:noFill inside a:ln must suppress the outline, got {:?}",
+        shape
+            .stroke
+            .as_ref()
+            .is_some_and(|stroke| stroke.style == BorderLineStyle::None),
+        "a:noFill inside a:ln must remain distinct from an omitted a:ln, got {:?}",
         shape.stroke
     );
     assert!(shape.fill.is_some(), "the shape fill must be unaffected");
