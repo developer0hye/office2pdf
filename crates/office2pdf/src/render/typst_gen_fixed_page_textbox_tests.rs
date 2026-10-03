@@ -5573,6 +5573,109 @@ fn a_zero_baseline_shift_keeps_wrapped_lines_on_the_story_grid() {
     }
 }
 
+/// A DrawingML baseline offset moves superscript/subscript paint without
+/// increasing the advance reserved for the surrounding slide paragraph.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn shifted_pptx_runs_do_not_expand_paragraph_advances() {
+    use crate::ir::{BaselineShiftEm, LineSpacing, TextBoxVerticalAlign};
+
+    let compile = |is_shifted: bool| {
+        let make_run = |text: &str, font_size_pt: f64, baseline_shift: Option<f64>| Run {
+            text: text.to_string(),
+            style: TextStyle {
+                font_family: Some("Libertinus Serif".into()),
+                font_size: Some(font_size_pt),
+                baseline_shift: if is_shifted {
+                    baseline_shift.map(BaselineShiftEm)
+                } else {
+                    None
+                },
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+            inline_box: None,
+        };
+        let make_paragraph = |runs: Vec<Run>| {
+            Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    line_spacing: Some(LineSpacing::Proportional(1.0)),
+                    ..ParagraphStyle::default()
+                },
+                runs,
+            })
+        };
+        let document = make_doc(vec![make_fixed_page(
+            960.0,
+            540.0,
+            vec![make_fixed_text_box(
+                72.0,
+                72.0,
+                400.0,
+                360.0,
+                Insets::default(),
+                TextBoxVerticalAlign::Top,
+                vec![
+                    make_paragraph(vec![
+                        make_run("Frame", 18.0, None),
+                        make_run("[1]", 7.0, Some(0.3 * 11.0 / 7.0)),
+                    ]),
+                    make_paragraph(vec![
+                        make_run("Body ", 11.0, None),
+                        make_run("sup ", 7.0, Some(0.3 * 11.0 / 7.0)),
+                        make_run("sub", 7.0, Some(-0.3 * 11.0 / 7.0)),
+                    ]),
+                    make_paragraph(vec![make_run("Next", 11.0, None)]),
+                ],
+            )],
+        )]);
+        let source = generate_typst(&document).unwrap();
+        crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap()
+    };
+    let find_baseline = |runs: &[crate::render::pdf::PlacedTextRun], text: &str| {
+        runs.iter()
+            .find(|run| run.text.contains(text))
+            .unwrap_or_else(|| panic!("missing {text:?} from placed text {runs:?}"))
+            .baseline_pt
+    };
+
+    let plain = compile(false);
+    let shifted = compile(true);
+    let plain_advances = [
+        find_baseline(&plain, "Body") - find_baseline(&plain, "Frame"),
+        find_baseline(&plain, "Next") - find_baseline(&plain, "Body"),
+    ];
+    let shifted_advances = [
+        find_baseline(&shifted, "Body") - find_baseline(&shifted, "Frame"),
+        find_baseline(&shifted, "Next") - find_baseline(&shifted, "Body"),
+    ];
+    for (plain_advance, shifted_advance) in plain_advances.into_iter().zip(shifted_advances) {
+        assert!(
+            (plain_advance - shifted_advance).abs() < 0.1,
+            "baseline offsets must not change paragraph advances: \
+             plain={plain_advances:?}, shifted={shifted_advances:?}"
+        );
+    }
+    let body_baseline: f64 = find_baseline(&shifted, "Body");
+    assert!(
+        find_baseline(&shifted, "sup") < body_baseline,
+        "superscript remains raised: {shifted:?}"
+    );
+    assert!(
+        find_baseline(&shifted, "sub") > body_baseline,
+        "subscript remains lowered: {shifted:?}"
+    );
+    assert!(
+        (body_baseline - find_baseline(&shifted, "sup") - 3.3).abs() < 0.1,
+        "superscript keeps its 3.3pt source displacement: {shifted:?}"
+    );
+    assert!(
+        (find_baseline(&shifted, "sub") - body_baseline - 3.3).abs() < 0.1,
+        "subscript keeps its 3.3pt source displacement: {shifted:?}"
+    );
+}
+
 // A text frame whose vertical insets are deeper than its own height has a
 // content region of zero or negative height. PowerPoint collapses that region
 // to the single line at its own middle, `tIns + (height - tIns - bIns) / 2`
