@@ -436,6 +436,121 @@ fn test_latin_table_cell_uses_natural_line_height() {
     );
 }
 
+/// Native PowerPoint table rows pace an explicit proportional line from the
+/// paragraph's plain-line lower edge, and cell borders do not reserve extra
+/// row height. Keep this separate from slide text boxes, whose line box still
+/// scales as a flat 1.2em.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn powerpoint_table_auto_rows_use_the_native_proportional_line_box() {
+    let Some((_, plain_line_bottom_em)) =
+        crate::render::pdf::powerpoint_line_box_em("Libertinus Serif")
+    else {
+        return; // no font book available (e.g. exotic CI sandbox)
+    };
+    let font_size_pt: f64 = 11.0;
+    let border_side = BorderSide {
+        width: 1.0,
+        color: Color::black(),
+        style: BorderLineStyle::Solid,
+        join: LineJoin::Round,
+        cap: LineCap::Flat,
+    };
+
+    for factor in [1.05, 1.10, 1.15, 1.20, 1.25] {
+        let make_cell = |text: &str| TableCell {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    line_spacing: Some(LineSpacing::Proportional(factor)),
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![Run {
+                    text: text.to_string(),
+                    style: TextStyle {
+                        font_family: Some("Libertinus Serif".to_string()),
+                        font_size: Some(font_size_pt),
+                        ..TextStyle::default()
+                    },
+                    href: None,
+                    footnote: None,
+                    inline_box: None,
+                }],
+            })],
+            border: Some(CellBorder {
+                top: Some(border_side.clone()),
+                bottom: Some(border_side.clone()),
+                ..CellBorder::default()
+            }),
+            padding: Some(Insets::default()),
+            ..TableCell::default()
+        };
+        let table = Table {
+            rows: vec![
+                TableRow {
+                    minimum_height: None,
+                    cells: vec![make_cell("Row 1 Col 1")],
+                    height: None,
+                },
+                TableRow {
+                    minimum_height: None,
+                    cells: vec![make_cell("Row 2 Col 1")],
+                    height: None,
+                },
+            ],
+            column_widths: vec![480.0],
+            default_cell_padding: Some(Insets::default()),
+            use_content_driven_row_heights: true,
+            ..Table::default()
+        };
+        let document = make_doc(vec![make_fixed_page(
+            720.0,
+            540.0,
+            vec![FixedElement {
+                x: 120.6,
+                y: 254.82,
+                width: 480.0,
+                height: 30.36,
+                kind: FixedElementKind::Table(table),
+            }],
+        )]);
+        let source = generate_typst(&document)
+            .unwrap_or_else(|error| panic!("table generation failed: {error}"))
+            .source;
+        let runs = crate::render::pdf::compiled_text_runs_before_line_seating(&source, 0)
+            .unwrap_or_else(|error| panic!("table compilation failed: {error}\n{source}"));
+        let row_baselines_pt: Vec<f64> = runs.iter().map(|run| run.baseline_pt).fold(
+            Vec::new(),
+            |mut baselines, baseline_pt| {
+                if baselines
+                    .last()
+                    .is_none_or(|previous| (baseline_pt - previous).abs() >= 0.05)
+                {
+                    baselines.push(baseline_pt);
+                }
+                baselines
+            },
+        );
+        assert_eq!(
+            row_baselines_pt.len(),
+            2,
+            "expected two table row baselines: {runs:?}\n{source}"
+        );
+        let first_baseline_pt: f64 = row_baselines_pt[0];
+        let second_baseline_pt: f64 = row_baselines_pt[1];
+        let native_row_track_pt: f64 =
+            font_size_pt * (1.2_f64).max(0.9 * factor + plain_line_bottom_em);
+        let actual_row_track_pt: f64 = second_baseline_pt - first_baseline_pt;
+
+        assert!(
+            (actual_row_track_pt - native_row_track_pt).abs() < 0.05,
+            "PowerPoint table rows at {:.0}% should advance {native_row_track_pt:.3}pt, \
+             got {actual_row_track_pt:.3}pt (bottom edge {plain_line_bottom_em:.5}em): \
+             {runs:?}\n{source}",
+            factor * 100.0
+        );
+    }
+}
+
 /// Word puts every cell in a table row on one baseline. Choosing the
 /// grid-snapped line box per cell, from that cell's own text, gave a Korean
 /// label a taller box than its numeric neighbours and split the row across two
