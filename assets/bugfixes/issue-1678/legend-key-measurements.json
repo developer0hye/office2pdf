@@ -1,0 +1,478 @@
+{
+  "measurement_method": "Parse each PDF with mutool draw -q -F trace; identify the unique square #4F81BD fill_path used for the Sales legend key; transform its corners into page coordinates; compare bbox top y.",
+  "probe_specs": [
+    "scripts/probes/issue-1435-column-legend-center.json",
+    "scripts/probes/issue-1437-column-plot-top.json"
+  ],
+  "native_export": "probe_harness.py --backend office (PowerPoint; Quartz PDFContext)",
+  "converter_outputs": {
+    "before": "target/probes/issue-1678-before/... (pre-change output)",
+    "after": "target/probes/issue-1678-guarded/..."
+  },
+  "coordinates": "PDF page points; bbox top is minimum transformed trace y.",
+  "summary_pt": {
+    "before_minus_native_top_range": [
+      -2.88174,
+      3.72683
+    ],
+    "after_minus_native_top_range": [
+      -0.00313,
+      0.00228
+    ],
+    "cases": 10
+  },
+  "measurements": [
+    {
+      "probe": "issue-1435-column-legend-center",
+      "factor_value": "1000",
+      "native": {
+        "pdf_sha256": "078f95cf4063ed38202daaab1d4d7742b438183fbcfb1eddbbfbfe780f0ad968",
+        "bbox_pt": [
+          561.4465,
+          279.0788,
+          566.9388,
+          284.5711
+        ],
+        "size_pt": [
+          5.4923,
+          5.4923
+        ]
+      },
+      "before": {
+        "pdf_sha256": "c0b3fe34a4c56990f1e498883cb2f3aa29d961b3e51d36ab0b251bfd8d8a0487",
+        "bbox_pt": [
+          561.44186,
+          279.077,
+          566.935024,
+          284.570164
+        ],
+        "size_pt": [
+          5.493164,
+          5.493164
+        ]
+      },
+      "after": {
+        "pdf_sha256": "88d18864970b8f8eb87e5f42ab57148f47a435a3026153fddcd478fc3e1a4a0a",
+        "bbox_pt": [
+          561.44186,
+          279.07823,
+          566.935024,
+          284.571394
+        ],
+        "size_pt": [
+          5.493164,
+          5.493164
+        ]
+      },
+      "before_minus_native_top_pt": -0.0018,
+      "after_minus_native_top_pt": -0.00057
+    },
+    {
+      "probe": "issue-1435-column-legend-center",
+      "factor_value": "1200",
+      "native": {
+        "pdf_sha256": "e141ea731bacd1e3be8018b4474c9d4910a6fa46e2af01df0f7d7a55314ea628",
+        "bbox_pt": [
+          555.676,
+          279.9912,
+          562.2686,
+          286.5837
+        ],
+        "size_pt": [
+          6.5926,
+          6.5925
+        ]
+      },
+      "before": {
+        "pdf_sha256": "431a19ced799713808ca6874f88550b83b2baf354d0321f17fa8e2aaf524ddb9",
+        "bbox_pt": [
+          555.6806,
+          279.9924,
+          562.272397,
+          286.584197
+        ],
+        "size_pt": [
+          6.591797,
+          6.591797
+        ]
+      },
+      "after": {
+        "pdf_sha256": "5a66fd57a3ea3c6506fbdfc1638a4c7aa34f50ae3865bf15fa0f3eced5324c21",
+        "bbox_pt": [
+          555.6806,
+          279.99348,
+          562.272397,
+          286.585277
+        ],
+        "size_pt": [
+          6.591797,
+          6.591797
+        ]
+      },
+      "before_minus_native_top_pt": 0.0012,
+      "after_minus_native_top_pt": 0.00228
+    },
+    {
+      "probe": "issue-1435-column-legend-center",
+      "factor_value": "1800",
+      "native": {
+        "pdf_sha256": "a23fa7497a8a2976e5703a53789eeb7b6f4e402c08dbf359bdd1a60878a76a7d",
+        "bbox_pt": [
+          538.4018,
+          282.738,
+          548.2905,
+          292.6268
+        ],
+        "size_pt": [
+          9.8887,
+          9.8888
+        ]
+      },
+      "before": {
+        "pdf_sha256": "52ec66777967301cf15119c721f76cc9de3f885070d28aef327adc0048c4a6db",
+        "bbox_pt": [
+          538.3969,
+          282.73866,
+          548.284595,
+          292.626355
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "after": {
+        "pdf_sha256": "4b9debf54999ecd5ded4a8e185c419f25d313f11c0acd01bdf07d074de05d32a",
+        "bbox_pt": [
+          538.3969,
+          282.73924,
+          548.284595,
+          292.626935
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "before_minus_native_top_pt": 0.00066,
+      "after_minus_native_top_pt": 0.00124
+    },
+    {
+      "probe": "issue-1435-column-legend-center",
+      "factor_value": "2400",
+      "native": {
+        "pdf_sha256": "1e0d9f45fa42471197655a1eff175bd175e39c9ce13bb6a563144a42e56138d4",
+        "bbox_pt": [
+          521.1207,
+          285.4861,
+          534.3034,
+          298.6688
+        ],
+        "size_pt": [
+          13.1827,
+          13.1827
+        ]
+      },
+      "before": {
+        "pdf_sha256": "fff08efecad7f9a47cef229fc6e418f0afe377ccbc551ff80098aa88209eadcc",
+        "bbox_pt": [
+          521.1132,
+          285.4849,
+          534.296794,
+          298.668494
+        ],
+        "size_pt": [
+          13.183594,
+          13.183594
+        ]
+      },
+      "after": {
+        "pdf_sha256": "c798a8f2ff0d62cf614ed1822525c38aedf0f937ab891591ffb00c728f6121c6",
+        "bbox_pt": [
+          521.1132,
+          285.48503,
+          534.296794,
+          298.668624
+        ],
+        "size_pt": [
+          13.183594,
+          13.183594
+        ]
+      },
+      "before_minus_native_top_pt": -0.0012,
+      "after_minus_native_top_pt": -0.00107
+    },
+    {
+      "probe": "issue-1435-column-legend-center",
+      "factor_value": "3600",
+      "native": {
+        "pdf_sha256": "14bf5c4878620ddedda2ec24ac083ea311487d900883beb1dde9963404d350ce",
+        "bbox_pt": [
+          486.552,
+          290.9797,
+          506.3273,
+          310.755
+        ],
+        "size_pt": [
+          19.7753,
+          19.7753
+        ]
+      },
+      "before": {
+        "pdf_sha256": "c36412e0192d30ecd8fca15ceec803e05a1be1cb44a61180faca3c90b97cd293",
+        "bbox_pt": [
+          486.54585,
+          290.9774,
+          506.32124,
+          310.75279
+        ],
+        "size_pt": [
+          19.77539,
+          19.77539
+        ]
+      },
+      "after": {
+        "pdf_sha256": "83ce803eefe7954ead69450b1bad3957132fdfc4d10eb51428c64f447218c49c",
+        "bbox_pt": [
+          486.54585,
+          290.97657,
+          506.32124,
+          310.75196
+        ],
+        "size_pt": [
+          19.77539,
+          19.77539
+        ]
+      },
+      "before_minus_native_top_pt": -0.0023,
+      "after_minus_native_top_pt": -0.00313
+    },
+    {
+      "probe": "issue-1437-column-plot-top",
+      "factor_value": "1000",
+      "native": {
+        "pdf_sha256": "fdaacbe91ed8d7443bfb23fd940b381d27ee128df2d2c473c553194da2a4c4bc",
+        "bbox_pt": [
+          538.4018,
+          275.658,
+          548.2905,
+          285.5468
+        ],
+        "size_pt": [
+          9.8887,
+          9.8888
+        ]
+      },
+      "before": {
+        "pdf_sha256": "8c00695c3f6dfa536aab86dc490c6db22bf27f008b3e4728b70ef4ca93747476",
+        "bbox_pt": [
+          538.3969,
+          272.77626,
+          548.284595,
+          282.663955
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "after": {
+        "pdf_sha256": "00eb54244d2e8113cb11a9c06b7e0390597711841eabc5e8b53741e99ac781b6",
+        "bbox_pt": [
+          538.3969,
+          275.65916,
+          548.284595,
+          285.546855
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "before_minus_native_top_pt": -2.88174,
+      "after_minus_native_top_pt": 0.00116
+    },
+    {
+      "probe": "issue-1437-column-plot-top",
+      "factor_value": "1400",
+      "native": {
+        "pdf_sha256": "3bafad112335f430c2375213c5da6f4e19fffc69ac7093ea57b96c28a967b5ba",
+        "bbox_pt": [
+          538.4018,
+          278.1006,
+          548.2905,
+          287.9893
+        ],
+        "size_pt": [
+          9.8887,
+          9.8887
+        ]
+      },
+      "before": {
+        "pdf_sha256": "f6b83f3c80fd2ec4426ea288ba5bd5ac61f7804989a795c9a5f080a0d130bc45",
+        "bbox_pt": [
+          538.3969,
+          276.2345,
+          548.284595,
+          286.122195
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "after": {
+        "pdf_sha256": "45f13b37d28fc6c659e41e398468726557e78b6338d7fd5c33866783db214111",
+        "bbox_pt": [
+          538.3969,
+          278.10057,
+          548.284595,
+          287.988265
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "before_minus_native_top_pt": -1.8661,
+      "after_minus_native_top_pt": -3e-05
+    },
+    {
+      "probe": "issue-1437-column-plot-top",
+      "factor_value": "1800",
+      "native": {
+        "pdf_sha256": "5dc13edcff24df3b928268b52cfcc692b0ec0747cc0b7a494585ef3612a260cc",
+        "bbox_pt": [
+          538.4018,
+          280.5431,
+          548.2905,
+          290.4318
+        ],
+        "size_pt": [
+          9.8887,
+          9.8887
+        ]
+      },
+      "before": {
+        "pdf_sha256": "94c58bc2f049d98a5a584b107e8b2b0ec2aebdcf722e6951b7c164b54469f3db",
+        "bbox_pt": [
+          538.3969,
+          279.69273,
+          548.284595,
+          289.580425
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "after": {
+        "pdf_sha256": "950e9113abb0a8bd0254f48adfabd8fa7249ce7fbfc4ae238754068dc7b55d24",
+        "bbox_pt": [
+          538.3969,
+          280.54197,
+          548.284595,
+          290.429665
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "before_minus_native_top_pt": -0.85037,
+      "after_minus_native_top_pt": -0.00113
+    },
+    {
+      "probe": "issue-1437-column-plot-top",
+      "factor_value": "2400",
+      "native": {
+        "pdf_sha256": "d54e9c5e8d90a004e5d99e2b0e4b88b4672e058d8d9b2b3268c611c6442d9673",
+        "bbox_pt": [
+          538.4018,
+          284.2031,
+          548.2905,
+          294.0918
+        ],
+        "size_pt": [
+          9.8887,
+          9.8887
+        ]
+      },
+      "before": {
+        "pdf_sha256": "7631b421909f5055a6dba337e353d7f464577df40d0540f3d838303db00af831",
+        "bbox_pt": [
+          538.3969,
+          284.8801,
+          548.284595,
+          294.767795
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "after": {
+        "pdf_sha256": "e9a36c63573b36f3eff3308cbe0e2fc35c1d488f05aec6099d0d6ea8f8faf51d",
+        "bbox_pt": [
+          538.3969,
+          284.20408,
+          548.284595,
+          294.091775
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "before_minus_native_top_pt": 0.677,
+      "after_minus_native_top_pt": 0.00098
+    },
+    {
+      "probe": "issue-1437-column-plot-top",
+      "factor_value": "3600",
+      "native": {
+        "pdf_sha256": "3098f1e5e316c1e900b95e9ddc4996ac8e7ca2a42896f5337390fd25d3add118",
+        "bbox_pt": [
+          538.4018,
+          291.528,
+          548.2905,
+          301.4168
+        ],
+        "size_pt": [
+          9.8887,
+          9.8888
+        ]
+      },
+      "before": {
+        "pdf_sha256": "947440843c4ba9ad863b103c348456a0dc10bda4c273cf390af863fb637eab39",
+        "bbox_pt": [
+          538.3969,
+          295.25483,
+          548.284595,
+          305.142525
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "after": {
+        "pdf_sha256": "d865cf527cfbd63d3577912fb679a90872f14dfa07f99ccaadec5a910cc039a1",
+        "bbox_pt": [
+          538.3969,
+          291.5283,
+          548.284595,
+          301.415995
+        ],
+        "size_pt": [
+          9.887695,
+          9.887695
+        ]
+      },
+      "before_minus_native_top_pt": 3.72683,
+      "after_minus_native_top_pt": 0.0003
+    }
+  ],
+  "reproduction": "Run python3 scripts/probe_harness.py scripts/probes/issue-1435-column-legend-center.json scripts/probes/issue-1437-column-plot-top.json --backend office for native PowerPoint PDFs; export the same probe variants with the candidate converter for before/after PDFs; extract bounds with mutool draw -q -F trace.",
+  "candidate_binary_sha256": "ea67e3cfeae7540327d6e3d81f1549b757921c50181874d8172f36e3ebdd461d"
+}
