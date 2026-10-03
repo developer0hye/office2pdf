@@ -585,21 +585,6 @@ fn break_type(br: &docx_rs::Break) -> Option<String> {
         .and_then(|value| value.get("breakType")?.as_str().map(String::from))
 }
 
-pub(super) fn extract_run_text_skip_layout_breaks(run: &docx_rs::Run) -> String {
-    let mut text = String::new();
-    for child in &run.children {
-        match child {
-            docx_rs::RunChild::Text(t) => text.push_str(&t.text),
-            docx_rs::RunChild::Tab(_) => text.push('\t'),
-            docx_rs::RunChild::Break(br) if !is_column_break(br) && !is_page_break(br) => {
-                text.push('\n');
-            }
-            _ => {}
-        }
-    }
-    text
-}
-
 pub(super) fn extract_run_text(run: &docx_rs::Run) -> String {
     let mut text = String::new();
     for child in &run.children {
