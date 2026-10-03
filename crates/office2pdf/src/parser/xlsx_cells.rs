@@ -2755,20 +2755,20 @@ fn measured_named_face_printed_grid_row_height(
 ///
 /// | fonts\[0\] | theme minor scheme | printed track for `ht=36` |
 /// | --- | --- | ---: |
-/// | Calibri 11, `<scheme val="minor"/>` | Office, per-script faces | 36 |
-/// | Calibri 11, no `scheme` | Office, per-script faces | 33 |
-/// | Calibri 11, `<scheme val="minor"/>` | script faces stripped | 33 |
+/// | Calibri 11, `<scheme val="minor"/>` | Office theme with Hang face | 36 |
+/// | Calibri 11, no `scheme` | Office theme with Hang face | 33 |
+/// | Calibri 11, `<scheme val="minor"/>` | no usable Hang or `ea` face | 33 |
 /// | Calibri 11, `<scheme val="minor"/>` | `script="Hang"` -> Calibri | 33 |
 ///
 /// So the scheme flag alone decides nothing. An Office theme names a face per
 /// script and Excel resolves the UI script's — Malgun Gothic on this machine,
 /// the face issue #1047 measures the dimension-less path against — and that
 /// face keeps the grid. A theme with neither a usable Hang nor `ea` face
-/// leaves the scheme on its `<a:latin>` Calibri, which compacts exactly as a
-/// font naming Calibri outright does. `03_inventory_en.xlsx` carries such a
-/// bare theme, which is why adding `<scheme val="minor"/>` to *its* Normal
-/// font leaves the track at 37 while the same edit on the probe leaves it at
-/// 36.
+/// leaves the scheme on the font's declared Calibri family, which compacts
+/// exactly as a font naming Calibri outright does. `03_inventory_en.xlsx`
+/// carries a theme with neither usable face, which is why adding
+/// `<scheme val="minor"/>` to *its* Normal font leaves the track at 37 while
+/// the same edit on the probe leaves it at 36.
 ///
 /// Two limits are known and unmodelled: the step to 0.95 from 14pt up (no
 /// tracked workbook declares one, so those compact at 0.92, a point short at

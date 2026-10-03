@@ -3748,9 +3748,9 @@ fn printed_row_heights_over_all_pages(data: &[u8]) -> Vec<Option<f64>> {
         .collect()
 }
 
-/// Drop the `<a:font script="..."/>` faces from a theme's minor font scheme,
-/// leaving its `<a:latin>` typeface alone — the difference between an Office
-/// theme and the bare one LibreOffice writes.
+/// Drop the script-font entries from a theme's minor scheme. This probe's
+/// `a:ea` typeface is empty, so the remaining fallback is the declared Calibri
+/// family on its Normal font.
 fn strip_theme_minor_font_script_faces(data: &[u8]) -> Vec<u8> {
     let mut archive = zip::ZipArchive::new(Cursor::new(data)).expect("readable zip");
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
@@ -3817,8 +3817,8 @@ fn strip_script_font_elements(fragment: &str) -> String {
 
 /// A Normal font that defers its face to the theme scheme is laid out
 /// against whatever that scheme resolves to, and a full Office theme gives
-/// the minor scheme a per-script face list Excel resolves through — not the
-/// Calibri its `<a:latin>` names. The grid then keeps every declared height.
+/// the minor scheme a Hang face Excel resolves through instead of the Normal
+/// font's declared Calibri family. The grid then keeps every declared height.
 ///
 /// Native Excel-for-Mac export of the probe workbook, baselines read with
 /// `mutool draw -F trace`: its 16 `ht="36"` rows print a 36.00pt track and
@@ -3846,11 +3846,11 @@ fn a_theme_resolved_scheme_normal_font_prints_declared_heights_whole() {
 }
 
 /// The theme is what makes the difference, not the scheme flag on its own.
-/// Stripping the same workbook's per-script faces — one factor, nothing else
-/// touched — leaves the minor scheme on its Calibri `<a:latin>`, and the
-/// export compacts every track: 36 -> 33 and 12 -> 11 (issue #1094).
+/// Stripping the same workbook's script-font entries leaves `a:ea` empty, so
+/// the minor scheme resolves to the Normal font's declared Calibri family.
+/// The export compacts every track: 36 -> 33 and 12 -> 11 (issue #1094).
 #[test]
-fn a_scheme_normal_font_over_a_theme_without_script_faces_compacts() {
+fn a_scheme_normal_font_over_a_theme_without_usable_ui_face_compacts() {
     let bare_theme: Vec<u8> = strip_theme_minor_font_script_faces(THEME_SCHEME_PROBE);
 
     let heights: Vec<Option<f64>> = printed_row_heights_over_all_pages(&bare_theme);
