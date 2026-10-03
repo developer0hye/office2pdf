@@ -54,9 +54,9 @@ use self::tables::convert_table;
 use self::text::{
     ThemeFonts, extract_doc_default_paragraph_style, extract_doc_default_text_style_with_theme,
     extract_paragraph_style, extract_run_style, extract_run_style_id, extract_run_text,
-    extract_run_text_skip_layout_breaks, extract_tab_stop_overrides, insert_east_asian_auto_space,
-    is_column_break, is_page_break, pair_kerning_from_half_points, parse_hex_color,
-    parse_theme_fonts, resolve_hyperlink_url, resolve_theme_font_family,
+    extract_tab_stop_overrides, insert_east_asian_auto_space, is_column_break, is_page_break,
+    pair_kerning_from_half_points, parse_hex_color, parse_theme_fonts, resolve_hyperlink_url,
+    resolve_theme_font_family,
 };
 #[cfg(test)]
 use self::text::{extract_pair_kerning, extract_tab_stops, resolve_highlight_color};
@@ -792,11 +792,8 @@ fn resolve_run_style(
     merge_text_style(&explicit_style, resolved_style)
 }
 
-/// Intermediate results from scanning a run's children for media, text boxes,
-/// and structural page/column breaks.
+/// Intermediate results from scanning a run segment for media and text boxes.
 struct RunChildrenMedia {
-    has_column_break: bool,
-    has_page_break: bool,
     text_box_blocks: Vec<Block>,
     /// The `wp:inline` text boxes this run anchors. They belong on the anchor
     /// paragraph's own line, so they ride the run rather than becoming flow
@@ -804,9 +801,63 @@ struct RunChildrenMedia {
     inline_text_boxes: Vec<InlineTextBox>,
 }
 
-/// Scan a run's children for drawings, VML shapes, and layout breaks.
-/// Extracted images are pushed to `inline_images`; text boxes and break detection
-/// are returned in `RunChildrenMedia`.
+/// The ordered pieces of a run around structural layout breaks.
+enum RunLayoutPart {
+    Content(docx_rs::Run),
+    PageBreak,
+    ColumnBreak,
+}
+
+/// Split only at page and column breaks so all content on either side keeps the
+/// run's properties and is emitted on the page or column where Word places it.
+fn split_run_at_layout_breaks(run: &docx_rs::Run) -> Vec<RunLayoutPart> {
+    let mut parts: Vec<RunLayoutPart> = Vec::new();
+    let mut content_children: Vec<docx_rs::RunChild> = Vec::new();
+
+    for child in &run.children {
+        let layout_break: Option<RunLayoutPart> = match child {
+            docx_rs::RunChild::Break(br) if is_page_break(br) => Some(RunLayoutPart::PageBreak),
+            docx_rs::RunChild::Break(br) if is_column_break(br) => Some(RunLayoutPart::ColumnBreak),
+            _ => None,
+        };
+
+        if let Some(layout_break) = layout_break {
+            if !content_children.is_empty() {
+                let mut content_run: docx_rs::Run = run.clone();
+                content_run.children = std::mem::take(&mut content_children);
+                parts.push(RunLayoutPart::Content(content_run));
+            }
+            parts.push(layout_break);
+        } else {
+            content_children.push(child.clone());
+        }
+    }
+
+    if !content_children.is_empty() {
+        let mut content_run: docx_rs::Run = run.clone();
+        content_run.children = content_children;
+        parts.push(RunLayoutPart::Content(content_run));
+    }
+
+    parts
+}
+
+/// A blank paragraph fragment still paints these paragraph-level decorations
+/// before a leading page or column break.
+fn paragraph_has_visible_background(
+    para: &docx_rs::Paragraph,
+    resolved_style: Option<&ResolvedStyle>,
+    flow: ParagraphFlow<'_>,
+) -> bool {
+    let explicit_style: ParagraphStyle = extract_paragraph_style(&para.property);
+    flow.background.is_some()
+        || explicit_style.background.is_some()
+        || resolved_style.is_some_and(|style| style.paragraph.background.is_some())
+}
+
+/// Scan a run segment's children for drawings and VML shapes.
+/// Extracted images are pushed to `inline_images`; text boxes are returned in
+/// `RunChildrenMedia`.
 fn extract_run_children_media(
     run: &docx_rs::Run,
     images: &ImageMap,
@@ -815,8 +866,6 @@ fn extract_run_children_media(
     ctx: &DocxConversionContext,
     inline_images: &mut Vec<Block>,
 ) -> RunChildrenMedia {
-    let mut has_column_break: bool = false;
-    let mut has_page_break: bool = false;
     let mut text_box_blocks: Vec<Block> = Vec::new();
     let mut inline_text_boxes: Vec<InlineTextBox> = Vec::new();
 
@@ -871,21 +920,9 @@ fn extract_run_children_media(
                 inline_images.push(img_block);
             }
         }
-        if let docx_rs::RunChild::Break(br) = run_child
-            && is_column_break(br)
-        {
-            has_column_break = true;
-        }
-        if let docx_rs::RunChild::Break(br) = run_child
-            && is_page_break(br)
-        {
-            has_page_break = true;
-        }
     }
 
     RunChildrenMedia {
-        has_column_break,
-        has_page_break,
         text_box_blocks,
         inline_text_boxes,
     }
@@ -1292,121 +1329,153 @@ fn convert_paragraph_blocks(
                     continue;
                 }
 
-                let media = extract_run_children_media(
-                    run,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    ctx,
-                    &mut inline_images,
-                );
+                for part in split_run_at_layout_breaks(run) {
+                    match part {
+                        break_part @ (RunLayoutPart::PageBreak | RunLayoutPart::ColumnBreak) => {
+                            // Flush queued inline media even when no text run
+                            // precedes the break; images are run children too.
+                            push_inline_images(
+                                out,
+                                &mut inline_images,
+                                paragraph_alignment(para),
+                                paragraph_image_spacing(
+                                    para,
+                                    resolved_style,
+                                    flow.contextual_spacing,
+                                ),
+                            );
+                            if !runs.is_empty() {
+                                push_paragraph_from_runs(
+                                    out,
+                                    para,
+                                    resolved_style,
+                                    style_map,
+                                    flow,
+                                    &mut runs,
+                                    caption_identifier.as_deref(),
+                                );
+                                emitted_paragraph = true;
+                            } else if !emitted_paragraph
+                                && !emitted_media_blocks
+                                && paragraph_has_visible_background(para, resolved_style, flow)
+                            {
+                                // Word paints the empty prefix's fill, but not its paragraph
+                                // border; borders belong to the text-bearing continuation.
+                                let mut fragment: Block = build_paragraph_block(
+                                    para,
+                                    resolved_style,
+                                    style_map,
+                                    flow,
+                                    &mut runs,
+                                    caption_identifier.as_deref(),
+                                );
+                                let fragment_style: &mut ParagraphStyle = match &mut fragment {
+                                    Block::Paragraph(paragraph) => &mut paragraph.style,
+                                    Block::Caption(caption) => &mut caption.paragraph.style,
+                                    _ => unreachable!("a paragraph must build a paragraph block"),
+                                };
+                                fragment_style.border = None;
+                                fragment_style.border_space = None;
+                                out.push(fragment);
+                                emitted_paragraph = true;
+                            }
+                            out.push(match break_part {
+                                RunLayoutPart::PageBreak => Block::PageBreak,
+                                RunLayoutPart::ColumnBreak => Block::ColumnBreak,
+                                RunLayoutPart::Content(_) => unreachable!(),
+                            });
+                            emitted_layout_break = true;
+                        }
+                        RunLayoutPart::Content(run_segment) => {
+                            let media = extract_run_children_media(
+                                &run_segment,
+                                images,
+                                hyperlinks,
+                                style_map,
+                                ctx,
+                                &mut inline_images,
+                            );
 
-                // A picture is the paragraph's content, so its paragraph mark
-                // belongs to the picture rather than to a blank line. Counting
-                // only text boxes here left a picture-only paragraph emitting an
-                // empty paragraph as well, adding a full line box below every
-                // figure (issue #496).
-                emitted_media_blocks |= !inline_images.is_empty();
+                            // A picture is the paragraph's content, so its paragraph mark
+                            // belongs to the picture rather than to a blank line. Counting
+                            // only text boxes here left a picture-only paragraph emitting an
+                            // empty paragraph as well, adding a full line box below every
+                            // figure (issue #496).
+                            emitted_media_blocks |= !inline_images.is_empty();
 
-                if !media.text_box_blocks.is_empty() {
-                    emitted_media_blocks = true;
-                    emitted_floating_anchor |= media.text_box_blocks.iter().any(|block| {
-                        matches!(block, Block::FloatingShape(_) | Block::FloatingTextBox(_))
-                    });
-                    if !runs.is_empty() {
-                        push_inline_images(
-                            out,
-                            &mut inline_images,
-                            paragraph_alignment(para),
-                            paragraph_image_spacing(para, resolved_style, flow.contextual_spacing),
-                        );
-                        push_paragraph_from_runs(
-                            out,
-                            para,
-                            resolved_style,
-                            style_map,
-                            flow,
-                            &mut runs,
-                            caption_identifier.as_deref(),
-                        );
-                        emitted_paragraph = true;
-                    } else if !inline_images.is_empty() {
-                        push_inline_images(
-                            out,
-                            &mut inline_images,
-                            paragraph_alignment(para),
-                            paragraph_image_spacing(para, resolved_style, flow.contextual_spacing),
-                        );
+                            if !media.text_box_blocks.is_empty() {
+                                emitted_media_blocks = true;
+                                emitted_floating_anchor |=
+                                    media.text_box_blocks.iter().any(|block| {
+                                        matches!(
+                                            block,
+                                            Block::FloatingShape(_) | Block::FloatingTextBox(_)
+                                        )
+                                    });
+                                if !runs.is_empty() {
+                                    push_inline_images(
+                                        out,
+                                        &mut inline_images,
+                                        paragraph_alignment(para),
+                                        paragraph_image_spacing(
+                                            para,
+                                            resolved_style,
+                                            flow.contextual_spacing,
+                                        ),
+                                    );
+                                    push_paragraph_from_runs(
+                                        out,
+                                        para,
+                                        resolved_style,
+                                        style_map,
+                                        flow,
+                                        &mut runs,
+                                        caption_identifier.as_deref(),
+                                    );
+                                    emitted_paragraph = true;
+                                } else if !inline_images.is_empty() {
+                                    push_inline_images(
+                                        out,
+                                        &mut inline_images,
+                                        paragraph_alignment(para),
+                                        paragraph_image_spacing(
+                                            para,
+                                            resolved_style,
+                                            flow.contextual_spacing,
+                                        ),
+                                    );
+                                }
+                                out.extend(media.text_box_blocks);
+                            }
+
+                            let text: String =
+                                seq_field_text(&run_segment, &ctx.fields, &mut caption_identifier)
+                                    .unwrap_or_else(|| extract_run_text(&run_segment));
+                            if let Some(ir_run) = build_text_run(
+                                text,
+                                &run_segment.run_property,
+                                is_small_caps,
+                                resolved_style,
+                                style_map,
+                                None,
+                            ) {
+                                runs.push(ir_run);
+                            }
+
+                            // An inline text box sits on this paragraph's line, after
+                            // whatever text its own `w:r` carried, so it joins the runs
+                            // rather than becoming a flow block (issue #1690).
+                            for inline_box in media.inline_text_boxes {
+                                runs.push(Run {
+                                    text: String::new(),
+                                    style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
+                                    inline_box: Some(Box::new(inline_box)),
+                                });
+                            }
+                        }
                     }
-                    out.extend(media.text_box_blocks);
-                }
-
-                if media.has_page_break || media.has_column_break {
-                    // Flush current runs as a paragraph before the layout break.
-                    if !runs.is_empty() {
-                        push_inline_images(
-                            out,
-                            &mut inline_images,
-                            paragraph_alignment(para),
-                            paragraph_image_spacing(para, resolved_style, flow.contextual_spacing),
-                        );
-                        push_paragraph_from_runs(
-                            out,
-                            para,
-                            resolved_style,
-                            style_map,
-                            flow,
-                            &mut runs,
-                            caption_identifier.as_deref(),
-                        );
-                        emitted_paragraph = true;
-                    }
-                    out.push(if media.has_page_break {
-                        Block::PageBreak
-                    } else {
-                        Block::ColumnBreak
-                    });
-                    emitted_layout_break = true;
-
-                    // Still extract any text from this run (after the break)
-                    let text: String = seq_field_text(run, &ctx.fields, &mut caption_identifier)
-                        .unwrap_or_else(|| extract_run_text_skip_layout_breaks(run));
-                    if let Some(ir_run) = build_text_run(
-                        text,
-                        &run.run_property,
-                        is_small_caps,
-                        resolved_style,
-                        style_map,
-                        None,
-                    ) {
-                        runs.push(ir_run);
-                    }
-                } else {
-                    let text: String = seq_field_text(run, &ctx.fields, &mut caption_identifier)
-                        .unwrap_or_else(|| extract_run_text(run));
-                    if let Some(ir_run) = build_text_run(
-                        text,
-                        &run.run_property,
-                        is_small_caps,
-                        resolved_style,
-                        style_map,
-                        None,
-                    ) {
-                        runs.push(ir_run);
-                    }
-                }
-
-                // An inline text box sits on this paragraph's line, after
-                // whatever text its own `w:r` carried, so it joins the runs
-                // rather than the flow blocks (issue #1690).
-                for inline_box in media.inline_text_boxes {
-                    runs.push(Run {
-                        text: String::new(),
-                        style: TextStyle::default(),
-                        href: None,
-                        footnote: None,
-                        inline_box: Some(Box::new(inline_box)),
-                    });
                 }
             }
             ParagraphItem::Hyperlink(hyperlink) => {

@@ -274,6 +274,155 @@ fn test_parse_docx_run_page_break() {
 }
 
 #[test]
+fn test_inline_image_before_run_page_break_stays_before_break() {
+    let image_bytes: Vec<u8> = super::image_tests::make_test_bmp();
+    let picture: docx_rs::Pic = docx_rs::Pic::new(&image_bytes).size(9_525, 9_525);
+    let paragraph: docx_rs::Paragraph = docx_rs::Paragraph::new()
+        .add_run(docx_rs::Run::new().add_image(picture))
+        .add_run(docx_rs::Run::new().add_break(docx_rs::BreakType::Page))
+        .add_run(docx_rs::Run::new().add_text("Next-page content"));
+    let data: Vec<u8> = build_docx_bytes(vec![paragraph]);
+    let parser: DocxParser = DocxParser;
+    let (document, _warnings) = parser
+        .parse(&data, &ConvertOptions::default())
+        .expect("synthetic DOCX with inline image and page break should parse");
+    let flow = match &document.pages[0] {
+        Page::Flow(flow) => flow,
+        _ => panic!("Expected FlowPage"),
+    };
+
+    let image_index: usize = flow
+        .content
+        .iter()
+        .position(|block| matches!(block, Block::Image(_) | Block::InlineImages(_)))
+        .expect("the image remains in the paragraph flow");
+    let page_break_index: usize = flow
+        .content
+        .iter()
+        .position(|block| matches!(block, Block::PageBreak))
+        .expect("the run-level page break remains structural");
+    let next_page_index: usize = flow
+        .content
+        .iter()
+        .position(|block| match block {
+            Block::Paragraph(paragraph) => paragraph
+                .runs
+                .iter()
+                .any(|run| run.text.contains("Next-page content")),
+            _ => false,
+        })
+        .expect("the text after the break remains in the paragraph flow");
+
+    assert!(
+        image_index < page_break_index,
+        "inline content before a page break must stay on the preceding page: {:?}",
+        flow.content
+            .iter()
+            .map(std::mem::discriminant)
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        page_break_index < next_page_index,
+        "content after a page break must start after it"
+    );
+}
+
+#[test]
+fn test_shaded_paragraph_fragment_before_leading_page_break_is_preserved() {
+    let mut paragraph: docx_rs::Paragraph = docx_rs::Paragraph::new()
+        .add_run(docx_rs::Run::new().add_break(docx_rs::BreakType::Page))
+        .add_run(docx_rs::Run::new().add_text("Visible after"));
+    paragraph.property = docx_rs::ParagraphProperty::new()
+        .shading(docx_rs::Shading::new().fill("00E4D5"))
+        .set_borders(docx_rs::ParagraphBorders::new());
+    let data: Vec<u8> = build_docx_bytes(vec![paragraph]);
+    let parser: DocxParser = DocxParser;
+    let (document, _warnings) = parser
+        .parse(&data, &ConvertOptions::default())
+        .expect("synthetic shaded DOCX with a leading page break should parse");
+    let flow = match &document.pages[0] {
+        Page::Flow(flow) => flow,
+        _ => panic!("Expected FlowPage"),
+    };
+
+    let page_break_index: usize = flow
+        .content
+        .iter()
+        .position(|block| matches!(block, Block::PageBreak))
+        .expect("the run-level page break remains structural");
+    let has_shaded_empty_fragment_before_break: bool =
+        flow.content[..page_break_index]
+            .iter()
+            .any(|block| match block {
+                Block::Paragraph(paragraph) => {
+                    paragraph.runs.is_empty()
+                        && paragraph.style.background.is_some()
+                        && paragraph.style.border.is_none()
+                }
+                _ => false,
+            });
+
+    assert!(
+        has_shaded_empty_fragment_before_break,
+        "paragraph shading before a leading page break must remain on the preceding page"
+    );
+}
+
+#[test]
+fn test_text_before_and_after_break_in_same_run_keeps_order() {
+    let paragraph: docx_rs::Paragraph = docx_rs::Paragraph::new().add_run(
+        docx_rs::Run::new()
+            .add_text("Visible before")
+            .add_break(docx_rs::BreakType::Page)
+            .add_text(" visible after"),
+    );
+    let data: Vec<u8> = build_docx_bytes(vec![paragraph]);
+    let parser: DocxParser = DocxParser;
+    let (document, _warnings) = parser
+        .parse(&data, &ConvertOptions::default())
+        .expect("synthetic DOCX with text around a page break should parse");
+    let flow = match &document.pages[0] {
+        Page::Flow(flow) => flow,
+        _ => panic!("Expected FlowPage"),
+    };
+
+    let page_break_index: usize = flow
+        .content
+        .iter()
+        .position(|block| matches!(block, Block::PageBreak))
+        .expect("the run-level page break remains structural");
+    let text_before_break: String = flow.content[..page_break_index]
+        .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => Some(
+                paragraph
+                    .runs
+                    .iter()
+                    .map(|run| run.text.as_str())
+                    .collect::<String>(),
+            ),
+            _ => None,
+        })
+        .collect();
+    let text_after_break: String = flow.content[page_break_index + 1..]
+        .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => Some(
+                paragraph
+                    .runs
+                    .iter()
+                    .map(|run| run.text.as_str())
+                    .collect::<String>(),
+            ),
+            _ => None,
+        })
+        .collect();
+
+    assert_eq!(text_before_break, "Visible before");
+    assert_eq!(text_after_break, " visible after");
+}
+
+#[test]
 fn test_parse_docx_single_column_no_layout() {
     let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
