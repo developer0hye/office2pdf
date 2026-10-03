@@ -797,15 +797,15 @@ impl ThemeFontSlot {
     }
 }
 
-/// The faces the workbook's theme names for the UI script in each of its
-/// two font schemes — the `<a:font script="Hang" .../>` entries every Office
-/// theme carries, and which a theme written by LibreOffice or by hand leaves
-/// out entirely.
+/// The resolved UI-script face in each of the workbook's two font schemes.
+/// Excel uses the `<a:font script="Hang" .../>` face when present; if it is
+/// absent, it uses the scheme's `<a:ea typeface="..."/>` face before falling
+/// back to the font's declared family.
 ///
-/// Excel resolves a `<scheme>` font's face through that list rather than
-/// through the scheme's `<a:latin>` typeface, which is what makes the same
-/// declared Calibri lay out, paint and price its columns against two
-/// different faces in two workbooks (issues #1094, #1380).
+/// Excel resolves a `<scheme>` font's face through these theme entries rather
+/// than always using its declared family, which is what makes the same Calibri
+/// lay out, paint and price its columns against different faces in different
+/// workbooks (issues #1094, #1380, #1711).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub(super) struct ThemeUiScriptFaces {
     pub(super) major: Option<String>,
@@ -822,20 +822,26 @@ impl ThemeUiScriptFaces {
     }
 }
 
-/// Read the theme's UI-script faces out of the archive's theme part.
+/// Read each scheme's Hang face, falling back to its nonempty East Asian face.
 fn read_theme_ui_script_faces(
     archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
 ) -> ThemeUiScriptFaces {
     use quick_xml::events::Event;
     use std::io::Read;
 
-    // Themes are numbered parts; a workbook carries one, and a workbook that
-    // carries none has no scheme to resolve through in the first place.
-    let Some(part): Option<String> = archive
-        .file_names()
-        .find(|name| name.starts_with("xl/theme/") && name.ends_with(".xml"))
-        .map(str::to_string)
-    else {
+    // Some exported packages retain obsolete theme parts. The workbook
+    // relationship is authoritative; archive order is only a malformed-
+    // package fallback.
+    let related_part: Option<String> = read_related_theme_part_name(archive);
+    let part: Option<String> = match related_part {
+        Some(part) if archive.by_name(&part).is_ok() => Some(part),
+        Some(_) => None,
+        None => archive
+            .file_names()
+            .find(|name| name.starts_with("xl/theme/") && name.ends_with(".xml"))
+            .map(str::to_string),
+    };
+    let Some(part): Option<String> = part else {
         return ThemeUiScriptFaces::default();
     };
     let mut xml = String::new();
@@ -848,7 +854,8 @@ fn read_theme_ui_script_faces(
         return ThemeUiScriptFaces::default();
     }
 
-    let mut faces = ThemeUiScriptFaces::default();
+    let mut hang_faces = ThemeUiScriptFaces::default();
+    let mut east_asian_faces = ThemeUiScriptFaces::default();
     let mut reader = quick_xml::Reader::from_str(&xml);
     let mut open_slot: Option<ThemeFontSlot> = None;
     loop {
@@ -856,6 +863,18 @@ fn read_theme_ui_script_faces(
             Ok(Event::Start(ref e)) => match e.local_name().as_ref() {
                 b"majorFont" => open_slot = Some(ThemeFontSlot::Major),
                 b"minorFont" => open_slot = Some(ThemeFontSlot::Minor),
+                b"font" => {
+                    if theme_font_names_ui_script(e) {
+                        if let Some(slot) = open_slot {
+                            set_theme_font_face(&mut hang_faces, slot, theme_font_typeface(e));
+                        }
+                    }
+                }
+                b"ea" => {
+                    if let Some(slot) = open_slot {
+                        set_theme_font_face(&mut east_asian_faces, slot, theme_font_typeface(e));
+                    }
+                }
                 _ => {}
             },
             Ok(Event::End(ref e))
@@ -863,37 +882,137 @@ fn read_theme_ui_script_faces(
             {
                 open_slot = None;
             }
-            Ok(Event::Empty(ref e)) if e.local_name().as_ref() == b"font" => {
-                let Some(slot) = open_slot else {
-                    continue;
-                };
-                let names_ui_script: bool = e
-                    .try_get_attribute("script")
-                    .ok()
-                    .flatten()
-                    .is_some_and(|script| script.value.as_ref() == UI_SCRIPT.as_bytes());
-                if !names_ui_script {
-                    continue;
+            Ok(Event::Empty(ref e)) => match e.local_name().as_ref() {
+                b"font" => {
+                    if theme_font_names_ui_script(e) {
+                        if let Some(slot) = open_slot {
+                            set_theme_font_face(&mut hang_faces, slot, theme_font_typeface(e));
+                        }
+                    }
                 }
-                // The face name is stored unescaped: a probe theme writes
-                // `맑은 고딕` as numeric character references.
-                let typeface: Option<String> = e
-                    .try_get_attribute("typeface")
-                    .ok()
-                    .flatten()
-                    .and_then(|attribute| attribute.normalized_value(OOXML_XML_VERSION).ok())
-                    .map(|face| face.trim().to_string())
-                    .filter(|face| !face.is_empty());
-                match slot {
-                    ThemeFontSlot::Major => faces.major = typeface,
-                    ThemeFontSlot::Minor => faces.minor = typeface,
+                b"ea" => {
+                    if let Some(slot) = open_slot {
+                        set_theme_font_face(&mut east_asian_faces, slot, theme_font_typeface(e));
+                    }
                 }
-            }
+                _ => {}
+            },
             Ok(Event::Eof) | Err(_) => break,
             _ => {}
         }
     }
-    faces
+    ThemeUiScriptFaces {
+        major: hang_faces.major.or(east_asian_faces.major),
+        minor: hang_faces.minor.or(east_asian_faces.minor),
+    }
+}
+
+/// Resolve the theme part selected by the workbook's internal relationship.
+fn read_related_theme_part_name(
+    archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
+) -> Option<String> {
+    use quick_xml::events::Event;
+    use std::io::Read;
+
+    let mut xml = String::new();
+    archive
+        .by_name("xl/_rels/workbook.xml.rels")
+        .ok()?
+        .read_to_string(&mut xml)
+        .ok()?;
+
+    let mut reader = quick_xml::Reader::from_str(&xml);
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref element) | Event::Empty(ref element))
+                if element.local_name().as_ref() == b"Relationship" =>
+            {
+                let relationship_type: String = relationship_attribute(element, "Type")?;
+                if !relationship_type.ends_with("/theme") {
+                    continue;
+                }
+                if relationship_attribute(element, "TargetMode")
+                    .is_some_and(|mode| mode.eq_ignore_ascii_case("external"))
+                {
+                    return None;
+                }
+                let target: String = relationship_attribute(element, "Target")?;
+                return package_part_path("xl/workbook.xml", &target);
+            }
+            Ok(Event::Eof) | Err(_) => return None,
+            _ => {}
+        }
+    }
+}
+
+/// Decode one relationship attribute with XML character references applied.
+fn relationship_attribute(
+    element: &quick_xml::events::BytesStart<'_>,
+    name: &str,
+) -> Option<String> {
+    let attribute = element.try_get_attribute(name).ok()??;
+    attribute
+        .normalized_value(OOXML_XML_VERSION)
+        .ok()
+        .map(|value| value.into_owned())
+}
+
+/// Resolve an OPC relationship target against its source part's directory.
+fn package_part_path(source_part: &str, target: &str) -> Option<String> {
+    let is_absolute: bool = target.starts_with('/');
+    let mut segments: Vec<String> = if is_absolute {
+        Vec::new()
+    } else {
+        source_part
+            .rsplit_once('/')?
+            .0
+            .split('/')
+            .map(str::to_string)
+            .collect()
+    };
+
+    for segment in target.trim_start_matches('/').split('/') {
+        match segment {
+            "" | "." => {}
+            ".." => {
+                segments.pop()?;
+            }
+            _ => segments.push(segment.to_string()),
+        }
+    }
+    (!segments.is_empty()).then(|| segments.join("/"))
+}
+
+/// Whether a theme `<a:font>` entry supplies the reference machine's UI face.
+fn theme_font_names_ui_script(element: &quick_xml::events::BytesStart<'_>) -> bool {
+    element
+        .try_get_attribute("script")
+        .ok()
+        .flatten()
+        .is_some_and(|script| script.value.as_ref() == UI_SCRIPT.as_bytes())
+}
+
+/// Decode a nonempty theme typeface name, including numeric XML references.
+fn theme_font_typeface(element: &quick_xml::events::BytesStart<'_>) -> Option<String> {
+    element
+        .try_get_attribute("typeface")
+        .ok()
+        .flatten()
+        .and_then(|attribute| attribute.normalized_value(OOXML_XML_VERSION).ok())
+        .map(|face| face.trim().to_string())
+        .filter(|face| !face.is_empty())
+}
+
+/// Record the face for one of the theme's two font schemes.
+fn set_theme_font_face(
+    faces: &mut ThemeUiScriptFaces,
+    slot: ThemeFontSlot,
+    typeface: Option<String>,
+) {
+    match slot {
+        ThemeFontSlot::Major => faces.major = typeface,
+        ThemeFontSlot::Minor => faces.minor = typeface,
+    }
 }
 
 /// The workbook's Normal font: the `xl/styles.xml` font that cells and
@@ -915,10 +1034,10 @@ pub(super) struct NormalFont {
     /// 15pt (issue #1047), and a declared Calibri 12 embeds Malgun Gothic and
     /// prices a 7pt column unit against Calibri's 6pt (issue #1380).
     pub(super) theme_scheme: Option<ThemeFontSlot>,
-    /// The faces the workbook's theme names for the UI script. Only bears on
-    /// a font with a `theme_scheme`: that is the list Excel resolves such a
-    /// font through (issue #1094), and the list every cell font carrying a
-    /// `<scheme>` of its own resolves through as well.
+    /// The theme-resolved UI-script faces, preferring Hang over the East
+    /// Asian face when present. Only bears on a font with a `theme_scheme`:
+    /// that is the list Excel resolves such a font through (issues #1094,
+    /// #1711), including cell fonts carrying a `<scheme>` of their own.
     pub(super) theme_ui_script_faces: ThemeUiScriptFaces,
 }
 
@@ -929,10 +1048,9 @@ impl NormalFont {
     }
 
     /// The face Excel resolves this font to on the reference machine: the
-    /// theme's UI-script face of the scheme it defers to, else the family it
-    /// declares. A scheme font over a theme that lists no script faces stays
-    /// on its declared family, exactly as issue #1141 measured it (a bare
-    /// theme compacts like a font naming Calibri outright).
+    /// theme's Hang face, then its nonempty East Asian face, else the family
+    /// it declares. A scheme font over a theme with neither usable face stays
+    /// on its declared family, exactly as issue #1141 measured it.
     pub(super) fn resolved_family(&self) -> &str {
         self.theme_scheme
             .and_then(|slot| self.theme_ui_script_faces.face(slot))
@@ -2645,11 +2763,12 @@ fn measured_named_face_printed_grid_row_height(
 /// So the scheme flag alone decides nothing. An Office theme names a face per
 /// script and Excel resolves the UI script's — Malgun Gothic on this machine,
 /// the face issue #1047 measures the dimension-less path against — and that
-/// face keeps the grid. A theme listing no script faces leaves the scheme on
-/// its `<a:latin>` Calibri, which compacts exactly as a font naming Calibri
-/// outright does. `03_inventory_en.xlsx` carries such a bare theme, which is
-/// why adding `<scheme val="minor"/>` to *its* Normal font leaves the track at
-/// 37 while the same edit on the probe leaves it at 36.
+/// face keeps the grid. A theme with neither a usable Hang nor `ea` face
+/// leaves the scheme on its `<a:latin>` Calibri, which compacts exactly as a
+/// font naming Calibri outright does. `03_inventory_en.xlsx` carries such a
+/// bare theme, which is why adding `<scheme val="minor"/>` to *its* Normal
+/// font leaves the track at 37 while the same edit on the probe leaves it at
+/// 36.
 ///
 /// Two limits are known and unmodelled: the step to 0.95 from 14pt up (no
 /// tracked workbook declares one, so those compact at 0.92, a point short at
@@ -2763,8 +2882,8 @@ pub(super) fn native_excel_pdf_row_height(
 ///
 /// Three families, each measured on native Excel-for-Mac exports:
 ///
-/// - The script-face theme family — a scheme Normal font over a theme naming
-///   per-script faces, which the reference machine resolves to its UI face —
+/// - The theme-resolved face family — a scheme Normal font over a theme with
+///   a usable Hang or `ea` face, resolved by the reference machine's UI —
 ///   floors at [`crate::render::typst_gen::SHEET_CELL_MIN_DESCENT_SEAT_PT`]:
 ///   six purpose-built probe workbooks print their declared tracks whole and
 ///   rest every 8-11pt Arial cell 4pt above the boundary (issue #1063).
@@ -2773,11 +2892,11 @@ pub(super) fn native_excel_pdf_row_height(
 ///   read off a ruled re-export of `10_kpi_tracker_en`'s note cell over an
 ///   eleven-size sweep (issue #1199).
 /// - A Normal font Excel neither remaps nor resolves by script — a face the
-///   reference machine has, named outright or reached through a theme that
-///   lists no script faces — takes no floor at all. One-factor exports of
-///   the budget workbook of issue #1545 (Trebuchet MS 10 Normal, theme
-///   without script faces) rest 8, 10, 12, 14 and 16pt cells 2, 2, 3, 3 and
-///   4pt above their fixed row's bottom boundary: the bare rounded `hhea`
+///   reference machine has, named outright or reached through a theme with
+///   neither a usable Hang nor `ea` face — takes no floor at all. One-factor
+///   exports of the budget workbook of issue #1545 (Trebuchet MS 10 Normal,
+///   theme without usable Hang or `ea` faces) rest 8, 10, 12, 14 and 16pt
+///   cells 2, 2, 3, 3 and 4pt above their fixed row's bottom boundary: the bare rounded `hhea`
 ///   descent, one and two points under the other families' floors. Dropping
 ///   the font's `<scheme>` and moving the Normal size to 14, 20 and 30pt
 ///   left every seat where it was, so the family is the resolved face, not
@@ -2794,7 +2913,7 @@ pub(super) fn native_excel_pdf_row_height(
 /// them. The mechanism behind the script-face split is the open part: a
 /// workbook cannot be pushed from one family to the other by anything the
 /// probes varied except whether the Normal font resolves through a theme
-/// that names per-script faces (issues #1068, #1094).
+/// that names a Hang or `ea` face (issues #1068, #1094, #1711).
 pub(super) fn bottom_aligned_descent_floor_pt(normal_font: Option<&NormalFont>) -> f64 {
     match normal_font {
         // Excel's own Normal font is Calibri/Aptos 11; a workbook we cannot
@@ -3049,7 +3168,8 @@ fn auto_row_height_pt(
 /// The series belongs to the face the cell *names*, not to the Normal font's
 /// face at the cell's size. Native Excel-for-Mac one-factor exports of
 /// `issue_1181_fit_to_height.xlsx` — Trebuchet MS 10 Normal deferring to a
-/// theme that names no script faces, one Arial Bold cell in an auto row —
+/// theme with neither a usable Hang nor `ea` face, one Arial Bold cell in an
+/// auto row —
 /// print that row 13/13/13/14/16/17/18/19/20/22/23/25/28/30pt at 8-24pt: from
 /// 10pt up exactly Arial's series, and the workbook's default row below it.
 /// The same row holding Courier New, Segoe UI, Georgia, Times New Roman,
@@ -3058,9 +3178,9 @@ fn auto_row_height_pt(
 /// from the Normal font's series printed the UI face's 27pt over Arial's 23.
 ///
 /// A cell font deferring to a theme scheme resolves the way the Normal font
-/// does — through the theme's UI-script face where the theme names one, else
-/// on its declared family — and a font naming no family at all inherits the
-/// Normal font's face.
+/// does — through the theme's Hang face, then its nonempty `ea` face, else on
+/// its declared family — and a font naming no family at all inherits the
+/// Normal font's resolved face.
 fn cell_font_row_height_pt(
     cell_font: &umya_spreadsheet::structs::Font,
     normal_font: &NormalFont,
