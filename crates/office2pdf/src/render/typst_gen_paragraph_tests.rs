@@ -1,6 +1,20 @@
 use super::*;
 use crate::ir::WordCompatibilityMode;
 
+fn empty_paragraph_metric_run(font_family: &str, font_size_pt: f64) -> Run {
+    Run {
+        text: String::new(),
+        style: TextStyle {
+            font_family: Some(font_family.into()),
+            font_size: Some(font_size_pt),
+            ..TextStyle::default()
+        },
+        href: None,
+        footnote: None,
+        inline_box: None,
+    }
+}
+
 #[test]
 fn test_generate_plain_paragraph() {
     let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Hello World")])]);
@@ -70,6 +84,88 @@ fn test_generate_empty_paragraph_reserves_line_height() {
     assert!(
         result.contains("#v(12pt)"),
         "empty DOCX paragraph marks should reserve vertical flow space: {result}"
+    );
+}
+
+#[test]
+fn empty_paragraph_line_spacing_does_not_add_leading_to_its_placeholder() {
+    let mut empty_paragraph = make_paragraph("");
+    let Block::Paragraph(paragraph) = &mut empty_paragraph else {
+        unreachable!("make_paragraph returns a paragraph block");
+    };
+    paragraph.runs.clear();
+    paragraph.style.line_spacing = Some(LineSpacing::Proportional(1.079));
+    let mark_run: Run = empty_paragraph_metric_run("Calibri", 11.0);
+    paragraph.style.paragraph_mark_text_style = Some(Box::new(mark_run.style.clone()));
+
+    let (top_edge_em, bottom_edge_em) =
+        super::word_line_box_em(std::slice::from_ref(&mark_run), &paragraph.style, None)
+            .expect("an empty paragraph mark still has a Word line box");
+    let expected_line_height_pt: f64 = (top_edge_em + bottom_edge_em) * 11.0;
+    let expected_placeholder: String = format!(
+        "#v({}pt)",
+        crate::render::typst_gen::fmt::format_f64(expected_line_height_pt)
+    );
+
+    let doc = make_doc(vec![make_flow_page(vec![empty_paragraph])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains(&expected_placeholder),
+        "the blank paragraph reserves its Word line advance: {result}"
+    );
+    assert!(
+        !result.contains("#set par(leading:") && !result.contains("#set text(top-edge:"),
+        "an explicit empty-paragraph strut must not create a text baseline: {result}"
+    );
+}
+
+#[test]
+fn empty_paragraph_border_insets_do_not_shrink_its_shaded_line_box() {
+    let top_border: BorderSide = BorderSide {
+        width: 3.0,
+        color: Color::black(),
+        style: BorderLineStyle::Solid,
+        join: LineJoin::Round,
+        cap: LineCap::Flat,
+    };
+    let mut empty_paragraph = make_paragraph("");
+    let Block::Paragraph(paragraph) = &mut empty_paragraph else {
+        unreachable!("make_paragraph returns a paragraph block");
+    };
+    paragraph.runs.clear();
+    paragraph.style.line_spacing = Some(LineSpacing::Proportional(1.079));
+    paragraph.style.background = Some(Color::new(0xE2, 0xEF, 0xD9));
+    let mark_run: Run = empty_paragraph_metric_run("Calibri", 11.0);
+    paragraph.style.paragraph_mark_text_style = Some(Box::new(mark_run.style.clone()));
+    paragraph.style.border = Some(Box::new(CellBorder {
+        top: Some(top_border.clone()),
+        bottom: Some(top_border),
+        left: None,
+        right: None,
+    }));
+    paragraph.style.border_space = Some(Box::new(Insets {
+        top: 1.0,
+        bottom: 1.0,
+        left: 0.0,
+        right: 0.0,
+    }));
+
+    let (top_edge_em, bottom_edge_em) =
+        super::word_line_box_em(std::slice::from_ref(&mark_run), &paragraph.style, None)
+            .expect("an empty paragraph mark still has a Word line box");
+    let word_line_height_pt: f64 = (top_edge_em + bottom_edge_em) * 11.0;
+    let expected_placeholder: String = format!(
+        "#v({}pt)",
+        crate::render::typst_gen::fmt::format_f64(word_line_height_pt)
+    );
+
+    let doc = make_doc(vec![make_flow_page(vec![empty_paragraph])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains(&expected_placeholder),
+        "the paragraph fill keeps its full Word line box; paragraph borders overlay its edges: {result}"
     );
 }
 
@@ -1924,6 +2020,144 @@ fn test_empty_indented_paragraph_closes_its_block() {
     assert!(
         result.contains("after the empty paragraph"),
         "the following paragraph must not be swallowed: {result}"
+    );
+}
+
+#[test]
+fn empty_shaded_paragraph_paints_background_through_before_spacing() {
+    let mut empty_paragraph = make_paragraph("");
+    let Block::Paragraph(paragraph) = &mut empty_paragraph else {
+        unreachable!("make_paragraph returns a paragraph block");
+    };
+    paragraph.runs.clear();
+    paragraph.style.space_before = Some(60.0);
+    paragraph.style.background = Some(Color::new(0xE2, 0xEF, 0xD9));
+
+    let doc = make_doc(vec![make_flow_page(vec![
+        make_paragraph("Previous paragraph"),
+        empty_paragraph,
+    ])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("height: 60pt, fill: rgb(226, 239, 217)"),
+        "empty paragraph shading must cover its before-spacing gap: {result}"
+    );
+    assert!(
+        !result.contains("#sym.wj#h(0pt, weak: true)#v(12pt)"),
+        "the placed shading must not create a text line before an empty paragraph's line box: {result}"
+    );
+}
+
+#[test]
+fn empty_shaded_before_spacing_owns_the_top_border_at_its_outer_edge() {
+    let top_border: BorderSide = BorderSide {
+        width: 3.0,
+        color: Color::black(),
+        style: BorderLineStyle::Solid,
+        join: LineJoin::Round,
+        cap: LineCap::Flat,
+    };
+    let mut empty_paragraph = make_paragraph("");
+    let Block::Paragraph(paragraph) = &mut empty_paragraph else {
+        unreachable!();
+    };
+    paragraph.runs.clear();
+    paragraph.style.space_after = Some(8.0);
+    paragraph.style.decoration_before_spacing = Some(52.0);
+    paragraph.style.background = Some(Color::new(0xE2, 0xEF, 0xD9));
+    paragraph.style.border_space = Some(Box::new(Insets {
+        top: 1.0,
+        bottom: 1.0,
+        left: 4.0,
+        right: 4.0,
+    }));
+    paragraph.style.border = Some(Box::new(CellBorder {
+        top: Some(top_border.clone()),
+        bottom: Some(top_border.clone()),
+        left: Some(top_border.clone()),
+        right: Some(top_border),
+    }));
+
+    let doc = make_doc(vec![make_flow_page(vec![empty_paragraph])]);
+    let source = generate_typst(&doc).unwrap().source;
+    let overlay_start: usize = source.find("#box(place(").expect("before-spacing overlay");
+    let overlay_end: usize = source[overlay_start..]
+        .find("#v(12pt)")
+        .map(|relative_end| overlay_start + relative_end)
+        .expect("empty paragraph line box follows its overlay");
+    let overlay: &str = &source[overlay_start..overlay_end];
+    let block_start: usize = source[..overlay_start]
+        .rfind("#block(width: 100%, below: 12pt")
+        .expect("decorated empty paragraph block");
+    let block_header_end: usize = source[block_start..]
+        .find(")[")
+        .map(|relative_end| block_start + relative_end)
+        .expect("decorated block header");
+    let block_header: &str = &source[block_start..block_header_end];
+
+    assert!(
+        overlay.contains("height: 52pt, fill: rgb(226, 239, 217), stroke: (top: 3pt"),
+        "the before-spacing overlay must carry the paragraph's top border: {overlay}"
+    );
+    assert!(
+        !block_header.contains("stroke: (top:") && block_header.contains("inset: (top: 2.5pt"),
+        "the inner paragraph block keeps its top inset without drawing a second top border: {block_header}"
+    );
+}
+
+#[test]
+fn empty_shaded_paragraph_keeps_after_spacing_outside_its_fill() {
+    let mut empty_paragraph = make_paragraph("");
+    let Block::Paragraph(paragraph) = &mut empty_paragraph else {
+        unreachable!("make_paragraph returns a paragraph block");
+    };
+    paragraph.runs.clear();
+    paragraph.style.space_before = None;
+    paragraph.style.space_after = Some(8.0);
+    paragraph.style.decoration_before_spacing = Some(60.0);
+    paragraph.style.background = Some(Color::new(0xE2, 0xEF, 0xD9));
+
+    let doc = make_doc(vec![make_flow_page(vec![empty_paragraph])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#block(width: 100%, below: 8pt, fill: rgb(226, 239, 217)"),
+        "the paragraph's block spacing stays outside its painted fill: {result}"
+    );
+}
+
+#[test]
+fn empty_paragraph_after_spacing_starts_beyond_its_bottom_border() {
+    let bottom_border: BorderSide = BorderSide {
+        width: 3.0,
+        color: Color::black(),
+        style: BorderLineStyle::Solid,
+        join: LineJoin::Round,
+        cap: LineCap::Flat,
+    };
+    let mut empty_paragraph = make_paragraph("");
+    let Block::Paragraph(paragraph) = &mut empty_paragraph else {
+        unreachable!("make_paragraph returns a paragraph block");
+    };
+    paragraph.runs.clear();
+    paragraph.style.space_after = Some(8.0);
+    paragraph.style.background = Some(Color::new(0xFF, 0x00, 0x00));
+    paragraph.style.border_space = Some(Box::new(Insets {
+        bottom: 1.0,
+        ..Insets::default()
+    }));
+    paragraph.style.border = Some(Box::new(CellBorder {
+        bottom: Some(bottom_border),
+        ..CellBorder::default()
+    }));
+
+    let doc = make_doc(vec![make_flow_page(vec![empty_paragraph])]);
+    let result = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        result.contains("#block(width: 100%, below: 12pt, fill: rgb(255, 0, 0)"),
+        "after-spacing must follow the empty paragraph's 1pt border gap and 3pt bottom rule: {result}"
     );
 }
 

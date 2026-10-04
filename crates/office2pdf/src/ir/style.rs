@@ -73,8 +73,8 @@ pub struct ParagraphStyle {
     pub indent_left: Option<f64>,
     pub indent_right: Option<f64>,
     pub indent_first_line: Option<f64>,
-    /// The first text fragment starts after a hard break at the beginning of
-    /// its source paragraph, so Typst must preserve that paragraph's before-spacing.
+    /// This paragraph fragment follows a hard break in its source paragraph.
+    /// Typst uses the marker for continuation-specific layout behavior.
     pub starts_after_layout_break: bool,
     /// The leading run carries a list number and tab, emitted inside its paragraph frame.
     pub has_inline_list_number: bool,

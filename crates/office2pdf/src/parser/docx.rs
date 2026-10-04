@@ -1309,6 +1309,8 @@ fn convert_paragraph_blocks(
     let mut emitted_media_blocks: bool = false;
     let mut emitted_floating_anchor: bool = false;
     let mut emitted_layout_break: bool = false;
+    let mut empty_break_fragment_indices: Vec<usize> = Vec::new();
+    let mut emitted_content_paragraph: bool = false;
     // Set by the run carrying a `SEQ` field, so the finished paragraph can be
     // wrapped as the caption a `TOC \a` list collects (issue #576).
     let mut caption_identifier: Option<String> = None;
@@ -1349,6 +1351,10 @@ fn convert_paragraph_blocks(
                                 ),
                             );
                             if !runs.is_empty() {
+                                clear_paragraph_fragment_borders(
+                                    out,
+                                    &empty_break_fragment_indices,
+                                );
                                 push_paragraph_from_runs(
                                     out,
                                     para,
@@ -1359,12 +1365,21 @@ fn convert_paragraph_blocks(
                                     caption_identifier.as_deref(),
                                 );
                                 emitted_paragraph = true;
-                            } else if !emitted_paragraph
+                                emitted_content_paragraph = true;
+                            } else if !emitted_content_paragraph
                                 && !emitted_media_blocks
                                 && paragraph_has_visible_background(para, resolved_style, flow)
                             {
-                                // Word paints the empty prefix's fill, but not its paragraph
-                                // border; borders belong to the text-bearing continuation.
+                                // A break-only paragraph paints a line-sized shaded fragment
+                                // before each break. Word leaves earlier fragments borderless
+                                // and applies the paragraph border to the final fragment.
+                                let is_continuation_fragment: bool =
+                                    !empty_break_fragment_indices.is_empty();
+                                if let Some(previous_fragment_index) =
+                                    empty_break_fragment_indices.last().copied()
+                                {
+                                    clear_paragraph_fragment_border(out, previous_fragment_index);
+                                }
                                 let mut fragment: Block = build_paragraph_block(
                                     para,
                                     resolved_style,
@@ -1378,9 +1393,15 @@ fn convert_paragraph_blocks(
                                     Block::Caption(caption) => &mut caption.paragraph.style,
                                     _ => unreachable!("a paragraph must build a paragraph block"),
                                 };
-                                fragment_style.border = None;
-                                fragment_style.border_space = None;
+                                fragment_style.space_before = None;
+                                fragment_style.decoration_before_spacing = None;
+                                fragment_style.starts_after_layout_break = is_continuation_fragment;
                                 out.push(fragment);
+                                if !is_continuation_fragment {
+                                    let fragment_index: usize = out.len() - 1;
+                                    clear_paragraph_fragment_border(out, fragment_index);
+                                }
+                                empty_break_fragment_indices.push(out.len() - 1);
                                 emitted_paragraph = true;
                             }
                             out.push(match break_part {
@@ -1417,6 +1438,10 @@ fn convert_paragraph_blocks(
                                         )
                                     });
                                 if !runs.is_empty() {
+                                    clear_paragraph_fragment_borders(
+                                        out,
+                                        &empty_break_fragment_indices,
+                                    );
                                     push_inline_images(
                                         out,
                                         &mut inline_images,
@@ -1437,6 +1462,7 @@ fn convert_paragraph_blocks(
                                         caption_identifier.as_deref(),
                                     );
                                     emitted_paragraph = true;
+                                    emitted_content_paragraph = true;
                                 } else if !inline_images.is_empty() {
                                     push_inline_images(
                                         out,
@@ -1505,6 +1531,34 @@ fn convert_paragraph_blocks(
         paragraph_image_spacing(para, resolved_style, flow.contextual_spacing),
     );
 
+    if emitted_layout_break
+        && runs.is_empty()
+        && !emitted_content_paragraph
+        && !emitted_media_blocks
+        && paragraph_has_visible_background(para, resolved_style, flow)
+        && matches!(
+            out.get(paragraph_block_start..)
+                .and_then(|blocks| blocks.last()),
+            Some(Block::ColumnBreak)
+        )
+    {
+        let mut continuation: Block = build_paragraph_block(
+            para,
+            resolved_style,
+            style_map,
+            flow,
+            &mut runs,
+            caption_identifier.as_deref(),
+        );
+        let continuation_style: &mut ParagraphStyle = match &mut continuation {
+            Block::Paragraph(paragraph) => &mut paragraph.style,
+            Block::Caption(caption) => &mut caption.paragraph.style,
+            _ => unreachable!("a paragraph must build a paragraph block"),
+        };
+        continuation_style.starts_after_layout_break = true;
+        out.push(continuation);
+    }
+
     // A paragraph whose remaining content is just the mark left behind by a
     // page or column break is a break carrier: Word uses it only to force the
     // break, so it must not add a line box on the new page. An empty paragraph
@@ -1516,6 +1570,9 @@ fn convert_paragraph_blocks(
             || !emitted_media_blocks
             || (emitted_floating_anchor && !emitted_paragraph))
     {
+        if !runs.is_empty() {
+            clear_paragraph_fragment_borders(out, &empty_break_fragment_indices);
+        }
         // Keep paragraph marks for floating drawing anchors. The drawing itself
         // is positioned by offsets, but the source paragraph still contributes
         // to flow spacing between the drawing cluster and following content.
@@ -1539,6 +1596,22 @@ fn convert_paragraph_blocks(
     }
 
     normalize_split_paragraph_styles(out, paragraph_block_start);
+}
+
+fn clear_paragraph_fragment_borders(blocks: &mut [Block], fragment_indices: &[usize]) {
+    for fragment_index in fragment_indices {
+        clear_paragraph_fragment_border(blocks, *fragment_index);
+    }
+}
+
+fn clear_paragraph_fragment_border(blocks: &mut [Block], fragment_index: usize) {
+    let style: &mut ParagraphStyle = match &mut blocks[fragment_index] {
+        Block::Paragraph(paragraph) => &mut paragraph.style,
+        Block::Caption(caption) => &mut caption.paragraph.style,
+        _ => unreachable!("empty paragraph fragment indices point to paragraphs"),
+    };
+    style.border = None;
+    style.border_space = None;
 }
 
 /// Keep paragraph-wide spacing and first-line indentation on the paragraph's
