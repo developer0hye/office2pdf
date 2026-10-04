@@ -265,6 +265,41 @@ fn test_parse_docx_with_text_header() {
 }
 
 #[test]
+fn issue_1894_page_field_inside_header_structured_tag_is_retained() {
+    let data: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/libreoffice/tdf153613_sdtAfterPgBreak.docx"
+    );
+    let (doc, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+
+    let flow_page = match &doc.pages[0] {
+        Page::Flow(flow_page) => flow_page,
+        other => panic!("Expected FlowPage, got {other:?}"),
+    };
+    let header = flow_page
+        .header
+        .as_ref()
+        .expect("fixture should have a header");
+    assert!(
+        header.paragraphs.iter().any(|paragraph| {
+            paragraph
+                .elements
+                .iter()
+                .any(|element| matches!(element, crate::ir::HFInline::PageNumber(_)))
+        }),
+        "the header's PAGE field inside its structured tag should be retained; got {header:#?}"
+    );
+    assert!(
+        !header.paragraphs.iter().any(|paragraph| {
+            paragraph
+                .elements
+                .iter()
+                .any(|element| matches!(element, crate::ir::HFInline::Run(run) if run.text == "2"))
+        }),
+        "the fixture's cached page number must not render as static text"
+    );
+}
+
+#[test]
 fn test_parse_docx_with_text_footer() {
     let data = build_docx_with_footer("Footer Text");
     let parser = DocxParser;
