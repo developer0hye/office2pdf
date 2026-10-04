@@ -191,6 +191,8 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
         indent_left: Some(10.0),
         indent_right: Some(5.0),
         indent_first_line: Some(20.0),
+        starts_after_layout_break: false,
+        has_inline_list_number: false,
         line_spacing: Some(LineSpacing::Proportional(1.5)),
         line_box: Some(LineBox {
             ascent_em: 1.0,
@@ -198,6 +200,7 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
         }),
         space_before: Some(6.0),
         space_after: Some(12.0),
+        decoration_before_spacing: None,
         space_before_percent: None,
         space_after_percent: None,
         heading_level: Some(2),
@@ -248,6 +251,8 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
         indent_left: Some(20.0),
         indent_right: Some(15.0),
         indent_first_line: Some(30.0),
+        starts_after_layout_break: false,
+        has_inline_list_number: false,
         line_spacing: Some(LineSpacing::Exact(14.0)),
         line_box: Some(LineBox {
             ascent_em: 1.3125,
@@ -255,6 +260,7 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
         }),
         space_before: Some(8.0),
         space_after: Some(16.0),
+        decoration_before_spacing: None,
         space_before_percent: None,
         space_after_percent: None,
         heading_level: Some(1),

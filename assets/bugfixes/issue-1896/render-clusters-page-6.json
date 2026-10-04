@@ -1,0 +1,87 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 7316.1216,
+      "bbox_pt": {
+        "height": 70.08,
+        "width": 140.16,
+        "x": 63.84,
+        "y": 20.16
+      },
+      "disposition": {
+        "issue": "#1977",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters are from the empty shaded paragraph fragments on page 6."
+      },
+      "id": "p6-7e40770b7fe1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 2486.4768,
+      "bbox_pt": {
+        "height": 18.24,
+        "width": 136.32,
+        "x": 219.36,
+        "y": 72.0
+      },
+      "disposition": {
+        "issue": "#1977",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters are from the empty shaded paragraph fragments on page 6."
+      },
+      "id": "p6-90ff5eaa4071",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 1828.4544,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 122.88,
+        "x": 70.56,
+        "y": 98.4
+      },
+      "disposition": {
+        "issue": "#1977",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters are from the empty shaded paragraph fragments on page 6."
+      },
+      "id": "p6-0e076420dc18",
+      "region": "left"
+    },
+    {
+      "area_pt2": 1474.56,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 122.88,
+        "x": 70.56,
+        "y": 148.8
+      },
+      "disposition": {
+        "issue": "#1977",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters are from the empty shaded paragraph fragments on page 6."
+      },
+      "id": "p6-575e1b2ad660",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 6,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 4,
+    "duplicate": 0,
+    "total": 4,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

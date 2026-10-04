@@ -493,6 +493,198 @@ fn test_parse_simple_numbered_list() {
 }
 
 #[test]
+fn test_leading_layout_break_keeps_numbered_paragraph_as_a_list() {
+    let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+        0,
+        docx_rs::Start::new(1),
+        docx_rs::NumberFormat::new("decimal"),
+        docx_rs::LevelText::new("%1."),
+        docx_rs::LevelJc::new("left"),
+    ));
+    let paragraph = docx_rs::Paragraph::new()
+        .add_run(
+            docx_rs::Run::new()
+                .add_break(docx_rs::BreakType::Column)
+                .add_text("Numbered continuation"),
+        )
+        .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0));
+    let data = build_docx_with_numbering(
+        vec![abstract_num],
+        vec![docx_rs::Numbering::new(1, 0)],
+        vec![paragraph],
+    );
+
+    let (document, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(page) = &document.pages[0] else {
+        panic!("Expected a flow page");
+    };
+    assert!(matches!(page.content.first(), Some(Block::ColumnBreak)));
+    let Some(Block::List(list)) = page.content.get(1) else {
+        panic!(
+            "a paragraph after a leading column break must stay numbered: {:#?}",
+            page.content
+        );
+    };
+    assert_eq!(list.items.len(), 1);
+    assert_eq!(list.items[0].start_at, Some(1));
+    assert_eq!(
+        list.items[0].content[0].runs[0].text,
+        "Numbered continuation"
+    );
+}
+
+#[test]
+fn test_numbered_paragraph_frame_survives_a_leading_column_break() {
+    const FIXTURE: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/libreoffice/tdf153964_numberingAfterBreak14.docx"
+    );
+    let (document, _warnings) = DocxParser
+        .parse(FIXTURE, &ConvertOptions::default())
+        .unwrap();
+    let source = crate::render::typst_gen::generate_typst(&document)
+        .unwrap()
+        .source;
+
+    assert!(
+        source.matches("fill: rgb(226, 239, 217)").count() >= 2,
+        "the visible numbered paragraph must retain its shading in addition to its empty break fragment: {source}"
+    );
+    assert!(
+        source.contains("if tab_prefix_width_1 < 17.85pt"),
+        "the inline number must place its suffix tab at the paragraph's 17.85pt text indent: {source}"
+    );
+    assert!(
+        source.contains(", outset: (x: 5.44pt)"),
+        "the paragraph border space must extend the frame outside the text measure: {source}"
+    );
+    assert!(
+        source.contains(", inset: (top: 2.5pt, bottom: 2.5pt)"),
+        "horizontal border spacing must not reduce the available line width: {source}"
+    );
+    let second_page_start: usize = source
+        .find("#pagebreak()")
+        .expect("the fixture starts its next page with a page break");
+    let second_page: &str = &source[second_page_start..];
+    let columns_start: usize = second_page
+        .find("#columns(2,")
+        .expect("the page-break continuation uses two columns");
+    let before_spacing: usize = second_page
+        .find("#v(52pt, weak: false)")
+        .expect("the continued paragraph keeps before-spacing after paragraph-after collapse");
+    assert!(
+        before_spacing > columns_start,
+        "page-top paragraph spacing must stay in the first column rather than shifting every column: {second_page}"
+    );
+}
+
+#[test]
+fn test_separate_paragraph_at_later_column_page_top_drops_before_spacing() {
+    const FIXTURE: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/libreoffice/tdf153964_topMarginAfterBreak14.docx"
+    );
+    let (document, _warnings) = DocxParser
+        .parse(FIXTURE, &ConvertOptions::default())
+        .unwrap();
+    let source = crate::render::typst_gen::generate_typst(&document)
+        .unwrap()
+        .source;
+    let text: usize = source
+        .find("page break1")
+        .expect("page-break paragraph emitted");
+    let page_break: usize = source[..text]
+        .rfind("#pagebreak()")
+        .expect("the paragraph follows a page break");
+    let page_segment: &str = &source[page_break..text];
+
+    assert!(
+        !page_segment.contains("#v(60pt, weak: false)") && !page_segment.contains("above: 60pt"),
+        "before-spacing from a later column-break paragraph must not move the separate paragraph at the page top: {page_segment}"
+    );
+    assert!(
+        source.contains(", outset: (x: 5.44pt)")
+            && source.contains(", inset: (top: 2.5pt, bottom: 2.5pt)"),
+        "horizontal paragraph-border spacing must expand the frame without narrowing text measure: {source}"
+    );
+}
+
+#[test]
+fn test_paragraph_starting_with_page_break_keeps_before_spacing_on_later_page() {
+    let before_break = docx_rs::Paragraph::new()
+        .add_run(docx_rs::Run::new().add_text("Paragraph before the explicit page break"));
+    let after_break = docx_rs::Paragraph::new()
+        .add_run(
+            docx_rs::Run::new()
+                .add_break(docx_rs::BreakType::Page)
+                .add_text("Paragraph content after the explicit page break"),
+        )
+        .line_spacing(docx_rs::LineSpacing::new().before(1200));
+    let data = build_docx_bytes(vec![before_break, after_break]);
+
+    let (document, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(page) = &document.pages[0] else {
+        panic!("Expected a flow page");
+    };
+    assert!(page.content.iter().any(|block| matches!(
+        block,
+        Block::Paragraph(paragraph) if paragraph.style.starts_after_layout_break
+    )));
+    let source = crate::render::typst_gen::generate_typst(&document)
+        .unwrap()
+        .source;
+
+    assert!(
+        source.contains("#pagebreak()\n\n#v(60pt, weak: false)"),
+        "before-spacing on a paragraph whose own first run is a page break must survive at the new page top: {source}"
+    );
+}
+
+#[test]
+fn test_layout_break_continuation_does_not_repeat_paragraph_edges_or_first_line_indent() {
+    let paragraph = docx_rs::Paragraph::new()
+        .add_run(
+            docx_rs::Run::new()
+                .add_text("Before break")
+                .add_break(docx_rs::BreakType::Page)
+                .add_text("After break"),
+        )
+        .line_spacing(docx_rs::LineSpacing::new().before(1200).after(120))
+        .indent(
+            None,
+            Some(docx_rs::SpecialIndentType::FirstLine(1134)),
+            None,
+            None,
+        );
+    let data = build_docx_bytes(vec![paragraph]);
+
+    let (document, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(page) = &document.pages[0] else {
+        panic!("Expected a flow page");
+    };
+    let [
+        Block::Paragraph(first),
+        Block::PageBreak,
+        Block::Paragraph(continuation),
+    ] = page.content.as_slice()
+    else {
+        panic!(
+            "expected two paragraph fragments around the page break: {:#?}",
+            page.content
+        );
+    };
+
+    assert_eq!(first.runs[0].text, "Before break");
+    assert_eq!(first.style.space_before, Some(60.0));
+    assert_eq!(first.style.space_after, None);
+    assert_eq!(first.style.indent_first_line, Some(56.7));
+    assert!(!first.style.starts_after_layout_break);
+    assert_eq!(continuation.runs[0].text, "After break");
+    assert_eq!(continuation.style.space_before, None);
+    assert_eq!(continuation.style.space_after, Some(6.0));
+    assert_eq!(continuation.style.indent_first_line, None);
+    assert!(!continuation.style.starts_after_layout_break);
+}
+
+#[test]
 fn test_parse_nested_multi_level_list() {
     let abstract_num = docx_rs::AbstractNumbering::new(0)
         .add_level(docx_rs::Level::new(

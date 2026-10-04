@@ -3820,6 +3820,220 @@ fn test_page_break_inside_equal_columns_breaks_the_page() {
 
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
+fn test_space_before_survives_leading_page_break_inside_equal_columns() {
+    let mut continuation = make_paragraph("After page break");
+    let Block::Paragraph(paragraph) = &mut continuation else {
+        unreachable!();
+    };
+    paragraph.style.space_before = Some(21.0);
+    paragraph.style.space_after = Some(8.0);
+    let (source, _) = column_section_layout(
+        vec![Block::PageBreak, continuation],
+        Some(EQUAL_TWO_COLUMNS.clone()),
+    );
+
+    let page_break = source.find("#pagebreak()").expect("page break emitted");
+    let gap = source[page_break..]
+        .find("#v(21pt, weak: false)")
+        .expect("the gap must be explicit at the new page top");
+    let paragraph = source
+        .find("After page break")
+        .expect("continuation paragraph emitted");
+    assert!(page_break + gap < paragraph, "{source}");
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_later_page_break_suppresses_separate_paragraph_before_spacing() {
+    let mut continuation = make_paragraph("After page break");
+    let Block::Paragraph(paragraph) = &mut continuation else {
+        unreachable!();
+    };
+    paragraph.style.space_before = Some(21.0);
+    paragraph.style.space_after = Some(8.0);
+    paragraph.style.background = Some(crate::ir::Color::new(0xDE, 0xEA, 0xF6));
+    let (source, _) = column_section_layout(
+        vec![
+            make_paragraph("Before page break"),
+            Block::PageBreak,
+            continuation,
+        ],
+        Some(EQUAL_TWO_COLUMNS.clone()),
+    );
+
+    let page_break = source.find("#pagebreak()").expect("page break emitted");
+    let paragraph = source
+        .find("After page break")
+        .expect("following paragraph emitted");
+    let after_page_break: &str = &source[page_break..paragraph];
+    assert!(
+        !after_page_break.contains("#v(21pt, weak: false)"),
+        "Word suppresses before-spacing for a separate paragraph at a later page top: {source}"
+    );
+    assert!(
+        !after_page_break.contains("above: 21pt"),
+        "Word suppresses the separate paragraph's before-spacing at a later page top: {source}"
+    );
+    assert!(
+        after_page_break.contains("height: 13pt") && after_page_break.contains("dy: -13pt"),
+        "Word keeps the paragraph decoration in the before-spacing left after paragraph spacing collapses: {source}"
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_continued_paragraph_after_later_page_break_collapses_after_spacing() {
+    let mut continuation = make_paragraph("Continued after page break");
+    let Block::Paragraph(paragraph) = &mut continuation else {
+        unreachable!();
+    };
+    paragraph.style.space_before = Some(21.0);
+    paragraph.style.space_after = Some(8.0);
+    paragraph.style.starts_after_layout_break = true;
+    let (source, _) = column_section_layout(
+        vec![
+            make_paragraph("Before page break"),
+            Block::PageBreak,
+            continuation,
+        ],
+        Some(EQUAL_TWO_COLUMNS.clone()),
+    );
+
+    let page_break = source.find("#pagebreak()").expect("page break emitted");
+    let paragraph_start = source
+        .find("Continued after page break")
+        .expect("continuation paragraph emitted");
+    assert!(
+        source[page_break..paragraph_start].contains("#v(13pt, weak: false)"),
+        "a later page break retains only before-spacing beyond paragraph spacing: {source}"
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_space_before_survives_equal_column_break() {
+    let mut continuation = make_paragraph("After column break");
+    let Block::Paragraph(paragraph) = &mut continuation else {
+        unreachable!();
+    };
+    paragraph.style.space_before = Some(21.0);
+    paragraph.style.space_after = Some(8.0);
+    for (before, after, expected_gap) in [(21.0, 8.0, 13.0), (6.0, 8.0, 0.0), (21.0, 0.0, 21.0)] {
+        let mut continuation = continuation.clone();
+        let Block::Paragraph(paragraph) = &mut continuation else {
+            unreachable!();
+        };
+        paragraph.style.space_before = Some(before);
+        paragraph.style.space_after = Some(after);
+        let (source, _) = column_section_layout(
+            vec![
+                make_paragraph("Before column break"),
+                Block::ColumnBreak,
+                continuation,
+            ],
+            Some(EQUAL_TWO_COLUMNS.clone()),
+        );
+
+        let column_break = source.find("#colbreak()").expect("column break emitted");
+        let paragraph_start = source
+            .find("After column break")
+            .expect("continuation paragraph emitted");
+        let after_column_break: &str = &source[column_break..paragraph_start];
+        if expected_gap > 0.0 {
+            assert!(
+                after_column_break.contains(&format!("#v({expected_gap}pt, weak: false)")),
+                "before-spacing {before}pt with after-spacing {after}pt must leave {expected_gap}pt at the column break: {source}"
+            );
+        } else {
+            assert!(
+                !after_column_break.contains("#v("),
+                "a smaller before-spacing must be absorbed by paragraph spacing: {source}"
+            );
+        }
+    }
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_leading_column_break_keeps_full_before_spacing() {
+    let mut continuation = make_paragraph("After leading column break");
+    let Block::Paragraph(paragraph) = &mut continuation else {
+        unreachable!();
+    };
+    paragraph.style.space_before = Some(21.0);
+    paragraph.style.space_after = Some(8.0);
+    let (source, _) = column_section_layout(
+        vec![Block::ColumnBreak, continuation],
+        Some(EQUAL_TWO_COLUMNS.clone()),
+    );
+
+    let paragraph = source
+        .find("After leading column break")
+        .expect("continuation paragraph emitted");
+    assert!(
+        source[..paragraph].contains("#v(21pt, weak: false)"),
+        "a leading column break has no preceding paragraph spacing to absorb: {source}"
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_empty_paragraph_after_column_break_does_not_keep_its_before_spacing() {
+    let mut empty_paragraph = make_paragraph("placeholder");
+    let Block::Paragraph(paragraph) = &mut empty_paragraph else {
+        unreachable!();
+    };
+    paragraph.runs.clear();
+    paragraph.style.space_before = Some(21.0);
+    let (source, _) = column_section_layout(
+        vec![
+            make_paragraph("Before column break"),
+            Block::ColumnBreak,
+            empty_paragraph,
+        ],
+        Some(EQUAL_TWO_COLUMNS.clone()),
+    );
+
+    let column_break = source.find("#colbreak()").expect("column break emitted");
+    assert!(
+        !source[column_break..].contains("#v(21pt, weak: false)"),
+        "an empty paragraph must not move the next column by its before-spacing: {source}"
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_space_before_survives_unequal_column_break() {
+    let unequal = ColumnLayout {
+        num_columns: 2,
+        spacing: 36.0,
+        column_widths: Some(vec![300.0, 150.0]),
+    };
+    let mut continuation = make_paragraph("After unequal column break");
+    let Block::Paragraph(paragraph) = &mut continuation else {
+        unreachable!();
+    };
+    paragraph.style.space_before = Some(21.0);
+    let (source, _) = column_section_layout(
+        vec![
+            make_paragraph("Before unequal column break"),
+            Block::ColumnBreak,
+            continuation,
+        ],
+        Some(unequal),
+    );
+
+    let column_break_cell = source
+        .find("After unequal column break")
+        .expect("second grid cell emitted");
+    let gap = source[..column_break_cell]
+        .rfind("#v(21pt, weak: false)")
+        .expect("the gap must be explicit in the new grid cell");
+    assert!(gap < column_break_cell, "{source}");
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn test_page_break_inside_unequal_columns_breaks_the_page() {
     let unequal = ColumnLayout {
         num_columns: 2,
@@ -3874,15 +4088,14 @@ fn test_leading_page_break_inside_columns_matches_the_plain_page() {
 
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
-fn test_trailing_page_break_inside_columns_matches_the_plain_page() {
+fn test_trailing_page_break_inside_columns_does_not_create_a_blank_page() {
     let content = || vec![make_paragraph("Last visible line"), Block::PageBreak];
     let (source, columned_pages) =
         column_section_layout(content(), Some(EQUAL_TWO_COLUMNS.clone()));
-    let (_, plain_pages) = column_section_layout(content(), None);
 
     assert_eq!(
-        columned_pages, plain_pages,
-        "a break after the last block behaves as it does outside a section: {source}"
+        columned_pages, 1,
+        "a trailing page break does not create a blank output page: {source}"
     );
     assert_eq!(
         source.matches("#columns(2, gutter: 36pt)").count(),

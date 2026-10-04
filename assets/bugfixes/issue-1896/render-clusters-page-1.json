@@ -1,0 +1,39 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 294.912,
+      "bbox_pt": {
+        "height": 2.4,
+        "width": 122.88,
+        "x": 70.56,
+        "y": 84.0
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p1-15512a79d448",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 1,
+    "duplicate": 0,
+    "total": 1,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

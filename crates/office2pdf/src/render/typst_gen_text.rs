@@ -223,16 +223,27 @@ pub(super) fn generate_paragraph(
     let line_height_settings: Option<String> =
         word_line_height_settings(&para.runs, style, line_grid_pitch);
     let has_para_style = needs_block_wrapper(style) || line_height_settings.is_some();
+    let first_line_indent: Option<f64> = style
+        .indent_first_line
+        .filter(|indent| indent.abs() > 0.0001 && !para.runs.is_empty());
 
     // Word's `w:ind` offsets the paragraph's whole column, and paints
     // `w:shd` and `w:pBdr` from the indent rather than the margin, so the
     // indent goes on an outer block as an inset and the fill and border stay
     // on an inner block that spans only the inset content area (issue #464).
     let indent = paragraph_indent_pt(style);
-    if indent.is_some() {
+    let is_framed_inline_list_number: bool = style.has_inline_list_number
+        && (style.background.is_some() || style.border.is_some())
+        && indent.is_some();
+    let outer_indent: Option<(f64, f64)> = if is_framed_inline_list_number {
+        None
+    } else {
+        indent
+    };
+    if outer_indent.is_some() {
         out.push_str("#block(width: 100%");
         write_block_spacing_params(out, style);
-        write_paragraph_indent_inset(out, indent);
+        write_paragraph_indent_inset(out, outer_indent);
         out.push_str(")[\n");
     }
 
@@ -253,6 +264,11 @@ pub(super) fn generate_paragraph(
             &style.border,
             style.border_space.as_deref().copied().unwrap_or_default(),
         );
+        if is_framed_inline_list_number {
+            out.push_str("#block(width: 100%, above: 0pt, below: 0pt");
+            write_paragraph_indent_inset(out, indent);
+            out.push_str(")[\n");
+        }
         write_line_box_settings(out, style.line_box);
         write_par_settings(out, style, &para.runs);
         if let Some(ref settings) = line_height_settings {
@@ -265,7 +281,7 @@ pub(super) fn generate_paragraph(
         if has_para_style {
             out.push_str("\n]");
         }
-        if indent.is_some() {
+        if outer_indent.is_some() {
             out.push_str("\n]");
         }
         out.push('\n');
@@ -290,6 +306,14 @@ pub(super) fn generate_paragraph(
             _ => "left",
         };
         let _ = write!(out, "#align({align_str})[");
+    }
+
+    if let Some(indent) = first_line_indent {
+        let _ = write!(
+            out,
+            "#par(first-line-indent: (amount: {}pt, all: true))[",
+            format_f64(indent)
+        );
     }
 
     // Whichever fixed line box the wrapper above put in force — the computed
@@ -317,6 +341,7 @@ pub(super) fn generate_paragraph(
         // #638 were measured on mixed-face body paragraphs only.
         Some(level) => {
             let _ = write!(out, "#heading(level: {level})[");
+            write_paragraph_before_spacing_overlay(out, style);
             generate_runs_with_tabs(
                 out,
                 &para.runs,
@@ -326,25 +351,36 @@ pub(super) fn generate_paragraph(
             );
             out.push(']');
         }
-        None => generate_word_runs_with_tabs(
-            out,
-            &para.runs,
-            style.tab_stops.as_deref(),
-            paragraph_tab_width_pt,
-            eojeol_wrap,
-            style,
-            line_grid_pitch,
-        ),
+        None => {
+            write_paragraph_before_spacing_overlay(out, style);
+            generate_word_runs_with_tabs(
+                out,
+                &para.runs,
+                style.tab_stops.as_deref(),
+                paragraph_tab_width_pt,
+                eojeol_wrap,
+                style,
+                line_grid_pitch,
+            );
+        }
+    }
+
+    if first_line_indent.is_some() {
+        out.push(']');
     }
 
     if use_align {
         out.push(']');
     }
 
+    if is_framed_inline_list_number {
+        out.push_str("\n]");
+    }
+
     if has_para_style {
         out.push_str("\n]");
     }
-    if indent.is_some() {
+    if outer_indent.is_some() {
         out.push_str("\n]");
     }
 
@@ -2742,22 +2778,134 @@ fn write_block_decoration_params(out: &mut String, style: &ParagraphStyle) {
     if let Some(background) = style.background {
         let _ = write!(out, ", fill: {}", rgb(&background));
     }
+    let border_space = style.border_space.as_deref().copied().unwrap_or_default();
     if let Some(border) = &style.border {
-        write_paragraph_border_params(
-            out,
-            border,
-            style.border_space.as_deref().copied().unwrap_or_default(),
-        );
+        write_paragraph_border_params(out, border, border_space);
     }
     if decorated {
         // `outset` widens what the block paints without moving the text in
         // it, which is what the overhang needs (issue #644).
-        let _ = write!(
-            out,
-            ", outset: (x: {}pt)",
-            format_f64(TEXT_COLUMN_DECORATION_OVERHANG_PT)
-        );
+        let (left_outset_pt, right_outset_pt) = paragraph_horizontal_decoration_outsets(style);
+        if (left_outset_pt - right_outset_pt).abs() < 0.0001 {
+            let _ = write!(out, ", outset: (x: {}pt)", format_f64(left_outset_pt));
+        } else {
+            let _ = write!(
+                out,
+                ", outset: (left: {}pt, right: {}pt)",
+                format_f64(left_outset_pt),
+                format_f64(right_outset_pt)
+            );
+        }
     }
+}
+
+fn paragraph_horizontal_decoration_outsets(style: &ParagraphStyle) -> (f64, f64) {
+    let border_space: Insets = style.border_space.as_deref().copied().unwrap_or_default();
+    let mut left_outset_pt: f64 = TEXT_COLUMN_DECORATION_OVERHANG_PT;
+    let mut right_outset_pt: f64 = TEXT_COLUMN_DECORATION_OVERHANG_PT;
+    if let Some(border) = &style.border {
+        if border
+            .left
+            .as_ref()
+            .is_some_and(|side| side.style != BorderLineStyle::Double)
+        {
+            left_outset_pt += border_space.left;
+        }
+        if border
+            .right
+            .as_ref()
+            .is_some_and(|side| side.style != BorderLineStyle::Double)
+        {
+            right_outset_pt += border_space.right;
+        }
+    }
+    // OOXML border spaces are twips (0.05pt), so hundredths preserve source
+    // precision while avoiding binary-sum artifacts in Typst.
+    (
+        (left_outset_pt * 100.0).round() / 100.0,
+        (right_outset_pt * 100.0).round() / 100.0,
+    )
+}
+
+/// Extend paragraph shading and vertical rules through Word's `w:before`
+/// spacing. The joiner keeps Typst's block-level `place` attached to the
+/// following inline content so it does not add a line to the paragraph.
+fn write_paragraph_before_spacing_overlay(out: &mut String, style: &ParagraphStyle) {
+    let Some(space_before): Option<f64> = style
+        .decoration_before_spacing
+        .or(style.space_before)
+        .filter(|space| *space > 0.0)
+    else {
+        return;
+    };
+    let border: Option<&CellBorder> = style.border.as_deref();
+    let has_visible_side_border: bool = border.is_some_and(|border| {
+        [border.left.as_ref(), border.right.as_ref()]
+            .into_iter()
+            .flatten()
+            .any(|side| side.style != BorderLineStyle::Double)
+    });
+    if style.background.is_none() && !has_visible_side_border {
+        return;
+    }
+
+    let (left_outset_pt, right_outset_pt) = paragraph_horizontal_decoration_outsets(style);
+    let border_space: Insets = style.border_space.as_deref().copied().unwrap_or_default();
+    let (left_inset_pt, right_inset_pt): (f64, f64) = border.map_or((0.0, 0.0), |border| {
+        let left: Option<&BorderSide> = border
+            .left
+            .as_ref()
+            .filter(|side| side.style == BorderLineStyle::Double);
+        let right: Option<&BorderSide> = border
+            .right
+            .as_ref()
+            .filter(|side| side.style == BorderLineStyle::Double);
+        (
+            left.map_or(0.0, |side| {
+                border_space.left + double_rule_thickness(side.width)
+            }),
+            right.map_or(0.0, |side| {
+                border_space.right + double_rule_thickness(side.width)
+            }),
+        )
+    });
+    let left_expansion_pt: f64 = left_outset_pt + left_inset_pt;
+    let right_expansion_pt: f64 = right_outset_pt + right_inset_pt;
+    let width_delta_pt: f64 = left_expansion_pt + right_expansion_pt;
+    let width: String = if width_delta_pt < 0.0001 {
+        "100%".to_string()
+    } else {
+        format!("100% + {}pt", format_f64(width_delta_pt))
+    };
+
+    let _ = write!(
+        out,
+        "#box(place(dx: -{}pt, dy: -{}pt, rect(width: {}, height: {}pt, fill: ",
+        format_f64(left_expansion_pt),
+        format_f64(space_before),
+        width,
+        format_f64(space_before)
+    );
+    if let Some(background) = style.background {
+        out.push_str(&rgb(&background));
+    } else {
+        out.push_str("none");
+    }
+
+    let mut strokes: Vec<String> = Vec::new();
+    if let Some(border) = border {
+        for (name, side) in [("left", &border.left), ("right", &border.right)] {
+            if let Some(side) = side
+                && side.style != BorderLineStyle::Double
+            {
+                strokes.push(format!("{name}: {}", stroke_literal(side)));
+            }
+        }
+    }
+    if !strokes.is_empty() {
+        let _ = write!(out, ", stroke: ({})", strokes.join(", "));
+    }
+    out.push_str(")))#sym.wj#h(0pt, weak: true)");
 }
 
 /// How far Word paints a rule or a shaded block past each edge of the text
@@ -2782,16 +2930,18 @@ fn stroke_literal(side: &BorderSide) -> String {
 }
 
 /// Emit `stroke:`/`inset:` block parameters for the paragraph's borders.
-/// Double rules are drawn as overlays (Typst strokes have no double style),
-/// so those sides only reserve inset space here.
+/// Horizontal `w:pBdr` spaces expand the frame outside the text measure;
+/// vertical spaces remain insets. Double rules are drawn as overlays (Typst
+/// strokes have no double style), so those sides keep their full inset.
 ///
-/// Each side reserves its own `w:space` plus *half* the rule's thickness,
-/// because Typst centres a box stroke on the inset edge and the other half
-/// falls outside it (issue #648). A double side is the exception: it emits no
-/// box stroke at all, so it reserves the full three-width span its overlays
-/// draw into. A fixed 4pt stood in for `w:space` until #520: a letterhead declaring 8pt then
-/// pulled every line below it up by the difference, and the error is a step,
-/// not a drift, so it survives to the bottom of the page.
+/// Top and bottom sides reserve their own `w:space` plus half the rule width;
+/// Typst centers a box stroke on the inset edge, so the other half falls
+/// outside it (issue #648). Left and right spaces are moved to the block's
+/// `outset` so they do not narrow the paragraph's line measure. A double side
+/// has no box stroke, so it keeps an inset for the full three-width overlay.
+/// A fixed 4pt stood in for `w:space` until #520: a letterhead declaring 8pt
+/// then pulled every line below it up by the difference, and the error is a
+/// step, not a drift, so it survives to the bottom of the page.
 fn write_paragraph_border_params(out: &mut String, border: &CellBorder, space: Insets) {
     let mut strokes: Vec<String> = Vec::new();
     let mut insets: Vec<String> = Vec::new();
@@ -2811,7 +2961,11 @@ fn write_paragraph_border_params(out: &mut String, border: &CellBorder, space: I
             // against the native export (issue #648).
             gap + side.width / 2.0
         };
-        insets.push(format!("{name}: {}pt", format_f64(reserved)));
+        let is_horizontal_side: bool = matches!(name, "left" | "right");
+        let moves_space_outside: bool = is_horizontal_side && side.style != BorderLineStyle::Double;
+        if !moves_space_outside {
+            insets.push(format!("{name}: {}pt", format_f64(reserved)));
+        }
     };
     push_side("top", &border.top, space.top);
     push_side("bottom", &border.bottom, space.bottom);
