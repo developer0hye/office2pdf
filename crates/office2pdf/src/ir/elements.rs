@@ -1651,7 +1651,7 @@ impl Default for TableCell {
 }
 
 /// Cell border specification.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct CellBorder {
     pub top: Option<BorderSide>,
     pub bottom: Option<BorderSide>,
@@ -1718,7 +1718,7 @@ pub enum LineJoin {
 /// outlines render them; Word and Excel have no corresponding border property,
 /// so their sides leave both at the default and their codegen never writes
 /// them out.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BorderSide {
     pub width: f64,
     pub color: Color,

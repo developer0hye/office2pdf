@@ -1042,6 +1042,202 @@ fn test_generate_paragraph_with_background_shading() {
 }
 
 #[test]
+fn matching_adjacent_paragraph_borders_join_without_merging_shading() {
+    let make_border = || CellBorder {
+        top: Some(BorderSide {
+            width: 1.0,
+            color: Color::black(),
+            style: BorderLineStyle::Solid,
+            join: LineJoin::Round,
+            cap: LineCap::Flat,
+        }),
+        bottom: Some(BorderSide {
+            width: 1.0,
+            color: Color::black(),
+            style: BorderLineStyle::Solid,
+            join: LineJoin::Round,
+            cap: LineCap::Flat,
+        }),
+        left: Some(BorderSide {
+            width: 1.0,
+            color: Color::black(),
+            style: BorderLineStyle::Solid,
+            join: LineJoin::Round,
+            cap: LineCap::Flat,
+        }),
+        right: Some(BorderSide {
+            width: 1.0,
+            color: Color::black(),
+            style: BorderLineStyle::Solid,
+            join: LineJoin::Round,
+            cap: LineCap::Flat,
+        }),
+    };
+    let mut first: Block = make_paragraph("First shaded paragraph");
+    let mut second: Block = make_paragraph("Second shaded paragraph");
+    let Block::Paragraph(first_paragraph) = &mut first else {
+        unreachable!();
+    };
+    first_paragraph.style.border = Some(Box::new(make_border()));
+    first_paragraph.style.background = Some(Color::new(251, 228, 213));
+    let Block::Paragraph(second_paragraph) = &mut second else {
+        unreachable!();
+    };
+    second_paragraph.style.border = Some(Box::new(make_border()));
+    second_paragraph.style.background = Some(Color::new(222, 234, 246));
+
+    let document: Document = make_doc(vec![make_flow_page(vec![first, second])]);
+    let source: String = generate_typst(&document).unwrap().source;
+
+    assert_eq!(
+        source.matches("top: 1pt + rgb(0, 0, 0)").count(),
+        1,
+        "only the first paragraph should paint the joined frame's top edge: {source}"
+    );
+    assert_eq!(
+        source.matches("bottom: 1pt + rgb(0, 0, 0)").count(),
+        1,
+        "only the last paragraph should paint the joined frame's bottom edge: {source}"
+    );
+    assert_eq!(
+        source.matches("left: 1pt + rgb(0, 0, 0)").count(),
+        3,
+        "the shared frame and both paragraph fills must keep the left edge: {source}"
+    );
+    assert_eq!(
+        source.matches("right: 1pt + rgb(0, 0, 0)").count(),
+        3,
+        "the shared frame and both paragraph fills must keep the right edge: {source}"
+    );
+    assert!(
+        source.contains("#block(width: 100%, above: 0pt, below: 0pt, stroke: (left: 1pt + rgb(0, 0, 0), right: 1pt + rgb(0, 0, 0)), outset: (x: 1.44pt))["),
+        "a shared frame must wrap the joined paragraphs: {source}"
+    );
+    assert!(source.contains("fill: rgb(251, 228, 213)"));
+    assert!(source.contains("fill: rgb(222, 234, 246)"));
+}
+
+#[test]
+fn matching_paragraph_borders_join_across_layout_breaks() {
+    let make_border = || {
+        Box::new(CellBorder {
+            top: Some(BorderSide {
+                width: 1.0,
+                color: Color::black(),
+                style: BorderLineStyle::Solid,
+                join: LineJoin::Round,
+                cap: LineCap::Flat,
+            }),
+            bottom: Some(BorderSide {
+                width: 1.0,
+                color: Color::black(),
+                style: BorderLineStyle::Solid,
+                join: LineJoin::Round,
+                cap: LineCap::Flat,
+            }),
+            left: Some(BorderSide {
+                width: 1.0,
+                color: Color::black(),
+                style: BorderLineStyle::Solid,
+                join: LineJoin::Round,
+                cap: LineCap::Flat,
+            }),
+            right: Some(BorderSide {
+                width: 1.0,
+                color: Color::black(),
+                style: BorderLineStyle::Solid,
+                join: LineJoin::Round,
+                cap: LineCap::Flat,
+            }),
+        })
+    };
+    let mut first: Block = make_paragraph("First shaded paragraph");
+    let mut second: Block = make_paragraph("Second shaded paragraph");
+    let Block::Paragraph(first_paragraph) = &mut first else {
+        unreachable!();
+    };
+    first_paragraph.style.border = Some(make_border());
+    first_paragraph.style.background = Some(Color::new(251, 228, 213));
+    let Block::Paragraph(second_paragraph) = &mut second else {
+        unreachable!();
+    };
+    second_paragraph.style.border = Some(make_border());
+    second_paragraph.style.background = Some(Color::new(222, 234, 246));
+
+    let document: Document = make_doc(vec![make_flow_page(vec![
+        first,
+        Block::ColumnBreak,
+        second,
+    ])]);
+    let source: String = generate_typst(&document).unwrap().source;
+
+    assert_eq!(
+        source.matches("top: 1pt + rgb(0, 0, 0)").count(),
+        1,
+        "the continuation must not add a top edge after a column break: {source}"
+    );
+    assert_eq!(
+        source.matches("bottom: 1pt + rgb(0, 0, 0)").count(),
+        1,
+        "the preceding paragraph must not add a bottom edge before a column break: {source}"
+    );
+}
+
+#[test]
+fn issue_1975_fixture_joins_borders_across_differently_shaded_paragraphs() {
+    use crate::parser::Parser;
+
+    let fixture: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/libreoffice/tdf153964_topMarginAfterBreak14.docx"
+    );
+    let (document, _) = crate::parser::docx::DocxParser
+        .parse(fixture, &crate::config::ConvertOptions::default())
+        .unwrap();
+    let source: String = generate_typst(&document).unwrap().source;
+    let first_text_position: usize = source.find("[column break1]").unwrap();
+    let first_paragraph_start: usize = source[..first_text_position]
+        .rfind("#block(width: 100%, fill: rgb(251, 228, 213)")
+        .unwrap();
+    let second_text_position: usize = source.find("[60 pt followed by page break]").unwrap();
+    let second_paragraph_start: usize = source[..second_text_position]
+        .rfind("#block(width: 100%, above: 52pt, fill: rgb(222, 234, 246)")
+        .unwrap();
+    let second_paragraph_after_text_end: usize =
+        second_text_position + source[second_text_position..].find("#pagebreak()").unwrap();
+    let first_paragraph: &str = &source[first_paragraph_start..first_text_position];
+    let first_paragraph_after_text: &str = &source[first_text_position..second_paragraph_start];
+    let second_paragraph: &str = &source[second_paragraph_start..second_text_position];
+    let second_paragraph_after_text: &str =
+        &source[second_text_position..second_paragraph_after_text_end];
+
+    assert!(
+        source[..first_paragraph_start]
+            .rfind("#block(width: 100%, above: 0pt, below: 0pt, stroke: (left: 3pt + rgb(0, 0, 0), right: 3pt + rgb(0, 0, 0)), outset: (x: 5.44pt))[" )
+            .is_some(),
+        "adjacent DOCX paragraphs with matching borders need a shared side frame"
+    );
+    assert!(!first_paragraph.contains("top: 3pt + rgb(0, 0, 0)"));
+    assert!(!first_paragraph.contains("bottom: 3pt + rgb(0, 0, 0)"));
+    assert!(!second_paragraph.contains("top: 3pt + rgb(0, 0, 0)"));
+    assert!(!second_paragraph.contains("bottom: 3pt + rgb(0, 0, 0)"));
+    assert!(
+        first_paragraph_after_text
+            .contains("#block(width: 100%, height: 8pt, above: 0pt, below: 0pt, fill: rgb(251, 228, 213), stroke: (left: 3pt + rgb(0, 0, 0), right: 3pt + rgb(0, 0, 0))"),
+        "the orange shading must fill the paragraph's transferred 8pt after-spacing: {first_paragraph_after_text}"
+    );
+    assert!(
+        second_paragraph.contains("dy: -62.5pt"),
+        "before-spacing shading must include the removed 2.5pt paragraph-border inset: {second_paragraph}"
+    );
+    assert!(
+        second_paragraph_after_text.contains("#block(width: 100%, height: 8pt, above: 0pt, below: 0pt, fill: rgb(222, 234, 246), stroke: (left: 3pt + rgb(0, 0, 0), right: 3pt + rgb(0, 0, 0))"),
+        "the blue shading and joined side frame must reach the paragraph's trailing 8pt: {second_paragraph_after_text}"
+    );
+    assert!(source.contains("fill: rgb(251, 228, 213)"));
+    assert!(source.contains("fill: rgb(222, 234, 246)"));
+}
+
+#[test]
 fn test_paragraph_before_spacing_overlay_stays_inline_with_text() {
     let doc = make_doc(vec![make_flow_page(vec![
         make_paragraph("Previous paragraph"),
