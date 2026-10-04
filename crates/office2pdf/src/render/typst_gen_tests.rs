@@ -463,6 +463,434 @@ fn test_generate_run_baseline_shift_moves_text_by_its_run_size() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn continuous_section_columns_do_not_add_typst_block_spacing() {
+    let mut first_section: FlowPage = match make_flow_page(vec![make_paragraph("before")]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    first_section.size = PageSize {
+        width: 300.0,
+        height: 300.0,
+    };
+    first_section.margins = Margins {
+        top: 20.0,
+        bottom: 20.0,
+        left: 20.0,
+        right: 20.0,
+    };
+
+    let mut column_section: FlowPage = match make_flow_page(vec![make_paragraph("middle")]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    column_section.size = first_section.size;
+    column_section.margins = first_section.margins;
+    column_section.columns = Some(ColumnLayout {
+        num_columns: 2,
+        spacing: 20.0,
+        column_widths: None,
+    });
+
+    let mut final_section: FlowPage = match make_flow_page(vec![make_paragraph("after")]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    final_section.size = first_section.size;
+    final_section.margins = first_section.margins;
+
+    let document: Document = make_doc(vec![
+        Page::Flow(first_section),
+        Page::FlowContinuous(column_section),
+        Page::FlowContinuous(final_section),
+    ]);
+    let output: TypstOutput = generate_typst(&document).expect("Typst should generate");
+    let placed = crate::render::pdf::compiled_text_runs(&output.source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{}", output.source));
+    let baseline = |needle: &str| -> f64 {
+        placed
+            .iter()
+            .find(|run| run.text == needle)
+            .unwrap_or_else(|| panic!("missing {needle:?} in {placed:?}"))
+            .baseline_pt
+    };
+    let before_baseline: f64 = baseline("before");
+    let middle_baseline: f64 = baseline("middle");
+    let after_baseline: f64 = baseline("after");
+    assert!(
+        middle_baseline - before_baseline <= 14.0,
+        "continuous section start inserted {}pt before the column text; {placed:?}\n{}",
+        middle_baseline - before_baseline,
+        output.source
+    );
+    assert!(
+        after_baseline - middle_baseline <= 14.0,
+        "continuous section boundary inserted {}pt after the column text; {placed:?}\n{}",
+        after_baseline - middle_baseline,
+        output.source
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn continuous_section_start_does_not_add_typst_paragraph_spacing() {
+    let mut before_paragraph: Block = make_paragraph("before");
+    let Block::Paragraph(before_paragraph) = &mut before_paragraph else {
+        unreachable!();
+    };
+    before_paragraph.style.line_spacing = Some(LineSpacing::Exact(12.0));
+    let mut first_section: FlowPage =
+        match make_flow_page(vec![Block::Paragraph(before_paragraph.clone())]) {
+            Page::Flow(page) => page,
+            _ => unreachable!(),
+        };
+    first_section.size = PageSize {
+        width: 300.0,
+        height: 300.0,
+    };
+    first_section.margins = Margins {
+        top: 20.0,
+        bottom: 20.0,
+        left: 20.0,
+        right: 20.0,
+    };
+
+    let mut after_paragraph: Block = make_paragraph("after");
+    let Block::Paragraph(after_paragraph) = &mut after_paragraph else {
+        unreachable!();
+    };
+    after_paragraph.style.line_spacing = Some(LineSpacing::Exact(12.0));
+    let mut continuous_section: FlowPage =
+        match make_flow_page(vec![Block::Paragraph(after_paragraph.clone())]) {
+            Page::Flow(page) => page,
+            _ => unreachable!(),
+        };
+    continuous_section.size = first_section.size;
+    continuous_section.margins = first_section.margins;
+
+    let document: Document = make_doc(vec![
+        Page::Flow(first_section),
+        Page::FlowContinuous(continuous_section),
+    ]);
+    let output: TypstOutput = generate_typst(&document).expect("Typst should generate");
+    let placed = crate::render::pdf::compiled_text_runs(&output.source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{}", output.source));
+    let baseline = |needle: &str| -> f64 {
+        placed
+            .iter()
+            .find(|run| run.text == needle)
+            .unwrap_or_else(|| panic!("missing {needle:?} in {placed:?}"))
+            .baseline_pt
+    };
+    let before_baseline: f64 = baseline("before");
+    let after_baseline: f64 = baseline("after");
+    assert!(
+        after_baseline - before_baseline <= 14.0,
+        "continuous section start inserted {}pt before the next paragraph; {placed:?}\n{}",
+        after_baseline - before_baseline,
+        output.source
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn continuous_section_columns_start_without_typst_block_spacing() {
+    let mut before: Paragraph = match make_paragraph("before") {
+        Block::Paragraph(paragraph) => paragraph,
+        _ => unreachable!(),
+    };
+    before.style.line_spacing = Some(LineSpacing::Exact(12.0));
+    let mut first_section: FlowPage = match make_flow_page(vec![Block::Paragraph(before)]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    first_section.size = PageSize {
+        width: 300.0,
+        height: 300.0,
+    };
+    first_section.margins = Margins {
+        top: 20.0,
+        bottom: 20.0,
+        left: 20.0,
+        right: 20.0,
+    };
+
+    let mut middle: Paragraph = match make_paragraph("middle") {
+        Block::Paragraph(paragraph) => paragraph,
+        _ => unreachable!(),
+    };
+    middle.style.line_spacing = Some(LineSpacing::Exact(12.0));
+    let mut column_section: FlowPage =
+        match make_flow_page(vec![Block::Paragraph(middle), Block::PageBreak]) {
+            Page::Flow(page) => page,
+            _ => unreachable!(),
+        };
+    column_section.size = first_section.size;
+    column_section.margins = first_section.margins;
+    column_section.columns = Some(ColumnLayout {
+        num_columns: 2,
+        spacing: 20.0,
+        column_widths: None,
+    });
+
+    let document: Document = make_doc(vec![
+        Page::Flow(first_section),
+        Page::FlowContinuous(column_section),
+    ]);
+    let output: TypstOutput = generate_typst(&document).expect("Typst should generate");
+    let placed = crate::render::pdf::compiled_text_runs(&output.source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{}", output.source));
+    let baseline = |needle: &str| -> f64 {
+        placed
+            .iter()
+            .find(|run| run.text == needle)
+            .unwrap_or_else(|| panic!("missing {needle:?} in {placed:?}"))
+            .baseline_pt
+    };
+    let before_baseline: f64 = baseline("before");
+    let middle_baseline: f64 = baseline("middle");
+    assert!(
+        middle_baseline - before_baseline <= 14.0,
+        "continuous column section start inserted {}pt before its first paragraph; {placed:?}\n{}",
+        middle_baseline - before_baseline,
+        output.source
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn continuous_section_balancing_keeps_paragraphs_in_one_column() {
+    let mut before: Paragraph = match make_paragraph("before") {
+        Block::Paragraph(paragraph) => paragraph,
+        _ => unreachable!(),
+    };
+    before.style.line_spacing = Some(LineSpacing::Exact(12.0));
+    let mut first_section: FlowPage = match make_flow_page(vec![Block::Paragraph(before)]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    first_section.size = PageSize {
+        width: 300.0,
+        height: 600.0,
+    };
+    first_section.margins = Margins {
+        top: 20.0,
+        bottom: 20.0,
+        left: 20.0,
+        right: 20.0,
+    };
+
+    let mut long_paragraph: Paragraph = match make_paragraph(
+        "FIRSTSTART one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four twenty-five twenty-six twenty-seven twenty-eight twenty-nine thirty thirty-one thirty-two thirty-three thirty-four thirty-five thirty-six thirty-seven thirty-eight thirty-nine forty forty-one forty-two forty-three forty-four forty-five forty-six forty-seven forty-eight forty-nine fifty FIRSTEND",
+    ) {
+        Block::Paragraph(paragraph) => paragraph,
+        _ => unreachable!(),
+    };
+    long_paragraph.style.line_spacing = Some(LineSpacing::Exact(12.0));
+    let mut short_paragraph: Paragraph = match make_paragraph("SECONDEND") {
+        Block::Paragraph(paragraph) => paragraph,
+        _ => unreachable!(),
+    };
+    short_paragraph.style.line_spacing = Some(LineSpacing::Exact(12.0));
+    let mut column_section: FlowPage = match make_flow_page(vec![
+        Block::Paragraph(long_paragraph),
+        Block::Paragraph(short_paragraph),
+    ]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    column_section.size = first_section.size;
+    column_section.margins = first_section.margins;
+    column_section.columns = Some(ColumnLayout {
+        num_columns: 2,
+        spacing: 20.0,
+        column_widths: None,
+    });
+
+    let mut final_section: FlowPage = match make_flow_page(vec![make_paragraph("after")]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    final_section.size = first_section.size;
+    final_section.margins = first_section.margins;
+
+    let document: Document = make_doc(vec![
+        Page::Flow(first_section),
+        Page::FlowContinuous(column_section),
+        Page::FlowContinuous(final_section),
+    ]);
+    let output: TypstOutput = generate_typst(&document).expect("Typst should generate");
+    let placed = crate::render::pdf::compiled_text_runs(&output.source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{}", output.source));
+    let x = |needle: &str| -> f64 {
+        placed
+            .iter()
+            .find(|run| run.text.contains(needle))
+            .unwrap_or_else(|| panic!("missing {needle:?} in {placed:?}\n{}", output.source))
+            .left_pt
+    };
+    assert_eq!(
+        x("FIRSTSTART"),
+        x("FIRSTEND"),
+        "one paragraph must remain in a single column; {placed:?}\n{}",
+        output.source
+    );
+    assert!(
+        x("SECONDEND") > x("FIRSTEND"),
+        "the following paragraph should start in the next column; {placed:?}\n{}",
+        output.source
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn continuous_section_uses_its_horizontal_margins_on_the_current_page() {
+    let mut before: FlowPage = match make_flow_page(vec![make_paragraph("before")]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    before.size = PageSize {
+        width: 300.0,
+        height: 600.0,
+    };
+    before.margins = Margins {
+        top: 20.0,
+        bottom: 20.0,
+        left: 30.0,
+        right: 30.0,
+    };
+
+    let mut first_column: Paragraph = match make_paragraph(
+        "CONTINUOUSSTART one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four twenty-five twenty-six twenty-seven twenty-eight twenty-nine thirty thirty-one thirty-two thirty-three thirty-four thirty-five thirty-six thirty-seven thirty-eight thirty-nine forty forty-one forty-two forty-three forty-four forty-five forty-six forty-seven forty-eight forty-nine fifty CONTINUOUSEND",
+    ) {
+        Block::Paragraph(paragraph) => paragraph,
+        _ => unreachable!(),
+    };
+    first_column.style.line_spacing = Some(LineSpacing::Exact(12.0));
+    let mut second_column: Paragraph = match make_paragraph("RIGHTCOLUMNMARK") {
+        Block::Paragraph(paragraph) => paragraph,
+        _ => unreachable!(),
+    };
+    second_column.style.line_spacing = Some(LineSpacing::Exact(12.0));
+
+    let mut continuous: FlowPage = match make_flow_page(vec![
+        Block::Paragraph(first_column),
+        Block::Paragraph(second_column),
+    ]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    continuous.size = before.size;
+    continuous.margins = Margins {
+        top: 20.0,
+        bottom: 20.0,
+        left: 20.0,
+        right: 20.0,
+    };
+    continuous.columns = Some(ColumnLayout {
+        num_columns: 2,
+        spacing: 20.0,
+        column_widths: None,
+    });
+
+    let mut final_section: FlowPage = match make_flow_page(vec![make_paragraph("after")]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    final_section.size = before.size;
+    final_section.margins = continuous.margins;
+
+    let document: Document = make_doc(vec![
+        Page::Flow(before),
+        Page::FlowContinuous(continuous),
+        Page::FlowContinuous(final_section),
+    ]);
+    let output: TypstOutput = generate_typst(&document).expect("Typst should generate");
+    let placed = crate::render::pdf::compiled_text_runs(&output.source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{}", output.source));
+    let left_x: f64 = placed
+        .iter()
+        .find(|run| run.text.contains("CONTINUOUSSTART"))
+        .expect("continuous section's first column text should render")
+        .left_pt;
+    let right_x: f64 = placed
+        .iter()
+        .find(|run| run.text.contains("RIGHTCOLUMNMARK"))
+        .expect("continuous section's second column text should render")
+        .left_pt;
+
+    assert_eq!(
+        left_x, 20.0,
+        "the continuous section must begin at its own left margin; {placed:?}\n{}",
+        output.source
+    );
+    assert_eq!(
+        right_x, 160.0,
+        "the second column should use the new content width"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn continuous_section_updates_margins_after_an_explicit_page_break() {
+    let mut first_section: FlowPage = match make_flow_page(vec![make_paragraph("before")]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    first_section.size = PageSize {
+        width: 300.0,
+        height: 400.0,
+    };
+    first_section.margins = Margins {
+        top: 20.0,
+        bottom: 20.0,
+        left: 30.0,
+        right: 30.0,
+    };
+
+    let mut continuous_section: FlowPage = match make_flow_page(vec![
+        make_paragraph("same-page"),
+        Block::PageBreak,
+        make_paragraph("new-page-margin"),
+    ]) {
+        Page::Flow(page) => page,
+        _ => unreachable!(),
+    };
+    continuous_section.size = first_section.size;
+    continuous_section.margins = Margins {
+        top: 20.0,
+        bottom: 20.0,
+        left: 20.0,
+        right: 20.0,
+    };
+
+    let document: Document = make_doc(vec![
+        Page::Flow(first_section),
+        Page::FlowContinuous(continuous_section),
+    ]);
+    let output: TypstOutput = generate_typst(&document).expect("Typst should generate");
+    let page_count: u32 =
+        crate::render::pdf::compile_page_count_with_fonts(&output.source, &output.images, &[], &[])
+            .expect("Typst should compile");
+    let next_page_runs = crate::render::pdf::compiled_text_runs(&output.source, 1)
+        .unwrap_or_else(|error| panic!("second page should compile: {error}\n{}", output.source));
+    let next_page_x: f64 = next_page_runs
+        .iter()
+        .find(|run| run.text.contains("new-page-margin"))
+        .expect("the continuous section should continue after the page break")
+        .left_pt;
+
+    assert_eq!(
+        page_count, 2,
+        "the section break itself must not add a page"
+    );
+    assert_eq!(
+        next_page_x, 20.0,
+        "the section's page setup must apply after its explicit page break"
+    );
+}
+
 #[test]
 fn test_generate_run_small_caps() {
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {

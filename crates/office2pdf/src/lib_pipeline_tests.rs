@@ -448,6 +448,96 @@ fn test_metrics_page_count_counts_printed_pages() {
 }
 
 #[test]
+fn continuous_section_fixtures_keep_their_native_page_counts() {
+    let fixtures: [(&str, &[u8], u32); 2] = [
+        (
+            "continuous multi-column transitions",
+            include_bytes!(
+                "../../../tests/fixtures/docx/libreoffice/tdf46940_dontEquallyDistributeColumns.docx"
+            ),
+            3,
+        ),
+        (
+            "continuous transition after a table",
+            include_bytes!("../../../tests/fixtures/docx/libreoffice/tdf105688.docx"),
+            2,
+        ),
+    ];
+    let mut mismatches: Vec<String> = Vec::new();
+
+    for (fixture_name, data, expected_page_count) in fixtures {
+        let result = convert_bytes(data, Format::Docx, &ConvertOptions::default())
+            .unwrap_or_else(|error| panic!("{fixture_name} should convert: {error}"));
+        let metrics = result
+            .metrics
+            .unwrap_or_else(|| panic!("{fixture_name} should report conversion metrics"));
+
+        if metrics.page_count != expected_page_count {
+            mismatches.push(format!(
+                "{fixture_name}: expected {expected_page_count} pages, got {}",
+                metrics.page_count
+            ));
+        }
+    }
+
+    assert!(mismatches.is_empty(), "{}", mismatches.join("; "));
+}
+
+#[test]
+fn continuous_section_marker_does_not_add_an_empty_body_line() {
+    let (document, _) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        include_bytes!(
+            "../../../tests/fixtures/docx/libreoffice/tdf46940_dontEquallyDistributeColumns.docx"
+        ),
+        &ConvertOptions::default(),
+    )
+    .expect("section-break fixture should parse");
+    let Some(crate::ir::Page::Flow(first_section)) = document.pages.first() else {
+        panic!("the fixture should begin with its ordinary first section");
+    };
+
+    assert!(
+        !matches!(
+            first_section.content.last(),
+            Some(crate::ir::Block::Paragraph(paragraph)) if paragraph.runs.is_empty()
+        ),
+        "an empty paragraph carrying section properties must not create a blank line"
+    );
+
+    for expected_heading in [
+        "Continuous break section after a regular page break",
+        "New page-break-section. Docx does not balance the last section.",
+    ] {
+        let paragraph = document
+            .pages
+            .iter()
+            .filter_map(|page| match page {
+                Page::Flow(flow) | Page::FlowContinuous(flow) => Some(&flow.content),
+                _ => None,
+            })
+            .flatten()
+            .filter_map(|block| match block {
+                Block::Paragraph(paragraph) => Some(paragraph),
+                _ => None,
+            })
+            .find(|paragraph| {
+                paragraph
+                    .runs
+                    .iter()
+                    .any(|run| run.text.contains(expected_heading))
+            })
+            .unwrap_or_else(|| panic!("missing shaded heading {expected_heading:?}"));
+
+        assert_eq!(
+            paragraph.style.background,
+            Some(Color::new(217, 217, 217)),
+            "dropping a section marker must keep the later paragraph's shading"
+        );
+    }
+}
+
+#[test]
 fn test_metrics_total_ge_sum_of_stages() {
     let data = make_test_docx_bytes();
     let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
