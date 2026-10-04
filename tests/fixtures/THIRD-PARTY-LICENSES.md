@@ -141,6 +141,21 @@ limitations under the License.
 
 ---
 
+## Mozilla Public License 2.0
+
+### LibreOffice core
+
+- **Source:** <https://github.com/LibreOffice/core>
+- **License:** [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/)
+- **Files:**
+  - `docx/libreoffice/tdf105688.docx` (metadata sanitized)
+  - `docx/libreoffice/tdf46940_dontEquallyDistributeColumns.docx`
+- **Original paths:**
+  - [`sw/qa/extras/ooxmlexport/data/tdf105688.docx`](https://github.com/LibreOffice/core/blob/master/sw/qa/extras/ooxmlexport/data/tdf105688.docx)
+  - [`sw/qa/extras/ooxmlexport/data/tdf46940_dontEquallyDistributeColumns.docx`](https://github.com/LibreOffice/core/blob/master/sw/qa/extras/ooxmlexport/data/tdf46940_dontEquallyDistributeColumns.docx)
+
+---
+
 ## SIL Open Font License 1.1
 
 ### Google Fonts Noto Sans SC
