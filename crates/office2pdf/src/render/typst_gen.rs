@@ -10,13 +10,14 @@ use crate::ir::{
     BorderSide, CellBorder, CellVerticalAlign, Chart, ChartGrouping, ChartType, Color,
     ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
     FloatingShape, FloatingTextBox, FlowPage, FrameAnchor, GradientFill, HFInline, HeaderFooter,
-    HeaderFooterFrame, IconShading, ImageCrop, ImageData, ImageFormat, ImageParagraphSpacing,
-    InlineTextBox, Insets, LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, List, ListKind,
-    Margins, MathEquation, Metadata, Page, PageNumberFormat, PageSize, PairKerning, Paragraph,
-    ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo,
-    Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TabAlignment, TabLeader,
-    TabStop, Table, TableBorderPaintModel, TableCell, TableOfContents, TableRow, TextBoxData,
-    TextBoxVerticalAlign, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
+    HeaderFooterFrame, HeaderFooterShapeContent, IconShading, ImageCrop, ImageData, ImageFormat,
+    ImageParagraphSpacing, InlineTextBox, Insets, LegendPosition, LineBox, LineCap, LineJoin,
+    LineSpacing, List, ListKind, Margins, MathEquation, Metadata, Page, PageNumberFormat, PageSize,
+    PairKerning, Paragraph, ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment,
+    PositionedTabRelativeTo, Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo,
+    TabAlignment, TabLeader, TabStop, Table, TableBorderPaintModel, TableCell, TableOfContents,
+    TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection, TextStyle, VerticalTextAlign,
+    WrapMode,
 };
 
 use self::diagrams::{
@@ -729,7 +730,7 @@ fn generate_flow_page(
         suppress_typst_spacing_at_continuous_section_start(&mut section_content);
     }
     if !begins_continuously {
-        write_flow_page_setup(out, page, &size, ctx);
+        write_flow_page_setup(out, page, &size, ctx)?;
         out.push('\n');
     }
     // The marker sits at the section's first page, so a first-page header can
@@ -903,7 +904,7 @@ fn generate_continuous_flow_blocks(
         let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
-            write_flow_page_setup(out, page, size, ctx);
+            write_flow_page_setup(out, page, size, ctx)?;
         }
         if segment.is_empty() {
             continue;
@@ -965,7 +966,7 @@ fn generate_flow_page_columns(
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
             if options.begins_continuously {
-                write_flow_page_setup(out, page, size, ctx);
+                write_flow_page_setup(out, page, size, ctx)?;
             }
         }
         if segment.is_empty() {
@@ -2959,7 +2960,12 @@ fn hf_paragraph_height_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Optio
     Some(total)
 }
 
-fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize, ctx: &mut GenCtx) {
+fn write_flow_page_setup(
+    out: &mut String,
+    page: &FlowPage,
+    size: &PageSize,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
     ctx.active_page_size = Some(*size);
     ctx.active_page_margins = Some(page.margins);
     // A section may declare only a first-page story — `w:titlePg` with just a
@@ -2971,7 +2977,7 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize, ctx
         && page.first_footer.is_none()
     {
         write_page_setup(out, size, &page.margins);
-        return;
+        return Ok(());
     }
 
     // A header taller than `w:top - w:header` grows the margin instead of
@@ -3077,7 +3083,7 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize, ctx
             size,
             behind_text,
             ctx,
-        );
+        )?;
         let first_stated: bool = page.first_header.is_some() || page.first_footer.is_some();
         let first_markup: String = match first_stated {
             true => page_anchored_layer_markup(
@@ -3087,7 +3093,7 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize, ctx
                 size,
                 behind_text,
                 ctx,
-            ),
+            )?,
             false => String::new(),
         };
         if default_markup.is_empty() && first_markup.is_empty() {
@@ -3110,6 +3116,7 @@ fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize, ctx
     }
 
     out.push_str(")\n");
+    Ok(())
 }
 
 /// Where a `<wp:align>` puts a box of `extent` inside a reference frame of
@@ -3176,8 +3183,8 @@ fn hf_paragraph_has_flow_content(paragraph: &crate::ir::HeaderFooterParagraph) -
             .is_none_or(|frame| !is_page_anchored_frame(frame))
 }
 
-/// One page layer's markup: the anchored shapes both stories put on it, plus
-/// their framed paragraphs below the body in the background.
+/// One page layer's markup: the page-anchored elements both stories put on it,
+/// plus their framed paragraphs below the body in the background.
 ///
 /// Empty when neither story draws anything there, which is the caller's signal
 /// to leave the layer off the `#set page` entirely.
@@ -3188,10 +3195,21 @@ fn page_anchored_layer_markup(
     size: &PageSize,
     behind_text: bool,
     ctx: &mut GenCtx,
-) -> String {
+) -> Result<String, ConvertError> {
     let mut markup = String::new();
-    for hf in header.into_iter().chain(footer) {
-        generate_page_anchored_hf_shapes(&mut markup, hf, size, behind_text, ctx);
+    for (hf, is_footer) in [(header, false), (footer, true)] {
+        let Some(hf) = hf else {
+            continue;
+        };
+        generate_page_anchored_hf_elements(
+            &mut markup,
+            hf,
+            page,
+            size,
+            behind_text,
+            is_footer,
+            ctx,
+        )?;
         // Word paints the main story after header/footer framed paragraphs, so
         // body drawings can cover those frames. Typst's page background is the
         // layer that preserves that cross-story order (issue #1408).
@@ -3199,54 +3217,125 @@ fn page_anchored_layer_markup(
             generate_page_anchored_hf_frames(&mut markup, hf, size, page.margins.right, ctx);
         }
     }
-    markup
+    Ok(markup)
 }
 
-/// Place a story's page-anchored shapes, each against the page rather than in
-/// the story's flow.
-///
-/// Unlike a framed paragraph, the shape's own extent is known, so both axes
-/// resolve here without the block's height entering into it (issue #961).
-fn generate_page_anchored_hf_shapes(
+/// Place a story's page-anchored elements against the page rather than in the
+/// story's flow. Drawing shapes use their stored extent to resolve alignment
+/// independently of the surrounding block height (issue #961); tables use
+/// their converted dimensions and resolved frame anchors.
+fn generate_page_anchored_hf_elements(
     out: &mut String,
     hf: &HeaderFooter,
+    page: &FlowPage,
     page_size: &PageSize,
     behind_text: bool,
+    is_footer: bool,
     ctx: &mut GenCtx,
-) {
-    for shape in &hf.shapes {
-        if shape.behind_text != behind_text || !is_page_anchored_frame(&shape.frame) {
-            continue;
+) -> Result<(), ConvertError> {
+    for element in &hf.shapes {
+        match &element.content {
+            HeaderFooterShapeContent::Shape(shape) => {
+                if element.behind_text != behind_text || !is_page_anchored_frame(&element.frame) {
+                    continue;
+                }
+                let x: f64 = element.frame.x.unwrap_or_else(|| {
+                    aligned_offset(
+                        element.frame.horizontal_align,
+                        page_size.width,
+                        Some(element.width),
+                    )
+                });
+                let y: f64 = element.frame.y.unwrap_or_else(|| {
+                    aligned_offset(
+                        element.frame.vertical_align,
+                        page_size.height,
+                        Some(element.height),
+                    )
+                });
+                // A box keeps transforms centred on the shape's own extent,
+                // including artwork that hangs past the page edge.
+                let _ = write!(
+                    out,
+                    "#place(top + left, dx: {}pt, dy: {}pt)[#box(width: {}pt, height: {}pt)[",
+                    format_f64(x),
+                    format_f64(y),
+                    format_f64(element.width),
+                    format_f64(element.height)
+                );
+                generate_shape(out, shape, element.width, element.height, ctx);
+                out.push_str("]]");
+            }
+            HeaderFooterShapeContent::Table(table) => {
+                if element.behind_text != behind_text {
+                    continue;
+                }
+                let x: f64 = page_relative_hf_table_x(element, page, page_size);
+                let y: f64 = page_relative_hf_table_y(element, hf, page, page_size, is_footer);
+                let _ = write!(
+                    out,
+                    "#place(top + left, dx: {}pt, dy: {}pt)[",
+                    format_f64(x),
+                    format_f64(y)
+                );
+                generate_table(out, table, ctx)?;
+                out.push(']');
+            }
         }
-        let x: f64 = shape.frame.x.unwrap_or_else(|| {
+    }
+    Ok(())
+}
+
+fn page_relative_hf_table_x(
+    element: &crate::ir::HeaderFooterShape,
+    page: &FlowPage,
+    page_size: &PageSize,
+) -> f64 {
+    let frame: &HeaderFooterFrame = &element.frame;
+    let (origin, available): (f64, f64) = match frame.horizontal_anchor {
+        FrameAnchor::Page => (0.0, page_size.width),
+        FrameAnchor::Margin | FrameAnchor::Text => (
+            page.margins.left,
+            (page_size.width - page.margins.left - page.margins.right).max(0.0),
+        ),
+    };
+    origin
+        + frame.x.unwrap_or_else(|| {
             aligned_offset(
-                shape.frame.horizontal_align,
-                page_size.width,
-                Some(shape.width),
+                frame.horizontal_align,
+                available,
+                frame.width.or(Some(element.width)),
             )
-        });
-        let y: f64 = shape.frame.y.unwrap_or_else(|| {
-            aligned_offset(
-                shape.frame.vertical_align,
-                page_size.height,
-                Some(shape.height),
-            )
-        });
-        // The `#box` is not decoration: `#rotate` turns its body about the
-        // frame it was laid out into, and inside a bare `#place` that frame is
-        // the page's width. The invoice's footer band is 627.84pt on a 595.28pt
-        // page, so a 180-degree turn about the page centre slid it 32.56pt off
-        // the right edge (issue #961).
-        let _ = write!(
-            out,
-            "#place(top + left, dx: {}pt, dy: {}pt)[#box(width: {}pt, height: {}pt)[",
-            format_f64(x),
-            format_f64(y),
-            format_f64(shape.width),
-            format_f64(shape.height)
-        );
-        generate_shape(out, &shape.shape, shape.width, shape.height, ctx);
-        out.push_str("]]");
+        })
+}
+
+fn page_relative_hf_table_y(
+    element: &crate::ir::HeaderFooterShape,
+    hf: &HeaderFooter,
+    page: &FlowPage,
+    page_size: &PageSize,
+    is_footer: bool,
+) -> f64 {
+    let frame: &HeaderFooterFrame = &element.frame;
+    let (origin, available): (f64, f64) = match frame.vertical_anchor {
+        FrameAnchor::Page => (0.0, page_size.height),
+        FrameAnchor::Margin | FrameAnchor::Text => (
+            page.margins.top,
+            (page_size.height - page.margins.top - page.margins.bottom).max(0.0),
+        ),
+    };
+    if let Some(offset) = frame.y {
+        return origin + offset;
+    }
+    if let Some(alignment) = frame.vertical_align {
+        return origin + aligned_offset(Some(alignment), available, frame.height);
+    }
+    match frame.vertical_anchor {
+        FrameAnchor::Page => 0.0,
+        FrameAnchor::Margin | FrameAnchor::Text if is_footer => {
+            page_size.height - hf.distance_from_edge.unwrap_or(0.0) - element.height
+        }
+        FrameAnchor::Margin | FrameAnchor::Text => hf.distance_from_edge.unwrap_or(0.0),
     }
 }
 

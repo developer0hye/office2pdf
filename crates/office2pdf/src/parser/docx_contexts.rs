@@ -92,3 +92,34 @@ pub(super) struct DocxConversionContext {
     /// zero with the element, Word's built-in 8pt without it (issue #1085).
     pub(super) paragraph_property_defaults_are_declared: bool,
 }
+
+impl DocxConversionContext {
+    /// Build independent cursors for one header/footer part, whose paragraphs
+    /// and tables must not consume the document body's pre-scanned entries.
+    pub(super) fn for_header_footer_story(
+        story_xml: &str,
+        styles_xml: Option<&str>,
+        default_paragraph_style_is_defined: bool,
+        paragraph_property_defaults_are_declared: bool,
+    ) -> Self {
+        let story_xml: Option<&str> = Some(story_xml);
+        Self {
+            notes: NoteContext::empty(),
+            wraps: build_wrap_context_from_xml(story_xml),
+            drawing_text_boxes: DrawingTextBoxContext::from_xml(story_xml),
+            drawing_shapes: DrawingShapeContext::from_xml(story_xml),
+            table_headers: TableHeaderContext::from_xml(story_xml),
+            table_styles: TableStyleContext::from_xml(story_xml, styles_xml),
+            vml_text_boxes: VmlTextBoxContext::from_xml(story_xml),
+            bidi: BidiContext::from_xml(story_xml),
+            small_caps: SmallCapsContext::from_xml(story_xml),
+            paragraph_shading: ParagraphShadingContext::from_xml(story_xml),
+            word_wraps: WordWrapContext::from_xml(story_xml),
+            contextual_spacing: ContextualSpacingContext::from_xml(story_xml, styles_xml),
+            paragraph_marks: ParagraphMarkContext::from_xml(story_xml),
+            fields: FieldContext::default(),
+            default_paragraph_style_is_defined,
+            paragraph_property_defaults_are_declared,
+        }
+    }
+}

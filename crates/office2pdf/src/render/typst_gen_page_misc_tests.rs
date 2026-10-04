@@ -4641,11 +4641,11 @@ fn a_header_line_advances_by_words_pitch() {
 fn a_behind_text_header_banner_is_drawn_on_the_background_layer() {
     use crate::ir::{
         FrameAnchor, GradientFill, GradientStop, HeaderFooter, HeaderFooterFrame,
-        HeaderFooterShape, Shape, ShapeKind,
+        HeaderFooterShape, HeaderFooterShapeContent, Shape, ShapeKind,
     };
 
     let banner = HeaderFooterShape {
-        shape: Shape {
+        content: HeaderFooterShapeContent::Shape(Shape {
             kind: ShapeKind::Path {
                 subpaths: vec![crate::ir::Subpath::closed_outline(vec![
                     (0.0, 0.0),
@@ -4674,7 +4674,7 @@ fn a_behind_text_header_banner_is_drawn_on_the_background_layer() {
             opacity: None,
             shadow: None,
             top_bevel: None,
-        },
+        }),
         // Wider than the 595.28pt page, centred, so it hangs off both edges.
         width: 609.12,
         height: 327.6,

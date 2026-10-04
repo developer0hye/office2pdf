@@ -761,6 +761,96 @@ fn parse_flow_page(data: &[u8]) -> FlowPage {
 }
 
 #[test]
+fn header_table_content_reaches_the_generated_page_header() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let page = match &document.pages[0] {
+        Page::Flow(page) | Page::FlowContinuous(page) => page,
+        other => panic!("Expected a flow page, got {other:?}"),
+    };
+    let header = page.header.as_ref().expect("the fixture declares a header");
+    assert!(
+        header.shapes.iter().any(|element| matches!(
+            &element.content,
+            crate::ir::HeaderFooterShapeContent::Table(_)
+        )),
+        "the header table must be retained in the parsed story"
+    );
+    let first_table = header
+        .shapes
+        .iter()
+        .find(|element| {
+            matches!(
+                &element.content,
+                crate::ir::HeaderFooterShapeContent::Table(_)
+            )
+        })
+        .expect("the first section header contains its floating table");
+    assert!(
+        first_table.behind_text,
+        "header-story tables are painted before the main document story"
+    );
+    assert_eq!(
+        first_table.frame.vertical_anchor,
+        crate::ir::FrameAnchor::Page,
+        "the table anchor is resolved against the section that defines the story"
+    );
+    assert!(
+        (first_table
+            .frame
+            .y
+            .expect("the table has a vertical position")
+            + 5.7)
+            .abs()
+            < 0.01,
+        "the first section margin and tblpY resolve the table to the page top"
+    );
+    let last_section = document
+        .pages
+        .last()
+        .expect("the fixture has a final section");
+    let last_section_header = match last_section {
+        Page::Flow(page) | Page::FlowContinuous(page) => page
+            .header
+            .as_ref()
+            .expect("the final section inherits the preceding header"),
+        other => panic!("Expected a flow page, got {other:?}"),
+    };
+    assert!(
+        last_section_header.shapes.iter().any(|element| matches!(
+            &element.content,
+            crate::ir::HeaderFooterShapeContent::Table(_)
+        )),
+        "the inherited final-section header must retain its table"
+    );
+    let last_table = last_section_header
+        .shapes
+        .iter()
+        .find(|element| {
+            matches!(
+                &element.content,
+                crate::ir::HeaderFooterShapeContent::Table(_)
+            )
+        })
+        .expect("the final section header contains the inherited floating table");
+    assert_eq!(
+        last_table.frame.vertical_anchor,
+        crate::ir::FrameAnchor::Page
+    );
+    assert_eq!(last_table.frame.y, first_table.frame.y);
+    let generated = crate::render::typst_gen::generate_typst(&document).unwrap();
+
+    assert!(
+        generated.source.contains("Xxxxxxxx"),
+        "the header table's title must be present in generated page content"
+    );
+    assert!(
+        generated.source.contains("rgb(0, 175, 240)"),
+        "the header table's declared fill must be present in generated page content"
+    );
+}
+
+#[test]
 fn doc_grid_without_a_type_declares_a_pitch_that_does_not_snap() {
     // Word writes a bare `<w:docGrid w:linePitch="360"/>` into ordinary Korean
     // documents. `w:type` then takes its default value `default`, which is

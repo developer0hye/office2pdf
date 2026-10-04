@@ -42,8 +42,8 @@ use self::media::{
 #[cfg(test)]
 use self::sections::extract_page_size;
 use self::sections::{
-    HeaderFooterAssets, HeaderFooterStyleContext, SectionOverrides, build_flow_page_from_section,
-    build_header_footer_assets,
+    HeaderFooterAssets, HeaderFooterStyleContext, SectionHeaderFooterInputs, SectionOverrides,
+    build_flow_page_from_section, build_header_footer_assets,
 };
 use self::styles::{
     DOC_DEFAULT_STYLE_ID, PairKerningRules, ResolvedStyle, StyleMap, TabStopOverride,
@@ -536,11 +536,19 @@ impl Parser for DocxParser {
                     Some(layout) => layout.clone(),
                     None => extract_column_layout_from_section_property(section_prop),
                 };
+                let previous_flow_page = pages.last().and_then(|previous| match previous {
+                    Page::Flow(flow_page) | Page::FlowContinuous(flow_page) => Some(flow_page),
+                    _ => None,
+                });
                 let flow_page: crate::ir::FlowPage = build_flow_page_from_section(
                     section_prop,
                     std::mem::take(&mut elements),
                     &numberings,
-                    &header_footer_assets,
+                    SectionHeaderFooterInputs {
+                        assets: &header_footer_assets,
+                        inherited_header: previous_flow_page.and_then(|page| page.header.as_ref()),
+                        inherited_footer: previous_flow_page.and_then(|page| page.footer.as_ref()),
+                    },
                     SectionOverrides {
                         column_layout,
                         page_numbering: page_numbering.get(section_layout_index).copied().flatten(),
@@ -568,11 +576,19 @@ impl Parser for DocxParser {
             Some(layout) => layout.clone(),
             None => extract_column_layout_from_section_property(&docx.document.section_property),
         };
+        let previous_flow_page = pages.last().and_then(|previous| match previous {
+            Page::Flow(flow_page) | Page::FlowContinuous(flow_page) => Some(flow_page),
+            _ => None,
+        });
         let final_flow_page: crate::ir::FlowPage = build_flow_page_from_section(
             &docx.document.section_property,
             elements,
             &numberings,
-            &header_footer_assets,
+            SectionHeaderFooterInputs {
+                assets: &header_footer_assets,
+                inherited_header: previous_flow_page.and_then(|page| page.header.as_ref()),
+                inherited_footer: previous_flow_page.and_then(|page| page.footer.as_ref()),
+            },
             SectionOverrides {
                 column_layout: final_column_layout,
                 page_numbering: page_numbering.get(section_layout_index).copied().flatten(),
