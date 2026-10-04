@@ -457,9 +457,7 @@ impl Parser for DocxParser {
                         &style_map,
                         &ctx,
                         &docx.styles,
-                    )
-                    .into_iter()
-                    .collect();
+                    );
                     // Inject math equations for this body child
                     let eqs = math.take(idx);
                     for eq in eqs {
@@ -672,8 +670,8 @@ fn convert_sdt_children(
     result
 }
 
-/// Convert a docx-rs Paragraph into a TaggedElement.
-/// If the paragraph has numbering, returns a `ListParagraph`; otherwise `Plain`.
+/// Convert one docx-rs paragraph into its ordered plain blocks and list paragraph.
+/// A numbered paragraph can produce multiple elements when breaks or images surround its text.
 fn convert_paragraph_element(
     para: &docx_rs::Paragraph,
     images: &ImageMap,
@@ -681,7 +679,7 @@ fn convert_paragraph_element(
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
     styles: &docx_rs::Styles,
-) -> Option<TaggedElement> {
+) -> Vec<TaggedElement> {
     let num_info = extract_num_info(para, styles);
 
     // Build the paragraph IR
@@ -694,52 +692,57 @@ fn convert_paragraph_element(
     // grouping at any element, so the items after the origin would start a
     // second list (issue #1710).
     if ctx.paragraph_marks.is_withholding() {
-        return (!blocks.is_empty()).then_some(TaggedElement::Plain(blocks));
+        return if blocks.is_empty() {
+            Vec::new()
+        } else {
+            vec![TaggedElement::Plain(blocks)]
+        };
     }
 
-    Some(match num_info {
-        Some(info) => {
-            // Extract the actual Paragraph from the blocks.
-            // List paragraphs may also produce page breaks and images before the paragraph.
-            let mut pre_blocks = Vec::new();
-            let mut paragraph = None;
-            for block in blocks {
-                match block {
-                    Block::Paragraph(p) if paragraph.is_none() => {
-                        paragraph = Some(p);
-                    }
-                    _ => pre_blocks.push(block),
-                }
+    let Some(info) = num_info else {
+        return vec![TaggedElement::Plain(blocks)];
+    };
+
+    let has_text_fragment: bool = blocks
+        .iter()
+        .any(|block| matches!(block, Block::Paragraph(paragraph) if !paragraph.runs.is_empty()));
+    let mut tagged: Vec<TaggedElement> = Vec::new();
+    let mut plain_blocks: Vec<Block> = Vec::new();
+    let mut list_paragraph_emitted: bool = false;
+    for block in blocks {
+        let paragraph: Option<Paragraph> = match block {
+            Block::Paragraph(paragraph)
+                if !list_paragraph_emitted
+                    && (!paragraph.runs.is_empty() || !has_text_fragment) =>
+            {
+                Some(paragraph)
             }
-            if !pre_blocks.is_empty() {
-                // If there were pre-blocks (page break, images), emit them as plain first.
-                // We return the plain blocks — the caller will see them before the list paragraph.
-                // For simplicity, we create a combined: Plain(pre) + ListParagraph.
-                // But TaggedElement is a single value, so we need to handle this differently.
-                // Actually, let's just emit them as plain first. The caller handles ordering.
-                // Since we can only return one TaggedElement, fold the pre-blocks into the
-                // paragraph by noting that list items in a list won't have page breaks.
-                // For now, treat the paragraph as a plain block if it has pre-blocks.
-                pre_blocks.push(Block::Paragraph(paragraph.unwrap_or_else(|| Paragraph {
-                    style: ParagraphStyle::default(),
-                    runs: Vec::new(),
-                })));
-                TaggedElement::Plain(pre_blocks)
-            } else if let Some(mut paragraph) = paragraph {
-                apply_word_compatible_paragraph_defaults(
-                    &mut paragraph.style,
-                    ctx.paragraph_property_defaults_are_declared,
-                );
-                TaggedElement::ListParagraph {
-                    info,
-                    paragraph: Box::new(paragraph),
-                }
-            } else {
-                TaggedElement::Plain(vec![])
+            other => {
+                plain_blocks.push(other);
+                None
             }
+        };
+        let Some(mut paragraph) = paragraph else {
+            continue;
+        };
+
+        if !plain_blocks.is_empty() {
+            tagged.push(TaggedElement::Plain(std::mem::take(&mut plain_blocks)));
         }
-        None => TaggedElement::Plain(blocks),
-    })
+        apply_word_compatible_paragraph_defaults(
+            &mut paragraph.style,
+            ctx.paragraph_property_defaults_are_declared,
+        );
+        tagged.push(TaggedElement::ListParagraph {
+            info: info.clone(),
+            paragraph: Box::new(paragraph),
+        });
+        list_paragraph_emitted = true;
+    }
+    if !plain_blocks.is_empty() {
+        tagged.push(TaggedElement::Plain(plain_blocks));
+    }
+    tagged
 }
 
 /// Build a text `Run` from extracted text, merging explicit run styling with the
@@ -1245,6 +1248,7 @@ fn convert_paragraph_blocks(
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
 ) {
+    let paragraph_block_start: usize = out.len();
     // Every paragraph cursor advances here, exactly once per XML <w:p>, and
     // each checks this paragraph's `w:pStyle` against the one its scan
     // recorded at the same index (issue #1689).
@@ -1532,6 +1536,76 @@ fn convert_paragraph_blocks(
             }
             block => out.push(block),
         }
+    }
+
+    normalize_split_paragraph_styles(out, paragraph_block_start);
+}
+
+/// Keep paragraph-wide spacing and first-line indentation on the paragraph's
+/// first text fragment. A hard layout break does not begin a new paragraph,
+/// so its continuation must not repeat those edges or its first-line indent.
+fn normalize_split_paragraph_styles(blocks: &mut [Block], start: usize) {
+    let fragments: Vec<usize> = blocks[start..]
+        .iter()
+        .enumerate()
+        .filter_map(|(offset, block)| {
+            matches!(block, Block::Paragraph(_) | Block::Caption(_)).then_some(start + offset)
+        })
+        .collect();
+    let content_fragments: Vec<usize> = fragments
+        .iter()
+        .copied()
+        .filter(|index| match &blocks[*index] {
+            Block::Paragraph(paragraph) => !paragraph.runs.is_empty(),
+            Block::Caption(caption) => !caption.paragraph.runs.is_empty(),
+            _ => false,
+        })
+        .collect();
+    let Some(first_content) = content_fragments.first().copied() else {
+        return;
+    };
+    let last_content: usize = *content_fragments.last().expect("first content exists");
+    let blocks_before_first_content: &[Block] = &blocks[start..first_content];
+    let starts_after_layout_break: bool = blocks_before_first_content
+        .iter()
+        .any(|block| matches!(block, Block::PageBreak | Block::ColumnBreak))
+        && blocks_before_first_content.iter().all(|block| {
+            is_empty_paragraph_block(block)
+                || matches!(block, Block::PageBreak | Block::ColumnBreak)
+        });
+
+    for index in fragments {
+        let (style, has_content): (&mut ParagraphStyle, bool) = match &mut blocks[index] {
+            Block::Paragraph(paragraph) => (&mut paragraph.style, !paragraph.runs.is_empty()),
+            Block::Caption(caption) => (
+                &mut caption.paragraph.style,
+                !caption.paragraph.runs.is_empty(),
+            ),
+            _ => unreachable!("fragment indices only include paragraphs and captions"),
+        };
+        if !has_content {
+            style.space_before = None;
+            style.space_after = None;
+            style.indent_first_line = None;
+            style.starts_after_layout_break = false;
+            continue;
+        }
+        style.starts_after_layout_break = index == first_content && starts_after_layout_break;
+        if index != first_content {
+            style.space_before = None;
+            style.indent_first_line = None;
+        }
+        if index != last_content {
+            style.space_after = None;
+        }
+    }
+}
+
+fn is_empty_paragraph_block(block: &Block) -> bool {
+    match block {
+        Block::Paragraph(paragraph) => paragraph.runs.is_empty(),
+        Block::Caption(caption) => caption.paragraph.runs.is_empty(),
+        _ => false,
     }
 }
 

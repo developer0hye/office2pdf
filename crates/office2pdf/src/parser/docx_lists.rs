@@ -1,6 +1,9 @@
 use std::collections::{BTreeMap, HashMap};
 
-use crate::ir::{Block, List, ListItem, ListKind, ListLevelStyle, Paragraph, ParagraphStyle, Run};
+use crate::ir::{
+    Block, List, ListItem, ListKind, ListLevelStyle, Paragraph, ParagraphStyle, Run, TabAlignment,
+    TabLeader, TabStop,
+};
 
 /// Numbering info extracted from a paragraph's numPr.
 #[derive(Debug, Clone)]
@@ -436,8 +439,35 @@ pub(super) fn group_into_lists(
                     })
                     && paragraph.style.indent_left.unwrap_or(0.0) == 0.0
                     && paragraph.style.indent_first_line.unwrap_or(0.0) == 0.0;
-                if is_flush_numbered {
+                let has_paragraph_frame: bool =
+                    paragraph.style.background.is_some() || paragraph.style.border.is_some();
+                let is_inline_numbered: bool =
+                    is_flush_numbered || (is_ordered && has_paragraph_frame);
+                if is_inline_numbered {
                     let level = resolved_level.expect("ordered level must be resolved");
+                    paragraph.style.has_inline_list_number = true;
+                    if !is_flush_numbered {
+                        // The list renderer emits item runs without their paragraph frame.
+                        // Inline numbering lets normal paragraph codegen keep shading and borders.
+                        apply_numbering_level_indentation(
+                            &mut paragraph,
+                            resolved_level.map(|level| &level.paragraph_style),
+                        );
+                    }
+                    let number_tab_position: f64 = paragraph.style.indent_left.unwrap_or(0.0);
+                    if number_tab_position > 0.0 {
+                        let mut tab_stops: Vec<TabStop> =
+                            paragraph.style.tab_stops.take().unwrap_or_default();
+                        tab_stops.insert(
+                            0,
+                            TabStop {
+                                position: number_tab_position,
+                                alignment: TabAlignment::Left,
+                                leader: TabLeader::None,
+                            },
+                        );
+                        paragraph.style.tab_stops = Some(tab_stops);
+                    }
                     let series_counters = counters.entry(series).or_default();
                     let should_restart =
                         has_explicit_restart || !series_counters.contains_key(&info.level);

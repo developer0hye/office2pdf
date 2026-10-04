@@ -584,6 +584,8 @@ pub(super) fn merge_paragraph_style(
         indent_first_line: explicit
             .indent_first_line
             .or(style_paragraph.and_then(|style| style.indent_first_line)),
+        starts_after_layout_break: false,
+        has_inline_list_number: false,
         line_spacing: explicit
             .line_spacing
             .or(style_paragraph.and_then(|style| style.line_spacing)),
@@ -596,6 +598,7 @@ pub(super) fn merge_paragraph_style(
         space_after: explicit
             .space_after
             .or(style_paragraph.and_then(|style| style.space_after)),
+        decoration_before_spacing: None,
         // Percentage paragraph gaps are a DrawingML intermediate. Word's
         // spacing reaches the IR as absolute points.
         space_before_percent: None,

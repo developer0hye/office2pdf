@@ -2729,9 +2729,9 @@ fn test_first_document_paragraph_keeps_its_space_before() {
     );
 }
 
-/// Only the document's first paragraph gets the explicit gap. Word suppresses
-/// space-before at the top of a page reached by a break, so later paragraphs
-/// keep ordinary collapsing block spacing.
+/// Ordinary later paragraphs keep collapsing block spacing. A paragraph at a
+/// page-break boundary is tested separately because Word preserves its
+/// declared space-before there.
 #[test]
 fn test_later_paragraph_space_before_stays_block_spacing() {
     let mut second = make_paragraph("Second");
@@ -2759,6 +2759,60 @@ fn test_later_paragraph_space_before_stays_block_spacing() {
         "later paragraphs keep block spacing"
     );
     assert!(output.source.contains("above: 21pt"));
+}
+
+#[test]
+fn test_paragraph_space_before_survives_page_break() {
+    let mut continuation = make_paragraph("After page break");
+    let Block::Paragraph(paragraph) = &mut continuation else {
+        unreachable!();
+    };
+    paragraph.style.space_before = Some(21.0);
+    paragraph.style.space_after = Some(8.0);
+    let doc = make_doc(vec![make_flow_page(vec![Block::PageBreak, continuation])]);
+
+    let source = generate_typst(&doc).unwrap().source;
+    let page_break = source.find("#pagebreak()").expect("page break emitted");
+    let vertical_gap = source[page_break..]
+        .find("#v(21pt, weak: false)")
+        .expect("Word's before-spacing must survive the page break");
+    let vertical_gap_start: usize = page_break + vertical_gap;
+    let paragraph = source
+        .find("After page break")
+        .expect("continuation paragraph emitted");
+
+    assert!(page_break < vertical_gap_start);
+    assert!(vertical_gap_start < paragraph);
+    assert!(
+        !source[vertical_gap_start..paragraph].contains("above: 21pt"),
+        "block spacing must not count the same gap twice: {source}"
+    );
+}
+
+#[test]
+fn test_paragraph_space_before_after_later_page_break_absorbs_after_spacing() {
+    let mut continuation = make_paragraph("After later page break");
+    let Block::Paragraph(paragraph) = &mut continuation else {
+        unreachable!();
+    };
+    paragraph.style.space_before = Some(21.0);
+    paragraph.style.space_after = Some(8.0);
+    paragraph.style.starts_after_layout_break = true;
+    let doc = make_doc(vec![make_flow_page(vec![
+        make_paragraph("Before later page break"),
+        Block::PageBreak,
+        continuation,
+    ])]);
+
+    let source = generate_typst(&doc).unwrap().source;
+    let page_break = source.find("#pagebreak()").expect("page break emitted");
+    let paragraph = source
+        .find("After later page break")
+        .expect("continuation paragraph emitted");
+    assert!(
+        source[page_break..paragraph].contains("#v(13pt, weak: false)"),
+        "the later break must retain only before-spacing beyond paragraph spacing: {source}"
+    );
 }
 
 /// `w:pBdr` sides declare a `w:space` gap in points between the text and the

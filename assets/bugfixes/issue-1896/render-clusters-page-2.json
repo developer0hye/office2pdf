@@ -1,0 +1,167 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 1771.5456,
+      "bbox_pt": {
+        "height": 72.96,
+        "width": 136.32,
+        "x": 219.36,
+        "y": 20.16
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p2-e253b99d9180",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 1358.208,
+      "bbox_pt": {
+        "height": 55.2,
+        "width": 136.32,
+        "x": 63.84,
+        "y": 132.48
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p2-9369f45b1717",
+      "region": "left"
+    },
+    {
+      "area_pt2": 257.1264,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 133.92,
+        "x": 65.28,
+        "y": 130.56
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p2-46b9e086c90e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 245.1456,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 127.68,
+        "x": 68.16,
+        "y": 133.44
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p2-dc3a068e8fe4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 40.8,
+        "width": 1.44,
+        "x": 219.36,
+        "y": 45.6
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p2-44d444d3cea9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.24,
+        "x": 81.12,
+        "y": 140.16
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p2-21cd9c686ebb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 4.8,
+        "x": 123.84,
+        "y": 140.16
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p2-5d4eb079554d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 4.8,
+        "x": 135.84,
+        "y": 154.56
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p2-128b0be51d2a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 4.8,
+        "x": 176.16,
+        "y": 140.16
+      },
+      "disposition": {
+        "issue": "#1975",
+        "kind": "issue",
+        "note": "Inspected the full-page GT/output, pixel diff, and matched crops; these clusters arise from Word joining adjacent paragraph borders while office2pdf draws separate frames."
+      },
+      "id": "p2-5e19bc35c229",
+      "region": "center"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 9,
+    "duplicate": 0,
+    "total": 9,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

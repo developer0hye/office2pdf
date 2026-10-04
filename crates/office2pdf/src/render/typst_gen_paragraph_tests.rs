@@ -9,6 +9,57 @@ fn test_generate_plain_paragraph() {
 }
 
 #[test]
+fn test_generate_first_line_indent_for_flow_paragraph() {
+    let mut paragraph = make_paragraph("Indented first line");
+    let Block::Paragraph(paragraph) = &mut paragraph else {
+        unreachable!();
+    };
+    paragraph.style.indent_first_line = Some(12.0);
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(
+        paragraph.clone(),
+    )])]);
+
+    let source = generate_typst(&doc).unwrap().source;
+
+    assert!(
+        source.contains("#par(first-line-indent: (amount: 12pt, all: true))["),
+        "Word first-line indentation must reach the flow paragraph: {source}"
+    );
+    assert!(source.contains("Indented first line"));
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_first_line_indent_does_not_change_baseline_after_page_break() {
+    let compiled_baseline = |first_line_indent: Option<f64>| -> f64 {
+        let mut after_page_break = make_paragraph("After page break");
+        let Block::Paragraph(paragraph) = &mut after_page_break else {
+            unreachable!();
+        };
+        paragraph.style.space_before = Some(60.0);
+        paragraph.style.indent_first_line = first_line_indent;
+        let doc = make_doc(vec![make_flow_page(vec![
+            Block::PageBreak,
+            after_page_break,
+        ])]);
+        let source = generate_typst(&doc).unwrap().source;
+        crate::render::pdf::compiled_text_runs(&source, 1)
+            .unwrap()
+            .into_iter()
+            .find(|run| run.text.contains("After page break"))
+            .expect("the paragraph must render after the page break")
+            .baseline_pt
+    };
+
+    let plain_baseline: f64 = compiled_baseline(None);
+    let indented_baseline: f64 = compiled_baseline(Some(56.7));
+    assert!(
+        (plain_baseline - indented_baseline).abs() < 0.05,
+        "first-line indentation changes only the horizontal start, not the baseline: plain={plain_baseline}pt, indented={indented_baseline}pt"
+    );
+}
+
+#[test]
 fn test_generate_empty_paragraph_reserves_line_height() {
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
         style: ParagraphStyle::default(),
@@ -988,6 +1039,71 @@ fn test_generate_paragraph_with_background_shading() {
         result.contains("#block(width: 100%"),
         "shaded paragraphs need the full-width block wrapper: {result}"
     );
+}
+
+#[test]
+fn test_paragraph_before_spacing_overlay_stays_inline_with_text() {
+    let doc = make_doc(vec![make_flow_page(vec![
+        make_paragraph("Previous paragraph"),
+        Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                space_before: Some(60.0),
+                background: Some(Color::new(0xFB, 0xE4, 0xD5)),
+                border: Some(Box::new(CellBorder {
+                    left: Some(BorderSide {
+                        width: 1.0,
+                        color: Color::black(),
+                        style: BorderLineStyle::Solid,
+                        join: LineJoin::Round,
+                        cap: LineCap::Flat,
+                    }),
+                    right: Some(BorderSide {
+                        width: 1.0,
+                        color: Color::black(),
+                        style: BorderLineStyle::Solid,
+                        join: LineJoin::Round,
+                        cap: LineCap::Flat,
+                    }),
+                    ..CellBorder::default()
+                })),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: "Shaded paragraph".to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+                inline_box: None,
+            }],
+        }),
+    ])]);
+    let source = generate_typst(&doc).unwrap().source;
+
+    let overlay_start: usize = source
+        .find("#box(place(")
+        .expect("a placed rectangle paints the before spacing");
+    let joiner_start: usize = source[overlay_start..]
+        .find("#sym.wj#h(0pt, weak: true)")
+        .map(|offset| overlay_start + offset)
+        .expect("the place call is joined to the next word");
+    let overlay_markup: &str = &source[overlay_start..joiner_start];
+
+    assert!(overlay_markup.contains("dy: -60pt"), "{overlay_markup}");
+    assert!(overlay_markup.contains("height: 60pt"), "{overlay_markup}");
+    assert!(
+        overlay_markup.contains("fill: rgb(251, 228, 213)"),
+        "{overlay_markup}"
+    );
+    assert!(
+        overlay_markup.contains("stroke: (left:"),
+        "{overlay_markup}"
+    );
+    assert!(overlay_markup.contains("right:"), "{overlay_markup}");
+    assert!(
+        !overlay_markup.contains("top:") && !overlay_markup.contains("bottom:"),
+        "the vertical gap continues the side borders without drawing a horizontal rule"
+    );
+    assert!(source[joiner_start..].contains("Shaded paragraph"));
 }
 
 #[test]

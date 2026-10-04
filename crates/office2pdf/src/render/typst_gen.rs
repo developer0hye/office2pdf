@@ -152,8 +152,8 @@ struct GenCtx {
     /// Effective default tab stop interval, in points, for the active page.
     default_tab_width_pt: f64,
     /// True until the document's first page has been generated. Word keeps
-    /// `w:spacing w:before` on the very first body paragraph, unlike the top of
-    /// pages reached by a break.
+    /// `w:spacing w:before` on the very first body paragraph, but suppresses it
+    /// for a separate paragraph after a break; continuation fragments retain it.
     at_document_start: bool,
     /// The table row being generated's East Asian line answer. Decided once
     /// per row so every cell in it shares a baseline, which reading each
@@ -743,8 +743,8 @@ fn generate_flow_page(
     // but Typst collapses leading block spacing at a page boundary, pulling the
     // first heading up to the top margin. Emit that gap as explicit vertical
     // space instead, and drop the block's own `above` so it is not counted
-    // twice. Later page tops keep collapsing spacing, which is what Word does
-    // after a page break.
+    // twice. Word also suppresses spacing for a separate paragraph after a
+    // break; continuation fragments preserve the source paragraph's before-gap.
     let leading_gap: Option<f64> = if ctx.at_document_start && page.columns.is_none() {
         match page.content.first() {
             Some(Block::Paragraph(paragraph)) => {
@@ -757,12 +757,12 @@ fn generate_flow_page(
     };
 
     if let Some(gap) = leading_gap {
-        let _ = writeln!(out, "#v({}pt, weak: false)", format_f64(gap));
         let Some(Block::Paragraph(first)) = page.content.first() else {
             unreachable!("leading_gap is only set for a leading paragraph")
         };
         let mut adjusted = first.clone();
         adjusted.style.space_before = None;
+        let _ = writeln!(out, "#v({}pt, weak: false)", format_f64(gap));
         generate_block(out, &Block::Paragraph(adjusted), ctx)?;
         if page.content.len() > 1 {
             out.push('\n');
@@ -793,16 +793,97 @@ fn generate_flow_page_columns(
     cols: &ColumnLayout,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
-    for (index, segment) in split_at_page_breaks(content).into_iter().enumerate() {
-        if index > 0 {
+    let has_leading_page_break: bool =
+        ctx.at_document_start && starts_with_page_break_before_content(content);
+    let segments: Vec<&[Block]> = split_at_page_breaks(content);
+    let last_segment_index: usize = segments.len() - 1;
+    for (index, segment) in segments.iter().enumerate() {
+        let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
+        if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
         }
         if segment.is_empty() {
             continue;
         }
-        generate_column_section_page(out, segment, cols, ctx)?;
+        let mut page_content: Vec<Block> = segment.to_vec();
+        // A page-top paragraph consumes space only in the column where it
+        // starts; writing this gap before `#columns` would shift every column.
+        let mut layout_break_space_before: Option<(usize, f64)> = None;
+        if index > 0 {
+            let has_content_before_page_break: bool = segments[..index]
+                .iter()
+                .flat_map(|previous_segment| previous_segment.iter())
+                .any(block_has_paragraph_content);
+            let first_content_index: Option<usize> =
+                page_content.iter().position(block_has_paragraph_content);
+            if has_leading_page_break && index == 1 {
+                if let Some(first_content_index) = first_content_index {
+                    layout_break_space_before = take_layout_break_space_before(
+                        &mut page_content[first_content_index],
+                        has_content_before_page_break,
+                    )
+                    .map(|space_before| (first_content_index, space_before));
+                }
+            } else if let Some(first_content_index) = first_content_index {
+                if block_starts_after_layout_break(&page_content[first_content_index]) {
+                    layout_break_space_before = take_layout_break_space_before(
+                        &mut page_content[first_content_index],
+                        has_content_before_page_break,
+                    )
+                    .map(|space_before| (first_content_index, space_before));
+                } else {
+                    // Word collapses the first paragraph's before-spacing at
+                    // a later page top unless the break continued that same
+                    // source paragraph. A marker on a later block belongs to
+                    // its own column break and must not affect this page top.
+                    suppress_block_space_before(&mut page_content[first_content_index]);
+                }
+            }
+        }
+        generate_column_section_page(out, &page_content, cols, layout_break_space_before, ctx)?;
     }
     Ok(())
+}
+
+fn starts_with_page_break_before_content(content: &[Block]) -> bool {
+    content
+        .iter()
+        .find(|block| !is_empty_paragraph_block(block))
+        .is_some_and(|block| matches!(block, Block::PageBreak))
+}
+
+fn is_empty_paragraph_block(block: &Block) -> bool {
+    match block {
+        Block::Paragraph(paragraph) => paragraph.runs.is_empty(),
+        Block::Caption(caption) => caption.paragraph.runs.is_empty(),
+        _ => false,
+    }
+}
+
+fn block_has_paragraph_content(block: &Block) -> bool {
+    match block {
+        Block::Paragraph(paragraph) => !paragraph.runs.is_empty(),
+        Block::Caption(caption) => !caption.paragraph.runs.is_empty(),
+        Block::List(list) => list
+            .items
+            .first()
+            .and_then(|item| item.content.first())
+            .is_some_and(|paragraph| !paragraph.runs.is_empty()),
+        _ => false,
+    }
+}
+
+fn block_starts_after_layout_break(block: &Block) -> bool {
+    match block {
+        Block::Paragraph(paragraph) => paragraph.style.starts_after_layout_break,
+        Block::Caption(caption) => caption.paragraph.style.starts_after_layout_break,
+        Block::List(list) => list
+            .items
+            .first()
+            .and_then(|item| item.content.first())
+            .is_some_and(|paragraph| paragraph.style.starts_after_layout_break),
+        _ => false,
+    }
 }
 
 /// Generate one page's worth of a multi-column section.
@@ -814,6 +895,7 @@ fn generate_column_section_page(
     out: &mut String,
     content: &[Block],
     cols: &ColumnLayout,
+    layout_break_space_before: Option<(usize, f64)>,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     if let Some(ref widths) = cols.column_widths {
@@ -831,11 +913,29 @@ fn generate_column_section_page(
 
         // Split content by ColumnBreak into grid cells
         let segments = split_at_column_breaks(content);
-        for segment in &segments {
+        let layout_space_location: Option<(usize, usize)> = layout_break_space_before
+            .map(|(block_index, _)| column_segment_location(content, block_index));
+        for (segment_index, segment) in segments.iter().enumerate() {
             out.push('[');
-            for (i, block) in segment.iter().enumerate() {
+            let mut cell_content: Vec<Block> =
+                segment.iter().map(|block| (*block).clone()).collect();
+            if segment_index > 0
+                && let Some(first_block) = cell_content.first_mut()
+            {
+                let has_content_before_column_break: bool = segments[..segment_index]
+                    .iter()
+                    .flatten()
+                    .any(|block| block_has_paragraph_content(block));
+                emit_layout_break_space_before(out, first_block, has_content_before_column_break);
+            }
+            for (i, block) in cell_content.iter().enumerate() {
                 if i > 0 {
                     out.push('\n');
+                }
+                if layout_space_location == Some((segment_index, i))
+                    && let Some((_, space_before)) = layout_break_space_before
+                {
+                    write_explicit_vertical_space(out, space_before);
                 }
                 generate_block(out, block, ctx)?;
             }
@@ -850,7 +950,7 @@ fn generate_column_section_page(
             cols.num_columns,
             format_f64(cols.spacing)
         );
-        generate_blocks(out, content, ctx)?;
+        generate_blocks_with_layout_space_before(out, content, ctx, layout_break_space_before)?;
         out.push_str("\n]\n");
     }
     Ok(())
@@ -3858,10 +3958,25 @@ fn generate_blocks(
     blocks: &[Block],
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
+    generate_blocks_with_layout_space_before(out, blocks, ctx, None)
+}
+
+fn generate_blocks_with_layout_space_before(
+    out: &mut String,
+    blocks: &[Block],
+    ctx: &mut GenCtx,
+    layout_space_before: Option<(usize, f64)>,
+) -> Result<(), ConvertError> {
     let mut index: usize = 0;
     while index < blocks.len() {
         if index > 0 {
             out.push('\n');
+        }
+
+        if let Some((space_index, space_before)) = layout_space_before
+            && index == space_index
+        {
+            write_explicit_vertical_space(out, space_before);
         }
 
         if is_zero_size_floating_anchor(&blocks[index]) {
@@ -3870,11 +3985,154 @@ fn generate_blocks(
             continue;
         }
 
-        generate_block(out, &blocks[index], ctx)?;
+        let follows_column_break: bool =
+            index > 0 && matches!(blocks[index - 1], Block::ColumnBreak);
+        let follows_source_paragraph_page_break: bool = index > 0
+            && matches!(blocks[index - 1], Block::PageBreak)
+            && block_starts_after_layout_break(&blocks[index]);
+        let follows_initial_page_break: bool =
+            ctx.at_document_start && index == 1 && matches!(blocks.first(), Some(Block::PageBreak));
+        if follows_column_break || follows_source_paragraph_page_break || follows_initial_page_break
+        {
+            let has_content_before_layout_break: bool = (follows_column_break
+                || follows_source_paragraph_page_break)
+                && blocks[..index - 1].iter().any(block_has_paragraph_content);
+            generate_block_after_layout_break(
+                out,
+                &blocks[index],
+                has_content_before_layout_break,
+                ctx,
+            )?;
+        } else {
+            generate_block(out, &blocks[index], ctx)?;
+        }
         index += 1;
     }
 
     Ok(())
+}
+
+/// Preserve before-spacing when a layout break splits the same source paragraph.
+/// A leading break keeps the full gap; a later break after content first absorbs
+/// that paragraph's after-spacing.
+fn generate_block_after_layout_break(
+    out: &mut String,
+    block: &Block,
+    should_collapse_with_after_spacing: bool,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let mut continuation: Block = block.clone();
+    emit_layout_break_space_before(out, &mut continuation, should_collapse_with_after_spacing);
+    generate_block(out, &continuation, ctx)
+}
+
+fn emit_layout_break_space_before(
+    out: &mut String,
+    block: &mut Block,
+    should_collapse_with_after_spacing: bool,
+) {
+    if let Some(space_before) =
+        take_layout_break_space_before(block, should_collapse_with_after_spacing)
+    {
+        write_explicit_vertical_space(out, space_before);
+    }
+}
+
+fn take_layout_break_space_before(
+    block: &mut Block,
+    should_collapse_with_after_spacing: bool,
+) -> Option<f64> {
+    if !block_has_paragraph_content(block) {
+        return None;
+    }
+    let (space_before, space_after): (&mut Option<f64>, Option<f64>) = match block {
+        Block::Paragraph(paragraph) => (
+            &mut paragraph.style.space_before,
+            paragraph.style.space_after,
+        ),
+        Block::Caption(caption) => (
+            &mut caption.paragraph.style.space_before,
+            caption.paragraph.style.space_after,
+        ),
+        Block::List(list) => {
+            let paragraph = list.items.first_mut()?.content.first_mut()?;
+            (
+                &mut paragraph.style.space_before,
+                paragraph.style.space_after,
+            )
+        }
+        _ => return None,
+    };
+    let raw_space_before: f64 = space_before.take()?;
+    if raw_space_before <= 0.0 {
+        *space_before = Some(raw_space_before);
+        return None;
+    }
+    let collapsed_space: f64 = if should_collapse_with_after_spacing {
+        (raw_space_before - space_after.unwrap_or(0.0)).max(0.0)
+    } else {
+        raw_space_before
+    };
+    (collapsed_space > 0.0).then_some(collapsed_space)
+}
+
+fn write_explicit_vertical_space(out: &mut String, space_before: f64) {
+    let _ = writeln!(out, "#v({}pt, weak: false)", format_f64(space_before));
+}
+
+fn column_segment_location(content: &[Block], block_index: usize) -> (usize, usize) {
+    let mut segment_index: usize = 0;
+    let mut block_in_segment_index: usize = 0;
+    for block in &content[..block_index] {
+        if matches!(block, Block::ColumnBreak) {
+            segment_index += 1;
+            block_in_segment_index = 0;
+        } else {
+            block_in_segment_index += 1;
+        }
+    }
+    (segment_index, block_in_segment_index)
+}
+
+fn suppress_block_space_before(block: &mut Block) {
+    let (space_before, space_after, decoration_before_spacing): (
+        &mut Option<f64>,
+        Option<f64>,
+        &mut Option<f64>,
+    ) = match block {
+        Block::Paragraph(paragraph) => (
+            &mut paragraph.style.space_before,
+            paragraph.style.space_after,
+            &mut paragraph.style.decoration_before_spacing,
+        ),
+        Block::Caption(caption) => (
+            &mut caption.paragraph.style.space_before,
+            caption.paragraph.style.space_after,
+            &mut caption.paragraph.style.decoration_before_spacing,
+        ),
+        Block::List(list) => {
+            let paragraph = list
+                .items
+                .first_mut()
+                .and_then(|item| item.content.first_mut())
+                .unwrap_or_else(|| unreachable!("a list content block has its first paragraph"));
+            (
+                &mut paragraph.style.space_before,
+                paragraph.style.space_after,
+                &mut paragraph.style.decoration_before_spacing,
+            )
+        }
+        _ => return,
+    };
+    if let Some(raw_space_before) = *space_before
+        && raw_space_before > 0.0
+    {
+        let decoration_spacing: f64 = (raw_space_before - space_after.unwrap_or(0.0)).max(0.0);
+        if decoration_spacing > 0.0 {
+            *decoration_before_spacing = Some(decoration_spacing);
+        }
+    }
+    *space_before = None;
 }
 
 fn is_zero_size_floating_anchor(block: &Block) -> bool {
