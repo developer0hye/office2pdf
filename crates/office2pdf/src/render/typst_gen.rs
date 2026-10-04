@@ -841,10 +841,10 @@ fn generate_flow_page_columns(
             }
         }
         let joins_previous_at_page_boundary: bool =
-            paragraph_borders_join_across_layout_boundary(&content[..*segment_start], *segment);
+            paragraph_borders_join_across_layout_boundary(&content[..*segment_start], segment);
         let segment_end: usize = *segment_start + segment.len();
         let joins_next_at_page_boundary: bool =
-            paragraph_borders_join_across_layout_boundary(*segment, &content[segment_end..]);
+            paragraph_borders_join_across_layout_boundary(segment, &content[segment_end..]);
         generate_column_section_page(
             out,
             &page_content,
@@ -4178,9 +4178,7 @@ fn take_joined_paragraph_after_shading_space(block: &mut Block) -> Option<f64> {
         Block::Caption(caption) => &mut caption.paragraph.style,
         _ => return None,
     };
-    if style.background.is_none() {
-        return None;
-    }
+    style.background?;
     style
         .space_after
         .take()
