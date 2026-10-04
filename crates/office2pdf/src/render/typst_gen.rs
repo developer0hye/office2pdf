@@ -795,9 +795,9 @@ fn generate_flow_page_columns(
 ) -> Result<(), ConvertError> {
     let has_leading_page_break: bool =
         ctx.at_document_start && starts_with_page_break_before_content(content);
-    let segments: Vec<&[Block]> = split_at_page_breaks(content);
+    let segments: Vec<(usize, &[Block])> = split_at_page_breaks(content);
     let last_segment_index: usize = segments.len() - 1;
-    for (index, segment) in segments.iter().enumerate() {
+    for (index, (segment_start, segment)) in segments.iter().enumerate() {
         let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
@@ -812,7 +812,7 @@ fn generate_flow_page_columns(
         if index > 0 {
             let has_content_before_page_break: bool = segments[..index]
                 .iter()
-                .flat_map(|previous_segment| previous_segment.iter())
+                .flat_map(|(_, previous_segment)| previous_segment.iter())
                 .any(block_has_paragraph_content);
             let first_content_index: Option<usize> =
                 page_content.iter().position(block_has_paragraph_content);
@@ -840,7 +840,20 @@ fn generate_flow_page_columns(
                 }
             }
         }
-        generate_column_section_page(out, &page_content, cols, layout_break_space_before, ctx)?;
+        let joins_previous_at_page_boundary: bool =
+            paragraph_borders_join_across_layout_boundary(&content[..*segment_start], *segment);
+        let segment_end: usize = *segment_start + segment.len();
+        let joins_next_at_page_boundary: bool =
+            paragraph_borders_join_across_layout_boundary(*segment, &content[segment_end..]);
+        generate_column_section_page(
+            out,
+            &page_content,
+            cols,
+            layout_break_space_before,
+            joins_previous_at_page_boundary,
+            joins_next_at_page_boundary,
+            ctx,
+        )?;
     }
     Ok(())
 }
@@ -886,6 +899,31 @@ fn block_starts_after_layout_break(block: &Block) -> bool {
     }
 }
 
+fn is_layout_break(block: &Block) -> bool {
+    matches!(block, Block::PageBreak | Block::ColumnBreak)
+}
+
+fn paragraph_borders_join_across_layout_boundary(
+    previous_blocks: &[Block],
+    next_blocks: &[Block],
+) -> bool {
+    let previous_block: Option<&Block> = previous_blocks
+        .iter()
+        .rev()
+        .find(|block| !is_layout_break(block));
+    let next_block: Option<&Block> = next_blocks.iter().find(|block| !is_layout_break(block));
+    paragraph_border_neighbors_match(previous_block, next_block)
+}
+
+fn paragraph_border_neighbors_match(
+    previous_block: Option<&Block>,
+    next_block: Option<&Block>,
+) -> bool {
+    previous_block
+        .zip(next_block)
+        .is_some_and(|(previous, next)| paragraph_borders_match(previous, next))
+}
+
 /// Generate one page's worth of a multi-column section.
 ///
 /// Equal columns use `#columns(n, gutter: Xpt)[content]`.
@@ -896,6 +934,8 @@ fn generate_column_section_page(
     content: &[Block],
     cols: &ColumnLayout,
     layout_break_space_before: Option<(usize, f64)>,
+    joins_previous_at_page_boundary: bool,
+    joins_next_at_page_boundary: bool,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     if let Some(ref widths) = cols.column_widths {
@@ -928,16 +968,73 @@ fn generate_column_section_page(
                     .any(|block| block_has_paragraph_content(block));
                 emit_layout_break_space_before(out, first_block, has_content_before_column_break);
             }
-            for (i, block) in cell_content.iter().enumerate() {
-                if i > 0 {
+            let previous_column_block: Option<&Block> = segments[..segment_index]
+                .iter()
+                .rev()
+                .flat_map(|previous_segment| previous_segment.iter().rev())
+                .copied()
+                .find(|block| !is_layout_break(block));
+            let next_column_block: Option<&Block> = segments[segment_index + 1..]
+                .iter()
+                .flat_map(|next_segment| next_segment.iter())
+                .copied()
+                .find(|block| !is_layout_break(block));
+            let first_column_block: Option<&Block> = segment
+                .iter()
+                .copied()
+                .find(|block| !is_layout_break(block));
+            let last_column_block: Option<&Block> = segment
+                .iter()
+                .rev()
+                .copied()
+                .find(|block| !is_layout_break(block));
+            let joins_previous_at_boundary: bool = if segment_index == 0 {
+                joins_previous_at_page_boundary
+            } else {
+                paragraph_border_neighbors_match(previous_column_block, first_column_block)
+            };
+            let joins_next_at_boundary: bool = if segment_index + 1 == segments.len() {
+                joins_next_at_page_boundary
+            } else {
+                paragraph_border_neighbors_match(last_column_block, next_column_block)
+            };
+            let first_block_index: Option<usize> = cell_content
+                .iter()
+                .position(|block| !is_layout_break(block));
+            let last_block_index: Option<usize> = cell_content
+                .iter()
+                .rposition(|block| !is_layout_break(block));
+            for (block_index, original_block) in cell_content.iter().enumerate() {
+                if block_index > 0 {
                     out.push('\n');
                 }
-                if layout_space_location == Some((segment_index, i))
+                if layout_space_location == Some((segment_index, block_index))
                     && let Some((_, space_before)) = layout_break_space_before
                 {
                     write_explicit_vertical_space(out, space_before);
                 }
-                generate_block(out, block, ctx)?;
+                let mut block: Block = original_block.clone();
+                let joins_previous_across_page: bool = joins_previous_at_boundary
+                    && first_block_index == Some(block_index)
+                    && paragraph_border_group_bounds(&cell_content, block_index)
+                        .is_some_and(|(group_start, _)| group_start == block_index);
+                let joins_next_across_page: bool = joins_next_at_boundary
+                    && last_block_index == Some(block_index)
+                    && paragraph_border_group_bounds(&cell_content, block_index)
+                        .is_some_and(|(_, group_end)| group_end == block_index + 1);
+                let joins_previous: bool =
+                    previous_non_layout_block_index(&cell_content, block_index).is_some_and(
+                        |previous_index| {
+                            paragraph_borders_match(&cell_content[previous_index], original_block)
+                        },
+                    ) || joins_previous_across_page;
+                let joins_next: bool = next_non_layout_block_index(&cell_content, block_index)
+                    .is_some_and(|next_index| {
+                        paragraph_borders_match(original_block, &cell_content[next_index])
+                    })
+                    || joins_next_across_page;
+                suppress_joined_paragraph_border_edges(&mut block, joins_previous, joins_next);
+                generate_block(out, &block, ctx)?;
             }
             out.push(']');
         }
@@ -950,7 +1047,14 @@ fn generate_column_section_page(
             cols.num_columns,
             format_f64(cols.spacing)
         );
-        generate_blocks_with_layout_space_before(out, content, ctx, layout_break_space_before)?;
+        generate_blocks_with_layout_space_before(
+            out,
+            content,
+            ctx,
+            layout_break_space_before,
+            joins_previous_at_page_boundary,
+            joins_next_at_page_boundary,
+        )?;
         out.push_str("\n]\n");
     }
     Ok(())
@@ -960,16 +1064,16 @@ fn generate_column_section_page(
 ///
 /// One slice per page the section spans. A leading, trailing or repeated break
 /// yields an empty slice, which the caller emits as the bare break.
-fn split_at_page_breaks(content: &[Block]) -> Vec<&[Block]> {
-    let mut segments: Vec<&[Block]> = Vec::new();
+fn split_at_page_breaks(content: &[Block]) -> Vec<(usize, &[Block])> {
+    let mut segments: Vec<(usize, &[Block])> = Vec::new();
     let mut start: usize = 0;
     for (index, block) in content.iter().enumerate() {
         if matches!(block, Block::PageBreak) {
-            segments.push(&content[start..index]);
+            segments.push((start, &content[start..index]));
             start = index + 1;
         }
     }
-    segments.push(&content[start..]);
+    segments.push((start, &content[start..]));
     segments
 }
 
@@ -3958,7 +4062,7 @@ fn generate_blocks(
     blocks: &[Block],
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
-    generate_blocks_with_layout_space_before(out, blocks, ctx, None)
+    generate_blocks_with_layout_space_before(out, blocks, ctx, None, false, false)
 }
 
 fn generate_blocks_with_layout_space_before(
@@ -3966,8 +4070,14 @@ fn generate_blocks_with_layout_space_before(
     blocks: &[Block],
     ctx: &mut GenCtx,
     layout_space_before: Option<(usize, f64)>,
+    joins_previous_at_boundary: bool,
+    joins_next_at_boundary: bool,
 ) -> Result<(), ConvertError> {
+    let first_block_index: Option<usize> = blocks.iter().position(|block| !is_layout_break(block));
+    let last_block_index: Option<usize> = blocks.iter().rposition(|block| !is_layout_break(block));
     let mut index: usize = 0;
+    let mut shared_border_frame_end: Option<usize> = None;
+    let mut pending_after_shading_space_pt: f64 = 0.0;
     while index < blocks.len() {
         if index > 0 {
             out.push('\n');
@@ -3985,6 +4095,40 @@ fn generate_blocks_with_layout_space_before(
             continue;
         }
 
+        if shared_border_frame_end.is_none()
+            && let Some((group_start, group_end)) = paragraph_border_group_bounds(blocks, index)
+            && group_start == index
+            && let Some(style) = paragraph_border_style(&blocks[index])
+            && write_joined_paragraph_border_frame_open(out, style)
+        {
+            shared_border_frame_end = Some(group_end);
+        }
+
+        let mut block: Block = blocks[index].clone();
+        let joins_previous_across_page: bool = joins_previous_at_boundary
+            && first_block_index == Some(index)
+            && paragraph_border_group_bounds(blocks, index)
+                .is_some_and(|(group_start, _)| group_start == index);
+        let joins_next_across_page: bool = joins_next_at_boundary
+            && last_block_index == Some(index)
+            && paragraph_border_group_bounds(blocks, index)
+                .is_some_and(|(_, group_end)| group_end == index + 1);
+        let joins_previous: bool =
+            previous_non_layout_block_index(blocks, index).is_some_and(|previous_index| {
+                paragraph_borders_match(&blocks[previous_index], &blocks[index])
+            }) || joins_previous_across_page;
+        let joins_next: bool = next_non_layout_block_index(blocks, index)
+            .is_some_and(|next_index| paragraph_borders_match(&blocks[index], &blocks[next_index]))
+            || joins_next_across_page;
+        suppress_joined_paragraph_border_edges(&mut block, joins_previous, joins_next);
+        if pending_after_shading_space_pt > 0.0 {
+            reduce_paragraph_space_before(&mut block, pending_after_shading_space_pt);
+            pending_after_shading_space_pt = 0.0;
+        }
+        let after_shading_space_pt: Option<f64> = joins_next
+            .then(|| take_joined_paragraph_after_shading_space(&mut block))
+            .flatten();
+
         let follows_column_break: bool =
             index > 0 && matches!(blocks[index - 1], Block::ColumnBreak);
         let follows_source_paragraph_page_break: bool = index > 0
@@ -3997,19 +4141,166 @@ fn generate_blocks_with_layout_space_before(
             let has_content_before_layout_break: bool = (follows_column_break
                 || follows_source_paragraph_page_break)
                 && blocks[..index - 1].iter().any(block_has_paragraph_content);
-            generate_block_after_layout_break(
-                out,
-                &blocks[index],
-                has_content_before_layout_break,
-                ctx,
-            )?;
+            generate_block_after_layout_break(out, &block, has_content_before_layout_break, ctx)?;
         } else {
-            generate_block(out, &blocks[index], ctx)?;
+            generate_block(out, &block, ctx)?;
+        }
+        if let Some(space_after_pt) = after_shading_space_pt {
+            if let Some(style) = paragraph_border_style(&block) {
+                write_paragraph_after_spacing_shading_block(out, style, space_after_pt);
+            }
+            pending_after_shading_space_pt = space_after_pt;
+        }
+        if shared_border_frame_end == Some(index + 1) {
+            out.push_str("\n]\n");
+            shared_border_frame_end = None;
         }
         index += 1;
     }
 
     Ok(())
+}
+
+fn reduce_paragraph_space_before(block: &mut Block, preceding_after_space_pt: f64) {
+    let style: Option<&mut ParagraphStyle> = match block {
+        Block::Paragraph(paragraph) => Some(&mut paragraph.style),
+        Block::Caption(caption) => Some(&mut caption.paragraph.style),
+        _ => None,
+    };
+    if let Some(space_before_pt) = style.and_then(|style| style.space_before.as_mut()) {
+        *space_before_pt = (*space_before_pt - preceding_after_space_pt).max(0.0);
+    }
+}
+
+fn take_joined_paragraph_after_shading_space(block: &mut Block) -> Option<f64> {
+    let style: &mut ParagraphStyle = match block {
+        Block::Paragraph(paragraph) => &mut paragraph.style,
+        Block::Caption(caption) => &mut caption.paragraph.style,
+        _ => return None,
+    };
+    if style.background.is_none() {
+        return None;
+    }
+    style
+        .space_after
+        .take()
+        .filter(|space_after_pt| *space_after_pt > 0.0)
+}
+
+fn previous_non_layout_block_index(blocks: &[Block], index: usize) -> Option<usize> {
+    (0..index)
+        .rev()
+        .find(|previous_index| !is_layout_break(&blocks[*previous_index]))
+}
+
+fn next_non_layout_block_index(blocks: &[Block], index: usize) -> Option<usize> {
+    (index + 1..blocks.len()).find(|next_index| !is_layout_break(&blocks[*next_index]))
+}
+
+/// Return the contiguous run of paragraph blocks with identical paragraph
+/// border settings. Layout-break blocks end a frame segment, while paragraph
+/// spacing inside the run remains within the shared outer frame.
+fn paragraph_border_group_bounds(blocks: &[Block], index: usize) -> Option<(usize, usize)> {
+    paragraph_border_style(blocks.get(index)?)?
+        .border
+        .as_ref()?;
+    let mut start: usize = index;
+    while start > 0 && paragraph_borders_match(&blocks[start - 1], &blocks[start]) {
+        start -= 1;
+    }
+    let mut end: usize = index + 1;
+    while end < blocks.len() && paragraph_borders_match(&blocks[end - 1], &blocks[end]) {
+        end += 1;
+    }
+    (end > start + 1 && blocks[start..end].iter().any(block_has_paragraph_content))
+        .then_some((start, end))
+}
+
+fn paragraph_border_style(block: &Block) -> Option<&ParagraphStyle> {
+    match block {
+        Block::Paragraph(paragraph) => Some(&paragraph.style),
+        Block::Caption(caption) => Some(&caption.paragraph.style),
+        _ => None,
+    }
+}
+
+fn paragraph_borders_match(first: &Block, second: &Block) -> bool {
+    if !block_has_paragraph_content(first) || !block_has_paragraph_content(second) {
+        return false;
+    }
+    let Some(first_style) = paragraph_border_style(first) else {
+        return false;
+    };
+    let Some(second_style) = paragraph_border_style(second) else {
+        return false;
+    };
+    let Some(first_border) = first_style.border.as_deref() else {
+        return false;
+    };
+    let Some(second_border) = second_style.border.as_deref() else {
+        return false;
+    };
+    let first_space: Insets = first_style
+        .border_space
+        .as_deref()
+        .copied()
+        .unwrap_or_default();
+    let second_space: Insets = second_style
+        .border_space
+        .as_deref()
+        .copied()
+        .unwrap_or_default();
+    first_border == second_border && first_space == second_space
+}
+
+fn suppress_joined_paragraph_border_edges(
+    block: &mut Block,
+    joins_previous: bool,
+    joins_next: bool,
+) {
+    let Some(style) = (match block {
+        Block::Paragraph(paragraph) => Some(&mut paragraph.style),
+        Block::Caption(caption) => Some(&mut caption.paragraph.style),
+        _ => None,
+    }) else {
+        return;
+    };
+    let Some(border) = style.border.as_mut() else {
+        return;
+    };
+    let mut space: Insets = style.border_space.as_deref().copied().unwrap_or_default();
+    if joins_previous {
+        let top_border_inset_pt: f64 = border.top.as_ref().map_or(0.0, |side| {
+            space.top
+                + if side.style == BorderLineStyle::Double {
+                    side.width * 3.0
+                } else {
+                    side.width / 2.0
+                }
+        });
+        if top_border_inset_pt > 0.0
+            && let Some(before_spacing_pt) = style.decoration_before_spacing.or(style.space_before)
+            && before_spacing_pt > 0.0
+        {
+            style.decoration_before_spacing = Some(before_spacing_pt + top_border_inset_pt);
+        }
+        border.top = None;
+        space.top = 0.0;
+    }
+    if joins_next {
+        border.bottom = None;
+        space.bottom = 0.0;
+    }
+    if border.top.is_none()
+        && border.bottom.is_none()
+        && border.left.is_none()
+        && border.right.is_none()
+    {
+        style.border = None;
+        style.border_space = None;
+    } else if style.border_space.is_some() {
+        style.border_space = Some(Box::new(space));
+    }
 }
 
 /// Preserve before-spacing when a layout break splits the same source paragraph.

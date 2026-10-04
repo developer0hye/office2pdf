@@ -329,7 +329,6 @@ pub(super) fn generate_paragraph(
             })
         })
         .flatten();
-
     let eojeol_wrap: EojeolWrap = paragraph_eojeol_wrap(
         breaks_hangul_at_eojeol,
         style,
@@ -2799,6 +2798,48 @@ fn write_block_decoration_params(out: &mut String, style: &ParagraphStyle) {
     }
 }
 
+/// Draw one pair of paragraph-border sides around adjacent matching
+/// paragraphs. Their individual fills remain on the inner paragraph blocks;
+/// this frame carries the shared sides through the spacing between them.
+pub(super) fn write_joined_paragraph_border_frame_open(
+    out: &mut String,
+    style: &ParagraphStyle,
+) -> bool {
+    if paragraph_indent_pt(style).is_some() {
+        return false;
+    }
+    let Some(border) = style.border.as_deref() else {
+        return false;
+    };
+    let mut strokes: Vec<String> = Vec::new();
+    for (name, side) in [("left", &border.left), ("right", &border.right)] {
+        if let Some(side) = side
+            && side.style != BorderLineStyle::Double
+        {
+            strokes.push(format!("{name}: {}", stroke_literal(side)));
+        }
+    }
+    if strokes.is_empty() {
+        return false;
+    }
+
+    out.push_str("#block(width: 100%, above: 0pt, below: 0pt");
+    let _ = write!(out, ", stroke: ({})", strokes.join(", "));
+    let (left_outset_pt, right_outset_pt) = paragraph_horizontal_decoration_outsets(style);
+    if (left_outset_pt - right_outset_pt).abs() < 0.0001 {
+        let _ = write!(out, ", outset: (x: {}pt)", format_f64(left_outset_pt));
+    } else {
+        let _ = write!(
+            out,
+            ", outset: (left: {}pt, right: {}pt)",
+            format_f64(left_outset_pt),
+            format_f64(right_outset_pt)
+        );
+    }
+    out.push_str(")[\n");
+    true
+}
+
 fn paragraph_horizontal_decoration_outsets(style: &ParagraphStyle) -> (f64, f64) {
     let border_space: Insets = style.border_space.as_deref().copied().unwrap_or_default();
     let mut left_outset_pt: f64 = TEXT_COLUMN_DECORATION_OVERHANG_PT;
@@ -2906,6 +2947,52 @@ fn write_paragraph_before_spacing_overlay(out: &mut String, style: &ParagraphSty
         let _ = write!(out, ", stroke: ({})", strokes.join(", "));
     }
     out.push_str(")))#sym.wj#h(0pt, weak: true)");
+}
+
+/// Emit a fixed-height fill block when a shaded paragraph's joined `w:after`
+/// spacing becomes visible between adjacent paragraphs.
+pub(super) fn write_paragraph_after_spacing_shading_block(
+    out: &mut String,
+    style: &ParagraphStyle,
+    space_after: f64,
+) {
+    let Some(background) = style.background else {
+        return;
+    };
+
+    let (left_expansion_pt, right_expansion_pt) = paragraph_horizontal_decoration_outsets(style);
+    out.push_str("#block(width: 100%, height: ");
+    let _ = write!(
+        out,
+        "{}pt, above: 0pt, below: 0pt, fill: {}",
+        format_f64(space_after),
+        rgb(&background)
+    );
+    if let Some(border) = style.border.as_deref() {
+        let strokes: Vec<String> = ["left", "right"]
+            .into_iter()
+            .zip([&border.left, &border.right])
+            .filter_map(|(name, side)| {
+                side.as_ref()
+                    .filter(|side| side.style != BorderLineStyle::Double)
+                    .map(|side| format!("{name}: {}", stroke_literal(side)))
+            })
+            .collect();
+        if !strokes.is_empty() {
+            let _ = write!(out, ", stroke: ({})", strokes.join(", "));
+        }
+    }
+    if (left_expansion_pt - right_expansion_pt).abs() < 0.0001 {
+        let _ = write!(out, ", outset: (x: {}pt)", format_f64(left_expansion_pt));
+    } else {
+        let _ = write!(
+            out,
+            ", outset: (left: {}pt, right: {}pt)",
+            format_f64(left_expansion_pt),
+            format_f64(right_expansion_pt)
+        );
+    }
+    out.push_str(")[#box(width: 0pt, height: 0pt)]");
 }
 
 /// How far Word paints a rule or a shaded block past each edge of the text
