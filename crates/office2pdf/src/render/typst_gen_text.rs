@@ -220,9 +220,51 @@ pub(super) fn generate_paragraph(
     // have a copy of this path that gained those settings one issue at a time;
     // the horizontal ones never arrived, and a centred zh-CN Word "Title",
     // which carries `w:outlineLvl 0`, printed flush left.
-    let line_height_settings: Option<String> =
-        word_line_height_settings(&para.runs, style, line_grid_pitch);
+    let is_empty_paragraph: bool = para.runs.is_empty() && style.heading_level.is_none();
+    let empty_paragraph_bottom_border_extent_pt: f64 = if is_empty_paragraph {
+        paragraph_bottom_border_extent_pt(style)
+    } else {
+        0.0
+    };
+    let paragraph_mark_metric_run: Option<Run> =
+        if is_empty_paragraph && style.line_spacing.is_some() {
+            style
+                .paragraph_mark_text_style
+                .as_deref()
+                .map(|mark_style| Run {
+                    text: String::new(),
+                    style: mark_style.clone(),
+                    href: None,
+                    footnote: None,
+                    inline_box: None,
+                })
+        } else {
+            None
+        };
+    let line_metric_runs: &[Run] = paragraph_mark_metric_run
+        .as_ref()
+        .map(std::slice::from_ref)
+        .unwrap_or(&para.runs);
+    let line_height_settings: Option<String> = if is_empty_paragraph {
+        None
+    } else {
+        word_line_height_settings(&para.runs, style, line_grid_pitch)
+    };
     let has_para_style = needs_block_wrapper(style) || line_height_settings.is_some();
+    let empty_paragraph_line_height_pt: f64 = if is_empty_paragraph {
+        match style.line_spacing {
+            Some(LineSpacing::Exact(points)) if points > 0.0 => points,
+            Some(LineSpacing::Proportional(_)) => {
+                word_line_box_em(line_metric_runs, style, line_grid_pitch)
+                    .map(|(top, bottom)| (top + bottom) * paragraph_font_size_pt(line_metric_runs))
+                    .unwrap_or(12.0)
+            }
+            _ => 12.0,
+        }
+    } else {
+        12.0
+    };
+    let empty_paragraph_placeholder_height_pt: f64 = empty_paragraph_line_height_pt;
     let first_line_indent: Option<f64> = style
         .indent_first_line
         .filter(|indent| indent.abs() > 0.0001 && !para.runs.is_empty());
@@ -240,10 +282,21 @@ pub(super) fn generate_paragraph(
     } else {
         indent
     };
-    if outer_indent.is_some() {
+    let has_outer_spacing_block: bool = outer_indent.is_some();
+    let should_move_empty_top_border_to_before_spacing: bool = is_empty_paragraph
+        && style.decoration_before_spacing.is_some()
+        && style.background.is_some()
+        && style
+            .border
+            .as_deref()
+            .and_then(|border| border.top.as_ref())
+            .is_some_and(|side| side.style != BorderLineStyle::Double);
+    if has_outer_spacing_block {
         out.push_str("#block(width: 100%");
-        write_block_spacing_params(out, style);
-        write_paragraph_indent_inset(out, outer_indent);
+        write_block_spacing_params(out, style, true, empty_paragraph_bottom_border_extent_pt);
+        if outer_indent.is_some() {
+            write_paragraph_indent_inset(out, outer_indent);
+        }
         out.push_str(")[\n");
     }
 
@@ -254,10 +307,10 @@ pub(super) fn generate_paragraph(
         // full line box, which `word_line_height_settings` spans directly,
         // so those gaps reach the block unmodified (issues #394, #452).
         out.push_str("#block(width: 100%");
-        if indent.is_none() {
-            write_block_spacing_params(out, style);
+        if indent.is_none() && !has_outer_spacing_block {
+            write_block_spacing_params(out, style, true, empty_paragraph_bottom_border_extent_pt);
         }
-        write_block_decoration_params(out, style);
+        write_block_decoration_params(out, style, should_move_empty_top_border_to_before_spacing);
         out.push_str(")[\n");
         write_paragraph_double_border_overlays(
             out,
@@ -270,18 +323,32 @@ pub(super) fn generate_paragraph(
             out.push_str(")[\n");
         }
         write_line_box_settings(out, style.line_box);
-        write_par_settings(out, style, &para.runs);
+        if !is_empty_paragraph {
+            write_par_settings(out, style, &para.runs);
+        }
         if let Some(ref settings) = line_height_settings {
             out.push_str(settings);
         }
     }
 
-    if para.runs.is_empty() && style.heading_level.is_none() {
-        out.push_str("#v(12pt)");
+    if is_empty_paragraph {
+        // Empty paragraphs return before the text path, so paint their shaded
+        // before-gap here as well.
+        write_paragraph_before_spacing_overlay(
+            out,
+            style,
+            false,
+            should_move_empty_top_border_to_before_spacing,
+        );
+        let _ = write!(
+            out,
+            "#v({}pt)",
+            format_f64(empty_paragraph_placeholder_height_pt)
+        );
         if has_para_style {
             out.push_str("\n]");
         }
-        if outer_indent.is_some() {
+        if has_outer_spacing_block {
             out.push_str("\n]");
         }
         out.push('\n');
@@ -340,7 +407,7 @@ pub(super) fn generate_paragraph(
         // #638 were measured on mixed-face body paragraphs only.
         Some(level) => {
             let _ = write!(out, "#heading(level: {level})[");
-            write_paragraph_before_spacing_overlay(out, style);
+            write_paragraph_before_spacing_overlay(out, style, true, false);
             generate_runs_with_tabs(
                 out,
                 &para.runs,
@@ -351,7 +418,7 @@ pub(super) fn generate_paragraph(
             out.push(']');
         }
         None => {
-            write_paragraph_before_spacing_overlay(out, style);
+            write_paragraph_before_spacing_overlay(out, style, true, false);
             generate_word_runs_with_tabs(
                 out,
                 &para.runs,
@@ -379,7 +446,7 @@ pub(super) fn generate_paragraph(
     if has_para_style {
         out.push_str("\n]");
     }
-    if outer_indent.is_some() {
+    if has_outer_spacing_block {
         out.push_str("\n]");
     }
 
@@ -1222,7 +1289,7 @@ fn word_line_box_and_leading(
     line_grid_pitch: Option<f64>,
 ) -> Option<(f64, f64, f64)> {
     let leading_pt: f64 = word_line_leading_pt(runs, style, line_grid_pitch)?;
-    let family: &str = east_asian_aware_metric_family(runs)?;
+    let family: &str = word_paragraph_metric_family(runs, style)?;
     let (ascender_em, descender_em, _word_pitch_em) =
         word_line_metrics_em(family, line_takes_east_asian_metrics(runs))?;
     let font_size: f64 = paragraph_font_size_pt(runs);
@@ -1317,6 +1384,19 @@ fn east_asian_aware_metric_family(runs: &[Run]) -> Option<&str> {
     } else {
         latin()
     }
+}
+
+fn word_paragraph_metric_family<'a>(runs: &'a [Run], style: &'a ParagraphStyle) -> Option<&'a str> {
+    east_asian_aware_metric_family(runs).or_else(|| {
+        (runs.is_empty() && matches!(style.line_spacing, Some(LineSpacing::Proportional(_)))).then(
+            || {
+                style
+                    .paragraph_mark_font_family
+                    .as_deref()
+                    .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_FAMILY)
+            },
+        )
+    })
 }
 
 /// The family that actually paints a spreadsheet cell's representative run.
@@ -2697,7 +2777,7 @@ pub(super) fn word_line_leading_pt(
         Some(LineSpacing::Proportional(factor)) if factor > 0.0 => factor,
         Some(_) => return None,
     };
-    let family: &str = east_asian_aware_metric_family(runs)?;
+    let family: &str = word_paragraph_metric_family(runs, style)?;
     let (ascender_em, descender_em, word_pitch_em) =
         word_line_metrics_em(family, line_takes_east_asian_metrics(runs))?;
     let font_size: f64 = runs
@@ -2760,11 +2840,19 @@ pub(super) fn write_block_params(out: &mut String, style: &ParagraphStyle) {
 /// first entry (every parameter is prefixed with a comma). They belong to
 /// the outermost block, so an indent wrapper does not separate them from the
 /// neighbouring paragraphs they collapse against.
-fn write_block_spacing_params(out: &mut String, style: &ParagraphStyle) {
+fn write_block_spacing_params(
+    out: &mut String,
+    style: &ParagraphStyle,
+    should_include_after_spacing: bool,
+    after_spacing_adjustment_pt: f64,
+) {
     if let Some(above) = style.space_before {
         let _ = write!(out, ", above: {}pt", format_f64(above));
     }
-    if let Some(below) = style.space_after {
+    if should_include_after_spacing
+        && (style.space_after.is_some() || after_spacing_adjustment_pt > 0.0)
+    {
+        let below: f64 = style.space_after.unwrap_or(0.0) + after_spacing_adjustment_pt;
         let _ = write!(out, ", below: {}pt", format_f64(below));
     }
 }
@@ -2772,14 +2860,23 @@ fn write_block_spacing_params(out: &mut String, style: &ParagraphStyle) {
 /// The paragraph's shading and borders, which Word paints across the
 /// paragraph's own column — from the left indent to the right indent — so
 /// they belong to the innermost block (issue #464).
-fn write_block_decoration_params(out: &mut String, style: &ParagraphStyle) {
+fn write_block_decoration_params(
+    out: &mut String,
+    style: &ParagraphStyle,
+    should_move_top_border_to_before_spacing: bool,
+) {
     let decorated: bool = style.background.is_some() || style.border.is_some();
     if let Some(background) = style.background {
         let _ = write!(out, ", fill: {}", rgb(&background));
     }
     let border_space = style.border_space.as_deref().copied().unwrap_or_default();
     if let Some(border) = &style.border {
-        write_paragraph_border_params(out, border, border_space);
+        write_paragraph_border_params(
+            out,
+            border,
+            border_space,
+            should_move_top_border_to_before_spacing,
+        );
     }
     if decorated {
         // `outset` widens what the block paints without moving the text in
@@ -2869,9 +2966,15 @@ fn paragraph_horizontal_decoration_outsets(style: &ParagraphStyle) -> (f64, f64)
 }
 
 /// Extend paragraph shading and vertical rules through Word's `w:before`
-/// spacing. The joiner keeps Typst's block-level `place` attached to the
-/// following inline content so it does not add a line to the paragraph.
-fn write_paragraph_before_spacing_overlay(out: &mut String, style: &ParagraphStyle) {
+/// spacing. When inline content follows, a word-joiner keeps Typst's block-level
+/// `place` attached without adding a line; empty paragraphs omit the joiner so
+/// their standalone overlay does not create empty inline text.
+fn write_paragraph_before_spacing_overlay(
+    out: &mut String,
+    style: &ParagraphStyle,
+    should_attach_to_following_inline: bool,
+    should_move_top_border_to_before_spacing: bool,
+) {
     let Some(space_before): Option<f64> = style
         .decoration_before_spacing
         .or(style.space_before)
@@ -2892,6 +2995,17 @@ fn write_paragraph_before_spacing_overlay(out: &mut String, style: &ParagraphSty
 
     let (left_outset_pt, right_outset_pt) = paragraph_horizontal_decoration_outsets(style);
     let border_space: Insets = style.border_space.as_deref().copied().unwrap_or_default();
+    let empty_paragraph_top_inset_pt: f64 = if should_attach_to_following_inline {
+        0.0
+    } else {
+        style
+            .border
+            .as_deref()
+            .and_then(|border| border.top.as_ref())
+            .map_or(0.0, |side| {
+                paragraph_border_side_inset(side, border_space.top)
+            })
+    };
     let (left_inset_pt, right_inset_pt): (f64, f64) = border.map_or((0.0, 0.0), |border| {
         let left: Option<&BorderSide> = border
             .left
@@ -2923,7 +3037,7 @@ fn write_paragraph_before_spacing_overlay(out: &mut String, style: &ParagraphSty
         out,
         "#box(place(dx: -{}pt, dy: -{}pt, rect(width: {}, height: {}pt, fill: ",
         format_f64(left_expansion_pt),
-        format_f64(space_before),
+        format_f64(space_before + empty_paragraph_top_inset_pt),
         width,
         format_f64(space_before)
     );
@@ -2935,7 +3049,14 @@ fn write_paragraph_before_spacing_overlay(out: &mut String, style: &ParagraphSty
 
     let mut strokes: Vec<String> = Vec::new();
     if let Some(border) = border {
-        for (name, side) in [("left", &border.left), ("right", &border.right)] {
+        for (name, side) in [
+            ("top", &border.top),
+            ("left", &border.left),
+            ("right", &border.right),
+        ] {
+            if name == "top" && !should_move_top_border_to_before_spacing {
+                continue;
+            }
             if let Some(side) = side
                 && side.style != BorderLineStyle::Double
             {
@@ -2946,7 +3067,10 @@ fn write_paragraph_before_spacing_overlay(out: &mut String, style: &ParagraphSty
     if !strokes.is_empty() {
         let _ = write!(out, ", stroke: ({})", strokes.join(", "));
     }
-    out.push_str(")))#sym.wj#h(0pt, weak: true)");
+    out.push_str(")))");
+    if should_attach_to_following_inline {
+        out.push_str("#sym.wj#h(0pt, weak: true)");
+    }
 }
 
 /// Emit a fixed-height fill block when a shaded paragraph's joined `w:after`
@@ -3029,7 +3153,12 @@ fn stroke_literal(side: &BorderSide) -> String {
 /// A fixed 4pt stood in for `w:space` until #520: a letterhead declaring 8pt
 /// then pulled every line below it up by the difference, and the error is a
 /// step, not a drift, so it survives to the bottom of the page.
-fn write_paragraph_border_params(out: &mut String, border: &CellBorder, space: Insets) {
+fn write_paragraph_border_params(
+    out: &mut String,
+    border: &CellBorder,
+    space: Insets,
+    should_move_top_border_to_before_spacing: bool,
+) {
     let mut strokes: Vec<String> = Vec::new();
     let mut insets: Vec<String> = Vec::new();
 
@@ -3037,17 +3166,12 @@ fn write_paragraph_border_params(out: &mut String, border: &CellBorder, space: I
         let Some(side) = side else {
             return;
         };
-        let reserved = if side.style == BorderLineStyle::Double {
-            gap + double_rule_thickness(side.width)
-        } else {
+        if side.style != BorderLineStyle::Double
+            && !(name == "top" && should_move_top_border_to_before_spacing)
+        {
             strokes.push(format!("{name}: {}", stroke_literal(side)));
-            // Typst centres a stroke on the inset edge, so half the rule
-            // already falls outside the reserved band. Reserving the whole
-            // width counted that half twice and put the rule half a width
-            // low — 0.31pt measured on `04_resume_en`'s 0.75pt name rule,
-            // against the native export (issue #648).
-            gap + side.width / 2.0
-        };
+        }
+        let reserved: f64 = paragraph_border_side_inset(side, gap);
         let is_horizontal_side: bool = matches!(name, "left" | "right");
         let moves_space_outside: bool = is_horizontal_side && side.style != BorderLineStyle::Double;
         if !moves_space_outside {
@@ -3065,6 +3189,37 @@ fn write_paragraph_border_params(out: &mut String, border: &CellBorder, space: I
     if !insets.is_empty() {
         let _ = write!(out, ", inset: ({})", insets.join(", "));
     }
+}
+
+fn paragraph_border_side_inset(side: &BorderSide, gap: f64) -> f64 {
+    if side.style == BorderLineStyle::Double {
+        gap + double_rule_thickness(side.width)
+    } else {
+        // Typst centers a stroke on the inset edge, so half the rule already
+        // falls outside the reserved band. Reserving the full width counts it
+        // twice and displaces the rule by half its width (#648).
+        gap + side.width / 2.0
+    }
+}
+
+fn paragraph_bottom_border_extent_pt(style: &ParagraphStyle) -> f64 {
+    // Word places `w:after` beyond the paragraph's full bottom border band.
+    // Typst reserves that band inside an empty paragraph's line box, so its
+    // extent must be carried into the following block's spacing.
+    let Some(side) = style
+        .border
+        .as_deref()
+        .and_then(|border| border.bottom.as_ref())
+    else {
+        return 0.0;
+    };
+    let border_space: Insets = style.border_space.as_deref().copied().unwrap_or_default();
+    let border_width_pt: f64 = if side.style == BorderLineStyle::Double {
+        double_rule_thickness(side.width)
+    } else {
+        side.width
+    };
+    border_space.bottom + border_width_pt
 }
 
 /// A Word double rule draws two lines of the declared width separated by a gap

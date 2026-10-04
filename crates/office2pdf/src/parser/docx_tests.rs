@@ -640,6 +640,151 @@ fn test_separate_paragraph_at_later_column_page_top_drops_before_spacing() {
 }
 
 #[test]
+fn test_empty_shaded_paragraphs_keep_their_before_spacing_across_breaks() {
+    const FIXTURE: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/libreoffice/tdf153964_topMarginAfterBreak14.docx"
+    );
+    let (document, _warnings) = DocxParser
+        .parse(FIXTURE, &ConvertOptions::default())
+        .unwrap();
+    let Page::Flow(page) = &document.pages[0] else {
+        panic!("expected one flow page");
+    };
+    let red_fragments: Vec<&Paragraph> = page
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph)
+                if paragraph.runs.is_empty()
+                    && paragraph.style.background == Some(Color::new(0xFF, 0, 0)) =>
+            {
+                Some(paragraph)
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        red_fragments.len(),
+        2,
+        "the empty red paragraph has one painted fragment before each layout break"
+    );
+    let paragraph_mark_style: &TextStyle = red_fragments[0]
+        .style
+        .paragraph_mark_text_style
+        .as_deref()
+        .expect("DOCX empty paragraphs retain their resolved paragraph-mark style");
+    assert_eq!(paragraph_mark_style.font_family.as_deref(), Some("Calibri"));
+    assert_eq!(paragraph_mark_style.font_size, Some(11.0));
+    assert!(
+        red_fragments
+            .iter()
+            .all(|paragraph| paragraph.style.space_before.is_none()),
+        "break-only fragments must not carry a 60pt before-gap into the next column or page"
+    );
+    assert!(
+        red_fragments[0].style.border.is_none(),
+        "an earlier empty fragment paints shading without a paragraph border"
+    );
+    assert!(
+        red_fragments[1].style.border.is_some(),
+        "the last empty fragment retains the paragraph border"
+    );
+
+    let purple_fragment: &Paragraph = page
+        .content
+        .windows(2)
+        .find_map(|pair| match (&pair[0], &pair[1]) {
+            (Block::Paragraph(paragraph), Block::PageBreak)
+                if paragraph.runs.is_empty()
+                    && paragraph.style.background == Some(Color::new(0x70, 0x30, 0xA0)) =>
+            {
+                Some(paragraph)
+            }
+            _ => None,
+        })
+        .expect("the purple empty paragraph ends with its page break");
+    assert!(
+        purple_fragment.style.border.is_none(),
+        "the prefix before a page break paints shading without a paragraph border"
+    );
+
+    let yellow_fragments: Vec<&Paragraph> = page
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph)
+                if paragraph.runs.is_empty()
+                    && paragraph.style.background == Some(Color::new(0xFF, 0xF2, 0xCC)) =>
+            {
+                Some(paragraph)
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        yellow_fragments.len(),
+        2,
+        "the empty yellow paragraph paints both the column-break prefix and its continuation"
+    );
+    assert!(yellow_fragments[0].style.border.is_none());
+    assert!(yellow_fragments[1].style.border.is_some());
+
+    let source = crate::render::typst_gen::generate_typst(&document)
+        .unwrap()
+        .source;
+    let yellow_color: &str = "fill: rgb(255, 242, 204)";
+    let yellow_prefix_color: usize = source
+        .find(yellow_color)
+        .expect("the yellow prefix precedes its column break");
+    let yellow_prefix_start: usize = source[..yellow_prefix_color]
+        .rfind("#block(")
+        .expect("the yellow prefix has its own paragraph block");
+    let yellow_column_break: usize = source[yellow_prefix_start..]
+        .find("#colbreak()")
+        .map(|relative_break| yellow_prefix_start + relative_break)
+        .expect("the yellow paragraph mark continues in the next column");
+    let yellow_continuation_color: usize = source[yellow_column_break..]
+        .find(yellow_color)
+        .map(|relative_color| yellow_column_break + relative_color)
+        .expect("the second yellow fragment is after its column break");
+    let yellow_continuation_start: usize = source[..yellow_continuation_color]
+        .rfind("#block(")
+        .expect("the yellow continuation is in its own paragraph block");
+    let preceding_column_break: usize = source[..yellow_continuation_start]
+        .rfind("#colbreak()")
+        .expect("the yellow paragraph mark continues in the next column");
+    assert!(
+        source[preceding_column_break..yellow_continuation_start].contains("#v(52pt, weak: false)"),
+        "the empty paragraph's before-spacing places its continuation after the column break: {source}"
+    );
+    let yellow_prefix_header_end: usize = source[yellow_prefix_start..]
+        .find(")[\n")
+        .map(|relative_end| yellow_prefix_start + relative_end)
+        .expect("the yellow prefix block header closes");
+    let yellow_continuation_header_end: usize = source[yellow_continuation_start..]
+        .find(")[\n")
+        .map(|relative_end| yellow_continuation_start + relative_end)
+        .expect("the yellow continuation block header closes");
+    assert!(
+        !source[yellow_prefix_start..yellow_prefix_header_end].contains("stroke:")
+            && source[yellow_continuation_start..yellow_continuation_header_end]
+                .contains("stroke:"),
+        "the prefix has no painted border while the final fragment retains the paragraph border: {source}"
+    );
+    assert!(
+        source.contains("height: 8pt, above: 0pt, below: 0pt, fill: rgb(112, 48, 160)")
+            && source.contains("height: 8pt, above: 0pt, below: 0pt, fill: rgb(226, 239, 217)"),
+        "empty paragraph shading extends through after-spacing at a page break: {source}"
+    );
+    assert!(
+        source.contains(
+            "dy: -54.5pt, rect(width: 100% + 10.88pt, height: 52pt, fill: rgb(226, 239, 217)"
+        ),
+        "the standalone green paragraph shades the collapsed before-spacing outside its border inset: {source}"
+    );
+}
+
+#[test]
 fn test_paragraph_starting_with_page_break_keeps_before_spacing_on_later_page() {
     let before_break = docx_rs::Paragraph::new()
         .add_run(docx_rs::Run::new().add_text("Paragraph before the explicit page break"));
