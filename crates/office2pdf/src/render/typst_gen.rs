@@ -819,11 +819,15 @@ fn generate_flow_page_columns(
             });
             if has_leading_page_break && index == 1 {
                 if let Some(first_content_index) = first_content_index {
-                    layout_break_space_before = take_layout_break_space_before(
+                    let space_before: f64 = take_layout_break_space_before(
                         &mut page_content[first_content_index],
                         has_content_before_page_break,
                     )
-                    .map(|space_before| (first_content_index, space_before));
+                    .unwrap_or_default()
+                        - leading_empty_paragraph_after_spacing_pt(content);
+                    if space_before != 0.0 {
+                        layout_break_space_before = Some((first_content_index, space_before));
+                    }
                 }
             } else if let Some(first_content_index) = first_content_index {
                 if block_starts_after_layout_break(&page_content[first_content_index]) {
@@ -868,6 +872,16 @@ fn starts_with_page_break_before_content(content: &[Block]) -> bool {
         .iter()
         .find(|block| !is_empty_paragraph_block(block))
         .is_some_and(|block| matches!(block, Block::PageBreak))
+}
+
+/// Word subtracts collapsed after-spacing before an initial hard page break
+/// from the first continuation paragraph's before-spacing.
+fn leading_empty_paragraph_after_spacing_pt(content: &[Block]) -> f64 {
+    content
+        .iter()
+        .take_while(|block| is_empty_paragraph_block(block))
+        .filter_map(|block| paragraph_border_style(block)?.space_after)
+        .fold(0.0, f64::max)
 }
 
 fn is_empty_paragraph_block(block: &Block) -> bool {

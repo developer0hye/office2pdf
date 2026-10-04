@@ -1336,6 +1336,99 @@ fn issue_1975_fixture_joins_borders_across_differently_shaded_paragraphs() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn issue_1896_preserves_empty_paragraph_after_spacing_before_a_leading_page_break() {
+    use crate::parser::Parser;
+
+    let fixtures: [&[u8]; 2] = [
+        include_bytes!(
+            "../../../../tests/fixtures/docx/libreoffice/tdf153964_topMarginAfterBreak14.docx"
+        ),
+        include_bytes!(
+            "../../../../tests/fixtures/docx/libreoffice/tdf153964_topMarginAfterBreak15.docx"
+        ),
+    ];
+    let continuation_baselines: Vec<f64> = fixtures
+        .iter()
+        .map(|fixture| {
+            let (document, _warnings) = crate::parser::docx::DocxParser
+                .parse(fixture, &crate::config::ConvertOptions::default())
+                .expect("the public break-spacing fixture should parse");
+            let source: String = generate_typst(&document)
+                .expect("the public break-spacing fixture should generate")
+                .source;
+            crate::render::pdf::compiled_text_runs(&source, 1)
+                .expect("the continuation page should compile")
+                .into_iter()
+                .find(|run| run.text.contains("start of the"))
+                .expect("the continuation text should be on page 2")
+                .baseline_pt
+        })
+        .collect();
+    let empty_paragraph_gap_pt: f64 = continuation_baselines[1] - continuation_baselines[0];
+
+    assert!(
+        (empty_paragraph_gap_pt + 8.0).abs() <= 0.24,
+        "Word subtracts the preceding empty Normal paragraph's 8pt after-spacing from the leading page-break continuation gap; observed a {empty_paragraph_gap_pt:.3}pt continuation gap"
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn issue_1896_collapses_empty_paragraph_after_spacing_before_a_leading_page_break() {
+    use crate::ir::ColumnLayout;
+
+    let continuation_baseline = |empty_paragraph_after_spacing_pt: &[f64]| -> f64 {
+        let mut content: Vec<Block> = empty_paragraph_after_spacing_pt
+            .iter()
+            .map(|space_after_pt| {
+                Block::Paragraph(Paragraph {
+                    style: ParagraphStyle {
+                        space_after: Some(*space_after_pt),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: Vec::new(),
+                })
+            })
+            .collect();
+        content.push(Block::PageBreak);
+        content.push(make_paragraph("Continuation"));
+        let mut page: Page = make_flow_page(content);
+        let Page::Flow(flow_page) = &mut page else {
+            unreachable!();
+        };
+        flow_page.columns = Some(ColumnLayout {
+            num_columns: 2,
+            spacing: 36.0,
+            column_widths: None,
+        });
+        let document: Document = make_doc(vec![page]);
+        let source: String = generate_typst(&document)
+            .expect("the synthetic break-spacing document should generate")
+            .source;
+        crate::render::pdf::compiled_text_runs(&source, 1)
+            .expect("the continuation page should compile")
+            .into_iter()
+            .find(|run| run.text.contains("Continuation"))
+            .expect("the continuation text should be on page 2")
+            .baseline_pt
+    };
+
+    let no_empty_paragraph_baseline_pt: f64 = continuation_baseline(&[]);
+    let one_empty_paragraph_baseline_pt: f64 = continuation_baseline(&[8.0]);
+    let two_empty_paragraph_baseline_pt: f64 = continuation_baseline(&[4.0, 8.0]);
+
+    assert!(
+        (one_empty_paragraph_baseline_pt - no_empty_paragraph_baseline_pt + 8.0).abs() < 0.01,
+        "the empty paragraph's after-spacing must pull the continuation upward across the initial page break"
+    );
+    assert!(
+        (two_empty_paragraph_baseline_pt - one_empty_paragraph_baseline_pt).abs() < 0.01,
+        "adjacent empty paragraphs collapse to the largest after-spacing, not a sum"
+    );
+}
+
+#[test]
 fn test_paragraph_before_spacing_overlay_stays_inline_with_text() {
     let doc = make_doc(vec![make_flow_page(vec![
         make_paragraph("Previous paragraph"),
