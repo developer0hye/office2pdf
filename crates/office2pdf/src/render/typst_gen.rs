@@ -235,6 +235,10 @@ struct GenCtx {
     /// frame would be pushed onto a line of its own and overflow it
     /// (issue #626).
     available_measure_pt: Option<f64>,
+    /// Page geometry currently active in Typst. A continuous section can
+    /// change its body frame without changing the page that already began.
+    active_page_size: Option<PageSize>,
+    active_page_margins: Option<Margins>,
     /// The spreadsheet cell box the current paragraph is laid out in, so a
     /// centred line can be seated on Excel's whole-point grid (issue #1600).
     /// `None` outside a sheet table cell.
@@ -302,6 +306,8 @@ impl GenCtx {
             at_document_start: true,
             breaks_hangul_at_eojeol: false,
             available_measure_pt: None,
+            active_page_size: None,
+            active_page_margins: None,
             sheet_cell_box: None,
         }
     }
@@ -654,12 +660,24 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
     ctx.document_default_tab_stop_pt = doc.styles.default_tab_stop_pt;
     ctx.document_default_text = doc.styles.default_text.clone();
     for (index, page) in doc.pages.iter().enumerate() {
-        if index > 0 {
+        let begins_continuously: bool = matches!(page, Page::FlowContinuous(_));
+        let ends_continuously: bool = doc
+            .pages
+            .get(index + 1)
+            .is_some_and(|next_page| matches!(next_page, Page::FlowContinuous(_)));
+        if index > 0 && !begins_continuously {
             out.push_str("\n#pagebreak()\n");
         }
         match page {
-            Page::Flow(flow) => {
-                generate_flow_page(&mut out, flow, &mut ctx, options)?;
+            Page::Flow(flow) | Page::FlowContinuous(flow) => {
+                generate_flow_page(
+                    &mut out,
+                    flow,
+                    begins_continuously && index > 0,
+                    ends_continuously,
+                    &mut ctx,
+                    options,
+                )?;
                 ctx.flow_section_index += 1;
             }
             Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx, options)?,
@@ -678,6 +696,8 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
 fn generate_flow_page(
     out: &mut String,
     page: &FlowPage,
+    begins_continuously: bool,
+    ends_continuously: bool,
     ctx: &mut GenCtx,
     options: &ConvertOptions,
 ) -> Result<(), ConvertError> {
@@ -704,8 +724,14 @@ fn generate_flow_page(
             } else {
                 DEFAULT_TAB_WIDTH_PT
             });
-    write_flow_page_setup(out, page, &size, ctx);
-    out.push('\n');
+    let mut section_content: Vec<Block> = page.content.clone();
+    if begins_continuously {
+        suppress_typst_spacing_at_continuous_section_start(&mut section_content);
+    }
+    if !begins_continuously {
+        write_flow_page_setup(out, page, &size, ctx);
+        out.push('\n');
+    }
     // The marker sits at the section's first page, so a first-page header can
     // resolve which page that is without assuming the section starts the
     // document (issue #846).
@@ -746,7 +772,7 @@ fn generate_flow_page(
     // twice. Word also suppresses spacing for a separate paragraph after a
     // break; continuation fragments preserve the source paragraph's before-gap.
     let leading_gap: Option<f64> = if ctx.at_document_start && page.columns.is_none() {
-        match page.content.first() {
+        match section_content.first() {
             Some(Block::Paragraph(paragraph)) => {
                 paragraph.style.space_before.filter(|gap| *gap > 0.0)
             }
@@ -757,21 +783,150 @@ fn generate_flow_page(
     };
 
     if let Some(gap) = leading_gap {
-        let Some(Block::Paragraph(first)) = page.content.first() else {
+        let Some(Block::Paragraph(first)) = section_content.first() else {
             unreachable!("leading_gap is only set for a leading paragraph")
         };
         let mut adjusted = first.clone();
         adjusted.style.space_before = None;
         let _ = writeln!(out, "#v({}pt, weak: false)", format_f64(gap));
         generate_block(out, &Block::Paragraph(adjusted), ctx)?;
-        if page.content.len() > 1 {
+        if section_content.len() > 1 {
             out.push('\n');
-            generate_blocks(out, &page.content[1..], ctx)?;
+            generate_blocks(out, &section_content[1..], ctx)?;
         }
     } else if let Some(ref cols) = page.columns {
-        generate_flow_page_columns(out, &page.content, cols, ctx)?;
+        generate_flow_page_columns(
+            out,
+            page,
+            &size,
+            &section_content,
+            cols,
+            begins_continuously,
+            ends_continuously,
+            ctx,
+        )?;
+    } else if begins_continuously
+        && section_content
+            .iter()
+            .any(|block| matches!(block, Block::PageBreak))
+    {
+        generate_continuous_flow_blocks(out, page, &size, &section_content, ctx)?;
     } else {
-        generate_blocks(out, &page.content, ctx)?;
+        let has_continuous_frame: bool =
+            begins_continuously && write_continuous_flow_frame_open(out, page, ctx);
+        generate_blocks(out, &section_content, ctx)?;
+        if has_continuous_frame {
+            write_continuous_flow_frame_close(out);
+        }
+    }
+    Ok(())
+}
+
+/// Remove Typst's fallback paragraph gap at the first body block of a
+/// continuous section. The boundary is a Word section transition, not a
+/// paragraph boundary, so implicit block spacing must not separate the flows.
+fn suppress_typst_spacing_at_continuous_section_start(content: &mut [Block]) {
+    let Some(first_content_index) = content.iter().position(block_has_paragraph_content) else {
+        return;
+    };
+    if content[..first_content_index]
+        .iter()
+        .any(|block| is_layout_break(block))
+        || block_starts_after_layout_break(&content[first_content_index])
+    {
+        return;
+    }
+    suppress_block_space_before(&mut content[first_content_index]);
+    match &mut content[first_content_index] {
+        Block::Paragraph(paragraph) => paragraph.style.space_before = Some(0.0),
+        Block::Caption(caption) => caption.paragraph.style.space_before = Some(0.0),
+        Block::List(list) => {
+            if let Some(paragraph) = list
+                .items
+                .first_mut()
+                .and_then(|item| item.content.first_mut())
+            {
+                paragraph.style.space_before = Some(0.0);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Open the new section's horizontal text frame inside the page that is
+/// already using the previous section's page margins.
+fn write_continuous_flow_frame_open(out: &mut String, page: &FlowPage, ctx: &GenCtx) -> bool {
+    let Some(active_margins) = ctx.active_page_margins else {
+        return false;
+    };
+    let active_page_width: f64 = ctx
+        .active_page_size
+        .map(|size| size.width)
+        .unwrap_or(page.size.width);
+    let active_content_width: f64 = active_page_width - active_margins.left - active_margins.right;
+    let section_content_width: f64 = page.size.width - page.margins.left - page.margins.right;
+    let horizontal_offset: f64 = page.margins.left - active_margins.left;
+    if horizontal_offset.abs() < 0.0001
+        && (active_content_width - section_content_width).abs() < 0.0001
+    {
+        return false;
+    }
+    if section_content_width <= 0.0 {
+        return false;
+    }
+
+    let _ = writeln!(
+        out,
+        "#move(dx: {}pt)[\n#block(width: {}pt)[",
+        format_f64(horizontal_offset),
+        format_f64(section_content_width)
+    );
+    true
+}
+
+fn write_continuous_flow_frame_close(out: &mut String) {
+    out.push_str("]\n]\n");
+}
+
+/// Keep page breaks at the top level while applying continuous-section page
+/// setup to each continuation page.
+fn generate_continuous_flow_blocks(
+    out: &mut String,
+    page: &FlowPage,
+    size: &PageSize,
+    content: &[Block],
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let segments: Vec<(usize, &[Block])> = split_at_page_breaks(content);
+    let last_segment_index: usize = segments.len() - 1;
+    for (index, (segment_start, segment)) in segments.iter().enumerate() {
+        let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
+        if index > 0 && !is_trailing_empty_segment {
+            out.push_str("#pagebreak()\n");
+            write_flow_page_setup(out, page, size, ctx);
+        }
+        if segment.is_empty() {
+            continue;
+        }
+
+        let has_continuous_frame: bool = write_continuous_flow_frame_open(out, page, ctx);
+        let segment_end: usize = *segment_start + segment.len();
+        let joins_previous_at_page_boundary: bool =
+            paragraph_borders_join_across_layout_boundary(&content[..*segment_start], segment);
+        let joins_next_at_page_boundary: bool =
+            paragraph_borders_join_across_layout_boundary(segment, &content[segment_end..]);
+        generate_blocks_with_layout_space_before(
+            out,
+            segment,
+            ctx,
+            None,
+            joins_previous_at_page_boundary,
+            joins_next_at_page_boundary,
+            segment_end < content.len(),
+        )?;
+        if has_continuous_frame {
+            write_continuous_flow_frame_close(out);
+        }
     }
     Ok(())
 }
@@ -789,8 +944,12 @@ fn generate_flow_page(
 /// vertical space, so only the break itself is emitted for those.
 fn generate_flow_page_columns(
     out: &mut String,
+    page: &FlowPage,
+    size: &PageSize,
     content: &[Block],
     cols: &ColumnLayout,
+    begins_continuously: bool,
+    balance_final_segment: bool,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     let has_leading_page_break: bool =
@@ -801,6 +960,9 @@ fn generate_flow_page_columns(
         let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
+            if begins_continuously {
+                write_flow_page_setup(out, page, size, ctx);
+            }
         }
         if segment.is_empty() {
             continue;
@@ -854,7 +1016,17 @@ fn generate_flow_page_columns(
             joins_previous_at_page_boundary,
             joins_next_at_page_boundary,
             ends_with_page_break: segment_end < content.len(),
+            balance_at_section_end: balance_final_segment && index == last_segment_index,
         };
+        let suppress_section_boundary_spacing: bool = begins_continuously
+            && index == 0
+            && !segment.is_empty()
+            && !page_boundaries.balance_at_section_end;
+        if suppress_section_boundary_spacing {
+            out.push_str("#block(width: 100%, above: 0pt, below: 0pt)[\n");
+        }
+        let has_continuous_frame: bool =
+            begins_continuously && write_continuous_flow_frame_open(out, page, ctx);
         generate_column_section_page(
             out,
             &page_content,
@@ -863,6 +1035,12 @@ fn generate_flow_page_columns(
             page_boundaries,
             ctx,
         )?;
+        if suppress_section_boundary_spacing {
+            out.push_str("]\n");
+        }
+        if has_continuous_frame {
+            write_continuous_flow_frame_close(out);
+        }
     }
     Ok(())
 }
@@ -953,6 +1131,7 @@ struct PageSegmentBoundaries {
     joins_previous_at_page_boundary: bool,
     joins_next_at_page_boundary: bool,
     ends_with_page_break: bool,
+    balance_at_section_end: bool,
 }
 
 fn generate_column_section_page(
@@ -1065,24 +1244,74 @@ fn generate_column_section_page(
         }
         out.push('\n');
     } else {
-        // Equal columns: use Typst columns()
-        let _ = writeln!(
-            out,
-            "#columns({}, gutter: {}pt)[",
-            cols.num_columns,
-            format_f64(cols.spacing)
-        );
-        generate_blocks_with_layout_space_before(
-            out,
-            content,
-            ctx,
-            layout_break_space_before,
-            page_boundaries.joins_previous_at_page_boundary,
-            page_boundaries.joins_next_at_page_boundary,
-            page_boundaries.ends_with_page_break,
-        )?;
-        out.push_str("\n]\n");
+        if page_boundaries.balance_at_section_end
+            && !content
+                .iter()
+                .any(|block| matches!(block, Block::ColumnBreak))
+            && let Some(content_width) = ctx.available_measure_pt
+        {
+            generate_balanced_flow_columns(
+                out,
+                content,
+                cols,
+                content_width,
+                layout_break_space_before,
+                page_boundaries,
+                ctx,
+            )?;
+        } else {
+            // Equal columns: use Typst columns()
+            let _ = writeln!(
+                out,
+                "#columns({}, gutter: {}pt)[",
+                cols.num_columns,
+                format_f64(cols.spacing)
+            );
+            generate_blocks_with_layout_space_before(
+                out,
+                content,
+                ctx,
+                layout_break_space_before,
+                page_boundaries.joins_previous_at_page_boundary,
+                page_boundaries.joins_next_at_page_boundary,
+                page_boundaries.ends_with_page_break,
+            )?;
+            out.push_str("\n]\n");
+        }
     }
+    Ok(())
+}
+
+fn generate_balanced_flow_columns(
+    out: &mut String,
+    content: &[Block],
+    cols: &ColumnLayout,
+    content_width: f64,
+    layout_break_space_before: Option<(usize, f64)>,
+    page_boundaries: PageSegmentBoundaries,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let column_width: f64 = (content_width - cols.spacing * f64::from(cols.num_columns - 1))
+        / f64::from(cols.num_columns);
+    out.push_str("#context {\n  let o2p_section_content = [\n");
+    generate_blocks_with_layout_space_before(
+        out,
+        content,
+        ctx,
+        layout_break_space_before,
+        page_boundaries.joins_previous_at_page_boundary,
+        page_boundaries.joins_next_at_page_boundary,
+        page_boundaries.ends_with_page_break,
+    )?;
+    let _ = writeln!(
+        out,
+        "\n  ]\n  let o2p_column_width = {}pt\n  let o2p_column_height = o2p_section_content.children.fold(\n    measure(o2p_section_content, width: o2p_column_width).height / {},\n    (height, child) => calc.max(height, measure(child, width: o2p_column_width).height),\n  )\n  block(width: {}pt, height: o2p_column_height, above: 0pt, below: 0pt)[\n    #columns({}, gutter: {}pt)[#o2p_section_content]\n  ]\n}}",
+        format_f64(column_width),
+        cols.num_columns,
+        format_f64(content_width),
+        cols.num_columns,
+        format_f64(cols.spacing),
+    );
     Ok(())
 }
 
@@ -2727,6 +2956,8 @@ fn hf_paragraph_height_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Optio
 }
 
 fn write_flow_page_setup(out: &mut String, page: &FlowPage, size: &PageSize, ctx: &mut GenCtx) {
+    ctx.active_page_size = Some(*size);
+    ctx.active_page_margins = Some(page.margins);
     // A section may declare only a first-page story — `w:titlePg` with just a
     // `first` reference means pages after the first carry none — so the
     // shortcut has to ask about those too (issue #846).

@@ -272,7 +272,7 @@ fn issue_1894_page_field_inside_header_structured_tag_is_retained() {
     let (doc, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
 
     let flow_page = match &doc.pages[0] {
-        Page::Flow(flow_page) => flow_page,
+        Page::Flow(flow_page) | Page::FlowContinuous(flow_page) => flow_page,
         other => panic!("Expected FlowPage, got {other:?}"),
     };
     let header = flow_page

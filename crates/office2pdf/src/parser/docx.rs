@@ -449,6 +449,21 @@ impl Parser for DocxParser {
                 elements.push(TaggedElement::Plain(vec![block]));
             }
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
+                docx_rs::DocumentChild::Paragraph(para)
+                    if is_empty_section_break_paragraph(para) =>
+                {
+                    // Paragraph cursors scan raw XML, so even this marker must
+                    // advance them before its layout-only block is discarded.
+                    let _ = convert_paragraph_element(
+                        para,
+                        &images,
+                        &hyperlinks,
+                        &style_map,
+                        &ctx,
+                        &docx.styles,
+                    );
+                    vec![]
+                }
                 docx_rs::DocumentChild::Paragraph(para) => {
                     let mut tagged: Vec<TaggedElement> = convert_paragraph_element(
                         para,
@@ -521,7 +536,7 @@ impl Parser for DocxParser {
                     Some(layout) => layout.clone(),
                     None => extract_column_layout_from_section_property(section_prop),
                 };
-                pages.push(Page::Flow(build_flow_page_from_section(
+                let flow_page: crate::ir::FlowPage = build_flow_page_from_section(
                     section_prop,
                     std::mem::take(&mut elements),
                     &numberings,
@@ -532,7 +547,14 @@ impl Parser for DocxParser {
                     },
                     header_footer_styles,
                     &mut warnings,
-                )));
+                );
+                pages.push(
+                    if section_prop.section_type == Some(docx_rs::SectionType::Continuous) {
+                        Page::FlowContinuous(flow_page)
+                    } else {
+                        Page::Flow(flow_page)
+                    },
+                );
                 section_layout_index += 1;
             }
         }
@@ -546,7 +568,7 @@ impl Parser for DocxParser {
             Some(layout) => layout.clone(),
             None => extract_column_layout_from_section_property(&docx.document.section_property),
         };
-        pages.push(Page::Flow(build_flow_page_from_section(
+        let final_flow_page: crate::ir::FlowPage = build_flow_page_from_section(
             &docx.document.section_property,
             elements,
             &numberings,
@@ -557,7 +579,15 @@ impl Parser for DocxParser {
             },
             header_footer_styles,
             &mut warnings,
-        )));
+        );
+        pages.push(
+            if docx.document.section_property.section_type == Some(docx_rs::SectionType::Continuous)
+            {
+                Page::FlowContinuous(final_flow_page)
+            } else {
+                Page::Flow(final_flow_page)
+            },
+        );
 
         Ok((
             Document {
@@ -1693,6 +1723,17 @@ fn withheld_paragraph_block(ctx: &DocxConversionContext) -> Option<Block> {
         .take_withheld()
         .filter(|paragraph| !paragraph.runs.is_empty())
         .map(Block::Paragraph)
+}
+
+/// A bare paragraph mark carrying only section properties marks the boundary;
+/// Word does not lay it out as an extra blank body line.
+fn is_empty_section_break_paragraph(para: &docx_rs::Paragraph) -> bool {
+    if !para.children.is_empty() || para.property.section_property.is_none() {
+        return false;
+    }
+    let mut properties: docx_rs::ParagraphProperty = para.property.clone();
+    properties.section_property = None;
+    properties == docx_rs::ParagraphProperty::default()
 }
 
 fn push_inline_images(

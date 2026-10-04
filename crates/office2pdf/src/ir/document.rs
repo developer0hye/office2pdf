@@ -25,6 +25,9 @@ pub struct Metadata {
 pub enum Page {
     /// DOCX: flowing text pages.
     Flow(FlowPage),
+    /// DOCX: a section that begins at the current page position instead of
+    /// forcing a new page (`w:sectPr/w:type="continuous"`).
+    FlowContinuous(FlowPage),
     /// PPTX: fixed coordinate pages.
     Fixed(FixedPage),
     /// XLSX: spreadsheet sheet pages.

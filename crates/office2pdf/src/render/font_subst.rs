@@ -2013,7 +2013,7 @@ fn collect_document_font_requests(doc: &Document) -> BTreeSet<FontRequest> {
 
     for page in &doc.pages {
         match page {
-            Page::Flow(page) => {
+            Page::Flow(page) | Page::FlowContinuous(page) => {
                 if let Some(header) = &page.header {
                     collect_header_footer_fonts(header, &mut fonts);
                 }
@@ -2101,7 +2101,7 @@ pub(crate) fn document_requests_bundled_selawik(doc: &Document) -> bool {
 
 pub(crate) fn document_requests_font_families(doc: &Document) -> bool {
     doc.pages.iter().any(|page| match page {
-        Page::Flow(page) => {
+        Page::Flow(page) | Page::FlowContinuous(page) => {
             page.header
                 .as_ref()
                 .is_some_and(header_footer_requests_font_family)

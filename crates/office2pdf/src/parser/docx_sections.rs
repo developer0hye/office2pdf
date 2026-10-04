@@ -388,11 +388,11 @@ pub(super) fn build_flow_page_from_section(
 
     if matches!(
         section_prop.section_type,
-        Some(docx_rs::SectionType::Continuous | docx_rs::SectionType::NextColumn)
+        Some(docx_rs::SectionType::NextColumn)
     ) {
         warnings.push(ConvertWarning::FallbackUsed {
             format: "DOCX".to_string(),
-            from: "continuous section break".to_string(),
+            from: "next-column section break".to_string(),
             to: "page-level section split".to_string(),
         });
     }
