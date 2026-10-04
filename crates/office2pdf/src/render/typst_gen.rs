@@ -801,8 +801,10 @@ fn generate_flow_page(
             &size,
             &section_content,
             cols,
-            begins_continuously,
-            ends_continuously,
+            FlowColumnRenderOptions {
+                begins_continuously,
+                balance_final_segment: ends_continuously,
+            },
             ctx,
         )?;
     } else if begins_continuously
@@ -829,9 +831,7 @@ fn suppress_typst_spacing_at_continuous_section_start(content: &mut [Block]) {
     let Some(first_content_index) = content.iter().position(block_has_paragraph_content) else {
         return;
     };
-    if content[..first_content_index]
-        .iter()
-        .any(|block| is_layout_break(block))
+    if content[..first_content_index].iter().any(is_layout_break)
         || block_starts_after_layout_break(&content[first_content_index])
     {
         return;
@@ -942,14 +942,18 @@ fn generate_continuous_flow_blocks(
 /// break between the slices. A break at either end of the section leaves an
 /// empty slice, and an empty wrapper would paint nothing while still claiming
 /// vertical space, so only the break itself is emitted for those.
+struct FlowColumnRenderOptions {
+    begins_continuously: bool,
+    balance_final_segment: bool,
+}
+
 fn generate_flow_page_columns(
     out: &mut String,
     page: &FlowPage,
     size: &PageSize,
     content: &[Block],
     cols: &ColumnLayout,
-    begins_continuously: bool,
-    balance_final_segment: bool,
+    options: FlowColumnRenderOptions,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     let has_leading_page_break: bool =
@@ -960,7 +964,7 @@ fn generate_flow_page_columns(
         let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
-            if begins_continuously {
+            if options.begins_continuously {
                 write_flow_page_setup(out, page, size, ctx);
             }
         }
@@ -1016,9 +1020,9 @@ fn generate_flow_page_columns(
             joins_previous_at_page_boundary,
             joins_next_at_page_boundary,
             ends_with_page_break: segment_end < content.len(),
-            balance_at_section_end: balance_final_segment && index == last_segment_index,
+            balance_at_section_end: options.balance_final_segment && index == last_segment_index,
         };
-        let suppress_section_boundary_spacing: bool = begins_continuously
+        let suppress_section_boundary_spacing: bool = options.begins_continuously
             && index == 0
             && !segment.is_empty()
             && !page_boundaries.balance_at_section_end;
@@ -1026,7 +1030,7 @@ fn generate_flow_page_columns(
             out.push_str("#block(width: 100%, above: 0pt, below: 0pt)[\n");
         }
         let has_continuous_frame: bool =
-            begins_continuously && write_continuous_flow_frame_open(out, page, ctx);
+            options.begins_continuously && write_continuous_flow_frame_open(out, page, ctx);
         generate_column_section_page(
             out,
             &page_content,
