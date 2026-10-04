@@ -11,23 +11,32 @@ pub struct HeaderFooter {
     /// Fit-to-page scale of a worksheet header/footer's horizontal coordinate
     /// box. `None` for flow-page stories and sheets whose story is not scaled.
     pub sheet_print_scale: Option<f64>,
-    /// Anchored shapes the story draws, positioned against the page rather
-    /// than laid out in the story's flow. A header's decorative banner is one
-    /// of these and carries no text at all (issue #961).
+    /// Page-anchored elements positioned outside the story's text flow. Their
+    /// content may be a drawing shape or a floating table; a decorative
+    /// header banner is one such element and carries no text (issue #961).
     pub shapes: Vec<HeaderFooterShape>,
 }
 
-/// A shape a header or footer story anchors to the page.
+/// An element a header or footer story anchors to the page.
 #[derive(Debug, Clone)]
 pub struct HeaderFooterShape {
-    pub shape: Shape,
+    pub content: HeaderFooterShapeContent,
     pub frame: HeaderFooterFrame,
-    /// On-page bounding-box size in points, from `wp:extent`.
+    /// On-page size in points. Drawing shapes use `wp:extent`; tables use
+    /// converted column widths and declared row heights.
     pub width: f64,
     pub height: f64,
-    /// `<wp:anchor behindDoc="1">` — drawn under the page's own content
-    /// instead of over it, which is where a decorative banner belongs.
+    /// Drawing-shape z-order from `<wp:anchor behindDoc="1">`. Header/footer
+    /// tables are placed behind the main story to match Word's paint order.
     pub behind_text: bool,
+}
+
+/// Content drawn at a header/footer story's page-relative position.
+#[derive(Debug, Clone)]
+pub enum HeaderFooterShapeContent {
+    Shape(Shape),
+    /// A floating `w:tbl` from a header/footer part.
+    Table(Table),
 }
 
 /// A paragraph within a header or footer.

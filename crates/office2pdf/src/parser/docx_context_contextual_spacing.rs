@@ -428,8 +428,9 @@ fn resolve_rules(
 /// `w:contextualSpacing` for every paragraph of `document.xml`, consumed once
 /// per converted `w:p` like the other paragraph cursors.
 ///
-/// TODO(header/footer parts): those parts convert through their own paragraph
-/// path with no cursor, so their flagged paragraphs still keep every gap.
+/// TODO(header/footer paragraphs): top-level story paragraphs bypass this
+/// cursor, so their flagged paragraphs still keep every gap. Tables use the
+/// story's independent conversion context and consume their cursor entries.
 pub(in super::super) struct ContextualSpacingContext {
     rules: ParagraphCursor<ParagraphContextualRule>,
     /// Each dropped `w:after` as it stood before the drop, for the offset it

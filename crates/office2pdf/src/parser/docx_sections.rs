@@ -4,13 +4,15 @@ use std::io::{Cursor, Read, Seek};
 
 use crate::error::ConvertWarning;
 use crate::ir::{
-    Block, Color, ColumnLayout, FlowPage, FrameAnchor, HFInline, HeaderFooter, HeaderFooterFrame,
-    HeaderFooterParagraph, Margins, PageNumbering, PageSize, PositionedTab, PositionedTabAlignment,
-    PositionedTabRelativeTo, Run, TabLeader, TextDirection, TextStyle,
+    Block, Color, ColumnLayout, FlowPage, FrameAlign, FrameAnchor, HFInline, HeaderFooter,
+    HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterShape, HeaderFooterShapeContent, Margins,
+    PageNumbering, PageSize, PositionedTab, PositionedTabAlignment, PositionedTabRelativeTo, Run,
+    TabLeader, TextDirection, TextStyle,
 };
 
-use super::contexts::WrapContext;
+use super::contexts::{DocxConversionContext, WrapContext};
 use super::media::extract_drawing_image;
+use super::tables::convert_table;
 use super::{
     DOC_DEFAULT_STYLE_ID, ImageMap, NumberingMap, ParagraphItem, ResolvedStyle, StyleMap,
     TaggedElement, extract_column_layout_from_section_property, extract_paragraph_style,
@@ -97,6 +99,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         .as_deref()
         .map(crate::parser::drawingml::parse_theme_color_scheme)
         .unwrap_or_default();
+    let styles_xml: Option<String> = read_zip_text(archive, "word/styles.xml");
     let mut assets = HeaderFooterAssets::default();
 
     for (relationship_id, path) in header_relationships {
@@ -109,9 +112,22 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             continue;
         };
         let anchors = scan_hf_anchors(&xml, &theme_colors);
-        if let Some(converted) =
-            convert_docx_header(&header, &images, &simple_fields, &anchors, styles)
-        {
+        let mut conversion_context = DocxConversionContext::for_header_footer_story(
+            &xml,
+            styles_xml.as_deref(),
+            styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
+            styles.paragraph_property_defaults_are_declared,
+        );
+        let hyperlinks: HashMap<String, String> = HashMap::new();
+        if let Some(converted) = convert_docx_header_with_context(
+            &header,
+            &images,
+            &simple_fields,
+            &anchors,
+            styles,
+            &mut conversion_context,
+            &hyperlinks,
+        ) {
             assets.headers.insert(relationship_id, converted);
         }
     }
@@ -127,13 +143,22 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             continue;
         };
         let anchors = scan_hf_anchors(&xml, &theme_colors);
-        if let Some(converted) = convert_docx_footer(
+        let mut conversion_context = DocxConversionContext::for_header_footer_story(
+            &xml,
+            styles_xml.as_deref(),
+            styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
+            styles.paragraph_property_defaults_are_declared,
+        );
+        let hyperlinks: HashMap<String, String> = HashMap::new();
+        if let Some(converted) = convert_docx_footer_with_context(
             &footer,
             &images,
             &bidi_paragraphs,
             &simple_fields,
             &anchors,
             styles,
+            &mut conversion_context,
+            &hyperlinks,
         ) {
             assets.footers.insert(relationship_id, converted);
         }
@@ -367,6 +392,8 @@ pub(super) fn build_flow_page_from_section(
     elements: Vec<TaggedElement>,
     numberings: &NumberingMap,
     header_footer_assets: &HeaderFooterAssets,
+    inherited_header: Option<&HeaderFooter>,
+    inherited_footer: Option<&HeaderFooter>,
     overrides: SectionOverrides,
     styles: HeaderFooterStyleContext<'_>,
     warnings: &mut Vec<ConvertWarning>,
@@ -412,15 +439,19 @@ pub(super) fn build_flow_page_from_section(
         });
     }
 
-    let mut header = extract_docx_header(section_prop, header_footer_assets, styles);
+    let mut header =
+        extract_docx_header(section_prop, header_footer_assets, styles, inherited_header);
     if let Some(header) = &mut header {
         header.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.header));
         apply_doc_default_text_style(header, doc_default_style);
+        resolve_hf_table_page_positions(header, &size, &margins, false);
     }
-    let mut footer = extract_docx_footer(section_prop, header_footer_assets, styles);
+    let mut footer =
+        extract_docx_footer(section_prop, header_footer_assets, styles, inherited_footer);
     if let Some(footer) = &mut footer {
         footer.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.footer));
         apply_doc_default_text_style(footer, doc_default_style);
+        resolve_hf_table_page_positions(footer, &size, &margins, true);
     }
     // The first-page stories take the same edge distance and default style the
     // whole-section ones do; only which story is chosen differs (issue #846).
@@ -428,11 +459,13 @@ pub(super) fn build_flow_page_from_section(
     if let Some(first_header) = &mut first_header {
         first_header.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.header));
         apply_doc_default_text_style(first_header, doc_default_style);
+        resolve_hf_table_page_positions(first_header, &size, &margins, false);
     }
     let mut first_footer = extract_docx_first_footer(section_prop, header_footer_assets, styles);
     if let Some(first_footer) = &mut first_footer {
         first_footer.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.footer));
         apply_doc_default_text_style(first_footer, doc_default_style);
+        resolve_hf_table_page_positions(first_footer, &size, &margins, true);
     }
 
     FlowPage {
@@ -449,6 +482,84 @@ pub(super) fn build_flow_page_from_section(
             .or_else(|| extract_column_layout_from_section_property(section_prop)),
         line_grid_pitch: extract_line_grid_pitch(section_prop),
         line_grid_snaps_lines: line_grid_snaps_lines(section_prop),
+    }
+}
+
+/// Resolve floating table anchors against the section that defines the story.
+/// A linked later section must reuse these page-space coordinates even when its
+/// body margins differ.
+fn resolve_hf_table_page_positions(
+    header_footer: &mut HeaderFooter,
+    page_size: &PageSize,
+    margins: &Margins,
+    is_footer: bool,
+) {
+    let distance_from_edge: f64 = header_footer.distance_from_edge.unwrap_or(0.0);
+    for element in &mut header_footer.shapes {
+        if !matches!(element.content, HeaderFooterShapeContent::Table(_)) {
+            continue;
+        }
+
+        let frame: &mut HeaderFooterFrame = &mut element.frame;
+        let (horizontal_origin, horizontal_available): (f64, f64) = match frame.horizontal_anchor {
+            FrameAnchor::Page => (0.0, page_size.width),
+            FrameAnchor::Margin | FrameAnchor::Text => (
+                margins.left,
+                (page_size.width - margins.left - margins.right).max(0.0),
+            ),
+        };
+        frame.x = Some(
+            horizontal_origin
+                + frame.x.unwrap_or_else(|| {
+                    hf_aligned_offset(
+                        frame.horizontal_align,
+                        horizontal_available,
+                        frame.width.or(Some(element.width)),
+                    )
+                }),
+        );
+        frame.horizontal_anchor = FrameAnchor::Page;
+        frame.horizontal_align = None;
+
+        let (vertical_origin, vertical_available): (f64, f64) = match frame.vertical_anchor {
+            FrameAnchor::Page => (0.0, page_size.height),
+            FrameAnchor::Margin | FrameAnchor::Text => (
+                margins.top,
+                (page_size.height - margins.top - margins.bottom).max(0.0),
+            ),
+        };
+        let vertical_position: f64 = frame
+            .y
+            .map(|offset| vertical_origin + offset)
+            .or_else(|| {
+                frame.vertical_align.map(|alignment| {
+                    vertical_origin
+                        + hf_aligned_offset(
+                            Some(alignment),
+                            vertical_available,
+                            frame.height.or(Some(element.height)),
+                        )
+                })
+            })
+            .unwrap_or_else(|| match frame.vertical_anchor {
+                FrameAnchor::Page => 0.0,
+                FrameAnchor::Margin | FrameAnchor::Text if is_footer => {
+                    page_size.height - distance_from_edge - element.height
+                }
+                FrameAnchor::Margin | FrameAnchor::Text => distance_from_edge,
+            });
+        frame.y = Some(vertical_position);
+        frame.vertical_anchor = FrameAnchor::Page;
+        frame.vertical_align = None;
+    }
+}
+
+fn hf_aligned_offset(align: Option<FrameAlign>, available: f64, extent: Option<f64>) -> f64 {
+    let extent: f64 = extent.unwrap_or(0.0);
+    match align {
+        Some(FrameAlign::Center) => (available - extent) / 2.0,
+        Some(FrameAlign::End) => available - extent,
+        _ => 0.0,
     }
 }
 
@@ -490,19 +601,58 @@ fn convert_docx_header(
     anchors: &[HfAnchorBox],
     styles: HeaderFooterStyleContext<'_>,
 ) -> Option<HeaderFooter> {
+    let mut conversion_context = DocxConversionContext::for_header_footer_story(
+        "",
+        None,
+        styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
+        styles.paragraph_property_defaults_are_declared,
+    );
+    let hyperlinks: HashMap<String, String> = HashMap::new();
+    convert_docx_header_with_context(
+        header,
+        images,
+        simple_fields,
+        anchors,
+        styles,
+        &mut conversion_context,
+        &hyperlinks,
+    )
+}
+
+fn convert_docx_header_with_context(
+    header: &docx_rs::Header,
+    images: &ImageMap,
+    simple_fields: &[Vec<SimpleFieldMarker>],
+    anchors: &[HfAnchorBox],
+    styles: HeaderFooterStyleContext<'_>,
+    conversion_context: &mut DocxConversionContext,
+    hyperlinks: &HashMap<String, String>,
+) -> Option<HeaderFooter> {
     let shapes = hf_anchored_shapes(anchors);
+    let mut shapes: Vec<HeaderFooterShape> = shapes;
     let mut anchors = anchors.iter();
     let mut story_paragraphs = Vec::new();
+    let mut story_tables: Vec<&docx_rs::Table> = Vec::new();
     for child in &header.children {
         match child {
             docx_rs::HeaderChild::Paragraph(paragraph) => {
                 story_paragraphs.push(paragraph.as_ref());
             }
+            docx_rs::HeaderChild::Table(table) => story_tables.push(table.as_ref()),
             docx_rs::HeaderChild::StructuredDataTag(sdt) => {
                 append_sdt_paragraphs(sdt, &mut story_paragraphs);
+                append_sdt_tables(sdt, &mut story_tables);
             }
-            _ => {}
         }
+    }
+    for table in story_tables {
+        shapes.push(convert_hf_table(
+            table,
+            images,
+            hyperlinks,
+            styles.style_map,
+            conversion_context,
+        ));
     }
     let paragraphs = story_paragraphs
         .into_iter()
@@ -544,19 +694,60 @@ fn convert_docx_footer(
     anchors: &[HfAnchorBox],
     styles: HeaderFooterStyleContext<'_>,
 ) -> Option<HeaderFooter> {
+    let mut conversion_context = DocxConversionContext::for_header_footer_story(
+        "",
+        None,
+        styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
+        styles.paragraph_property_defaults_are_declared,
+    );
+    let hyperlinks: HashMap<String, String> = HashMap::new();
+    convert_docx_footer_with_context(
+        footer,
+        images,
+        bidi_paragraphs,
+        simple_fields,
+        anchors,
+        styles,
+        &mut conversion_context,
+        &hyperlinks,
+    )
+}
+
+fn convert_docx_footer_with_context(
+    footer: &docx_rs::Footer,
+    images: &ImageMap,
+    bidi_paragraphs: &[bool],
+    simple_fields: &[Vec<SimpleFieldMarker>],
+    anchors: &[HfAnchorBox],
+    styles: HeaderFooterStyleContext<'_>,
+    conversion_context: &mut DocxConversionContext,
+    hyperlinks: &HashMap<String, String>,
+) -> Option<HeaderFooter> {
     let shapes = hf_anchored_shapes(anchors);
+    let mut shapes: Vec<HeaderFooterShape> = shapes;
     let mut anchors = anchors.iter();
     let mut story_paragraphs = Vec::new();
+    let mut story_tables: Vec<&docx_rs::Table> = Vec::new();
     for child in &footer.children {
         match child {
             docx_rs::FooterChild::Paragraph(paragraph) => {
                 story_paragraphs.push(paragraph.as_ref());
             }
+            docx_rs::FooterChild::Table(table) => story_tables.push(table.as_ref()),
             docx_rs::FooterChild::StructuredDataTag(sdt) => {
                 append_sdt_paragraphs(sdt, &mut story_paragraphs);
+                append_sdt_tables(sdt, &mut story_tables);
             }
-            _ => {}
         }
+    }
+    for table in story_tables {
+        shapes.push(convert_hf_table(
+            table,
+            images,
+            hyperlinks,
+            styles.style_map,
+            conversion_context,
+        ));
     }
     let paragraphs = story_paragraphs
         .into_iter()
@@ -590,6 +781,101 @@ fn convert_docx_footer(
     })
 }
 
+fn convert_hf_table(
+    source_table: &docx_rs::Table,
+    images: &ImageMap,
+    hyperlinks: &HashMap<String, String>,
+    style_map: &StyleMap,
+    conversion_context: &mut DocxConversionContext,
+) -> HeaderFooterShape {
+    let table = convert_table(
+        source_table,
+        images,
+        hyperlinks,
+        style_map,
+        conversion_context,
+        0,
+    );
+    let width_pt: f64 = table.column_widths.iter().sum();
+    let height_pt: Option<f64> = table.rows.iter().try_fold(0.0, |height, row| {
+        row.height
+            .or(row.minimum_height)
+            .map(|row_height| height + row_height)
+    });
+    let frame: HeaderFooterFrame = hf_table_frame(source_table, &table, width_pt, height_pt);
+    tracing::debug!(
+        table_width_pt = width_pt,
+        has_declared_height = height_pt.is_some(),
+        "parsed DOCX header/footer table"
+    );
+    HeaderFooterShape {
+        content: HeaderFooterShapeContent::Table(table),
+        frame,
+        width: width_pt,
+        height: height_pt.unwrap_or_default(),
+        behind_text: true,
+    }
+}
+
+fn hf_table_frame(
+    source_table: &docx_rs::Table,
+    table: &crate::ir::Table,
+    width_pt: f64,
+    height_pt: Option<f64>,
+) -> HeaderFooterFrame {
+    let properties: serde_json::Value =
+        serde_json::to_value(&source_table.property).unwrap_or_default();
+    let position: Option<&serde_json::Value> = properties.get("position");
+    let position_str = |key: &str| -> Option<&str> {
+        position
+            .and_then(|position| position.get(key))
+            .and_then(serde_json::Value::as_str)
+    };
+    let position_twips = |key: &str| -> Option<f64> {
+        position
+            .and_then(|position| position.get(key))
+            .and_then(serde_json::Value::as_f64)
+            .map(twips_to_pt)
+    };
+    let horizontal_anchor: FrameAnchor = position_str("horizontalAnchor")
+        .map(|value| frame_anchor(Some(value)))
+        .unwrap_or(FrameAnchor::Margin);
+    let vertical_anchor: FrameAnchor = position_str("verticalAnchor")
+        .map(|value| frame_anchor(Some(value)))
+        .unwrap_or(FrameAnchor::Text);
+    let horizontal_align: Option<FrameAlign> = position_str("positionXAlignment")
+        .and_then(frame_align)
+        .or_else(|| match table.alignment {
+            Some(crate::ir::Alignment::Center) => Some(FrameAlign::Center),
+            Some(crate::ir::Alignment::Right) => Some(FrameAlign::End),
+            _ => None,
+        });
+
+    HeaderFooterFrame {
+        x: position_twips("positionX"),
+        y: position_twips("positionY"),
+        width: (width_pt > 0.0).then_some(width_pt),
+        height: height_pt,
+        horizontal_anchor,
+        vertical_anchor,
+        horizontal_align,
+        vertical_align: position_str("positionYAlignment").and_then(frame_align),
+        inset_left: 0.0,
+        inset_top: 0.0,
+        bottom_offset: None,
+        wraps_text: true,
+    }
+}
+
+fn frame_align(value: &str) -> Option<FrameAlign> {
+    match value {
+        "left" | "start" | "top" => Some(FrameAlign::Start),
+        "center" => Some(FrameAlign::Center),
+        "right" | "end" | "bottom" => Some(FrameAlign::End),
+        _ => None,
+    }
+}
+
 /// Treat block-level content controls as transparent wrappers around their paragraphs.
 fn append_sdt_paragraphs<'a>(
     sdt: &'a docx_rs::StructuredDataTag,
@@ -602,6 +888,21 @@ fn append_sdt_paragraphs<'a>(
             }
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
                 append_sdt_paragraphs(nested, paragraphs);
+            }
+            _ => {}
+        }
+    }
+}
+
+fn append_sdt_tables<'a>(
+    sdt: &'a docx_rs::StructuredDataTag,
+    tables: &mut Vec<&'a docx_rs::Table>,
+) {
+    for child in &sdt.children {
+        match child {
+            docx_rs::StructuredDataTagChild::Table(table) => tables.push(table.as_ref()),
+            docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
+                append_sdt_tables(nested, tables);
             }
             _ => {}
         }
@@ -659,12 +960,12 @@ pub(super) fn extract_docx_first_footer(
         })
 }
 
-/// Extract the header for a section, preferring the default variant and falling back to
-/// first/even variants when that is all the source document provides.
+/// Extract the default header, linking it to the preceding section when omitted.
 fn extract_docx_header(
     section_prop: &docx_rs::SectionProperty,
     assets: &HeaderFooterAssets,
     styles: HeaderFooterStyleContext<'_>,
+    inherited_header: Option<&HeaderFooter>,
 ) -> Option<HeaderFooter> {
     section_prop
         .header_reference
@@ -678,6 +979,7 @@ fn extract_docx_header(
                     convert_docx_header(header, &ImageMap::new(), &[], &[], styles)
                 })
         })
+        .or_else(|| inherited_header.cloned())
         .or_else(|| {
             section_prop
                 .first_header_reference
@@ -708,12 +1010,12 @@ fn extract_docx_header(
         })
 }
 
-/// Extract the footer for a section, preferring the default variant and falling back to
-/// first/even variants when that is all the source document provides.
+/// Extract the default footer, linking it to the preceding section when omitted.
 fn extract_docx_footer(
     section_prop: &docx_rs::SectionProperty,
     assets: &HeaderFooterAssets,
     styles: HeaderFooterStyleContext<'_>,
+    inherited_footer: Option<&HeaderFooter>,
 ) -> Option<HeaderFooter> {
     section_prop
         .footer_reference
@@ -727,6 +1029,7 @@ fn extract_docx_footer(
                     convert_docx_footer(footer, &ImageMap::new(), &[], &[], &[], styles)
                 })
         })
+        .or_else(|| inherited_footer.cloned())
         .or_else(|| {
             section_prop
                 .first_footer_reference
@@ -1016,7 +1319,7 @@ fn hf_anchored_shapes(anchors: &[HfAnchorBox]) -> Vec<crate::ir::HeaderFooterSha
             let shape = anchor.shape.clone()?;
             let frame = anchor.to_shape_frame()?;
             Some(crate::ir::HeaderFooterShape {
-                shape,
+                content: HeaderFooterShapeContent::Shape(shape),
                 width: anchor.width_pt?,
                 height: anchor.height_pt?,
                 frame,
@@ -1702,8 +2005,11 @@ mod anchor_tests {
         assert!((banner.width - 609.12).abs() < 0.01, "{}", banner.width);
         assert!((banner.height - 327.60).abs() < 0.01, "{}", banner.height);
 
-        let crate::ir::ShapeKind::Path { subpaths } = &banner.shape.kind else {
-            panic!("a custGeom wedge, not {:?}", banner.shape.kind);
+        let HeaderFooterShapeContent::Shape(shape) = &banner.content else {
+            panic!("a decorative banner shape");
+        };
+        let crate::ir::ShapeKind::Path { subpaths } = &shape.kind else {
+            panic!("a custGeom wedge, not {:?}", shape.kind);
         };
         assert_eq!(subpaths.len(), 1);
         // The wedge's right edge stops at 1896461/2906395 of the path box,
@@ -1722,11 +2028,10 @@ mod anchor_tests {
     fn the_banner_gradient_resolves_its_scheme_stops() {
         let anchors = scan_hf_anchors(HEADER_BANNER, &accent_theme());
         let shapes = hf_anchored_shapes(&anchors);
-        let gradient = shapes[0]
-            .shape
-            .gradient_fill
-            .as_ref()
-            .expect("a two-stop gradient");
+        let HeaderFooterShapeContent::Shape(shape) = &shapes[0].content else {
+            panic!("a decorative banner shape");
+        };
+        let gradient = shape.gradient_fill.as_ref().expect("a two-stop gradient");
 
         assert!(
             (gradient.angle - 32.0).abs() < 0.01,
