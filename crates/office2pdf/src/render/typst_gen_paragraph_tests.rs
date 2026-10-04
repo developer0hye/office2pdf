@@ -95,7 +95,8 @@ fn empty_paragraph_line_spacing_does_not_add_leading_to_its_placeholder() {
     };
     paragraph.runs.clear();
     paragraph.style.line_spacing = Some(LineSpacing::Proportional(1.079));
-    let mark_run: Run = empty_paragraph_metric_run("Calibri", 11.0);
+    let mark_run: Run =
+        empty_paragraph_metric_run(crate::defaults::TYPST_DEFAULT_FONT_FAMILY, 11.0);
     paragraph.style.paragraph_mark_text_style = Some(Box::new(mark_run.style.clone()));
 
     let (top_edge_em, bottom_edge_em) =
@@ -136,7 +137,8 @@ fn empty_paragraph_border_insets_do_not_shrink_its_shaded_line_box() {
     paragraph.runs.clear();
     paragraph.style.line_spacing = Some(LineSpacing::Proportional(1.079));
     paragraph.style.background = Some(Color::new(0xE2, 0xEF, 0xD9));
-    let mark_run: Run = empty_paragraph_metric_run("Calibri", 11.0);
+    let mark_run: Run =
+        empty_paragraph_metric_run(crate::defaults::TYPST_DEFAULT_FONT_FAMILY, 11.0);
     paragraph.style.paragraph_mark_text_style = Some(Box::new(mark_run.style.clone()));
     paragraph.style.border = Some(Box::new(CellBorder {
         top: Some(top_border.clone()),
