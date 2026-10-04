@@ -3883,6 +3883,9 @@ fn generate_hf_paragraph(
         .as_ref()
         .and_then(|border| border.bottom.as_ref());
     let stacks_rules: bool = top_border.is_some() || bottom_border.is_some();
+    let border_space: Insets = paragraph.border_space.unwrap_or_default();
+    let (left_border_outset_pt, right_border_outset_pt): (f64, f64) =
+        text::paragraph_border_horizontal_outsets(paragraph.border.as_ref(), border_space);
     // `w:pBdr` sides declare their own `w:space` gap in points, measured from
     // the text's bottom edge, which is why the stack pins it there. An absent
     // `w:space` is the schema's zero, not a hairline: native Word 16.113.1
@@ -3892,12 +3895,34 @@ fn generate_hf_paragraph(
     let space = |declared: Option<f64>| -> f64 { declared.unwrap_or(0.0) };
     let top_space: f64 = space(paragraph.border_space.map(|insets| insets.top));
     let bottom_space: f64 = space(paragraph.border_space.map(|insets| insets.bottom));
+    let border_rule_extension = |border: &BorderSide, border_space: f64, is_top: bool| -> f64 {
+        let (first_rule_height, second_rule_height): (f64, f64) =
+            if border.style == BorderLineStyle::Double {
+                (border.width * 0.67, border.width * 0.17)
+            } else {
+                (border.width, 0.0)
+            };
+        let extension_to_rule_center: f64 = if is_top {
+            second_rule_height + first_rule_height / 2.0
+        } else if second_rule_height > 0.0 {
+            first_rule_height + second_rule_height / 2.0
+        } else {
+            first_rule_height / 2.0
+        };
+        border_space + extension_to_rule_center
+    };
+    let top_border_extension_pt: f64 = top_border
+        .map(|border| border_rule_extension(border, top_space, true))
+        .unwrap_or(0.0);
+    let bottom_border_extension_pt: f64 = bottom_border
+        .map(|border| border_rule_extension(border, bottom_space, false))
+        .unwrap_or(0.0);
 
     if stacks_rules {
         out.push_str("#stack(dir: ttb, spacing: 0pt, ");
     }
     if let Some(border) = top_border {
-        write_hf_border_rules(out, border);
+        write_hf_border_rules(out, border, left_border_outset_pt, right_border_outset_pt);
         let _ = write!(out, ", block(height: {}pt)[], ", format_f64(top_space));
     }
     // Word measures `w:pBdr w:space` from the line's bottom, which for an East
@@ -3917,6 +3942,14 @@ fn generate_hf_paragraph(
             .unwrap_or_else(|| "\"descender\"".to_string());
         let _ = write!(out, "[#set text(bottom-edge: {bottom_edge});");
     }
+    let has_vertical_borders: bool = text::write_hf_vertical_border_block_open(
+        out,
+        paragraph.border.as_ref(),
+        left_border_outset_pt,
+        right_border_outset_pt,
+        top_border_extension_pt,
+        bottom_border_extension_pt,
+    );
 
     if let Some(index) = right_tab {
         out.push_str("#grid(columns: (1fr, auto), [");
@@ -3956,12 +3989,15 @@ fn generate_hf_paragraph(
         generate_hf_elements(out, &paragraph.elements, ctx);
     }
 
+    if has_vertical_borders {
+        out.push(']');
+    }
     if stacks_rules {
         out.push(']');
     }
     if let Some(border) = bottom_border {
         let _ = write!(out, ", block(height: {}pt)[], ", format_f64(bottom_space));
-        write_hf_border_rules(out, border);
+        write_hf_border_rules(out, border, left_border_outset_pt, right_border_outset_pt);
     }
     if stacks_rules {
         out.push(')');
@@ -3970,15 +4006,32 @@ fn generate_hf_paragraph(
 
 /// Emit the one or two `line()` blocks a single paragraph-border side needs.
 /// Word draws a `double` side as two thin rules, so it takes two blocks.
-fn write_hf_border_rules(out: &mut String, border: &BorderSide) {
-    write_hf_border_line(out, border, border.style == BorderLineStyle::Double);
+fn write_hf_border_rules(
+    out: &mut String,
+    border: &BorderSide,
+    left_outset_pt: f64,
+    right_outset_pt: f64,
+) {
+    write_hf_border_line(
+        out,
+        border,
+        border.style == BorderLineStyle::Double,
+        left_outset_pt,
+        right_outset_pt,
+    );
     if border.style == BorderLineStyle::Double {
         out.push_str(", ");
-        write_hf_border_line(out, border, false);
+        write_hf_border_line(out, border, false, left_outset_pt, right_outset_pt);
     }
 }
 
-fn write_hf_border_line(out: &mut String, border: &BorderSide, is_primary_double: bool) {
+fn write_hf_border_line(
+    out: &mut String,
+    border: &BorderSide,
+    is_primary_double: bool,
+    left_outset_pt: f64,
+    right_outset_pt: f64,
+) {
     let width = if is_primary_double {
         border.width * 0.67
     } else if border.style == BorderLineStyle::Double {
@@ -4007,8 +4060,8 @@ fn write_hf_border_line(out: &mut String, border: &BorderSide, is_primary_double
         out,
         "block(height: {}pt)[#align(left)[#move(dx: -{}pt)[#line(length: 100% + {}pt, stroke: (paint: {}, thickness: {}pt, dash: \"{}\"))]]]",
         format_f64(width),
-        format_f64(TEXT_COLUMN_DECORATION_OVERHANG_PT),
-        format_f64(2.0 * TEXT_COLUMN_DECORATION_OVERHANG_PT),
+        format_f64(left_outset_pt),
+        format_f64(left_outset_pt + right_outset_pt),
         rgb(&border.color),
         format_f64(width),
         if border.style == BorderLineStyle::Double {

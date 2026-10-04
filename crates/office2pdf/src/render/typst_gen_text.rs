@@ -2895,6 +2895,83 @@ fn write_block_decoration_params(
     }
 }
 
+/// Open a frame for the non-double vertical edges of a header/footer paragraph.
+/// Its outsets use the same extents as the horizontal rules and bridge the gaps
+/// above and below the text without changing the stack's layout height.
+pub(super) fn write_hf_vertical_border_block_open(
+    out: &mut String,
+    border: Option<&CellBorder>,
+    left_outset_pt: f64,
+    right_outset_pt: f64,
+    top_extension_pt: f64,
+    bottom_extension_pt: f64,
+) -> bool {
+    let Some(border) = border else {
+        return false;
+    };
+
+    let vertical_sides: [(&str, &Option<BorderSide>); 2] =
+        [("left", &border.left), ("right", &border.right)];
+    let strokes: Vec<String> = vertical_sides
+        .iter()
+        .filter_map(|(name, side)| {
+            side.as_ref()
+                .filter(|side| side.style != BorderLineStyle::Double)
+                .map(|side| format!("{name}: {}", stroke_literal(side)))
+        })
+        .collect();
+    if strokes.is_empty() {
+        return false;
+    }
+
+    out.push_str("#block(width: 100%, above: 0pt, below: 0pt, stroke: (");
+    out.push_str(&strokes.join(", "));
+    let _ = write!(
+        out,
+        "), outset: (left: {}pt, right: {}pt, top: {}pt, bottom: {}pt))[",
+        format_f64(left_outset_pt),
+        format_f64(right_outset_pt),
+        format_f64(top_extension_pt),
+        format_f64(bottom_extension_pt),
+    );
+    true
+}
+
+/// Return the left/right extent used by the paragraph frame's non-double
+/// vertical strokes, including Word's measured 0.02in overhang and their
+/// side-specific `w:space`. Double vertical sides are not emitted by the
+/// current paragraph-frame path. Header/footer horizontal rules and visible
+/// vertical edges share this geometry.
+pub(super) fn paragraph_border_horizontal_outsets(
+    border: Option<&CellBorder>,
+    border_space: Insets,
+) -> (f64, f64) {
+    let mut left_outset_pt: f64 = TEXT_COLUMN_DECORATION_OVERHANG_PT;
+    let mut right_outset_pt: f64 = TEXT_COLUMN_DECORATION_OVERHANG_PT;
+    if let Some(border) = border {
+        if border
+            .left
+            .as_ref()
+            .is_some_and(|side| side.style != BorderLineStyle::Double)
+        {
+            left_outset_pt += border_space.left;
+        }
+        if border
+            .right
+            .as_ref()
+            .is_some_and(|side| side.style != BorderLineStyle::Double)
+        {
+            right_outset_pt += border_space.right;
+        }
+    }
+    // OOXML border spaces are twips (0.05pt), so hundredths preserve source
+    // precision while avoiding binary-sum artifacts in Typst.
+    (
+        (left_outset_pt * 100.0).round() / 100.0,
+        (right_outset_pt * 100.0).round() / 100.0,
+    )
+}
+
 /// Draw one pair of paragraph-border sides around adjacent matching
 /// paragraphs. Their individual fills remain on the inner paragraph blocks;
 /// this frame carries the shared sides through the spacing between them.
@@ -2939,30 +3016,7 @@ pub(super) fn write_joined_paragraph_border_frame_open(
 
 fn paragraph_horizontal_decoration_outsets(style: &ParagraphStyle) -> (f64, f64) {
     let border_space: Insets = style.border_space.as_deref().copied().unwrap_or_default();
-    let mut left_outset_pt: f64 = TEXT_COLUMN_DECORATION_OVERHANG_PT;
-    let mut right_outset_pt: f64 = TEXT_COLUMN_DECORATION_OVERHANG_PT;
-    if let Some(border) = &style.border {
-        if border
-            .left
-            .as_ref()
-            .is_some_and(|side| side.style != BorderLineStyle::Double)
-        {
-            left_outset_pt += border_space.left;
-        }
-        if border
-            .right
-            .as_ref()
-            .is_some_and(|side| side.style != BorderLineStyle::Double)
-        {
-            right_outset_pt += border_space.right;
-        }
-    }
-    // OOXML border spaces are twips (0.05pt), so hundredths preserve source
-    // precision while avoiding binary-sum artifacts in Typst.
-    (
-        (left_outset_pt * 100.0).round() / 100.0,
-        (right_outset_pt * 100.0).round() / 100.0,
-    )
+    paragraph_border_horizontal_outsets(style.border.as_deref(), border_space)
 }
 
 /// Extend paragraph shading and vertical rules through Word's `w:before`
@@ -3135,15 +3189,16 @@ pub(super) fn write_paragraph_after_spacing_shading_block(
 pub(super) const TEXT_COLUMN_DECORATION_OVERHANG_PT: f64 = 1.44;
 
 fn stroke_literal(side: &BorderSide) -> String {
-    // Callers skip Double sides (drawn as overlays), so for every reachable
-    // style this matches the table flavor of the shared stroke formatter.
+    // Callers skip Double sides; horizontal ones have separate overlays. For
+    // every reachable style this matches the table flavor of the stroke formatter.
     stroke_value(side, true)
 }
 
 /// Emit `stroke:`/`inset:` block parameters for the paragraph's borders.
 /// Horizontal `w:pBdr` spaces expand the frame outside the text measure;
-/// vertical spaces remain insets. Double rules are drawn as overlays (Typst
-/// strokes have no double style), so those sides keep their full inset.
+/// vertical spaces remain insets. Horizontal double rules are drawn as overlays
+/// (Typst strokes have no double style), so those sides keep their full inset.
+/// Vertical double sides are not emitted by the current paragraph-frame path.
 ///
 /// Top and bottom sides reserve their own `w:space` plus half the rule width;
 /// Typst centers a box stroke on the inset edge, so the other half falls
@@ -3232,8 +3287,8 @@ fn double_rule_thickness(width: f64) -> f64 {
 
 /// Draw double-rule paragraph borders as two placed hairlines; Typst strokes
 /// cannot render Word's double style. Only horizontal doubles occur in
-/// practice (letterhead rules); vertical doubles fall back to a single
-/// stroke drawn by `write_paragraph_border_params`.
+/// practice (letterhead rules); the current paragraph-border path does not
+/// emit vertical double sides.
 fn write_paragraph_double_border_overlays(
     out: &mut String,
     border: &Option<Box<CellBorder>>,

@@ -2399,6 +2399,81 @@ fn test_generate_header_with_bottom_border_draws_rule_below_text() {
     );
 }
 
+/// Word draws all four paragraph-border sides on the header and footer in the
+/// public regression fixture (issue #1976). Keep the parser and generated
+/// frame covered together so neither side edges nor their independent spaces
+/// can be silently dropped.
+#[test]
+fn docx_header_and_footer_paragraph_borders_keep_their_vertical_edges() {
+    use crate::internal::{DocxParser, Parser};
+
+    let source_docx: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/libreoffice/tdf153964_firstIndentAfterBreak14.docx"
+    );
+    let (document, _warnings) = DocxParser
+        .parse(source_docx, &crate::config::ConvertOptions::default())
+        .expect("the #1976 DOCX fixture should parse");
+    let page = match &document.pages[0] {
+        Page::Flow(page) => page,
+        other => panic!("expected a flow page, got {other:?}"),
+    };
+
+    for (story_name, story) in [
+        ("header", page.header.as_ref().expect("fixture header")),
+        ("footer", page.footer.as_ref().expect("fixture footer")),
+    ] {
+        let paragraph = story
+            .paragraphs
+            .first()
+            .unwrap_or_else(|| panic!("fixture {story_name} paragraph"));
+        let border = paragraph
+            .border
+            .as_ref()
+            .unwrap_or_else(|| panic!("fixture {story_name} border"));
+        assert!(border.left.is_some(), "fixture {story_name} left edge");
+        assert!(border.right.is_some(), "fixture {story_name} right edge");
+        let border_space = paragraph
+            .border_space
+            .unwrap_or_else(|| panic!("fixture {story_name} border spacing"));
+        assert_eq!(border_space.top, 1.0);
+        assert_eq!(border_space.left, 4.0);
+        assert_eq!(border_space.bottom, 1.0);
+        assert_eq!(border_space.right, 4.0);
+    }
+
+    let generated_source: String = generate_typst(&document)
+        .expect("the fixture should generate Typst")
+        .source;
+    assert_eq!(
+        generated_source
+            .matches("left: 0.5pt + rgb(0, 0, 0)")
+            .count(),
+        2,
+        "header and footer must each emit a left border"
+    );
+    assert_eq!(
+        generated_source
+            .matches("right: 0.5pt + rgb(0, 0, 0)")
+            .count(),
+        2,
+        "header and footer must each emit a right border"
+    );
+    assert_eq!(
+        generated_source
+            .matches("outset: (left: 5.44pt, right: 5.44pt, top: 1.25pt, bottom: 1.25pt)")
+            .count(),
+        2,
+        "each frame must bridge its side and horizontal borders"
+    );
+    assert_eq!(
+        generated_source
+            .matches("line(length: 100% + 10.88pt")
+            .count(),
+        4,
+        "both header and footer rules must meet their vertical edges"
+    );
+}
+
 /// A right-aligned header still draws its rule symmetrically about the column.
 ///
 /// Regression for #840: the rule is 2.88pt wider than the text column, so
