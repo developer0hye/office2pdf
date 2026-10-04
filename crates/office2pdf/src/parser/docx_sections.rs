@@ -492,13 +492,20 @@ fn convert_docx_header(
 ) -> Option<HeaderFooter> {
     let shapes = hf_anchored_shapes(anchors);
     let mut anchors = anchors.iter();
-    let paragraphs = header
-        .children
-        .iter()
-        .filter_map(|child| match child {
-            docx_rs::HeaderChild::Paragraph(paragraph) => Some(paragraph),
-            _ => None,
-        })
+    let mut story_paragraphs = Vec::new();
+    for child in &header.children {
+        match child {
+            docx_rs::HeaderChild::Paragraph(paragraph) => {
+                story_paragraphs.push(paragraph.as_ref());
+            }
+            docx_rs::HeaderChild::StructuredDataTag(sdt) => {
+                append_sdt_paragraphs(sdt, &mut story_paragraphs);
+            }
+            _ => {}
+        }
+    }
+    let paragraphs = story_paragraphs
+        .into_iter()
         .enumerate()
         .flat_map(|(index, paragraph)| {
             let mut converted = vec![convert_hf_paragraph(
@@ -539,13 +546,20 @@ fn convert_docx_footer(
 ) -> Option<HeaderFooter> {
     let shapes = hf_anchored_shapes(anchors);
     let mut anchors = anchors.iter();
-    let paragraphs = footer
-        .children
-        .iter()
-        .filter_map(|child| match child {
-            docx_rs::FooterChild::Paragraph(paragraph) => Some(paragraph),
-            _ => None,
-        })
+    let mut story_paragraphs = Vec::new();
+    for child in &footer.children {
+        match child {
+            docx_rs::FooterChild::Paragraph(paragraph) => {
+                story_paragraphs.push(paragraph.as_ref());
+            }
+            docx_rs::FooterChild::StructuredDataTag(sdt) => {
+                append_sdt_paragraphs(sdt, &mut story_paragraphs);
+            }
+            _ => {}
+        }
+    }
+    let paragraphs = story_paragraphs
+        .into_iter()
         .enumerate()
         .flat_map(|(index, paragraph)| {
             let mut converted = vec![convert_hf_paragraph(
@@ -574,6 +588,24 @@ fn convert_docx_footer(
         sheet_print_scale: None,
         shapes,
     })
+}
+
+/// Treat block-level content controls as transparent wrappers around their paragraphs.
+fn append_sdt_paragraphs<'a>(
+    sdt: &'a docx_rs::StructuredDataTag,
+    paragraphs: &mut Vec<&'a docx_rs::Paragraph>,
+) {
+    for child in &sdt.children {
+        match child {
+            docx_rs::StructuredDataTagChild::Paragraph(paragraph) => {
+                paragraphs.push(paragraph.as_ref());
+            }
+            docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
+                append_sdt_paragraphs(nested, paragraphs);
+            }
+            _ => {}
+        }
+    }
 }
 
 /// The `first` variant of a section's header, where `<w:titlePg/>` asks for one.
@@ -1442,10 +1474,10 @@ fn extract_hf_run_elements(
                 if !*in_field {
                     continue;
                 }
-                let trimmed = value.trim();
-                if trimmed.eq_ignore_ascii_case("page") {
+                let field_name = value.split_whitespace().next().unwrap_or_default();
+                if field_name.eq_ignore_ascii_case("page") {
                     *field_inline = Some(HFInline::PageNumber(style.clone()));
-                } else if trimmed.eq_ignore_ascii_case("numpages") {
+                } else if field_name.eq_ignore_ascii_case("numpages") {
                     *field_inline = Some(HFInline::TotalPages(style.clone()));
                 }
             }
@@ -1772,5 +1804,115 @@ mod body_pr_wrap_tests {
             let frame = anchors[0].to_frame().expect("a page-relative frame");
             assert!(frame.wraps_text, "{markup}");
         }
+    }
+}
+
+#[cfg(test)]
+mod structured_tag_tests {
+    use super::*;
+
+    fn page_field_paragraph() -> docx_rs::Paragraph {
+        docx_rs::Paragraph::new().add_run(
+            docx_rs::Run::new()
+                .add_field_char(docx_rs::FieldCharType::Begin, false)
+                .add_instr_text(docx_rs::InstrText::PAGE(docx_rs::InstrPAGE::new()))
+                .add_field_char(docx_rs::FieldCharType::Separate, false)
+                .add_text("1")
+                .add_field_char(docx_rs::FieldCharType::End, false),
+        )
+    }
+
+    fn nested_sdt_with_page_field() -> docx_rs::StructuredDataTag {
+        let inner = docx_rs::StructuredDataTag {
+            children: vec![docx_rs::StructuredDataTagChild::Paragraph(Box::new(
+                page_field_paragraph(),
+            ))],
+            ..Default::default()
+        };
+        docx_rs::StructuredDataTag {
+            children: vec![docx_rs::StructuredDataTagChild::StructuredDataTag(
+                Box::new(inner),
+            )],
+            ..Default::default()
+        }
+    }
+
+    fn contains_page_number(story: &HeaderFooter) -> bool {
+        story.paragraphs.iter().any(|paragraph| {
+            paragraph
+                .elements
+                .iter()
+                .any(|element| matches!(element, HFInline::PageNumber(_)))
+        })
+    }
+
+    #[test]
+    fn page_field_with_mergeformat_switch_resolves_as_a_page_number() {
+        let mut run = docx_rs::Run::new()
+            .add_field_char(docx_rs::FieldCharType::Begin, false)
+            .add_field_char(docx_rs::FieldCharType::Separate, false)
+            .add_text("2")
+            .add_field_char(docx_rs::FieldCharType::End, false);
+        run.children.insert(
+            1,
+            docx_rs::RunChild::InstrTextString(" PAGE   \\* MERGEFORMAT ".to_string()),
+        );
+        let paragraph = docx_rs::Paragraph::new().add_run(run);
+        let style_map = StyleMap::new();
+        let styles = HeaderFooterStyleContext {
+            style_map: &style_map,
+            paragraph_property_defaults_are_declared: false,
+        };
+
+        let converted = convert_hf_paragraph(&paragraph, &ImageMap::new(), false, &[], styles);
+
+        assert!(
+            converted
+                .elements
+                .iter()
+                .any(|element| matches!(element, HFInline::PageNumber(_))),
+            "PAGE's formatting switch should not make its cached result static: {:?}",
+            converted.elements
+        );
+    }
+
+    #[test]
+    fn nested_structured_tags_are_transparent_in_headers() {
+        let header = docx_rs::Header {
+            has_numbering: false,
+            children: vec![docx_rs::HeaderChild::StructuredDataTag(Box::new(
+                nested_sdt_with_page_field(),
+            ))],
+        };
+        let style_map = StyleMap::new();
+        let styles = HeaderFooterStyleContext {
+            style_map: &style_map,
+            paragraph_property_defaults_are_declared: false,
+        };
+
+        let converted = convert_docx_header(&header, &ImageMap::new(), &[], &[], styles)
+            .expect("header SDT paragraph should be retained");
+
+        assert!(contains_page_number(&converted));
+    }
+
+    #[test]
+    fn structured_tags_are_transparent_in_footers() {
+        let footer = docx_rs::Footer {
+            has_numbering: false,
+            children: vec![docx_rs::FooterChild::StructuredDataTag(Box::new(
+                nested_sdt_with_page_field(),
+            ))],
+        };
+        let style_map = StyleMap::new();
+        let styles = HeaderFooterStyleContext {
+            style_map: &style_map,
+            paragraph_property_defaults_are_declared: false,
+        };
+
+        let converted = convert_docx_footer(&footer, &ImageMap::new(), &[], &[], &[], styles)
+            .expect("footer SDT paragraph should be retained");
+
+        assert!(contains_page_number(&converted));
     }
 }
