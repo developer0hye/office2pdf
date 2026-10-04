@@ -463,6 +463,7 @@ fn test_generate_run_baseline_shift_moves_text_by_its_run_size() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn continuous_section_columns_do_not_add_typst_block_spacing() {
     let mut first_section: FlowPage = match make_flow_page(vec![make_paragraph("before")]) {
@@ -531,6 +532,7 @@ fn continuous_section_columns_do_not_add_typst_block_spacing() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn continuous_section_start_does_not_add_typst_paragraph_spacing() {
     let mut before_paragraph: Block = make_paragraph("before");
@@ -591,6 +593,7 @@ fn continuous_section_start_does_not_add_typst_paragraph_spacing() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn continuous_section_columns_start_without_typst_block_spacing() {
     let mut before: Paragraph = match make_paragraph("before") {
@@ -655,6 +658,7 @@ fn continuous_section_columns_start_without_typst_block_spacing() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn continuous_section_balancing_keeps_paragraphs_in_one_column() {
     let mut before: Paragraph = match make_paragraph("before") {
@@ -739,6 +743,7 @@ fn continuous_section_balancing_keeps_paragraphs_in_one_column() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn continuous_section_uses_its_horizontal_margins_on_the_current_page() {
     let mut before: FlowPage = match make_flow_page(vec![make_paragraph("before")]) {
@@ -826,6 +831,7 @@ fn continuous_section_uses_its_horizontal_margins_on_the_current_page() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn continuous_section_updates_margins_after_an_explicit_page_break() {
     let mut first_section: FlowPage = match make_flow_page(vec![make_paragraph("before")]) {
