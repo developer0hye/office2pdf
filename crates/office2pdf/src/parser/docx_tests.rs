@@ -534,6 +534,38 @@ fn test_leading_layout_break_keeps_numbered_paragraph_as_a_list() {
 }
 
 #[test]
+fn test_empty_numbered_paragraph_remains_a_list_item() {
+    let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(docx_rs::Level::new(
+        0,
+        docx_rs::Start::new(1),
+        docx_rs::NumberFormat::new("decimal"),
+        docx_rs::LevelText::new("%1."),
+        docx_rs::LevelJc::new("left"),
+    ));
+    let paragraph = docx_rs::Paragraph::new()
+        .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0));
+    let data = build_docx_with_numbering(
+        vec![abstract_num],
+        vec![docx_rs::Numbering::new(1, 0)],
+        vec![paragraph],
+    );
+
+    let (document, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(page) = &document.pages[0] else {
+        panic!("Expected a flow page");
+    };
+    let Some(Block::List(list)) = page.content.first() else {
+        panic!(
+            "an empty numbered paragraph must remain a list item: {:#?}",
+            page.content
+        );
+    };
+    assert_eq!(list.items.len(), 1);
+    assert_eq!(list.items[0].start_at, Some(1));
+    assert!(list.items[0].content[0].runs.is_empty());
+}
+
+#[test]
 fn test_numbered_paragraph_frame_survives_a_leading_column_break() {
     const FIXTURE: &[u8] = include_bytes!(
         "../../../../tests/fixtures/docx/libreoffice/tdf153964_numberingAfterBreak14.docx"

@@ -29,6 +29,7 @@ fn test_generate_first_line_indent_for_flow_paragraph() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn test_first_line_indent_does_not_change_baseline_after_page_break() {
     let compiled_baseline = |first_line_indent: Option<f64>| -> f64 {
         let mut after_page_break = make_paragraph("After page break");

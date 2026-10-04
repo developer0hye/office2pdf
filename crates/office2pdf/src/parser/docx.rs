@@ -703,13 +703,17 @@ fn convert_paragraph_element(
         return vec![TaggedElement::Plain(blocks)];
     };
 
+    let has_text_fragment: bool = blocks
+        .iter()
+        .any(|block| matches!(block, Block::Paragraph(paragraph) if !paragraph.runs.is_empty()));
     let mut tagged: Vec<TaggedElement> = Vec::new();
     let mut plain_blocks: Vec<Block> = Vec::new();
     let mut list_paragraph_emitted: bool = false;
     for block in blocks {
         let paragraph: Option<Paragraph> = match block {
             Block::Paragraph(paragraph)
-                if !list_paragraph_emitted && !paragraph.runs.is_empty() =>
+                if !list_paragraph_emitted
+                    && (!paragraph.runs.is_empty() || !has_text_fragment) =>
             {
                 Some(paragraph)
             }

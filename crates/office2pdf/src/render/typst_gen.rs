@@ -814,9 +814,8 @@ fn generate_flow_page_columns(
                 .iter()
                 .flat_map(|previous_segment| previous_segment.iter())
                 .any(block_has_paragraph_content);
-            let first_content_index: Option<usize> = page_content
-                .iter()
-                .position(|block| block_has_paragraph_content(block));
+            let first_content_index: Option<usize> =
+                page_content.iter().position(block_has_paragraph_content);
             if has_leading_page_break && index == 1 {
                 if let Some(first_content_index) = first_content_index {
                     layout_break_space_before = take_layout_break_space_before(
@@ -3997,9 +3996,7 @@ fn generate_blocks_with_layout_space_before(
         {
             let has_content_before_layout_break: bool = (follows_column_break
                 || follows_source_paragraph_page_break)
-                && blocks[..index - 1]
-                    .iter()
-                    .any(|block| block_has_paragraph_content(block));
+                && blocks[..index - 1].iter().any(block_has_paragraph_content);
             generate_block_after_layout_break(
                 out,
                 &blocks[index],
