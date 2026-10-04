@@ -29,6 +29,12 @@ pub(super) struct HeaderFooterAssets {
     footers: HashMap<String, HeaderFooter>,
 }
 
+pub(super) struct SectionHeaderFooterInputs<'a> {
+    pub(super) assets: &'a HeaderFooterAssets,
+    pub(super) inherited_header: Option<&'a HeaderFooter>,
+    pub(super) inherited_footer: Option<&'a HeaderFooter>,
+}
+
 /// What a header or footer paragraph resolves its unstated paragraph
 /// properties through.
 ///
@@ -153,8 +159,10 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         if let Some(converted) = convert_docx_footer_with_context(
             &footer,
             &images,
-            &bidi_paragraphs,
-            &simple_fields,
+            FooterParagraphMetadata {
+                bidi_paragraphs: &bidi_paragraphs,
+                simple_fields: &simple_fields,
+            },
             &anchors,
             styles,
             &mut conversion_context,
@@ -391,9 +399,7 @@ pub(super) fn build_flow_page_from_section(
     section_prop: &docx_rs::SectionProperty,
     elements: Vec<TaggedElement>,
     numberings: &NumberingMap,
-    header_footer_assets: &HeaderFooterAssets,
-    inherited_header: Option<&HeaderFooter>,
-    inherited_footer: Option<&HeaderFooter>,
+    header_footer: SectionHeaderFooterInputs<'_>,
     overrides: SectionOverrides,
     styles: HeaderFooterStyleContext<'_>,
     warnings: &mut Vec<ConvertWarning>,
@@ -439,15 +445,23 @@ pub(super) fn build_flow_page_from_section(
         });
     }
 
-    let mut header =
-        extract_docx_header(section_prop, header_footer_assets, styles, inherited_header);
+    let mut header = extract_docx_header(
+        section_prop,
+        header_footer.assets,
+        styles,
+        header_footer.inherited_header,
+    );
     if let Some(header) = &mut header {
         header.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.header));
         apply_doc_default_text_style(header, doc_default_style);
         resolve_hf_table_page_positions(header, &size, &margins, false);
     }
-    let mut footer =
-        extract_docx_footer(section_prop, header_footer_assets, styles, inherited_footer);
+    let mut footer = extract_docx_footer(
+        section_prop,
+        header_footer.assets,
+        styles,
+        header_footer.inherited_footer,
+    );
     if let Some(footer) = &mut footer {
         footer.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.footer));
         apply_doc_default_text_style(footer, doc_default_style);
@@ -455,13 +469,13 @@ pub(super) fn build_flow_page_from_section(
     }
     // The first-page stories take the same edge distance and default style the
     // whole-section ones do; only which story is chosen differs (issue #846).
-    let mut first_header = extract_docx_first_header(section_prop, header_footer_assets, styles);
+    let mut first_header = extract_docx_first_header(section_prop, header_footer.assets, styles);
     if let Some(first_header) = &mut first_header {
         first_header.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.header));
         apply_doc_default_text_style(first_header, doc_default_style);
         resolve_hf_table_page_positions(first_header, &size, &margins, false);
     }
-    let mut first_footer = extract_docx_first_footer(section_prop, header_footer_assets, styles);
+    let mut first_footer = extract_docx_first_footer(section_prop, header_footer.assets, styles);
     if let Some(first_footer) = &mut first_footer {
         first_footer.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.footer));
         apply_doc_default_text_style(first_footer, doc_default_style);
@@ -541,7 +555,7 @@ fn resolve_hf_table_page_positions(
                         )
                 })
             })
-            .unwrap_or_else(|| match frame.vertical_anchor {
+            .unwrap_or(match frame.vertical_anchor {
                 FrameAnchor::Page => 0.0,
                 FrameAnchor::Margin | FrameAnchor::Text if is_footer => {
                     page_size.height - distance_from_edge - element.height
@@ -704,8 +718,10 @@ fn convert_docx_footer(
     convert_docx_footer_with_context(
         footer,
         images,
-        bidi_paragraphs,
-        simple_fields,
+        FooterParagraphMetadata {
+            bidi_paragraphs,
+            simple_fields,
+        },
         anchors,
         styles,
         &mut conversion_context,
@@ -713,11 +729,15 @@ fn convert_docx_footer(
     )
 }
 
+struct FooterParagraphMetadata<'a> {
+    bidi_paragraphs: &'a [bool],
+    simple_fields: &'a [Vec<SimpleFieldMarker>],
+}
+
 fn convert_docx_footer_with_context(
     footer: &docx_rs::Footer,
     images: &ImageMap,
-    bidi_paragraphs: &[bool],
-    simple_fields: &[Vec<SimpleFieldMarker>],
+    paragraph_metadata: FooterParagraphMetadata<'_>,
     anchors: &[HfAnchorBox],
     styles: HeaderFooterStyleContext<'_>,
     conversion_context: &mut DocxConversionContext,
@@ -756,8 +776,16 @@ fn convert_docx_footer_with_context(
             let mut converted = vec![convert_hf_paragraph(
                 paragraph,
                 images,
-                bidi_paragraphs.get(index).copied().unwrap_or(false),
-                simple_fields.get(index).map(Vec::as_slice).unwrap_or(&[]),
+                paragraph_metadata
+                    .bidi_paragraphs
+                    .get(index)
+                    .copied()
+                    .unwrap_or(false),
+                paragraph_metadata
+                    .simple_fields
+                    .get(index)
+                    .map(Vec::as_slice)
+                    .unwrap_or(&[]),
                 styles,
             )];
             converted.extend(hf_anchored_text_box_paragraphs(
@@ -845,7 +873,7 @@ fn hf_table_frame(
         .unwrap_or(FrameAnchor::Text);
     let horizontal_align: Option<FrameAlign> = position_str("positionXAlignment")
         .and_then(frame_align)
-        .or_else(|| match table.alignment {
+        .or(match table.alignment {
             Some(crate::ir::Alignment::Center) => Some(FrameAlign::Center),
             Some(crate::ir::Alignment::Right) => Some(FrameAlign::End),
             _ => None,
