@@ -56,7 +56,7 @@ use self::text::{
     extract_paragraph_style, extract_run_style, extract_run_style_id, extract_run_text,
     extract_tab_stop_overrides, insert_east_asian_auto_space, is_column_break, is_page_break,
     pair_kerning_from_half_points, parse_hex_color, parse_theme_fonts, resolve_hyperlink_url,
-    resolve_theme_font_family,
+    resolve_latin_theme_font_family, resolve_theme_font_family,
 };
 #[cfg(test)]
 use self::text::{extract_pair_kerning, extract_tab_stops, resolve_highlight_color};
@@ -273,7 +273,11 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
             let style_paragraph_backgrounds = scan_style_paragraph_shading(styles_xml.as_deref());
             let style_word_wraps = scan_style_word_wrap(styles_xml.as_deref());
             let theme_xml = read_zip_text(&mut archive, "word/theme/theme1.xml");
-            let notes = build_note_context_from_xml(doc_xml.as_deref(), &mut archive);
+            let theme_fonts = theme_xml
+                .as_deref()
+                .map(parse_theme_fonts)
+                .unwrap_or_default();
+            let notes = build_note_context_from_xml(doc_xml.as_deref(), &mut archive, &theme_fonts);
             let wraps = build_wrap_context_from_xml(doc_xml.as_deref());
             let drawing_text_boxes = DrawingTextBoxContext::from_xml(doc_xml.as_deref());
             let drawing_shapes =
@@ -296,6 +300,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
             let small_caps = SmallCapsContext::from_xml(doc_xml.as_deref());
             let metafile_images = build_document_metafile_image_map(&mut archive);
             let ctx = DocxConversionContext {
+                theme_fonts: theme_fonts.clone(),
                 notes,
                 wraps,
                 drawing_text_boxes,
@@ -330,10 +335,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 column_layouts,
                 page_numbering,
                 metafile_images,
-                theme_fonts: theme_xml
-                    .as_deref()
-                    .map(parse_theme_fonts)
-                    .unwrap_or_default(),
+                theme_fonts,
                 default_paragraph_style_id,
                 style_paragraph_backgrounds,
                 style_word_wraps,
@@ -343,6 +345,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
         Err(_) => ZipPreParseAssets {
             metadata: crate::ir::Metadata::default(),
             ctx: DocxConversionContext {
+                theme_fonts: ThemeFonts::default(),
                 notes: NoteContext::empty(),
                 wraps: WrapContext::empty(),
                 drawing_text_boxes: DrawingTextBoxContext::from_xml(None),
@@ -419,6 +422,7 @@ impl Parser for DocxParser {
 
         let header_footer_styles = HeaderFooterStyleContext {
             style_map: &style_map,
+            theme_fonts: &theme_fonts,
             paragraph_property_defaults_are_declared: ctx.paragraph_property_defaults_are_declared,
         };
 
@@ -813,6 +817,7 @@ fn build_text_run(
     is_small_caps: bool,
     resolved_style: Option<&ResolvedStyle>,
     style_map: &StyleMap,
+    theme_fonts: &ThemeFonts,
     href: Option<String>,
 ) -> Option<Run> {
     if text.is_empty() {
@@ -820,7 +825,13 @@ fn build_text_run(
     }
     Some(Run {
         text,
-        style: resolve_run_style(run_property, is_small_caps, resolved_style, style_map),
+        style: resolve_run_style(
+            run_property,
+            is_small_caps,
+            resolved_style,
+            style_map,
+            theme_fonts,
+        ),
         href,
         footnote: None,
         inline_box: None,
@@ -838,8 +849,15 @@ fn resolve_run_style(
     is_small_caps: bool,
     resolved_style: Option<&ResolvedStyle>,
     style_map: &StyleMap,
+    theme_fonts: &ThemeFonts,
 ) -> TextStyle {
     let mut explicit_style: TextStyle = extract_run_style(run_property);
+    if explicit_style.font_family.is_none()
+        && let Ok(run_property_json) = serde_json::to_value(run_property)
+    {
+        explicit_style.font_family =
+            resolve_latin_theme_font_family(&run_property_json, theme_fonts);
+    }
     if is_small_caps {
         explicit_style.small_caps = Some(true);
     }
@@ -1261,6 +1279,7 @@ fn process_hyperlink_runs(
                 hl_small_caps,
                 resolved_style,
                 style_map,
+                &ctx.theme_fonts,
                 href.clone(),
             ) {
                 runs.push(ir_run);
@@ -1269,16 +1288,16 @@ fn process_hyperlink_runs(
     }
 }
 
-/// What the surrounding flow contributes to a paragraph, as opposed to the
-/// paragraph's own formatting: the direction `w:bidi` inherits onto it, the
-/// shading its style hierarchy paints behind it, and whether its effective
-/// paragraph style is one the document actually defines.
+/// Context shared by the output blocks generated from one source `<w:p>`:
+/// document theme fonts used by run and paragraph-mark resolution, plus its
+/// inherited direction, shading, wrapping, contextual spacing, and style state.
 ///
 /// Resolved once per `<w:p>` because the paragraph cursors (bidi, shading,
-/// `w:wordWrap`, `w:contextualSpacing`) advance on read, then handed to every
-/// paragraph the `<w:p>` splits into.
+/// `w:wordWrap`, `w:contextualSpacing`) advance on read, then reused by every
+/// output paragraph the source `<w:p>` splits into.
 #[derive(Clone, Copy)]
 struct ParagraphFlow<'a> {
+    theme_fonts: &'a ThemeFonts,
     is_rtl: bool,
     background: Option<Color>,
     /// The paragraph's own `w:wordWrap`, recovered from the raw XML — the
@@ -1319,6 +1338,7 @@ fn convert_paragraph_blocks(
     // recorded at the same index (issue #1689).
     let style_id: Option<&str> = get_paragraph_style_id(&para.property);
     let flow = ParagraphFlow {
+        theme_fonts: &ctx.theme_fonts,
         is_rtl: ctx.bidi.next_is_bidi(style_id),
         background: ctx.paragraph_shading.next_background(style_id),
         word_wrap: ctx.word_wraps.next_word_wrap(style_id),
@@ -1552,6 +1572,7 @@ fn convert_paragraph_blocks(
                                 is_small_caps,
                                 resolved_style,
                                 style_map,
+                                &ctx.theme_fonts,
                                 None,
                             ) {
                                 runs.push(ir_run);
@@ -1940,6 +1961,7 @@ fn build_paragraph_block(
             false,
             resolved_style,
             style_map,
+            flow.theme_fonts,
         )));
     }
     let paragraph = Paragraph {
