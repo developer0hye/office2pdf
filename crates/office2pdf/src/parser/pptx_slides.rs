@@ -1894,15 +1894,10 @@ impl<'a> SlideXmlParser<'a> {
                     self.ctx.table_styles,
                     self.ctx.default_text_size_pt,
                 ) {
-                    scale_pptx_table_geometry_to_frame(
-                        &mut table,
-                        emu_to_pt(self.gf.cx),
-                        emu_to_pt(self.gf.cy),
-                    );
-                    // PowerPoint treats each `a:tr/@h` as a floor and grows a
-                    // row whose cell content is taller. The frame still scales
-                    // those floors up when it explicitly exceeds their sum,
-                    // but it must not turn them into clipping tracks (#1253).
+                    scale_pptx_table_columns_to_frame(&mut table, emu_to_pt(self.gf.cx));
+                    // PowerPoint treats each `a:tr/@h` as a floor and grows
+                    // rows from their content; preserve those floors instead
+                    // of scaling them to the graphic frame's `cy` (#1253, #2013).
                     table.use_content_driven_row_heights = true;
                     self.elements.push(FixedElement {
                         x: emu_to_pt(self.gf.x),

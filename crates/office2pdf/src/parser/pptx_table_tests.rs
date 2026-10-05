@@ -49,7 +49,7 @@ fn test_slide_with_basic_table() {
 }
 
 #[test]
-fn test_slide_table_scales_geometry_to_graphic_frame_extent() {
+fn test_slide_table_does_not_scale_row_floors_to_graphic_frame_height() {
     let rows_xml = format!(
         "{}{}",
         make_table_row(&["A1", "B1"]),
@@ -79,15 +79,15 @@ fn test_slide_table_scales_geometry_to_graphic_frame_extent() {
     assert_eq!(table.rows.len(), 2);
     assert_eq!(table.rows[0].height, None);
     assert_eq!(table.rows[1].height, None);
-    assert_eq!(table.rows[0].minimum_height, Some(58.4));
-    assert_eq!(table.rows[1].minimum_height, Some(58.4));
+    assert_eq!(table.rows[0].minimum_height, Some(29.2));
+    assert_eq!(table.rows[1].minimum_height, Some(29.2));
     assert!(
         (table
             .rows
             .iter()
             .map(|row| row.minimum_height.unwrap_or(0.0))
             .sum::<f64>()
-            - elem.height)
+            - 58.4)
             .abs()
             < 0.1
     );
