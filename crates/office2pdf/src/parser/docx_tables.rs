@@ -30,6 +30,12 @@ struct RawRow {
     minimum_height: Option<f64>,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TableContentContext {
+    DocumentFlow,
+    AnchoredTextBox,
+}
+
 fn extract_margin_side_points(side_json: &serde_json::Value) -> Option<f64> {
     let width_type = side_json
         .get("widthType")
@@ -156,22 +162,77 @@ pub(super) fn convert_table(
     ctx: &DocxConversionContext,
     depth: usize,
 ) -> Table {
+    convert_table_with_context(
+        table,
+        images,
+        hyperlinks,
+        style_map,
+        ctx,
+        depth,
+        TableContentContext::DocumentFlow,
+    )
+}
+
+pub(super) fn convert_table_in_text_box(
+    table: &docx_rs::Table,
+    images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
+    style_map: &StyleMap,
+    ctx: &DocxConversionContext,
+    depth: usize,
+) -> Table {
+    convert_table_with_context(
+        table,
+        images,
+        hyperlinks,
+        style_map,
+        ctx,
+        depth,
+        TableContentContext::AnchoredTextBox,
+    )
+}
+
+fn convert_table_with_context(
+    table: &docx_rs::Table,
+    images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
+    style_map: &StyleMap,
+    ctx: &DocxConversionContext,
+    depth: usize,
+    content_context: TableContentContext,
+) -> Table {
     let header_info = ctx.table_headers.consume_next();
     let table_style = ctx.table_styles.consume_next();
     let table_prop_json = serde_json::to_value(&table.property).ok();
     let alignment = extract_table_alignment(table_prop_json.as_ref());
+    let direct_cell_padding = extract_table_default_cell_padding(table_prop_json.as_ref());
     // Direct table properties win, but a table that states no `w:tblStyle`
     // still inherits the package's default table style (issue #1466). A
     // package that resolves no table style at all reaches the last arm, where
     // Typst's unrelated symmetric 5pt inset used to leak in and put every cell
     // line 5pt low (issue #1687).
-    let default_cell_padding = extract_table_default_cell_padding(table_prop_json.as_ref())
+    let mut default_cell_padding = direct_cell_padding
         .or_else(|| {
             table_style
                 .as_ref()
                 .and_then(ResolvedTableStyle::default_cell_padding)
         })
         .or(Some(WORD_STYLELESS_TABLE_CELL_MARGINS));
+    let has_direct_left_cell_margin = table_prop_json
+        .as_ref()
+        .and_then(|properties| properties.get("margins"))
+        .and_then(|margins| margins.get("left"))
+        .and_then(extract_margin_side_points)
+        .is_some();
+    if content_context == TableContentContext::AnchoredTextBox
+        && has_direct_left_cell_margin
+        && let Some(padding) = &mut default_cell_padding
+    {
+        // Word applies the anchored text-box table's paragraph indent but
+        // omits its direct table-level left cell margin (#2000). Keep the
+        // other sides, body-flow tables, and cell-level overrides intact.
+        padding.left = 0.0;
+    }
 
     let mut raw_rows = extract_raw_rows(
         table,
