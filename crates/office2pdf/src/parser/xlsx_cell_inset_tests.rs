@@ -419,8 +419,9 @@ fn test_centred_cell_carries_its_wrap_text_flag_to_the_renderer() {
 /// confirmation, not just the formula:
 /// - 42pt bold is the issue's own fixture title cell: a fresh native export
 ///   places it at physical x 85.80pt, matching this model's 8pt inset to
-///   within the +0.475pt residual issue #1719 already tracks for every run on
-///   that fitted sheet (a shared paint/text origin snap, not this rule).
+///   within the model's inset rule. The renderer applies the fitted page's
+///   snapped origin to both paint and text (#1719), independently of this
+///   inset calculation.
 /// - 36 and 48 are a differential probe (2026-09-17): the same wide-column
 ///   workbook exported regular and bold, reading only the bold-minus-regular
 ///   shift in the "2026" digits' start x so the (unmodelled) column boundary

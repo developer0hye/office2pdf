@@ -3071,30 +3071,29 @@ fn horizontal_sheet_merge_selects_the_lower_odd_centering_half() {
     );
 }
 
-/// A fitted sheet snaps the line seat in its own declared-point coordinate
-/// system and scales that answer onto the printed page (issues #1238, #1496).
-///
-/// The landscape sheet from #982 prints at 0.82 scale. Its two one-row merged
-/// Century Gothic headings, ordinary Segoe UI header, and five Segoe UI body
-/// rows all land one sheet-space point above the corresponding unscaled
-/// fixed-track cadence. The former regression reused that unscaled cadence
-/// and therefore asserted the repeated +0.70pt defect as correct. Cover both
-/// merge states and two ordinary row heights so the correction is a shared
-/// fitted-sheet seat, not a font, merge, or one-row special case.
+/// A fitted sheet snaps the line seat in its declared-point coordinate system
+/// and scales that answer onto the printed page (issues #1238, #1496, #1719).
+/// The #982 landscape sheet's physical-margin-origin correction was one sheet
+/// point. Once cell text inherits the page-level snapped origin, that point is
+/// no longer subtracted from the fixed-track seat. Cover both merge states
+/// and two ordinary row heights so the rule stays shared across faces and
+/// tracks.
 #[test]
-fn scaled_sheet_fixed_rows_use_the_native_excel_baseline_seat() {
+fn scaled_sheet_fixed_rows_use_the_snapped_origin_seat() {
     const SEGOE_UI: (f64, f64, f64) = (2210.0 / 2048.0, 514.0 / 2048.0, 0.0);
     const CENTURY_GOTHIC: (f64, f64, f64) = (2060.0 / 2048.0, 451.0 / 2048.0, 0.0);
     const SCALE: f64 = 0.82;
 
-    // (metrics, track, size, horizontally merged, native sheet-space seat)
+    // (metrics, track, size, horizontally merged, physical-origin seat)
     let measured = [
         (CENTURY_GOTHIC, 49.0, 24.0, true, 33.0),
         (SEGOE_UI, 49.0, 12.0, false, 28.0),
         (SEGOE_UI, 30.0, 11.0, false, 18.0),
     ];
 
-    for ((ascent_em, descent_em, line_gap_em), track_pt, size_pt, merged, native_pt) in measured {
+    for ((ascent_em, descent_em, line_gap_em), track_pt, size_pt, merged, physical_origin_pt) in
+        measured
+    {
         let seated_pt: f64 = sheet_cell_baseline_from_track_top_pt(
             track_pt * SCALE,
             ascent_em,
@@ -3104,11 +3103,12 @@ fn scaled_sheet_fixed_rows_use_the_native_excel_baseline_seat() {
             merged,
             Some(SCALE),
         );
+        let snapped_origin_seat_pt: f64 = physical_origin_pt + 1.0;
         assert!(
-            (seated_pt - native_pt * SCALE).abs() < 1e-9,
-            "the {native_pt}pt native sheet-space seat must print at {}pt, \
+            (seated_pt - snapped_origin_seat_pt * SCALE).abs() < 1e-9,
+            "the {snapped_origin_seat_pt}pt snapped-origin seat must print at {}pt, \
              seated {seated_pt}pt (track={track_pt}, size={size_pt}, merged={merged})",
-            native_pt * SCALE
+            snapped_origin_seat_pt * SCALE
         );
     }
 }
@@ -4682,12 +4682,11 @@ fn top_aligned_sheet_cell_seat_reproduces_the_native_excel_probe() {
 }
 
 /// The fitted #982 original evaluates the same top seat at the declared size
-/// and prints it through the 0.82 scale, one sheet point above the unscaled
-/// cadence — the shared fitted-sheet lift the centred seat carries for the
-/// physical-margin text origin (issues #1496, #1719): 15 sheet points print
-/// as 12.30pt against the native 12.42pt from that origin (issue #1606).
+/// and prints it through the 0.82 scale. The page-level translation now snaps
+/// the cell text origin, so the seat itself is no longer reduced by the old
+/// one-point physical-origin correction (issues #1496, #1719).
 #[test]
-fn scaled_top_aligned_sheet_cell_seat_prints_the_lifted_sheet_point() {
+fn scaled_top_aligned_sheet_cell_seat_uses_the_snapped_origin() {
     const SEGOE_UI_ASCENT_WITH_GAP_EM: f64 = 2210.0 / 2048.0;
     const SCALE: f64 = 0.82;
 
@@ -4697,8 +4696,8 @@ fn scaled_top_aligned_sheet_cell_seat_prints_the_lifted_sheet_point() {
         Some(SCALE),
     );
     assert!(
-        (seated_pt - 15.0 * SCALE).abs() < 1e-9,
-        "the fitted top seat must print (16 - 1) x 0.82 = 12.30pt, seated {seated_pt}pt"
+        (seated_pt - 16.0 * SCALE).abs() < 1e-9,
+        "the fitted top seat must print 16 x 0.82 = 13.12pt, seated {seated_pt}pt"
     );
 }
 

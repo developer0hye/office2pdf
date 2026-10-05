@@ -11305,6 +11305,63 @@ fn budget_month_axis_uses_its_major_theme_font() {
     }
 }
 
+/// Fitted worksheet cell text shares Excel's snapped sheet-space origin with
+/// the grid paint. These left edges are from a fresh Excel for Mac 16.112.3
+/// export of the reported #1719 workbook, page 2; keeping the physical margin
+/// origin leaves a fractional-point residual at scale 0.78. The page-level
+/// move must carry both axes, with no inverse text move restoring the old
+/// physical origin.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn fitted_budget_cell_text_uses_the_snapped_sheet_origin() {
+    let data = include_bytes!("../../../../tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx");
+    let (doc, _) = crate::parser::Parser::parse(
+        &crate::parser::xlsx::XlsxParser,
+        data,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("the reported budget fixture parses");
+    let output = generate_typst(&doc).expect("the reported budget fixture generates Typst");
+    let runs =
+        crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 1)
+            .expect("the fitted budget sheet compiles");
+
+    let move_lines: Vec<&str> = output
+        .source
+        .lines()
+        .filter(|line| line.contains("#move("))
+        .collect();
+    assert!(
+        move_lines
+            .iter()
+            .any(|line| line.contains("dx: 0.475pt") && line.contains("dy: -0.18pt")),
+        "the fitted paint group must use the snapped two-axis origin"
+    );
+    assert!(
+        !move_lines
+            .iter()
+            .any(|line| line.contains("dx: -0.475pt") && line.contains("dy: 0.18pt")),
+        "cell text must not countershift back to the physical margin origin"
+    );
+
+    for (text, native_left_pt) in [
+        ("Monthly college budget", 85.8),
+        ("Cash flow", 81.9),
+        ("Cumulative cash flow", 81.9),
+        ("TOTAL EXPENSES", 81.9),
+    ] {
+        let run = runs
+            .iter()
+            .find(|run| run.text == text)
+            .unwrap_or_else(|| panic!("the fitted page must contain {text:?}"));
+        assert!(
+            (run.left_pt - native_left_pt).abs() < 0.01,
+            "{text}: native left edge {native_left_pt}pt, converter {}pt",
+            run.left_pt
+        );
+    }
+}
+
 #[test]
 fn axis_typefaces_reach_each_axis_chart_renderer() {
     for kind in [

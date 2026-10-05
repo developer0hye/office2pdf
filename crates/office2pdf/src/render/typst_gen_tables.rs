@@ -3154,41 +3154,30 @@ fn format_border_side(side: &BorderSide) -> String {
     stroke_value(side, true)
 }
 
-/// Generate a table cell's content at its established seat when the fitted
-/// worksheet's paint layer has been translated underneath it, or when its
-/// descender seat falls inside the cell's inset.
-///
-/// `#move` leaves layout dimensions unchanged, so the inverse translation
-/// cancels only the visual table-paint offset from issue #1538, and
-/// `seat_shortfall_pt` drops the line to a boundary distance Typst's clamped
-/// `bottom-edge` cannot reach (issue #1545); a spill passes zero here and
-/// translates its placed clip box instead, so the clip moves with the line.
-/// Off a fitted sheet and with the seat inside the box, the helper is
-/// byte-for-byte the direct generation path.
+/// Generate a table cell's content at its established seat, dropping a line
+/// to a boundary distance Typst's clamped `bottom-edge` cannot reach
+/// (issue #1545). Fitted sheets translate the table and its text together so
+/// both share Excel's snapped origin (issues #1538, #1719); a spill passes
+/// zero here and translates its placed clip box instead, so the clip moves
+/// with the line.
 fn generate_sheet_cell_content(
     out: &mut String,
     blocks: &[Block],
     ctx: &mut GenCtx,
     seat_shortfall_pt: f64,
 ) -> Result<(), ConvertError> {
-    let paint_offset_pt: Option<(f64, f64)> = ctx.sheet_paint_offset_pt.take();
-    let content_shift_pt: Option<(f64, f64)> = match paint_offset_pt {
-        Some((paint_dx_pt, paint_dy_pt)) => Some((-paint_dx_pt, seat_shortfall_pt - paint_dy_pt)),
-        None if seat_shortfall_pt > 0.0 => Some((0.0, seat_shortfall_pt)),
-        None => None,
-    };
-    if let Some((dx_pt, dy_pt)) = content_shift_pt {
+    let should_shift_for_seat: bool = seat_shortfall_pt > 0.0;
+    if should_shift_for_seat {
         let _ = write!(
             out,
             "#move(dx: {}pt, dy: {}pt)[",
-            format_geometry(dx_pt),
-            format_geometry(dy_pt),
+            format_geometry(0.0),
+            format_geometry(seat_shortfall_pt),
         );
     }
     let rewritten_blocks: Option<Vec<Block>> = rewrite_blocks_for_unavailable_hangul_bold(blocks);
     let result = generate_cell_content(out, rewritten_blocks.as_deref().unwrap_or(blocks), ctx);
-    ctx.sheet_paint_offset_pt = paint_offset_pt;
-    if content_shift_pt.is_some() {
+    if should_shift_for_seat {
         out.push(']');
     }
     result
