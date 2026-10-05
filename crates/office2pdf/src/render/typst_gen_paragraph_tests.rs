@@ -3149,6 +3149,62 @@ fn a_header_tab_places_its_segment_exactly_like_a_body_tab() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn centered_header_page_field_uses_its_effective_left_and_right_indents() {
+    let page_number_x = |indent_left: Option<f64>, indent_right: Option<f64>| -> f64 {
+        let header_paragraph = crate::ir::HeaderFooterParagraph {
+            style: ParagraphStyle {
+                alignment: Some(Alignment::Center),
+                indent_left,
+                indent_right,
+                ..ParagraphStyle::default()
+            },
+            elements: vec![crate::ir::HFInline::PageNumber(TextStyle::default())],
+            border: None,
+            border_space: None,
+            sheet_section_is_rich: false,
+            frame: None,
+        };
+        let Page::Flow(mut flow) = make_flow_page(Vec::new()) else {
+            unreachable!("the fixture is a flow page");
+        };
+        flow.header = Some(crate::ir::HeaderFooter {
+            shapes: Vec::new(),
+            paragraphs: vec![header_paragraph],
+            distance_from_edge: None,
+            sheet_print_scale: None,
+        });
+        let document: Document = make_doc(vec![Page::Flow(flow)]);
+        let source: String = generate_typst(&document).unwrap().source;
+
+        crate::render::pdf::compiled_text_runs(&source, 0)
+            .unwrap()
+            .into_iter()
+            .find(|run| run.text == "1")
+            .expect("the page-number field should be rendered in the header")
+            .left_pt
+    };
+
+    let no_indents: f64 = page_number_x(None, None);
+    let negative_right_indent: f64 = page_number_x(None, Some(-56.7));
+    let positive_left_indent: f64 = page_number_x(Some(20.0), None);
+    let both_indents: f64 = page_number_x(Some(20.0), Some(8.0));
+
+    assert!(
+        (negative_right_indent - no_indents - 28.35).abs() < 0.05,
+        "a -56.7pt right indent must widen the centered line and move its field 28.35pt right: no-indent={no_indents}pt, negative-right={negative_right_indent}pt"
+    );
+    assert!(
+        (positive_left_indent - no_indents - 10.0).abs() < 0.05,
+        "a 20pt left indent must narrow the centered line and move its field 10pt right: no-indent={no_indents}pt, positive-left={positive_left_indent}pt"
+    );
+    assert!(
+        (both_indents - no_indents - 6.0).abs() < 0.05,
+        "centered placement must account for both indents: no-indent={no_indents}pt, left-and-right={both_indents}pt"
+    );
+}
+
 /// Letter-spacing disables ligatures (issue #684).
 ///
 /// Tracking and ligation are mutually exclusive: a ligature replaces several

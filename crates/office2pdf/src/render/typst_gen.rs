@@ -4406,6 +4406,20 @@ fn generate_hf_styled_paragraph(
     paragraph: &crate::ir::HeaderFooterParagraph,
     ctx: &mut GenCtx,
 ) {
+    let indent_left: f64 = paragraph.style.indent_left.unwrap_or(0.0);
+    let indent_right: f64 = paragraph.style.indent_right.unwrap_or(0.0);
+    let has_indents: bool = indent_left.abs() > 0.0001 || indent_right.abs() > 0.0001;
+    if has_indents {
+        // Header/footer alignment uses the paragraph's own line measure, just
+        // like body paragraphs. Keeping signed indents lets a negative Word
+        // indent expand that measure into the corresponding margin.
+        let _ = write!(
+            out,
+            "#block(width: 100%, above: 0pt, below: 0pt, inset: (left: {}pt, right: {}pt))[",
+            format_f64(indent_left),
+            format_f64(indent_right)
+        );
+    }
     if let Some(align) = paragraph.style.alignment {
         let align_str = match align {
             Alignment::Left => "left",
@@ -4423,6 +4437,9 @@ fn generate_hf_styled_paragraph(
         out.push(']');
     }
     if paragraph.style.alignment.is_some() {
+        out.push(']');
+    }
+    if has_indents {
         out.push(']');
     }
 }
