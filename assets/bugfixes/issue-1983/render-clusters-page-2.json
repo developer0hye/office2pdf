@@ -1,0 +1,38 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 145.44,
+        "y": 60.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p2-b7d8bbd93e9d",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 1,
+    "duplicate": 0,
+    "total": 1,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
