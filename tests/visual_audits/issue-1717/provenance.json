@@ -1,0 +1,65 @@
+{
+  "source": {
+    "fixture": "tests/fixtures/xlsx/issue_1717_ascii_width_boundary.xlsx",
+    "fixture_sha256": "1516e061c61eec2e5d6ffa46d388ad342574511dd1b6acfb17a5c27c6be12f77",
+    "derived_from": "tests/fixtures/xlsx/1000-customers.xlsx",
+    "derived_from_sha256": "0ad0125cf5eeebb9f58bc6752b58c029466ec9029baca8d0bbe852cf6638cb91",
+    "origin": "my-sample-files/files-hub",
+    "license": "CC0-1.0",
+    "worksheet": "E2=Customer Quality Executive; column E width=21.7 characters",
+    "style": "Normal 12pt Calibri, minor theme scheme; parser resolves to Malgun Gothic"
+  },
+  "reference_export": {
+    "application": "Microsoft Excel for Mac",
+    "version": "16.113.3",
+    "platform": "macOS 26.6.2 build 25G83",
+    "exporter": "Quartz PDFContext",
+    "method": "scripts/probe_harness.py with the office backend; native Excel width probe at 21.7 characters",
+    "pdf_sha256": "d1c0103c662813973a1175ebbb417b1fbaf8fb84e6bcc0ac539a3a70e188a10d",
+    "pdf_creator": "Excel",
+    "page_count": 1,
+    "page_size": "A4",
+    "font": "Malgun Gothic subset embedded in PDF; Excel-bundled DFonts/malgun.ttf"
+  },
+  "converter_exports": {
+    "before": {
+      "base_commit": "f0f7d6e9686c945ef3e143c22e43c31f8514c076",
+      "pdf_sha256": "4391e0e78c44e4cc284d4cae24480a4638510b9e40958e654a48e989f98d8a51",
+      "pdf_creator": "Typst 0.15.1",
+      "layout": "3 output lines versus 2 native lines; Customer Quality Executive wraps"
+    },
+    "after": {
+      "branch": "fix/issue-1717-ascii-width-estimate",
+      "pdf_sha256": "ec58f2509251f19d702439f666da15cde90601a9e12dcfa705949622a36838ec",
+      "pdf_creator": "Typst 0.15.1",
+      "layout": "2 of 2 native lines match; no wrap, reflow, missing or extra text, visibility mismatch, or shift"
+    }
+  },
+  "comparison": {
+    "layout_command": "python3 scripts/compare_layout.py --json --audit --fine-shift 0.5 --noise-floor 0.5",
+    "render_command": "python3 scripts/compare_render.py --page 1 --dpi 150 --fine-shift 0.5 --audit --cluster-dispositions tests/visual_audits/issue-1717/cluster-dispositions-page-1.json --strict-clusters",
+    "fine_shift_pt": 0.5,
+    "excel_noise_floor_pt": 0.5,
+    "page": 1,
+    "dpi": 150,
+    "after_text_layer_content_matches": true,
+    "after_render": {
+      "ae_fuzz_5_percent": 545,
+      "ae_fuzz_1_percent": 709,
+      "rmse": 195.143,
+      "material_clusters": 0,
+      "remaining": "dispersed glyph-edge rasterization and antialiasing specks below the cluster floor"
+    }
+  },
+  "raster_evidence": {
+    "dimensions_px": "1241x1754",
+    "density_dpi": 150,
+    "jpeg_quality": 86,
+    "progressive": true,
+    "sha256": {
+      "gt": "8bea364e6f1c80171af48d5220346fe7bdb9337c18a8e555cf72cc57a00ead38",
+      "before": "af16fdb906caa3952b1b8ed83c0cb517795d65994d4a8247aaeb7ea52216140f",
+      "after": "f36e2b3107e70cf10bc3aea7cd7bcdb09c227b97a7d70f994baad7d29055628a"
+    }
+  }
+}

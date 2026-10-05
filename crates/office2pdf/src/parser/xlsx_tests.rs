@@ -406,15 +406,16 @@ fn test_max_digit_advance_em_reads_real_face_hmtx() {
     assert_eq!(column_unit_pt("Libertinus Serif", 11.0, false), 5.0);
 }
 
-/// The single-line width estimate prices each ASCII character against the
+/// The unresolved-face fallback prices each ASCII character against the
 /// family's own digit advance, so a line of narrow letters costs a fraction of
 /// a line of capitals. The flat half-em-per-character rule it replaced put a
 /// realistic sentence a third over its real advance, which walked the printed
 /// range past the page and split a one-page sheet in two (issue #1054).
 ///
-/// Ground truth is the real `hmtx` advance sum of each named face over the
-/// literal string, read from those faces' own tables: 41.6772em of ArialMT,
-/// 22.9761em of Verdana, 8.6875em of Calibri.
+/// Resolved faces use their fractional per-glyph advances for clip-box width;
+/// page-column continuation rounds each glyph to Excel's whole-point grid.
+/// Unresolved faces retain the portable ratio estimate and stay within 5% of
+/// the measured `hmtx` sums.
 #[test]
 fn test_estimate_line_width_tracks_real_face_advances() {
     let cases: [(&str, &str, f64, f64); 3] = [
@@ -436,13 +437,24 @@ fn test_estimate_line_width_tracks_real_face_advances() {
     for (family, text, size_pt, truth_em) in cases {
         let truth_pt: f64 = truth_em * size_pt;
         let estimate: f64 = estimate_line_width_pt(text, Some(family), size_pt);
-        let error: f64 = (estimate - truth_pt) / truth_pt;
-        assert!(
-            error.abs() < 0.05,
-            "{family} {size_pt}pt: estimate {estimate:.2}pt is {:.1}% off the \
-             face's own {truth_pt:.2}pt",
-            error * 100.0
-        );
+        if let Some(advances_em) = crate::render::pdf::glyph_advances_em(family, false, text) {
+            let expected_width_pt: f64 = advances_em
+                .into_iter()
+                .map(|advance_em| advance_em * size_pt)
+                .sum();
+            assert_eq!(
+                estimate, expected_width_pt,
+                "{family} must use its own fractional per-glyph advances"
+            );
+        } else {
+            let error: f64 = (estimate - truth_pt) / truth_pt;
+            assert!(
+                error.abs() < 0.05,
+                "{family} {size_pt}pt: estimate {estimate:.2}pt is {:.1}% off the \
+                 face's own {truth_pt:.2}pt",
+                error * 100.0
+            );
+        }
     }
 
     // Triangulation: the estimate must follow the glyphs, not the character
@@ -461,6 +473,67 @@ fn test_estimate_line_width_tracks_real_face_advances() {
     assert_eq!(
         estimate_line_width_pt("Monthly Active Users", None, 11.0),
         estimate_line_width_pt("Monthly Active Users", Some("Calibri"), 11.0),
+    );
+}
+
+/// A family-wide digit ratio cannot model faces whose ASCII glyphs are not
+/// proportional to that digit, such as Malgun Gothic (issue #1717). The clip
+/// box follows Typst's fractional glyph advances; page-column continuation
+/// uses Excel's whole-point grid separately.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn test_estimate_line_width_uses_resolved_face_advances() {
+    let text: &str = "Chief Configuration Representative";
+    let size_pt: f64 = 12.0;
+
+    for family in ["Malgun Gothic", "DejaVu Sans Mono", "New Computer Modern"] {
+        let Some(advances) = crate::render::pdf::glyph_advances_em(family, false, text) else {
+            continue;
+        };
+        let expected_width_pt: f64 = advances
+            .into_iter()
+            .map(|advance_em| advance_em * size_pt)
+            .sum();
+        let estimated_width_pt: f64 = estimate_line_width_pt(text, Some(family), size_pt);
+
+        assert_eq!(
+            estimated_width_pt, expected_width_pt,
+            "{family} must use its own per-glyph Excel advances"
+        );
+        return;
+    }
+
+    panic!("at least one embedded test face must resolve for width estimation");
+}
+
+#[test]
+fn issue_1717_unwrapped_text_crossing_its_column_gets_a_clip_box() {
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/xlsx/issue_1717_ascii_width_boundary.xlsx");
+    let (doc, _warnings) = XlsxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let target_text: &str = "Customer Quality Executive";
+    let target_cell: &TableCell = doc
+        .pages
+        .iter()
+        .find_map(|page| match page {
+            Page::Sheet(sheet) => sheet
+                .table
+                .rows
+                .iter()
+                .flat_map(|row| &row.cells)
+                .find(|cell| cell_text(cell) == target_text),
+            _ => None,
+        })
+        .expect("the near-edge occupation cell should be present");
+
+    assert_eq!(
+        first_run_style(target_cell).font_family.as_deref(),
+        Some("맑은 고딕"),
+        "the fixture exercises Excel's locale-resolved Normal font"
+    );
+    assert!(
+        target_cell.spill_width.is_some(),
+        "the actual per-glyph width crosses the cell's available width, so the line must stay unwrapped"
     );
 }
 

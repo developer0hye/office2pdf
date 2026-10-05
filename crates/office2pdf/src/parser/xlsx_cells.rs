@@ -2154,12 +2154,23 @@ fn estimate_text_width_pt(runs: &[Run]) -> f64 {
 /// The single-run form of [`estimate_text_width_pt`], for callers that have a
 /// bare string, family and font size rather than IR runs.
 ///
-/// Printable ASCII costs its [`ASCII_ADVANCE_RATIO`] share of the family's
-/// digit advance; CJK and other non-Latin glyphs are priced full-width, and
-/// ASCII control characters draw nothing. A cell naming no family is measured
-/// on Excel's default Normal font, the same last resort [`column_unit_pt`]
-/// takes.
+/// When the face resolves, each glyph uses its own fractional advance so the
+/// clip box contains the text Typst paints. [`sheet_line_extent`] separately
+/// applies Excel's per-glyph whole-point grid when deciding whether a line
+/// continues onto another page-column. Otherwise printable ASCII costs its
+/// [`ASCII_ADVANCE_RATIO`] share of the family's digit advance; CJK and other
+/// non-Latin glyphs are priced full-width, and ASCII control characters draw
+/// nothing. A cell naming no family uses Excel's default Normal font, the same
+/// last resort [`column_unit_pt`] takes.
 pub(super) fn estimate_line_width_pt(text: &str, family: Option<&str>, font_size: f64) -> f64 {
+    let resolved_family: &str = family.unwrap_or("Calibri");
+    if let Some(advances_em) = crate::render::pdf::glyph_advances_em(resolved_family, false, text) {
+        return advances_em
+            .into_iter()
+            .map(|advance_em| advance_em * font_size)
+            .sum();
+    }
+
     // A single-line width estimate, not the cell inset: bold's effect on
     // digit advance (issue #1623) is not modelled here.
     let digit_advance_em: f64 = family.map_or(CALIBRI_DIGIT_ADVANCE_EM, |family| {
