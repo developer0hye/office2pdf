@@ -40,6 +40,9 @@ RENDER_CLUSTER_REPORT_PATH = re.compile(
 REFERENCE_DIFFERENCE_PATH = re.compile(
     r"^assets/bugfixes/issue-(?P<issue>\d+)/reference-exporter-differences\.json$"
 )
+# These bounds match diff_page's missing_text/extra_text diagnostic labels.
+LAYOUT_TEXT_SAMPLE_LIMIT = 5
+LAYOUT_TEXT_LABEL_LIMIT = 60
 # Prose living under assets/bugfixes/ carries no pixels, so it is neither evidence
 # to validate nor a rendered change to audit. Without this the file documenting the
 # evidence convention could never be edited (#539). Image suffixes stay outside the
@@ -516,6 +519,76 @@ def _reference_visibility_key(
         return None
 
 
+def _current_rasterized_text_findings(
+    report: dict[str, object], declared_pages: set[int]
+) -> set[tuple[int, str, str, int]]:
+    """Return exact labels and occurrences from compare_layout's missing/extra lists."""
+
+    pages = report.get("pages")
+    if not isinstance(pages, list) or len(pages) != len(declared_pages):
+        raise ValueError(
+            "declared Page(s) must map one-to-one to the layout report page vectors"
+        )
+    findings: set[tuple[int, str, str, int]] = set()
+    for page_number, page_report in zip(sorted(declared_pages), pages, strict=True):
+        if not isinstance(page_report, dict):
+            raise ValueError(f"page {page_number} must be an object")
+        lines = page_report.get("lines")
+        if not isinstance(lines, dict):
+            raise ValueError(f"page {page_number} lines must be an object")
+        for report_field, count_field, side in (
+            ("extra_text", "extra", "gt"),
+            ("missing_text", "missing", "out"),
+        ):
+            labels = lines.get(report_field)
+            count = lines.get(count_field)
+            if not isinstance(labels, list):
+                raise ValueError(f"page {page_number} lines.{report_field} must be a list")
+            if type(count) is not int or count < 0:
+                raise ValueError(f"page {page_number} lines.{count_field} must be non-negative")
+            sample_count = min(count, LAYOUT_TEXT_SAMPLE_LIMIT)
+            if len(labels) != sample_count:
+                raise ValueError(
+                    f"page {page_number} lines.{report_field} must list the first "
+                    f"{sample_count} of {count} findings"
+                )
+            occurrences: dict[str, int] = {}
+            for index, label in enumerate(labels, start=1):
+                if (
+                    not isinstance(label, str)
+                    or not label.strip()
+                    or len(label) > LAYOUT_TEXT_LABEL_LIMIT
+                ):
+                    raise ValueError(
+                        f"page {page_number} lines.{report_field} entry {index} "
+                        "must be a non-empty label of at most "
+                        f"{LAYOUT_TEXT_LABEL_LIMIT} characters"
+                    )
+                occurrence = occurrences.get(label, 0) + 1
+                occurrences[label] = occurrence
+                findings.add((page_number, label, side, occurrence))
+    return findings
+
+
+def _reference_rasterized_text_key(
+    difference: dict[str, object],
+) -> tuple[int, str, str, int] | None:
+    finding = difference.get("layout_finding")
+    page = difference.get("page")
+    if type(page) is not int or not isinstance(finding, dict):
+        return None
+    label = finding.get("label")
+    side = finding.get("side")
+    occurrence = finding.get("occurrence")
+    if (
+        not isinstance(label, str)
+        or not isinstance(side, str)
+        or type(occurrence) is not int
+    ):
+        return None
+    return page, label, side, occurrence
+
+
 def _shift_label_occurrence(label: str) -> tuple[str, int]:
     """Split compare_layout's repeated-label suffix into text and occurrence."""
 
@@ -738,10 +811,11 @@ def validate_reference_exporter_differences(
             "![Native](https://...)."
         )
 
-    expected_evidence = {
-        "reference_export": f"assets/bugfixes/issue-{issue_number}/gt.jpg",
-        "native_export": expected_native_path,
-    }
+    native_ground_truth = document.get("reference_export") is None
+    expected_evidence = {"native_export": expected_native_path}
+    ground_truth_path = f"assets/bugfixes/issue-{issue_number}/gt.jpg"
+    if not native_ground_truth:
+        expected_evidence["reference_export"] = ground_truth_path
     verified_evidence: dict[str, Path] = {}
     for export_name, evidence_path in expected_evidence.items():
         export = document[export_name]
@@ -764,7 +838,30 @@ def validate_reference_exporter_differences(
                 f"{evidence_path}."
             )
 
-    if set(verified_evidence) == set(expected_evidence):
+    if native_ground_truth:
+        absolute_ground_truth_path = root / ground_truth_path
+        if not absolute_ground_truth_path.is_file():
+            errors.append(f"{ground_truth_path}: native ground-truth evidence is missing.")
+        else:
+            ground_truth_errors = validate_jpeg(absolute_ground_truth_path)
+            errors.extend(ground_truth_errors)
+            if not ground_truth_errors:
+                verified_evidence["ground_truth"] = absolute_ground_truth_path
+
+    if native_ground_truth and {"ground_truth", "native_export"} <= set(verified_evidence):
+        try:
+            evidence_delta = decoded_pixel_delta(
+                verified_evidence["ground_truth"],
+                verified_evidence["native_export"],
+            )
+        except RuntimeError as exc:
+            errors.append(f"GT/native evidence comparison failed: {exc}.")
+        else:
+            if evidence_delta != 0:
+                errors.append(
+                    "GT/native evidence must be pixel-identical when reference_export is null."
+                )
+    elif not native_ground_truth and set(verified_evidence) == set(expected_evidence):
         try:
             evidence_delta = decoded_pixel_delta(
                 verified_evidence["reference_export"],
@@ -874,6 +971,7 @@ def validate_layout_audit(
     errors.extend(f"Reference exporter differences: {error}." for error in reference_errors)
     declared_pages = compared_pages(field(audit, "Page(s)"))
     current_visibility: set[tuple[int, str, str, str, int]] | None = None
+    current_rasterized_text: set[tuple[int, str, str, int]] | None = None
     current_shifts: dict[str, set[tuple[int, str, int, float, float]]] = {}
     fields = {
         "page count": "Layout audit page count",
@@ -903,12 +1001,12 @@ def validate_layout_audit(
                 )
             if not disposition_references:
                 continue
-            reference_kind = {
-                "text flow": "painted-text-visibility",
-                "large shifts": "text-shift",
-                "fine shifts": "text-shift",
+            reference_kinds = {
+                "text flow": {"painted-text-visibility", "rasterized-text"},
+                "large shifts": {"text-shift"},
+                "fine shifts": {"text-shift"},
             }.get(category)
-            if reference_kind is None:
+            if reference_kinds is None:
                 errors.append(
                     f"Visual audit > {field_name} does not support reference exporter "
                     "differences; use an open issue."
@@ -930,7 +1028,15 @@ def validate_layout_audit(
                     except ValueError as exc:
                         errors.append(f"{expected_path}: {exc}.")
                         current_visibility = set()
-                current_findings = set(current_visibility)
+                if current_rasterized_text is None:
+                    try:
+                        current_rasterized_text = _current_rasterized_text_findings(
+                            report, declared_pages
+                        )
+                    except ValueError as exc:
+                        errors.append(f"{expected_path}: {exc}.")
+                        current_rasterized_text = set()
+                current_findings = set(current_visibility) | set(current_rasterized_text)
             else:
                 if category not in current_shifts:
                     try:
@@ -942,6 +1048,7 @@ def validate_layout_audit(
                         current_shifts[category] = set()
                 current_findings = set(current_shifts[category])
             referenced_keys: set[tuple[object, ...]] = set()
+            referenced_rasterized_text: set[tuple[int, str, str, int]] = set()
             for difference_id in sorted(disposition_references):
                 difference = reference_registry.get(difference_id)
                 if difference is None:
@@ -950,33 +1057,69 @@ def validate_layout_audit(
                         "a validated reference exporter difference."
                     )
                     continue
-                if difference.get("kind") != reference_kind:
+                if difference.get("kind") not in reference_kinds:
+                    expected_kind = (
+                        next(iter(reference_kinds))
+                        if len(reference_kinds) == 1
+                        else None
+                    )
                     errors.append(
                         f"Visual audit > {field_name} ref:{difference_id} is not a "
-                        f"{reference_kind} difference."
+                        + (
+                            f"{expected_kind} difference."
+                            if expected_kind is not None
+                            else f"supported {category} difference."
+                        )
                     )
                     continue
                 if category == "text flow":
-                    reference_key = _reference_visibility_key(difference)
+                    if difference.get("kind") == "painted-text-visibility":
+                        reference_key = _reference_visibility_key(difference)
+                    else:
+                        reference_key = _reference_rasterized_text_key(difference)
                 else:
                     reference_key = _reference_shift_key(difference)
                 if reference_key is None or reference_key not in current_findings:
-                    finding_name = "visibility" if category == "text flow" else "shift"
+                    finding_name = (
+                        "rasterized-text"
+                        if difference.get("kind") == "rasterized-text"
+                        else "visibility" if category == "text flow" else "shift"
+                    )
                     errors.append(
                         f"Visual audit > {field_name} ref:{difference_id} does not match "
                         f"an exact current {finding_name} finding."
                     )
                     continue
                 referenced_keys.add(reference_key)
+                if difference.get("kind") == "rasterized-text":
+                    referenced_rasterized_text.add(reference_key)
 
             if not disposition_issues:
                 if category == "text flow":
                     other_text_flow_count = 0
-                    for page in report["pages"]:
+                    referenced_by_page_and_side: dict[tuple[int, str], int] = {}
+                    for page_number, _, side, _ in referenced_rasterized_text:
+                        count_name = "extra" if side == "gt" else "missing"
+                        selector = (page_number, count_name)
+                        referenced_by_page_and_side[selector] = (
+                            referenced_by_page_and_side.get(selector, 0) + 1
+                        )
+                    for page_number, page in zip(
+                        sorted(declared_pages), report["pages"], strict=True
+                    ):
+                        lines = page["lines"]
+                        other_text_flow_count += max(
+                            0,
+                            lines["missing"]
+                            - referenced_by_page_and_side.get((page_number, "missing"), 0),
+                        )
+                        other_text_flow_count += max(
+                            0,
+                            lines["extra"]
+                            - referenced_by_page_and_side.get((page_number, "extra"), 0),
+                        )
                         other_text_flow_count += (
-                            page["lines"]["missing"]
-                            + page["lines"]["extra"]
-                            + page["wraps"]["count"]
+                            page["wraps"]["count"]
                             + page["reflow"]["gt_lines"]
                             + page["reflow"]["out_lines"]
                         )

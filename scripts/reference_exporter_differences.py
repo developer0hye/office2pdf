@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate evidence-backed differences introduced by a non-native GT exporter."""
+"""Validate evidence-backed differences for a supplied ground-truth export."""
 
 from __future__ import annotations
 
@@ -117,12 +117,13 @@ def validate_reference_difference_document(
             errors.append("source.url must be an HTTPS URL")
         _validate_sha(source.get("sha256"), "source.sha256", errors)
 
-    _validate_export(
-        document.get("reference_export"),
-        "reference_export",
-        native=False,
-        errors=errors,
-    )
+    if document.get("reference_export") is not None:
+        _validate_export(
+            document["reference_export"],
+            "reference_export",
+            native=False,
+            errors=errors,
+        )
     _validate_export(
         document.get("native_export"),
         "native_export",
@@ -172,6 +173,8 @@ def validate_reference_difference_document(
 
     registry: dict[str, dict[str, object]] = {}
     shift_selectors: set[tuple[int, str, int]] = set()
+    rasterized_text_selectors: set[tuple[int, str, str, int]] = set()
+    native_ground_truth = document.get("reference_export") is None
     for index, difference in enumerate(raw_differences, start=1):
         prefix = f"difference {index}"
         if not isinstance(difference, dict):
@@ -192,6 +195,10 @@ def validate_reference_difference_document(
             errors.append(f"{prefix} page must be a positive integer")
 
         kind = difference.get("kind")
+        if native_ground_truth and kind != "rasterized-text":
+            errors.append(
+                f"{prefix} kind must be rasterized-text when reference_export is null"
+            )
         if kind == "painted-text-visibility":
             allowed = {"id", "page", "kind", "layout_finding"}
             extra_difference = _unexpected_fields(difference, allowed)
@@ -293,10 +300,56 @@ def validate_reference_difference_document(
                         errors.append(
                             f"{prefix} layout_finding.{coordinate} must be finite"
                         )
+        elif kind == "rasterized-text":
+            allowed = {"id", "page", "kind", "layout_finding"}
+            extra_difference = _unexpected_fields(difference, allowed)
+            if extra_difference:
+                errors.append(
+                    f"{prefix} has unsupported fields for {kind}: "
+                    + ", ".join(extra_difference)
+                )
+            finding = difference.get("layout_finding")
+            if not isinstance(finding, dict):
+                errors.append(f"{prefix} layout_finding must be an object")
+            else:
+                expected_fields = {"label", "side", "occurrence"}
+                if set(finding) != expected_fields:
+                    errors.append(
+                        f"{prefix} layout_finding must contain exactly label, side, "
+                        "and occurrence"
+                    )
+                label = finding.get("label")
+                side = finding.get("side")
+                occurrence = finding.get("occurrence")
+                _validate_nonempty(label, f"{prefix} layout_finding.label", errors)
+                if not isinstance(side, str) or side not in {"gt", "out"}:
+                    errors.append(
+                        f"{prefix} layout_finding.side must be gt or out"
+                    )
+                if type(occurrence) is not int or occurrence <= 0:
+                    errors.append(
+                        f"{prefix} layout_finding.occurrence must be positive"
+                    )
+                if (
+                    type(page) is int
+                    and page > 0
+                    and isinstance(label, str)
+                    and label.strip()
+                    and isinstance(side, str)
+                    and side in {"gt", "out"}
+                    and type(occurrence) is int
+                    and occurrence > 0
+                ):
+                    selector = (page, label, side, occurrence)
+                    if selector in rasterized_text_selectors:
+                        errors.append(
+                            f"{prefix} rasterized-text selector appears more than once"
+                        )
+                    rasterized_text_selectors.add(selector)
         else:
             errors.append(
                 f"{prefix} kind must be painted-text-visibility, render-clusters, "
-                "or text-shift"
+                "text-shift, or rasterized-text"
             )
 
         registry[difference_id] = difference
