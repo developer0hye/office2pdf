@@ -1,0 +1,1835 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 1076.1408,
+      "bbox_pt": {
+        "height": 28.56,
+        "width": 37.68,
+        "x": 465.6,
+        "y": 34.32
+      },
+      "disposition": {
+        "issue": "#1994",
+        "kind": "issue"
+      },
+      "id": "p1-19db2fa9db67",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 1067.0976,
+      "bbox_pt": {
+        "height": 28.32,
+        "width": 37.68,
+        "x": 465.6,
+        "y": 2.4
+      },
+      "disposition": {
+        "issue": "#1994",
+        "kind": "issue"
+      },
+      "id": "p1-5d59a69392a6",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 103.968,
+      "bbox_pt": {
+        "height": 19.68,
+        "width": 17.28,
+        "x": 76.08,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-104021f3908c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 85.8816,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 21.36,
+        "x": 556.08,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-fbd1113dfc15",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 82.1376,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 21.36,
+        "x": 480.48,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-9b2068e56198",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 79.8912,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 22.32,
+        "x": 305.28,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-ee203e23c43e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 77.7024,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 19.92,
+        "x": 371.76,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-fc4143af4b5e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 74.4192,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 19.2,
+        "x": 444.96,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-9984413dca16",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 64.0512,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 17.28,
+        "x": 331.44,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-3f77dc620c2d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 63.9936,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 22.32,
+        "x": 472.08,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-ca338864d4b2",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 63.2448,
+      "bbox_pt": {
+        "height": 11.76,
+        "width": 13.2,
+        "x": 75.84,
+        "y": 50.16
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-0259bd3c1289",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 62.8992,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 15.6,
+        "x": 394.08,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-f6d090fde326",
+      "region": "top"
+    },
+    {
+      "area_pt2": 62.8992,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 16.32,
+        "x": 414.24,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-53d8eacb3a41",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 62.6688,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 13.2,
+        "x": 22.08,
+        "y": 49.92
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-1529fce24509",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 60.1344,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 15.6,
+        "x": 452.16,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-ddb55e4efb14",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 58.4064,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 15.12,
+        "x": 515.52,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-bd8ef2b97605",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 58.3488,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 12.24,
+        "x": 258.72,
+        "y": 171.36
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-52dcc3fdc45f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 58.2336,
+      "bbox_pt": {
+        "height": 14.16,
+        "width": 12.72,
+        "x": 22.08,
+        "y": 14.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-697596e51b5f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 57.5424,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 12.96,
+        "x": 287.04,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-d8dacbeeba3d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 57.312,
+      "bbox_pt": {
+        "height": 14.64,
+        "width": 13.2,
+        "x": 122.16,
+        "y": 27.6
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-2479f6e93fdf",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 57.024,
+      "bbox_pt": {
+        "height": 13.68,
+        "width": 12.72,
+        "x": 122.4,
+        "y": 14.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-9f1bc691b910",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 56.736,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 15.12,
+        "x": 438.24,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-d0ea0abb8d3d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 55.584,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 19.44,
+        "x": 295.92,
+        "y": 191.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-79c5f253ccfb",
+      "region": "top"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 182.16,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-6ebdedb2bd26",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 170.64,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-f184d6053f00",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 105.36,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-8d769a214993",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 135.84,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-315e0b5f1ec5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 147.36,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-ba97f93ed7fd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 159.12,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-6ed26c6f4627",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 170.64,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-a51f968ce0c5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 47.28,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-fde89cd6a8dc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 193.92,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-0e45a1b18087",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 205.44,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-b39e3c0bb519",
+      "region": "top"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 159.12,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-aa8ec68d519a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 147.36,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-f376146b065f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 135.84,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-75246771a5d9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 35.76,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-55ec0424bdcb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 93.6,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-6fee84b5e281",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 82.08,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-272a6d7c2f35",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 70.56,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-8a7a661919af",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 105.36,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-6e8ac1fae669",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 182.16,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-e0921317b925",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 205.44,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-53a6602cea3a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 93.6,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-4112a38c8fe5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 193.92,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-c0526a36f390",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 35.76,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-1564b22da7a0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 47.28,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-bad970dad2e9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 58.8,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-a7bc9b0e8677",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.568,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.28,
+        "x": 58.8,
+        "y": 19.44
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-c2b203e32508",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.2224,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 12.0,
+        "x": 232.56,
+        "y": 116.16
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-861b2bacb142",
+      "region": "top"
+    },
+    {
+      "area_pt2": 52.1856,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 15.84,
+        "x": 327.36,
+        "y": 172.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-cd92ecab5117",
+      "region": "top"
+    },
+    {
+      "area_pt2": 51.552,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 12.72,
+        "x": 22.32,
+        "y": 41.52
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-9de05c55ed47",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 50.1696,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 13.68,
+        "x": 568.08,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-1b55cfd11d05",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 48.7872,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 11.28,
+        "x": 339.12,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-59a9bb21127b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 48.0384,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 12.24,
+        "x": 396.0,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-28cbc95a606b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.9808,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 12.96,
+        "x": 244.32,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-6401913ceef7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.2896,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 11.28,
+        "x": 368.4,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-ccd75fe218f5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 45.7344,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 11.04,
+        "x": 70.56,
+        "y": 30.96
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-c6cb1bf6ae77",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 44.7552,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 13.68,
+        "x": 399.6,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-32b850d3e55b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 43.9488,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 13.2,
+        "x": 296.4,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-2b93192c8fe2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 43.0848,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 12.72,
+        "x": 348.48,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-48885b33ee86",
+      "region": "top"
+    },
+    {
+      "area_pt2": 42.2784,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 12.72,
+        "x": 468.0,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-57654390ceef",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 42.1056,
+      "bbox_pt": {
+        "height": 14.16,
+        "width": 8.16,
+        "x": 24.72,
+        "y": 27.36
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-3790834fb74f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 40.608,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 13.68,
+        "x": 485.04,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-65347355c91a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 11.28,
+        "x": 47.28,
+        "y": 52.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-c5568fcefe7a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 11.28,
+        "x": 58.8,
+        "y": 52.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-fadf1a3a5208",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 11.28,
+        "x": 89.52,
+        "y": 52.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-acbfa1f18a1e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 11.28,
+        "x": 101.04,
+        "y": 52.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-5e5758d91d2d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 11.28,
+        "x": 112.56,
+        "y": 52.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-614e48e4e540",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 11.28,
+        "x": 124.32,
+        "y": 52.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-c812b28af8ac",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 11.28,
+        "x": 35.76,
+        "y": 52.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-7810b4769de6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.9376,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 13.44,
+        "x": 456.48,
+        "y": 207.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-7411dec3bd8a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.9376,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 477.12,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-15c69ef30798",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 36.7488,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 234.0,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-9e7c7810b541",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.848,
+      "bbox_pt": {
+        "height": 8.88,
+        "width": 9.84,
+        "x": 285.12,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-13bb6b97bc21",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.4448,
+      "bbox_pt": {
+        "height": 4.08,
+        "width": 12.72,
+        "x": 502.08,
+        "y": 209.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-e5a2acebaa1f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 34.4448,
+      "bbox_pt": {
+        "height": 4.08,
+        "width": 12.72,
+        "x": 279.84,
+        "y": 209.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-b0f1dbb42a20",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.2144,
+      "bbox_pt": {
+        "height": 8.88,
+        "width": 9.6,
+        "x": 357.84,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-7083b01278d6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.8,
+        "x": 59.04,
+        "y": 43.92
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-f908d4ca6194",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.8,
+        "x": 36.0,
+        "y": 43.92
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-b8ba1d358917",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.8,
+        "x": 101.28,
+        "y": 43.92
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-5a33153a4c0c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.8,
+        "x": 47.52,
+        "y": 43.92
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-b008c3aaf8df",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.8,
+        "x": 89.76,
+        "y": 43.92
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-8f00ea81032b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.8,
+        "x": 124.56,
+        "y": 43.92
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-fc788bf97c17",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.8,
+        "x": 112.8,
+        "y": 43.92
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p1-8fa7a4fcb463",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 9.36,
+        "x": 378.0,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-8499fbdb0ab9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.36,
+        "x": 498.96,
+        "y": 191.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-3263b2d036cd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 547.44,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-b378366b1cc3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 32.1984,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.6,
+        "x": 308.16,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-1f8bbfb81925",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.4496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 8.64,
+        "x": 270.48,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-06d776e389d8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.0464,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 9.36,
+        "x": 539.76,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-fe6893c0753c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.9888,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 8.4,
+        "x": 288.24,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-62447c14b294",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.3552,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 10.32,
+        "x": 391.92,
+        "y": 207.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-50ef6a78f7cf",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.3552,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 259.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-0d98886fed05",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.3552,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 391.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-f79955b1b9c2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.0096,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 412.08,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-ee913afb7aa2",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.0096,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 280.08,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-f9fdd982884d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.0096,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 360.0,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-b9a3ce2638ad",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 10.32,
+        "x": 301.2,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-bdbf2dc20a1a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 10.32,
+        "x": 410.88,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-6be41d5a4cf5",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6848,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 7.68,
+        "x": 388.32,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-843d2433f58f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 7.92,
+        "x": 540.0,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-25c169e0dfa5",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.2816,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 7.68,
+        "x": 409.68,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-8127d75b7722",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.784,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 8.16,
+        "x": 248.64,
+        "y": 207.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue"
+      },
+      "id": "p1-5693b7f2e6d6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.784,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 9.6,
+        "x": 279.12,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-da00b0a424c5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.784,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 9.6,
+        "x": 339.6,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-a505b91421f0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.5536,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 7.68,
+        "x": 443.28,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-0cabb6f4aa59",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.1504,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 4.8,
+        "x": 228.0,
+        "y": 116.16
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-ee1f18804440",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.4016,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 402.48,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-93e54264f26b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.4016,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 350.4,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-1ce2193248a9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 7.92,
+        "x": 370.08,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-089e5e566527",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 7.2,
+        "x": 531.12,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-1fd3867d6f53",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.6368,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 7.2,
+        "x": 409.92,
+        "y": 138.96
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-aa61a7e2c635",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.2912,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.04,
+        "x": 436.56,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-eab1118e02ba",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.44,
+        "x": 498.24,
+        "y": 174.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-cb235bd4375f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.0608,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 7.2,
+        "x": 465.12,
+        "y": 190.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-730e90b88345",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.0,
+        "x": 408.24,
+        "y": 173.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected the full page, 5% diff, and matched quote crop: the Calibri passage is in place; residual marks follow glyph outlines only."
+      },
+      "id": "p1-b48338f7ddbd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.5424,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.0,
+        "x": 503.76,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-9fae4a685cff",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.5424,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.0,
+        "x": 319.68,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1984",
+        "kind": "issue"
+      },
+      "id": "p1-2ec6f162ff72",
+      "region": "top"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 119,
+    "duplicate": 0,
+    "total": 119,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

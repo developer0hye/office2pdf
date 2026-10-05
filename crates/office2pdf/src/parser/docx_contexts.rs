@@ -60,11 +60,14 @@ pub(super) use vml::{VmlTextBoxContext, VmlTextBoxInfo};
 pub(super) use word_wrap::{WordWrapContext, scan_style_word_wrap};
 pub(super) use wrap::{WrapContext, build_wrap_context_from_xml};
 
+use super::text::ThemeFonts;
+
 /// Bundled conversion contexts threaded through the recursive DOCX call tree.
 ///
 /// Groups the context types that were previously passed as individual
 /// parameters, eliminating `#[allow(clippy::too_many_arguments)]` annotations.
 pub(super) struct DocxConversionContext {
+    pub(super) theme_fonts: ThemeFonts,
     pub(super) notes: NoteContext,
     pub(super) wraps: WrapContext,
     pub(super) drawing_text_boxes: DrawingTextBoxContext,
@@ -101,9 +104,11 @@ impl DocxConversionContext {
         styles_xml: Option<&str>,
         default_paragraph_style_is_defined: bool,
         paragraph_property_defaults_are_declared: bool,
+        theme_fonts: ThemeFonts,
     ) -> Self {
         let story_xml: Option<&str> = Some(story_xml);
         Self {
+            theme_fonts,
             notes: NoteContext::empty(),
             wraps: build_wrap_context_from_xml(story_xml),
             drawing_text_boxes: DrawingTextBoxContext::from_xml(story_xml),

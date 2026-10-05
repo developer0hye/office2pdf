@@ -1415,6 +1415,31 @@ docx_fixture_tests!(tdf111550, "libreoffice/tdf111550.docx");
 docx_fixture_tests!(tdf111964, "libreoffice/tdf111964.docx");
 docx_fixture_tests!(tdf124670, "libreoffice/tdf124670.docx");
 docx_fixture_tests!(tdf129659, "libreoffice/tdf129659.docx");
+
+#[test]
+fn direct_run_theme_font_overrides_paragraph_style_font() {
+    let pages = flow_pages("libreoffice/tdf105688.docx");
+    let blocks = all_blocks(&pages);
+    let runs: Vec<&Run> = all_runs(&blocks);
+    let quote_start: usize = runs
+        .windows(2)
+        .position(|pair| pair[0].text == "“" && pair[1].text == "Xxxx")
+        .expect("the fixture's pull quote begins with its opening quote and first word");
+    let quote_end: usize = quote_start
+        + runs[quote_start..]
+            .iter()
+            .position(|run| run.text == ".”")
+            .expect("the pull quote has a closing quote");
+
+    for run in &runs[quote_start..=quote_end] {
+        assert_eq!(
+            run.style.font_family.as_deref(),
+            Some("Calibri"),
+            "a direct minorHAnsi theme slot must override the paragraph style font"
+        );
+    }
+}
+
 docx_fixture_tests!(
     tdf159207_footer_frame_border,
     "libreoffice/tdf159207_footerFramePrBorder.docx"

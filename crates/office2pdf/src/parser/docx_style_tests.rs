@@ -705,6 +705,40 @@ fn test_doc_default_theme_font_resolves_via_theme() {
 }
 
 #[test]
+fn direct_run_latin_theme_font_resolves_without_using_east_asian_slot() {
+    let theme_xml = r#"<?xml version="1.0"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <a:themeElements><a:fontScheme name="Office">
+    <a:majorFont><a:latin typeface="Cambria"/></a:majorFont>
+    <a:minorFont><a:latin typeface="Calibri"/></a:minorFont>
+  </a:fontScheme></a:themeElements>
+</a:theme>"#;
+    let theme = parse_theme_fonts(theme_xml);
+
+    for slot in ["asciiTheme", "hiAnsiTheme", "hAnsiTheme"] {
+        let fonts = serde_json::Map::from_iter([(
+            slot.to_string(),
+            serde_json::Value::String("minorHAnsi".to_string()),
+        )]);
+        let run_property = serde_json::json!({ "fonts": fonts });
+        assert_eq!(
+            resolve_latin_theme_font_family(&run_property, &theme).as_deref(),
+            Some("Calibri"),
+            "{slot} selects the Latin minor theme face"
+        );
+    }
+
+    let east_asia_property = serde_json::json!({
+        "fonts": { "eastAsiaTheme": "minorEastAsia" }
+    });
+    assert_eq!(
+        resolve_latin_theme_font_family(&east_asia_property, &theme),
+        None,
+        "an East Asian slot must not replace the inherited Latin face"
+    );
+}
+
+#[test]
 fn test_doc_default_falls_back_to_words_face_only_when_none_resolves() {
     // Triangulation for issue #1196 on a package of a different shape from the
     // fixture that measured it: raw `word/styles.xml`, no header, no footer,

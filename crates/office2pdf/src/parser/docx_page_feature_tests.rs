@@ -1820,8 +1820,10 @@ fn a_first_header_without_title_pg_is_not_used() {
     };
     let assets = super::sections::HeaderFooterAssets::default();
     let style_map = super::StyleMap::new();
+    let theme_fonts = super::ThemeFonts::default();
     let styles = super::sections::HeaderFooterStyleContext {
         style_map: &style_map,
+        theme_fonts: &theme_fonts,
         paragraph_property_defaults_are_declared: false,
     };
 

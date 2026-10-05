@@ -14,6 +14,7 @@ use crate::ir::{
 use super::contexts::{DocxConversionContext, WrapContext};
 use super::media::extract_drawing_image;
 use super::tables::convert_table;
+use super::text::ThemeFonts;
 use super::{
     DOC_DEFAULT_STYLE_ID, ImageMap, NumberingMap, ParagraphItem, ResolvedStyle, StyleMap,
     TaggedElement, extract_column_layout_from_section_property, extract_paragraph_style,
@@ -45,6 +46,7 @@ pub(super) struct SectionHeaderFooterInputs<'a> {
 #[derive(Clone, Copy)]
 pub(super) struct HeaderFooterStyleContext<'a> {
     pub(super) style_map: &'a StyleMap,
+    pub(super) theme_fonts: &'a ThemeFonts,
     /// Whether `word/styles.xml` declares `w:docDefaults/w:pPrDefault`, which
     /// decides the `w:spacing w:after` an unstated gap falls back to
     /// (issue #1085).
@@ -124,6 +126,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             styles_xml.as_deref(),
             styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
             styles.paragraph_property_defaults_are_declared,
+            styles.theme_fonts.clone(),
         );
         let hyperlinks: HashMap<String, String> = HashMap::new();
         if let Some(converted) = convert_docx_header_with_context(
@@ -155,6 +158,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             styles_xml.as_deref(),
             styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
             styles.paragraph_property_defaults_are_declared,
+            styles.theme_fonts.clone(),
         );
         let hyperlinks: HashMap<String, String> = HashMap::new();
         if let Some(converted) = convert_docx_footer_with_context(
@@ -622,6 +626,7 @@ fn convert_docx_header(
         None,
         styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
         styles.paragraph_property_defaults_are_declared,
+        styles.theme_fonts.clone(),
     );
     let hyperlinks: HashMap<String, String> = HashMap::new();
     convert_docx_header_with_context(
@@ -714,6 +719,7 @@ fn convert_docx_footer(
         None,
         styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
         styles.paragraph_property_defaults_are_declared,
+        styles.theme_fonts.clone(),
     );
     let hyperlinks: HashMap<String, String> = HashMap::new();
     convert_docx_footer_with_context(
@@ -1274,8 +1280,13 @@ fn convert_hf_paragraph(
                     cached_runs_to_skip -= 1;
                     continue;
                 }
-                let run_style =
-                    resolve_run_style(&run.run_property, false, resolved_style, styles.style_map);
+                let run_style = resolve_run_style(
+                    &run.run_property,
+                    false,
+                    resolved_style,
+                    styles.style_map,
+                    styles.theme_fonts,
+                );
                 extract_hf_run_elements(&run.children, &run_style, &mut elements, &mut field_state);
                 for run_child in &run.children {
                     if let docx_rs::RunChild::Drawing(drawing) = run_child
@@ -2518,8 +2529,10 @@ mod structured_tag_tests {
         );
         let paragraph = docx_rs::Paragraph::new().add_run(run);
         let style_map = StyleMap::new();
+        let theme_fonts = ThemeFonts::default();
         let styles = HeaderFooterStyleContext {
             style_map: &style_map,
+            theme_fonts: &theme_fonts,
             paragraph_property_defaults_are_declared: false,
         };
 
@@ -2544,8 +2557,10 @@ mod structured_tag_tests {
             ))],
         };
         let style_map = StyleMap::new();
+        let theme_fonts = ThemeFonts::default();
         let styles = HeaderFooterStyleContext {
             style_map: &style_map,
+            theme_fonts: &theme_fonts,
             paragraph_property_defaults_are_declared: false,
         };
 
@@ -2564,8 +2579,10 @@ mod structured_tag_tests {
             ))],
         };
         let style_map = StyleMap::new();
+        let theme_fonts = ThemeFonts::default();
         let styles = HeaderFooterStyleContext {
             style_map: &style_map,
+            theme_fonts: &theme_fonts,
             paragraph_property_defaults_are_declared: false,
         };
 

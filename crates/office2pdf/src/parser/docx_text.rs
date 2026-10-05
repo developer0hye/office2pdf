@@ -533,6 +533,28 @@ pub(super) fn resolve_theme_font_family(
     }
 }
 
+/// Resolve only the Latin theme slots a run uses for ASCII and high-ANSI
+/// text. East Asian and complex-script slots need their own families; using
+/// the theme's Latin face for either one can replace an inherited Latin font.
+pub(super) fn resolve_latin_theme_font_family(
+    run_property_json: &serde_json::Value,
+    theme_fonts: &ThemeFonts,
+) -> Option<String> {
+    let fonts = run_property_json.get("fonts")?;
+    let slot: &str = fonts
+        .get("asciiTheme")
+        .or_else(|| fonts.get("hiAnsiTheme"))
+        .or_else(|| fonts.get("hAnsiTheme"))
+        .and_then(serde_json::Value::as_str)?;
+    if slot.starts_with("minor") {
+        theme_fonts.minor_latin.clone()
+    } else if slot.starts_with("major") {
+        theme_fonts.major_latin.clone()
+    } else {
+        None
+    }
+}
+
 pub(super) fn resolve_highlight_color(name: &str) -> Option<Color> {
     match name {
         "yellow" => Some(Color::new(255, 255, 0)),

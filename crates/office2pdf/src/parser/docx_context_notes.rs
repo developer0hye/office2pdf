@@ -4,6 +4,9 @@ use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek};
 
 use super::super::extract_run_text;
+use super::super::text::{ThemeFonts, resolve_latin_theme_font_family};
+#[cfg(test)]
+use super::super::text::parse_theme_fonts;
 use crate::ir::TextStyle;
 use crate::parser::units::half_points_to_pt;
 use crate::parser::xml_util::parse_hex_color;
@@ -88,14 +91,15 @@ impl NoteContext {
 pub(in super::super) fn build_note_context_from_xml(
     doc_xml: Option<&str>,
     archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
+    theme_fonts: &ThemeFonts,
 ) -> NoteContext {
     let mut note_context = NoteContext::empty();
 
     if let Some(xml) = read_zip_text(archive, "word/footnotes.xml") {
-        note_context.footnote_content = parse_notes_xml(&xml);
+        note_context.footnote_content = parse_notes_xml(&xml, theme_fonts);
     }
     if let Some(xml) = read_zip_text(archive, "word/endnotes.xml") {
-        note_context.endnote_content = parse_notes_xml(&xml);
+        note_context.endnote_content = parse_notes_xml(&xml, theme_fonts);
     }
     note_context.note_refs = doc_xml.map(scan_note_refs).unwrap_or_default();
 
@@ -122,7 +126,7 @@ pub(in super::super) fn read_zip_text(
 /// docx-rs does not read these parts, so this stays a scan; it reads the run
 /// properties the cascade needs — weight, slant, size, colour, and family —
 /// and leaves the rest to the style the note names.
-fn parse_notes_xml(xml: &str) -> HashMap<usize, NoteContent> {
+fn parse_notes_xml(xml: &str, theme_fonts: &ThemeFonts) -> HashMap<usize, NoteContent> {
     let mut map: HashMap<usize, NoteContent> = HashMap::new();
     let mut reader = quick_xml::Reader::from_str(xml);
     let mut current_id: Option<usize> = None;
@@ -188,6 +192,16 @@ fn parse_notes_xml(xml: &str) -> HashMap<usize, NoteContent> {
                         run.explicit.font_family = attribute_value(element, b"ascii")
                             .or_else(|| attribute_value(element, b"hAnsi"))
                             .or_else(|| attribute_value(element, b"eastAsia"));
+                        if run.explicit.font_family.is_none() {
+                            let run_property = serde_json::json!({
+                                "fonts": {
+                                    "asciiTheme": attribute_value(element, b"asciiTheme"),
+                                    "hiAnsiTheme": attribute_value(element, b"hAnsiTheme"),
+                                }
+                            });
+                            run.explicit.font_family =
+                                resolve_latin_theme_font_family(&run_property, theme_fonts);
+                        }
                     }
                     b"t" => in_text = true,
                     _ => {}
@@ -283,4 +297,25 @@ pub(in super::super) fn is_note_reference_run(run: &docx_rs::Run, notes: &NoteCo
         return extract_run_text(run).is_empty();
     }
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn note_run_latin_theme_font_resolves_from_document_theme() {
+        let theme_fonts: ThemeFonts = parse_theme_fonts(
+            r#"<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:themeElements><a:fontScheme name="Office"><a:minorFont><a:latin typeface="Calibri"/></a:minorFont></a:fontScheme></a:themeElements></a:theme>"#,
+        );
+        let notes = parse_notes_xml(
+            r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:id="2"><w:p><w:r><w:rPr><w:rFonts w:asciiTheme="minorHAnsi"/></w:rPr><w:t>note text</w:t></w:r></w:p></w:footnote></w:footnotes>"#,
+            &theme_fonts,
+        );
+
+        assert_eq!(
+            notes[&2].runs[0].explicit.font_family.as_deref(),
+            Some("Calibri")
+        );
+    }
 }
