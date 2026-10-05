@@ -48,6 +48,7 @@ fn test_table_cell_with_multiple_paragraphs() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn word_table_cell_line_spacing_advances_between_paragraphs() {
     let Some((_, _, natural_pitch_em)) = crate::render::pdf::font_line_metrics_em("Cambria") else {
