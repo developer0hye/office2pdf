@@ -18,6 +18,8 @@ pub(in super::super) struct DrawingTextBoxInfo {
     pub(in super::super) padding: Insets,
     pub(in super::super) horizontal_anchor: FrameAnchor,
     pub(in super::super) horizontal_align: Option<FrameAlign>,
+    pub(in super::super) vertical_anchor: FrameAnchor,
+    pub(in super::super) vertical_position_align: Option<FrameAlign>,
 }
 
 pub(in super::super) struct DrawingTextBoxContext {
@@ -41,10 +43,11 @@ impl DrawingTextBoxContext {
 }
 
 /// Scan `word/document.xml` for every `wps:wsp` text box drawing, in document
-/// order, retaining its extent, frame styles, and horizontal position metadata.
+/// order, retaining its extent, frame styles, and horizontal/vertical position metadata.
 ///
 /// The shared [`ShapeScanState`] reads `wp:extent`, `a:ln`, `a:solidFill` and
-/// `wps:bodyPr`; this scan also preserves `wp:positionH` alignment/reference.
+/// `wps:bodyPr`; this scan also preserves `wp:positionH` and `wp:positionV`
+/// alignment/reference metadata.
 fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
     let mut reader = quick_xml::Reader::from_str(xml);
     let mut buffer: Vec<u8> = Vec::new();
@@ -53,8 +56,12 @@ fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
     let mut drawing_depth: usize = 0;
     let mut horizontal_anchor: FrameAnchor = FrameAnchor::Text;
     let mut horizontal_align: Option<FrameAlign> = None;
+    let mut vertical_anchor: FrameAnchor = FrameAnchor::Text;
+    let mut vertical_position_align: Option<FrameAlign> = None;
     let mut in_position_h: bool = false;
     let mut in_horizontal_align: bool = false;
+    let mut in_position_v: bool = false;
+    let mut in_vertical_align: bool = false;
     let mut state: ShapeScanState = ShapeScanState::default();
     let mut builder: Option<ShapeBuilder> = None;
 
@@ -71,18 +78,30 @@ fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
                             state.reset();
                             horizontal_anchor = FrameAnchor::Text;
                             horizontal_align = None;
+                            vertical_anchor = FrameAnchor::Text;
+                            vertical_position_align = None;
                             in_position_h = false;
                             in_horizontal_align = false;
+                            in_position_v = false;
+                            in_vertical_align = false;
                         }
                         drawing_depth += 1;
                     }
                     b"positionH" if drawing_depth == 1 => {
-                        horizontal_anchor = drawing_horizontal_anchor(element);
+                        horizontal_anchor = drawing_position_anchor(element);
                         horizontal_align = None;
                         in_position_h = true;
                     }
                     b"align" if drawing_depth == 1 && in_position_h => {
                         in_horizontal_align = true;
+                    }
+                    b"positionV" if drawing_depth == 1 => {
+                        vertical_anchor = drawing_position_anchor(element);
+                        vertical_position_align = None;
+                        in_position_v = true;
+                    }
+                    b"align" if drawing_depth == 1 && in_position_v => {
+                        in_vertical_align = true;
                     }
                     // Only the box's own `wps:wsp` describes the box. A nested
                     // `w:drawing` inside `w:txbxContent` — a picture in one of
@@ -96,8 +115,11 @@ fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
             Ok(quick_xml::events::Event::Empty(ref element)) => {
                 if drawing_depth == 1 {
                     if element.local_name().as_ref() == b"positionH" {
-                        horizontal_anchor = drawing_horizontal_anchor(element);
+                        horizontal_anchor = drawing_position_anchor(element);
                         horizontal_align = None;
+                    } else if element.local_name().as_ref() == b"positionV" {
+                        vertical_anchor = drawing_position_anchor(element);
+                        vertical_position_align = None;
                     } else {
                         state.empty(builder.as_mut(), element);
                     }
@@ -105,15 +127,25 @@ fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
             }
             Ok(quick_xml::events::Event::Text(ref text)) if in_horizontal_align => {
                 if let Ok(value) = text.xml_content(OOXML_XML_VERSION) {
-                    horizontal_align = drawing_horizontal_alignment(&value);
+                    horizontal_align = drawing_alignment(&value);
+                }
+            }
+            Ok(quick_xml::events::Event::Text(ref text)) if in_vertical_align => {
+                if let Ok(value) = text.xml_content(OOXML_XML_VERSION) {
+                    vertical_position_align = drawing_vertical_alignment(&value);
                 }
             }
             Ok(quick_xml::events::Event::End(ref element)) => match element.local_name().as_ref() {
                 b"body" => in_body = false,
                 b"align" if in_horizontal_align => in_horizontal_align = false,
+                b"align" if in_vertical_align => in_vertical_align = false,
                 b"positionH" if in_position_h => {
                     in_position_h = false;
                     in_horizontal_align = false;
+                }
+                b"positionV" if in_position_v => {
+                    in_position_v = false;
+                    in_vertical_align = false;
                 }
                 b"drawing" if drawing_depth > 0 => {
                     drawing_depth -= 1;
@@ -121,7 +153,13 @@ fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
                         && let Some(builder) = builder.take()
                         && builder.is_text_box()
                     {
-                        result.push(text_box_info(&builder, horizontal_anchor, horizontal_align));
+                        result.push(text_box_info(
+                            &builder,
+                            horizontal_anchor,
+                            horizontal_align,
+                            vertical_anchor,
+                            vertical_position_align,
+                        ));
                     }
                 }
                 other if drawing_depth == 1 => state.end(other),
@@ -137,7 +175,7 @@ fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
     result
 }
 
-fn drawing_horizontal_alignment(value: &str) -> Option<FrameAlign> {
+fn drawing_alignment(value: &str) -> Option<FrameAlign> {
     match value.trim() {
         "left" | "start" => Some(FrameAlign::Start),
         "center" => Some(FrameAlign::Center),
@@ -146,7 +184,16 @@ fn drawing_horizontal_alignment(value: &str) -> Option<FrameAlign> {
     }
 }
 
-fn drawing_horizontal_anchor(element: &BytesStart<'_>) -> FrameAnchor {
+fn drawing_vertical_alignment(value: &str) -> Option<FrameAlign> {
+    match value.trim() {
+        "top" | "start" => Some(FrameAlign::Start),
+        "center" => Some(FrameAlign::Center),
+        "bottom" | "end" => Some(FrameAlign::End),
+        _ => None,
+    }
+}
+
+fn drawing_position_anchor(element: &BytesStart<'_>) -> FrameAnchor {
     element
         .attributes()
         .flatten()
@@ -163,6 +210,8 @@ fn text_box_info(
     builder: &ShapeBuilder,
     horizontal_anchor: FrameAnchor,
     horizontal_align: Option<FrameAlign>,
+    vertical_anchor: FrameAnchor,
+    vertical_position_align: Option<FrameAlign>,
 ) -> DrawingTextBoxInfo {
     let (width_pt, height_pt) = builder.box_size_pt();
     let (stroke, fill) = builder.text_box_frame();
@@ -174,5 +223,7 @@ fn text_box_info(
         padding: builder.text_box_insets(),
         horizontal_anchor,
         horizontal_align,
+        vertical_anchor,
+        vertical_position_align,
     }
 }

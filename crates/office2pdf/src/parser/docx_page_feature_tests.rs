@@ -939,6 +939,45 @@ fn right_aligned_anchored_text_box_retains_its_margin_reference() {
 }
 
 #[test]
+fn page_anchored_text_box_retains_its_vertical_offset_and_extent() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let text_box = document
+        .pages
+        .iter()
+        .filter_map(|page| match page {
+            Page::Flow(page) | Page::FlowContinuous(page) => Some(&page.content),
+            _ => None,
+        })
+        .flatten()
+        .find_map(|block| match block {
+            Block::FloatingTextBox(text_box)
+                if text_box.horizontal_align == Some(crate::ir::FrameAlign::End) =>
+            {
+                Some(text_box)
+            }
+            _ => None,
+        })
+        .expect("the fixture's page-anchored text box should be in the flow");
+
+    assert!((text_box.height - 248.8).abs() < 0.01);
+    assert!(
+        (text_box.offset_y - 204.144).abs() < 0.01,
+        "2592624 EMU should convert to 204.144pt, got {}pt",
+        text_box.offset_y
+    );
+    assert_eq!(text_box.vertical_anchor, crate::ir::FrameAnchor::Page);
+    assert_eq!(text_box.vertical_position_align, None);
+    assert_eq!(text_box.fill, Some(crate::ir::Color::white()));
+    let stroke = text_box
+        .stroke
+        .as_ref()
+        .expect("the floating shape should retain its outline");
+    assert!((stroke.width - 0.75).abs() < 0.01);
+    assert_eq!(stroke.color, crate::ir::Color::new(0, 176, 240));
+}
+
+#[test]
 fn an_unpositioned_docx_body_table_remains_in_text_flow() {
     let paragraph =
         docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("An ordinary body table"));

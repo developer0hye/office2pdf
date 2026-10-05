@@ -1,0 +1,533 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 3231.36,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 612.0,
+        "x": 0.0,
+        "y": 92.16
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-3c976c8f6423",
+      "region": "top"
+    },
+    {
+      "area_pt2": 1092.096,
+      "bbox_pt": {
+        "height": 28.8,
+        "width": 37.92,
+        "x": 465.6,
+        "y": 34.08
+      },
+      "disposition": {
+        "issue": "#1994",
+        "kind": "issue"
+      },
+      "id": "p2-6c62212675d3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 1073.8944,
+      "bbox_pt": {
+        "height": 28.32,
+        "width": 37.92,
+        "x": 465.6,
+        "y": 2.4
+      },
+      "disposition": {
+        "issue": "#1994",
+        "kind": "issue"
+      },
+      "id": "p2-57c14fc9c5e8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 850.176,
+      "bbox_pt": {
+        "height": 1.44,
+        "width": 590.4,
+        "x": 12.0,
+        "y": 757.44
+      },
+      "disposition": {
+        "issue": "#1990",
+        "kind": "issue"
+      },
+      "id": "p2-3a515a90224b",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 149.2992,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 24.0,
+        "x": 71.52,
+        "y": 44.16
+      },
+      "disposition": {
+        "issue": "#1995",
+        "kind": "issue"
+      },
+      "id": "p2-a4c53d811e9b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 98.6112,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 12.0,
+        "x": 45.6,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-ddce5f92d531",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 95.616,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 15.36,
+        "x": 53.76,
+        "y": 46.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-d8b36d228cb0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 93.312,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 14.4,
+        "x": 143.04,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-d2ab63a14301",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 92.6208,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 12.48,
+        "x": 156.96,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-3defd0c03240",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 87.552,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 14.88,
+        "x": 177.6,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-192e4d552254",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 85.9392,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 11.04,
+        "x": 35.04,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-2d61a79cddcd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 84.5568,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 14.4,
+        "x": 66.24,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-9426406af544",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 84.096,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 13.44,
+        "x": 55.68,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-01e366daf99d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 83.6352,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 13.92,
+        "x": 167.04,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-db7fb7cd8785",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 82.7136,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 10.08,
+        "x": 135.84,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-916d5c2afa4d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 76.7232,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 11.04,
+        "x": 112.8,
+        "y": 46.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-ac98a6ef0ca1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 75.3408,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 10.56,
+        "x": 113.28,
+        "y": 16.8
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-60bacc5b773f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 67.2768,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 12.0,
+        "x": 22.56,
+        "y": 52.32
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-52d6b637bf64",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 64.9728,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 8.64,
+        "x": 86.88,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-ed076e6e141f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 62.208,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 12.0,
+        "x": 22.56,
+        "y": 16.8
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-729c9360f73e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 61.056,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 8.64,
+        "x": 97.44,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-161330cdb1f4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 59.4432,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 8.64,
+        "x": 188.16,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-5c215bd72d81",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 8.64,
+        "x": 76.8,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-78a0a07b84f0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 57.1392,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 12.0,
+        "x": 22.56,
+        "y": 29.28
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-366960db27bd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 52.0704,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 12.0,
+        "x": 122.88,
+        "y": 30.24
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-18404277a64d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 9.12,
+        "x": 125.76,
+        "y": 20.64
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-7a9013a3bf11",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 26.88,
+        "y": 42.72
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-989e528b74ad",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 10.08,
+        "x": 124.32,
+        "y": 50.4
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-a10325913293",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 10.08,
+        "x": 205.44,
+        "y": 30.72
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-99c95f0e47fe",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 9.6,
+        "x": 106.08,
+        "y": 30.72
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-e61351eaa343",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 8.64,
+        "x": 95.04,
+        "y": 30.72
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-5b48a4a18203",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 8.64,
+        "x": 195.36,
+        "y": 30.72
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-4f68f303d9a4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.64,
+        "x": 83.52,
+        "y": 32.16
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-14214d9ee2e8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 99.36,
+        "y": 46.56
+      },
+      "disposition": {
+        "issue": "#1993",
+        "kind": "issue"
+      },
+      "id": "p2-6937f993a2c6",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 34,
+    "duplicate": 0,
+    "total": 34,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

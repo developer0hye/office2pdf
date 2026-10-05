@@ -5470,10 +5470,9 @@ fn generate_floating_text_box(
             out.push_str("]\n");
         }
         WrapMode::Behind | WrapMode::InFront | WrapMode::None => {
-            // Anchor to the current flow position (the box's paragraph), not the
-            // page, by wrapping `#place` in a zero-size box. Without this the
-            // box piles at the page top, away from the shapes it belongs with
-            // (issue #176).
+            // Text-anchored boxes use this zero-size flow box to keep `#place`
+            // tied to their paragraph. Page- and margin-anchored boxes resolve
+            // an absolute page coordinate in `generate_floating_text_box_overlay`.
             out.push_str("#box(width: 0pt, height: 0pt)[\n");
             generate_floating_text_box_overlay(out, ftb, ctx, false, ftb.offset_y)?;
             out.push_str("]\n");
@@ -5517,31 +5516,35 @@ fn generate_floating_text_box_overlay(
     ftb: &FloatingTextBox,
     ctx: &mut GenCtx,
     should_float: bool,
-    offset_y: f64,
+    flow_offset_y: f64,
 ) -> Result<(), ConvertError> {
     let aligned_page_x: Option<f64> = floating_text_box_aligned_page_x(ftb, ctx);
-    if let Some(target_x) = aligned_page_x {
-        out.push_str("#context [\n#let anchor_x = here().position().x\n");
-        let _ = write!(
-            out,
-            "#place(top + left, dx: {}pt - anchor_x, dy: {}pt",
-            format_f64(target_x + ftb.offset_x),
-            format_f64(offset_y),
-        );
-    } else {
-        let _ = write!(
-            out,
-            "#place(top + left, dx: {}pt, dy: {}pt",
-            format_f64(ftb.offset_x),
-            format_f64(offset_y),
-        );
+    let page_y: Option<f64> = floating_text_box_page_y(ftb, ctx);
+    let needs_page_context: bool = aligned_page_x.is_some() || page_y.is_some();
+    if needs_page_context {
+        out.push_str("#context [\n");
+        if aligned_page_x.is_some() {
+            out.push_str("#let anchor_x = here().position().x\n");
+        }
+        if page_y.is_some() {
+            out.push_str("#let anchor_y = here().position().y\n");
+        }
     }
+    let dx: String = match aligned_page_x {
+        Some(target_x) => format!("{}pt - anchor_x", format_f64(target_x + ftb.offset_x)),
+        None => format!("{}pt", format_f64(ftb.offset_x)),
+    };
+    let dy: String = match page_y {
+        Some(target_y) => format!("{}pt - anchor_y", format_f64(target_y)),
+        None => format!("{}pt", format_f64(flow_offset_y)),
+    };
+    let _ = write!(out, "#place(top + left, dx: {dx}, dy: {dy}");
     if should_float {
         out.push_str(", float: true");
     }
     out.push_str(")[\n");
     generate_floating_text_box_content(out, ftb, ctx)?;
-    if aligned_page_x.is_some() {
+    if needs_page_context {
         out.push_str("]\n]\n");
     } else {
         out.push_str("]\n");
@@ -5563,6 +5566,30 @@ fn floating_text_box_aligned_page_x(ftb: &FloatingTextBox, ctx: &GenCtx) -> Opti
         ),
     };
     Some(origin + aligned_offset(Some(alignment), available, Some(ftb.width)))
+}
+
+fn floating_text_box_page_y(ftb: &FloatingTextBox, ctx: &GenCtx) -> Option<f64> {
+    let page_size: PageSize = ctx.active_page_size?;
+    let margins: Margins = ctx.active_page_margins?;
+    let alignment: Option<crate::ir::FrameAlign> = ftb.vertical_position_align;
+    let (origin, available): (f64, f64) = match ftb.vertical_anchor {
+        FrameAnchor::Page => (0.0, page_size.height),
+        FrameAnchor::Margin => (
+            margins.top,
+            (page_size.height - margins.top - margins.bottom).max(0.0),
+        ),
+        FrameAnchor::Text => return None,
+    };
+    let aligned_y: f64 = aligned_offset(alignment, available, Some(ftb.height));
+    Some(
+        origin
+            + aligned_y
+            + if alignment.is_none() {
+                ftb.offset_y
+            } else {
+                0.0
+            },
+    )
 }
 
 fn generate_floating_text_box_content(
@@ -5599,21 +5626,33 @@ fn generate_floating_text_box_content(
     } else {
         format_insets(&ftb.padding)
     };
-    let _ = writeln!(
+    let _ = write!(
         out,
-        "#box(width: {}pt, height: {}pt, inset: {})[",
+        "#box(width: {}pt, height: {}pt, inset: {}",
         format_f64(ftb.width),
         format_f64(ftb.height),
         inset,
     );
+    if let Some(fill) = &ftb.fill {
+        write_fill_color(out, fill, None);
+    }
+    write_shape_stroke(out, &ftb.stroke);
+    out.push_str(")[\n");
 
     if matches!(ftb.vertical_align, TextBoxVerticalAlign::Top) {
-        let _ = writeln!(
-            out,
-            "#place(top + left, dy: -{}pt)[\n#block(width: {}pt)[",
-            format_f64(FLOATING_TEXT_BOX_TOP_LEADING_COMPENSATION_PT),
-            format_f64(inner_width)
-        );
+        // Paragraph-first boxes need the correction for Typst's extra line-box
+        // leading. A table carries its own top geometry; shifting it would move
+        // the table border above the page-positioned text-box frame.
+        let needs_top_leading_compensation: bool =
+            matches!(ftb.content.first(), Some(Block::Paragraph(_)));
+        if needs_top_leading_compensation {
+            let _ = writeln!(
+                out,
+                "#place(top + left, dy: -{}pt)[",
+                format_f64(FLOATING_TEXT_BOX_TOP_LEADING_COMPENSATION_PT),
+            );
+        }
+        let _ = writeln!(out, "#block(width: {}pt)[", format_f64(inner_width));
         for (index, block) in ftb.content.iter().enumerate() {
             if index > 0 {
                 out.push('\n');
@@ -5627,7 +5666,11 @@ fn generate_floating_text_box_content(
                 PowerPointBaselineMode::Disabled,
             )?;
         }
-        out.push_str("]\n]\n]\n");
+        out.push_str("]\n");
+        if needs_top_leading_compensation {
+            out.push_str("]\n");
+        }
+        out.push_str("]\n");
         return Ok(());
     }
 
