@@ -2040,25 +2040,10 @@ pub(super) fn sheet_cell_baseline_from_track_top_pt(
     } else {
         half_slack_pt.ceil()
     };
-    // A fitted sheet lifts the completed seat by one sheet-space point before
-    // scaling it (issue #1496); see `fitted_sheet_lift_pt`.
-    (slack_above_pt + above_baseline_pt - fitted_sheet_lift_pt(scale)) * scale
-}
-
-/// The sheet-space point a fitted sheet's fixed-row text origin sits above
-/// the otherwise identical unscaled cadence (issue #1496). The landscape #982
-/// export exposes the same quantum across merged Century Gothic headings,
-/// ordinary Segoe UI header/body rows and the top-aligned instruction block;
-/// applying it after scaling would turn one Excel grid point into one device
-/// point. It stands in for the snap remainder between the converter's
-/// physical-margin text origin and Excel's sheet-space one, so a fix for
-/// issue #1719 re-derives it from that origin for every seat at once.
-fn fitted_sheet_lift_pt(scale: f64) -> f64 {
-    if scale + f64::EPSILON < 1.0 {
-        SHEET_ADVANCE_GRID_PT
-    } else {
-        0.0
-    }
+    // The enclosing fitted-sheet translation now puts the row and its text
+    // on Excel's snapped sheet-space origin, so no separate fitted lift is
+    // needed here (issues #1496, #1719).
+    (slack_above_pt + above_baseline_pt) * scale
 }
 
 /// The constant Excel adds to a top-aligned line's `hhea` ascent plus line
@@ -2085,11 +2070,10 @@ const SHEET_TOP_ALIGNED_SEAT_OFFSET_PT: f64 = 1.17;
 /// border changes nothing, and a horizontal merge keeps the unmerged answer:
 /// the #982 workbook's merged B4:D4 instruction block prints its Segoe UI 14
 /// first baseline 16 sheet points below row 4's top, exactly where the
-/// unmerged Arial series predicts. Like the centred seat, a fitted sheet
-/// evaluates the rule in declared sheet space, lifts it by
-/// [`fitted_sheet_lift_pt`], and scales the completed answer onto the page:
-/// that block sits 16 sheet points down in both the unscaled control and the
-/// 0.82-fitted original.
+/// unmerged Arial series predicts. A fitted sheet evaluates the rule in
+/// declared sheet space and scales the completed answer onto the page; its
+/// page-level translation already supplies the snapped origin, so no
+/// separate physical-origin lift is applied (issues #1496, #1719).
 ///
 /// Measured on the native Excel-for-Mac exports of the #1063 probe workbooks
 /// (`/Volumes/T7/scratch/issue-1063/probe`, the top-aligned rows of probe 1's
@@ -2105,7 +2089,7 @@ pub(super) fn sheet_cell_top_baseline_from_track_top_pt(
     let sheet_font_size_pt: f64 = font_size_pt / scale;
     let seat_pt: f64 =
         (ascent_with_gap_em * sheet_font_size_pt + SHEET_TOP_ALIGNED_SEAT_OFFSET_PT).round();
-    (seat_pt - fitted_sheet_lift_pt(scale)) * scale
+    seat_pt * scale
 }
 
 /// The gap Excel never closes between a bottom-aligned sheet cell's baseline

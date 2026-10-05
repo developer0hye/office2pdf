@@ -182,11 +182,6 @@ struct GenCtx {
     /// [`Table::print_scale`]. `None` on an unscaled sheet and off a sheet
     /// entirely; [`GenCtx::sheet_print_scale`] resolves the two apart.
     table_print_scale: Option<f64>,
-    /// Visual translation applied to a fitted worksheet's table paint. Cell
-    /// content takes the inverse so text that already matches Excel stays in
-    /// its established seat while fills and boundary bands follow the scaled
-    /// paper-space origin (issue #1538).
-    sheet_paint_offset_pt: Option<(f64, f64)>,
     /// Whether the cell being generated seats its line box on the descender:
     /// the enclosing table is a spreadsheet and the cell's effective vertical
     /// alignment is bottom (issue #618).
@@ -296,7 +291,6 @@ impl GenCtx {
             table_seats_bottom_aligned_text_on_descender: false,
             table_bottom_aligned_descent_floor_pt: 0.0,
             table_print_scale: None,
-            sheet_paint_offset_pt: None,
             cell_seats_text_on_descender: false,
             cell_vertical_align: None,
             cell_sheet_row_line: None,
@@ -1514,10 +1508,9 @@ fn generate_table_page(
     // own alignment, which the centering does not touch.
     let centering_inset_pt: Option<f64> = horizontal_centering_inset_pt(page, &size);
 
-    // Excel paints a fitted sheet's grid against a paper box constructed in
-    // declared sheet space and then scaled. Cell text has its own already
-    // calibrated seats, so the cell writer counter-shifts its content by the
-    // inverse (#1538). Floating drawing paint uses this same sheet origin.
+    // Excel paints a fitted sheet against a paper box constructed in declared
+    // sheet space and then scaled. The move applies to its grid and cell text;
+    // floating drawing paint uses the same sheet origin (#1538, #1719).
     let paint_offset_pt: Option<(f64, f64)> =
         scaled_sheet_paint_offset_pt(page, &size, centering_inset_pt);
 
@@ -1552,8 +1545,6 @@ fn generate_table_page(
         );
     }
 
-    ctx.sheet_paint_offset_pt = paint_offset_pt;
-
     if let Some(inset_pt) = centering_inset_pt {
         let _ = writeln!(out, "#pad(left: {}pt)[", format_f64(inset_pt));
     }
@@ -1578,7 +1569,6 @@ fn generate_table_page(
     if paint_offset_pt.is_some() {
         out.push_str("]\n");
     }
-    ctx.sheet_paint_offset_pt = None;
     Ok(())
 }
 

@@ -5097,9 +5097,10 @@ fn test_centered_sheet_wider_than_the_printable_width_is_not_inset() {
 /// The fit-to-page A3 sheet attached to issue #1538 has a 1,078.30pt printed
 /// grid centred on a 1,190.55pt page with 50pt side and 54pt top margins. Excel
 /// lays the paper box out in sheet space before applying the 0.82 print scale.
-/// Its resulting paint origin is (-0.185, -0.70)pt from the converter's table
-/// origin. The first painted boundary then lands at 55.125 - 0.185 + 8.20 =
-/// 63.14pt, matching the pinned native trace rather than the old 63.325pt.
+/// Its resulting origin is (-0.185, -0.70)pt from the converter's table
+/// origin. The grid and cell text share this translation. The first painted
+/// boundary lands at 55.125 - 0.185 + 8.20 = 63.14pt, matching the pinned
+/// native trace rather than the old 63.325pt.
 #[test]
 fn a_fit_scaled_a3_sheet_uses_its_scaled_paper_space_body_seat() {
     let Page::Sheet(mut sheet) = centered_sheet_page(true, vec![1_078.3]) else {
@@ -5119,8 +5120,8 @@ fn a_fit_scaled_a3_sheet_uses_its_scaled_paper_space_body_seat() {
         "the scaled paint must start from Excel's sheet-space paper origin: {source}"
     );
     assert!(
-        source.contains("#move(dx: 0.185pt, dy: 0.7pt)["),
-        "cell content must keep its independently matched seat: {source}"
+        !source.contains("#move(dx: 0.185pt, dy: 0.7pt)["),
+        "cell text must inherit the grid's snapped origin: {source}"
     );
     let inset_pt = sheet_centering_inset_pt(&source)
         .unwrap_or_else(|| panic!("the centred sheet needs its physical inset: {source}"));
