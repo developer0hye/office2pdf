@@ -11,24 +11,29 @@ pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayou
     let mut num_columns: u32 = 1;
     let mut spacing_twips: f64 = 720.0;
     let mut equal_width = true;
+    let mut has_separator = false;
     let mut column_widths: Vec<f64> = Vec::new();
 
-    let build_layout =
-        |num_columns: u32, spacing_twips: f64, equal_width: bool, column_widths: &[f64]| {
-            if num_columns < 2 {
-                return None;
-            }
+    let build_layout = |num_columns: u32,
+                        spacing_twips: f64,
+                        equal_width: bool,
+                        has_separator: bool,
+                        column_widths: &[f64]| {
+        if num_columns < 2 {
+            return None;
+        }
 
-            Some(ColumnLayout {
-                num_columns,
-                spacing: twips_to_pt(spacing_twips),
-                column_widths: if !equal_width && !column_widths.is_empty() {
-                    Some(column_widths.to_vec())
-                } else {
-                    None
-                },
-            })
-        };
+        Some(ColumnLayout {
+            num_columns,
+            spacing: twips_to_pt(spacing_twips),
+            column_widths: if !equal_width && !column_widths.is_empty() {
+                Some(column_widths.to_vec())
+            } else {
+                None
+            },
+            has_separator,
+        })
+    };
 
     loop {
         match reader.read_event() {
@@ -39,6 +44,7 @@ pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayou
                     num_columns = 1;
                     spacing_twips = 720.0;
                     equal_width = true;
+                    has_separator = false;
                     column_widths.clear();
                 }
                 b"cols" if in_section_properties => {
@@ -58,6 +64,9 @@ pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayou
                                     }
                                 }
                                 b"equalWidth" => equal_width = value != "0",
+                                b"sep" => {
+                                    has_separator = matches!(value.as_ref(), "true" | "1" | "on")
+                                }
                                 _ => {}
                             }
                         }
@@ -77,7 +86,7 @@ pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayou
             },
             Ok(quick_xml::events::Event::Empty(ref element)) => match element.local_name().as_ref()
             {
-                b"sectPr" => layouts.push(build_layout(1, 720.0, true, &[])),
+                b"sectPr" => layouts.push(build_layout(1, 720.0, true, false, &[])),
                 b"cols" if in_section_properties => {
                     in_columns = false;
                     for attribute in element.attributes().flatten() {
@@ -95,6 +104,9 @@ pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayou
                                     }
                                 }
                                 b"equalWidth" => equal_width = value != "0",
+                                b"sep" => {
+                                    has_separator = matches!(value.as_ref(), "true" | "1" | "on")
+                                }
                                 _ => {}
                             }
                         }
@@ -118,6 +130,7 @@ pub(in super::super) fn scan_column_layouts(xml: &str) -> Vec<Option<ColumnLayou
                         num_columns,
                         spacing_twips,
                         equal_width,
+                        has_separator,
                         &column_widths,
                     ));
                     in_section_properties = false;
@@ -145,5 +158,6 @@ pub(in super::super) fn extract_column_layout_from_section_property(
         num_columns: section_prop.columns as u32,
         spacing: twips_to_pt(section_prop.space as f64),
         column_widths: None,
+        has_separator: false,
     })
 }

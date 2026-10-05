@@ -1,0 +1,87 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 7.68,
+        "x": 57.12,
+        "y": 236.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected paragraph text differences remain within the sub-materiality tracker scope."
+      },
+      "id": "p2-e75f9c06a635",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 66.24,
+        "y": 253.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected paragraph text differences remain within the sub-materiality tracker scope."
+      },
+      "id": "p2-bf5ac3564c45",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 3.36,
+        "width": 7.2,
+        "x": 57.12,
+        "y": 243.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected paragraph text differences remain within the sub-materiality tracker scope."
+      },
+      "id": "p2-b1e06e5eb498",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 79.68,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected paragraph text differences remain within the sub-materiality tracker scope."
+      },
+      "id": "p2-07b712546747",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 4,
+    "duplicate": 0,
+    "total": 4,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

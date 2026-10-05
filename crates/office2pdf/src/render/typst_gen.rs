@@ -87,6 +87,8 @@ pub struct TypstOutput {
 
 /// Maximum nesting depth for tables-within-tables, matching the parser limit.
 const MAX_TABLE_DEPTH: usize = 64;
+/// Word's 0.96pt measured rule rounds to Typst's 1pt stroke for this separator.
+const DOCX_COLUMN_SEPARATOR_STROKE_PT: f64 = 1.0;
 /// How far a justified line may squeeze its spaces, as a share of the space's
 /// own width. Calibrated on the corpus in [`write_page_format_state`], which
 /// is where the measurements behind it are recorded.
@@ -1159,7 +1161,6 @@ fn generate_column_section_page(
         }
         let _ = write!(out, "), gutter: {}pt", format_f64(cols.spacing));
         out.push_str(")\n");
-
         // Split content by ColumnBreak into grid cells
         let segments = split_at_column_breaks(content);
         let layout_space_location: Option<(usize, usize)> = layout_break_space_before
@@ -1310,14 +1311,37 @@ fn generate_balanced_flow_columns(
     )?;
     let _ = writeln!(
         out,
-        "\n  ]\n  let o2p_column_width = {}pt\n  let o2p_column_height = o2p_section_content.children.fold(\n    measure(o2p_section_content, width: o2p_column_width).height / {},\n    (height, child) => calc.max(height, measure(child, width: o2p_column_width).height),\n  )\n  block(width: {}pt, height: o2p_column_height, above: 0pt, below: 0pt)[\n    #columns({}, gutter: {}pt)[#o2p_section_content]\n  ]\n}}",
+        "\n  ]\n  let o2p_column_width = {}pt\n  let o2p_column_height = o2p_section_content.children.fold(\n    measure(o2p_section_content, width: o2p_column_width).height / {},\n    (height, child) => calc.max(height, measure(child, width: o2p_column_width).height),\n  )\n  block(width: {}pt, height: o2p_column_height, above: 0pt, below: 0pt)[\n{}    #columns({}, gutter: {}pt)[#o2p_section_content]\n  ]\n}}",
         format_f64(column_width),
         cols.num_columns,
         format_f64(content_width),
+        column_separator_markup(cols, column_width),
         cols.num_columns,
         format_f64(cols.spacing),
     );
     Ok(())
+}
+
+/// Emit Word's divider rules over the measured content block. Typst's columns
+/// element has no separator parameter, and placing the rules keeps them out of
+/// text flow so they do not change the column height.
+fn column_separator_markup(cols: &ColumnLayout, column_width: f64) -> String {
+    if !cols.has_separator {
+        return String::new();
+    }
+
+    let mut markup: String = String::new();
+    let separator_stroke: String = format_f64(DOCX_COLUMN_SEPARATOR_STROKE_PT);
+    for divider_index in 1..cols.num_columns {
+        let divider_offset: f64 = column_width * f64::from(divider_index)
+            + cols.spacing * (f64::from(divider_index) - 0.5);
+        let _ = writeln!(
+            markup,
+            "    #place(top + left, dx: {}pt, dy: 0pt, line(length: o2p_column_height, angle: 90deg, stroke: {separator_stroke}pt))",
+            format_f64(divider_offset),
+        );
+    }
+    markup
 }
 
 /// Split content blocks at `PageBreak` boundaries into contiguous slices.

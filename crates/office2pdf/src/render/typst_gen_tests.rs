@@ -491,6 +491,7 @@ fn continuous_section_columns_do_not_add_typst_block_spacing() {
         num_columns: 2,
         spacing: 20.0,
         column_widths: None,
+        has_separator: false,
     });
 
     let mut final_section: FlowPage = match make_flow_page(vec![make_paragraph("after")]) {
@@ -632,6 +633,7 @@ fn continuous_section_columns_start_without_typst_block_spacing() {
         num_columns: 2,
         spacing: 20.0,
         column_widths: None,
+        has_separator: false,
     });
 
     let document: Document = make_doc(vec![
@@ -706,6 +708,7 @@ fn continuous_section_balancing_keeps_paragraphs_in_one_column() {
         num_columns: 2,
         spacing: 20.0,
         column_widths: None,
+        has_separator: false,
     });
 
     let mut final_section: FlowPage = match make_flow_page(vec![make_paragraph("after")]) {
@@ -792,6 +795,7 @@ fn continuous_section_uses_its_horizontal_margins_on_the_current_page() {
         num_columns: 2,
         spacing: 20.0,
         column_widths: None,
+        has_separator: false,
     });
 
     let mut final_section: FlowPage = match make_flow_page(vec![make_paragraph("after")]) {

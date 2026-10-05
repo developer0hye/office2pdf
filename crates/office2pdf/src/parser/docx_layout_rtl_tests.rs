@@ -99,6 +99,30 @@ fn test_parse_docx_two_column_equal() {
         cols.column_widths.is_none(),
         "Equal columns should not have per-column widths"
     );
+    assert!(!cols.has_separator, "missing w:sep defaults to no rule");
+}
+
+#[test]
+fn test_parse_docx_column_separator_from_real_fixture() {
+    let fixture: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/libreoffice/tdf46940_dontEquallyDistributeColumns.docx"
+    );
+    let parser = DocxParser;
+    let (document, _warnings) = parser.parse(fixture, &ConvertOptions::default()).unwrap();
+
+    let column_layouts: Vec<_> = document
+        .pages
+        .iter()
+        .filter_map(|page| match page {
+            Page::Flow(flow) | Page::FlowContinuous(flow) => flow.columns.as_ref(),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(column_layouts.len(), 3, "fixture section layout changed");
+    assert!(
+        column_layouts.iter().all(|columns| columns.has_separator),
+        "the three w:cols/@w:sep flags must survive section parsing"
+    );
 }
 
 #[test]
@@ -178,7 +202,7 @@ fn test_parse_docx_unequal_columns() {
     <w:body>
         <w:p><w:r><w:t>Content</w:t></w:r></w:p>
         <w:sectPr>
-            <w:cols w:num="2" w:space="720" w:equalWidth="0">
+            <w:cols w:num="2" w:space="720" w:equalWidth="0" w:sep="1">
                 <w:col w:w="6000" w:space="720"/>
                 <w:col w:w="3000"/>
             </w:cols>
@@ -202,6 +226,7 @@ fn test_parse_docx_unequal_columns() {
     assert_eq!(widths.len(), 2);
     assert!((widths[0] - 300.0).abs() < 0.1, "width[0]: {}", widths[0]);
     assert!((widths[1] - 150.0).abs() < 0.1, "width[1]: {}", widths[1]);
+    assert!(cols.has_separator, "w:sep=1 must enable column rules");
 }
 
 #[test]

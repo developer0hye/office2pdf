@@ -1,0 +1,103 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 73.4976,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 10.56,
+        "x": 57.12,
+        "y": 207.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected paragraph text differences remain within the sub-materiality tracker scope."
+      },
+      "id": "p1-a2736f311667",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 5.28,
+        "x": 111.84,
+        "y": 209.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected paragraph text differences remain within the sub-materiality tracker scope."
+      },
+      "id": "p1-943d2d544812",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.2,
+        "x": 57.6,
+        "y": 145.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected paragraph text differences remain within the sub-materiality tracker scope."
+      },
+      "id": "p1-9a9125a855a9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.28,
+        "x": 70.56,
+        "y": 223.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected paragraph text differences remain within the sub-materiality tracker scope."
+      },
+      "id": "p1-ec575944929a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 7.2,
+        "x": 57.12,
+        "y": 139.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected paragraph text differences remain within the sub-materiality tracker scope."
+      },
+      "id": "p1-e880b0180baf",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 5,
+    "duplicate": 0,
+    "total": 5,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
