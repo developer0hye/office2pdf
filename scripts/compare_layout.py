@@ -8,7 +8,10 @@ visible ink. It then matches lines by their text and reports typed deviations:
 
 - matched / missing / extra lines, safe split/join topology differences for
   distant text objects, and wrap-point differences (text that is present but
-  breaks at a different word) counted separately from real loss;
+  breaks at a different word) counted separately from real loss. Glyph origins
+  within the active noise floor are ordered by their owning paint's first-glyph
+  x-coordinate, so trace jitter between adjacent cell paints cannot invent a
+  reflow;
 - spatial-anchor dy statistics, dx0 and width drift for independently painted
   cell/object fragments, and inter-line pitch deltas between matched lines.
   Horizontal text uses its true baseline; a rotated or skewed `fill_text` stays one visual run and uses
@@ -102,6 +105,7 @@ COLOR_RE = re.compile(r'color="([-0-9.e ]+)"')
 MEDIABOX_RE = re.compile(r'\bmediabox="([-0-9.e ]+)"')
 
 LINE_Y_TOLERANCE_PT = 0.6
+DEFAULT_NOISE_FLOOR_PT = 0.12
 # A normal inter-word gap is far smaller than this. Combined with a text-paint
 # operation boundary, this isolates independently positioned chart/table text
 # that mutool happens to merge only because the objects share a baseline.
@@ -148,6 +152,8 @@ class Glyph:
     size: float
     advance: float
     paint_index: int = -1
+    # Device-space x of the owning fill_text operation's first glyph.
+    paint_origin_x: float | None = None
     color: tuple[float, float, float] | None = None
     alpha: float = 1.0
     needs_path_ink: bool = False
@@ -1119,7 +1125,10 @@ def compare_fill_coverage(
     }
 
 
-def parse_trace(trace_xml: str) -> list[PageLayout]:
+def parse_trace(
+    trace_xml: str,
+    glyph_order_tolerance: float = DEFAULT_NOISE_FLOOR_PT,
+) -> list[PageLayout]:
     pages: list[PageLayout] = []
     for page_match in PAGE_RE.finditer(trace_xml):
         page_attrs, content = page_match.groups()
@@ -1145,6 +1154,7 @@ def parse_trace(trace_xml: str) -> list[PageLayout]:
             groups = group_contexts.get(op_match.start(), ())
             alpha = parse_alpha(op_attrs) * math.prod(alpha for _, alpha in groups)
             transformed_run: list[Glyph] = []
+            paint_origin_x: float | None = None
             for span_attrs, span_body in SPAN_RE.findall(op_body):
                 trm = TRM_RE.search(span_attrs)
                 size_units = float(trm.group(1)) if trm else 0.0
@@ -1167,14 +1177,18 @@ def parse_trace(trace_xml: str) -> list[PageLayout]:
                         )
                         continue
                     previous_origin = (glyph_x, glyph_y)
+                    device_x: float = a * glyph_x + c * glyph_y + e
+                    if paint_origin_x is None:
+                        paint_origin_x = device_x
                     transformed_run.append(
                         Glyph(
-                            x=a * glyph_x + c * glyph_y + e,
+                            x=device_x,
                             y=b * glyph_x + d * glyph_y + f,
                             unicode=unescape(unicode_char),
                             size=size_pt,
                             advance=abs(float(adv) * size_units * a),
                             paint_index=op_match.start(),
+                            paint_origin_x=paint_origin_x,
                             color=color,
                             alpha=alpha,
                             needs_path_ink=op_kind == "ignore_text",
@@ -1293,7 +1307,7 @@ def parse_trace(trace_xml: str) -> list[PageLayout]:
         paints = [replace(paint, group_opacities=group_contexts.get(paint.index, ()))
                   for paint in paints]
         paints.sort(key=lambda paint: paint.index)
-        lines = build_lines(glyphs)
+        lines = build_lines(glyphs, glyph_order_tolerance=glyph_order_tolerance)
         lines.extend(line for line in rotated_lines if line.key)
         for line in lines:
             line.visibility = classify_line_visibility(line, paints)
@@ -1310,7 +1324,11 @@ def parse_trace(trace_xml: str) -> list[PageLayout]:
     return pages
 
 
-def build_lines(glyphs: list[Glyph], y_tolerance: float = LINE_Y_TOLERANCE_PT) -> list[Line]:
+def build_lines(
+    glyphs: list[Glyph],
+    y_tolerance: float = LINE_Y_TOLERANCE_PT,
+    glyph_order_tolerance: float = DEFAULT_NOISE_FLOOR_PT,
+) -> list[Line]:
     lines: list[Line] = []
     for glyph in sorted(glyphs, key=lambda g: (g.y, g.x)):
         target = None
@@ -1323,7 +1341,43 @@ def build_lines(glyphs: list[Glyph], y_tolerance: float = LINE_Y_TOLERANCE_PT) -
             lines.append(target)
         target.glyphs.append(glyph)
     for line in lines:
-        line.glyphs.sort(key=lambda g: g.x)
+        # Separate cell paints can interleave when their glyph origins differ
+        # by less than trace noise. Keep that local tie in paint-origin order.
+        spatial_order: list[Glyph] = sorted(line.glyphs, key=lambda glyph: glyph.x)
+        ordered_glyphs: list[Glyph] = []
+        coincident_cluster: list[Glyph] = []
+        cluster_start_x: float | None = None
+
+        def flush_coincident_cluster() -> None:
+            if coincident_cluster:
+                ordered_glyphs.extend(
+                    sorted(
+                        coincident_cluster,
+                        key=lambda glyph: (
+                            glyph.paint_origin_x
+                            if glyph.paint_origin_x is not None
+                            else glyph.x,
+                            glyph.paint_index,
+                            glyph.x,
+                        ),
+                    )
+                )
+                coincident_cluster.clear()
+
+        for glyph in spatial_order:
+            if (
+                coincident_cluster
+                and cluster_start_x is not None
+                and glyph.x - cluster_start_x > glyph_order_tolerance
+            ):
+                flush_coincident_cluster()
+                cluster_start_x = None
+            if not coincident_cluster:
+                cluster_start_x = glyph.x
+            coincident_cluster.append(glyph)
+        flush_coincident_cluster()
+
+        line.glyphs = ordered_glyphs
         line.y = statistics.median(g.y for g in line.glyphs)
     lines = [line for line in lines if line.key]
     lines.sort(key=lambda line: (line.y, line.x0))
@@ -2004,7 +2058,7 @@ def rect_sample(gt_group: CanonicalRect, out_group: CanonicalRect) -> dict:
 def diff_page(
     gt: PageLayout,
     out: PageLayout,
-    noise_floor: float = 0.12,
+    noise_floor: float = DEFAULT_NOISE_FLOOR_PT,
     large_shift: float = 5.0,
     fine_shift: float | None = None,
 ) -> dict:
@@ -2456,7 +2510,7 @@ def main() -> int:
     parser.add_argument(
         "--noise-floor",
         type=float,
-        default=0.12,
+        default=DEFAULT_NOISE_FLOOR_PT,
         help="pt threshold under which a delta is measurement noise (0.12 Word GT, 0.5 Excel GT)",
     )
     parser.add_argument(
@@ -2493,8 +2547,8 @@ def main() -> int:
     if args.fine_shift is not None and args.fine_shift < args.noise_floor:
         parser.error("--fine-shift must be at least --noise-floor")
 
-    gt_pages = parse_trace(run_mutool(args.gt))
-    out_pages = parse_trace(run_mutool(args.output))
+    gt_pages = parse_trace(run_mutool(args.gt), glyph_order_tolerance=args.noise_floor)
+    out_pages = parse_trace(run_mutool(args.output), glyph_order_tolerance=args.noise_floor)
 
     # A trace that yields no pages means the parser did not understand mutool's
     # output, not that the two files agree. Reporting an empty diff here would
