@@ -1288,16 +1288,16 @@ fn process_hyperlink_runs(
     }
 }
 
-/// What the surrounding flow contributes to a paragraph, as opposed to the
-/// paragraph's own formatting: the direction `w:bidi` inherits onto it, the
-/// shading its style hierarchy paints behind it, and whether its effective
-/// paragraph style is one the document actually defines.
+/// Context shared by the output blocks generated from one source `<w:p>`:
+/// document theme fonts used by run and paragraph-mark resolution, plus its
+/// inherited direction, shading, wrapping, contextual spacing, and style state.
 ///
 /// Resolved once per `<w:p>` because the paragraph cursors (bidi, shading,
-/// `w:wordWrap`, `w:contextualSpacing`) advance on read, then handed to every
-/// paragraph the `<w:p>` splits into.
+/// `w:wordWrap`, `w:contextualSpacing`) advance on read, then reused by every
+/// output paragraph the source `<w:p>` splits into.
 #[derive(Clone, Copy)]
 struct ParagraphFlow<'a> {
+    theme_fonts: &'a ThemeFonts,
     is_rtl: bool,
     background: Option<Color>,
     /// The paragraph's own `w:wordWrap`, recovered from the raw XML — the
@@ -1338,6 +1338,7 @@ fn convert_paragraph_blocks(
     // recorded at the same index (issue #1689).
     let style_id: Option<&str> = get_paragraph_style_id(&para.property);
     let flow = ParagraphFlow {
+        theme_fonts: &ctx.theme_fonts,
         is_rtl: ctx.bidi.next_is_bidi(style_id),
         background: ctx.paragraph_shading.next_background(style_id),
         word_wrap: ctx.word_wraps.next_word_wrap(style_id),
@@ -1444,7 +1445,6 @@ fn convert_paragraph_blocks(
                                     para,
                                     resolved_style,
                                     style_map,
-                                    &ctx.theme_fonts,
                                     flow,
                                     &mut runs,
                                     caption_identifier.as_deref(),
@@ -1469,7 +1469,6 @@ fn convert_paragraph_blocks(
                                     para,
                                     resolved_style,
                                     style_map,
-                                    &ctx.theme_fonts,
                                     flow,
                                     &mut runs,
                                     caption_identifier.as_deref(),
@@ -1543,7 +1542,6 @@ fn convert_paragraph_blocks(
                                         para,
                                         resolved_style,
                                         style_map,
-                                        &ctx.theme_fonts,
                                         flow,
                                         &mut runs,
                                         caption_identifier.as_deref(),
@@ -1634,7 +1632,6 @@ fn convert_paragraph_blocks(
             para,
             resolved_style,
             style_map,
-            &ctx.theme_fonts,
             flow,
             &mut runs,
             caption_identifier.as_deref(),
@@ -1669,7 +1666,6 @@ fn convert_paragraph_blocks(
             para,
             resolved_style,
             style_map,
-            &ctx.theme_fonts,
             flow,
             &mut runs,
             caption_identifier.as_deref(),
@@ -1868,7 +1864,6 @@ fn push_paragraph_from_runs(
     para: &docx_rs::Paragraph,
     resolved_style: Option<&ResolvedStyle>,
     style_map: &StyleMap,
-    theme_fonts: &ThemeFonts,
     flow: ParagraphFlow<'_>,
     runs: &mut Vec<Run>,
     caption_identifier: Option<&str>,
@@ -1877,7 +1872,6 @@ fn push_paragraph_from_runs(
         para,
         resolved_style,
         style_map,
-        theme_fonts,
         flow,
         runs,
         caption_identifier,
@@ -1892,7 +1886,6 @@ fn build_paragraph_block(
     para: &docx_rs::Paragraph,
     resolved_style: Option<&ResolvedStyle>,
     style_map: &StyleMap,
-    theme_fonts: &ThemeFonts,
     flow: ParagraphFlow<'_>,
     runs: &mut Vec<Run>,
     caption_identifier: Option<&str>,
@@ -1968,7 +1961,7 @@ fn build_paragraph_block(
             false,
             resolved_style,
             style_map,
-            theme_fonts,
+            flow.theme_fonts,
         )));
     }
     let paragraph = Paragraph {
