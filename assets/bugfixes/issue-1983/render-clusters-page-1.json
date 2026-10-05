@@ -1,0 +1,135 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 1263.2832,
+      "bbox_pt": {
+        "height": 57.12,
+        "width": 54.24,
+        "x": 78.72,
+        "y": 61.92
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "All clusters are confined to the embedded 22x22 logo; full-page inspection shows the same position and footprint, with bitmap resampling differences."
+      },
+      "id": "p1-9e4ead123c5b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 65.8944,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 12.0,
+        "x": 78.72,
+        "y": 68.16
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "All clusters are confined to the embedded 22x22 logo; full-page inspection shows the same position and footprint, with bitmap resampling differences."
+      },
+      "id": "p1-6f580f419953",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 44.0064,
+      "bbox_pt": {
+        "height": 18.72,
+        "width": 2.88,
+        "x": 135.84,
+        "y": 81.12
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "All clusters are confined to the embedded 22x22 logo; full-page inspection shows the same position and footprint, with bitmap resampling differences."
+      },
+      "id": "p1-65e2cb6b2c9e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 2.4,
+        "width": 18.72,
+        "x": 97.44,
+        "y": 120.0
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "All clusters are confined to the embedded 22x22 logo; full-page inspection shows the same position and footprint, with bitmap resampling differences."
+      },
+      "id": "p1-b822344f915f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 2.88,
+        "width": 15.84,
+        "x": 100.32,
+        "y": 59.52
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "All clusters are confined to the embedded 22x22 logo; full-page inspection shows the same position and footprint, with bitmap resampling differences."
+      },
+      "id": "p1-8acd062da7ec",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.32,
+        "x": 131.04,
+        "y": 97.92
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "All clusters are confined to the embedded 22x22 logo; full-page inspection shows the same position and footprint, with bitmap resampling differences."
+      },
+      "id": "p1-caa0ab460399",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 1.92,
+        "x": 76.32,
+        "y": 84.0
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "All clusters are confined to the embedded 22x22 logo; full-page inspection shows the same position and footprint, with bitmap resampling differences."
+      },
+      "id": "p1-49fc6a673f39",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 7,
+    "duplicate": 0,
+    "total": 7,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
