@@ -11308,9 +11308,9 @@ fn budget_month_axis_uses_its_major_theme_font() {
 /// Fitted worksheet cell text shares Excel's snapped sheet-space origin with
 /// the grid paint. These left edges are from a fresh Excel for Mac 16.112.3
 /// export of the reported #1719 workbook, page 2; keeping the physical margin
-/// origin leaves a fractional-point residual at scale 0.78. The row-4
-/// formula labels verify that the former #1496 lift no longer offsets their
-/// baselines from the snapped whole-sheet-point cadence.
+/// origin leaves a fractional-point residual at scale 0.78. The page-level
+/// move must carry both axes, with no inverse text move restoring the old
+/// physical origin.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn fitted_budget_cell_text_uses_the_snapped_sheet_origin() {
@@ -11326,6 +11326,24 @@ fn fitted_budget_cell_text_uses_the_snapped_sheet_origin() {
         crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 1)
             .expect("the fitted budget sheet compiles");
 
+    let move_lines: Vec<&str> = output
+        .source
+        .lines()
+        .filter(|line| line.contains("#move("))
+        .collect();
+    assert!(
+        move_lines
+            .iter()
+            .any(|line| line.contains("dx: 0.475pt") && line.contains("dy: -0.18pt")),
+        "the fitted paint group must use the snapped two-axis origin"
+    );
+    assert!(
+        !move_lines
+            .iter()
+            .any(|line| line.contains("dx: -0.475pt") && line.contains("dy: 0.18pt")),
+        "cell text must not countershift back to the physical margin origin"
+    );
+
     for (text, native_left_pt) in [
         ("Monthly college budget", 85.8),
         ("Cash flow", 81.9),
@@ -11340,19 +11358,6 @@ fn fitted_budget_cell_text_uses_the_snapped_sheet_origin() {
             (run.left_pt - native_left_pt).abs() < 0.01,
             "{text}: native left edge {native_left_pt}pt, converter {}pt",
             run.left_pt
-        );
-    }
-
-    for text in ["january income:", "january expenses:", "january cash flow:"] {
-        let run = runs
-            .iter()
-            .find(|run| run.text == text)
-            .unwrap_or_else(|| panic!("the fitted page must contain {text:?}"));
-        let baseline_sheet_pt: f64 = (run.baseline_pt - 53.82) / 0.78;
-        assert!(
-            (baseline_sheet_pt - baseline_sheet_pt.round()).abs() < 0.01,
-            "{text}: baseline {}pt must stay on a whole sheet point from the snapped origin",
-            run.baseline_pt
         );
     }
 }
