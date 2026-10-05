@@ -133,6 +133,8 @@ pub(super) fn extract_vml_shape_text_box(
         shape_rotation_deg: None,
         padding: crate::ir::Insets::default(),
         vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+        horizontal_align: None,
+        horizontal_anchor: crate::ir::FrameAnchor::Text,
         offset_x,
         offset_y,
     })
@@ -222,7 +224,7 @@ fn extract_vml_style_dimension(style: Option<&str>, key: &str) -> Option<f64> {
 pub(super) enum DrawingTextBoxPlacement {
     /// The drawing is not a text box.
     Absent,
-    /// `wp:anchor`: a box positioned by its own offsets, as its own block.
+    /// `wp:anchor`: a box positioned by its offsets or alignment, as its own block.
     Floating(Vec<Block>),
     /// `wp:inline`: a box on the line of the paragraph that anchors it,
     /// carried by the run it was anchored to (issue #1690).
@@ -306,6 +308,8 @@ pub(super) fn extract_drawing_text_box_blocks(
         shape_rotation_deg: None,
         padding: crate::ir::Insets::default(),
         vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+        horizontal_align: layout.horizontal_align,
+        horizontal_anchor: layout.horizontal_anchor,
         offset_x,
         offset_y,
     })])

@@ -4884,7 +4884,7 @@ fn generate_floating_anchor_group(
         match block {
             Block::FloatingShape(shape) => generate_floating_shape_overlay(out, shape, ctx),
             Block::FloatingTextBox(text_box) => {
-                generate_floating_text_box_overlay(out, text_box, ctx)?;
+                generate_floating_text_box_overlay(out, text_box, ctx, false, text_box.offset_y)?;
             }
             _ => unreachable!("checked by is_zero_size_floating_anchor"),
         }
@@ -5463,13 +5463,7 @@ fn generate_floating_text_box(
     match ftb.wrap_mode {
         WrapMode::TopAndBottom => {
             out.push_str("#block(width: 100%)[\n");
-            let _ = writeln!(
-                out,
-                "  #place(top + left, dx: {}pt, dy: 0pt)[",
-                format_f64(ftb.offset_x)
-            );
-            generate_floating_text_box_content(out, ftb, ctx)?;
-            out.push_str("  ]\n");
+            generate_floating_text_box_overlay(out, ftb, ctx, false, 0.0)?;
             if ftb.height > 0.0 {
                 let _ = writeln!(out, "  #v({}pt)", format_f64(ftb.height));
             }
@@ -5481,18 +5475,11 @@ fn generate_floating_text_box(
             // box piles at the page top, away from the shapes it belongs with
             // (issue #176).
             out.push_str("#box(width: 0pt, height: 0pt)[\n");
-            generate_floating_text_box_overlay(out, ftb, ctx)?;
+            generate_floating_text_box_overlay(out, ftb, ctx, false, ftb.offset_y)?;
             out.push_str("]\n");
         }
         WrapMode::Square | WrapMode::Tight => {
-            let _ = writeln!(
-                out,
-                "#place(top + left, dx: {}pt, dy: {}pt, float: true)[",
-                format_f64(ftb.offset_x),
-                format_f64(ftb.offset_y)
-            );
-            generate_floating_text_box_content(out, ftb, ctx)?;
-            out.push_str("]\n");
+            generate_floating_text_box_overlay(out, ftb, ctx, true, ftb.offset_y)?;
         }
     }
 
@@ -5529,16 +5516,53 @@ fn generate_floating_text_box_overlay(
     out: &mut String,
     ftb: &FloatingTextBox,
     ctx: &mut GenCtx,
+    should_float: bool,
+    offset_y: f64,
 ) -> Result<(), ConvertError> {
-    let _ = writeln!(
-        out,
-        "#place(top + left, dx: {}pt, dy: {}pt)[",
-        format_f64(ftb.offset_x),
-        format_f64(ftb.offset_y)
-    );
+    let aligned_page_x: Option<f64> = floating_text_box_aligned_page_x(ftb, ctx);
+    if let Some(target_x) = aligned_page_x {
+        out.push_str("#context [\n#let anchor_x = here().position().x\n");
+        let _ = write!(
+            out,
+            "#place(top + left, dx: {}pt - anchor_x, dy: {}pt",
+            format_f64(target_x + ftb.offset_x),
+            format_f64(offset_y),
+        );
+    } else {
+        let _ = write!(
+            out,
+            "#place(top + left, dx: {}pt, dy: {}pt",
+            format_f64(ftb.offset_x),
+            format_f64(offset_y),
+        );
+    }
+    if should_float {
+        out.push_str(", float: true");
+    }
+    out.push_str(")[\n");
     generate_floating_text_box_content(out, ftb, ctx)?;
-    out.push_str("]\n");
+    if aligned_page_x.is_some() {
+        out.push_str("]\n]\n");
+    } else {
+        out.push_str("]\n");
+    }
     Ok(())
+}
+
+fn floating_text_box_aligned_page_x(ftb: &FloatingTextBox, ctx: &GenCtx) -> Option<f64> {
+    // Word aligns to a page frame, but Typst places at the anchor paragraph.
+    // The generated context translates that flow location to this page-space x.
+    let alignment: crate::ir::FrameAlign = ftb.horizontal_align?;
+    let page_size: PageSize = ctx.active_page_size?;
+    let margins: Margins = ctx.active_page_margins?;
+    let (origin, available): (f64, f64) = match ftb.horizontal_anchor {
+        FrameAnchor::Page => (0.0, page_size.width),
+        FrameAnchor::Margin | FrameAnchor::Text => (
+            margins.left,
+            (page_size.width - margins.left - margins.right).max(0.0),
+        ),
+    };
+    Some(origin + aligned_offset(Some(alignment), available, Some(ftb.width)))
 }
 
 fn generate_floating_text_box_content(

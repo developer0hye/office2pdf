@@ -915,6 +915,30 @@ fn floating_body_table_respects_its_page_and_margin_anchors() {
 }
 
 #[test]
+fn right_aligned_anchored_text_box_retains_its_margin_reference() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let text_box = document
+        .pages
+        .iter()
+        .filter_map(|page| match page {
+            Page::Flow(page) | Page::FlowContinuous(page) => Some(&page.content),
+            _ => None,
+        })
+        .flatten()
+        .find_map(|block| match block {
+            Block::FloatingTextBox(text_box) if (text_box.width - 156.25).abs() < 0.01 => {
+                Some(text_box)
+            }
+            _ => None,
+        })
+        .expect("the fixture's 156.25pt anchored text box should be in the flow");
+
+    assert_eq!(text_box.horizontal_align, Some(crate::ir::FrameAlign::End));
+    assert_eq!(text_box.horizontal_anchor, crate::ir::FrameAnchor::Margin);
+}
+
+#[test]
 fn an_unpositioned_docx_body_table_remains_in_text_flow() {
     let paragraph =
         docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("An ordinary body table"));

@@ -1036,6 +1036,8 @@ fn convert_wpg_drawing_blocks(
                 shape_rotation_deg: child.rotation_deg,
                 padding: child.padding,
                 vertical_align: child.vertical_align,
+                horizontal_align: None,
+                horizontal_anchor: crate::ir::FrameAnchor::Text,
                 offset_x: child.offset_x,
                 offset_y: child.offset_y,
             }));

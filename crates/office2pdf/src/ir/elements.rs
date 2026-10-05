@@ -1189,6 +1189,11 @@ pub struct FloatingTextBox {
     pub shape_rotation_deg: Option<f64>,
     pub padding: Insets,
     pub vertical_align: TextBoxVerticalAlign,
+    /// Horizontal alignment relative to `horizontal_anchor`, when the source
+    /// uses `<wp:align>` instead of `<wp:posOffset>`.
+    pub horizontal_align: Option<FrameAlign>,
+    /// Reference frame for the source's horizontal alignment.
+    pub horizontal_anchor: FrameAnchor,
     /// Horizontal offset in points from the anchor reference.
     pub offset_x: f64,
     /// Vertical offset in points from the anchor reference.
