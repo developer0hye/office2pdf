@@ -44,6 +44,7 @@ fn floating_image_positioned_maps_offsets_to_xy() {
             paragraph_spacing: None,
         },
         wrap_mode: WrapMode::Square,
+        vertical_anchor: FloatingImageVerticalAnchor::Page,
         offset_x: 50.0,
         offset_y: 75.0,
     };
@@ -72,6 +73,7 @@ fn floating_image_positioned_returns_zero_when_dimensions_absent() {
             paragraph_spacing: None,
         },
         wrap_mode: WrapMode::None,
+        vertical_anchor: FloatingImageVerticalAnchor::Page,
         offset_x: 10.0,
         offset_y: 20.0,
     };

@@ -3326,39 +3326,52 @@ fn generate_cell_content(
         })
         .count();
     let stacks_multiple_blocks: bool = rendered_block_count > 1;
+    let mut pending_floating_images: Vec<&FloatingImage> = Vec::new();
     for (i, block) in blocks.iter().enumerate() {
+        if !pending_floating_images.is_empty()
+            && !matches!(
+                block,
+                Block::FloatingImage(_) | Block::Paragraph(_) | Block::Caption(_)
+            )
+        {
+            generate_cell_floating_images(out, &pending_floating_images, ctx, 0.0);
+            pending_floating_images.clear();
+        }
         if i > 0 {
             out.push('\n');
         }
-        let paragraph_ctx = |para: &Paragraph| CellParagraphCtx {
-            default_tab_width_pt: ctx.default_tab_width_pt,
-            line_grid_pitch: ctx.line_grid_pitch,
-            row_east_asian: ctx.row_east_asian,
-            vertical_align: ctx.cell_vertical_align,
-            seats_text_on_descender: ctx.cell_seats_text_on_descender,
-            sheet_row_line: ctx.cell_sheet_row_line.clone(),
-            sheet_seat: ctx.cell_sheet_seat,
-            sheet_print_scale: ctx.sheet_print_scale(),
-            in_spill_cell: ctx.in_spill_cell,
-            uses_powerpoint_line_box: ctx.table_uses_powerpoint_line_box,
-            stacks_multiple_blocks,
-            has_following_flow_content: blocks[i + 1..].iter().any(cell_block_has_flow_extent),
-            paragraph_mark_metric_runs: para
-                .runs
-                .is_empty()
-                .then(|| cell_paragraph_mark_metric_runs(blocks, i, &para.style))
-                .flatten(),
-            breaks_hangul_at_eojeol: ctx.breaks_hangul_at_eojeol,
-            available_measure_pt: ctx.available_measure_pt,
-            sheet_cell_box: ctx.sheet_cell_box,
-        };
         match block {
             // A `TOC` field inside a table cell is not a shape Word produces.
             Block::TableOfContents(_) => {}
             Block::Caption(caption) => {
-                generate_cell_paragraph(out, &caption.paragraph, &paragraph_ctx(&caption.paragraph))
+                let paragraph: CellParagraphCtx<'_> = cell_paragraph_context(
+                    ctx,
+                    blocks,
+                    i,
+                    &caption.paragraph,
+                    stacks_multiple_blocks,
+                );
+                generate_cell_floating_images(
+                    out,
+                    &pending_floating_images,
+                    ctx,
+                    cell_paragraph_anchor_offset_pt(&caption.paragraph, &paragraph),
+                );
+                pending_floating_images.clear();
+                generate_cell_paragraph(out, &caption.paragraph, &paragraph);
             }
-            Block::Paragraph(para) => generate_cell_paragraph(out, para, &paragraph_ctx(para)),
+            Block::Paragraph(para) => {
+                let paragraph: CellParagraphCtx<'_> =
+                    cell_paragraph_context(ctx, blocks, i, para, stacks_multiple_blocks);
+                generate_cell_floating_images(
+                    out,
+                    &pending_floating_images,
+                    ctx,
+                    cell_paragraph_anchor_offset_pt(para, &paragraph),
+                );
+                pending_floating_images.clear();
+                generate_cell_paragraph(out, para, &paragraph);
+            }
             Block::Table(table) => {
                 if ctx.table_depth < MAX_TABLE_DEPTH {
                     generate_table(out, table, ctx)?;
@@ -3374,6 +3387,11 @@ fn generate_cell_content(
                 for image in images {
                     generate_image(out, image, ctx);
                 }
+            }
+            Block::FloatingImage(fi)
+                if fi.vertical_anchor == FloatingImageVerticalAnchor::Paragraph =>
+            {
+                pending_floating_images.push(fi);
             }
             Block::FloatingImage(fi) => generate_floating_image(out, fi, ctx),
             Block::FloatingTextBox(ftb) => generate_floating_text_box(out, ftb, ctx)?,
@@ -3409,7 +3427,91 @@ fn generate_cell_content(
             Block::PageBreak | Block::ColumnBreak => {}
         }
     }
+    if !pending_floating_images.is_empty() {
+        generate_cell_floating_images(out, &pending_floating_images, ctx, 0.0);
+    }
     Ok(())
+}
+
+fn cell_paragraph_context<'a>(
+    ctx: &GenCtx,
+    blocks: &'a [Block],
+    index: usize,
+    paragraph: &Paragraph,
+    stacks_multiple_blocks: bool,
+) -> CellParagraphCtx<'a> {
+    CellParagraphCtx {
+        default_tab_width_pt: ctx.default_tab_width_pt,
+        line_grid_pitch: ctx.line_grid_pitch,
+        row_east_asian: ctx.row_east_asian,
+        vertical_align: ctx.cell_vertical_align,
+        seats_text_on_descender: ctx.cell_seats_text_on_descender,
+        sheet_row_line: ctx.cell_sheet_row_line.clone(),
+        sheet_seat: ctx.cell_sheet_seat,
+        sheet_print_scale: ctx.sheet_print_scale(),
+        in_spill_cell: ctx.in_spill_cell,
+        uses_powerpoint_line_box: ctx.table_uses_powerpoint_line_box,
+        stacks_multiple_blocks,
+        has_following_flow_content: blocks[index + 1..].iter().any(cell_block_has_flow_extent),
+        paragraph_mark_metric_runs: paragraph
+            .runs
+            .is_empty()
+            .then(|| cell_paragraph_mark_metric_runs(blocks, index, &paragraph.style))
+            .flatten(),
+        breaks_hangul_at_eojeol: ctx.breaks_hangul_at_eojeol,
+        available_measure_pt: ctx.available_measure_pt,
+        sheet_cell_box: ctx.sheet_cell_box,
+    }
+}
+
+fn generate_cell_floating_images(
+    out: &mut String,
+    images: &[&FloatingImage],
+    ctx: &mut GenCtx,
+    paragraph_anchor_offset_pt: f64,
+) {
+    for image in images {
+        // Keep the placement box beside its anchor paragraph so it cannot
+        // affect the paragraph's alignment or line measure. The offset
+        // compensates for Typst's cell line-box origin so DrawingML's
+        // paragraph-relative anchor uses Word's origin (#1994).
+        out.push_str("#box(width: 0pt, height: 0pt)[\n");
+        super::generate_floating_image_with_vertical_offset(
+            out,
+            image,
+            ctx,
+            image.offset_y + paragraph_anchor_offset_pt,
+        );
+        out.push_str("]\n");
+    }
+}
+
+fn cell_paragraph_anchor_offset_pt(paragraph: &Paragraph, cell: &CellParagraphCtx<'_>) -> f64 {
+    // The image is emitted before its paragraph to leave text alignment and
+    // line measure untouched, so carry the paragraph's own leading space to
+    // the same anchor point (#1994).
+    let space_before_pt: f64 = paragraph.style.space_before.unwrap_or(0.0);
+    let runs: &[Run] = if paragraph.runs.is_empty() {
+        cell.paragraph_mark_metric_runs
+            .as_deref()
+            .unwrap_or_default()
+    } else {
+        &paragraph.runs
+    };
+    word_cell_line_box(
+        runs,
+        &paragraph.style,
+        cell.line_grid_pitch,
+        cell.row_east_asian,
+        cell.vertical_align,
+        cell.seats_text_on_descender,
+        cell.sheet_row_line.as_ref(),
+        cell.sheet_seat,
+        cell.sheet_print_scale,
+    )
+    .map_or(space_before_pt, |line_box| {
+        space_before_pt - (line_box.bottom_em * line_box.font_size_pt)
+    })
 }
 
 /// The cell-level facts a paragraph's emission needs beyond its own IR.
@@ -3779,7 +3881,6 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
     if let Some(space_before) = style.space_before {
         let _ = writeln!(out, "#v({}pt)", format_f64(space_before));
     }
-
     match paragraph_mark_line_pt {
         Some(height_pt) => {
             let _ = write!(out, "#box(width: 0pt, height: {}pt)", format_f64(height_pt));

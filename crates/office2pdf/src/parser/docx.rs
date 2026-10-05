@@ -10,11 +10,11 @@ use crate::error::{ConvertError, ConvertWarning};
 const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, Caption, CellBorder, CellVerticalAlign, Color,
-    ColumnLayout, Document, FloatingImage, FloatingTable, FloatingTextBox, ImageData, ImageFormat,
-    ImageParagraphSpacing, InlineTextBox, Insets, LineCap, LineJoin, LineSpacing, Page,
-    PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment,
-    TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow, TextDirection, TextStyle,
-    VerticalTextAlign, WordCompatibilityMode,
+    ColumnLayout, Document, FloatingImage, FloatingImageVerticalAnchor, FloatingTable,
+    FloatingTextBox, ImageData, ImageFormat, ImageParagraphSpacing, InlineTextBox, Insets, LineCap,
+    LineJoin, LineSpacing, Page, PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run,
+    StyleSheet, TabAlignment, TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow,
+    TextDirection, TextStyle, VerticalTextAlign, WordCompatibilityMode,
 };
 use crate::parser::Parser;
 

@@ -1174,10 +1174,26 @@ pub enum WrapMode {
 pub struct FloatingImage {
     pub image: ImageData,
     pub wrap_mode: WrapMode,
+    /// Vertical reference frame from DrawingML `wp:positionV/@relativeFrom`.
+    pub vertical_anchor: FloatingImageVerticalAnchor,
     /// Horizontal offset in points from the anchor reference.
     pub offset_x: f64,
     /// Vertical offset in points from the anchor reference.
     pub offset_y: f64,
+}
+
+/// The source frame used by a floating picture's vertical offset.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FloatingImageVerticalAnchor {
+    BottomMargin,
+    InsideMargin,
+    Line,
+    Margin,
+    OutsideMargin,
+    #[default]
+    Page,
+    Paragraph,
+    TopMargin,
 }
 
 /// A floating text box with positioning, size, and text wrap mode.
