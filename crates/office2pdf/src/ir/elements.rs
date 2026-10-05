@@ -1184,11 +1184,20 @@ pub struct FloatingTextBox {
     pub wrap_mode: WrapMode,
     pub width: f64,
     pub height: f64,
+    /// Solid fill from the floating shape's DrawingML `a:solidFill`.
+    pub fill: Option<Color>,
+    /// Outline from the floating shape's DrawingML `a:ln`.
+    pub stroke: Option<BorderSide>,
     /// Clockwise rotation of the whole box about its centre, from the WPS
     /// shape's `<a:xfrm rot>`.
     pub shape_rotation_deg: Option<f64>,
     pub padding: Insets,
     pub vertical_align: TextBoxVerticalAlign,
+    /// Reference frame for the source's vertical position.
+    pub vertical_anchor: FrameAnchor,
+    /// Vertical alignment within `vertical_anchor`, when the source uses
+    /// `<wp:align>` instead of `<wp:posOffset>`.
+    pub vertical_position_align: Option<FrameAlign>,
     /// Horizontal alignment relative to `horizontal_anchor`, when the source
     /// uses `<wp:align>` instead of `<wp:posOffset>`.
     pub horizontal_align: Option<FrameAlign>,

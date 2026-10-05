@@ -2,6 +2,152 @@ use super::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn page_anchored_text_box_position_does_not_follow_flow_position() {
+    fn anchored_text_baseline(preceding_paragraph_count: usize) -> f64 {
+        let mut content: Vec<Block> = (0..preceding_paragraph_count)
+            .map(|paragraph_index| {
+                Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: format!("preceding flow paragraph {paragraph_index} ").repeat(12),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                })
+            })
+            .collect();
+        content.push(Block::FloatingTextBox(FloatingTextBox {
+            content: vec![Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Page anchored text".to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                    inline_box: None,
+                }],
+            })],
+            wrap_mode: WrapMode::Behind,
+            width: 120.0,
+            height: 48.0,
+            fill: None,
+            stroke: None,
+            shape_rotation_deg: None,
+            padding: Insets::default(),
+            vertical_align: TextBoxVerticalAlign::Top,
+            vertical_anchor: crate::ir::FrameAnchor::Page,
+            vertical_position_align: None,
+            horizontal_align: None,
+            horizontal_anchor: crate::ir::FrameAnchor::Text,
+            offset_x: 0.0,
+            offset_y: 240.0,
+        }));
+        let document: Document = Document {
+            metadata: Metadata::default(),
+            pages: vec![Page::Flow(FlowPage {
+                first_header: None,
+                first_footer: None,
+                header: None,
+                footer: None,
+                columns: None,
+                line_grid_pitch: None,
+                line_grid_snaps_lines: false,
+                page_numbering: None,
+                size: PageSize {
+                    width: 612.0,
+                    height: 792.0,
+                },
+                margins: Margins {
+                    top: 72.0,
+                    right: 72.0,
+                    bottom: 72.0,
+                    left: 72.0,
+                },
+                content,
+            })],
+            styles: crate::ir::StyleSheet::default(),
+        };
+        let output: TypstOutput =
+            generate_typst(&document).expect("the test document should generate");
+        (0..4)
+            .filter_map(|page_index| {
+                crate::render::pdf::compiled_text_runs(&output.source, page_index).ok()
+            })
+            .flatten()
+            .find(|run| run.text == "Page anchored text")
+            .expect("the floating textbox text should remain searchable")
+            .baseline_pt
+    }
+
+    let baseline_without_flow: f64 = anchored_text_baseline(0);
+    let baseline_after_flow: f64 = anchored_text_baseline(8);
+    assert!(
+        (baseline_without_flow - baseline_after_flow).abs() < 0.25,
+        "page anchoring should keep the baseline stable when preceding flow changes; before={baseline_without_flow}pt after={baseline_after_flow}pt"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn page_anchored_text_box_paints_its_declared_frame_at_the_page_offset() {
+    use crate::render::pdf::{PaintedKind, compiled_paint_sequence};
+
+    let page_size: PageSize = PageSize::default();
+    let document: Document = make_doc(vec![make_flow_page(vec![Block::FloatingTextBox(
+        FloatingTextBox {
+            content: vec![make_paragraph("Page frame")],
+            wrap_mode: WrapMode::Behind,
+            width: 120.0,
+            height: 48.0,
+            fill: Some(Color::white()),
+            stroke: Some(BorderSide {
+                width: 0.75,
+                color: Color::new(0, 176, 240),
+                style: BorderLineStyle::Solid,
+                join: LineJoin::Round,
+                cap: LineCap::Flat,
+            }),
+            shape_rotation_deg: None,
+            padding: Insets::default(),
+            vertical_align: TextBoxVerticalAlign::Top,
+            vertical_anchor: crate::ir::FrameAnchor::Page,
+            vertical_position_align: None,
+            horizontal_align: Some(crate::ir::FrameAlign::End),
+            horizontal_anchor: crate::ir::FrameAnchor::Page,
+            offset_x: 0.0,
+            offset_y: 240.0,
+        },
+    )])]);
+    let output: TypstOutput = generate_typst(&document).expect("the page should generate");
+    assert!(output.source.contains("fill: rgb(255, 255, 255)"));
+    assert!(output.source.contains("paint: rgb(0, 176, 240)"));
+    assert!(output.source.contains("thickness: 0.75pt"));
+
+    let paints = compiled_paint_sequence(&output.source, &output.images, 0)
+        .expect("the page should compile to paint geometry");
+    let frame = paints
+        .iter()
+        .find(|paint| {
+            paint.kind == PaintedKind::Shape
+                && paint.rectangle_fill.is_some()
+                && paint
+                    .stroke
+                    .as_ref()
+                    .is_some_and(|stroke| (stroke.thickness_pt - 0.75).abs() < 0.01)
+        })
+        .expect("the text box should paint its filled and stroked frame");
+    let expected_left: f64 = page_size.width - 120.0;
+
+    assert!((frame.bounds.0 - expected_left).abs() < 0.25);
+    assert!((frame.bounds.1 - 240.0).abs() < 0.25);
+    assert!((frame.bounds.2 - page_size.width).abs() < 0.25);
+    assert!((frame.bounds.3 - 288.0).abs() < 0.25);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn docx_right_aligned_anchored_text_box_uses_the_page_margin() {
     use crate::parser::Parser;
 
@@ -124,9 +270,13 @@ fn floating_text_box_margin_alignment_tracks_a_different_page_geometry() {
                     wrap_mode: WrapMode::Behind,
                     width: 100.0,
                     height: 32.0,
+                    fill: None,
+                    stroke: None,
                     shape_rotation_deg: None,
                     padding: Insets::default(),
                     vertical_align: TextBoxVerticalAlign::Top,
+                    vertical_anchor: crate::ir::FrameAnchor::Text,
+                    vertical_position_align: None,
                     horizontal_align: Some(crate::ir::FrameAlign::End),
                     horizontal_anchor: crate::ir::FrameAnchor::Margin,
                     offset_x: 0.0,
@@ -381,9 +531,13 @@ fn test_floating_text_box_square_wrap_codegen() {
             wrap_mode: WrapMode::Square,
             width: 200.0,
             height: 100.0,
+            fill: None,
+            stroke: None,
             shape_rotation_deg: None,
             padding: Insets::default(),
             vertical_align: TextBoxVerticalAlign::Top,
+            vertical_anchor: crate::ir::FrameAnchor::Text,
+            vertical_position_align: None,
             horizontal_align: None,
             horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 72.0,
@@ -432,9 +586,13 @@ fn a_rotated_floating_text_box_keeps_its_declared_center() {
             wrap_mode: WrapMode::None,
             width: 200.0,
             height: 150.0,
+            fill: None,
+            stroke: None,
             shape_rotation_deg: Some(90.0),
             padding: Insets::default(),
             vertical_align: TextBoxVerticalAlign::Top,
+            vertical_anchor: crate::ir::FrameAnchor::Text,
+            vertical_position_align: None,
             horizontal_align: None,
             horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 72.0,
@@ -460,9 +618,13 @@ fn test_floating_text_box_top_and_bottom_codegen() {
             wrap_mode: WrapMode::TopAndBottom,
             width: 150.0,
             height: 60.0,
+            fill: None,
+            stroke: None,
             shape_rotation_deg: None,
             padding: Insets::default(),
             vertical_align: TextBoxVerticalAlign::Top,
+            vertical_anchor: crate::ir::FrameAnchor::Text,
+            vertical_position_align: None,
             horizontal_align: None,
             horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 10.0,
@@ -498,9 +660,13 @@ fn test_floating_text_box_content_is_top_left_aligned_inside_bounds() {
             wrap_mode: WrapMode::None,
             width: 120.0,
             height: 40.0,
+            fill: None,
+            stroke: None,
             shape_rotation_deg: None,
             padding: Insets::default(),
             vertical_align: TextBoxVerticalAlign::Top,
+            vertical_anchor: crate::ir::FrameAnchor::Text,
+            vertical_position_align: None,
             horizontal_align: None,
             horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 10.0,
@@ -534,6 +700,8 @@ fn test_floating_text_box_applies_padding_and_center_alignment() {
             wrap_mode: WrapMode::None,
             width: 120.0,
             height: 60.0,
+            fill: None,
+            stroke: None,
             shape_rotation_deg: None,
             padding: Insets {
                 top: 3.0,
@@ -542,6 +710,8 @@ fn test_floating_text_box_applies_padding_and_center_alignment() {
                 left: 6.0,
             },
             vertical_align: TextBoxVerticalAlign::Center,
+            vertical_anchor: crate::ir::FrameAnchor::Text,
+            vertical_position_align: None,
             horizontal_align: None,
             horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 10.0,
