@@ -4692,6 +4692,7 @@ fn a_behind_text_header_banner_is_drawn_on_the_background_layer() {
             inset_top: 0.0,
             bottom_offset: None,
         },
+        anchor_paragraph_index: None,
         behind_text: true,
     };
 
@@ -4742,6 +4743,34 @@ fn a_behind_text_header_banner_is_drawn_on_the_background_layer() {
         ),
         "{}",
         output.source
+    );
+}
+
+/// The public regression document keeps its footer line in the page overlay
+/// at each page's own text-column position (issue #1990).
+#[test]
+fn paragraph_relative_footer_line_is_emitted_at_each_page_position() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        fixture,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("public footer-line fixture parses");
+    let source: String = generate_typst(&document).unwrap().source;
+
+    assert!(
+        source.contains(
+            "#place(top + left, dx: 30pt, dy: 758.25pt)[#box(width: 590.25pt, height: 0pt)["
+        ),
+        "page one uses the first text column: {source}"
+    );
+    assert!(
+        source.contains(
+            "#place(top + left, dx: 12pt, dy: 758.25pt)[#box(width: 590.25pt, height: 0pt)["
+        ),
+        "page two uses its own text column: {source}"
     );
 }
 
