@@ -177,7 +177,7 @@ text-layer line. Therefore `side: "gt"` must match an exact entry in
 `lines.extra_text`, while `side: "out"` must match an exact entry in
 `lines.missing_text`. Occurrences count repeated labels separately on each page
 and side, in report order. Use the exact label printed by the report
-(truncated to 60 characters); it exposes up to five labels per list, so only
+(truncated to 60 characters); it exposes up to twenty labels per list, so only
 those entries can be dispositioned. This record can also be used with a
 non-native reference export when it describes that exact rasterized-text
 difference.
@@ -233,6 +233,8 @@ Layout audit fine shifts: ref:page-10-august-bergquist-shift
 
 Render `![Native](...)` with a stable image URL. In the deviation table, use
 `Reference difference: ref:<id>` once for every difference in the report.
+When one deviation row covers multiple records, list each exact ID separated by
+commas, for example `Reference difference: ref:page-2-badge, ref:page-3-badge`.
 Reference differences can cover one exact occurrence of a
 `painted-text-visibility` finding or a `text-shift` finding when a non-native
 reference export is recorded. A shift records its page, base label, occurrence,

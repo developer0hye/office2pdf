@@ -11,6 +11,8 @@ from unittest.mock import patch
 from scripts.check_visual_pr import (
     AUDIT_ROWS,
     INSPECTION_ITEMS,
+    audit_reference_difference_ids,
+    _current_rasterized_text_findings,
     decoded_pixel_delta,
     read_jpeg_info,
     validate_evidence,
@@ -112,9 +114,9 @@ def layout_report(
     extra_text: list[str] | None = None,
 ) -> dict[str, object]:
     if missing_text is None:
-        missing_text = [f"missing line {index}" for index in range(1, min(missing, 5) + 1)]
+        missing_text = [f"missing line {index}" for index in range(1, min(missing, 20) + 1)]
     if extra_text is None:
-        extra_text = [f"extra line {index}" for index in range(1, min(extra, 5) + 1)]
+        extra_text = [f"extra line {index}" for index in range(1, min(extra, 20) + 1)]
     return {
         "pages": [
             {
@@ -356,6 +358,25 @@ def defect_body():
 
 
 class PullRequestBodyTests(unittest.TestCase):
+    def test_multiple_reference_differences_can_share_one_deviation_row(self):
+        difference_ids = {
+            "page-2-slide-number-rasterized",
+            "page-3-slide-number-rasterized",
+        }
+        references = ", ".join(
+            f"ref:{difference_id}" for difference_id in sorted(difference_ids)
+        )
+        body = visual_body(
+            {"Element presence": f"Reference difference: {references}"}
+        )
+
+        errors = validate_pr_body(
+            body, ["assets/bugfixes/issue-186/after.jpg"]
+        )
+
+        self.assertEqual(errors, [])
+        self.assertEqual(audit_reference_difference_ids(body), difference_ids)
+
     def test_non_visual_pr_requires_reason(self):
         body = """## Visual impact
 
@@ -812,6 +833,37 @@ class ReferenceExporterDifferenceTests(unittest.TestCase):
         self.assertEqual(evidence_errors, [])
         self.assertEqual(layout_errors, [])
 
+    def test_native_ground_truth_manifest_accepts_multiple_audit_references_in_one_row(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path, document = self.prepare_native_ground_truth_evidence(root)
+            second_difference = rasterized_text_difference(
+                difference_id="page-14-slide-number-rasterized",
+                page=14,
+                label="14",
+            )
+            document["differences"].append(second_difference)
+            (root / manifest_path).write_text(json.dumps(document), encoding="utf-8")
+            body = rasterized_text_body("page-13-slide-number-rasterized").replace(
+                "Reference difference: ref:page-13-slide-number-rasterized",
+                "Reference difference: ref:page-13-slide-number-rasterized, "
+                "ref:page-14-slide-number-rasterized",
+            )
+
+            _, errors = validate_reference_exporter_differences(
+                body,
+                [
+                    manifest_path,
+                    "assets/bugfixes/issue-186/gt.jpg",
+                    "assets/bugfixes/issue-186/native.jpg",
+                ],
+                root,
+            )
+
+        self.assertEqual(errors, [])
+
     def test_reference_and_native_images_must_record_a_pixel_difference(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -1249,6 +1301,14 @@ class LayoutAuditTests(unittest.TestCase):
         )
 
         self.assertEqual(errors, [])
+
+    def test_rasterized_text_report_can_select_a_label_after_the_first_five(self):
+        labels = [f"extra line {index}" for index in range(1, 7)] + ["13"]
+        report = layout_report(extra=len(labels), extra_text=labels)
+
+        findings = _current_rasterized_text_findings(report, {13})
+
+        self.assertIn((13, "13", "gt", 1), findings)
 
     def test_rasterized_output_text_can_disposition_the_exact_missing_line(
         self,

@@ -128,6 +128,9 @@ RECT_RULE_MIN_LENGTH_PT = 4.0
 # audit tolerance.
 RECT_COVERAGE_EPSILON_PT = 0.01
 RECT_SAMPLE_LIMIT = 5
+# Keep enough unmatched-text labels for exact evidence when a page also has
+# several unrelated chart or table text findings.
+TEXT_SAMPLE_LIMIT = 20
 OPAQUE_ALPHA = 0.98
 INVISIBLE_ALPHA = 0.02
 LOW_CONTRAST_CHANNEL_DELTA = 0.04
@@ -2245,8 +2248,8 @@ def diff_page(
             "missing": len(missing),
             "extra": len(extra),
             "deviant": deviant_lines,
-            "missing_text": [line.key[:60] for line in missing[:5]],
-            "extra_text": [line.key[:60] for line in extra[:5]],
+            "missing_text": [line.key[:60] for line in missing[:TEXT_SAMPLE_LIMIT]],
+            "extra_text": [line.key[:60] for line in extra[:TEXT_SAMPLE_LIMIT]],
         },
         "baseline": {
             "mean_abs_dy": dy_stats["mean_abs"],

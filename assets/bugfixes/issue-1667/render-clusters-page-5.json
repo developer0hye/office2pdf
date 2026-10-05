@@ -1,0 +1,311 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 155.0592,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 80.64,
+        "x": 643.2,
+        "y": 526.08
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-a679e414b7ef",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 81.5616,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 50.4,
+        "x": 229.44,
+        "y": 524.64
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-862347adcd83",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 26.88,
+        "x": 305.28,
+        "y": 519.36
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-df2630694bc8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 17.28,
+        "x": 753.6,
+        "y": 496.32
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-98c844d2dddb",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 2.88,
+        "width": 20.64,
+        "x": 184.32,
+        "y": 530.4
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-3abbcbda4f7d",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 22.08,
+        "x": 96.48,
+        "y": 524.16
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-9e0873d9f0f9",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 1.44,
+        "width": 22.56,
+        "x": 483.36,
+        "y": 511.2
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-6fe14a167a06",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 20.64,
+        "x": 518.88,
+        "y": 510.24
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-5387d1a54349",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 2.4,
+        "width": 19.2,
+        "x": 74.4,
+        "y": 524.64
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-ea6d2bdb334b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 2.4,
+        "width": 18.24,
+        "x": 365.76,
+        "y": 508.8
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-899435f83717",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 2.4,
+        "width": 16.32,
+        "x": 280.8,
+        "y": 523.2
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-a7ca0715b568",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 16.32,
+        "x": 598.56,
+        "y": 519.36
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-449646a36947",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 16.32,
+        "x": 550.08,
+        "y": 507.36
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-16c5935b1ee3",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 15.84,
+        "x": 533.76,
+        "y": 504.48
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-be9f31a047cd",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 13.92,
+        "x": 459.84,
+        "y": 511.68
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-c052a6aa557d",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 11.52,
+        "x": 474.72,
+        "y": 472.32
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-b9b8e9a6cb32",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 13.92,
+        "x": 311.52,
+        "y": 512.64
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-c178bb8d76be",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 2.4,
+        "width": 13.44,
+        "x": 766.56,
+        "y": 446.88
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p5-d733a3193649",
+      "region": "bottom-right"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 5,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 18,
+    "duplicate": 0,
+    "total": 18,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

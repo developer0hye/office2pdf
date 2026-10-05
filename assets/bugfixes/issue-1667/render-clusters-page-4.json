@@ -1,0 +1,279 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 72.3456,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.56,
+        "x": 201.12,
+        "y": 256.8
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-a626f40aef91",
+      "region": "left"
+    },
+    {
+      "area_pt2": 45.8496,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 9.12,
+        "x": 344.16,
+        "y": 258.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-08cae9d8242b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 212.16,
+        "y": 258.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-1d64eacd3f68",
+      "region": "left"
+    },
+    {
+      "area_pt2": 45.3888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 324.96,
+        "y": 258.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-dac9baab7381",
+      "region": "center"
+    },
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.2,
+        "x": 185.76,
+        "y": 256.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-eaed199801e7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.12,
+        "x": 231.84,
+        "y": 258.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-97f084aaa820",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 318.72,
+        "y": 256.8
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-e9a9e3427169",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.32,
+        "x": 179.04,
+        "y": 256.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-b9b1b145e843",
+      "region": "left"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 306.24,
+        "y": 258.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-cd38d69e7c70",
+      "region": "left"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.32,
+        "x": 291.84,
+        "y": 256.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-a6567b99a61b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 4.8,
+        "x": 313.92,
+        "y": 257.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-963d3edb7e89",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.8,
+        "x": 298.56,
+        "y": 256.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-6fe8d5d30fc3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 193.44,
+        "y": 259.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-6e02fea5f888",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 3.84,
+        "x": 219.84,
+        "y": 258.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-53a8dbab3c1f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 224.16,
+        "y": 258.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-98788e75abbe",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 336.96,
+        "y": 258.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p4-588933f293bf",
+      "region": "center"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 4,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 16,
+    "duplicate": 0,
+    "total": 16,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

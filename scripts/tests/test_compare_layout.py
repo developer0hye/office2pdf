@@ -922,6 +922,18 @@ class MatchAndDiffTest(unittest.TestCase):
         self.assertIn("Sensitivity:Internal", vector["lines"]["extra_text"])
         self.assertEqual(compare_layout.audit_failures([vector]), 1)
 
+    def test_extra_text_samples_include_labels_after_the_first_five(self) -> None:
+        labels = [f"Extra{index}" for index in range(1, 7)] + ["14"]
+        output = "\n".join(
+            line_of(label, 72, 100 + index * 20)
+            for index, label in enumerate(labels)
+        )
+
+        vector = self.diff("", output)
+
+        self.assertEqual(vector["lines"]["extra"], len(labels))
+        self.assertEqual(vector["lines"]["extra_text"], labels)
+
     def test_unmatched_text_fully_below_media_box_is_not_a_visual_finding(self) -> None:
         vector = self.diff(line_of("Outside", 72, 860), "")
 

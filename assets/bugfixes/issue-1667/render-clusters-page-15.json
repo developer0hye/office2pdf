@@ -1,0 +1,295 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 122.112,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 15.36,
+        "x": 286.56,
+        "y": 283.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-6363312391a7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 77.4144,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 8.16,
+        "x": 300.96,
+        "y": 283.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-0889ec00af7c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 59.904,
+      "bbox_pt": {
+        "height": 18.24,
+        "width": 6.24,
+        "x": 239.52,
+        "y": 278.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-0dc4f9f78f64",
+      "region": "left"
+    },
+    {
+      "area_pt2": 56.9088,
+      "bbox_pt": {
+        "height": 18.72,
+        "width": 6.72,
+        "x": 242.88,
+        "y": 278.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-2491eca5beaa",
+      "region": "left"
+    },
+    {
+      "area_pt2": 54.3744,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 9.12,
+        "x": 220.8,
+        "y": 278.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-b6fa4d7adbad",
+      "region": "left"
+    },
+    {
+      "area_pt2": 53.6832,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 9.6,
+        "x": 216.48,
+        "y": 286.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-9e543d18bf92",
+      "region": "left"
+    },
+    {
+      "area_pt2": 52.0704,
+      "bbox_pt": {
+        "height": 18.72,
+        "width": 6.24,
+        "x": 227.52,
+        "y": 278.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-0af78ad176ab",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.3056,
+      "bbox_pt": {
+        "height": 18.24,
+        "width": 6.24,
+        "x": 213.12,
+        "y": 278.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-e3d0a84e519d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 17.28,
+        "x": 84.0,
+        "y": 326.88
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "Inspected crop contains the small vector icon stroke only."
+      },
+      "id": "p15-f9a8216e2e9b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 5.28,
+        "x": 235.2,
+        "y": 283.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-5878a86c0b6e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 6.72,
+        "x": 276.96,
+        "y": 283.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-331a5a76d0f4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.64,
+        "x": 256.8,
+        "y": 288.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-180453ff8f1a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 4.8,
+        "x": 231.84,
+        "y": 283.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-7129f953987a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 263.04,
+        "y": 283.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-ac48d86048cb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 271.2,
+        "y": 288.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-696d827e745c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 280.32,
+        "y": 286.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-353e31010de7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 285.12,
+        "y": 286.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected contact-text crops show glyph-edge rasterization only."
+      },
+      "id": "p15-c031421ea5a8",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 15,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 17,
+    "duplicate": 0,
+    "total": 17,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

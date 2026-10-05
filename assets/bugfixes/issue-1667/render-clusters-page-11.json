@@ -1,0 +1,375 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 74.1888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 12.0,
+        "x": 155.04,
+        "y": 212.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-ae1b3827a5d9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 43.0848,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 157.92,
+        "y": 241.44
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-1c7cb01fe76c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 40.5504,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.56,
+        "x": 120.48,
+        "y": 183.36
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-b327cd920144",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 535.68,
+        "y": 256.8
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-24cb2d0c36ea",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.6,
+        "x": 554.88,
+        "y": 258.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-c2fefb23858c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 149.28,
+        "y": 212.16
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-b1b7b8f64564",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 148.32,
+        "y": 272.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-a4484f84a73f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 279.36,
+        "y": 183.36
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-3a2bfe1ac8c1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.8,
+        "x": 154.08,
+        "y": 272.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-b2e54a07b89f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 148.8,
+        "y": 185.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-b4a21fd55022",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 112.8,
+        "y": 271.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-4ce9d96f6ea6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 491.04,
+        "y": 470.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-2be6adc4b48c",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 547.68,
+        "y": 257.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-2aa692501439",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 143.04,
+        "y": 214.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-0b3f00035e50",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 140.64,
+        "y": 185.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-64538ecdc2d4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 2.88,
+        "x": 136.8,
+        "y": 241.44
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-d411252185b7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.76,
+        "x": 519.84,
+        "y": 258.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-04f140cbcea9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 113.28,
+        "y": 213.12
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-43c75404d5f5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.32,
+        "x": 108.96,
+        "y": 243.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-c39f34736de8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 111.36,
+        "y": 183.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-8280f236a1a1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.32,
+        "x": 248.16,
+        "y": 468.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-8adb361185a6",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.8,
+        "x": 237.12,
+        "y": 470.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p11-c1759636760b",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 11,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 22,
+    "duplicate": 0,
+    "total": 22,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

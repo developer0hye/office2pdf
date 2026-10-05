@@ -1,0 +1,71 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 1.44,
+        "width": 21.12,
+        "x": 226.56,
+        "y": 102.72
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p12-fdfc7b944f13",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 1.44,
+        "width": 21.12,
+        "x": 192.96,
+        "y": 102.72
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p12-e6d8442ec0ab",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 1.44,
+        "width": 16.32,
+        "x": 173.76,
+        "y": 102.72
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "Full-page diff and every matched crop were inspected; the difference is confined to this rendering class."
+      },
+      "id": "p12-529950fe78b1",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 12,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 3,
+    "duplicate": 0,
+    "total": 3,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
