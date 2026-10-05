@@ -837,15 +837,26 @@ fn header_table_content_reaches_the_generated_page_header() {
         crate::ir::FrameAnchor::Page,
         "the table anchor is resolved against the section that defines the story"
     );
-    assert!(
-        (first_table
-            .frame
-            .y
-            .expect("the table has a vertical position")
-            + 5.7)
-            .abs()
-            < 0.01,
-        "the first section margin and tblpY resolve the table to the page top"
+    let crate::ir::HeaderFooterShapeContent::Table(parsed_table) = &first_table.content else {
+        unreachable!("the selected header element is a table")
+    };
+    assert_eq!(
+        first_table.frame.y,
+        Some(0.0),
+        "Word clamps the negative floating header-table position at the page top"
+    );
+    let paragraph_after_spacing: Vec<Option<f64>> = parsed_table.rows[0].cells[0]
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            crate::ir::Block::Paragraph(paragraph) => Some(paragraph.style.space_after),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        paragraph_after_spacing,
+        vec![Some(0.0); 4],
+        "TableGrid's paragraph spacing overrides docDefaults in the header cell"
     );
     let last_section = document
         .pages

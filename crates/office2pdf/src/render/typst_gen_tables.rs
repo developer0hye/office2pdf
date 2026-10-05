@@ -3342,6 +3342,7 @@ fn generate_cell_content(
             in_spill_cell: ctx.in_spill_cell,
             uses_powerpoint_line_box: ctx.table_uses_powerpoint_line_box,
             stacks_multiple_blocks,
+            has_following_flow_content: blocks[i + 1..].iter().any(cell_block_has_flow_extent),
             paragraph_mark_metric_runs: para
                 .runs
                 .is_empty()
@@ -3443,6 +3444,10 @@ struct CellParagraphCtx<'a> {
     /// Whether the cell stacks more than one rendered block, so this
     /// paragraph has a sibling to leak Typst's default block spacing against.
     stacks_multiple_blocks: bool,
+    /// Whether a Word table-cell paragraph's last line advances into later
+    /// in-flow cell content. Typst otherwise drops that line leading at the
+    /// paragraph boundary (issue #1993).
+    has_following_flow_content: bool,
     /// Runs standing in for the paragraph mark's own font when the paragraph
     /// has none of its own — see [`cell_paragraph_mark_metric_runs`].
     paragraph_mark_metric_runs: Option<Cow<'a, [Run]>>,
@@ -3462,6 +3467,19 @@ struct CellParagraphCtx<'a> {
     /// centred line can be seated where Excel prints it (issue #1600). `None`
     /// off a sheet.
     sheet_cell_box: Option<SheetCellBox>,
+}
+
+fn cell_block_has_flow_extent(block: &Block) -> bool {
+    !matches!(
+        block,
+        Block::TableOfContents(_)
+            | Block::PageBreak
+            | Block::ColumnBreak
+            | Block::FloatingImage(_)
+            | Block::FloatingTable(_)
+            | Block::FloatingTextBox(_)
+            | Block::FloatingShape(_)
+    )
 }
 
 /// The runs an empty `<w:p>` in a cell resolves its line box from.
@@ -3659,6 +3677,37 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
                 .map(|line_box| (line_box.top_em + line_box.bottom_em) * line_box.font_size_pt)
             }
         });
+    let paragraph_metric_runs: Option<&[Run]> = if para.runs.is_empty() {
+        cell.paragraph_mark_metric_runs.as_deref()
+    } else {
+        Some(&para.runs)
+    };
+    let interparagraph_line_advance_pt: Option<f64> = if cell.has_following_flow_content
+        && !cell.uses_powerpoint_line_box
+        && cell.sheet_row_line.is_none()
+        && cell.sheet_seat.is_none()
+        && cell.sheet_print_scale.is_none()
+        && cell.sheet_cell_box.is_none()
+    {
+        paragraph_metric_runs
+            .and_then(|runs| {
+                word_cell_line_box(
+                    runs,
+                    style,
+                    cell.line_grid_pitch,
+                    cell.row_east_asian,
+                    cell.vertical_align,
+                    cell.seats_text_on_descender,
+                    cell.sheet_row_line.as_ref(),
+                    cell.sheet_seat,
+                    cell.sheet_print_scale,
+                )
+            })
+            .map(|line_box| line_box.leading_pt)
+            .filter(|leading_pt| *leading_pt > 0.0001)
+    } else {
+        None
+    };
     // Typst's default block spacing may only be dropped where this paragraph
     // supplies a fixed line box of its own, which carries the whole advance;
     // adding Typst's gap on top would count the line twice. A paragraph that
@@ -3809,6 +3858,12 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
         && !cell_grid_absorbs_space_after(style, cell.line_grid_pitch, cell.row_east_asian)
     {
         let _ = write!(out, "\n#v({}pt)", format_f64(space_after));
+    }
+
+    if let Some(line_advance_pt) = interparagraph_line_advance_pt {
+        // Typst applies `par(leading)` only between lines in one paragraph.
+        // Word carries the line advance across adjacent cell paragraphs too.
+        let _ = write!(out, "\n#v({}pt)", format_f64(line_advance_pt));
     }
 
     if has_block_wrapper {

@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use super::super::tables::{BorderSideSpec, TableBorderSpec};
 use super::super::{Block, Color, TextStyle, parse_hex_color};
 use crate::ir::{Alignment, BorderLineStyle, BorderSide, CellBorder, Insets, LineCap, LineJoin};
+use crate::parser::units::twips_to_pt;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 struct PartialInsets {
@@ -69,6 +70,8 @@ struct TableRegionStyle {
     /// `w:tblPr/w:jc` is a different property — it places the table box — and
     /// is deliberately not read here.
     alignment: Option<Alignment>,
+    /// `w:spacing/@w:after` from the region's `w:pPr`.
+    space_after: Option<f64>,
     cell_margins: PartialInsets,
     borders: RegionBorders,
 }
@@ -81,6 +84,7 @@ impl TableRegionStyle {
             bold: other.bold.or(self.bold),
             all_caps: other.all_caps.or(self.all_caps),
             alignment: other.alignment.or(self.alignment),
+            space_after: other.space_after.or(self.space_after),
             cell_margins: self.cell_margins.overlay(other.cell_margins),
             borders: self.borders.overlay(other.borders),
         }
@@ -202,6 +206,24 @@ impl ResolvedTableStyle {
         self.default_cell_padding
     }
 
+    pub(in super::super) fn paragraph_space_after(
+        &self,
+        row_index: usize,
+        row_count: usize,
+        column_index: usize,
+        column_span: usize,
+        column_count: usize,
+    ) -> Option<f64> {
+        self.resolved_cell_region(
+            row_index,
+            row_count,
+            column_index,
+            column_span,
+            column_count,
+        )
+        .space_after
+    }
+
     pub(in super::super) fn cell_style(
         &self,
         row_index: usize,
@@ -211,35 +233,13 @@ impl ResolvedTableStyle {
         column_count: usize,
         direct_borders: &TableBorderSpec,
     ) -> ResolvedTableCellStyle {
-        let mut region = self.definition.base.clone();
-        if self.look.horizontal_banding {
-            let band_index = row_index.saturating_sub(usize::from(self.look.first_row));
-            region = region.overlay(if band_index.is_multiple_of(2) {
-                self.definition.band1_horizontal.clone()
-            } else {
-                self.definition.band2_horizontal.clone()
-            });
-        }
-        if self.look.vertical_banding {
-            let band_index = column_index.saturating_sub(usize::from(self.look.first_column));
-            region = region.overlay(if band_index.is_multiple_of(2) {
-                self.definition.band1_vertical.clone()
-            } else {
-                self.definition.band2_vertical.clone()
-            });
-        }
-        if self.look.first_row && row_index == 0 {
-            region = region.overlay(self.definition.first_row.clone());
-        }
-        if self.look.last_row && row_index + 1 == row_count {
-            region = region.overlay(self.definition.last_row.clone());
-        }
-        if self.look.first_column && column_index == 0 {
-            region = region.overlay(self.definition.first_column.clone());
-        }
-        if self.look.last_column && column_index + column_span == column_count {
-            region = region.overlay(self.definition.last_column.clone());
-        }
+        let region: TableRegionStyle = self.resolved_cell_region(
+            row_index,
+            row_count,
+            column_index,
+            column_span,
+            column_count,
+        );
         // Resolve the cell's border sides. The base region draws the table
         // grid (outer edges on boundary cells, insideH/insideV on interior
         // edges); an active special region's explicit sides then override
@@ -331,6 +331,46 @@ impl ResolvedTableStyle {
                 .flatten(),
             border,
         }
+    }
+
+    fn resolved_cell_region(
+        &self,
+        row_index: usize,
+        row_count: usize,
+        column_index: usize,
+        column_span: usize,
+        column_count: usize,
+    ) -> TableRegionStyle {
+        let mut region = self.definition.base.clone();
+        if self.look.horizontal_banding {
+            let band_index = row_index.saturating_sub(usize::from(self.look.first_row));
+            region = region.overlay(if band_index.is_multiple_of(2) {
+                self.definition.band1_horizontal.clone()
+            } else {
+                self.definition.band2_horizontal.clone()
+            });
+        }
+        if self.look.vertical_banding {
+            let band_index = column_index.saturating_sub(usize::from(self.look.first_column));
+            region = region.overlay(if band_index.is_multiple_of(2) {
+                self.definition.band1_vertical.clone()
+            } else {
+                self.definition.band2_vertical.clone()
+            });
+        }
+        if self.look.first_row && row_index == 0 {
+            region = region.overlay(self.definition.first_row.clone());
+        }
+        if self.look.last_row && row_index + 1 == row_count {
+            region = region.overlay(self.definition.last_row.clone());
+        }
+        if self.look.first_column && column_index == 0 {
+            region = region.overlay(self.definition.first_column.clone());
+        }
+        if self.look.last_column && column_index + column_span == column_count {
+            region = region.overlay(self.definition.last_column.clone());
+        }
+        region
     }
 }
 
@@ -610,6 +650,12 @@ fn apply_style_element(
             target.alignment = attribute_value(element, b"val")
                 .as_deref()
                 .and_then(super::super::text::parse_alignment);
+        }
+        b"spacing" if in_paragraph_properties => {
+            target.space_after = attribute_value(element, b"after")
+                .and_then(|value| value.parse::<f64>().ok())
+                .map(twips_to_pt)
+                .or(target.space_after);
         }
         _ => {}
     }
