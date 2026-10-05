@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://github.com/user-attachments/files/31185149/GENERAL.SERVICES.pptx",
+    "sha256": "17924ec3b27646a2c1b2bb711b845360b713cc7052b3cdde9df752f9ceded3a9"
+  },
+  "reference_export": null,
+  "native_export": {
+    "application": "Microsoft PowerPoint",
+    "version": "16.113.3",
+    "platform": "macOS 26.6.2 build 25G83",
+    "pdf_sha256": "8cead61a1fe370637d572b0b5c201959d7258e929bd17f80a80d4a2d2c0c8173",
+    "evidence_path": "assets/bugfixes/issue-1667/native.jpg",
+    "evidence_sha256": "f2c9c16bf4d0b972e14320ecb6b58403c761ebb70a6f6e610e465d0d7dba69b9"
+  },
+  "verification_url": "https://github.com/developer0hye/office2pdf/issues/1667#issuecomment-5996015113",
+  "differences": [
+    {
+      "id": "page-2-slide-number-rasterized",
+      "page": 2,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "2",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-3-slide-number-rasterized",
+      "page": 3,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "3",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-4-slide-number-rasterized",
+      "page": 4,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "4",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-5-slide-number-rasterized",
+      "page": 5,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "5",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-6-slide-number-rasterized",
+      "page": 6,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "6",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-7-slide-number-rasterized",
+      "page": 7,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "7",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-8-slide-number-rasterized",
+      "page": 8,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "8",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-9-slide-number-rasterized",
+      "page": 9,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "9",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-10-slide-number-rasterized",
+      "page": 10,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "10",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-11-slide-number-rasterized",
+      "page": 11,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "11",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-12-slide-number-rasterized",
+      "page": 12,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "12",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-13-slide-number-rasterized",
+      "page": 13,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "13",
+        "side": "gt",
+        "occurrence": 1
+      }
+    },
+    {
+      "id": "page-14-slide-number-rasterized",
+      "page": 14,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "14",
+        "side": "gt",
+        "occurrence": 1
+      }
+    }
+  ]
+}

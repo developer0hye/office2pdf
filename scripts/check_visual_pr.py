@@ -40,8 +40,9 @@ RENDER_CLUSTER_REPORT_PATH = re.compile(
 REFERENCE_DIFFERENCE_PATH = re.compile(
     r"^assets/bugfixes/issue-(?P<issue>\d+)/reference-exporter-differences\.json$"
 )
+REFERENCE_DIFFERENCE_ID = re.compile(r"ref:([a-z0-9]+(?:-[a-z0-9]+)*)")
 # These bounds match diff_page's missing_text/extra_text diagnostic labels.
-LAYOUT_TEXT_SAMPLE_LIMIT = 5
+LAYOUT_TEXT_SAMPLE_LIMIT = 20
 LAYOUT_TEXT_LABEL_LIMIT = 60
 # Prose living under assets/bugfixes/ carries no pixels, so it is neither evidence
 # to validate nor a rendered change to audit. Without this the file documenting the
@@ -139,6 +140,23 @@ def audit_table(section: str) -> dict[str, str]:
         if len(cells) == 2 and cells[0] in AUDIT_ROWS:
             rows[cells[0]] = cells[1]
     return rows
+
+
+def _reference_difference_ids(value: str) -> list[str] | None:
+    """Parse unique comma-separated exact IDs from one deviation-table row."""
+
+    if not value.startswith("Reference difference:"):
+        return None
+    references = [
+        reference.strip()
+        for reference in value.removeprefix("Reference difference:").split(",")
+    ]
+    matches = [
+        REFERENCE_DIFFERENCE_ID.fullmatch(reference) for reference in references
+    ]
+    if not references or not all(matches) or len(references) != len(set(references)):
+        return None
+    return [match.group(1) for match in matches if match is not None]
 
 
 def rendered_preview_urls(section: str, labels: tuple[str, ...]) -> dict[str, str]:
@@ -294,12 +312,10 @@ def validate_pr_body(body: str, changed_paths: list[str]) -> list[str]:
             if not re.search(r"#\d+", result):
                 errors.append(f"Remaining deviation must reference an issue: {row}.")
         elif result.startswith("Reference difference:"):
-            if re.fullmatch(
-                r"Reference difference:\s*ref:[a-z0-9]+(?:-[a-z0-9]+)*",
-                result,
-            ) is None:
+            if _reference_difference_ids(result) is None:
                 errors.append(
-                    f"Reference exporter difference must use one exact ref:<id>: {row}."
+                    "Reference exporter differences must use unique exact ref:<id> "
+                    f"values separated by commas: {row}."
                 )
         elif not result.startswith(ALLOWED_RESULTS):
             errors.append(
@@ -327,12 +343,9 @@ def audit_reference_difference_ids(body: str) -> set[str]:
     audit = extract_section(body, "## Visual audit")
     difference_ids: set[str] = set()
     for result in audit_table(audit).values():
-        match = re.fullmatch(
-            r"Reference difference:\s*ref:([a-z0-9]+(?:-[a-z0-9]+)*)",
-            result,
-        )
-        if match:
-            difference_ids.add(match.group(1))
+        references = _reference_difference_ids(result)
+        if references is not None:
+            difference_ids.update(references)
     return difference_ids
 
 

@@ -42,7 +42,7 @@ by applicable law.
 - Reference exporter differences: None <!-- or assets/bugfixes/issue-N/reference-exporter-differences.json -->
 - Fine-detail threshold: <!-- e.g. 0.5pt; must match compare_layout.py --fine-shift -->
 - Layout audit page count: <!-- Pass, or #N references when the report differs -->
-- Layout audit text flow: <!-- Pass, #N, or ref:<id> for an exact verified painted-text visibility difference -->
+- Layout audit text flow: <!-- Pass, #N, or ref:<id> for an exact verified painted-text visibility or rasterized-text difference -->
 - Layout audit visible fills: <!-- Pass, or #N references for visible-fill occlusions -->
 - Layout audit rectangle geometry: <!-- Pass, or #N references for matched rectangle position/size/edge findings -->
 - Layout audit large shifts: <!-- Pass, #N open-issue references, or ref:<id> for an exact text-shift record (page/label/occurrence/dx/dy) above the report threshold -->
@@ -86,7 +86,7 @@ by applicable law.
 
 ### Deviation audit
 
-<!-- Every result must start with: Matches GT, Fixed, No deviation observed, Reference difference: ref:<id>, or Remaining: #N. -->
+<!-- Every result must start with: Matches GT, Fixed, No deviation observed, Reference difference: ref:<id> (comma-separated exact IDs are allowed), or Remaining: #N. -->
 
 | Check | Result |
 | --- | --- |

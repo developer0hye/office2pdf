@@ -1,0 +1,1079 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 908.928,
+      "bbox_pt": {
+        "height": 41.76,
+        "width": 35.04,
+        "x": 522.24,
+        "y": 268.32
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-e436944e0496",
+      "region": "center"
+    },
+    {
+      "area_pt2": 908.0064,
+      "bbox_pt": {
+        "height": 41.76,
+        "width": 35.04,
+        "x": 227.04,
+        "y": 193.44
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-0691e66722f9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 510.5664,
+      "bbox_pt": {
+        "height": 40.8,
+        "width": 37.92,
+        "x": 405.6,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-771b3a965231",
+      "region": "center"
+    },
+    {
+      "area_pt2": 508.4928,
+      "bbox_pt": {
+        "height": 40.8,
+        "width": 37.92,
+        "x": 638.4,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-3507627a2667",
+      "region": "right"
+    },
+    {
+      "area_pt2": 508.2624,
+      "bbox_pt": {
+        "height": 40.8,
+        "width": 37.92,
+        "x": 285.12,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-a4d60916bbf0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 486.144,
+      "bbox_pt": {
+        "height": 40.8,
+        "width": 29.28,
+        "x": 374.88,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-b3088cefdc36",
+      "region": "center"
+    },
+    {
+      "area_pt2": 485.2224,
+      "bbox_pt": {
+        "height": 40.8,
+        "width": 29.76,
+        "x": 327.36,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-183d325c53a9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 484.5312,
+      "bbox_pt": {
+        "height": 40.8,
+        "width": 29.28,
+        "x": 554.4,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-3aa2ad012456",
+      "region": "center"
+    },
+    {
+      "area_pt2": 483.1488,
+      "bbox_pt": {
+        "height": 26.4,
+        "width": 24.96,
+        "x": 269.28,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-f2fa7a3381b5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 483.1488,
+      "bbox_pt": {
+        "height": 26.4,
+        "width": 24.96,
+        "x": 522.72,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-887d2b083928",
+      "region": "center"
+    },
+    {
+      "area_pt2": 482.688,
+      "bbox_pt": {
+        "height": 26.4,
+        "width": 24.96,
+        "x": 343.2,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-5681d13127f1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 481.7664,
+      "bbox_pt": {
+        "height": 26.4,
+        "width": 24.96,
+        "x": 397.44,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-2e8f2bb8d759",
+      "region": "center"
+    },
+    {
+      "area_pt2": 481.3056,
+      "bbox_pt": {
+        "height": 41.28,
+        "width": 35.52,
+        "x": 581.76,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-c94e2baf3bd2",
+      "region": "center"
+    },
+    {
+      "area_pt2": 480.6144,
+      "bbox_pt": {
+        "height": 26.4,
+        "width": 24.96,
+        "x": 676.8,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-6cda2c012615",
+      "region": "right"
+    },
+    {
+      "area_pt2": 431.3088,
+      "bbox_pt": {
+        "height": 27.36,
+        "width": 26.88,
+        "x": 578.4,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-b0681fa76730",
+      "region": "center"
+    },
+    {
+      "area_pt2": 416.1024,
+      "bbox_pt": {
+        "height": 20.16,
+        "width": 34.08,
+        "x": 636.0,
+        "y": 215.04
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-38ce522c9e59",
+      "region": "right"
+    },
+    {
+      "area_pt2": 411.264,
+      "bbox_pt": {
+        "height": 20.16,
+        "width": 33.12,
+        "x": 636.48,
+        "y": 193.44
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-c7d9db9a0da0",
+      "region": "right"
+    },
+    {
+      "area_pt2": 403.4304,
+      "bbox_pt": {
+        "height": 27.36,
+        "width": 26.4,
+        "x": 491.04,
+        "y": 207.84
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-246e343b7411",
+      "region": "center"
+    },
+    {
+      "area_pt2": 402.048,
+      "bbox_pt": {
+        "height": 27.36,
+        "width": 26.4,
+        "x": 707.04,
+        "y": 207.84
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-510e671c6726",
+      "region": "right"
+    },
+    {
+      "area_pt2": 388.6848,
+      "bbox_pt": {
+        "height": 26.88,
+        "width": 26.4,
+        "x": 491.04,
+        "y": 193.44
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-4640f23cf519",
+      "region": "center"
+    },
+    {
+      "area_pt2": 387.7632,
+      "bbox_pt": {
+        "height": 26.88,
+        "width": 26.4,
+        "x": 707.04,
+        "y": 193.44
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-18eb7f4b63d4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 375.7824,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 34.08,
+        "x": 426.24,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-6d13f03291dd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 282.7008,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 26.4,
+        "x": 447.84,
+        "y": 221.76
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-7cf3c0df4022",
+      "region": "center"
+    },
+    {
+      "area_pt2": 279.7056,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 26.4,
+        "x": 611.04,
+        "y": 296.64
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-de66d1de2670",
+      "region": "center"
+    },
+    {
+      "area_pt2": 273.7152,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 25.92,
+        "x": 676.32,
+        "y": 221.76
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-ec0dd12f49d3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 270.72,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 25.44,
+        "x": 269.28,
+        "y": 221.76
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-3be1b20023cc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 270.72,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 25.44,
+        "x": 343.2,
+        "y": 221.76
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-8649ca73bdcd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 270.72,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 25.44,
+        "x": 397.44,
+        "y": 296.64
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-acbddabce68c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 270.72,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 25.44,
+        "x": 522.72,
+        "y": 221.76
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-db24e13d7d64",
+      "region": "center"
+    },
+    {
+      "area_pt2": 260.352,
+      "bbox_pt": {
+        "height": 18.72,
+        "width": 36.96,
+        "x": 244.32,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-201d81be8a2c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 230.4,
+      "bbox_pt": {
+        "height": 21.12,
+        "width": 23.52,
+        "x": 369.6,
+        "y": 288.48
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-43036e791be8",
+      "region": "center"
+    },
+    {
+      "area_pt2": 195.3792,
+      "bbox_pt": {
+        "height": 27.84,
+        "width": 26.4,
+        "x": 688.8,
+        "y": 281.76
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-43a84bb1a8ee",
+      "region": "right"
+    },
+    {
+      "area_pt2": 193.9968,
+      "bbox_pt": {
+        "height": 26.88,
+        "width": 25.92,
+        "x": 681.12,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-2883f77ef54c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 188.4672,
+      "bbox_pt": {
+        "height": 27.84,
+        "width": 26.4,
+        "x": 489.6,
+        "y": 281.76
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-7cdba4590c13",
+      "region": "center"
+    },
+    {
+      "area_pt2": 188.0064,
+      "bbox_pt": {
+        "height": 27.84,
+        "width": 26.4,
+        "x": 309.12,
+        "y": 206.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-194e77e155d6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 187.5456,
+      "bbox_pt": {
+        "height": 26.88,
+        "width": 26.4,
+        "x": 481.44,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-e042256b3852",
+      "region": "center"
+    },
+    {
+      "area_pt2": 187.0848,
+      "bbox_pt": {
+        "height": 26.88,
+        "width": 26.4,
+        "x": 300.96,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-6248f67835e8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 180.1728,
+      "bbox_pt": {
+        "height": 19.68,
+        "width": 19.68,
+        "x": 369.6,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-48a7e128762f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 144.4608,
+      "bbox_pt": {
+        "height": 16.8,
+        "width": 20.16,
+        "x": 252.48,
+        "y": 282.24
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-9100a1ae76af",
+      "region": "left"
+    },
+    {
+      "area_pt2": 114.5088,
+      "bbox_pt": {
+        "height": 19.2,
+        "width": 10.56,
+        "x": 419.04,
+        "y": 202.56
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-f8461c35bba6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 113.8176,
+      "bbox_pt": {
+        "height": 19.2,
+        "width": 10.08,
+        "x": 651.84,
+        "y": 277.44
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-ce249df25707",
+      "region": "right"
+    },
+    {
+      "area_pt2": 113.8176,
+      "bbox_pt": {
+        "height": 19.2,
+        "width": 10.08,
+        "x": 298.56,
+        "y": 277.44
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-51eadd88c5e7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 465.12,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-461397e2af61",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 621.12,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-b030ce6208a3",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 621.6,
+        "y": 228.0
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-7138d3001280",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 360.96,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-35773a079ec0",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 272.16,
+        "y": 302.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-143713c19f18",
+      "region": "left"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 360.96,
+        "y": 302.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-65b3768407ef",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 438.72,
+        "y": 302.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-14f6adee1281",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 465.12,
+        "y": 302.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-2dc498c474a9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.12,
+        "x": 578.4,
+        "y": 302.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-03dd8830eff9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 300.96,
+        "y": 228.0
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-d8c57a83270c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 244.32,
+        "y": 302.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-2e44df6742bc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 554.4,
+        "y": 228.0
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-17ecb335de7b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 707.04,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-8ffd05471b49",
+      "region": "right"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 680.64,
+        "y": 302.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-b99d258ff20c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 507.36,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-235b3c223ee4",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 447.84,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-d2bebacea48b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 326.88,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-00b4b06bc5bc",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 327.36,
+        "y": 302.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-821b64f070e4",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 611.04,
+        "y": 268.8
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-bbc055543afa",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 374.88,
+        "y": 228.0
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-093ac2f27bcf",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 481.44,
+        "y": 302.88
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-cdd9b068d696",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 396.0,
+        "y": 207.84
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-d246ed71db6c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 348.48,
+        "y": 282.72
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-876821784890",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 575.52,
+        "y": 207.84
+      },
+      "disposition": {
+        "issue": "#1864",
+        "kind": "issue",
+        "note": "Every inspected cluster is on the shifted cover title text recorded by #1864."
+      },
+      "id": "p1-4b27ad8496dc",
+      "region": "center"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 66,
+    "duplicate": 0,
+    "total": 66,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
