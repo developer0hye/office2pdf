@@ -913,17 +913,30 @@ fn floating_picture_in_header_table_obeys_paragraph_vertical_anchor() {
     let glyph_runs =
         crate::render::pdf::compiled_text_runs_with_images(&generated.source, &generated.images, 0)
             .expect("the header table text compiles");
-    let first_title_run_x: f64 = glyph_runs
+    let first_title_run = glyph_runs
         .iter()
         .filter(|run| run.text == "Xxxxxxxx")
-        .map(|run| run.left_pt)
-        .fold(f64::INFINITY, f64::min);
+        .min_by(|left, right| left.left_pt.total_cmp(&right.left_pt))
+        .expect("the header title is present");
+    let first_title_run_x: f64 = first_title_run.left_pt;
     assert!(
         (first_title_run_x - 21.84).abs() < 0.5,
         "anchoring the picture must not shift the paragraph text, got x={first_title_run_x:.2}pt"
     );
 
+    let mut first_picture_top_pt: Option<f64> = None;
     for page_index in 0..document.pages.len() {
+        let page_runs = crate::render::pdf::compiled_text_runs_with_images(
+            &generated.source,
+            &generated.images,
+            page_index,
+        )
+        .expect("the header table text compiles");
+        let title_run = page_runs
+            .iter()
+            .filter(|run| run.text == "Xxxxxxxx")
+            .min_by(|left, right| left.left_pt.total_cmp(&right.left_pt))
+            .expect("the repeated header title is present");
         let images = crate::render::pdf::compiled_image_boxes(
             &generated.source,
             &generated.images,
@@ -939,11 +952,104 @@ fn floating_picture_in_header_table_obeys_paragraph_vertical_anchor() {
             .map(|corner| corner.1)
             .fold(f64::INFINITY, f64::min);
 
+        // A host may substitute Cambria and move the header row, so assert
+        // placement against this render's anchor line rather than a fixed
+        // page y. The issue's ignored anchor left the picture more than 32pt
+        // above this line.
+        let baseline_distance_pt: f64 = title_run.baseline_pt - top_pt;
         assert!(
-            (top_pt - 34.08).abs() < 0.5,
-            "page {page_index} header picture should start at Word's paragraph-relative y=34.08pt, got {top_pt:.2}pt"
+            (0.0..title_run.font_size_pt).contains(&baseline_distance_pt),
+            "page {page_index} header picture should remain within one title-font size of its anchor line, got y={top_pt:.2}pt and baseline={:.2}pt",
+            title_run.baseline_pt
         );
+        if let Some(first_top_pt) = first_picture_top_pt {
+            assert!(
+                (top_pt - first_top_pt).abs() < 0.5,
+                "the repeated header picture should keep the same y on every page, got {top_pt:.2}pt vs {first_top_pt:.2}pt"
+            );
+        } else {
+            first_picture_top_pt = Some(top_pt);
+        }
     }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn paragraph_anchored_header_picture_tracks_paragraph_spacing() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+
+    fn first_title_and_picture_y(document: &Document) -> (f64, f64) {
+        let generated = crate::render::typst_gen::generate_typst(document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs_with_images(
+            &generated.source,
+            &generated.images,
+            0,
+        )
+        .unwrap();
+        let title_baseline: f64 = runs
+            .iter()
+            .filter(|run| run.text == "Xxxxxxxx" && run.left_pt < 100.0)
+            .map(|run| run.baseline_pt)
+            .fold(f64::INFINITY, f64::min);
+        let images =
+            crate::render::pdf::compiled_image_boxes(&generated.source, &generated.images, 0)
+                .unwrap();
+        let picture_top: f64 = images[0]
+            .corners
+            .iter()
+            .map(|corner| corner.1)
+            .fold(f64::INFINITY, f64::min);
+        (title_baseline, picture_top)
+    }
+
+    let before: (f64, f64) = first_title_and_picture_y(&document);
+    let mut spaced_document: Document = document.clone();
+    let page = match &mut spaced_document.pages[0] {
+        Page::Flow(page) | Page::FlowContinuous(page) => page,
+        other => panic!("Expected a flow page, got {other:?}"),
+    };
+    let header_table = page
+        .header
+        .as_mut()
+        .unwrap()
+        .shapes
+        .iter_mut()
+        .find_map(|shape| match &mut shape.content {
+            crate::ir::HeaderFooterShapeContent::Table(table) => Some(table),
+            crate::ir::HeaderFooterShapeContent::Shape(_) => None,
+        })
+        .unwrap();
+    let title_paragraph = header_table
+        .rows
+        .iter_mut()
+        .flat_map(|row| row.cells.iter_mut())
+        .flat_map(|cell| cell.content.iter_mut())
+        .find_map(|block| match block {
+            Block::Paragraph(paragraph)
+                if paragraph
+                    .runs
+                    .iter()
+                    .any(|run| run.text.contains("Xxxxxxxx")) =>
+            {
+                Some(paragraph)
+            }
+            _ => None,
+        })
+        .unwrap();
+    title_paragraph.style.space_before = Some(12.0);
+
+    let after: (f64, f64) = first_title_and_picture_y(&spaced_document);
+    let text_shift: f64 = after.0 - before.0;
+    let image_shift: f64 = after.1 - before.1;
+    assert!(
+        text_shift > 1.0,
+        "the paragraph spacing should move its title, got {text_shift:.2}pt"
+    );
+    assert!(
+        (image_shift - text_shift).abs() < 0.5,
+        "the paragraph-anchored image should follow its title by the same amount, text moved {text_shift:.2}pt and image moved {image_shift:.2}pt"
+    );
 }
 
 #[test]

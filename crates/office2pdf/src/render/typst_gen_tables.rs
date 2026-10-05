@@ -3487,6 +3487,10 @@ fn generate_cell_floating_images(
 }
 
 fn cell_paragraph_anchor_offset_pt(paragraph: &Paragraph, cell: &CellParagraphCtx<'_>) -> f64 {
+    // The image is emitted before its paragraph to leave text alignment and
+    // line measure untouched, so carry the paragraph's own leading space to
+    // the same anchor point (#1994).
+    let space_before_pt: f64 = paragraph.style.space_before.unwrap_or(0.0);
     let runs: &[Run] = if paragraph.runs.is_empty() {
         cell.paragraph_mark_metric_runs
             .as_deref()
@@ -3505,8 +3509,8 @@ fn cell_paragraph_anchor_offset_pt(paragraph: &Paragraph, cell: &CellParagraphCt
         cell.sheet_seat,
         cell.sheet_print_scale,
     )
-    .map_or(0.0, |line_box| {
-        -(line_box.bottom_em * line_box.font_size_pt)
+    .map_or(space_before_pt, |line_box| {
+        space_before_pt - (line_box.bottom_em * line_box.font_size_pt)
     })
 }
 
