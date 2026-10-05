@@ -896,19 +896,22 @@ fn floating_body_table_respects_its_page_and_margin_anchors() {
         (table_width_pt - 611.75).abs() < 0.01,
         "the declared grid must stay 611.75pt wide, got {table_width_pt}pt"
     );
-    document.pages.truncate(1);
-    let generated = crate::render::typst_gen::generate_typst(&document).unwrap();
-    let runs = crate::render::pdf::compiled_text_runs(&generated.source, 0).unwrap();
-    let quote = runs
-        .iter()
-        .find(|run| run.text.starts_with('“'))
-        .expect("the floating table's quote is rendered on page one");
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        document.pages.truncate(1);
+        let generated = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&generated.source, 0).unwrap();
+        let quote = runs
+            .iter()
+            .find(|run| run.text.starts_with('“'))
+            .expect("the floating table's quote is rendered on page one");
 
-    assert!(
-        (quote.left_pt - 223.92).abs() < 0.25,
-        "the centered, over-wide table should start at the page-centered cell position, got {}pt",
-        quote.left_pt
-    );
+        assert!(
+            (quote.left_pt - 223.92).abs() < 0.25,
+            "the centered, over-wide table should start at the page-centered cell position, got {}pt",
+            quote.left_pt
+        );
+    }
 }
 
 #[test]
