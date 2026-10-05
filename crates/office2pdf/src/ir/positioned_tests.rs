@@ -91,6 +91,8 @@ fn floating_text_box_positioned_maps_offsets_to_xy() {
         shape_rotation_deg: None,
         padding: Insets::default(),
         vertical_align: TextBoxVerticalAlign::Top,
+        horizontal_align: None,
+        horizontal_anchor: FrameAnchor::Text,
         offset_x: 30.0,
         offset_y: 45.0,
     };
@@ -127,6 +129,8 @@ fn positioned_trait_works_through_dyn_dispatch() {
         shape_rotation_deg: None,
         padding: Insets::default(),
         vertical_align: TextBoxVerticalAlign::Top,
+        horizontal_align: None,
+        horizontal_anchor: FrameAnchor::Text,
         offset_x: 15.0,
         offset_y: 25.0,
     };
@@ -172,6 +176,8 @@ fn floating_text_box_positioned_with_negative_offsets() {
         shape_rotation_deg: None,
         padding: Insets::default(),
         vertical_align: TextBoxVerticalAlign::Top,
+        horizontal_align: None,
+        horizontal_anchor: FrameAnchor::Text,
         offset_x: -10.0,
         offset_y: -5.0,
     };

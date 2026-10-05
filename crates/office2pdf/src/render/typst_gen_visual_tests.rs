@@ -2,6 +2,164 @@ use super::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn docx_right_aligned_anchored_text_box_uses_the_page_margin() {
+    use crate::parser::Parser;
+
+    const FIXTURE: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = crate::parser::docx::DocxParser
+        .parse(FIXTURE, &crate::config::ConvertOptions::default())
+        .expect("the reported DOCX should parse");
+    let mut isolated_page = document
+        .pages
+        .iter()
+        .find_map(|page| match page {
+            Page::Flow(page) | Page::FlowContinuous(page)
+                if page.content.iter().any(|block| {
+                    matches!(
+                        block,
+                        Block::FloatingTextBox(text_box)
+                            if (text_box.width - 156.25).abs() < 0.01
+                    )
+                }) =>
+            {
+                Some(page.clone())
+            }
+            _ => None,
+        })
+        .expect("the reported anchored text box should be in the flow");
+    let text_box = isolated_page
+        .content
+        .iter()
+        .find(|block| {
+            matches!(
+                block,
+                Block::FloatingTextBox(text_box) if (text_box.width - 156.25).abs() < 0.01
+            )
+        })
+        .expect("the reported anchored text box should be in the flow")
+        .clone();
+    isolated_page.content = vec![text_box];
+    isolated_page.header = None;
+    isolated_page.footer = None;
+    isolated_page.first_header = None;
+    isolated_page.first_footer = None;
+    let page_width: f64 = isolated_page.size.width;
+    let expected_right_margin: f64 = page_width - isolated_page.margins.right;
+    let isolated_document = Document {
+        metadata: document.metadata.clone(),
+        pages: vec![Page::Flow(isolated_page)],
+        styles: document.styles.clone(),
+    };
+    let output = generate_typst(&isolated_document)
+        .expect("the isolated anchored text box should generate Typst");
+    let runs = crate::render::pdf::compiled_text_runs(&output.source, 0)
+        .expect("the isolated page should compile");
+    let quote = runs
+        .iter()
+        .find(|run| run.text == "“")
+        .expect("the anchored box should keep its opening quote");
+    let paints = crate::render::pdf::compiled_paint_sequence(&output.source, &output.images, 0)
+        .expect("the isolated page should produce paint geometry");
+    let rightmost_shape_edge: f64 = paints
+        .iter()
+        .filter(|paint| paint.kind == crate::render::pdf::PaintedKind::Shape)
+        .map(|paint| paint.bounds.2)
+        .reduce(f64::max)
+        .expect("the anchored table border should paint shape geometry");
+
+    assert!(
+        quote.left_pt > page_width / 2.0,
+        "the quote should follow the right-aligned box on the right half of the page, got x={}pt",
+        quote.left_pt
+    );
+    assert!(
+        (rightmost_shape_edge - expected_right_margin).abs() < 0.5,
+        "the box's right edge should align to the page's right margin at {expected_right_margin}pt, got {rightmost_shape_edge}pt"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn floating_text_box_margin_alignment_tracks_a_different_page_geometry() {
+    let page_size: PageSize = PageSize {
+        width: 720.0,
+        height: 900.0,
+    };
+    let margins: Margins = Margins {
+        top: 36.0,
+        right: 80.0,
+        bottom: 36.0,
+        left: 20.0,
+    };
+    let document = Document {
+        metadata: Metadata::default(),
+        pages: vec![Page::Flow(FlowPage {
+            first_header: None,
+            first_footer: None,
+            size: page_size,
+            margins,
+            content: vec![
+                Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: "Anchor paragraph".to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                }),
+                Block::FloatingTextBox(FloatingTextBox {
+                    content: vec![Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Margin aligned".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                            inline_box: None,
+                        }],
+                    })],
+                    wrap_mode: WrapMode::Behind,
+                    width: 100.0,
+                    height: 32.0,
+                    shape_rotation_deg: None,
+                    padding: Insets::default(),
+                    vertical_align: TextBoxVerticalAlign::Top,
+                    horizontal_align: Some(crate::ir::FrameAlign::End),
+                    horizontal_anchor: crate::ir::FrameAnchor::Margin,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                }),
+            ],
+            header: None,
+            footer: None,
+            columns: None,
+            line_grid_pitch: None,
+            line_grid_snaps_lines: false,
+            page_numbering: None,
+        })],
+        styles: StyleSheet::default(),
+    };
+    let output = generate_typst(&document).expect("the synthetic page should generate Typst");
+    let runs = crate::render::pdf::compiled_text_runs(&output.source, 0)
+        .expect("the synthetic page should compile");
+    let aligned = runs
+        .iter()
+        .find(|run| run.text == "Margin aligned")
+        .expect("the floating box text should be present");
+    let expected_x: f64 = page_size.width - margins.right - 100.0;
+
+    assert!(
+        (aligned.left_pt - expected_x).abs() < 0.25,
+        "right alignment should use the page's own margin geometry at x={expected_x}pt, got {}pt",
+        aligned.left_pt
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn explicit_pptx_no_fill_line_does_not_emit_a_default_rectangle_outline() {
     use crate::parser::Parser;
     use crate::parser::pptx::PptxParser;
@@ -226,6 +384,8 @@ fn test_floating_text_box_square_wrap_codegen() {
             shape_rotation_deg: None,
             padding: Insets::default(),
             vertical_align: TextBoxVerticalAlign::Top,
+            horizontal_align: None,
+            horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 72.0,
             offset_y: 36.0,
         },
@@ -275,6 +435,8 @@ fn a_rotated_floating_text_box_keeps_its_declared_center() {
             shape_rotation_deg: Some(90.0),
             padding: Insets::default(),
             vertical_align: TextBoxVerticalAlign::Top,
+            horizontal_align: None,
+            horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 72.0,
             offset_y: 36.0,
         },
@@ -301,6 +463,8 @@ fn test_floating_text_box_top_and_bottom_codegen() {
             shape_rotation_deg: None,
             padding: Insets::default(),
             vertical_align: TextBoxVerticalAlign::Top,
+            horizontal_align: None,
+            horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 10.0,
             offset_y: 0.0,
         },
@@ -337,6 +501,8 @@ fn test_floating_text_box_content_is_top_left_aligned_inside_bounds() {
             shape_rotation_deg: None,
             padding: Insets::default(),
             vertical_align: TextBoxVerticalAlign::Top,
+            horizontal_align: None,
+            horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 10.0,
             offset_y: 5.0,
         },
@@ -376,6 +542,8 @@ fn test_floating_text_box_applies_padding_and_center_alignment() {
                 left: 6.0,
             },
             vertical_align: TextBoxVerticalAlign::Center,
+            horizontal_align: None,
+            horizontal_anchor: crate::ir::FrameAnchor::Text,
             offset_x: 10.0,
             offset_y: 5.0,
         },
