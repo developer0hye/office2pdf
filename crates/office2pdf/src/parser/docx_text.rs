@@ -321,12 +321,14 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
             .get("color")
             .and_then(serde_json::Value::as_str)
             .and_then(xml_util::parse_hex_color),
+        // TextStyle::font_family carries Latin text. The East Asian slot is
+        // retained separately below; neither it nor the complex-script slot
+        // can replace an inherited Latin family.
         font_family: rp.get("fonts").and_then(|fonts| {
             fonts
                 .get("ascii")
                 .or_else(|| fonts.get("hiAnsi"))
-                .or_else(|| fonts.get("eastAsia"))
-                .or_else(|| fonts.get("cs"))
+                .or_else(|| fonts.get("hAnsi"))
                 .and_then(serde_json::Value::as_str)
                 .map(String::from)
         }),
@@ -511,26 +513,14 @@ pub(super) fn parse_theme_fonts(theme_xml: &str) -> ThemeFonts {
     fonts
 }
 
-/// Resolve rFonts theme slots (asciiTheme="minorHAnsi" etc.) against the
-/// document theme when no literal font family is given.
+/// Resolve the Latin rFonts theme slots against the document theme when no
+/// literal Latin font family is given. East Asian and complex-script slots do
+/// not override the inherited Latin family.
 pub(super) fn resolve_theme_font_family(
     run_property_json: &serde_json::Value,
     theme_fonts: &ThemeFonts,
 ) -> Option<String> {
-    let fonts = run_property_json.get("fonts")?;
-    let slot: &str = fonts
-        .get("asciiTheme")
-        .or_else(|| fonts.get("hiAnsiTheme"))
-        .or_else(|| fonts.get("eastAsiaTheme"))
-        .or_else(|| fonts.get("csTheme"))
-        .and_then(serde_json::Value::as_str)?;
-    if slot.starts_with("minor") {
-        theme_fonts.minor_latin.clone()
-    } else if slot.starts_with("major") {
-        theme_fonts.major_latin.clone()
-    } else {
-        None
-    }
+    resolve_latin_theme_font_family(run_property_json, theme_fonts)
 }
 
 /// Resolve only the Latin theme slots a run uses for ASCII and high-ANSI

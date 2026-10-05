@@ -736,6 +736,92 @@ fn direct_run_latin_theme_font_resolves_without_using_east_asian_slot() {
         None,
         "an East Asian slot must not replace the inherited Latin face"
     );
+    assert_eq!(
+        resolve_theme_font_family(&east_asia_property, &theme),
+        None,
+        "the general style resolver must also leave an East Asian slot out of the Latin face"
+    );
+
+    let complex_script_property = serde_json::json!({
+        "fonts": { "csTheme": "minorBidi" }
+    });
+    assert_eq!(
+        resolve_latin_theme_font_family(&complex_script_property, &theme),
+        None,
+        "a complex-script slot must not replace the inherited Latin face"
+    );
+    assert_eq!(
+        resolve_theme_font_family(&complex_script_property, &theme),
+        None,
+        "the general style resolver must also leave a complex-script slot out of the Latin face"
+    );
+}
+
+#[test]
+fn latin_font_extraction_keeps_script_specific_fonts_separate() {
+    let east_asian_only = serde_json::json!({
+        "fonts": { "eastAsia": "Noto Sans CJK SC" }
+    });
+    let east_asian_style = crate::parser::docx::text::extract_run_style_from_json(&east_asian_only);
+    assert_eq!(east_asian_style.font_family, None);
+    assert_eq!(
+        east_asian_style.east_asian_font_family.as_deref(),
+        Some("Noto Sans CJK SC")
+    );
+
+    let complex_script_only = serde_json::json!({
+        "fonts": { "cs": "Amiri" }
+    });
+    let complex_script_style =
+        crate::parser::docx::text::extract_run_style_from_json(&complex_script_only);
+    assert_eq!(complex_script_style.font_family, None);
+
+    let latin_and_east_asian = serde_json::json!({
+        "fonts": { "ascii": "Aptos", "eastAsia": "Noto Sans CJK JP" }
+    });
+    let mixed_script_style =
+        crate::parser::docx::text::extract_run_style_from_json(&latin_and_east_asian);
+    assert_eq!(mixed_script_style.font_family.as_deref(), Some("Aptos"));
+    assert_eq!(
+        mixed_script_style.east_asian_font_family.as_deref(),
+        Some("Noto Sans CJK JP")
+    );
+}
+
+#[test]
+fn latin_default_font_survives_script_only_paragraph_style() {
+    let styles_xml = r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+      <w:docDefaults><w:rPrDefault><w:rPr>
+        <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>
+      </w:rPr></w:rPrDefault></w:docDefaults>
+      <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+        <w:name w:val="Normal"/>
+      </w:style>
+      <w:style w:type="paragraph" w:styleId="BodyText">
+        <w:name w:val="Body Text"/><w:basedOn w:val="Normal"/>
+        <w:rPr><w:rFonts w:eastAsia="Noto Sans CJK SC" w:cs="Amiri"/></w:rPr>
+      </w:style>
+    </w:styles>"#;
+    let body_xml = r#"<w:p>
+      <w:pPr><w:pStyle w:val="BodyText"/></w:pPr>
+      <w:r><w:t>Latin paragraph</w:t></w:r>
+    </w:p>"#;
+    let data = super::page_feature_tests::build_docx_with_raw_styles(styles_xml, body_xml);
+    let (document, _warnings) = DocxParser
+        .parse(&data, &ConvertOptions::default())
+        .expect("the script-specific-font package parses");
+    let target_run = first_run(&document);
+
+    assert_eq!(
+        target_run.style.font_family.as_deref(),
+        Some("Calibri"),
+        "the paragraph style's East Asian and complex-script fonts must not override the inherited Latin face"
+    );
+    assert_eq!(
+        target_run.style.east_asian_font_family.as_deref(),
+        Some("Noto Sans CJK SC"),
+        "the style's East Asian face remains available to East Asian text"
+    );
 }
 
 #[test]
