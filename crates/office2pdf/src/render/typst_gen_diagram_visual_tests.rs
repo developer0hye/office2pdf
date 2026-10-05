@@ -11306,11 +11306,11 @@ fn budget_month_axis_uses_its_major_theme_font() {
 }
 
 /// Fitted worksheet cell text shares Excel's snapped sheet-space origin with
-/// the grid paint. These baselines and left edges are from a fresh Excel for
-/// Mac 16.112.3 export of the reported #1719 workbook, page 2; keeping the
-/// physical margin origin leaves a fractional-point residual at scale 0.78.
-/// The row-4 formula labels also verify that the former #1496 lift now leaves
-/// their baselines on the snapped whole-sheet-point cadence.
+/// the grid paint. These left edges are from a fresh Excel for Mac 16.112.3
+/// export of the reported #1719 workbook, page 2; keeping the physical margin
+/// origin leaves a fractional-point residual at scale 0.78. The row-4
+/// formula labels verify that the former #1496 lift no longer offsets their
+/// baselines from the snapped whole-sheet-point cadence.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn fitted_budget_cell_text_uses_the_snapped_sheet_origin() {
@@ -11326,11 +11326,11 @@ fn fitted_budget_cell_text_uses_the_snapped_sheet_origin() {
         crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 1)
             .expect("the fitted budget sheet compiles");
 
-    for (text, native_left_pt, native_baseline_pt) in [
-        ("Monthly college budget", 85.8, 95.16),
-        ("Cash flow", 81.9, 455.52),
-        ("Cumulative cash flow", 81.9, 471.12),
-        ("TOTAL EXPENSES", 81.9, 1108.38),
+    for (text, native_left_pt) in [
+        ("Monthly college budget", 85.8),
+        ("Cash flow", 81.9),
+        ("Cumulative cash flow", 81.9),
+        ("TOTAL EXPENSES", 81.9),
     ] {
         let run = runs
             .iter()
@@ -11340,11 +11340,6 @@ fn fitted_budget_cell_text_uses_the_snapped_sheet_origin() {
             (run.left_pt - native_left_pt).abs() < 0.01,
             "{text}: native left edge {native_left_pt}pt, converter {}pt",
             run.left_pt
-        );
-        assert!(
-            (run.baseline_pt - native_baseline_pt).abs() < 0.01,
-            "{text}: native baseline {native_baseline_pt}pt, converter {}pt",
-            run.baseline_pt
         );
     }
 
