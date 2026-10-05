@@ -4575,6 +4575,71 @@ fn continuous_section_body_starts_below_its_inherited_header_table() {
     );
 }
 
+#[test]
+fn a_page_anchored_header_shape_reserves_space_without_measurable_text_metrics() {
+    use crate::ir::{
+        FrameAnchor, HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterShape,
+        HeaderFooterShapeContent, Shape, ShapeKind,
+    };
+
+    let mut document: Document = doc_with_header(
+        None,
+        36.0,
+        vec![HeaderFooterParagraph {
+            style: ParagraphStyle::default(),
+            elements: Vec::new(),
+            border: None,
+            border_space: None,
+            sheet_section_is_rich: false,
+            frame: None,
+        }],
+    );
+    let Page::Flow(page) = &mut document.pages[0] else {
+        panic!("the helper creates a flow page");
+    };
+    page.header
+        .as_mut()
+        .expect("the helper creates a header")
+        .shapes
+        .push(HeaderFooterShape {
+            content: HeaderFooterShapeContent::Shape(Shape {
+                kind: ShapeKind::Rectangle,
+                fill: None,
+                gradient_fill: None,
+                pattern_fill: None,
+                stroke: None,
+                rotation_deg: None,
+                opacity: None,
+                shadow: None,
+                top_bevel: None,
+            }),
+            frame: HeaderFooterFrame {
+                x: Some(0.0),
+                y: Some(20.0),
+                width: Some(100.0),
+                height: Some(72.16),
+                horizontal_anchor: FrameAnchor::Page,
+                vertical_anchor: FrameAnchor::Page,
+                horizontal_align: None,
+                vertical_align: None,
+                inset_left: 0.0,
+                inset_top: 0.0,
+                bottom_offset: None,
+                wraps_text: true,
+            },
+            anchor_paragraph_index: None,
+            width: 100.0,
+            height: 72.16,
+            behind_text: true,
+        });
+
+    let top_margin_pt: f64 = flow_page_top_margin_pt(page, &page.size, None, true);
+    assert!(
+        (top_margin_pt - 103.16).abs() < 0.001,
+        "a measured page-anchored overlay and the fallback empty line box must be reserved when header text metrics are unavailable, got {top_margin_pt}pt"
+    );
+}
+
 /// A taller first-page story grows the shared margin too (issues #736, #846).
 ///
 /// One margin serves the whole section, so measuring only the default story

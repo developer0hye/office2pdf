@@ -2900,8 +2900,9 @@ fn flow_header_value(
 /// boxes, as Word does (issue #1995).
 ///
 /// Otherwise `w:top` is left alone, so the common case emits exactly what it
-/// always did. A header whose face cannot be measured also leaves it alone
-/// rather than guessing.
+/// always did. When a header face cannot be measured, its nonempty text cannot
+/// contribute a guessed height. Empty flow lines after a known overlay still
+/// reserve their declared/default font size and paragraph spacing.
 fn flow_page_top_margin_pt(
     page: &FlowPage,
     size: &PageSize,
@@ -2928,9 +2929,14 @@ fn flow_page_top_margin_pt(
             // On continuation pages, also retain the empty flow paragraphs
             // that follow a page-anchored header overlay; Word reserves their
             // line boxes even though they paint no text.
-            let content_height: f64 =
-                hf_content_height_pt(header, default_text, overlay_bottom.is_some())?;
-            let flow_reach: f64 = header.distance_from_edge.unwrap_or(0.0) + content_height;
+            let content_height: Option<f64> =
+                hf_content_height_pt(header, default_text, overlay_bottom.is_some());
+            if content_height.is_none() && overlay_bottom.is_none() {
+                return None;
+            }
+            let flow_reach: f64 = content_height
+                .map(|height| header.distance_from_edge.unwrap_or(0.0) + height)
+                .unwrap_or(0.0);
             let overlay_reach: f64 = overlay_bottom
                 .map(|bottom| {
                     bottom + hf_last_flow_paragraph_height_pt(header, default_text).unwrap_or(0.0)
@@ -3018,7 +3024,9 @@ fn hf_last_flow_paragraph_height_pt(
 }
 
 /// The height one header or footer paragraph takes: Word's line for its face,
-/// plus whatever its `w:pBdr` rules and their `w:space` gaps reserve.
+/// plus whatever its `w:pBdr` rules and their `w:space` gaps reserve. For an
+/// empty flow paragraph retained after a page-anchored overlay, missing face
+/// metrics fall back to its paragraph-mark/default font size and line spacing.
 ///
 /// Shared with [`generate_stacked_hf_paragraphs`], which states it on the
 /// paragraph's block, so the height a ruled story reserves in the band is the
@@ -3029,13 +3037,15 @@ fn hf_paragraph_height_pt(
     use_default_for_empty: bool,
 ) -> Option<f64> {
     let mut runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
-    if runs.is_empty() && use_default_for_empty {
+    let is_empty_flow_paragraph: bool = runs.is_empty() && use_default_for_empty;
+    if is_empty_flow_paragraph {
         let style: TextStyle = paragraph
             .style
             .paragraph_mark_text_style
             .as_deref()
-            .or(default_text)?
-            .clone();
+            .or(default_text)
+            .cloned()
+            .unwrap_or_default();
         runs.push(Run {
             text: "M".to_string(),
             style,
@@ -3044,7 +3054,25 @@ fn hf_paragraph_height_pt(
             inline_box: None,
         });
     }
-    let mut total: f64 = text::word_line_advance_pt(&runs)?;
+    let mut total: f64 = text::word_line_advance_pt(&runs).or_else(|| {
+        if !is_empty_flow_paragraph {
+            return None;
+        }
+        // The overlay's final empty paragraph still owns a line box when
+        // this platform cannot provide the face metrics.
+        let font_size_pt: f64 = runs
+            .iter()
+            .filter_map(|run| run.style.font_size)
+            .reduce(f64::max)
+            .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT);
+        Some(match paragraph.style.line_spacing {
+            Some(crate::ir::LineSpacing::Exact(height)) => height.max(0.0),
+            Some(crate::ir::LineSpacing::Proportional(multiplier)) => {
+                (font_size_pt * multiplier).max(0.0)
+            }
+            None => font_size_pt,
+        })
+    })?;
     if let Some(border) = paragraph.border.as_ref() {
         for (side, space) in [
             (border.top.as_ref(), paragraph.border_space.map(|i| i.top)),
