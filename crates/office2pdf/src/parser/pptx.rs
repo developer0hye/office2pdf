@@ -34,7 +34,7 @@ use self::shapes::{
     preset_text_rect_insets, prst_to_shape_kind,
 };
 use self::slides::{PresentationResources, SlideParseContext, parse_single_slide, parse_slide_xml};
-use self::tables::{parse_pptx_table, scale_pptx_table_geometry_to_frame};
+use self::tables::{parse_pptx_table, scale_pptx_table_columns_to_frame};
 use self::text::*;
 use self::theme::{
     ColorMapData, ParsedColor, PptxMasterTextStyles, ThemeData, ThemeLineStyle, default_color_map,

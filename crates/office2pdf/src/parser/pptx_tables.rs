@@ -977,30 +977,18 @@ pub(super) fn parse_pptx_table(
     Ok(state.finish())
 }
 
-pub(super) fn scale_pptx_table_geometry_to_frame(
-    table: &mut Table,
-    frame_width_pt: f64,
-    frame_height_pt: f64,
-) {
+/// Fit the declared grid columns to a slide table's graphic-frame width.
+///
+/// Row heights stay at their `a:tr/@h` floors: PowerPoint grows rows from
+/// their cell content, while changing the graphic-frame `cy` does not stretch
+/// them. Scaling those floors double-counts content growth and moves borders
+/// below the native table bottom (issue #2013).
+pub(super) fn scale_pptx_table_columns_to_frame(table: &mut Table, frame_width_pt: f64) {
     let intrinsic_width_pt: f64 = table.column_widths.iter().sum();
     if intrinsic_width_pt > 0.0 && frame_width_pt > 0.0 {
         let x_scale: f64 = frame_width_pt / intrinsic_width_pt;
         for width in &mut table.column_widths {
             *width *= x_scale;
-        }
-    }
-
-    let intrinsic_height_pt: f64 = table.rows.iter().filter_map(|row| row.minimum_height).sum();
-    if intrinsic_height_pt > 0.0 && frame_height_pt > intrinsic_height_pt {
-        // A frame taller than the declared rows stretches them proportionally,
-        // matching PowerPoint. A frame SHORTER than the rows is stale generator
-        // output: PowerPoint grows the table instead of compressing rows, so
-        // tr h acts as a minimum and must not be scaled down.
-        let y_scale: f64 = frame_height_pt / intrinsic_height_pt;
-        for row in &mut table.rows {
-            if let Some(height) = row.minimum_height.as_mut() {
-                *height *= y_scale;
-            }
         }
     }
 }

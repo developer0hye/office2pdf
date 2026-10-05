@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://github.com/user-attachments/files/31185149/GENERAL.SERVICES.pptx",
+    "sha256": "17924ec3b27646a2c1b2bb711b845360b713cc7052b3cdde9df752f9ceded3a9"
+  },
+  "reference_export": null,
+  "native_export": {
+    "application": "Microsoft PowerPoint",
+    "version": "16.113.3",
+    "platform": "macOS 26.6.2 build 25G83",
+    "pdf_sha256": "8cead61a1fe370637d572b0b5c201959d7258e929bd17f80a80d4a2d2c0c8173",
+    "evidence_path": "assets/bugfixes/issue-2013/native.jpg",
+    "evidence_sha256": "3177d22c03e6bfa59b34cb55bb5dbbd72d00a4669786d0150661de5cd5a217cb"
+  },
+  "verification_url": "https://github.com/developer0hye/office2pdf/issues/1667#issuecomment-5996015113",
+  "differences": [
+    {
+      "id": "page-3-slide-number-rasterized",
+      "page": 3,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "3",
+        "side": "gt",
+        "occurrence": 1
+      }
+    }
+  ]
+}
