@@ -93,26 +93,37 @@ def visual_body(result_overrides=None, include_previews=True):
 
 def layout_report(
     *,
-    gt_pages=1,
-    out_pages=1,
-    missing=0,
-    extra=0,
-    wraps=0,
-    reflow_gt=0,
-    reflow_out=0,
-    large_shifts=0,
-    fine_shifts=0,
-    fine_threshold=0.5,
-    visibility=0,
-    visible_fills=0,
-    rect_geometry=0,
-    large_shift_entries=None,
-    fine_shift_entries=None,
-):
+    gt_pages: int = 1,
+    out_pages: int = 1,
+    missing: int = 0,
+    extra: int = 0,
+    wraps: int = 0,
+    reflow_gt: int = 0,
+    reflow_out: int = 0,
+    large_shifts: int = 0,
+    fine_shifts: int = 0,
+    fine_threshold: float | None = 0.5,
+    visibility: int = 0,
+    visible_fills: int = 0,
+    rect_geometry: int = 0,
+    large_shift_entries: list[dict[str, object]] | None = None,
+    fine_shift_entries: list[dict[str, object]] | None = None,
+    missing_text: list[str] | None = None,
+    extra_text: list[str] | None = None,
+) -> dict[str, object]:
+    if missing_text is None:
+        missing_text = [f"missing line {index}" for index in range(1, min(missing, 5) + 1)]
+    if extra_text is None:
+        extra_text = [f"extra line {index}" for index in range(1, min(extra, 5) + 1)]
     return {
         "pages": [
             {
-                "lines": {"missing": missing, "extra": extra},
+                "lines": {
+                    "missing": missing,
+                    "extra": extra,
+                    "missing_text": missing_text,
+                    "extra_text": extra_text,
+                },
                 "wraps": {"count": wraps},
                 "reflow": {"gt_lines": reflow_gt, "out_lines": reflow_out},
                 "instances": {
@@ -215,20 +226,28 @@ def validate_cluster_reports(body, reports, reference_differences=None):
         )
 
 
-def reference_difference_document(*, cluster_ids=None, shift_differences=None):
-    differences = [
-        {
-            "id": "page-9-slide-number-visibility",
-            "page": 9,
-            "kind": "painted-text-visibility",
-            "layout_finding": {
-                "label": "9",
-                "gt": "hidden",
-                "out": "painted",
-                "occurrence": 1,
-            },
-        }
-    ]
+def reference_difference_document(
+    *,
+    cluster_ids: list[str] | None = None,
+    shift_differences: list[dict[str, object]] | None = None,
+    native_ground_truth: bool = False,
+    rasterized_text_differences: list[dict[str, object]] | None = None,
+) -> dict[str, object]:
+    differences = []
+    if not native_ground_truth:
+        differences.append(
+            {
+                "id": "page-9-slide-number-visibility",
+                "page": 9,
+                "kind": "painted-text-visibility",
+                "layout_finding": {
+                    "label": "9",
+                    "gt": "hidden",
+                    "out": "painted",
+                    "occurrence": 1,
+                },
+            }
+        )
     if cluster_ids is not None:
         differences.append(
             {
@@ -239,20 +258,25 @@ def reference_difference_document(*, cluster_ids=None, shift_differences=None):
             }
         )
     differences.extend(shift_differences or [])
+    differences.extend(rasterized_text_differences or [])
     return {
         "schema_version": 1,
         "source": {
             "url": "https://github.com/developer0hye/office2pdf/files/123/source.pptx",
             "sha256": "1" * 64,
         },
-        "reference_export": {
-            "application": "LibreOffice Impress",
-            "version": "26.2.5.2",
-            "platform": "macOS 26.6.2",
-            "pdf_sha256": "2" * 64,
-            "evidence_path": "assets/bugfixes/issue-186/gt.jpg",
-            "evidence_sha256": "3" * 64,
-        },
+        "reference_export": (
+            None
+            if native_ground_truth
+            else {
+                "application": "LibreOffice Impress",
+                "version": "26.2.5.2",
+                "platform": "macOS 26.6.2",
+                "pdf_sha256": "2" * 64,
+                "evidence_path": "assets/bugfixes/issue-186/gt.jpg",
+                "evidence_sha256": "3" * 64,
+            }
+        ),
         "native_export": {
             "application": "Microsoft PowerPoint",
             "version": "16.112.3",
@@ -266,6 +290,47 @@ def reference_difference_document(*, cluster_ids=None, shift_differences=None):
             "#issuecomment-5471464526"
         ),
         "differences": differences,
+    }
+
+
+def rasterized_text_body(difference_id: str, *, page: int = 13) -> str:
+    native_path = "assets/bugfixes/issue-186/native.jpg"
+    manifest_path = "assets/bugfixes/issue-186/reference-exporter-differences.json"
+    body = visual_body(
+        {"Element presence": f"Reference difference: ref:{difference_id}"}
+    )
+    return (
+        body.replace("- Page(s): 1", f"- Page(s): {page}")
+        .replace(
+            "Reference exporter differences: None",
+            f"Reference exporter differences: `{manifest_path}`",
+        )
+        .replace(
+            "Layout audit text flow: Pass",
+            f"Layout audit text flow: ref:{difference_id}",
+        )
+        .replace("- Native: None", f"- Native: `{native_path}`")
+        + f"\n![Native](https://example.com/native.jpg)\n"
+    )
+
+
+def rasterized_text_difference(
+    *,
+    difference_id: str = "page-13-slide-number-rasterized",
+    page: int = 13,
+    label: str = "13",
+    side: str = "gt",
+    occurrence: int = 1,
+) -> dict[str, object]:
+    return {
+        "id": difference_id,
+        "page": page,
+        "kind": "rasterized-text",
+        "layout_finding": {
+            "label": label,
+            "side": side,
+            "occurrence": occurrence,
+        },
     }
 
 
@@ -475,6 +540,30 @@ class PullRequestBodyTests(unittest.TestCase):
 
 
 class ReferenceExporterDifferenceTests(unittest.TestCase):
+    def prepare_native_ground_truth_evidence(
+        self, root: Path, *, pixel_identical: bool = True
+    ) -> tuple[str, dict[str, object]]:
+        issue_dir = root / "assets/bugfixes/issue-186"
+        issue_dir.mkdir(parents=True)
+        ground_truth_image = ROOT / "assets/bugfixes/issue-1497/gt.jpg"
+        native_image = (
+            ground_truth_image
+            if pixel_identical
+            else ROOT / "assets/bugfixes/issue-1497/after.jpg"
+        )
+        shutil.copyfile(ground_truth_image, issue_dir / "gt.jpg")
+        shutil.copyfile(native_image, issue_dir / "native.jpg")
+        document = reference_difference_document(
+            native_ground_truth=True,
+            rasterized_text_differences=[rasterized_text_difference()],
+        )
+        document["native_export"]["evidence_sha256"] = hashlib.sha256(
+            native_image.read_bytes()
+        ).hexdigest()
+        relative = "assets/bugfixes/issue-186/reference-exporter-differences.json"
+        (root / relative).write_text(json.dumps(document), encoding="utf-8")
+        return relative, document
+
     def test_decoded_pixel_delta_accepts_scientific_notation(self):
         with (
             patch("scripts.check_visual_pr.shutil.which", return_value="/usr/bin/magick"),
@@ -487,6 +576,93 @@ class ReferenceExporterDifferenceTests(unittest.TestCase):
             delta = decoded_pixel_delta(Path("gt.jpg"), Path("native.jpg"))
 
         self.assertEqual(delta, 6_839_930)
+
+    def test_native_ground_truth_rasterized_text_selector_is_valid(self) -> None:
+        document = reference_difference_document(
+            native_ground_truth=True,
+            rasterized_text_differences=[rasterized_text_difference()],
+        )
+
+        registry, errors = validate_reference_difference_document(document)
+
+        self.assertEqual(errors, [])
+        self.assertIsNone(document["reference_export"])
+        self.assertEqual(
+            registry["page-13-slide-number-rasterized"]["kind"], "rasterized-text"
+        )
+
+    def test_native_ground_truth_may_omit_reference_export(self) -> None:
+        document = reference_difference_document(
+            native_ground_truth=True,
+            rasterized_text_differences=[rasterized_text_difference()],
+        )
+        document.pop("reference_export")
+
+        registry, errors = validate_reference_difference_document(document)
+
+        self.assertEqual(errors, [])
+        self.assertEqual(
+            registry["page-13-slide-number-rasterized"]["kind"], "rasterized-text"
+        )
+
+    def test_non_native_reference_can_record_rasterized_text(self) -> None:
+        document = reference_difference_document(
+            rasterized_text_differences=[rasterized_text_difference()]
+        )
+
+        registry, errors = validate_reference_difference_document(document)
+
+        self.assertEqual(errors, [])
+        self.assertEqual(
+            registry["page-13-slide-number-rasterized"]["kind"], "rasterized-text"
+        )
+
+    def test_rasterized_text_selector_rejects_invalid_side_and_duplicate_occurrence(
+        self,
+    ) -> None:
+        first = rasterized_text_difference()
+        invalid_side = rasterized_text_difference(
+            difference_id="page-13-slide-number-invalid-side", side="both"
+        )
+        duplicate = rasterized_text_difference(
+            difference_id="page-13-slide-number-copy"
+        )
+        document = reference_difference_document(
+            native_ground_truth=True,
+            rasterized_text_differences=[first, invalid_side, duplicate],
+        )
+
+        _, errors = validate_reference_difference_document(document)
+
+        self.assertTrue(any("side must be gt or out" in error for error in errors))
+        self.assertTrue(any("selector appears more than once" in error for error in errors))
+
+    def test_native_ground_truth_does_not_allow_other_exporter_differences(
+        self,
+    ) -> None:
+        difference = {
+            "id": "page-13-slide-number-shift",
+            "page": 13,
+            "kind": "text-shift",
+            "layout_finding": {
+                "label": "13",
+                "occurrence": 1,
+                "dx": 1.0,
+                "dy": 0.0,
+            },
+        }
+        document = reference_difference_document(
+            native_ground_truth=True,
+            rasterized_text_differences=[rasterized_text_difference()],
+            shift_differences=[difference],
+        )
+
+        _, errors = validate_reference_difference_document(document)
+
+        self.assertTrue(
+            any("kind must be rasterized-text when reference_export is null" in error
+                for error in errors)
+        )
 
     def prepare_evidence(self, root: Path) -> tuple[str, dict[str, object]]:
         issue_dir = root / "assets/bugfixes/issue-186"
@@ -561,6 +737,80 @@ class ReferenceExporterDifferenceTests(unittest.TestCase):
             )
 
         self.assertTrue(any("native_export evidence SHA-256" in error for error in errors))
+
+    def test_native_ground_truth_accepts_pixel_identical_gt_and_native_evidence(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path, expected = self.prepare_native_ground_truth_evidence(root)
+
+            document, errors = validate_reference_exporter_differences(
+                rasterized_text_body("page-13-slide-number-rasterized"),
+                [
+                    path,
+                    "assets/bugfixes/issue-186/gt.jpg",
+                    "assets/bugfixes/issue-186/native.jpg",
+                ],
+                root,
+            )
+
+        self.assertEqual(errors, [])
+        self.assertEqual(document, expected)
+
+    def test_native_ground_truth_rejects_different_gt_and_native_evidence(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path, _ = self.prepare_native_ground_truth_evidence(
+                root, pixel_identical=False
+            )
+
+            _, errors = validate_reference_exporter_differences(
+                rasterized_text_body("page-13-slide-number-rasterized"),
+                [path, "assets/bugfixes/issue-186/native.jpg"],
+                root,
+            )
+
+        self.assertTrue(
+            any("GT/native evidence must be pixel-identical" in error for error in errors)
+        )
+
+    def test_native_ground_truth_rasterized_text_passes_evidence_and_layout_gates(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path, document = self.prepare_native_ground_truth_evidence(root)
+            layout_path = "assets/bugfixes/issue-186/layout-audit.json"
+            absolute_layout_path = root / layout_path
+            absolute_layout_path.parent.mkdir(parents=True, exist_ok=True)
+            absolute_layout_path.write_text(
+                json.dumps(layout_report(extra=1, extra_text=["13"])),
+                encoding="utf-8",
+            )
+            changed_paths = [
+                manifest_path,
+                "assets/bugfixes/issue-186/gt.jpg",
+                "assets/bugfixes/issue-186/native.jpg",
+                "assets/bugfixes/issue-186/after.jpg",
+                layout_path,
+            ]
+            body = rasterized_text_body("page-13-slide-number-rasterized")
+
+            _, evidence_errors = validate_reference_exporter_differences(
+                body, changed_paths, root
+            )
+            layout_errors = validate_layout_audit(
+                body,
+                changed_paths,
+                root,
+                reference_differences=document,
+            )
+
+        self.assertEqual(evidence_errors, [])
+        self.assertEqual(layout_errors, [])
 
     def test_reference_and_native_images_must_record_a_pixel_difference(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -984,6 +1234,96 @@ class LayoutAuditTests(unittest.TestCase):
         self.assertEqual(
             validate_report(body, report, reference_difference_document()),
             [],
+        )
+
+    def test_rasterized_gt_text_can_disposition_the_exact_extra_line(self) -> None:
+        difference_id = "page-13-slide-number-rasterized"
+        document = reference_difference_document(
+            native_ground_truth=True,
+            rasterized_text_differences=[rasterized_text_difference()],
+        )
+        report = layout_report(extra=1, extra_text=["13"])
+
+        errors = validate_report(
+            rasterized_text_body(difference_id), report, document
+        )
+
+        self.assertEqual(errors, [])
+
+    def test_rasterized_output_text_can_disposition_the_exact_missing_line(
+        self,
+    ) -> None:
+        difference_id = "page-13-output-text-rasterized"
+        difference = rasterized_text_difference(
+            difference_id=difference_id, side="out"
+        )
+        document = reference_difference_document(
+            native_ground_truth=True,
+            rasterized_text_differences=[difference],
+        )
+        report = layout_report(missing=1, missing_text=["13"])
+
+        errors = validate_report(
+            rasterized_text_body(difference_id), report, document
+        )
+
+        self.assertEqual(errors, [])
+
+    def test_rasterized_text_reference_must_match_page_label_side_and_occurrence(
+        self,
+    ) -> None:
+        cases = (
+            (14, "13", "gt", 1, ["13"]),
+            (13, "12", "gt", 1, ["13"]),
+            (13, "13", "out", 1, ["13"]),
+            (13, "13", "gt", 2, ["13"]),
+        )
+        for page, label, side, occurrence, extra_text in cases:
+            with self.subTest(
+                page=page, label=label, side=side, occurrence=occurrence
+            ):
+                difference_id = "page-13-slide-number-rasterized"
+                difference = rasterized_text_difference(
+                    label=label,
+                    side=side,
+                    occurrence=occurrence,
+                )
+                document = reference_difference_document(
+                    native_ground_truth=True,
+                    rasterized_text_differences=[difference],
+                )
+                body = rasterized_text_body(difference_id, page=page)
+                report = layout_report(extra=1, extra_text=extra_text)
+
+                errors = validate_report(body, report, document)
+
+                self.assertTrue(
+                    any(
+                        "does not match an exact current rasterized-text finding"
+                        in error
+                        for error in errors
+                    ),
+                    errors,
+                )
+
+    def test_rasterized_text_reference_leaves_other_text_findings_open(self) -> None:
+        difference_id = "page-13-slide-number-rasterized"
+        document = reference_difference_document(
+            native_ground_truth=True,
+            rasterized_text_differences=[rasterized_text_difference()],
+        )
+        report = layout_report(
+            extra=2,
+            extra_text=["13", "unrelated line"],
+            wraps=1,
+        )
+
+        errors = validate_report(
+            rasterized_text_body(difference_id), report, document
+        )
+
+        self.assertTrue(
+            any("requires an open issue" in error for error in errors), errors
         )
 
     def test_reference_difference_cannot_hide_a_different_visibility_finding(self):

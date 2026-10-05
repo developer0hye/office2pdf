@@ -163,11 +163,63 @@ shape:
 ```
 
 Both `gt.jpg` and `native.jpg` are full-page renders from the recorded PDFs and
-follow the normal JPEG rules. The gate verifies the committed JPEG hashes and
-requires structured source/reference/native provenance, SHA-256-shaped binary
-hashes, and a stable GitHub comment URL. The reviewer still verifies the
-uncommitted source/PDF hashes and comment content manually. Free-form notes do
-not create a disposition.
+follow the normal JPEG rules. The gate verifies declared evidence JPEG hashes;
+in native-GT form, it also requires `gt.jpg` and `native.jpg` to be
+pixel-identical. It requires structured source and native-export provenance,
+optional non-native reference provenance, SHA-256-shaped binary hashes, and a
+stable GitHub comment URL. The reviewer still verifies the uncommitted
+source/PDF hashes and comment content manually. Free-form notes do not create a
+disposition.
+
+A `rasterized-text` record identifies a text line one compared PDF paints only
+as an image. `side` names the render that paints the text as pixels without a
+text-layer line. Therefore `side: "gt"` must match an exact entry in
+`lines.extra_text`, while `side: "out"` must match an exact entry in
+`lines.missing_text`. Occurrences count repeated labels separately on each page
+and side, in report order. Use the exact label printed by the report
+(truncated to 60 characters); it exposes up to five labels per list, so only
+those entries can be dispositioned. This record can also be used with a
+non-native reference export when it describes that exact rasterized-text
+difference.
+
+When the supplied GT is itself the native Office export, omit `reference_export`
+or set it to `null` instead of inventing a non-native reference. Keep the
+`native_export` provenance and `native.jpg`; the gate requires `gt.jpg` and
+`native.jpg` to be pixel-identical. This form supports only exact
+`rasterized-text` differences, because a text shift or other visual mismatch
+against native GT remains a converter finding.
+
+```json
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://github.com/owner/repository/files/123/source.pptx",
+    "sha256": "<64 lowercase hex characters>"
+  },
+  "reference_export": null,
+  "native_export": {
+    "application": "Microsoft PowerPoint",
+    "version": "16.112.3",
+    "platform": "macOS 26.6.2",
+    "pdf_sha256": "<64 lowercase hex characters>",
+    "evidence_path": "assets/bugfixes/issue-123/native.jpg",
+    "evidence_sha256": "<64 lowercase hex characters>"
+  },
+  "verification_url": "https://github.com/owner/repository/issues/456#issuecomment-789",
+  "differences": [
+    {
+      "id": "page-13-slide-number-rasterized",
+      "page": 13,
+      "kind": "rasterized-text",
+      "layout_finding": {
+        "label": "13",
+        "side": "gt",
+        "occurrence": 1
+      }
+    }
+  ]
+}
+```
 
 Set these PR fields when the report is used:
 
@@ -181,14 +233,17 @@ Layout audit fine shifts: ref:page-10-august-bergquist-shift
 
 Render `![Native](...)` with a stable image URL. In the deviation table, use
 `Reference difference: ref:<id>` once for every difference in the report.
-Layout reference differences can cover one exact occurrence of a
-`painted-text-visibility` finding or a `text-shift` finding. A shift records its
-page, base label, occurrence, and exact `dx`/`dy` values from the current layout
-report; repeated labels use the occurrence number shown in its `[N/M]` label.
+Reference differences can cover one exact occurrence of a
+`painted-text-visibility` finding or a `text-shift` finding when a non-native
+reference export is recorded. A shift records its page, base label, occurrence,
+and exact `dx`/`dy` values from the current layout report; repeated labels use
+the occurrence number shown in its `[N/M]` label.
 Use the same shift ID in both large- and fine-shift fields when it appears in
-both lists. Missing/extra text, wrap/reflow, geometry, fill, and any unmatched
-shift still need an open issue. If a category contains other findings beside
-verified reference differences, also name the issue that tracks those findings.
+both lists. In native-GT form, `rasterized-text` records instead match the exact
+missing/extra text label, side, and occurrence described above. Any missing/extra
+text outside those exact records, wrap/reflow, geometry, fill, or unmatched shift
+still needs an open issue. If a category contains other findings beside verified
+reference differences, also name the issue that tracks those findings.
 
 Generate the cluster IDs once without strict mode, inspect every cluster in the
 full-resolution diff and matched crops, then create a disposition file whose
