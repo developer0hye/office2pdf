@@ -37,6 +37,15 @@ enum TableContentContext {
     AnchoredTextBox,
 }
 
+#[derive(Clone, Copy)]
+struct CellContentExtractionContext<'a> {
+    images: &'a ImageMap,
+    hyperlinks: &'a HyperlinkMap,
+    style_map: &'a StyleMap,
+    ctx: &'a DocxConversionContext,
+    depth: usize,
+}
+
 fn extract_margin_side_points(side_json: &serde_json::Value) -> Option<f64> {
     let width_type = side_json
         .get("widthType")
@@ -235,13 +244,16 @@ fn convert_table_with_context(
         padding.left = 0.0;
     }
 
-    let mut raw_rows = extract_raw_rows(
-        table,
+    let cell_content_context: CellContentExtractionContext<'_> = CellContentExtractionContext {
         images,
         hyperlinks,
         style_map,
         ctx,
         depth,
+    };
+    let mut raw_rows = extract_raw_rows(
+        table,
+        cell_content_context,
         default_cell_padding,
         table_style.as_ref(),
         source_table_column_count(table),
@@ -341,11 +353,7 @@ fn source_table_column_count(table: &docx_rs::Table) -> usize {
 
 fn extract_raw_rows(
     table: &docx_rs::Table,
-    images: &ImageMap,
-    hyperlinks: &HyperlinkMap,
-    style_map: &StyleMap,
-    ctx: &DocxConversionContext,
-    depth: usize,
+    cell_content_context: CellContentExtractionContext<'_>,
     default_cell_padding: Option<Insets>,
     table_style: Option<&ResolvedTableStyle>,
     column_count: usize,
@@ -405,15 +413,7 @@ fn extract_raw_rows(
                     column_count,
                 )
             });
-            let content = extract_cell_content(
-                cell,
-                images,
-                hyperlinks,
-                style_map,
-                ctx,
-                depth,
-                table_space_after,
-            );
+            let content = extract_cell_content(cell, cell_content_context, table_space_after);
             if let Some(picture_height) = in_cell_floating_picture_height(cell) {
                 in_cell_picture_floor = Some(
                     in_cell_picture_floor.map_or(picture_height, |floor| floor.max(picture_height)),
@@ -1143,13 +1143,16 @@ fn count_vmerge_span(raw_rows: &[RawRow], start_row: usize, col_index: usize) ->
 
 fn extract_cell_content(
     cell: &docx_rs::TableCell,
-    images: &ImageMap,
-    hyperlinks: &HyperlinkMap,
-    style_map: &StyleMap,
-    ctx: &DocxConversionContext,
-    depth: usize,
+    cell_content_context: CellContentExtractionContext<'_>,
     table_style_space_after: Option<f64>,
 ) -> Vec<Block> {
+    let CellContentExtractionContext {
+        images,
+        hyperlinks,
+        style_map,
+        ctx,
+        depth,
+    } = cell_content_context;
     let mut blocks: Vec<Block> = Vec::new();
     for content in &cell.children {
         match content {
@@ -1182,11 +1185,7 @@ fn extract_cell_content(
                 extend_with_cell_sdt_content(
                     &mut blocks,
                     sdt,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    ctx,
-                    depth,
+                    cell_content_context,
                     table_style_space_after,
                 );
             }
@@ -1204,13 +1203,16 @@ fn extract_cell_content(
 fn extend_with_cell_sdt_content(
     blocks: &mut Vec<Block>,
     sdt: &docx_rs::StructuredDataTag,
-    images: &ImageMap,
-    hyperlinks: &HyperlinkMap,
-    style_map: &StyleMap,
-    ctx: &DocxConversionContext,
-    depth: usize,
+    cell_content_context: CellContentExtractionContext<'_>,
     table_style_space_after: Option<f64>,
 ) {
+    let CellContentExtractionContext {
+        images,
+        hyperlinks,
+        style_map,
+        ctx,
+        depth,
+    } = cell_content_context;
     for child in &sdt.children {
         match child {
             docx_rs::StructuredDataTagChild::Paragraph(para) => {
@@ -1238,11 +1240,7 @@ fn extend_with_cell_sdt_content(
                 extend_with_cell_sdt_content(
                     blocks,
                     nested,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    ctx,
-                    depth,
+                    cell_content_context,
                     table_style_space_after,
                 );
             }
