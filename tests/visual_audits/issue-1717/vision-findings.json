@@ -1,0 +1,9 @@
+{
+  "page_count_and_order": "One A4 page on both sides; order is unchanged.",
+  "element_presence": "The five headers and the E2 value are visible in both Excel and the fixed output.",
+  "text_flow": "The pre-fix output wraps Customer Quality Executive into two lines; Excel and the fixed output keep it on one line.",
+  "position_and_geometry": "All six matched text instances have zero measured x/y shift; the layout audit reports no wrap, reflow, clipping, or visibility mismatch.",
+  "font_and_emphasis": "The native PDF embeds Malgun Gothic. The fixed output preserves the 12pt regular black text and matching alignment; no emphasis changes are visible.",
+  "fills_borders_and_decoration": "No fills, borders, strokes, rotation, or decorative objects appear in the compared page.",
+  "remaining_difference": "The 150 DPI diff contains only dispersed glyph-edge rasterization and antialiasing specks, with no material cluster at or above 20pt^2."
+}

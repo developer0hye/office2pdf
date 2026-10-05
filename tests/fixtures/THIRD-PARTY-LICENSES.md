@@ -36,6 +36,7 @@ No attribution required. These files are in the public domain.
   - `xlsx/customers_trailing_band_no_spill.xlsx` (modified from `xlsx/100-customers.xlsx`)
   - `xlsx/customers_middle_band_no_spill.xlsx` (modified from `xlsx/100-customers.xlsx`)
   - `xlsx/1000-customers.xlsx`
+  - `xlsx/issue_1717_ascii_width_boundary.xlsx` (modified from `xlsx/1000-customers.xlsx`)
 
 ---
 
