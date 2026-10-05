@@ -153,6 +153,8 @@ pub enum HFInline {
 pub enum Block {
     Paragraph(Paragraph),
     Table(Table),
+    /// A Word table positioned by `w:tblpPr`, outside the document's text flow.
+    FloatingTable(Box<FloatingTable>),
     Image(ImageData),
     /// Consecutive inline images from one flow paragraph.
     InlineImages(Vec<ImageData>),
@@ -1235,6 +1237,27 @@ pub struct FloatingShape {
     /// Vertical offset in points from the anchor reference.
     pub offset_y: f64,
     pub wrap_mode: WrapMode,
+}
+
+/// A DOCX body table whose `w:tblpPr` frame has been resolved against its
+/// section's page, margin, or text area.
+#[derive(Debug, Clone)]
+pub struct FloatingTable {
+    pub table: Table,
+    pub frame: FloatingTableFrame,
+}
+
+/// Positioning for a DOCX floating table. Before section resolution, `x` and
+/// `y` are offsets from their corresponding anchors; afterwards they are
+/// offsets from the top-left of the page text area and both anchors are Text.
+#[derive(Debug, Clone)]
+pub struct FloatingTableFrame {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub horizontal_anchor: FrameAnchor,
+    pub vertical_anchor: FrameAnchor,
+    pub horizontal_align: Option<FrameAlign>,
+    pub vertical_align: Option<FrameAlign>,
 }
 
 /// Vertical alignment for fixed text box content.

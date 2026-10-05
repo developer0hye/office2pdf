@@ -71,7 +71,7 @@ fn all_blocks(pages: &[FlowPage]) -> Vec<&Block> {
     pages.iter().flat_map(|p| p.content.iter()).collect()
 }
 
-/// Recursively collect all runs from blocks (paragraphs, lists, tables, floating text boxes).
+/// Recursively collect all runs from blocks (paragraphs, lists, tables, and floating content).
 fn all_runs<'a>(blocks: &'a [&'a Block]) -> Vec<&'a Run> {
     let mut runs = Vec::new();
     for block in blocks {
@@ -99,6 +99,15 @@ fn collect_runs_from_block<'a>(block: &'a Block, out: &mut Vec<&'a Run>) {
                 for cell in &row.cells {
                     for b in &cell.content {
                         collect_runs_from_block(b, out);
+                    }
+                }
+            }
+        }
+        Block::FloatingTable(floating_table) => {
+            for row in &floating_table.table.rows {
+                for cell in &row.cells {
+                    for nested_block in &cell.content {
+                        collect_runs_from_block(nested_block, out);
                     }
                 }
             }
@@ -136,6 +145,15 @@ fn block_text(block: &Block) -> String {
             .collect::<Vec<String>>()
             .join("\n"),
         Block::Table(table) => table
+            .rows
+            .iter()
+            .flat_map(|row| row.cells.iter())
+            .flat_map(|cell| cell.content.iter())
+            .map(block_text)
+            .collect::<Vec<String>>()
+            .join("\n"),
+        Block::FloatingTable(floating_table) => floating_table
+            .table
             .rows
             .iter()
             .flat_map(|row| row.cells.iter())
@@ -325,7 +343,9 @@ fn has_footnote_runs(runs: &[&Run]) -> bool {
 }
 
 fn has_table_block(blocks: &[&Block]) -> bool {
-    blocks.iter().any(|b| matches!(b, Block::Table(_)))
+    blocks
+        .iter()
+        .any(|block| matches!(block, Block::Table(_) | Block::FloatingTable(_)))
 }
 
 fn has_image_block(blocks: &[&Block]) -> bool {

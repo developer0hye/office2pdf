@@ -3374,6 +3374,11 @@ fn generate_cell_content(
                     generate_table(out, table, ctx)?;
                 }
             }
+            Block::FloatingTable(table) => {
+                if ctx.table_depth < MAX_TABLE_DEPTH {
+                    generate_table(out, &table.table, ctx)?;
+                }
+            }
             Block::Image(img) => generate_image(out, img, ctx),
             Block::InlineImages(images) => {
                 for image in images {

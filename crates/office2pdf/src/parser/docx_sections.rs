@@ -4,10 +4,11 @@ use std::io::{Cursor, Read, Seek};
 
 use crate::error::ConvertWarning;
 use crate::ir::{
-    Block, Color, ColumnLayout, FlowPage, FrameAlign, FrameAnchor, HFInline, HeaderFooter,
-    HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterShape, HeaderFooterShapeContent, Margins,
-    PageNumbering, PageSize, PositionedTab, PositionedTabAlignment, PositionedTabRelativeTo, Run,
-    TabLeader, TextDirection, TextStyle,
+    Block, Color, ColumnLayout, FloatingTableFrame, FlowPage, FrameAlign, FrameAnchor, HFInline,
+    HeaderFooter, HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterShape,
+    HeaderFooterShapeContent, Margins, PageNumbering, PageSize, PositionedTab,
+    PositionedTabAlignment, PositionedTabRelativeTo, Run, TabLeader, Table, TextDirection,
+    TextStyle,
 };
 
 use super::contexts::{DocxConversionContext, WrapContext};
@@ -406,7 +407,8 @@ pub(super) fn build_flow_page_from_section(
 ) -> FlowPage {
     let (size, margins) = extract_page_setup(section_prop);
     let doc_default_style: Option<&ResolvedStyle> = styles.style_map.get(DOC_DEFAULT_STYLE_ID);
-    let content = group_into_lists(elements, numberings);
+    let mut content = group_into_lists(elements, numberings);
+    resolve_body_floating_table_positions(&mut content, &size, &margins);
 
     for block in &content {
         if let Block::Chart(chart) = block {
@@ -842,6 +844,109 @@ fn convert_hf_table(
         width: width_pt,
         height: height_pt.unwrap_or_default(),
         behind_text: true,
+    }
+}
+
+pub(super) fn floating_table_frame(
+    source_table: &docx_rs::Table,
+    table: &Table,
+) -> Option<FloatingTableFrame> {
+    let properties: serde_json::Value = serde_json::to_value(&source_table.property).ok()?;
+    let position: &serde_json::Map<String, serde_json::Value> =
+        properties.get("position")?.as_object()?;
+    // Word ignores an empty tblpPr. Only a declared positioning attribute
+    // makes this a floating table rather than an ordinary flow table.
+    if position.is_empty() {
+        return None;
+    }
+    let position_string =
+        |key: &str| -> Option<&str> { position.get(key).and_then(serde_json::Value::as_str) };
+    let position_twips = |key: &str| -> Option<f64> {
+        position
+            .get(key)
+            .and_then(serde_json::Value::as_f64)
+            .map(|twips| twips_to_pt(twips as i32))
+    };
+    let horizontal_align = position_string("positionXAlignment")
+        .and_then(frame_align)
+        .or(match table.alignment {
+            Some(crate::ir::Alignment::Center) => Some(FrameAlign::Center),
+            Some(crate::ir::Alignment::Right) => Some(FrameAlign::End),
+            _ => None,
+        });
+
+    Some(FloatingTableFrame {
+        x: position_twips("positionX"),
+        y: position_twips("positionY"),
+        // Word's interoperability defaults differ from the schema defaults.
+        horizontal_anchor: position_string("horizontalAnchor")
+            .map(|value| frame_anchor(Some(value)))
+            .unwrap_or(FrameAnchor::Text),
+        vertical_anchor: position_string("verticalAnchor")
+            .map(|value| frame_anchor(Some(value)))
+            .unwrap_or(FrameAnchor::Margin),
+        horizontal_align,
+        vertical_align: position_string("positionYAlignment").and_then(frame_align),
+    })
+}
+
+fn resolve_body_floating_table_positions(
+    blocks: &mut [Block],
+    page_size: &PageSize,
+    margins: &Margins,
+) {
+    for block in blocks {
+        let Block::FloatingTable(floating_table) = block else {
+            continue;
+        };
+        let frame: &mut FloatingTableFrame = &mut floating_table.frame;
+        let width: f64 = floating_table.table.column_widths.iter().sum();
+        let height: Option<f64> = floating_table
+            .table
+            .rows
+            .iter()
+            .try_fold(0.0, |height, row| {
+                row.height.map(|row_height| height + row_height)
+            });
+
+        let (horizontal_origin, horizontal_available): (f64, f64) = match frame.horizontal_anchor {
+            FrameAnchor::Page => (0.0, page_size.width),
+            FrameAnchor::Margin | FrameAnchor::Text => (
+                margins.left,
+                (page_size.width - margins.left - margins.right).max(0.0),
+            ),
+        };
+        let page_x: f64 = horizontal_origin
+            + frame.x.unwrap_or_else(|| {
+                hf_aligned_offset(frame.horizontal_align, horizontal_available, Some(width))
+            });
+
+        let (vertical_origin, vertical_available): (f64, f64) = match frame.vertical_anchor {
+            FrameAnchor::Page => (0.0, page_size.height),
+            FrameAnchor::Margin | FrameAnchor::Text => (
+                margins.top,
+                (page_size.height - margins.top - margins.bottom).max(0.0),
+            ),
+        };
+        let page_y: f64 = frame
+            .y
+            .map(|offset| vertical_origin + offset)
+            .or_else(|| {
+                frame.vertical_align.map(|alignment| {
+                    vertical_origin + hf_aligned_offset(Some(alignment), vertical_available, height)
+                })
+            })
+            .unwrap_or(vertical_origin);
+
+        // Typst's top-level `place` measures offsets from the text area's
+        // origin. Resolve section anchors here so the renderer receives one
+        // stable coordinate pair, including for over-wide aligned tables.
+        frame.x = Some(page_x - margins.left);
+        frame.y = Some(page_y - margins.top);
+        frame.horizontal_anchor = FrameAnchor::Text;
+        frame.vertical_anchor = FrameAnchor::Text;
+        frame.horizontal_align = None;
+        frame.vertical_align = None;
     }
 }
 

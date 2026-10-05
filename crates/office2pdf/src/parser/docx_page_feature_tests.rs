@@ -851,6 +851,105 @@ fn header_table_content_reaches_the_generated_page_header() {
 }
 
 #[test]
+fn floating_body_table_respects_its_page_and_margin_anchors() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (mut document, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let first_page = match &mut document.pages[0] {
+        Page::Flow(page) | Page::FlowContinuous(page) => page,
+        other => panic!("Expected a flow page, got {other:?}"),
+    };
+    first_page.header = None;
+    first_page.footer = None;
+    first_page.first_header = None;
+    first_page.first_footer = None;
+    first_page
+        .content
+        .retain(|block| matches!(block, crate::ir::Block::FloatingTable(_)));
+    let floating_table = first_page
+        .content
+        .iter()
+        .find_map(|block| match block {
+            crate::ir::Block::FloatingTable(table) => Some(table),
+            _ => None,
+        })
+        .expect("the target body table must retain its floating frame");
+    assert_eq!(
+        floating_table.frame.horizontal_anchor,
+        crate::ir::FrameAnchor::Text
+    );
+    assert_eq!(
+        floating_table.frame.vertical_anchor,
+        crate::ir::FrameAnchor::Text
+    );
+    assert!(
+        (floating_table.frame.x.expect("resolved x") + 53.875).abs() < 0.01,
+        "center alignment against the page margins must resolve to x=-53.875pt, got {:?}",
+        floating_table.frame.x
+    );
+    assert!(
+        (floating_table.frame.y.expect("resolved y") + 26.15).abs() < 0.01,
+        "the page-relative y anchor must resolve to y=-26.15pt from the text area, got {:?}",
+        floating_table.frame.y
+    );
+    let table_width_pt: f64 = floating_table.table.column_widths.iter().sum();
+    assert!(
+        (table_width_pt - 611.75).abs() < 0.01,
+        "the declared grid must stay 611.75pt wide, got {table_width_pt}pt"
+    );
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        document.pages.truncate(1);
+        let generated = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&generated.source, 0).unwrap();
+        let quote = runs
+            .iter()
+            .find(|run| run.text.starts_with('“'))
+            .expect("the floating table's quote is rendered on page one");
+
+        assert!(
+            (quote.left_pt - 223.92).abs() < 0.25,
+            "the centered, over-wide table should start at the page-centered cell position, got {}pt",
+            quote.left_pt
+        );
+    }
+}
+
+#[test]
+fn an_unpositioned_docx_body_table_remains_in_text_flow() {
+    let paragraph =
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("An ordinary body table"));
+    let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+        docx_rs::TableCell::new().add_paragraph(paragraph),
+    ])])
+    .set_grid(vec![3600]);
+    let docx = docx_rs::Docx::new().add_table(table);
+    let mut cursor = Cursor::new(Vec::new());
+    docx.build().pack(&mut cursor).unwrap();
+    let (document, _warnings) = DocxParser
+        .parse(&cursor.into_inner(), &ConvertOptions::default())
+        .unwrap();
+    let page = match &document.pages[0] {
+        Page::Flow(page) | Page::FlowContinuous(page) => page,
+        other => panic!("Expected a flow page, got {other:?}"),
+    };
+    let table_block = page
+        .content
+        .iter()
+        .find(|block| {
+            matches!(
+                block,
+                crate::ir::Block::Table(_) | crate::ir::Block::FloatingTable(_)
+            )
+        })
+        .expect("the ordinary body table is present");
+
+    assert!(
+        matches!(table_block, crate::ir::Block::Table(_)),
+        "a table without positioned-table properties must remain in document flow"
+    );
+}
+
+#[test]
 fn doc_grid_without_a_type_declares_a_pitch_that_does_not_snap() {
     // Word writes a bare `<w:docGrid w:linePitch="360"/>` into ordinary Korean
     // documents. `w:type` then takes its default value `default`, which is
