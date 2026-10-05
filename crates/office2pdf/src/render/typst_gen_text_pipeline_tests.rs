@@ -90,6 +90,7 @@ fn test_generate_flow_page_with_equal_columns() {
             num_columns: 2,
             spacing: 36.0,
             column_widths: None,
+            has_separator: false,
         }),
         line_grid_pitch: None,
         line_grid_snaps_lines: false,
@@ -120,6 +121,7 @@ fn test_generate_flow_page_with_three_columns() {
             num_columns: 3,
             spacing: 18.0,
             column_widths: None,
+            has_separator: false,
         }),
         line_grid_pitch: None,
         line_grid_snaps_lines: false,
@@ -146,6 +148,7 @@ fn test_generate_flow_page_with_unequal_columns() {
             num_columns: 2,
             spacing: 36.0,
             column_widths: Some(vec![300.0, 150.0]),
+            has_separator: false,
         }),
         line_grid_pitch: None,
         line_grid_snaps_lines: false,
@@ -176,6 +179,7 @@ fn test_generate_column_break() {
             num_columns: 2,
             spacing: 36.0,
             column_widths: None,
+            has_separator: false,
         }),
         line_grid_pitch: None,
         line_grid_snaps_lines: false,
@@ -3790,7 +3794,49 @@ const EQUAL_TWO_COLUMNS: ColumnLayout = ColumnLayout {
     num_columns: 2,
     spacing: 36.0,
     column_widths: None,
+    has_separator: false,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+fn continuous_column_section_source(has_separator: bool) -> String {
+    let mut column_page: Page = make_flow_page(vec![
+        make_paragraph("First column content"),
+        make_paragraph("Second column content"),
+    ]);
+    let Page::Flow(column_flow_page) = &mut column_page else {
+        unreachable!("helper constructs a flow page");
+    };
+    column_flow_page.columns = Some(ColumnLayout {
+        num_columns: 2,
+        spacing: 12.0,
+        column_widths: None,
+        has_separator,
+    });
+    let following_section: Page = match make_flow_page(vec![make_paragraph("Following section")]) {
+        Page::Flow(flow_page) => Page::FlowContinuous(flow_page),
+        _ => unreachable!("helper constructs a flow page"),
+    };
+    let document = make_doc(vec![column_page, following_section]);
+    generate_typst(&document)
+        .expect("continuous section should generate Typst")
+        .source
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn test_continuous_equal_columns_draw_separator_when_enabled() {
+    let with_separator: String = continuous_column_section_source(true);
+    let without_separator: String = continuous_column_section_source(false);
+
+    assert!(
+        with_separator.contains("line(length: o2p_column_height, angle: 90deg, stroke: 1pt)"),
+        "the measured separator must be emitted into the column section: {with_separator}"
+    );
+    assert!(
+        !without_separator.contains("line(length: o2p_column_height"),
+        "sections without w:cols/@w:sep must not gain a line: {without_separator}"
+    );
+}
 
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
@@ -4008,6 +4054,7 @@ fn test_space_before_survives_unequal_column_break() {
         num_columns: 2,
         spacing: 36.0,
         column_widths: Some(vec![300.0, 150.0]),
+        has_separator: false,
     };
     let mut continuation = make_paragraph("After unequal column break");
     let Block::Paragraph(paragraph) = &mut continuation else {
@@ -4039,6 +4086,7 @@ fn test_page_break_inside_unequal_columns_breaks_the_page() {
         num_columns: 2,
         spacing: 36.0,
         column_widths: Some(vec![300.0, 150.0]),
+        has_separator: false,
     };
     // A column break moves to the next column and a page break to the next
     // page, so this section spans exactly two pages. The plain-page baseline the

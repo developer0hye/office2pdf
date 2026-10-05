@@ -81,6 +81,8 @@ pub struct ColumnLayout {
     pub spacing: f64,
     /// Optional per-column widths in points. When `None`, columns are equal width.
     pub column_widths: Option<Vec<f64>>,
+    /// Whether Word's `<w:cols w:sep="true"/>` requests rules between columns.
+    pub has_separator: bool,
 }
 
 /// A flowing-content page (DOCX).

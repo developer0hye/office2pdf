@@ -1401,6 +1401,7 @@ fn issue_1896_collapses_empty_paragraph_after_spacing_before_a_leading_page_brea
             num_columns: 2,
             spacing: 36.0,
             column_widths: None,
+            has_separator: false,
         });
         let document: Document = make_doc(vec![page]);
         let source: String = generate_typst(&document)
