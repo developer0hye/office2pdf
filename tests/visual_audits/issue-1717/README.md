@@ -23,6 +23,11 @@ width gives the spill clip box enough room for the unwrapped line. The page
 column continuation decision remains based on Excel's per-glyph whole-point
 grid.
 
+The fixture's spill assertion runs on hosts that resolve the Malgun Gothic
+face. Hosts without it use the documented portable ratio fallback; the
+face-independent unit test still checks exact advances against other resolved
+fonts.
+
 The pre-fix layout audit records 2 native lines versus 3 output lines and one
 wrap. The fixed output has 2/2 lines, no wrap, missing or extra text, visibility
 mismatch, or position shift. The strict render audit uses a 0.5pt fine-detail
