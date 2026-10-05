@@ -726,7 +726,7 @@ fn generate_flow_page(
         suppress_typst_spacing_at_continuous_section_start(&mut section_content);
     }
     if !begins_continuously {
-        write_flow_page_setup(out, page, &size, ctx)?;
+        write_flow_page_setup(out, page, &size, false, ctx)?;
         out.push('\n');
     }
     // The marker sits at the section's first page, so a first-page header can
@@ -900,7 +900,7 @@ fn generate_continuous_flow_blocks(
         let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
-            write_flow_page_setup(out, page, size, ctx)?;
+            write_flow_page_setup(out, page, size, true, ctx)?;
         }
         if segment.is_empty() {
             continue;
@@ -962,7 +962,7 @@ fn generate_flow_page_columns(
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
             if options.begins_continuously {
-                write_flow_page_setup(out, page, size, ctx)?;
+                write_flow_page_setup(out, page, size, true, ctx)?;
             }
         }
         if segment.is_empty() {
@@ -2895,12 +2895,20 @@ fn flow_header_value(
 /// the top margin rather than overprinting the body. Before this, a header of
 /// four 12pt lines in a 26.95pt band interleaved its last two lines with the
 /// body text; the reference export pushes the body below all four (issue #736).
+/// On continuation pages, a page-anchored header shape that crosses the body
+/// top margin also reserves its bottom and any following empty header line
+/// boxes, as Word does (issue #1995).
 ///
-/// Only growth is possible, and only for a story that outgrows its band: one
-/// that fits leaves `w:top` alone, so the common case emits exactly what it
-/// always did. A header whose face cannot be measured also leaves it alone
-/// rather than guessing.
-fn flow_page_top_margin_pt(page: &FlowPage) -> f64 {
+/// Otherwise `w:top` is left alone, so the common case emits exactly what it
+/// always did. When a header face cannot be measured, its nonempty text cannot
+/// contribute a guessed height. Empty flow lines after a known overlay still
+/// reserve their declared/default font size and paragraph spacing.
+fn flow_page_top_margin_pt(
+    page: &FlowPage,
+    size: &PageSize,
+    default_text: Option<&TextStyle>,
+    reserve_page_anchored_header_shapes: bool,
+) -> f64 {
     // One margin serves the whole section, so where `w:titlePg` gives the first
     // page its own story both have to fit it — taking the default story alone
     // would leave a taller first-page header overprinting page one, which is
@@ -2908,12 +2916,33 @@ fn flow_page_top_margin_pt(page: &FlowPage) -> f64 {
     [page.header.as_ref(), page.first_header.as_ref()]
         .into_iter()
         .flatten()
-        .filter(|header| hf_has_flow_content(header))
         .filter_map(|header| {
+            let overlay_bottom: Option<f64> = reserve_page_anchored_header_shapes
+                .then(|| page_anchored_header_shape_bottom_pt(header, size, page.margins.top))
+                .flatten();
+            if !hf_has_flow_content(header) && overlay_bottom.is_none() {
+                return None;
+            }
+
             // The band runs from the `w:header` line down, so a story that
             // overflows needs the margin to reach the bottom of its content.
-            let reach: f64 =
-                header.distance_from_edge.unwrap_or(0.0) + hf_content_height_pt(header)?;
+            // On continuation pages, also retain the empty flow paragraphs
+            // that follow a page-anchored header overlay; Word reserves their
+            // line boxes even though they paint no text.
+            let content_height: Option<f64> =
+                hf_content_height_pt(header, default_text, overlay_bottom.is_some());
+            if content_height.is_none() && overlay_bottom.is_none() {
+                return None;
+            }
+            let flow_reach: f64 = content_height
+                .map(|height| header.distance_from_edge.unwrap_or(0.0) + height)
+                .unwrap_or(0.0);
+            let overlay_reach: f64 = overlay_bottom
+                .map(|bottom| {
+                    bottom + hf_last_flow_paragraph_height_pt(header, default_text).unwrap_or(0.0)
+                })
+                .unwrap_or(0.0);
+            let reach: f64 = flow_reach.max(overlay_reach);
             // A story that fits its band is left exactly as it renders today,
             // clamp and all. Growing those too would move the body a fraction
             // of a point on ordinary documents — measured at 0.63pt for a
@@ -2939,23 +2968,111 @@ fn flow_page_top_margin_pt(page: &FlowPage) -> f64 {
 /// `w:space` reserve. Wrapping is not modelled: a header paragraph that wraps
 /// would measure short, which grows the margin less than it should rather than
 /// more, so the failure stays on the side of the current behaviour.
-fn hf_content_height_pt(hf: &HeaderFooter) -> Option<f64> {
+fn hf_content_height_pt(
+    hf: &HeaderFooter,
+    default_text: Option<&TextStyle>,
+    include_empty_flow_paragraphs: bool,
+) -> Option<f64> {
     let mut total: f64 = 0.0;
     for paragraph in &hf.paragraphs {
-        total += hf_paragraph_height_pt(paragraph)?;
+        if include_empty_flow_paragraphs {
+            if paragraph.frame.as_ref().is_some_and(is_page_anchored_frame) {
+                continue;
+            }
+            total += hf_paragraph_height_pt(paragraph, default_text, true)?;
+        } else {
+            total += hf_paragraph_height_pt(paragraph, None, false)?;
+        }
     }
     Some(total)
 }
 
+/// The bottom of a page-anchored header shape that crosses the body's top edge.
+fn page_anchored_header_shape_bottom_pt(
+    header: &HeaderFooter,
+    size: &PageSize,
+    top_margin_pt: f64,
+) -> Option<f64> {
+    header
+        .shapes
+        .iter()
+        .filter(|shape| shape.frame.vertical_anchor == crate::ir::FrameAnchor::Page)
+        .filter_map(|shape| {
+            if shape.height <= 0.0 {
+                return None;
+            }
+            let top: f64 = shape.frame.y.unwrap_or_else(|| {
+                aligned_offset(shape.frame.vertical_align, size.height, Some(shape.height))
+            });
+            let bottom: f64 = top.max(0.0) + shape.height;
+            (top < top_margin_pt && bottom > top_margin_pt).then_some(bottom)
+        })
+        .max_by(f64::total_cmp)
+}
+
+/// Reserve the final flowing header line below its page-anchored overlay.
+fn hf_last_flow_paragraph_height_pt(
+    header: &HeaderFooter,
+    default_text: Option<&TextStyle>,
+) -> Option<f64> {
+    header
+        .paragraphs
+        .iter()
+        .rev()
+        .filter(|paragraph| !paragraph.frame.as_ref().is_some_and(is_page_anchored_frame))
+        .find_map(|paragraph| hf_paragraph_height_pt(paragraph, default_text, true))
+}
+
 /// The height one header or footer paragraph takes: Word's line for its face,
-/// plus whatever its `w:pBdr` rules and their `w:space` gaps reserve.
+/// plus whatever its `w:pBdr` rules and their `w:space` gaps reserve. For an
+/// empty flow paragraph retained after a page-anchored overlay, missing face
+/// metrics fall back to its paragraph-mark/default font size and line spacing.
 ///
 /// Shared with [`generate_stacked_hf_paragraphs`], which states it on the
 /// paragraph's block, so the height a ruled story reserves in the band is the
 /// height it actually lays out (issue #1824).
-fn hf_paragraph_height_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Option<f64> {
-    let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
-    let mut total: f64 = text::word_line_advance_pt(&runs)?;
+fn hf_paragraph_height_pt(
+    paragraph: &crate::ir::HeaderFooterParagraph,
+    default_text: Option<&TextStyle>,
+    use_default_for_empty: bool,
+) -> Option<f64> {
+    let mut runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
+    let is_empty_flow_paragraph: bool = runs.is_empty() && use_default_for_empty;
+    if is_empty_flow_paragraph {
+        let style: TextStyle = paragraph
+            .style
+            .paragraph_mark_text_style
+            .as_deref()
+            .or(default_text)
+            .cloned()
+            .unwrap_or_default();
+        runs.push(Run {
+            text: "M".to_string(),
+            style,
+            href: None,
+            footnote: None,
+            inline_box: None,
+        });
+    }
+    let mut total: f64 = text::word_line_advance_pt(&runs).or_else(|| {
+        if !is_empty_flow_paragraph {
+            return None;
+        }
+        // The overlay's final empty paragraph still owns a line box when
+        // this platform cannot provide the face metrics.
+        let font_size_pt: f64 = runs
+            .iter()
+            .filter_map(|run| run.style.font_size)
+            .reduce(f64::max)
+            .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT);
+        Some(match paragraph.style.line_spacing {
+            Some(crate::ir::LineSpacing::Exact(height)) => height.max(0.0),
+            Some(crate::ir::LineSpacing::Proportional(multiplier)) => {
+                (font_size_pt * multiplier).max(0.0)
+            }
+            None => font_size_pt,
+        })
+    })?;
     if let Some(border) = paragraph.border.as_ref() {
         for (side, space) in [
             (border.top.as_ref(), paragraph.border_space.map(|i| i.top)),
@@ -2978,6 +3095,7 @@ fn write_flow_page_setup(
     out: &mut String,
     page: &FlowPage,
     size: &PageSize,
+    reserve_page_anchored_header_shapes: bool,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     ctx.active_page_size = Some(*size);
@@ -2994,9 +3112,14 @@ fn write_flow_page_setup(
         return Ok(());
     }
 
-    // A header taller than `w:top - w:header` grows the margin instead of
-    // overprinting the body (issue #736).
-    let top_margin_pt: f64 = flow_page_top_margin_pt(page);
+    // An overflowing header or a page-anchored overlay on a continuation page
+    // grows the margin instead of overprinting the body (issues #736, #1995).
+    let top_margin_pt: f64 = flow_page_top_margin_pt(
+        page,
+        size,
+        ctx.document_default_text.as_ref(),
+        reserve_page_anchored_header_shapes,
+    );
     let _ = write!(
         out,
         "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
@@ -3483,7 +3606,7 @@ fn page_relative_hf_paragraph_shape_position(
 }
 
 fn hf_paragraph_story_height_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> f64 {
-    if let Some(height) = hf_paragraph_height_pt(paragraph) {
+    if let Some(height) = hf_paragraph_height_pt(paragraph, None, false) {
         return height;
     }
     match paragraph.style.line_spacing {
@@ -3521,7 +3644,7 @@ fn generate_stacked_hf_paragraphs(out: &mut String, hf: &HeaderFooter, ctx: &mut
             continue;
         }
         out.push_str("#block(width: 100%, above: 0pt, below: 0pt");
-        if let Some(height) = hf_paragraph_height_pt(paragraph) {
+        if let Some(height) = hf_paragraph_height_pt(paragraph, None, false) {
             let _ = write!(out, ", height: {}pt", format_f64(height));
         }
         out.push_str(")[");

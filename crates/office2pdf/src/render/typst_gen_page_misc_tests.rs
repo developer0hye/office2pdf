@@ -4533,6 +4533,113 @@ fn a_header_taller_than_its_band_pushes_the_body_down() {
     );
 }
 
+/// An inherited floating header table must leave enough room for a continuous
+/// section's first body lines on the page where its rendered break lands.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn continuous_section_body_starts_below_its_inherited_header_table() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        fixture,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("the continuous-section fixture should parse");
+    let generated = generate_typst(&document).expect("the fixture should generate");
+    let mut page_runs: Vec<crate::render::pdf::PlacedTextRun> =
+        crate::render::pdf::compiled_text_runs_with_images(&generated.source, &generated.images, 1)
+            .expect("the fixture's second page should compile");
+    page_runs.sort_by(|left, right| left.baseline_pt.total_cmp(&right.baseline_pt));
+
+    const HEADER_TABLE_BOTTOM_PT: f64 = 92.16;
+    let body_heading: &crate::render::pdf::PlacedTextRun = page_runs
+        .iter()
+        .find(|run| (run.left_pt - 36.0).abs() < 0.5 && run.text == "Xxxxx")
+        .expect("the second page should contain the body heading");
+    // A full em above the baseline is a conservative bound for visible glyph ink.
+    let body_heading_top_pt: f64 = body_heading.baseline_pt - body_heading.font_size_pt;
+    assert!(
+        body_heading_top_pt > HEADER_TABLE_BOTTOM_PT,
+        "the body heading should start below the inherited header table's {HEADER_TABLE_BOTTOM_PT}pt bottom, got a conservative glyph top of {body_heading_top_pt}pt"
+    );
+
+    let next_paragraph: &crate::render::pdf::PlacedTextRun = page_runs
+        .iter()
+        .find(|run| (run.left_pt - 36.0).abs() < 0.5 && run.text == "Xxxxxx")
+        .expect("the second page should contain the next body paragraph");
+    let next_paragraph_top_pt: f64 = next_paragraph.baseline_pt - next_paragraph.font_size_pt;
+    assert!(
+        next_paragraph_top_pt > HEADER_TABLE_BOTTOM_PT,
+        "the next body paragraph should also start below the inherited header table, got a conservative glyph top of {next_paragraph_top_pt}pt"
+    );
+}
+
+#[test]
+fn a_page_anchored_header_shape_reserves_space_without_measurable_text_metrics() {
+    use crate::ir::{
+        FrameAnchor, HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterShape,
+        HeaderFooterShapeContent, Shape, ShapeKind,
+    };
+
+    let mut document: Document = doc_with_header(
+        None,
+        36.0,
+        vec![HeaderFooterParagraph {
+            style: ParagraphStyle::default(),
+            elements: Vec::new(),
+            border: None,
+            border_space: None,
+            sheet_section_is_rich: false,
+            frame: None,
+        }],
+    );
+    let Page::Flow(page) = &mut document.pages[0] else {
+        panic!("the helper creates a flow page");
+    };
+    page.header
+        .as_mut()
+        .expect("the helper creates a header")
+        .shapes
+        .push(HeaderFooterShape {
+            content: HeaderFooterShapeContent::Shape(Shape {
+                kind: ShapeKind::Rectangle,
+                fill: None,
+                gradient_fill: None,
+                pattern_fill: None,
+                stroke: None,
+                rotation_deg: None,
+                opacity: None,
+                shadow: None,
+                top_bevel: None,
+            }),
+            frame: HeaderFooterFrame {
+                x: Some(0.0),
+                y: Some(20.0),
+                width: Some(100.0),
+                height: Some(72.16),
+                horizontal_anchor: FrameAnchor::Page,
+                vertical_anchor: FrameAnchor::Page,
+                horizontal_align: None,
+                vertical_align: None,
+                inset_left: 0.0,
+                inset_top: 0.0,
+                bottom_offset: None,
+                wraps_text: true,
+            },
+            anchor_paragraph_index: None,
+            width: 100.0,
+            height: 72.16,
+            behind_text: true,
+        });
+
+    let top_margin_pt: f64 = flow_page_top_margin_pt(page, &page.size, None, true);
+    assert!(
+        (top_margin_pt - 103.16).abs() < 0.001,
+        "a measured page-anchored overlay and the fallback empty line box must be reserved when header text metrics are unavailable, got {top_margin_pt}pt"
+    );
+}
+
 /// A taller first-page story grows the shared margin too (issues #736, #846).
 ///
 /// One margin serves the whole section, so measuring only the default story
