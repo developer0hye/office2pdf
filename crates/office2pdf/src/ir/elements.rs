@@ -11,17 +11,20 @@ pub struct HeaderFooter {
     /// Fit-to-page scale of a worksheet header/footer's horizontal coordinate
     /// box. `None` for flow-page stories and sheets whose story is not scaled.
     pub sheet_print_scale: Option<f64>,
-    /// Page-anchored elements positioned outside the story's text flow. Their
-    /// content may be a drawing shape or a floating table; a decorative
-    /// header banner is one such element and carries no text (issue #961).
+    /// Drawing shapes and floating tables placed in the page overlay. Shapes
+    /// may be page-relative or anchored to a header/footer paragraph; a
+    /// decorative header banner carries no text (issue #961).
     pub shapes: Vec<HeaderFooterShape>,
 }
 
-/// An element a header or footer story anchors to the page.
+/// An element a header or footer story places outside its text flow.
 #[derive(Debug, Clone)]
 pub struct HeaderFooterShape {
     pub content: HeaderFooterShapeContent,
     pub frame: HeaderFooterFrame,
+    /// Header/footer paragraph a text-flow-relative drawing is anchored to.
+    /// Page-relative drawings and floating tables leave this unset.
+    pub anchor_paragraph_index: Option<usize>,
     /// On-page size in points. Drawing shapes use `wp:extent`; tables use
     /// converted column widths and declared row heights.
     pub width: f64,
@@ -31,7 +34,7 @@ pub struct HeaderFooterShape {
     pub behind_text: bool,
 }
 
-/// Content drawn at a header/footer story's page-relative position.
+/// Content drawn in a header/footer's page overlay.
 #[derive(Debug, Clone)]
 pub enum HeaderFooterShapeContent {
     Shape(Shape),

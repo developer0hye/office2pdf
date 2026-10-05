@@ -670,25 +670,24 @@ fn convert_docx_header_with_context(
             conversion_context,
         ));
     }
-    let paragraphs = story_paragraphs
-        .into_iter()
-        .enumerate()
-        .flat_map(|(index, paragraph)| {
-            let mut converted = vec![convert_hf_paragraph(
-                paragraph,
-                images,
-                false,
-                simple_fields.get(index).map(Vec::as_slice).unwrap_or(&[]),
-                styles,
-            )];
-            converted.extend(hf_anchored_text_box_paragraphs(
-                paragraph,
-                &mut anchors,
-                styles,
-            ));
-            converted
-        })
-        .collect::<Vec<_>>();
+    let mut source_to_rendered_paragraphs: Vec<usize> = Vec::with_capacity(story_paragraphs.len());
+    let mut paragraphs: Vec<HeaderFooterParagraph> = Vec::new();
+    for (index, paragraph) in story_paragraphs.into_iter().enumerate() {
+        source_to_rendered_paragraphs.push(paragraphs.len());
+        paragraphs.push(convert_hf_paragraph(
+            paragraph,
+            images,
+            false,
+            simple_fields.get(index).map(Vec::as_slice).unwrap_or(&[]),
+            styles,
+        ));
+        paragraphs.extend(hf_anchored_text_box_paragraphs(
+            paragraph,
+            &mut anchors,
+            styles,
+        ));
+    }
+    remap_hf_shape_paragraph_indices(&mut shapes, &source_to_rendered_paragraphs);
     // A story that draws only a decorative banner has no paragraph worth
     // keeping but is still not empty (issue #961).
     if paragraphs.is_empty() && shapes.is_empty() {
@@ -771,33 +770,32 @@ fn convert_docx_footer_with_context(
             conversion_context,
         ));
     }
-    let paragraphs = story_paragraphs
-        .into_iter()
-        .enumerate()
-        .flat_map(|(index, paragraph)| {
-            let mut converted = vec![convert_hf_paragraph(
-                paragraph,
-                images,
-                paragraph_metadata
-                    .bidi_paragraphs
-                    .get(index)
-                    .copied()
-                    .unwrap_or(false),
-                paragraph_metadata
-                    .simple_fields
-                    .get(index)
-                    .map(Vec::as_slice)
-                    .unwrap_or(&[]),
-                styles,
-            )];
-            converted.extend(hf_anchored_text_box_paragraphs(
-                paragraph,
-                &mut anchors,
-                styles,
-            ));
-            converted
-        })
-        .collect::<Vec<_>>();
+    let mut source_to_rendered_paragraphs: Vec<usize> = Vec::with_capacity(story_paragraphs.len());
+    let mut paragraphs: Vec<HeaderFooterParagraph> = Vec::new();
+    for (index, paragraph) in story_paragraphs.into_iter().enumerate() {
+        source_to_rendered_paragraphs.push(paragraphs.len());
+        paragraphs.push(convert_hf_paragraph(
+            paragraph,
+            images,
+            paragraph_metadata
+                .bidi_paragraphs
+                .get(index)
+                .copied()
+                .unwrap_or(false),
+            paragraph_metadata
+                .simple_fields
+                .get(index)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
+            styles,
+        ));
+        paragraphs.extend(hf_anchored_text_box_paragraphs(
+            paragraph,
+            &mut anchors,
+            styles,
+        ));
+    }
+    remap_hf_shape_paragraph_indices(&mut shapes, &source_to_rendered_paragraphs);
     // A story that draws only a decorative banner has no paragraph worth
     // keeping but is still not empty (issue #961).
     if paragraphs.is_empty() && shapes.is_empty() {
@@ -841,6 +839,7 @@ fn convert_hf_table(
     HeaderFooterShape {
         content: HeaderFooterShapeContent::Table(table),
         frame,
+        anchor_paragraph_index: None,
         width: width_pt,
         height: height_pt.unwrap_or_default(),
         behind_text: true,
@@ -1376,6 +1375,8 @@ struct HfAnchorBox {
     bottom_inset_pt: f64,
     /// `<wp:anchor behindDoc="1">` — the shape sits under the page's content.
     behind_doc: bool,
+    /// Top-level header/footer paragraph containing this drawing.
+    story_paragraph_index: Option<usize>,
     /// The geometry and fill the anchor's `<wps:wsp>` declares, when it has
     /// any worth drawing (issue #961).
     shape: Option<crate::ir::Shape>,
@@ -1388,41 +1389,27 @@ struct HfAnchorBox {
 
 #[derive(Debug, Clone, Default)]
 struct HfAnchorAxis {
-    relative_from_page: bool,
+    relative_from: Option<String>,
     align: Option<crate::ir::FrameAlign>,
     offset_pt: Option<f64>,
 }
 
 impl HfAnchorBox {
-    /// The frame this anchor describes, or `None` when it is positioned
-    /// relative to something this path does not model — a column or a
-    /// character, say — where guessing would put the shape somewhere Word
-    /// never does.
+    /// The text-box frame this anchor describes, or `None` when its position
+    /// is relative to something this text path does not model.
     fn to_frame(&self) -> Option<HeaderFooterFrame> {
-        (self.horizontal.relative_from_page && self.vertical.relative_from_page).then(|| {
-            HeaderFooterFrame {
-                // The frame is the text's column, so the box's own left inset
-                // moves it and both insets narrow it.
-                x: self.horizontal.offset_pt,
-                y: self.vertical.offset_pt,
-                width: self
-                    .width_pt
-                    .map(|width| (width - self.left_inset_pt - self.right_inset_pt).max(0.0)),
-                height: self.height_pt,
-                horizontal_anchor: FrameAnchor::Page,
-                vertical_anchor: FrameAnchor::Page,
-                horizontal_align: self.horizontal.align,
-                vertical_align: self.vertical.align,
-                inset_left: self.left_inset_pt,
-                inset_top: self.top_inset_pt,
-                // Only a box pinned to the bottom of its reference frame can
-                // resolve this without knowing where the box itself landed.
-                bottom_offset: (self.seats_text_at_bottom
-                    && self.vertical.align == Some(crate::ir::FrameAlign::End))
-                .then_some(self.bottom_inset_pt),
-                wraps_text: self.wraps_text,
-            }
-        })
+        self.is_page_anchored()
+            .then(|| self.to_frame_at(FrameAnchor::Page, true))
+    }
+
+    fn is_page_anchored(&self) -> bool {
+        self.horizontal.relative_from.as_deref() == Some("page")
+            && self.vertical.relative_from.as_deref() == Some("page")
+    }
+
+    fn is_column_paragraph_anchored(&self) -> bool {
+        self.horizontal.relative_from.as_deref() == Some("column")
+            && self.vertical.relative_from.as_deref() == Some("paragraph")
     }
 
     /// The frame of the drawing box itself.
@@ -1431,16 +1418,59 @@ impl HfAnchorBox {
     /// padding narrows and shifts. A shape is drawn against the box, so it
     /// takes the untouched extent (issue #961).
     fn to_shape_frame(&self) -> Option<HeaderFooterFrame> {
-        let mut frame = self.to_frame()?;
-        frame.width = self.width_pt;
-        frame.inset_left = 0.0;
-        frame.inset_top = 0.0;
-        frame.bottom_offset = None;
-        Some(frame)
+        if self.is_page_anchored() {
+            Some(self.to_frame_at(FrameAnchor::Page, false))
+        } else if self.is_column_paragraph_anchored() {
+            Some(self.to_frame_at(FrameAnchor::Text, false))
+        } else {
+            None
+        }
+    }
+
+    fn to_frame_at(
+        &self,
+        reference_anchor: FrameAnchor,
+        includes_text_insets: bool,
+    ) -> HeaderFooterFrame {
+        HeaderFooterFrame {
+            // A text box uses the inset-adjusted column; a shape uses its
+            // untouched extent as the drawing box.
+            x: self.horizontal.offset_pt,
+            y: self.vertical.offset_pt,
+            width: self.width_pt.map(|width| {
+                if includes_text_insets {
+                    (width - self.left_inset_pt - self.right_inset_pt).max(0.0)
+                } else {
+                    width
+                }
+            }),
+            height: self.height_pt,
+            horizontal_anchor: reference_anchor,
+            vertical_anchor: reference_anchor,
+            horizontal_align: self.horizontal.align,
+            vertical_align: self.vertical.align,
+            inset_left: if includes_text_insets {
+                self.left_inset_pt
+            } else {
+                0.0
+            },
+            inset_top: if includes_text_insets {
+                self.top_inset_pt
+            } else {
+                0.0
+            },
+            // Only a box pinned to the bottom of its reference frame can
+            // resolve this without knowing where the box itself landed.
+            bottom_offset: (includes_text_insets
+                && self.seats_text_at_bottom
+                && self.vertical.align == Some(crate::ir::FrameAlign::End))
+            .then_some(self.bottom_inset_pt),
+            wraps_text: self.wraps_text,
+        }
     }
 }
 
-/// The page-anchored shapes a header or footer story draws.
+/// The anchored shapes a header or footer story draws.
 ///
 /// A shape that carries no text still carries a fill, and a decorative banner
 /// is nothing else: the invoice of #841 draws its two green wedges this way,
@@ -1451,15 +1481,43 @@ fn hf_anchored_shapes(anchors: &[HfAnchorBox]) -> Vec<crate::ir::HeaderFooterSha
         .filter_map(|anchor| {
             let shape = anchor.shape.clone()?;
             let frame = anchor.to_shape_frame()?;
+            let anchor_paragraph_index: Option<usize> = if frame.horizontal_anchor
+                != FrameAnchor::Page
+                || frame.vertical_anchor != FrameAnchor::Page
+            {
+                Some(anchor.story_paragraph_index?)
+            } else {
+                None
+            };
             Some(crate::ir::HeaderFooterShape {
                 content: HeaderFooterShapeContent::Shape(shape),
                 width: anchor.width_pt?,
                 height: anchor.height_pt?,
                 frame,
+                anchor_paragraph_index,
                 behind_text: anchor.behind_doc,
             })
         })
         .collect()
+}
+
+fn remap_hf_shape_paragraph_indices(
+    shapes: &mut [HeaderFooterShape],
+    source_to_rendered_paragraphs: &[usize],
+) {
+    for shape in shapes {
+        shape.anchor_paragraph_index = remap_hf_shape_paragraph_index(
+            shape.anchor_paragraph_index,
+            source_to_rendered_paragraphs,
+        );
+    }
+}
+
+fn remap_hf_shape_paragraph_index(
+    source_index: Option<usize>,
+    source_to_rendered_paragraphs: &[usize],
+) -> Option<usize> {
+    source_index.and_then(|index| source_to_rendered_paragraphs.get(index).copied())
 }
 
 /// The framed paragraphs a paragraph's anchored text-box drawings contribute
@@ -1608,6 +1666,18 @@ fn attribute_f64(element: &quick_xml::events::BytesStart<'_>, name: &[u8]) -> Op
         })
 }
 
+fn attribute_text(element: &quick_xml::events::BytesStart<'_>, name: &[u8]) -> Option<String> {
+    element
+        .attributes()
+        .flatten()
+        .find(|attribute| attribute.key.local_name().as_ref() == name)
+        .and_then(|attribute| {
+            std::str::from_utf8(attribute.value.as_ref())
+                .ok()
+                .map(str::to_owned)
+        })
+}
+
 /// Read a `<wps:bodyPr>`'s padding, bottom-seating and wrap mode onto the
 /// anchor being scanned.
 fn read_body_insets(element: &quick_xml::events::BytesStart<'_>, anchor: Option<&mut HfAnchorBox>) {
@@ -1651,9 +1721,19 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
     // Which of the two `<wp:positionH>`/`<wp:positionV>` subtrees the scan is
     // inside, so `<wp:align>` and `<wp:posOffset>` land on the right axis.
     let mut axis: Option<bool> = None; // Some(true) = horizontal
+    let mut next_story_paragraph_index: usize = 0;
+    let mut story_paragraph_index: Option<usize> = None;
+    let mut table_depth: usize = 0;
+    let mut line_depth: usize = 0;
+    let empty_color_aliases: HashMap<String, String> = HashMap::new();
     loop {
         match reader.read_event() {
             Ok(Event::Start(ref element)) => match element.local_name().as_ref() {
+                b"tbl" => table_depth += 1,
+                b"p" if current.is_none() && table_depth == 0 => {
+                    story_paragraph_index = Some(next_story_paragraph_index);
+                    next_story_paragraph_index += 1;
+                }
                 b"anchor" => {
                     let behind_doc = element.attributes().flatten().any(|attribute| {
                         attribute.key.local_name().as_ref() == b"behindDoc"
@@ -1661,6 +1741,7 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
                     });
                     current = Some(HfAnchorBox {
                         behind_doc,
+                        story_paragraph_index,
                         // Only `wrap="none"` turns wrapping off, so a box that
                         // states nothing wraps (issue #967).
                         wraps_text: true,
@@ -1670,17 +1751,72 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
                 b"positionH" | b"positionV" => {
                     let horizontal = element.local_name().as_ref() == b"positionH";
                     axis = Some(horizontal);
-                    let page = element.attributes().flatten().any(|attribute| {
-                        attribute.key.local_name().as_ref() == b"relativeFrom"
-                            && attribute.value.as_ref() == b"page"
-                    });
+                    let relative_from: Option<String> = attribute_text(element, b"relativeFrom");
                     if let Some(anchor) = current.as_mut() {
                         let target = if horizontal {
                             &mut anchor.horizontal
                         } else {
                             &mut anchor.vertical
                         };
-                        target.relative_from_page = page;
+                        target.relative_from = relative_from;
+                    }
+                }
+                b"ln" => {
+                    line_depth += 1;
+                    if let Some(anchor) = current.as_mut() {
+                        let width_pt: f64 = attribute_f64(element, b"w")
+                            .map(|width_emu| width_emu / EMU_PER_POINT)
+                            .filter(|width| *width > 0.0)
+                            .unwrap_or(0.75);
+                        let line_shape = anchor.shape.get_or_insert_with(default_anchor_shape);
+                        line_shape.stroke = Some(crate::ir::BorderSide {
+                            width: width_pt,
+                            color: Color::new(0, 0, 0),
+                            style: crate::ir::BorderLineStyle::Solid,
+                            join: crate::ir::LineJoin::Round,
+                            cap: crate::ir::LineCap::Flat,
+                        });
+                    }
+                }
+                b"prstGeom" => {
+                    let preset: Option<String> = attribute_text(element, b"prst");
+                    if matches!(preset.as_deref(), Some("line" | "straightConnector1"))
+                        && let Some(anchor) = current.as_mut()
+                    {
+                        let width: f64 = anchor.width_pt.unwrap_or(0.0);
+                        let height: f64 = anchor.height_pt.unwrap_or(0.0);
+                        anchor.shape.get_or_insert_with(default_anchor_shape).kind =
+                            crate::ir::ShapeKind::Line {
+                                x1: 0.0,
+                                y1: 0.0,
+                                x2: width,
+                                y2: height,
+                                head_end: crate::ir::ArrowHead::None,
+                                tail_end: crate::ir::ArrowHead::None,
+                            };
+                    }
+                }
+                b"noFill" if line_depth > 0 => {
+                    if let Some(anchor) = current.as_mut() {
+                        anchor.shape.get_or_insert_with(default_anchor_shape).stroke = None;
+                    }
+                }
+                b"srgbClr" | b"schemeClr" | b"sysClr" if line_depth > 0 => {
+                    let scheme = crate::parser::drawingml::SchemeColors {
+                        colors: theme_colors,
+                        aliases: &empty_color_aliases,
+                    };
+                    let color = crate::parser::drawingml::parse_color_from_start(
+                        &mut reader,
+                        element,
+                        &scheme,
+                    )
+                    .color;
+                    if let (Some(anchor), Some(color)) = (current.as_mut(), color) {
+                        let shape = anchor.shape.get_or_insert_with(default_anchor_shape);
+                        if let Some(stroke) = shape.stroke.as_mut() {
+                            stroke.color = color;
+                        }
                     }
                 }
                 b"bodyPr" => read_body_insets(element, current.as_mut()),
@@ -1772,6 +1908,53 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
             Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"bodyPr" => {
                 read_body_insets(element, current.as_mut());
             }
+            Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"p" => {
+                if current.is_none() && table_depth == 0 {
+                    next_story_paragraph_index += 1;
+                }
+            }
+            Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"ln" => {
+                if let Some(anchor) = current.as_mut() {
+                    let width_pt: f64 = attribute_f64(element, b"w")
+                        .map(|width_emu| width_emu / EMU_PER_POINT)
+                        .filter(|width| *width > 0.0)
+                        .unwrap_or(0.75);
+                    anchor.shape.get_or_insert_with(default_anchor_shape).stroke =
+                        Some(crate::ir::BorderSide {
+                            width: width_pt,
+                            color: Color::new(0, 0, 0),
+                            style: crate::ir::BorderLineStyle::Solid,
+                            join: crate::ir::LineJoin::Round,
+                            cap: crate::ir::LineCap::Flat,
+                        });
+                }
+            }
+            Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"noFill" => {
+                if line_depth > 0
+                    && let Some(anchor) = current.as_mut()
+                {
+                    anchor.shape.get_or_insert_with(default_anchor_shape).stroke = None;
+                }
+            }
+            Ok(Event::Empty(ref element))
+                if matches!(
+                    element.local_name().as_ref(),
+                    b"srgbClr" | b"schemeClr" | b"sysClr"
+                ) && line_depth > 0 =>
+            {
+                let scheme = crate::parser::drawingml::SchemeColors {
+                    colors: theme_colors,
+                    aliases: &empty_color_aliases,
+                };
+                let color =
+                    crate::parser::drawingml::parse_color_from_empty(element, &scheme).color;
+                if let (Some(anchor), Some(color)) = (current.as_mut(), color) {
+                    let shape = anchor.shape.get_or_insert_with(default_anchor_shape);
+                    if let Some(stroke) = shape.stroke.as_mut() {
+                        stroke.color = color;
+                    }
+                }
+            }
             Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"extent" => {
                 let value = |name: &[u8]| -> Option<f64> {
                     element
@@ -1797,6 +1980,17 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
                     anchors.push(anchor);
                 }
                 axis = None;
+            }
+            Ok(Event::End(ref element)) if element.local_name().as_ref() == b"ln" => {
+                line_depth = line_depth.saturating_sub(1);
+            }
+            Ok(Event::End(ref element)) if element.local_name().as_ref() == b"p" => {
+                if current.is_none() && table_depth == 0 {
+                    story_paragraph_index = None;
+                }
+            }
+            Ok(Event::End(ref element)) if element.local_name().as_ref() == b"tbl" => {
+                table_depth = table_depth.saturating_sub(1);
             }
             Ok(Event::Eof) | Err(_) => break,
             _ => {}
@@ -2082,6 +2276,33 @@ mod anchor_tests {
         let anchors = scan_hf_anchors(&relative, &HashMap::new());
         assert_eq!(anchors.len(), 1);
         assert!(anchors[0].to_frame().is_none());
+    }
+
+    #[test]
+    fn a_self_closing_story_paragraph_advances_later_anchor_indices() {
+        let with_blank_paragraph: String = FOOTER_ANCHOR.replace("<w:p><w:r>", "<w:p/><w:p><w:r>");
+        let anchors = scan_hf_anchors(&with_blank_paragraph, &HashMap::new());
+
+        assert_eq!(anchors.len(), 1);
+        assert_eq!(anchors[0].story_paragraph_index, Some(1));
+    }
+
+    #[test]
+    fn header_footer_shape_indices_follow_inserted_text_box_paragraphs() {
+        let source_to_rendered_paragraphs: [usize; 3] = [0, 3, 4];
+
+        assert_eq!(
+            remap_hf_shape_paragraph_index(Some(1), &source_to_rendered_paragraphs),
+            Some(3)
+        );
+        assert_eq!(
+            remap_hf_shape_paragraph_index(Some(2), &source_to_rendered_paragraphs),
+            Some(4)
+        );
+        assert_eq!(
+            remap_hf_shape_paragraph_index(None, &source_to_rendered_paragraphs),
+            None
+        );
     }
 
     /// The header part of `003_FAKTURA.docx` (issue #961), trimmed to the

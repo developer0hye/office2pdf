@@ -3220,10 +3220,9 @@ fn page_anchored_layer_markup(
     Ok(markup)
 }
 
-/// Place a story's page-anchored elements against the page rather than in the
-/// story's flow. Drawing shapes use their stored extent to resolve alignment
-/// independently of the surrounding block height (issue #961); tables use
-/// their converted dimensions and resolved frame anchors.
+/// Place header/footer elements in the page overlay. Paragraph-relative
+/// drawing shapes use their anchor paragraph's position; page-relative shapes
+/// use their stored extent, and tables use converted dimensions and frame anchors.
 fn generate_page_anchored_hf_elements(
     out: &mut String,
     hf: &HeaderFooter,
@@ -3236,7 +3235,19 @@ fn generate_page_anchored_hf_elements(
     for element in &hf.shapes {
         match &element.content {
             HeaderFooterShapeContent::Shape(shape) => {
-                if element.behind_text != behind_text || !is_page_anchored_frame(&element.frame) {
+                if element.behind_text != behind_text {
+                    continue;
+                }
+                if element.anchor_paragraph_index.is_some() {
+                    let Some((x, y)) = page_relative_hf_paragraph_shape_position(
+                        hf, element, page, page_size, is_footer,
+                    ) else {
+                        continue;
+                    };
+                    generate_page_anchored_hf_shape(out, element, shape, x, y, ctx);
+                    continue;
+                }
+                if !is_page_anchored_frame(&element.frame) {
                     continue;
                 }
                 let x: f64 = element.frame.x.unwrap_or_else(|| {
@@ -3255,16 +3266,7 @@ fn generate_page_anchored_hf_elements(
                 });
                 // A box keeps transforms centred on the shape's own extent,
                 // including artwork that hangs past the page edge.
-                let _ = write!(
-                    out,
-                    "#place(top + left, dx: {}pt, dy: {}pt)[#box(width: {}pt, height: {}pt)[",
-                    format_f64(x),
-                    format_f64(y),
-                    format_f64(element.width),
-                    format_f64(element.height)
-                );
-                generate_shape(out, shape, element.width, element.height, ctx);
-                out.push_str("]]");
+                generate_page_anchored_hf_shape(out, element, shape, x, y, ctx);
             }
             HeaderFooterShapeContent::Table(table) => {
                 if element.behind_text != behind_text {
@@ -3383,6 +3385,97 @@ fn generate_flow_hf_content(out: &mut String, hf: &HeaderFooter, ctx: &mut GenCt
         }
         generate_hf_styled_paragraph(out, paragraph, ctx);
         is_first = false;
+    }
+}
+
+fn generate_page_anchored_hf_shape(
+    out: &mut String,
+    element: &crate::ir::HeaderFooterShape,
+    shape: &crate::ir::Shape,
+    x: f64,
+    y: f64,
+    ctx: &mut GenCtx,
+) {
+    let _ = write!(
+        out,
+        "#place(top + left, dx: {}pt, dy: {}pt)[#box(width: {}pt, height: {}pt)[",
+        format_f64(x),
+        format_f64(y),
+        format_f64(element.width),
+        format_f64(element.height)
+    );
+    generate_shape(out, shape, element.width, element.height, ctx);
+    out.push_str("]]\n");
+}
+
+fn page_relative_hf_paragraph_shape_position(
+    hf: &HeaderFooter,
+    element: &crate::ir::HeaderFooterShape,
+    page: &FlowPage,
+    page_size: &PageSize,
+    is_footer: bool,
+) -> Option<(f64, f64)> {
+    let anchor_paragraph_index: usize = element.anchor_paragraph_index?;
+    let frame: &HeaderFooterFrame = &element.frame;
+    let horizontal_available: f64 =
+        (page_size.width - page.margins.left - page.margins.right).max(0.0);
+    let horizontal_origin: f64 = match frame.horizontal_anchor {
+        FrameAnchor::Page => 0.0,
+        FrameAnchor::Margin | FrameAnchor::Text => page.margins.left,
+    };
+    let x: f64 = horizontal_origin
+        + frame.x.unwrap_or_else(|| {
+            aligned_offset(
+                frame.horizontal_align,
+                match frame.horizontal_anchor {
+                    FrameAnchor::Page => page_size.width,
+                    FrameAnchor::Margin | FrameAnchor::Text => horizontal_available,
+                },
+                frame.width.or(Some(element.width)),
+            )
+        });
+
+    let mut story_height: f64 = 0.0;
+    let mut preceding_height: f64 = 0.0;
+    for (paragraph_index, paragraph) in hf.paragraphs.iter().enumerate() {
+        if paragraph.frame.as_ref().is_some_and(is_page_anchored_frame) {
+            continue;
+        }
+        let paragraph_height: f64 = hf_paragraph_story_height_pt(paragraph);
+        let paragraph_before: f64 = paragraph.style.space_before.unwrap_or(0.0).max(0.0);
+        let paragraph_after: f64 = paragraph.style.space_after.unwrap_or(0.0).max(0.0);
+        story_height += paragraph_before + paragraph_height + paragraph_after;
+        if paragraph_index < anchor_paragraph_index {
+            preceding_height += paragraph_before + paragraph_height + paragraph_after;
+        }
+    }
+    let paragraph: &crate::ir::HeaderFooterParagraph = hf.paragraphs.get(anchor_paragraph_index)?;
+    let paragraph_height: f64 = hf_paragraph_story_height_pt(paragraph);
+    let vertical_available: f64 = paragraph_height;
+    let vertical_offset: f64 = frame.y.unwrap_or_else(|| {
+        aligned_offset(
+            frame.vertical_align,
+            vertical_available,
+            frame.height.or(Some(element.height)),
+        )
+    });
+    let story_origin_y: f64 = if is_footer {
+        page_size.height - hf.distance_from_edge.unwrap_or(0.0) - story_height
+    } else {
+        hf.distance_from_edge.unwrap_or(0.0)
+    };
+    let y: f64 = story_origin_y + preceding_height + vertical_offset;
+    Some((x, y))
+}
+
+fn hf_paragraph_story_height_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> f64 {
+    if let Some(height) = hf_paragraph_height_pt(paragraph) {
+        return height;
+    }
+    match paragraph.style.line_spacing {
+        Some(crate::ir::LineSpacing::Exact(height)) => height.max(0.0),
+        Some(crate::ir::LineSpacing::Proportional(multiplier)) => (11.0 * multiplier).max(0.0),
+        None => 11.0,
     }
 }
 

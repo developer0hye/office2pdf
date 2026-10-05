@@ -322,6 +322,48 @@ fn test_parse_docx_with_text_footer() {
     assert!(has_text, "Footer should contain 'Footer Text'");
 }
 
+/// LibreOffice's public `tdf105688.docx` keeps this footer rule in an
+/// AlternateContent DrawingML anchor. The shape and its text-flow position
+/// must survive the header/footer side-channel (issue #1990).
+#[test]
+fn issue_1990_parses_the_anchored_footer_line() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = DocxParser
+        .parse(fixture, &ConvertOptions::default())
+        .expect("public footer-line fixture parses");
+    let page: &FlowPage = match &document.pages[1] {
+        Page::Flow(page) | Page::FlowContinuous(page) => page,
+        other => panic!("expected the fixture's second page to be a flow page, got {other:?}"),
+    };
+    let footer = page
+        .footer
+        .as_ref()
+        .expect("page two uses a default footer");
+    let line = footer
+        .shapes
+        .iter()
+        .find(|shape| matches!(shape.content, HeaderFooterShapeContent::Shape(_)))
+        .expect("the anchored footer line is retained");
+
+    assert!((line.width - 590.25).abs() < 0.01, "{}", line.width);
+    assert_eq!(line.height, 0.0);
+    assert_eq!(line.frame.horizontal_anchor, FrameAnchor::Text);
+    assert_eq!(line.frame.vertical_anchor, FrameAnchor::Text);
+    assert_eq!(line.frame.x, Some(-24.0));
+    assert!((line.frame.y.unwrap_or_default() - 12.25).abs() < 0.01);
+    assert_eq!(line.anchor_paragraph_index, Some(0));
+    let HeaderFooterShapeContent::Shape(shape) = &line.content else {
+        unreachable!("the selected shape is the DrawingML line")
+    };
+    assert!(matches!(shape.kind, crate::ir::ShapeKind::Line { .. }));
+    let stroke = shape
+        .stroke
+        .as_ref()
+        .expect("the explicit DrawingML stroke");
+    assert_eq!(stroke.color, Color::new(0x00, 0xB0, 0xF0));
+}
+
 #[test]
 fn test_parse_docx_with_page_number_in_footer() {
     let data = build_docx_with_page_number_footer();
