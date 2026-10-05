@@ -1933,6 +1933,64 @@ fn test_table_style_centre_alignment_is_read_as_written() {
     );
 }
 
+#[test]
+fn table_style_paragraph_after_overrides_document_defaults_in_cells() {
+    let data = build_docx_with_table_style(
+        r#"
+        <w:docDefaults><w:pPrDefault><w:pPr><w:spacing w:after="200"/></w:pPr></w:pPrDefault></w:docDefaults>
+        <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+        <w:style w:type="table" w:styleId="Invoice"><w:name w:val="Invoice"/><w:pPr><w:spacing w:after="0"/></w:pPr></w:style>
+        "#,
+        TABLE_WITH_STYLE,
+    );
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let t = first_table(&doc);
+
+    assert_eq!(
+        first_paragraph_of(&t.rows[0].cells[0]).style.space_after,
+        Some(0.0),
+        "the table style's zero gap outranks the document's 10pt default"
+    );
+}
+
+#[test]
+fn paragraph_after_spacing_keeps_paragraph_style_and_direct_precedence_over_table_style() {
+    let styles = r#"
+        <w:docDefaults><w:pPrDefault><w:pPr><w:spacing w:after="200"/></w:pPr></w:pPrDefault></w:docDefaults>
+        <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:pPr><w:spacing w:after="240"/></w:pPr></w:style>
+        <w:style w:type="table" w:styleId="Invoice"><w:name w:val="Invoice"/><w:pPr><w:spacing w:after="0"/></w:pPr></w:style>
+    "#;
+    let (doc, _warnings) = DocxParser
+        .parse(
+            &build_docx_with_table_style(styles, TABLE_WITH_STYLE),
+            &ConvertOptions::default(),
+        )
+        .unwrap();
+    let t = first_table(&doc);
+    assert_eq!(
+        first_paragraph_of(&t.rows[0].cells[0]).style.space_after,
+        Some(12.0),
+        "an explicit paragraph-style gap outranks the table style"
+    );
+
+    let table_xml = TABLE_WITH_STYLE.replace(
+        "<w:p><w:r><w:t>Stilling",
+        "<w:p><w:pPr><w:spacing w:after=\"120\"/></w:pPr><w:r><w:t>Stilling",
+    );
+    let (doc, _warnings) = DocxParser
+        .parse(
+            &build_docx_with_table_style(styles, &table_xml),
+            &ConvertOptions::default(),
+        )
+        .unwrap();
+    let t = first_table(&doc);
+    assert_eq!(
+        first_paragraph_of(&t.rows[0].cells[0]).style.space_after,
+        Some(6.0),
+        "direct paragraph spacing outranks both paragraph and table styles"
+    );
+}
+
 /// A paragraph that declares its own `w:jc` keeps it: direct formatting wins
 /// over the style.
 #[test]

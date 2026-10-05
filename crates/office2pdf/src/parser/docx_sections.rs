@@ -548,7 +548,7 @@ fn resolve_hf_table_page_positions(
                 (page_size.height - margins.top - margins.bottom).max(0.0),
             ),
         };
-        let vertical_position: f64 = frame
+        let requested_vertical_position: f64 = frame
             .y
             .map(|offset| vertical_origin + offset)
             .or_else(|| {
@@ -568,6 +568,20 @@ fn resolve_hf_table_page_positions(
                 }
                 FrameAnchor::Margin | FrameAnchor::Text => distance_from_edge,
             });
+        // Word clamps a header table placed above the page to the physical
+        // page top, while footer positioning may legitimately extend below it.
+        let vertical_position: f64 = if is_footer {
+            requested_vertical_position
+        } else {
+            requested_vertical_position.max(0.0)
+        };
+        if requested_vertical_position != vertical_position {
+            tracing::debug!(
+                requested_page_y_pt = requested_vertical_position,
+                resolved_page_y_pt = vertical_position,
+                "clamped header table to the page top"
+            );
+        }
         frame.y = Some(vertical_position);
         frame.vertical_anchor = FrameAnchor::Page;
         frame.vertical_align = None;

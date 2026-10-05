@@ -1,0 +1,55 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 1001.088,
+      "bbox_pt": {
+        "height": 26.4,
+        "width": 37.92,
+        "x": 465.6,
+        "y": 7.68
+      },
+      "disposition": {
+        "issue": "#1994",
+        "kind": "issue",
+        "note": "The full-page images and localized diff show the contained header picture at a different position; its independent anchor defect is tracked in #1994."
+      },
+      "id": "p2-3147ac0c6b44",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 1001.088,
+      "bbox_pt": {
+        "height": 26.4,
+        "width": 37.92,
+        "x": 465.6,
+        "y": 36.48
+      },
+      "disposition": {
+        "issue": "#1994",
+        "kind": "issue",
+        "note": "The full-page images and localized diff show the contained header picture at a different position; its independent anchor defect is tracked in #1994."
+      },
+      "id": "p2-84f3f957d3bd",
+      "region": "top-right"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 2,
+    "duplicate": 0,
+    "total": 2,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

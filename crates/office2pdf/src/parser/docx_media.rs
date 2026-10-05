@@ -259,7 +259,15 @@ pub(super) fn extract_drawing_text_box_blocks(
             docx_rs::TextBoxContentChild::Paragraph(para) => {
                 // A text box carries its own flow: Word lays its paragraphs
                 // out as body text even when the box is anchored in a cell.
-                convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, ctx);
+                convert_paragraph_blocks(
+                    para,
+                    &mut blocks,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    ctx,
+                    None,
+                );
             }
             docx_rs::TextBoxContentChild::Table(table) => {
                 let converted_table: crate::ir::Table = if is_anchored {

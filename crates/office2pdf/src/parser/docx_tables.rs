@@ -37,6 +37,15 @@ enum TableContentContext {
     AnchoredTextBox,
 }
 
+#[derive(Clone, Copy)]
+struct CellContentExtractionContext<'a> {
+    images: &'a ImageMap,
+    hyperlinks: &'a HyperlinkMap,
+    style_map: &'a StyleMap,
+    ctx: &'a DocxConversionContext,
+    depth: usize,
+}
+
 fn extract_margin_side_points(side_json: &serde_json::Value) -> Option<f64> {
     let width_type = side_json
         .get("widthType")
@@ -235,14 +244,19 @@ fn convert_table_with_context(
         padding.left = 0.0;
     }
 
-    let mut raw_rows = extract_raw_rows(
-        table,
+    let cell_content_context: CellContentExtractionContext<'_> = CellContentExtractionContext {
         images,
         hyperlinks,
         style_map,
         ctx,
         depth,
+    };
+    let mut raw_rows = extract_raw_rows(
+        table,
+        cell_content_context,
         default_cell_padding,
+        table_style.as_ref(),
+        source_table_column_count(table),
     );
     // The table's own `w:tblBorders`, as tri-states: a stated `none` has to
     // reach the style merge as a suppression rather than as silence
@@ -315,18 +329,38 @@ fn reverse_raw_rows_for_visual_rtl(raw_rows: &mut [RawRow], column_count: usize)
     }
 }
 
+fn source_table_column_count(table: &docx_rs::Table) -> usize {
+    let widest_row_column_count: usize = table
+        .rows
+        .iter()
+        .map(|table_child| {
+            let docx_rs::TableChild::TableRow(row) = table_child;
+            row.cells
+                .iter()
+                .map(|cell_child| {
+                    let docx_rs::TableRowChild::TableCell(cell) = cell_child;
+                    serde_json::to_value(&cell.property)
+                        .ok()
+                        .and_then(|properties| properties.get("gridSpan").and_then(|v| v.as_u64()))
+                        .unwrap_or(1) as usize
+                })
+                .sum()
+        })
+        .max()
+        .unwrap_or(0);
+    table.grid.len().max(widest_row_column_count)
+}
+
 fn extract_raw_rows(
     table: &docx_rs::Table,
-    images: &ImageMap,
-    hyperlinks: &HyperlinkMap,
-    style_map: &StyleMap,
-    ctx: &DocxConversionContext,
-    depth: usize,
+    cell_content_context: CellContentExtractionContext<'_>,
     default_cell_padding: Option<Insets>,
+    table_style: Option<&ResolvedTableStyle>,
+    column_count: usize,
 ) -> Vec<RawRow> {
     let mut raw_rows: Vec<RawRow> = Vec::new();
 
-    for table_child in &table.rows {
+    for (row_index, table_child) in table.rows.iter().enumerate() {
         let docx_rs::TableChild::TableRow(row) = table_child;
         let row_prop_json = serde_json::to_value(&row.property).ok();
         // docx-rs stores `w:trHeight/@w:val` verbatim, and the schema types it
@@ -370,7 +404,16 @@ fn extract_raw_rows(
                 .map(String::from);
             let preferred_width = extract_table_cell_width(prop_json.as_ref());
 
-            let content = extract_cell_content(cell, images, hyperlinks, style_map, ctx, depth);
+            let table_space_after: Option<f64> = table_style.and_then(|style| {
+                style.paragraph_space_after(
+                    row_index,
+                    table.rows.len(),
+                    col_index,
+                    grid_span as usize,
+                    column_count,
+                )
+            });
+            let content = extract_cell_content(cell, cell_content_context, table_space_after);
             if let Some(picture_height) = in_cell_floating_picture_height(cell) {
                 in_cell_picture_floor = Some(
                     in_cell_picture_floor.map_or(picture_height, |floor| floor.max(picture_height)),
@@ -1100,17 +1143,29 @@ fn count_vmerge_span(raw_rows: &[RawRow], start_row: usize, col_index: usize) ->
 
 fn extract_cell_content(
     cell: &docx_rs::TableCell,
-    images: &ImageMap,
-    hyperlinks: &HyperlinkMap,
-    style_map: &StyleMap,
-    ctx: &DocxConversionContext,
-    depth: usize,
+    cell_content_context: CellContentExtractionContext<'_>,
+    table_style_space_after: Option<f64>,
 ) -> Vec<Block> {
+    let CellContentExtractionContext {
+        images,
+        hyperlinks,
+        style_map,
+        ctx,
+        depth,
+    } = cell_content_context;
     let mut blocks: Vec<Block> = Vec::new();
     for content in &cell.children {
         match content {
             docx_rs::TableCellContent::Paragraph(para) => {
-                convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, ctx);
+                convert_paragraph_blocks(
+                    para,
+                    &mut blocks,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    ctx,
+                    table_style_space_after,
+                );
             }
             docx_rs::TableCellContent::Table(nested_table) if depth < MAX_TABLE_DEPTH => {
                 blocks.push(Block::Table(convert_table(
@@ -1130,11 +1185,8 @@ fn extract_cell_content(
                 extend_with_cell_sdt_content(
                     &mut blocks,
                     sdt,
-                    images,
-                    hyperlinks,
-                    style_map,
-                    ctx,
-                    depth,
+                    cell_content_context,
+                    table_style_space_after,
                 );
             }
             _ => {}
@@ -1151,16 +1203,28 @@ fn extract_cell_content(
 fn extend_with_cell_sdt_content(
     blocks: &mut Vec<Block>,
     sdt: &docx_rs::StructuredDataTag,
-    images: &ImageMap,
-    hyperlinks: &HyperlinkMap,
-    style_map: &StyleMap,
-    ctx: &DocxConversionContext,
-    depth: usize,
+    cell_content_context: CellContentExtractionContext<'_>,
+    table_style_space_after: Option<f64>,
 ) {
+    let CellContentExtractionContext {
+        images,
+        hyperlinks,
+        style_map,
+        ctx,
+        depth,
+    } = cell_content_context;
     for child in &sdt.children {
         match child {
             docx_rs::StructuredDataTagChild::Paragraph(para) => {
-                convert_paragraph_blocks(para, blocks, images, hyperlinks, style_map, ctx);
+                convert_paragraph_blocks(
+                    para,
+                    blocks,
+                    images,
+                    hyperlinks,
+                    style_map,
+                    ctx,
+                    table_style_space_after,
+                );
             }
             docx_rs::StructuredDataTagChild::Table(nested_table) if depth < MAX_TABLE_DEPTH => {
                 blocks.push(Block::Table(convert_table(
@@ -1174,7 +1238,10 @@ fn extend_with_cell_sdt_content(
             }
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
                 extend_with_cell_sdt_content(
-                    blocks, nested, images, hyperlinks, style_map, ctx, depth,
+                    blocks,
+                    nested,
+                    cell_content_context,
+                    table_style_space_after,
                 );
             }
             _ => {}

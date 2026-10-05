@@ -747,7 +747,7 @@ fn convert_paragraph_element(
 
     // Build the paragraph IR
     let mut blocks = Vec::new();
-    convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, ctx);
+    convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, ctx, None);
 
     // A paragraph whose mark a tracked deletion or move removed is held back
     // for the paragraph it merges into, so it contributes no element of its own
@@ -1033,6 +1033,7 @@ fn convert_wpg_drawing_blocks(
                     hyperlinks,
                     style_map,
                     ctx,
+                    None,
                 ),
                 docx_rs::DocumentChild::Table(table) => content.push(Block::Table(convert_table(
                     table, images, hyperlinks, style_map, ctx, 0,
@@ -1318,6 +1319,9 @@ struct ParagraphFlow<'a> {
     /// decides the `w:spacing w:after` an unstated gap falls back to
     /// (issue #1085).
     paragraph_property_defaults_are_declared: bool,
+    /// The active table-style paragraph after spacing for this cell, before
+    /// document defaults are applied.
+    table_style_space_after: Option<f64>,
 }
 
 /// Convert a docx-rs Paragraph to IR blocks, handling page breaks and inline images.
@@ -1331,6 +1335,7 @@ fn convert_paragraph_blocks(
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
+    table_style_space_after: Option<f64>,
 ) {
     let paragraph_block_start: usize = out.len();
     // Every paragraph cursor advances here, exactly once per XML <w:p>, and
@@ -1350,6 +1355,7 @@ fn convert_paragraph_blocks(
             _ => ctx.default_paragraph_style_is_defined,
         },
         paragraph_property_defaults_are_declared: ctx.paragraph_property_defaults_are_declared,
+        table_style_space_after,
     };
     // A paragraph mark a tracked deletion or move removed is not in the final
     // document, so this paragraph has no break of its own: it merges into the
@@ -1899,6 +1905,12 @@ fn build_paragraph_block(
         explicit_tab_overrides.as_deref(),
         resolved_style,
     );
+    if explicit_para_style.space_after.is_none()
+        && !resolved_style.is_some_and(|resolved| resolved.paragraph_space_after_is_explicit)
+        && let Some(table_space_after) = flow.table_style_space_after
+    {
+        style.space_after = Some(table_space_after);
+    }
     if flow.is_rtl {
         style.direction = Some(TextDirection::Rtl);
     }

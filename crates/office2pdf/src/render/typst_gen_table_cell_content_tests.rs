@@ -48,6 +48,72 @@ fn test_table_cell_with_multiple_paragraphs() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn word_table_cell_line_spacing_advances_between_paragraphs() {
+    let Some((_, _, natural_pitch_em)) = crate::render::pdf::font_line_metrics_em("Cambria") else {
+        return;
+    };
+    let font_size_pt: f64 = 24.0;
+    let line_factor: f64 = 0.7;
+    let paragraph = |text: &str| Paragraph {
+        style: ParagraphStyle {
+            line_spacing: Some(LineSpacing::Proportional(line_factor)),
+            space_after: Some(0.0),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: text.to_string(),
+            style: TextStyle {
+                font_family: Some("Cambria".to_string()),
+                font_size: Some(font_size_pt),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            minimum_height: None,
+            cells: vec![TableCell {
+                content: vec![
+                    Block::Paragraph(paragraph("First title")),
+                    Block::Paragraph(paragraph("Second title")),
+                ],
+                vertical_align: Some(CellVerticalAlign::Center),
+                ..TableCell::default()
+            }],
+            height: Some(92.2),
+        }],
+        column_widths: vec![500.0],
+        ..Table::default()
+    };
+    let source = generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])]))
+        .expect("the centered title table compiles")
+        .source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    let first_baseline_pt: f64 = runs
+        .iter()
+        .find(|run| run.text == "First title")
+        .expect("the first title is painted")
+        .baseline_pt;
+    let second_baseline_pt: f64 = runs
+        .iter()
+        .find(|run| run.text == "Second title")
+        .expect("the second title is painted")
+        .baseline_pt;
+    let expected_advance_pt: f64 = natural_pitch_em * font_size_pt * line_factor;
+
+    assert!(
+        (second_baseline_pt - first_baseline_pt - expected_advance_pt).abs() < 0.1,
+        "separate cell paragraphs advance by Word's {expected_advance_pt:.3}pt line, got {:.3}pt\n{source}",
+        second_baseline_pt - first_baseline_pt
+    );
+}
+
 #[test]
 fn test_table_cell_simple_list_uses_compact_fixed_text_layout() {
     let list = List {
