@@ -1,0 +1,1127 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 168.8832,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 35.04,
+        "x": 228.0,
+        "y": 115.68
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-b72d02c5340a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 112.896,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 39.36,
+        "x": 484.8,
+        "y": 209.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-73ecf50de953",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 87.552,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 19.68,
+        "x": 347.52,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-634f2783ac37",
+      "region": "top"
+    },
+    {
+      "area_pt2": 82.7136,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 21.12,
+        "x": 556.32,
+        "y": 190.56
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-c240dd7cd896",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 69.8112,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 17.28,
+        "x": 479.52,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-7de02263d22e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 61.7472,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 12.48,
+        "x": 287.04,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-3b7e4e2ac90c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 60.5952,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 14.88,
+        "x": 400.32,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-6511e7b4a740",
+      "region": "top"
+    },
+    {
+      "area_pt2": 58.0608,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 11.52,
+        "x": 380.16,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-b04f8afb40a7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 57.8304,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 15.36,
+        "x": 432.96,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-ec5dc007be10",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 57.8304,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 17.76,
+        "x": 388.8,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-21d805ebcced",
+      "region": "top"
+    },
+    {
+      "area_pt2": 55.7568,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 18.24,
+        "x": 412.8,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-88b42ce5a10c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 54.144,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 13.44,
+        "x": 394.56,
+        "y": 190.56
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-a6f0a26f6e20",
+      "region": "top"
+    },
+    {
+      "area_pt2": 53.2224,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 12.0,
+        "x": 258.72,
+        "y": 170.88
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-e3fb8185e7ba",
+      "region": "top"
+    },
+    {
+      "area_pt2": 48.6144,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 12.96,
+        "x": 332.64,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-c5bb000afa82",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.9232,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 12.96,
+        "x": 327.84,
+        "y": 172.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-7fdbb4e50318",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.4624,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 15.84,
+        "x": 485.28,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-5ad8622822fb",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 47.232,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 12.48,
+        "x": 404.64,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-59c766e7ee41",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 11.04,
+        "x": 346.56,
+        "y": 138.24
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-f6d5db8a2710",
+      "region": "top"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.08,
+        "x": 369.12,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-fb211614acec",
+      "region": "top"
+    },
+    {
+      "area_pt2": 42.624,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 11.04,
+        "x": 543.84,
+        "y": 190.56
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-529ac1fd401c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.08,
+        "x": 357.12,
+        "y": 173.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-df875ed20df8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 12.48,
+        "x": 270.24,
+        "y": 207.36
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-fcd93b08f5b9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 235.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-67cd0d5b0aae",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.3248,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.12,
+        "x": 372.0,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-959267319cf1",
+      "region": "top"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 12.48,
+        "x": 545.76,
+        "y": 174.24
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-6a87ed4b4477",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.6,
+        "x": 576.0,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-276f8f3fac30",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 317.28,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-cceffd835882",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 11.52,
+        "x": 472.32,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-24cd37ac6ce0",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.16,
+        "x": 568.8,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-95eeace8a192",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 445.44,
+        "y": 190.56
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-8675be6fb815",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 288.48,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-ca838d427dd8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.68,
+        "x": 300.48,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-7d2ec522ef39",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 412.32,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-40560b3a43b0",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 11.04,
+        "x": 405.6,
+        "y": 190.56
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-98a2663eaf50",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 280.32,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-80e8e62f18fa",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.08,
+        "x": 297.6,
+        "y": 207.36
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-4478fad33340",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.64,
+        "x": 516.0,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-dddc85ff757d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 309.6,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-d14eed04cbac",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 468.48,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-3376a3d25c42",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 497.28,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-adcc90f3f181",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 448.32,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-c824d8c8ed82",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 398.4,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-f7ad89ed490f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 266.4,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-91067e6eaafd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 540.48,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-937c435993f7",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 312.0,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-3603cdadb4fc",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 11.04,
+        "x": 497.28,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-302c895f7912",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 459.36,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-bf4e91adc6a5",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.6,
+        "x": 404.16,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-0bd4b2fa1cd0",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.68,
+        "x": 358.08,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-48dc8cc47d48",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.68,
+        "x": 392.64,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-e125277f5dec",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 455.04,
+        "y": 190.56
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-151a924edb46",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 391.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-0d34aac33999",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 10.08,
+        "x": 459.84,
+        "y": 209.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-f466dfa55305",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 9.6,
+        "x": 484.8,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-3add902d8bf2",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 524.64,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-196cad39b4ed",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.6,
+        "x": 309.6,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-98576514bb9b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 9.12,
+        "x": 283.2,
+        "y": 209.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-52ae2e0c64d6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 9.12,
+        "x": 300.0,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-6626ff026846",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.6,
+        "x": 396.48,
+        "y": 209.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-9c3f0b2f4eb8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 339.36,
+        "y": 138.24
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-962a475eb7d2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 319.68,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-eabd5d37a39d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 272.64,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-fae05d4967f2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 347.52,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-91c4e7f90db2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 504.0,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-0b53b0ad9fe4",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 477.12,
+        "y": 208.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-bfc579e70ee8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.16,
+        "x": 248.64,
+        "y": 208.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-0f1aa35017de",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 476.16,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Clusters occur in the justified pull quote tracked by this issue."
+      },
+      "id": "p1-f8b1ee09e54c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 324.96,
+        "y": 138.72
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-c44ea0a3c965",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 259.68,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2017",
+        "kind": "issue",
+        "note": "Clusters occur in the cyan BodyText paragraph tracked by this issue."
+      },
+      "id": "p1-9dedac355d0e",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 69,
+    "duplicate": 0,
+    "total": 69,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

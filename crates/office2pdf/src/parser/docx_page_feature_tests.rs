@@ -903,6 +903,49 @@ fn header_table_content_reaches_the_generated_page_header() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn floating_picture_in_header_table_obeys_paragraph_vertical_anchor() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    assert_eq!(document.pages.len(), 2, "the fixture spans two pages");
+    let generated = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let glyph_runs =
+        crate::render::pdf::compiled_text_runs_with_images(&generated.source, &generated.images, 0)
+            .expect("the header table text compiles");
+    let first_title_run_x: f64 = glyph_runs
+        .iter()
+        .filter(|run| run.text == "Xxxxxxxx")
+        .map(|run| run.left_pt)
+        .fold(f64::INFINITY, f64::min);
+    assert!(
+        (first_title_run_x - 21.84).abs() < 0.5,
+        "anchoring the picture must not shift the paragraph text, got x={first_title_run_x:.2}pt"
+    );
+
+    for page_index in 0..document.pages.len() {
+        let images = crate::render::pdf::compiled_image_boxes(
+            &generated.source,
+            &generated.images,
+            page_index,
+        )
+        .expect("the header table compiles");
+        let [picture] = images.as_slice() else {
+            panic!("page {page_index} should paint its one header picture, got {images:?}");
+        };
+        let top_pt: f64 = picture
+            .corners
+            .iter()
+            .map(|corner| corner.1)
+            .fold(f64::INFINITY, f64::min);
+
+        assert!(
+            (top_pt - 34.08).abs() < 0.5,
+            "page {page_index} header picture should start at Word's paragraph-relative y=34.08pt, got {top_pt:.2}pt"
+        );
+    }
+}
+
 #[test]
 fn floating_body_table_respects_its_page_and_margin_anchors() {
     let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");

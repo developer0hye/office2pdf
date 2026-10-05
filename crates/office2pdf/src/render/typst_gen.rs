@@ -9,15 +9,15 @@ use crate::ir::{
     Alignment, ArrowHead, AxisTickMark, BarBandLayout, BaselineShiftEm, Block, BorderLineStyle,
     BorderSide, CellBorder, CellVerticalAlign, Chart, ChartGrouping, ChartType, Color,
     ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
-    FloatingShape, FloatingTextBox, FlowPage, FrameAnchor, GradientFill, HFInline, HeaderFooter,
-    HeaderFooterFrame, HeaderFooterShapeContent, IconShading, ImageCrop, ImageData, ImageFormat,
-    ImageParagraphSpacing, InlineTextBox, Insets, LegendPosition, LineBox, LineCap, LineJoin,
-    LineSpacing, List, ListKind, Margins, MathEquation, Metadata, Page, PageNumberFormat, PageSize,
-    PairKerning, Paragraph, ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment,
-    PositionedTabRelativeTo, Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo,
-    TabAlignment, TabLeader, TabStop, Table, TableBorderPaintModel, TableCell, TableOfContents,
-    TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection, TextStyle, VerticalTextAlign,
-    WrapMode,
+    FloatingImageVerticalAnchor, FloatingShape, FloatingTextBox, FlowPage, FrameAnchor,
+    GradientFill, HFInline, HeaderFooter, HeaderFooterFrame, HeaderFooterShapeContent, IconShading,
+    ImageCrop, ImageData, ImageFormat, ImageParagraphSpacing, InlineTextBox, Insets,
+    LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, List, ListKind, Margins, MathEquation,
+    Metadata, Page, PageNumberFormat, PageSize, PairKerning, Paragraph, ParagraphStyle,
+    PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo, Run, Shadow,
+    Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TabAlignment, TabLeader, TabStop, Table,
+    TableBorderPaintModel, TableCell, TableOfContents, TableRow, TextBoxData, TextBoxVerticalAlign,
+    TextDirection, TextStyle, VerticalTextAlign, WrapMode,
 };
 
 use self::diagrams::{
@@ -5591,6 +5591,15 @@ fn generate_image(out: &mut String, img: &ImageData, ctx: &mut GenCtx) {
 /// - Behind/InFront/None: `#place()` with no text wrapping
 /// - Square/Tight/TopAndBottom: `#place()` with `float: true` for best-effort text flow
 fn generate_floating_image(out: &mut String, fi: &FloatingImage, ctx: &mut GenCtx) {
+    generate_floating_image_with_vertical_offset(out, fi, ctx, fi.offset_y);
+}
+
+fn generate_floating_image_with_vertical_offset(
+    out: &mut String,
+    fi: &FloatingImage,
+    ctx: &mut GenCtx,
+    offset_y: f64,
+) {
     let path = ctx.add_image(&fi.image);
 
     match fi.wrap_mode {
@@ -5616,7 +5625,7 @@ fn generate_floating_image(out: &mut String, fi: &FloatingImage, ctx: &mut GenCt
                 out,
                 "#place(top + left, dx: {}pt, dy: {}pt)[",
                 format_f64(fi.offset_x),
-                format_f64(fi.offset_y)
+                format_f64(offset_y)
             );
             generate_floating_image_content(out, &fi.image, &path);
             out.push_str("]\n");
@@ -5627,7 +5636,7 @@ fn generate_floating_image(out: &mut String, fi: &FloatingImage, ctx: &mut GenCt
                 out,
                 "#place(top + left, dx: {}pt, dy: {}pt, float: true)[",
                 format_f64(fi.offset_x),
-                format_f64(fi.offset_y)
+                format_f64(offset_y)
             );
             generate_floating_image_content(out, &fi.image, &path);
             out.push_str("]\n");

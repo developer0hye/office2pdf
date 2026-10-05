@@ -1,8 +1,9 @@
 use super::contexts::DocxConversionContext;
 use super::{
-    Block, DrawingTextBoxInfo, FloatingImage, FloatingTextBox, HyperlinkMap, ImageData, ImageMap,
-    InlineTextBox, Paragraph, StyleMap, VmlTextBoxInfo, WrapContext, convert_paragraph_blocks,
-    convert_table, convert_table_in_text_box, withheld_paragraph_block,
+    Block, DrawingTextBoxInfo, FloatingImage, FloatingImageVerticalAnchor, FloatingTextBox,
+    HyperlinkMap, ImageData, ImageMap, InlineTextBox, Paragraph, StyleMap, VmlTextBoxInfo,
+    WrapContext, convert_paragraph_blocks, convert_table, convert_table_in_text_box,
+    withheld_paragraph_block,
 };
 use crate::parser::units::emu_to_pt;
 
@@ -60,6 +61,22 @@ pub(super) fn extract_drawing_image(
         Some(Block::FloatingImage(FloatingImage {
             image: image_data,
             wrap_mode,
+            vertical_anchor: match pic.relative_from_v {
+                docx_rs::RelativeFromVType::BottomMargin => {
+                    FloatingImageVerticalAnchor::BottomMargin
+                }
+                docx_rs::RelativeFromVType::InsideMargin => {
+                    FloatingImageVerticalAnchor::InsideMargin
+                }
+                docx_rs::RelativeFromVType::Line => FloatingImageVerticalAnchor::Line,
+                docx_rs::RelativeFromVType::Margin => FloatingImageVerticalAnchor::Margin,
+                docx_rs::RelativeFromVType::OutsizeMargin => {
+                    FloatingImageVerticalAnchor::OutsideMargin
+                }
+                docx_rs::RelativeFromVType::Page => FloatingImageVerticalAnchor::Page,
+                docx_rs::RelativeFromVType::Paragraph => FloatingImageVerticalAnchor::Paragraph,
+                docx_rs::RelativeFromVType::TopMargin => FloatingImageVerticalAnchor::TopMargin,
+            },
             offset_x,
             offset_y,
         }))
@@ -67,6 +84,7 @@ pub(super) fn extract_drawing_image(
         Some(Block::FloatingImage(FloatingImage {
             image: image_data,
             wrap_mode: crate::ir::WrapMode::None,
+            vertical_anchor: FloatingImageVerticalAnchor::Page,
             offset_x,
             offset_y,
         }))
