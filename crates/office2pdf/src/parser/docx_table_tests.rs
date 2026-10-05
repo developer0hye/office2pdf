@@ -1615,6 +1615,94 @@ fn test_table_level_borders_expand_to_cells() {
     assert!(first.bottom.is_some(), "insideH between rows");
 }
 
+#[test]
+fn test_cell_nil_border_suppresses_only_its_table_border_side() {
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblPr><w:tblBorders>
+        <w:top w:val="single" w:sz="4" w:color="000000"/>
+        <w:left w:val="single" w:sz="4" w:color="000000"/>
+        <w:bottom w:val="single" w:sz="4" w:color="000000"/>
+        <w:right w:val="single" w:sz="4" w:color="000000"/>
+      </w:tblBorders></w:tblPr>
+      <w:tblGrid><w:gridCol w:w="3000"/></w:tblGrid>
+      <w:tr><w:tc>
+        <w:tcPr><w:tcBorders>
+          <w:left w:val="nil"/>
+          <w:right w:val="single" w:sz="8" w:color="FF0000"/>
+        </w:tcBorders></w:tcPr>
+        <w:p><w:r><w:t>Cell border precedence</w:t></w:r></w:p>
+      </w:tc></w:tr>
+    </w:tbl>
+    <w:sectPr/>
+  </w:body>
+</w:document>"#;
+    let data = build_docx_with_columns(document_xml);
+    let (document, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let table = first_table(&document);
+    let border = table.rows[0].cells[0]
+        .border
+        .as_ref()
+        .expect("the unstated cell sides inherit their table borders");
+
+    assert_eq!(
+        border.left, None,
+        "explicit tcBorders nil suppresses tblBorders"
+    );
+    assert_eq!(
+        border.right.as_ref().map(|side| side.color),
+        Some(Color::new(0xFF, 0, 0)),
+        "an explicitly drawn cell side wins over the table side"
+    );
+    assert_eq!(
+        border.top.as_ref().map(|side| side.color),
+        Some(Color::black())
+    );
+    assert_eq!(
+        border.bottom.as_ref().map(|side| side.color),
+        Some(Color::black())
+    );
+}
+
+#[test]
+fn test_visual_rtl_mirrors_explicit_cell_border_suppression() {
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblPr><w:bidiVisual/><w:tblBorders>
+        <w:left w:val="single" w:sz="4" w:color="000000"/>
+        <w:right w:val="single" w:sz="4" w:color="000000"/>
+      </w:tblBorders></w:tblPr>
+      <w:tblGrid><w:gridCol w:w="3000"/></w:tblGrid>
+      <w:tr><w:tc>
+        <w:tcPr><w:tcBorders><w:left w:val="nil"/></w:tcBorders></w:tcPr>
+        <w:p><w:r><w:t>Mirrored border suppression</w:t></w:r></w:p>
+      </w:tc></w:tr>
+    </w:tbl>
+    <w:sectPr/>
+  </w:body>
+</w:document>"#;
+    let data = build_docx_with_columns(document_xml);
+    let (document, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let table = first_table(&document);
+    let border = table.rows[0].cells[0]
+        .border
+        .as_ref()
+        .expect("the unstated mirrored side inherits the table border");
+
+    assert_eq!(
+        border.left.as_ref().map(|side| side.color),
+        Some(Color::black())
+    );
+    assert_eq!(
+        border.right, None,
+        "the left-side nil mirrors with the RTL cell"
+    );
+}
+
 /// A content control that wraps a whole `<w:p>` inside a table cell — the
 /// block-level form Word writes for a placeholder line — contributed nothing,
 /// because `TableCellContent::StructuredDataTag` fell through the cell walker

@@ -806,6 +806,42 @@ fn find_floating_text_boxes(doc: &Document) -> Vec<&FloatingTextBox> {
 }
 
 #[test]
+fn test_docx_anchored_text_box_cell_nil_borders_hide_table_grid() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+
+    let text_box: &FloatingTextBox = document
+        .pages
+        .iter()
+        .find_map(|page| {
+            let content = match page {
+                Page::Flow(page) | Page::FlowContinuous(page) => &page.content,
+                _ => return None,
+            };
+            content.iter().find_map(|block| match block {
+                Block::FloatingTextBox(text_box) => Some(text_box),
+                _ => None,
+            })
+        })
+        .expect("the fixture contains a page-anchored text box");
+    let table = text_box
+        .content
+        .iter()
+        .find_map(|block| match block {
+            Block::Table(table) => Some(table),
+            _ => None,
+        })
+        .expect("the floating text box contains its pull-quote table");
+
+    assert_eq!(table.rows.len(), 1);
+    assert_eq!(table.rows[0].cells.len(), 1);
+    assert!(
+        table.rows[0].cells[0].border.is_none(),
+        "the cell's four explicit tcBorders nil values suppress the table grid"
+    );
+}
+
+#[test]
 fn test_docx_floating_text_box_square_wrap() {
     let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"

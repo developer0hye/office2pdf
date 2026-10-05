@@ -15,6 +15,7 @@ struct RawCell {
     preferred_width: Option<f64>,
     vmerge: Option<String>,
     border: Option<CellBorder>,
+    border_spec: TableBorderSpec,
     background: Option<Color>,
     has_explicit_background: bool,
     vertical_align: Option<CellVerticalAlign>,
@@ -275,7 +276,7 @@ fn convert_table_with_context(
     }
 
     let mut rows = resolve_vmerge_and_build_rows(&raw_rows);
-    apply_table_level_borders(&mut rows, table_prop_json.as_ref());
+    apply_table_level_borders(&mut rows, &raw_rows, &direct_table_borders);
 
     Table {
         rows,
@@ -305,6 +306,7 @@ fn reverse_raw_rows_for_visual_rtl(raw_rows: &mut [RawRow], column_count: usize)
             if let Some(border) = &mut cell.border {
                 std::mem::swap(&mut border.left, &mut border.right);
             }
+            std::mem::swap(&mut cell.border_spec.left, &mut cell.border_spec.right);
             if let Some(padding) = &mut cell.padding {
                 std::mem::swap(&mut padding.left, &mut padding.right);
             }
@@ -374,10 +376,14 @@ fn extract_raw_rows(
                     in_cell_picture_floor.map_or(picture_height, |floor| floor.max(picture_height)),
                 );
             }
-            let border = prop_json
+            let cell_border_properties = prop_json
                 .as_ref()
-                .and_then(|j| j.get("borders"))
-                .and_then(extract_cell_borders);
+                .and_then(|properties| properties.get("borders"))
+                .filter(|borders| !borders.is_null());
+            let border = cell_border_properties.and_then(extract_cell_borders);
+            let border_spec = cell_border_properties
+                .map(extract_table_border_spec)
+                .unwrap_or_default();
             let shading = prop_json
                 .as_ref()
                 .and_then(|j| j.get("shading"))
@@ -402,6 +408,7 @@ fn extract_raw_rows(
                 preferred_width,
                 vmerge,
                 border,
+                border_spec,
                 background,
                 has_explicit_background,
                 vertical_align,
@@ -560,10 +567,9 @@ fn apply_conditional_table_style(
             if !cell.has_explicit_background {
                 cell.background = style.background;
             }
-            // Explicit tcBorders on the cell win over the style's borders.
-            if cell.border.is_none() {
-                cell.border = style.border.clone();
-            }
+            // Explicit tcBorders win per edge: `nil` suppresses that side,
+            // while an unstated side can still inherit the table style.
+            cell.border = merge_cell_border_with_direct(&style.border, &cell.border_spec);
             // A conditional region's `w:tcMar` applies only where that region
             // is active. Direct per-cell margins were resolved before this
             // pass and keep precedence.
@@ -1176,66 +1182,123 @@ fn extend_with_cell_sdt_content(
     }
 }
 
-/// Expand table-level `w:tblBorders` onto cells that carry no explicit
-/// borders of their own: outer sides on edge cells, insideH/insideV between
-/// cells. Previously these tables relied on Typst's default grid, which the
-/// renderer no longer paints.
-fn apply_table_level_borders(rows: &mut [TableRow], table_prop_json: Option<&serde_json::Value>) {
-    let Some(borders) = table_prop_json.and_then(|j| j.get("borders")) else {
-        return;
-    };
-    if borders.is_null() {
-        return;
-    }
-    let outer: Option<CellBorder> = extract_cell_borders(borders);
-    let inside_h: Option<BorderSide> = extract_border_side(borders, "insideH");
-    let inside_v: Option<BorderSide> = extract_border_side(borders, "insideV");
-    if outer.is_none() && inside_h.is_none() && inside_v.is_none() {
+/// Resolve each cell edge in precedence order: explicit `w:tcBorders`
+/// (including `nil`), a stated direct `w:tblBorders` side, then the table-style
+/// border. Use outer sides at the table boundary and insideH/insideV elsewhere.
+/// Typst's default grid is not painted, so preserve resolved borders in the IR.
+fn apply_table_level_borders(
+    rows: &mut [TableRow],
+    raw_rows: &[RawRow],
+    table_borders: &TableBorderSpec,
+) {
+    if !table_borders.has_any_stated_side() {
         return;
     }
 
     let row_count = rows.len();
-    for (row_index, row) in rows.iter_mut().enumerate() {
-        let cell_count = row.cells.len();
-        for (cell_index, cell) in row.cells.iter_mut().enumerate() {
-            if cell.border.is_some() {
+    let column_count: usize = raw_table_column_count(raw_rows);
+    for (row_index, (row, raw_row)) in rows.iter_mut().zip(raw_rows).enumerate() {
+        let mut output_cell_index: usize = 0;
+        for raw_cell in &raw_row.cells {
+            // Vertical-merge continuation cells are omitted from the IR row,
+            // so keep the raw-to-output index mapping in step with that rule.
+            if raw_cell.vmerge.as_deref() == Some("continue") {
                 continue;
             }
-            let is_first_row = row_index == 0;
-            let is_last_row = row_index + 1 == row_count;
-            let is_first_col = cell_index == 0;
-            let is_last_col = cell_index + 1 == cell_count;
-            let border = CellBorder {
-                top: if is_first_row {
-                    outer.as_ref().and_then(|b| b.top.clone())
-                } else {
-                    inside_h.clone()
-                },
-                bottom: if is_last_row {
-                    outer.as_ref().and_then(|b| b.bottom.clone())
-                } else {
-                    inside_h.clone()
-                },
-                left: if is_first_col {
-                    outer.as_ref().and_then(|b| b.left.clone())
-                } else {
-                    inside_v.clone()
-                },
-                right: if is_last_col {
-                    outer.as_ref().and_then(|b| b.right.clone())
-                } else {
-                    inside_v.clone()
-                },
+            let Some(cell) = row.cells.get_mut(output_cell_index) else {
+                break;
             };
-            if border.top.is_some()
-                || border.bottom.is_some()
-                || border.left.is_some()
-                || border.right.is_some()
-            {
-                cell.border = Some(border);
-            }
+            output_cell_index += 1;
+
+            let row_span: usize = cell.row_span as usize;
+            let is_first_row: bool = row_index == 0;
+            let is_last_row: bool = row_index + row_span >= row_count;
+            let is_first_col: bool = raw_cell.col_index == 0;
+            let is_last_col: bool = raw_cell.col_index + raw_cell.col_span as usize >= column_count;
+            let inherited: Option<CellBorder> = cell.border.clone();
+            cell.border = cell_border_from_sides(
+                resolve_border_side(
+                    &raw_cell.border_spec.top,
+                    Some(table_borders.horizontal(is_first_row, &table_borders.top)),
+                    inherited.as_ref().and_then(|border| border.top.as_ref()),
+                ),
+                resolve_border_side(
+                    &raw_cell.border_spec.bottom,
+                    Some(table_borders.horizontal(is_last_row, &table_borders.bottom)),
+                    inherited.as_ref().and_then(|border| border.bottom.as_ref()),
+                ),
+                resolve_border_side(
+                    &raw_cell.border_spec.left,
+                    Some(table_borders.vertical(is_first_col, &table_borders.left)),
+                    inherited.as_ref().and_then(|border| border.left.as_ref()),
+                ),
+                resolve_border_side(
+                    &raw_cell.border_spec.right,
+                    Some(table_borders.vertical(is_last_col, &table_borders.right)),
+                    inherited.as_ref().and_then(|border| border.right.as_ref()),
+                ),
+            );
         }
     }
+}
+
+fn merge_cell_border_with_direct(
+    inherited: &Option<CellBorder>,
+    direct: &TableBorderSpec,
+) -> Option<CellBorder> {
+    cell_border_from_sides(
+        resolve_border_side(
+            &direct.top,
+            None,
+            inherited.as_ref().and_then(|border| border.top.as_ref()),
+        ),
+        resolve_border_side(
+            &direct.bottom,
+            None,
+            inherited.as_ref().and_then(|border| border.bottom.as_ref()),
+        ),
+        resolve_border_side(
+            &direct.left,
+            None,
+            inherited.as_ref().and_then(|border| border.left.as_ref()),
+        ),
+        resolve_border_side(
+            &direct.right,
+            None,
+            inherited.as_ref().and_then(|border| border.right.as_ref()),
+        ),
+    )
+}
+
+fn resolve_border_side(
+    direct_cell: &BorderSideSpec,
+    direct_table: Option<&BorderSideSpec>,
+    inherited: Option<&BorderSide>,
+) -> Option<BorderSide> {
+    if direct_cell.is_stated() {
+        return direct_cell.drawn();
+    }
+    if let Some(direct_table) = direct_table.filter(|side| side.is_stated()) {
+        return direct_table.drawn();
+    }
+    inherited.cloned()
+}
+
+fn cell_border_from_sides(
+    top: Option<BorderSide>,
+    bottom: Option<BorderSide>,
+    left: Option<BorderSide>,
+    right: Option<BorderSide>,
+) -> Option<CellBorder> {
+    if top.is_none() && bottom.is_none() && left.is_none() && right.is_none() {
+        return None;
+    }
+    Some(CellBorder {
+        top,
+        bottom,
+        left,
+        right,
+    })
 }
 
 fn extract_border_side(borders_json: &serde_json::Value, key: &str) -> Option<BorderSide> {
@@ -1288,6 +1351,15 @@ pub(super) struct TableBorderSpec {
 }
 
 impl TableBorderSpec {
+    fn has_any_stated_side(&self) -> bool {
+        self.top.is_stated()
+            || self.bottom.is_stated()
+            || self.left.is_stated()
+            || self.right.is_stated()
+            || self.inside_h.is_stated()
+            || self.inside_v.is_stated()
+    }
+
     /// The side this spec states for a cell's top or bottom edge, given where
     /// the cell sits: the outer side on a boundary row, `insideH` between
     /// rows. `outer` picks which of `top`/`bottom` the caller means.
