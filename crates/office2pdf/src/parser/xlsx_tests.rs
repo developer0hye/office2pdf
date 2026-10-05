@@ -507,12 +507,12 @@ fn test_estimate_line_width_uses_resolved_face_advances() {
 }
 
 #[test]
-fn issue_1717_unwrapped_text_crossing_its_column_gets_a_clip_box() {
+fn issue_1717_boundary_fixture_uses_resolved_width_for_spill_decision() {
     let data: &[u8] =
         include_bytes!("../../../../tests/fixtures/xlsx/issue_1717_ascii_width_boundary.xlsx");
     let (doc, _warnings) = XlsxParser.parse(data, &ConvertOptions::default()).unwrap();
     let target_text: &str = "Customer Quality Executive";
-    let target_cell: &TableCell = doc
+    let (table, target_cell): (&Table, &TableCell) = doc
         .pages
         .iter()
         .find_map(|page| match page {
@@ -521,27 +521,49 @@ fn issue_1717_unwrapped_text_crossing_its_column_gets_a_clip_box() {
                 .rows
                 .iter()
                 .flat_map(|row| &row.cells)
-                .find(|cell| cell_text(cell) == target_text),
+                .find(|cell| cell_text(cell) == target_text)
+                .map(|cell| (&sheet.table, cell)),
             _ => None,
         })
         .expect("the near-edge occupation cell should be present");
 
-    let font_family: &str = first_run_style(target_cell)
+    let target_style: &TextStyle = first_run_style(target_cell);
+    let font_family: &str = target_style
         .font_family
         .as_deref()
         .expect("the fixture's Normal style names a font");
     let is_malgun_gothic: bool =
         font_family == "맑은 고딕" || font_family.eq_ignore_ascii_case("Malgun Gothic");
-    if !is_malgun_gothic
-        || crate::render::pdf::glyph_advances_em(font_family, false, target_text).is_none()
-    {
-        // The boundary fixture only reproduces the report when the host has
-        // the same face; the estimator's resolved-font behavior is tested above.
+    let Some(advances_em) = crate::render::pdf::glyph_advances_em(font_family, false, target_text)
+    else {
+        // The generic resolved-font test covers native hosts without this face.
+        return;
+    };
+    if !is_malgun_gothic {
+        return;
+    }
+
+    let font_size_pt: f64 = target_style.font_size.unwrap_or(11.0);
+    let measured_width_pt: f64 = advances_em.into_iter().sum::<f64>() * font_size_pt;
+    let column_width_pt: f64 = *table
+        .column_widths
+        .get(4)
+        .expect("the target cell is in the fifth column");
+    let padding: Insets = target_cell
+        .padding
+        .or(table.default_cell_padding)
+        .unwrap_or_default();
+    let available_width_pt: f64 = column_width_pt - padding.left - padding.right;
+    if measured_width_pt <= available_width_pt {
+        assert!(
+            target_cell.spill_width.is_none(),
+            "text that fits its available width should not need a spill clip box"
+        );
         return;
     }
     assert!(
         target_cell.spill_width.is_some(),
-        "the actual per-glyph width crosses the cell's available width, so the line must stay unwrapped"
+        "the actual per-glyph width ({measured_width_pt:.2}pt) crosses the cell's available width ({available_width_pt:.2}pt), so the line must stay unwrapped"
     );
 }
 

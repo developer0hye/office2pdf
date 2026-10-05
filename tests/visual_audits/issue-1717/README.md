@@ -23,10 +23,12 @@ width gives the spill clip box enough room for the unwrapped line. The page
 column continuation decision remains based on Excel's per-glyph whole-point
 grid.
 
-The fixture's spill assertion runs on hosts that resolve the Malgun Gothic
-face. Hosts without it use the documented portable ratio fallback; the
-face-independent unit test still checks exact advances against other resolved
-fonts.
+The fixture's spill assertion checks its boundary when the host resolves the
+Malgun Gothic face and its measured line exceeds the cell's available width.
+If the host lacks that face, the generic face-independent unit test still
+checks exact advances against another resolved font on native hosts; WASM
+does not run host-font advance assertions. If its Malgun metrics put this
+fixture's line inside the cell, the test confirms no spill box is needed.
 
 The pre-fix layout audit records 2 native lines versus 3 output lines and one
 wrap. The fixed output has 2/2 lines, no wrap, missing or extra text, visibility
