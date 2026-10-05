@@ -11,7 +11,7 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 
 ## Features
 
-- **DOCX** — paragraphs, inline formatting (bold/italic/underline/color), tables, images, drawing shapes, ordered/nested lists, syntax-highlighted code, headers/footers, page setup
+- **DOCX** — paragraphs, inline formatting (bold/italic/underline/color), tables (including floating tables), images, drawing shapes, ordered/nested lists, syntax-highlighted code, headers/footers, page setup
 - **PPTX** — slides, text boxes, shapes, tables (with theme-based table styles), images, slide masters, speaker notes, gradient backgrounds, shadow/reflection effects; hidden slides are omitted by default and can be included explicitly
 - **XLSX** — sheets (hidden ones skipped, as Excel does), chartsheets (one page-sized chart each), cell formatting including accounting currency alignment, merged cells, column widths, row heights, print scaling, Excel tables (built-in style banding, header/foot rules, bold header), conditional formatting (DataBar, IconSet, and formula rules)
 - **PDF/A-2b** — archival-compliant output via `--pdf-a`
@@ -243,7 +243,7 @@ Native Rust callers can use the same per-conversion path through
 
 | Format | Status | Key Features |
 |--------|--------|-------------|
-| DOCX | Supported | Text, tables, images, drawing shapes, lists, code highlighting, headers/footers, page setup |
+| DOCX | Supported | Text, tables (including floating tables), images, drawing shapes, lists, code highlighting, headers/footers, page setup |
 | PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
 

@@ -5096,6 +5096,19 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             out.push_str("#pagebreak()\n");
             Ok(())
         }
+        Block::FloatingTable(floating_table) => {
+            let offset_x: f64 = floating_table.frame.x.unwrap_or_default();
+            let offset_y: f64 = floating_table.frame.y.unwrap_or_default();
+            let _ = writeln!(
+                out,
+                "#place(top + left, dx: {}pt, dy: {}pt)[",
+                format_f64(offset_x),
+                format_f64(offset_y)
+            );
+            let result: Result<(), ConvertError> = generate_table(out, &floating_table.table, ctx);
+            out.push_str("]\n");
+            result
+        }
         Block::Table(table) => {
             // Word gives a table no vertical spacing of its own: the gap above
             // it is the preceding paragraph's `w:after` and the gap below it is

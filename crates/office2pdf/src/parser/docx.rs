@@ -10,7 +10,7 @@ use crate::error::{ConvertError, ConvertWarning};
 const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, Caption, CellBorder, CellVerticalAlign, Color,
-    ColumnLayout, Document, FloatingImage, FloatingTextBox, ImageData, ImageFormat,
+    ColumnLayout, Document, FloatingImage, FloatingTable, FloatingTextBox, ImageData, ImageFormat,
     ImageParagraphSpacing, InlineTextBox, Insets, LineCap, LineJoin, LineSpacing, Page,
     PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment,
     TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow, TextDirection, TextStyle,
@@ -486,14 +486,13 @@ impl Parser for DocxParser {
                     tagged
                 }
                 docx_rs::DocumentChild::Table(table) => {
-                    vec![TaggedElement::Plain(vec![Block::Table(convert_table(
+                    vec![TaggedElement::Plain(vec![convert_body_table_block(
                         table,
                         &images,
                         &hyperlinks,
                         &style_map,
                         &ctx,
-                        0,
-                    ))])]
+                    )])]
                 }
                 docx_rs::DocumentChild::StructuredDataTag(sdt) => {
                     convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &ctx, &docx.styles)
@@ -701,9 +700,9 @@ fn convert_sdt_children(
                 ));
             }
             docx_rs::StructuredDataTagChild::Table(table) => {
-                result.push(TaggedElement::Plain(vec![Block::Table(convert_table(
-                    table, images, hyperlinks, style_map, ctx, 0,
-                ))]));
+                result.push(TaggedElement::Plain(vec![convert_body_table_block(
+                    table, images, hyperlinks, style_map, ctx,
+                )]));
             }
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
                 result.extend(convert_sdt_children(
@@ -714,6 +713,20 @@ fn convert_sdt_children(
         }
     }
     result
+}
+
+fn convert_body_table_block(
+    source_table: &docx_rs::Table,
+    images: &ImageMap,
+    hyperlinks: &HyperlinkMap,
+    style_map: &StyleMap,
+    ctx: &DocxConversionContext,
+) -> Block {
+    let table: Table = convert_table(source_table, images, hyperlinks, style_map, ctx, 0);
+    match sections::floating_table_frame(source_table, &table) {
+        Some(frame) => Block::FloatingTable(Box::new(FloatingTable { table, frame })),
+        None => Block::Table(table),
+    }
 }
 
 /// Convert one docx-rs paragraph into its ordered plain blocks and list paragraph.
