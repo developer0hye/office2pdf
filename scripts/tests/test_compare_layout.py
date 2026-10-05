@@ -396,8 +396,13 @@ class ParseTraceTest(unittest.TestCase):
 
 class MatchAndDiffTest(unittest.TestCase):
     def diff(self, gt_page: str, out_page: str, **kwargs) -> dict:
-        gt = compare_layout.parse_trace(trace_document(gt_page))[0]
-        out = compare_layout.parse_trace(trace_document(out_page))[0]
+        glyph_order_tolerance = kwargs.get("noise_floor", 0.12)
+        gt = compare_layout.parse_trace(
+            trace_document(gt_page), glyph_order_tolerance=glyph_order_tolerance
+        )[0]
+        out = compare_layout.parse_trace(
+            trace_document(out_page), glyph_order_tolerance=glyph_order_tolerance
+        )[0]
         return compare_layout.diff_page(gt, out, **kwargs)
 
     def test_identical_pages_report_no_deviation(self) -> None:
@@ -411,6 +416,48 @@ class MatchAndDiffTest(unittest.TestCase):
         self.assertEqual(vector["lines"]["deviant"], 0)
         self.assertAlmostEqual(vector["baseline"]["mean_abs_dy"], 0.0, places=6)
         self.assertEqual(vector["rects"]["gt_count"], vector["rects"]["out_count"])
+
+    def test_clipped_glyph_and_neighbor_cell_do_not_reorder_the_row(self) -> None:
+        def row_with_email_glyphs(email_glyph_x: tuple[float, float]) -> str:
+            email = text_op(
+                [("D", 72.0), ("h", email_glyph_x[0]), ("o", email_glyph_x[1])],
+                baseline_y=100.0,
+            )
+            clipped_email = clipped_text_op(email, 70.0, 80.0, 333.96, 120.0)
+            age = text_op([("4", 334.0), ("0", 341.0)], baseline_y=100.0)
+            return "\n".join([clipped_email, age])
+
+        gt = row_with_email_glyphs((333.973, 340.977))
+        out = row_with_email_glyphs((334.005, 341.002))
+
+        vector = self.diff(gt, out, noise_floor=0.5)
+
+        self.assertEqual(vector["lines"]["matched"], 1)
+        self.assertEqual(vector["lines"]["missing"], 0)
+        self.assertEqual(vector["lines"]["extra"], 0)
+        self.assertEqual(vector["reflow"]["gt_lines"], 0)
+        self.assertEqual(vector["reflow"]["out_lines"], 0)
+        self.assertEqual(vector["visibility"]["mismatch_count"], 0)
+
+    def test_glyph_tie_order_uses_the_active_noise_floor(self) -> None:
+        def row_with_email_glyphs(header_x: float) -> str:
+            email = text_op(
+                [("D", 72.0), ("h", header_x), ("o", header_x + 7.0)],
+                baseline_y=100.0,
+            )
+            clipped_email = clipped_text_op(email, 70.0, 80.0, 333.5, 120.0)
+            age = text_op([("4", 334.0), ("0", 341.0)], baseline_y=100.0)
+            return "\n".join([clipped_email, age])
+
+        gt = row_with_email_glyphs(333.7)
+        out = row_with_email_glyphs(334.3)
+
+        word_vector = self.diff(gt, out, noise_floor=0.12)
+        excel_vector = self.diff(gt, out, noise_floor=0.5)
+
+        self.assertEqual(word_vector["reflow"]["gt_lines"], 1)
+        self.assertEqual(excel_vector["reflow"]["gt_lines"], 0)
+        self.assertEqual(excel_vector["lines"]["matched"], 1)
 
     def test_shifted_line_reports_dy_and_deviant_count(self) -> None:
         gt = "\n".join([line_of("hello", 72, 100), line_of("world", 72, 112)])
@@ -1940,6 +1987,45 @@ class ReadingTest(unittest.TestCase):
 
 
 class CompareLayoutCliTest(unittest.TestCase):
+    def test_excel_noise_floor_controls_coincident_glyph_order(self) -> None:
+        def row_with_email_glyphs(email_glyph_x: float) -> str:
+            email = text_op(
+                [("D", 72.0), ("h", email_glyph_x), ("o", email_glyph_x + 7.0)],
+                baseline_y=100.0,
+            )
+            clipped_email = clipped_text_op(email, 70.0, 80.0, 333.5, 120.0)
+            age = text_op([("4", 334.0), ("0", 341.0)], baseline_y=100.0)
+            return "\n".join([clipped_email, age])
+
+        traces = [
+            trace_document(row_with_email_glyphs(333.7)),
+            trace_document(row_with_email_glyphs(334.3)),
+        ]
+        stdout = io.StringIO()
+        with (
+            patch.object(compare_layout, "run_mutool", side_effect=traces),
+            patch.object(
+                sys,
+                "argv",
+                [
+                    "compare_layout.py",
+                    "gt.pdf",
+                    "output.pdf",
+                    "--noise-floor",
+                    "0.5",
+                    "--json",
+                    "--audit",
+                ],
+            ),
+            patch("sys.stdout", stdout),
+        ):
+            result = compare_layout.main()
+
+        report = json.loads(stdout.getvalue())
+        self.assertEqual(result, 0)
+        self.assertEqual(report["pages"][0]["lines"]["matched"], 1)
+        self.assertEqual(report["pages"][0]["reflow"]["gt_lines"], 0)
+
     def test_rect_geometry_makes_json_audit_fail(self) -> None:
         traces = [
             trace_document(rect_op(10.0, 20.0, 110.0, 30.0)),
