@@ -4,9 +4,9 @@ use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek};
 
 use super::super::extract_run_text;
-use super::super::text::{ThemeFonts, resolve_latin_theme_font_family};
 #[cfg(test)]
 use super::super::text::parse_theme_fonts;
+use super::super::text::{ThemeFonts, resolve_latin_theme_font_family};
 use crate::ir::TextStyle;
 use crate::parser::units::half_points_to_pt;
 use crate::parser::xml_util::parse_hex_color;
