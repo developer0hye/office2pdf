@@ -50,7 +50,7 @@ use self::styles::{
     apply_tab_stop_overrides, build_style_map, get_paragraph_style_id, merge_paragraph_style,
     merge_text_style, resolve_doc_default_text_style,
 };
-use self::tables::convert_table;
+use self::tables::{convert_table, convert_table_in_text_box};
 use self::text::{
     ThemeFonts, extract_doc_default_paragraph_style, extract_doc_default_text_style_with_theme,
     extract_paragraph_style, extract_run_style, extract_run_style_id, extract_run_text,

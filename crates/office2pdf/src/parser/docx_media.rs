@@ -2,7 +2,7 @@ use super::contexts::DocxConversionContext;
 use super::{
     Block, DrawingTextBoxInfo, FloatingImage, FloatingTextBox, HyperlinkMap, ImageData, ImageMap,
     InlineTextBox, Paragraph, StyleMap, VmlTextBoxInfo, WrapContext, convert_paragraph_blocks,
-    convert_table, withheld_paragraph_block,
+    convert_table, convert_table_in_text_box, withheld_paragraph_block,
 };
 use crate::parser::units::emu_to_pt;
 
@@ -253,6 +253,7 @@ pub(super) fn extract_drawing_text_box_blocks(
 
     let layout: DrawingTextBoxInfo = ctx.drawing_text_boxes.consume_next();
     let mut blocks: Vec<Block> = Vec::new();
+    let is_anchored: bool = text_box.position_type == docx_rs::DrawingPositionType::Anchor;
     for child in &text_box.children {
         match child {
             docx_rs::TextBoxContentChild::Paragraph(para) => {
@@ -261,9 +262,12 @@ pub(super) fn extract_drawing_text_box_blocks(
                 convert_paragraph_blocks(para, &mut blocks, images, hyperlinks, style_map, ctx);
             }
             docx_rs::TextBoxContentChild::Table(table) => {
-                blocks.push(Block::Table(convert_table(
-                    table, images, hyperlinks, style_map, ctx, 0,
-                )));
+                let converted_table: crate::ir::Table = if is_anchored {
+                    convert_table_in_text_box(table, images, hyperlinks, style_map, ctx, 0)
+                } else {
+                    convert_table(table, images, hyperlinks, style_map, ctx, 0)
+                };
+                blocks.push(Block::Table(converted_table));
             }
         }
     }

@@ -978,6 +978,85 @@ fn page_anchored_text_box_retains_its_vertical_offset_and_extent() {
 }
 
 #[test]
+fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (mut document, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let page = match &mut document.pages[1] {
+            Page::Flow(page) | Page::FlowContinuous(page) => page,
+            other => panic!("Expected a flow page, got {other:?}"),
+        };
+        let text_box = page
+            .content
+            .iter()
+            .find_map(|block| match block {
+                Block::FloatingTextBox(text_box) => Some(text_box),
+                _ => None,
+            })
+            .expect("page two contains the anchored text box");
+        let table = text_box
+            .content
+            .iter()
+            .find_map(|block| match block {
+                Block::Table(table) => Some(table),
+                _ => None,
+            })
+            .expect("the text box contains its pull-quote table");
+        assert_eq!(
+            table.default_cell_padding,
+            Some(crate::ir::Insets {
+                top: 7.2,
+                right: 7.2,
+                bottom: 7.2,
+                left: 0.0,
+            }),
+            "only the anchored table's direct left margin should be omitted"
+        );
+        let quote_paragraph = table
+            .rows
+            .iter()
+            .flat_map(|row| row.cells.iter())
+            .flat_map(|cell| cell.content.iter())
+            .find_map(|block| match block {
+                Block::Paragraph(paragraph)
+                    if paragraph.runs.iter().any(|run| run.text.starts_with('“')) =>
+                {
+                    Some(paragraph)
+                }
+                _ => None,
+            })
+            .expect("the table contains the quote paragraph");
+        assert_eq!(
+            quote_paragraph.style.indent_left,
+            Some(4.5),
+            "the paragraph's independent left indent must remain applied"
+        );
+        page.first_header = None;
+        page.first_footer = None;
+        page.header = None;
+        page.footer = None;
+        page.content
+            .retain(|block| matches!(block, Block::FloatingTextBox(_)));
+        document.pages.remove(0);
+
+        let generated = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&generated.source, 0).unwrap();
+        let quote = runs
+            .iter()
+            .find(|run| run.text.starts_with('“'))
+            .expect("the anchored text box quote should render on page two");
+
+        assert!(
+            (quote.left_pt - 424.59).abs() < 0.25,
+            "the quote should retain its paragraph indent without the table-level left inset, got {}pt",
+            quote.left_pt
+        );
+    }
+}
+
+#[test]
 fn an_unpositioned_docx_body_table_remains_in_text_flow() {
     let paragraph =
         docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("An ordinary body table"));
