@@ -758,6 +758,47 @@ fn direct_run_latin_theme_font_resolves_without_using_east_asian_slot() {
 }
 
 #[test]
+fn east_asia_theme_does_not_replace_the_inherited_latin_style_font() {
+    // The PAGE field in #1984 inherits Header's Latin face from Normal even
+    // though Header declares East Asian and complex-script theme slots.
+    let normal_style = docx_rs::Style::new("Normal", docx_rs::StyleType::Paragraph).fonts(
+        docx_rs::RunFonts::new()
+            .ascii("Times New Roman")
+            .hi_ansi("Times New Roman")
+            .east_asia("Times New Roman"),
+    );
+    let header_style = docx_rs::Style::new("Header", docx_rs::StyleType::Paragraph)
+        .based_on("Normal")
+        .fonts(
+            docx_rs::RunFonts::new()
+                .east_asia_theme("minorHAnsi")
+                .cs_theme("minorBidi"),
+        );
+    let styles: docx_rs::Styles = docx_rs::Styles::new()
+        .add_style(normal_style)
+        .add_style(header_style);
+    let theme_fonts: ThemeFonts = ThemeFonts {
+        minor_latin: Some("Calibri".to_string()),
+        major_latin: Some("Cambria".to_string()),
+    };
+    let empty_context: std::collections::HashMap<String, bool> = std::collections::HashMap::new();
+    let style_map: StyleMap = build_style_map(
+        &styles,
+        &theme_fonts,
+        Some("Normal"),
+        &std::collections::HashMap::new(),
+        &empty_context,
+        &PairKerningRules::default(),
+    );
+
+    assert_eq!(
+        style_map["Header"].text.font_family.as_deref(),
+        Some("Times New Roman"),
+        "Header's East Asian theme slot must not replace Normal's inherited Latin face"
+    );
+}
+
+#[test]
 fn latin_font_extraction_keeps_script_specific_fonts_separate() {
     let east_asian_only = serde_json::json!({
         "fonts": { "eastAsia": "Noto Sans CJK SC" }
