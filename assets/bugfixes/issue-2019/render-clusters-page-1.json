@@ -1,0 +1,1719 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 75.8016,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 23.04,
+        "x": 296.16,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-2f6efb1d6cde",
+      "region": "top"
+    },
+    {
+      "area_pt2": 75.5712,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 21.12,
+        "x": 473.28,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-67d44501214c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 54.144,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 15.84,
+        "x": 555.36,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-c38f88e7aa0e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 50.688,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 12.0,
+        "x": 273.12,
+        "y": 208.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-344478dc4401",
+      "region": "top"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 11.04,
+        "x": 513.6,
+        "y": 208.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-a51f32c37fed",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 360.0,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-da84ad7614e0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 406.56,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-2faed47d5951",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 378.72,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-76851f0692ef",
+      "region": "top"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 391.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-5b53ec53ac32",
+      "region": "top"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 332.16,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-6867d3a4d09c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 319.68,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-d7d36b940e40",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 245.76,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-a489390392c6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 377.76,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-4b4e1debd7ff",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 318.72,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-f651685217b3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 259.68,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-c443e31ed102",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 295.68,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-18c894b7c0b5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 236.64,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-e902bca39002",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 354.72,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-6ab71a403f9b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 556.32,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-8349b4daf59a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 413.76,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-bbd7049f5f62",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 427.68,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-fe7102d2411f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 497.28,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-63f782d78ac4",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 472.8,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-4fd8f6d8c02e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.08,
+        "x": 545.76,
+        "y": 174.24
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-9253b5d2da46",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 37.3248,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 11.04,
+        "x": 300.48,
+        "y": 208.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-b71d595d5a5a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.64,
+        "x": 453.12,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-e525704a3b8f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.64,
+        "x": 407.52,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-e317d4b4be87",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 405.12,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-3efdff37bc72",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 524.64,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-416780b0a36e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 462.24,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-d69efde30cfc",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 510.72,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-32f35552edad",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 287.04,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-b9245f355af9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 441.12,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-7aa12a3f4ee6",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 228.0,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-378a1aa49013",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 235.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-0065606d3cac",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 250.08,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-e6c7d3a70ccc",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 333.6,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-0a907b914c87",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 340.8,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-dfd3d3f3d351",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 346.08,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-c6950a3fa978",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 281.76,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-9796c9aae749",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 392.64,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-674e12f9f022",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 273.12,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-54dd42e69a82",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 264.0,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-6306920749cf",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 569.76,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-b8b128e9acbe",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 455.04,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-dd1fc33a8ea1",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 542.4,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-198a7b3f9a8a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 531.84,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-4cae67b50a5b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 294.24,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-9cc80992c560",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 304.8,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-c78c5c74357e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 10.08,
+        "x": 285.6,
+        "y": 208.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-26f82e6bb077",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 9.12,
+        "x": 327.84,
+        "y": 172.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-296f8721afe6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 397.92,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-ee1c0397fa08",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 486.24,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-aabfba198a82",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.2,
+        "x": 228.0,
+        "y": 121.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-d3dd5404877f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 477.12,
+        "y": 208.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-72ff70a77294",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 27.8784,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 248.64,
+        "y": 208.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-2d4b430e8a0e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 485.28,
+        "y": 174.24
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-4a1af8210f58",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.2,
+        "x": 228.0,
+        "y": 115.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-a5409832eabc",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 507.84,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-29eeaa7940e8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 243.84,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-bfde59fe5bb6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 224.64,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-2f5705b584c5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 495.36,
+        "y": 208.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-3f1dbc84402f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 277.92,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-69c4d5f7c587",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 4.8,
+        "x": 224.64,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-3bbd64bad3c6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.16,
+        "x": 289.92,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-e74f5d25d3b9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 264.48,
+        "y": 172.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-15cb0f93f0fa",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 499.68,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-9bfcaf9de58b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 585.12,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-a31149b864b6",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 585.12,
+        "y": 175.2
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-0d97285da17d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 248.64,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-35a88adf6f5d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 249.6,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-ff0b033d8af8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 230.4,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-eaad193477ed",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 367.68,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-d182dc95c5ad",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 258.72,
+        "y": 174.24
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-c97267948869",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 465.6,
+        "y": 192.96
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-6b3154b50984",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 336.96,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-df190b7f2d06",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 242.88,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-ac7fc53be91a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 502.08,
+        "y": 209.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-46d1a17f5eea",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 376.32,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-6eae5ea721f9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 261.12,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-45c8beee55db",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 578.88,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-5668da76b93d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 578.88,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-f462aea1f057",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 462.24,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Page 1 justified Pullquote wrap differs from the native Word reference."
+      },
+      "id": "p1-e2f33ae8b908",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 312.96,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-055a7112674b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 434.4,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-9cb85876b666",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 504.0,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-29ab1b871e43",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 563.04,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-c5b23baec2b7",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 266.4,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-cfbe5160705e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 312.96,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-eac3db180396",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 353.28,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-ee6acb53d767",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 448.32,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-3275866731b1",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 576.96,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-c0d56dbfa1b8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 339.36,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-ac1c78609774",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 517.92,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-2d6fff724547",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 257.28,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-21e7cdb82fc0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 271.2,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-cfb5bc7aedbb",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 504.0,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-0f59539946c8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 434.4,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-147a314f2961",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 563.04,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-15a076a22336",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 326.88,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-a5c65128827e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 412.32,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-d50dbefe0be0",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 398.4,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-14d70e1f3c3b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 266.4,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-878a036014ab",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 385.92,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-bf3370cd4229",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 399.84,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-0dad22cd0e72",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 280.32,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page 1 BodyText glyph differences accompany its sub-material vertical baseline shift."
+      },
+      "id": "p1-658bdb34c71e",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 106,
+    "duplicate": 0,
+    "total": 106,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
