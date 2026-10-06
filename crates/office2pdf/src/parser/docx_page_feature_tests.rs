@@ -1285,7 +1285,12 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
 
         let target_page_header_runs = |candidate: &crate::ir::Document| {
             let generated = crate::render::typst_gen::generate_typst(candidate).unwrap();
-            let runs = crate::render::pdf::compiled_text_runs(&generated.source, 1).unwrap();
+            let runs = crate::render::pdf::compiled_text_runs_with_images(
+                &generated.source,
+                &generated.images,
+                1,
+            )
+            .unwrap();
             let mut header_runs: Vec<(String, f64)> = runs
                 .into_iter()
                 .filter(|run| run.left_pt < 50.0 && run.baseline_pt < 80.0)
@@ -1333,7 +1338,12 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
         document.pages.remove(0);
 
         let generated = crate::render::typst_gen::generate_typst(&document).unwrap();
-        let runs = crate::render::pdf::compiled_text_runs(&generated.source, 0).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs_with_images(
+            &generated.source,
+            &generated.images,
+            0,
+        )
+        .unwrap();
         let quote = runs
             .iter()
             .find(|run| run.text.starts_with('“'))
