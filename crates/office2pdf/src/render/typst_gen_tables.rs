@@ -1740,6 +1740,7 @@ fn spill_line_box_height_pt(cell: &TableCell, ctx: &GenCtx) -> Option<f64> {
         ctx.cell_sheet_row_line.as_ref(),
         ctx.cell_sheet_seat,
         ctx.sheet_print_scale(),
+        ctx.in_top_aligned_floating_text_box,
     )?;
     Some((line_box.top_em + line_box.bottom_em) * line_box.font_size_pt)
 }
@@ -2550,6 +2551,7 @@ fn auto_row_frame_height_estimate_pt(
                 None,
                 None,
                 ctx.sheet_print_scale(),
+                ctx.in_top_aligned_floating_text_box,
             )?;
             let inset: Insets = cell_inset_with_border(cell, default_cell_padding);
             Some(
@@ -3297,6 +3299,7 @@ fn sheet_cell_seat_shortfall_pt(blocks: &[Block], ctx: &GenCtx) -> f64 {
                 ctx.cell_sheet_row_line.as_ref(),
                 ctx.cell_sheet_seat,
                 ctx.sheet_print_scale(),
+                ctx.in_top_aligned_floating_text_box,
             )
         })
         .map_or(0.0, |line_box| line_box.seat_shortfall_pt)
@@ -3461,6 +3464,7 @@ fn cell_paragraph_context<'a>(
         breaks_hangul_at_eojeol: ctx.breaks_hangul_at_eojeol,
         available_measure_pt: ctx.available_measure_pt,
         sheet_cell_box: ctx.sheet_cell_box,
+        in_top_aligned_floating_text_box: ctx.in_top_aligned_floating_text_box,
     }
 }
 
@@ -3508,6 +3512,7 @@ fn cell_paragraph_anchor_offset_pt(paragraph: &Paragraph, cell: &CellParagraphCt
         cell.sheet_row_line.as_ref(),
         cell.sheet_seat,
         cell.sheet_print_scale,
+        cell.in_top_aligned_floating_text_box,
     )
     .map_or(space_before_pt, |line_box| {
         space_before_pt - (line_box.bottom_em * line_box.font_size_pt)
@@ -3535,6 +3540,9 @@ struct CellParagraphCtx<'a> {
     /// (#1238) at the cell's declared size before scaling them. `None` off a
     /// sheet; the marker is the same one the descender seat keys on.
     sheet_print_scale: Option<f64>,
+    /// Whether this paragraph's enclosing floating text box is top-aligned;
+    /// line-box code applies its measured seat only to expanded exact lines in top-aligned cells.
+    in_top_aligned_floating_text_box: bool,
     /// Whether this paragraph is inside a spill cell's clipped wrapper, where
     /// the `#place` anchor already carries the cell's horizontal alignment.
     /// A `width: 100%` block inside that wrapper is not just redundant: the
@@ -3726,6 +3734,7 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
             cell.sheet_row_line.as_ref(),
             cell.sheet_seat,
             cell.sheet_print_scale,
+            cell.in_top_aligned_floating_text_box,
         )
     };
     // Whichever fixed edges the block wrapper below puts in force — the
@@ -3743,6 +3752,7 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
         cell.sheet_row_line.as_ref(),
         cell.sheet_seat,
         cell.sheet_print_scale,
+        cell.in_top_aligned_floating_text_box,
     )
     .map(|line_box| (line_box.top_em, line_box.bottom_em))
     .or_else(|| {
@@ -3775,6 +3785,7 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
                     cell.sheet_row_line.as_ref(),
                     cell.sheet_seat,
                     cell.sheet_print_scale,
+                    cell.in_top_aligned_floating_text_box,
                 )
                 .map(|line_box| (line_box.top_em + line_box.bottom_em) * line_box.font_size_pt)
             }
@@ -3803,6 +3814,7 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
                     cell.sheet_row_line.as_ref(),
                     cell.sheet_seat,
                     cell.sheet_print_scale,
+                    cell.in_top_aligned_floating_text_box,
                 )
             })
             .map(|line_box| line_box.leading_pt)
@@ -4018,6 +4030,7 @@ fn centered_sheet_odd_line_seat(
         cell.sheet_row_line.as_ref(),
         cell.sheet_seat,
         cell.sheet_print_scale,
+        cell.in_top_aligned_floating_text_box,
     )?;
     let line_advance_pt: f64 =
         (line_box.top_em + line_box.bottom_em) * line_box.font_size_pt + line_box.leading_pt;

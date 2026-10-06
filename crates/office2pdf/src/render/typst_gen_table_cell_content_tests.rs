@@ -2378,37 +2378,39 @@ fn a_line_spaced_cell_paragraph_scales_its_line_box() {
     let _ = descender_em;
 }
 
-/// `w:lineRule="exact"` states the advance outright, so the box is that many
-/// points tall whatever the font asks for (issue #727).
+/// `w:lineRule="exact"` fixes the baseline advance between cell paragraphs
+/// (issue #727).
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
-    let Some((ascender_em, _descender_em, _pitch_em)) =
-        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
-    else {
+    if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
         return;
-    };
+    }
     let font_size: f64 = 10.0;
+    let make_paragraph = |text: &str| {
+        Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                line_spacing: Some(LineSpacing::Exact(18.0)),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: text.to_string(),
+                style: TextStyle {
+                    font_family: Some("Libertinus Serif".to_string()),
+                    font_size: Some(font_size),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+                inline_box: None,
+            }],
+        })
+    };
     let table = Table {
         rows: vec![TableRow {
             minimum_height: None,
             cells: vec![TableCell {
-                content: vec![Block::Paragraph(Paragraph {
-                    style: ParagraphStyle {
-                        line_spacing: Some(LineSpacing::Exact(18.0)),
-                        ..ParagraphStyle::default()
-                    },
-                    runs: vec![Run {
-                        text: "Exact".to_string(),
-                        style: TextStyle {
-                            font_family: Some("Libertinus Serif".to_string()),
-                            font_size: Some(font_size),
-                            ..TextStyle::default()
-                        },
-                        href: None,
-                        footnote: None,
-                        inline_box: None,
-                    }],
-                })],
+                content: vec![make_paragraph("First"), make_paragraph("Second")],
                 ..TableCell::default()
             }],
             height: None,
@@ -2416,16 +2418,143 @@ fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
         column_widths: vec![200.0],
         ..Table::default()
     };
-    let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-    let source = generate_typst(&doc).unwrap().source;
-
+    let baseline_advance_pt = |block: Block| -> f64 {
+        let document = make_doc(vec![make_flow_page(vec![block])]);
+        let source = generate_typst(&document).unwrap().source;
+        let mut baselines_pt: Vec<f64> = crate::render::pdf::compiled_text_runs(&source, 0)
+            .expect("the exact-spaced cell should compile")
+            .into_iter()
+            .filter(|run| matches!(run.text.as_str(), "First" | "Second"))
+            .map(|run| run.baseline_pt)
+            .collect();
+        baselines_pt.sort_by(f64::total_cmp);
+        assert_eq!(
+            baselines_pt.len(),
+            2,
+            "both exact-spaced paragraphs should render: {baselines_pt:?}"
+        );
+        baselines_pt[1] - baselines_pt[0]
+    };
+    let ordinary_cell_advance_pt: f64 = baseline_advance_pt(Block::Table(table.clone()));
     assert!(
-        source.contains(&format!(
-            "#set text(top-edge: {}em, bottom-edge: -{}em)",
-            format_f64(ascender_em),
-            format_f64(18.0 / font_size - ascender_em)
-        )),
-        "an exact rule states the advance outright: {source}"
+        (ordinary_cell_advance_pt - 18.0).abs() < 0.01,
+        "ordinary exact-spaced cell paragraphs should advance 18pt, got {ordinary_cell_advance_pt:.4}pt"
+    );
+    let top_aligned_text_box: Block = Block::FloatingTextBox(crate::ir::FloatingTextBox {
+        content: vec![Block::Table(table)],
+        wrap_mode: crate::ir::WrapMode::None,
+        width: 200.0,
+        height: 100.0,
+        fill: None,
+        stroke: None,
+        shape_rotation_deg: None,
+        padding: crate::ir::Insets::default(),
+        vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+        vertical_anchor: crate::ir::FrameAnchor::Page,
+        vertical_position_align: None,
+        horizontal_align: None,
+        horizontal_anchor: crate::ir::FrameAnchor::Page,
+        offset_x: 0.0,
+        offset_y: 0.0,
+    });
+    let text_box_advance_pt: f64 = baseline_advance_pt(top_aligned_text_box);
+    assert!(
+        (text_box_advance_pt - 18.0).abs() < 0.01,
+        "exact-spaced paragraphs in a top-aligned text box should keep their 18pt advance, got {text_box_advance_pt:.4}pt"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn exact_line_spacing_moves_only_top_anchored_text_box_cell_text() {
+    let Some((ascender_em, descender_em, _word_pitch_em)) =
+        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
+    else {
+        return;
+    };
+    let font_size_pt: f64 = 10.0;
+    let font_metric_height_pt: f64 = (ascender_em + descender_em) * font_size_pt;
+    let first_line_height_pt: f64 = font_metric_height_pt + 6.0;
+    let second_line_height_pt: f64 = first_line_height_pt + 8.0;
+
+    let baseline_for_exact_height = |line_height_pt: f64, in_text_box: bool| -> f64 {
+        let table = Table {
+            rows: vec![TableRow {
+                minimum_height: None,
+                cells: vec![TableCell {
+                    content: vec![Block::Paragraph(Paragraph {
+                        style: ParagraphStyle {
+                            line_spacing: Some(LineSpacing::Exact(line_height_pt)),
+                            ..ParagraphStyle::default()
+                        },
+                        runs: vec![Run {
+                            text: "Centered line".to_string(),
+                            style: TextStyle {
+                                font_family: Some("Libertinus Serif".to_string()),
+                                font_size: Some(font_size_pt),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                            inline_box: None,
+                        }],
+                    })],
+                    ..TableCell::default()
+                }],
+                height: None,
+            }],
+            column_widths: vec![200.0],
+            ..Table::default()
+        };
+        let block: Block = if in_text_box {
+            Block::FloatingTextBox(crate::ir::FloatingTextBox {
+                content: vec![Block::Table(table)],
+                wrap_mode: crate::ir::WrapMode::None,
+                width: 200.0,
+                height: 100.0,
+                fill: None,
+                stroke: None,
+                shape_rotation_deg: None,
+                padding: crate::ir::Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                vertical_anchor: crate::ir::FrameAnchor::Page,
+                vertical_position_align: None,
+                horizontal_align: None,
+                horizontal_anchor: crate::ir::FrameAnchor::Page,
+                offset_x: 0.0,
+                offset_y: 0.0,
+            })
+        } else {
+            Block::Table(table)
+        };
+        let document = make_doc(vec![make_flow_page(vec![block])]);
+        let source = generate_typst(&document)
+            .expect("the exact-spaced cell should generate")
+            .source;
+        let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+            .expect("the exact-spaced cell should compile");
+        runs.iter()
+            .find(|run| run.text == "Centered line")
+            .expect("the cell text should be placed")
+            .baseline_pt
+    };
+
+    let first_table_baseline_pt: f64 = baseline_for_exact_height(first_line_height_pt, false);
+    let second_table_baseline_pt: f64 = baseline_for_exact_height(second_line_height_pt, false);
+    let table_shift_pt: f64 = second_table_baseline_pt - first_table_baseline_pt;
+    assert!(
+        table_shift_pt.abs() < 0.1,
+        "an ordinary table cell keeps its top seat as an exact line grows, got {table_shift_pt:.3}pt"
+    );
+
+    let first_text_box_baseline_pt: f64 = baseline_for_exact_height(first_line_height_pt, true);
+    let second_text_box_baseline_pt: f64 = baseline_for_exact_height(second_line_height_pt, true);
+    let text_box_shift_pt: f64 = second_text_box_baseline_pt - first_text_box_baseline_pt;
+    let expected_text_box_shift_pt: f64 =
+        (second_line_height_pt - first_line_height_pt) * ascender_em / (ascender_em + descender_em);
+    assert!(
+        (text_box_shift_pt - expected_text_box_shift_pt).abs() < 0.1,
+        "an exact line in a top-aligned floating text box should grow its baseline by the font's ascent share ({expected_text_box_shift_pt:.3}pt), got {text_box_shift_pt:.3}pt"
     );
 }
 
@@ -4482,6 +4611,7 @@ fn substituted_sheet_face_keeps_the_declared_excel_wrapped_advance() {
         Some(&painted_row_line),
         None,
         Some(1.0),
+        false,
     )
     .expect("the embedded painted face has line metrics");
     let emitted_advance_pt: f64 =

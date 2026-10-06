@@ -1158,6 +1158,7 @@ fn test_word_auto_row_vertical_bands_use_blank_paragraph_mark_metrics() {
         None,
         None,
         None,
+        false,
     ) else {
         return; // no font book available (e.g. exotic CI sandbox)
     };
@@ -1277,6 +1278,7 @@ fn test_boundary_band_auto_row_verticals_paint_concrete_twin_bands() {
         // `boundary_band_table` leaves the spreadsheet marker off, which is
         // what the codegen passes for this table.
         None,
+        false,
     ) else {
         return; // no font book available (e.g. exotic CI sandbox)
     };
