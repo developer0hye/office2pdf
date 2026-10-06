@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "source": {
+    "fixture": "tests/fixtures/xlsx/100-customers.xlsx",
+    "sha256": "f520110f531d75291223e4f76660fb4dc95dc9a67221fcde27b3bc71cbc11a34",
+    "main_commit": "e1537dee5767f3f46a871b8c5aa76e0e82d08639"
+  },
+  "ground_truth": {
+    "path": "assets/bugfixes/issue-1656/gt.jpg",
+    "commit": "9f9c5eb7a4215dfffe063b129f02b638675b1b78",
+    "sha256": "ab18dcb387747b60110edbe7174fdbde1709d11b12b3881d916f452a2860df05",
+    "dpi": 150,
+    "dimensions_px": [
+      1240,
+      1755
+    ],
+    "kind": "archived native Excel page raster"
+  },
+  "current_output": {
+    "pdf_sha256": "7a8daf1c7752c17580b539a6246a02fa5546f94dec7f893906901386fb5b72c6",
+    "page_render_path": "assets/audits/issue-1858/current-page-1.png",
+    "page_render_sha256": "1cf0c5ddab32af0a2b3b470029f7cd1f1e3b77603a3f7625f0e5cc8f72779cb0",
+    "dpi": 150,
+    "renderer": "scripts/compare_render.py",
+    "pdf_path": "assets/audits/issue-1858/current-output.pdf",
+    "pages": 6,
+    "creator": "Typst 0.15.1"
+  },
+  "rechecked_cluster": {
+    "historical_id": "p1-fc6d6deb9fe7",
+    "historical_disposition": "#1660",
+    "historical_bbox_pt": {
+      "x": 268.8,
+      "y": 616.8,
+      "width": 6.24,
+      "height": 9.12
+    },
+    "historical_mask_area_pt2": 44.928,
+    "crop_bbox_pt": {
+      "x": 259.2,
+      "y": 607.2,
+      "width": 19.2,
+      "height": 19.2
+    },
+    "crop_pixels": [
+      40,
+      40
+    ],
+    "crop_pixel_origin": [
+      540,
+      1265
+    ],
+    "comparison": "magick compare -metric AE -fuzz 5%",
+    "pixels_outside_fuzz": 76,
+    "context_crop_pixels": [
+      160,
+      120
+    ],
+    "context_pixels_outside_fuzz": 79,
+    "current_disposition": "absent",
+    "visual_finding": "The archived native crop and current output both show the trailing 'Farrell' text without the reported cut glyph at the column edge."
+  },
+  "limitations": [
+    "The native PDF is unavailable in this environment, so this is a targeted raster recheck rather than a full layout or text-layer audit.",
+    "Rewrapping the archived JPEG as a PDF changes its page box and introduces unrelated page-wide raster differences; no full-page cluster census or dispositions are claimed from that reconstruction."
+  ],
+  "artifacts": {
+    "gt_crop": "assets/audits/issue-1858/old-cluster-gt-crop.png",
+    "current_crop": "assets/audits/issue-1858/current-output-crop.png",
+    "side_by_side": "assets/audits/issue-1858/old-cluster-side-by-side.png",
+    "diff_5pct": "assets/audits/issue-1858/old-cluster-diff-5pct.png",
+    "context_gt_crop": "assets/audits/issue-1858/old-cluster-context-gt.png",
+    "context_output_crop": "assets/audits/issue-1858/old-cluster-context-output.png",
+    "context_diff_5pct": "assets/audits/issue-1858/old-cluster-context-diff-5pct.png"
+  },
+  "artifact_sha256": {
+    "current-page-1.png": "1cf0c5ddab32af0a2b3b470029f7cd1f1e3b77603a3f7625f0e5cc8f72779cb0",
+    "old-cluster-gt-crop.png": "b3ddeb628d29e3f91c8db634c777f401b4046edcc693fbd0e0841858b6fc0249",
+    "current-output-crop.png": "fae59fa1f533acd8d362d8d4a370c33f54cf0f810725140a806ce10b96d7064c",
+    "old-cluster-side-by-side.png": "7a535df7f4d2ce13ba6ad3a968d42631b3ae2640b1e383cd762e2fa20932c4e1",
+    "old-cluster-diff-5pct.png": "10ea563a60ac4f662955d1758c362d3a08670b67ca6c86e39fa7b69a13e75ff9",
+    "old-cluster-context-gt.png": "35bc1411c1f1fe5adf85ed039ed3fb56a8f321da59535cf5c50ed89124ae2a47",
+    "old-cluster-context-output.png": "495e62dcfd36fe3bf9990624832cb5c17488c969e8211b28ca92be437dd1419d",
+    "old-cluster-context-diff-5pct.png": "093dbe79dd4c22071376c99d5321c56237bbadc1d751f65632af254a7f70d68e",
+    "current-output.pdf": "7a8daf1c7752c17580b539a6246a02fa5546f94dec7f893906901386fb5b72c6"
+  }
+}

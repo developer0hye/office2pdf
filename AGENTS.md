@@ -198,8 +198,11 @@ its stable IDs to build explicit disposition groups, then rerun with
 `--cluster-dispositions PATH --strict-clusters`. Accepted renderer-only classes
 are glyph-edge rasterization, photo resampling, gradient rasterization, and
 shape-edge antialiasing; otherwise use an open issue. Page-, region-, or
-bbox-wide approvals are invalid, so every new cluster requires review. A
-bounded `renderer_observations` entry may record inspected fragments below the
+bbox-wide approvals are invalid, and every current cluster requires review.
+Re-derive dispositions from current crops; never inherit a prior note by stable
+ID or bounding box. An absent cluster has no current disposition. Keep
+historical reports frozen and record re-audits separately. A bounded
+`renderer_observations` entry may record inspected fragments below the
 material-cluster floor, but never dispositions a cluster inside that bbox.
 For a proven non-native GT difference, pass the issue-local manifest with
 `--reference-differences`; its `reference-exporter-difference` group must name
