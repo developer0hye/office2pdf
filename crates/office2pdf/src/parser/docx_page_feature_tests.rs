@@ -1257,9 +1257,26 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             quote.left_pt
         );
         let baseline_gap_pt: f64 = quote.baseline_pt - text_box_top_pt;
+        let line_box_settings: Vec<&str> = generated
+            .source
+            .lines()
+            .filter(|line| line.contains("top-edge:") || line.contains("bottom-edge:"))
+            .collect();
+        let quote_run_sizes: Vec<(String, Option<f64>, Option<String>)> = quote_paragraph
+            .runs
+            .iter()
+            .map(|run| {
+                (
+                    run.text.clone(),
+                    run.style.font_size,
+                    run.style.font_family.clone(),
+                )
+            })
+            .collect();
         assert!(
             (baseline_gap_pt - 23.62).abs() <= 1.0,
-            "the first line in the page-anchored box should match Word's 23.62pt baseline gap within 1pt, got {baseline_gap_pt:.5}pt"
+            "the first line in the page-anchored box should match Word's 23.62pt baseline gap within 1pt, got {baseline_gap_pt:.5}pt for {quote:?}; exact spacing={:?}, quote run styles={quote_run_sizes:?}, generated line-box settings={line_box_settings:?}",
+            quote_paragraph.style.line_spacing
         );
     }
 }

@@ -2378,41 +2378,36 @@ fn a_line_spaced_cell_paragraph_scales_its_line_box() {
     let _ = descender_em;
 }
 
-/// `w:lineRule="exact"` fixes line height; Word centers the text when that
-/// height exceeds the font metrics (issue #727).
+/// `w:lineRule="exact"` fixes the baseline advance between cell paragraphs
+/// (issue #727).
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
-    let Some((ascender_em, descender_em, _pitch_em)) =
-        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
-    else {
-        return;
-    };
     let font_size: f64 = 10.0;
-    let exact_line_em: f64 = 18.0 / font_size;
-    let extra_leading_em: f64 = ((exact_line_em - ascender_em - descender_em).max(0.0)) / 2.0;
-    let expected_top_em: f64 = ascender_em + extra_leading_em;
-    let expected_bottom_em: f64 = exact_line_em - expected_top_em;
+    let make_paragraph = |text: &str| {
+        Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                line_spacing: Some(LineSpacing::Exact(18.0)),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: text.to_string(),
+                style: TextStyle {
+                    font_family: Some("Libertinus Serif".to_string()),
+                    font_size: Some(font_size),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+                inline_box: None,
+            }],
+        })
+    };
     let table = Table {
         rows: vec![TableRow {
             minimum_height: None,
             cells: vec![TableCell {
-                content: vec![Block::Paragraph(Paragraph {
-                    style: ParagraphStyle {
-                        line_spacing: Some(LineSpacing::Exact(18.0)),
-                        ..ParagraphStyle::default()
-                    },
-                    runs: vec![Run {
-                        text: "Exact".to_string(),
-                        style: TextStyle {
-                            font_family: Some("Libertinus Serif".to_string()),
-                            font_size: Some(font_size),
-                            ..TextStyle::default()
-                        },
-                        href: None,
-                        footnote: None,
-                        inline_box: None,
-                    }],
-                })],
+                content: vec![make_paragraph("First"), make_paragraph("Second")],
                 ..TableCell::default()
             }],
             height: None,
@@ -2422,14 +2417,22 @@ fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
     };
     let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
     let source = generate_typst(&doc).unwrap().source;
-
+    let mut baselines_pt: Vec<f64> = crate::render::pdf::compiled_text_runs(&source, 0)
+        .expect("the exact-spaced cell should compile")
+        .into_iter()
+        .filter(|run| matches!(run.text.as_str(), "First" | "Second"))
+        .map(|run| run.baseline_pt)
+        .collect();
+    baselines_pt.sort_by(f64::total_cmp);
+    assert_eq!(
+        baselines_pt.len(),
+        2,
+        "both exact-spaced paragraphs should render: {baselines_pt:?}"
+    );
+    let actual_advance_pt: f64 = baselines_pt[1] - baselines_pt[0];
     assert!(
-        source.contains(&format!(
-            "#set text(top-edge: {}em, bottom-edge: -{}em)",
-            format_f64(expected_top_em),
-            format_f64(expected_bottom_em)
-        )),
-        "an exact rule states the advance and centers text within added leading: {source}"
+        (actual_advance_pt - 18.0).abs() < 0.01,
+        "exactly spaced cell paragraphs should advance 18pt, got {actual_advance_pt:.4}pt"
     );
 }
 
