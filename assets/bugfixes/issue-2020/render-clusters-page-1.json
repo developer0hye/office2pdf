@@ -1,54 +1,6 @@
 {
   "clusters": [
     {
-      "area_pt2": 53.4528,
-      "bbox_pt": {
-        "height": 7.68,
-        "width": 16.32,
-        "x": 347.52,
-        "y": 192.48
-      },
-      "disposition": {
-        "issue": "#2020",
-        "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
-      },
-      "id": "p1-a0093264c4a0",
-      "region": "top"
-    },
-    {
-      "area_pt2": 45.1584,
-      "bbox_pt": {
-        "height": 9.12,
-        "width": 11.04,
-        "x": 360.48,
-        "y": 174.24
-      },
-      "disposition": {
-        "issue": "#2020",
-        "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
-      },
-      "id": "p1-cd256d371aba",
-      "region": "top"
-    },
-    {
-      "area_pt2": 40.5504,
-      "bbox_pt": {
-        "height": 9.12,
-        "width": 10.08,
-        "x": 343.2,
-        "y": 174.24
-      },
-      "disposition": {
-        "issue": "#2020",
-        "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
-      },
-      "id": "p1-6875ac9838e9",
-      "region": "top"
-    },
-    {
       "area_pt2": 40.32,
       "bbox_pt": {
         "height": 10.08,
@@ -59,7 +11,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-2faed47d5951",
       "region": "top-right"
@@ -75,7 +27,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-da84ad7614e0",
       "region": "top"
@@ -91,9 +43,25 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-76851f0692ef",
+      "region": "top"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 319.68,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-d7d36b940e40",
       "region": "top"
     },
     {
@@ -107,7 +75,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-6867d3a4d09c",
       "region": "top"
@@ -123,26 +91,26 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-5b53ec53ac32",
       "region": "top"
     },
     {
-      "area_pt2": 39.6288,
+      "area_pt2": 38.4768,
       "bbox_pt": {
         "height": 10.08,
-        "width": 6.24,
-        "x": 319.68,
+        "width": 5.76,
+        "x": 472.8,
         "y": 118.08
       },
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-d7d36b940e40",
-      "region": "top"
+      "id": "p1-4fd8f6d8c02e",
+      "region": "top-right"
     },
     {
       "area_pt2": 38.4768,
@@ -155,7 +123,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-63f782d78ac4",
       "region": "top-right"
@@ -171,137 +139,9 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-4b4e1debd7ff",
-      "region": "top"
-    },
-    {
-      "area_pt2": 38.4768,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 413.76,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-bbd7049f5f62",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 38.4768,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 556.32,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-8349b4daf59a",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 38.4768,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 472.8,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-4fd8f6d8c02e",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 38.4768,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 259.68,
-        "y": 137.76
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-c443e31ed102",
-      "region": "top"
-    },
-    {
-      "area_pt2": 38.4768,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 427.68,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-fe7102d2411f",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 38.4768,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 245.76,
-        "y": 137.76
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-a489390392c6",
-      "region": "top"
-    },
-    {
-      "area_pt2": 38.4768,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 354.72,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-6ab71a403f9b",
-      "region": "top"
-    },
-    {
-      "area_pt2": 38.4768,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 236.64,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-e902bca39002",
       "region": "top"
     },
     {
@@ -315,9 +155,57 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-f651685217b3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 236.64,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-e902bca39002",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 259.68,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-c443e31ed102",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 245.76,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-a489390392c6",
       "region": "top"
     },
     {
@@ -331,26 +219,154 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-18c894b7c0b5",
       "region": "top"
     },
     {
-      "area_pt2": 36.6336,
+      "area_pt2": 38.4768,
       "bbox_pt": {
-        "height": 10.56,
-        "width": 9.12,
-        "x": 327.84,
-        "y": 172.32
+        "height": 10.08,
+        "width": 5.76,
+        "x": 354.72,
+        "y": 118.08
       },
       "disposition": {
-        "issue": "#2020",
+        "issue": "#1874",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-53a5378a867b",
+      "id": "p1-6ab71a403f9b",
       "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 413.76,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-bbd7049f5f62",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 427.68,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-fe7102d2411f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 556.32,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-8349b4daf59a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 462.24,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-d69efde30cfc",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 235.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-0065606d3cac",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 569.76,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-b8b128e9acbe",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 287.04,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-b9245f355af9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 524.64,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-416780b0a36e",
+      "region": "top-right"
     },
     {
       "area_pt2": 35.9424,
@@ -363,7 +379,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-198a7b3f9a8a",
       "region": "top-right"
@@ -373,16 +389,16 @@
       "bbox_pt": {
         "height": 10.08,
         "width": 5.76,
-        "x": 294.24,
-        "y": 137.76
+        "x": 531.84,
+        "y": 118.08
       },
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-9cc80992c560",
-      "region": "top"
+      "id": "p1-4cae67b50a5b",
+      "region": "top-right"
     },
     {
       "area_pt2": 35.9424,
@@ -395,7 +411,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-378a1aa49013",
       "region": "top"
@@ -411,217 +427,9 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-c78c5c74357e",
-      "region": "top"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 281.76,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-9796c9aae749",
-      "region": "top"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 264.0,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-6306920749cf",
-      "region": "top"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 250.08,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-e6c7d3a70ccc",
-      "region": "top"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 510.72,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-32f35552edad",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 569.76,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-b8b128e9acbe",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 524.64,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-416780b0a36e",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 531.84,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-4cae67b50a5b",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 392.64,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-674e12f9f022",
-      "region": "top"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 235.2,
-        "y": 137.76
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-0065606d3cac",
-      "region": "top"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 340.8,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-dfd3d3f3d351",
-      "region": "top"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 333.6,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-0a907b914c87",
-      "region": "top"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 441.12,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-7aa12a3f4ee6",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 35.9424,
-      "bbox_pt": {
-        "height": 10.08,
-        "width": 5.76,
-        "x": 273.12,
-        "y": 137.76
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-54dd42e69a82",
       "region": "top"
     },
     {
@@ -635,7 +443,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-dd1fc33a8ea1",
       "region": "top-right"
@@ -645,15 +453,15 @@
       "bbox_pt": {
         "height": 10.08,
         "width": 5.76,
-        "x": 462.24,
+        "x": 510.72,
         "y": 118.08
       },
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-d69efde30cfc",
+      "id": "p1-32f35552edad",
       "region": "top-right"
     },
     {
@@ -661,15 +469,15 @@
       "bbox_pt": {
         "height": 10.08,
         "width": 5.76,
-        "x": 346.08,
-        "y": 137.76
+        "x": 264.0,
+        "y": 118.08
       },
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-c6950a3fa978",
+      "id": "p1-6306920749cf",
       "region": "top"
     },
     {
@@ -677,16 +485,16 @@
       "bbox_pt": {
         "height": 10.08,
         "width": 5.76,
-        "x": 287.04,
-        "y": 137.76
+        "x": 441.12,
+        "y": 118.08
       },
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-b9245f355af9",
-      "region": "top"
+      "id": "p1-7aa12a3f4ee6",
+      "region": "top-right"
     },
     {
       "area_pt2": 35.9424,
@@ -699,26 +507,138 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-3efdff37bc72",
       "region": "top"
     },
     {
-      "area_pt2": 32.9472,
+      "area_pt2": 35.9424,
       "bbox_pt": {
-        "height": 8.64,
-        "width": 8.64,
-        "x": 553.92,
-        "y": 174.72
+        "height": 10.08,
+        "width": 5.76,
+        "x": 281.76,
+        "y": 118.08
       },
       "disposition": {
-        "issue": "#2020",
+        "issue": "#1874",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-024617198d22",
-      "region": "top-right"
+      "id": "p1-9796c9aae749",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 250.08,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-e6c7d3a70ccc",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 346.08,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-c6950a3fa978",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 333.6,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-0a907b914c87",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 340.8,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-dfd3d3f3d351",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 273.12,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-54dd42e69a82",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 294.24,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-9cc80992c560",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 392.64,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-674e12f9f022",
+      "region": "top"
     },
     {
       "area_pt2": 29.2608,
@@ -731,26 +651,10 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-d3dd5404877f",
       "region": "top"
-    },
-    {
-      "area_pt2": 27.648,
-      "bbox_pt": {
-        "height": 8.64,
-        "width": 8.16,
-        "x": 575.04,
-        "y": 174.72
-      },
-      "disposition": {
-        "issue": "#2020",
-        "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
-      },
-      "id": "p1-28189c057105",
-      "region": "top-right"
     },
     {
       "area_pt2": 27.1872,
@@ -763,9 +667,25 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-a5409832eabc",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 284.16,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-46f655c26589",
       "region": "top"
     },
     {
@@ -779,9 +699,73 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-bfde59fe5bb6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 560.64,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-64450534e94f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 344.64,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-3834a8bfcd3e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 468.48,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-1713381986fa",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 376.32,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-4ba133b0adb5",
       "region": "top"
     },
     {
@@ -795,25 +779,41 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-2f5705b584c5",
       "region": "top"
     },
     {
-      "area_pt2": 24.8832,
+      "area_pt2": 26.2656,
       "bbox_pt": {
-        "height": 8.16,
+        "height": 8.64,
         "width": 4.8,
-        "x": 445.44,
-        "y": 192.0
+        "x": 462.24,
+        "y": 174.72
       },
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
-      "id": "p1-47dcb804f40d",
+      "id": "p1-0a98937e0e5b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 501.12,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-c47805d4b3ae",
       "region": "top-right"
     },
     {
@@ -827,74 +827,186 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-3bbd64bad3c6",
       "region": "top"
     },
     {
-      "area_pt2": 24.8832,
+      "area_pt2": 22.1184,
       "bbox_pt": {
-        "height": 6.24,
-        "width": 7.68,
-        "x": 543.36,
-        "y": 174.24
+        "height": 7.68,
+        "width": 4.32,
+        "x": 585.12,
+        "y": 192.48
       },
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
-      "id": "p1-fca86b77adc4",
+      "id": "p1-a31149b864b6",
       "region": "top-right"
     },
     {
-      "area_pt2": 24.4224,
+      "area_pt2": 22.1184,
       "bbox_pt": {
-        "height": 8.64,
-        "width": 7.68,
-        "x": 556.8,
-        "y": 192.0
+        "height": 7.68,
+        "width": 4.32,
+        "x": 451.68,
+        "y": 192.48
       },
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
-      "id": "p1-9817f8d0d90c",
+      "id": "p1-86be84b520d6",
       "region": "top-right"
     },
     {
-      "area_pt2": 23.04,
+      "area_pt2": 22.1184,
       "bbox_pt": {
-        "height": 8.64,
-        "width": 6.24,
-        "x": 576.96,
-        "y": 192.0
+        "height": 7.68,
+        "width": 4.32,
+        "x": 564.48,
+        "y": 175.2
       },
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
-      "id": "p1-afe660e161ce",
+      "id": "p1-5c2aec03bac4",
       "region": "top-right"
     },
     {
-      "area_pt2": 21.888,
+      "area_pt2": 22.1184,
       "bbox_pt": {
-        "height": 8.16,
-        "width": 4.8,
-        "x": 248.64,
-        "y": 192.0
+        "height": 7.68,
+        "width": 4.32,
+        "x": 400.8,
+        "y": 192.48
       },
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
-      "id": "p1-35a88adf6f5d",
+      "id": "p1-9135a6aa6ef6",
       "region": "top"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 308.64,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-a02a27cbf5cf",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 585.12,
+        "y": 175.2
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-0d97285da17d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 399.36,
+        "y": 175.2
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-b8b053ae6b21",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 284.16,
+        "y": 175.2
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-e285bc13c9cf",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 359.52,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-b0fa33544917",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.24,
+        "x": 264.48,
+        "y": 172.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-5d96014b6ef6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 525.6,
+        "y": 175.2
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-dbdcad8769d2",
+      "region": "top-right"
     },
     {
       "area_pt2": 21.888,
@@ -907,9 +1019,137 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-ff0b033d8af8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 566.4,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-779ed3462537",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 533.76,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-e198b7e1ab1a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 515.52,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-ad93f0bdc821",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 474.24,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-ff7e7db8021b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 430.56,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-e45a0d55ac62",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 382.08,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-eba742250cbf",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 289.92,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-7488953ce1f3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 248.64,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-35a88adf6f5d",
       "region": "top"
     },
     {
@@ -923,7 +1163,7 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-eaad193477ed",
       "region": "top"
@@ -931,17 +1171,145 @@
     {
       "area_pt2": 21.888,
       "bbox_pt": {
-        "height": 8.64,
-        "width": 6.24,
-        "x": 528.0,
-        "y": 192.0
+        "height": 8.16,
+        "width": 4.8,
+        "x": 545.76,
+        "y": 174.72
       },
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
-      "id": "p1-a0c09261184d",
+      "id": "p1-160dd4e3761b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 506.88,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-565a8cfebf9f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 488.64,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-1928c47d0e58",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 468.0,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-e0f4241404be",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 429.12,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-28c0c705d682",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 368.64,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-1179a605584b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 350.4,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-d71d8ada9c43",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 304.32,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-e347c2d86311",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 565.44,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-8a577a0b627e",
       "region": "top-right"
     },
     {
@@ -955,7 +1323,7 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-0e030d75a2b3",
       "region": "top"
@@ -971,25 +1339,9 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-99a181961e3d",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 21.6576,
-      "bbox_pt": {
-        "height": 7.68,
-        "width": 4.8,
-        "x": 565.44,
-        "y": 210.24
-      },
-      "disposition": {
-        "issue": "#2020",
-        "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
-      },
-      "id": "p1-8a577a0b627e",
       "region": "top-right"
     },
     {
@@ -1003,7 +1355,7 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-1e20c1b1d98d",
       "region": "top-right"
@@ -1019,25 +1371,9 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-d182dc95c5ad",
-      "region": "top"
-    },
-    {
-      "area_pt2": 20.9664,
-      "bbox_pt": {
-        "height": 8.64,
-        "width": 4.8,
-        "x": 261.12,
-        "y": 192.0
-      },
-      "disposition": {
-        "issue": "#2020",
-        "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
-      },
-      "id": "p1-45c8beee55db",
       "region": "top"
     },
     {
@@ -1051,42 +1387,282 @@
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
       "id": "p1-ac7fc53be91a",
       "region": "top"
     },
     {
-      "area_pt2": 20.736,
+      "area_pt2": 20.9664,
       "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 563.04,
-        "y": 123.36
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-c5b23baec2b7",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 20.736,
-      "bbox_pt": {
-        "height": 7.2,
-        "width": 6.72,
-        "x": 533.76,
-        "y": 191.52
+        "height": 8.64,
+        "width": 4.8,
+        "x": 362.88,
+        "y": 174.72
       },
       "disposition": {
         "issue": "#2020",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
       },
-      "id": "p1-316dfde6918a",
+      "id": "p1-76126e71e8e8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 394.56,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-567170c6f390",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 578.88,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-f462aea1f057",
       "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 528.0,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-d4b76ffd89f5",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 445.44,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-10fa038531e3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 486.72,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-5efdb3e5462a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 353.28,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-23c84b449b99",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 441.6,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-da80d8734cd4",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 316.8,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-17d67533308e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 261.12,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-45c8beee55db",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 519.36,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-102ef3149386",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 277.92,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-8f531a80bd76",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 302.4,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-07dc46d08d62",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 558.24,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-61338de91a42",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 578.88,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-5668da76b93d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 546.24,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-6a7c366c19f3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 393.12,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the Pullquote and its byline position residual."
+      },
+      "id": "p1-9fb820447118",
+      "region": "top"
     },
     {
       "area_pt2": 20.736,
@@ -1099,7 +1675,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-29ab1b871e43",
       "region": "top-right"
@@ -1115,26 +1691,10 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-cfbe5160705e",
       "region": "top"
-    },
-    {
-      "area_pt2": 20.736,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 434.4,
-        "y": 123.36
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-9cb85876b666",
-      "region": "top-right"
     },
     {
       "area_pt2": 20.736,
@@ -1147,7 +1707,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-055a7112674b",
       "region": "top"
@@ -1155,161 +1715,33 @@
     {
       "area_pt2": 20.736,
       "bbox_pt": {
-        "height": 7.2,
-        "width": 6.72,
-        "x": 304.32,
-        "y": 174.24
-      },
-      "disposition": {
-        "issue": "#2020",
-        "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
-      },
-      "id": "p1-3c0bbc1c8dc7",
-      "region": "top"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 576.96,
-        "y": 123.36
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-c0d56dbfa1b8",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 517.92,
-        "y": 123.36
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-2d6fff724547",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 385.92,
-        "y": 123.36
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-bf3370cd4229",
-      "region": "top"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 399.84,
-        "y": 123.36
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-0dad22cd0e72",
-      "region": "top"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 353.28,
-        "y": 143.04
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-ee6acb53d767",
-      "region": "top"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 504.0,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-0f59539946c8",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 280.32,
-        "y": 143.04
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-658bdb34c71e",
-      "region": "top"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 266.4,
-        "y": 137.76
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-878a036014ab",
-      "region": "top"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
         "height": 4.8,
         "width": 5.76,
         "x": 434.4,
-        "y": 118.08
+        "y": 123.36
       },
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-147a314f2961",
+      "id": "p1-9cb85876b666",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 563.04,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-c5b23baec2b7",
       "region": "top-right"
     },
     {
@@ -1323,7 +1755,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-3275866731b1",
       "region": "top-right"
@@ -1333,47 +1765,15 @@
       "bbox_pt": {
         "height": 4.8,
         "width": 5.76,
-        "x": 257.28,
+        "x": 517.92,
         "y": 123.36
       },
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-21e7cdb82fc0",
-      "region": "top"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 339.36,
-        "y": 143.04
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-ac1c78609774",
-      "region": "top"
-    },
-    {
-      "area_pt2": 20.5056,
-      "bbox_pt": {
-        "height": 4.8,
-        "width": 5.76,
-        "x": 563.04,
-        "y": 118.08
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
-      },
-      "id": "p1-15a076a22336",
+      "id": "p1-2d6fff724547",
       "region": "top-right"
     },
     {
@@ -1387,9 +1787,73 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-cfb5bc7aedbb",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 280.32,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-658bdb34c71e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 257.28,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-21e7cdb82fc0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 504.0,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-0f59539946c8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 399.84,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-0dad22cd0e72",
       "region": "top"
     },
     {
@@ -1403,7 +1867,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-14d70e1f3c3b",
       "region": "top"
@@ -1413,15 +1877,15 @@
       "bbox_pt": {
         "height": 4.8,
         "width": 5.76,
-        "x": 412.32,
-        "y": 143.04
+        "x": 434.4,
+        "y": 118.08
       },
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-d50dbefe0be0",
+      "id": "p1-147a314f2961",
       "region": "top-right"
     },
     {
@@ -1429,15 +1893,79 @@
       "bbox_pt": {
         "height": 4.8,
         "width": 5.76,
-        "x": 312.96,
+        "x": 563.04,
         "y": 118.08
       },
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-eac3db180396",
+      "id": "p1-15a076a22336",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 339.36,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-ac1c78609774",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 385.92,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-bf3370cd4229",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 576.96,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-c0d56dbfa1b8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 353.28,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-ee6acb53d767",
       "region": "top"
     },
     {
@@ -1451,26 +1979,58 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Exact text clusters from the two body lines whose 2.6-2.7pt vertical offsets remain on the tracker."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
       "id": "p1-a5c65128827e",
       "region": "top"
     },
     {
-      "area_pt2": 20.0448,
+      "area_pt2": 20.5056,
       "bbox_pt": {
-        "height": 7.2,
-        "width": 6.72,
-        "x": 515.52,
-        "y": 191.52
+        "height": 4.8,
+        "width": 5.76,
+        "x": 312.96,
+        "y": 118.08
       },
       "disposition": {
-        "issue": "#2020",
+        "issue": "#1874",
         "kind": "issue",
-        "note": "Exact Pullquote clusters from the residual font-width and vertical-offset differences after the line wraps match native Word."
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
       },
-      "id": "p1-870c96925fb8",
+      "id": "p1-eac3db180396",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 412.32,
+        "y": 143.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-d50dbefe0be0",
       "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 266.4,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Exact cluster IDs for the nearby page-1 body text position residual."
+      },
+      "id": "p1-878a036014ab",
+      "region": "top"
     }
   ],
   "dpi": 150,
@@ -1484,9 +2044,9 @@
   "schema_version": 1,
   "strict": true,
   "summary": {
-    "dispositioned": 92,
+    "dispositioned": 127,
     "duplicate": 0,
-    "total": 92,
+    "total": 127,
     "undispositioned": 0,
     "unknown": 0
   },
