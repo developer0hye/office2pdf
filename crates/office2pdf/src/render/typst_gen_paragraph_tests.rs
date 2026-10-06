@@ -122,6 +122,64 @@ fn empty_paragraph_line_spacing_does_not_add_leading_to_its_placeholder() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn issue_2018_empty_bodycopy_keeps_the_following_paragraph_at_the_word_baseline() {
+    use crate::parser::Parser;
+
+    const FIXTURE: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = crate::parser::docx::DocxParser
+        .parse(FIXTURE, &crate::ConvertOptions::default())
+        .expect("the DOCX fixture should parse");
+    let mut additional_fonts: Vec<typst::text::Font> = Vec::new();
+    crate::pipeline::extend_document_fonts(&mut additional_fonts, &document);
+    let font_context: crate::render::font_context::FontSearchContext =
+        crate::render::font_context::resolve_font_search_context(&[])
+            .with_in_memory_fonts(&additional_fonts);
+    let output: crate::render::typst_gen::TypstOutput =
+        crate::render::typst_gen::generate_typst_with_options_and_font_context(
+            &document,
+            &crate::ConvertOptions::default(),
+            Some(&font_context),
+        )
+        .expect("the fixture should generate Typst");
+    let page_runs: Vec<crate::render::pdf::PlacedTextRun> =
+        crate::render::pdf::compiled_text_runs_with_fonts_and_images(
+            &output.source,
+            &output.images,
+            1,
+            &additional_fonts,
+        )
+        .expect("the second page should compile");
+    let heading_baseline_pt: f64 = page_runs
+        .iter()
+        .find(|run| run.font_size_pt == 12.0 && run.text == "Xxxxx")
+        .expect("the cyan SectionHeading should render")
+        .baseline_pt;
+    let mut body_baselines_pt: Vec<f64> = page_runs
+        .iter()
+        .filter(|run| run.font_size_pt == 8.5 && run.left_pt == 36.0)
+        .map(|run| run.baseline_pt)
+        .collect();
+    body_baselines_pt.sort_by(f64::total_cmp);
+    body_baselines_pt.dedup_by(|left, right| (*left - *right).abs() < 0.01);
+    assert!(
+        !body_baselines_pt.is_empty(),
+        "the Bodycopy paragraph should render at least one line"
+    );
+    let baseline_gap_pt: f64 = body_baselines_pt[0] - heading_baseline_pt;
+    assert!(
+        (body_baselines_pt[0] - 141.60).abs() <= 0.5,
+        "the following Bodycopy baseline should match Word's 141.60pt position, got {:.5}pt",
+        body_baselines_pt[0]
+    );
+    assert!(
+        (baseline_gap_pt - 26.88).abs() <= 0.5,
+        "the paragraph after the empty Bodycopy paragraph should match Word's 26.88pt baseline gap, got {baseline_gap_pt:.5}pt"
+    );
+}
+
+#[test]
 fn empty_paragraph_border_insets_do_not_shrink_its_shaded_line_box() {
     let top_border: BorderSide = BorderSide {
         width: 3.0,
@@ -1294,7 +1352,7 @@ fn issue_1975_fixture_joins_borders_across_differently_shaded_paragraphs() {
     let source: String = generate_typst(&document).unwrap().source;
     let first_text_position: usize = source.find("[column break1]").unwrap();
     let first_paragraph_start: usize = source[..first_text_position]
-        .rfind("#block(width: 100%, fill: rgb(251, 228, 213)")
+        .rfind("#block(width: 100%, above: 0pt, fill: rgb(251, 228, 213)")
         .unwrap();
     let second_text_position: usize = source.find("[60 pt followed by page break]").unwrap();
     let second_paragraph_start: usize = source[..second_text_position]
@@ -2184,7 +2242,7 @@ fn empty_shaded_before_spacing_owns_the_top_border_at_its_outer_edge() {
         .expect("empty paragraph line box follows its overlay");
     let overlay: &str = &source[overlay_start..overlay_end];
     let block_start: usize = source[..overlay_start]
-        .rfind("#block(width: 100%, below: 12pt")
+        .rfind("#block(width: 100%, above: 0pt, below: 12pt")
         .expect("decorated empty paragraph block");
     let block_header_end: usize = source[block_start..]
         .find(")[")
@@ -2218,7 +2276,7 @@ fn empty_shaded_paragraph_keeps_after_spacing_outside_its_fill() {
     let result = generate_typst(&doc).unwrap().source;
 
     assert!(
-        result.contains("#block(width: 100%, below: 8pt, fill: rgb(226, 239, 217)"),
+        result.contains("#block(width: 100%, above: 0pt, below: 8pt, fill: rgb(226, 239, 217)"),
         "the paragraph's block spacing stays outside its painted fill: {result}"
     );
 }
@@ -2252,7 +2310,7 @@ fn empty_paragraph_after_spacing_starts_beyond_its_bottom_border() {
     let result = generate_typst(&doc).unwrap().source;
 
     assert!(
-        result.contains("#block(width: 100%, below: 12pt, fill: rgb(255, 0, 0)"),
+        result.contains("#block(width: 100%, above: 0pt, below: 12pt, fill: rgb(255, 0, 0)"),
         "after-spacing must follow the empty paragraph's 1pt border gap and 3pt bottom rule: {result}"
     );
 }
@@ -2704,7 +2762,11 @@ fn every_heading_spacing_reaches_its_block_unchanged() {
     //
     // Triangulated across values, so no single measured constant can pass.
     for (before, after, expected) in [
-        (None, Some(8.0), "#block(width: 100%, below: 8pt)"),
+        (
+            None,
+            Some(8.0),
+            "#block(width: 100%, above: 0pt, below: 8pt)",
+        ),
         (
             Some(14.0),
             Some(7.0),
