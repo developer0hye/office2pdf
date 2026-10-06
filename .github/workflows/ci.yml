@@ -266,14 +266,20 @@ jobs:
       - name: Preserve the PR base converter for a font-matched audit
         if: always()
         run: cp target/ci/office2pdf "${RUNNER_TEMP}/issue-2019-base"
-      - name: Upload converters for a font-matched audit
+      - name: Upload the PR head converter for a font-matched audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-2019-audit-converters
-          path: |
-            ${{ runner.temp }}/issue-2019-head
-            ${{ runner.temp }}/issue-2019-base
+          name: issue-2019-head-converter
+          path: ${{ runner.temp }}/issue-2019-head
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload the PR base converter for a font-matched audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2019-base-converter
+          path: ${{ runner.temp }}/issue-2019-base
           if-no-files-found: error
           retention-days: 1
       - name: Require focused issue 2019 baseline regression to pass
