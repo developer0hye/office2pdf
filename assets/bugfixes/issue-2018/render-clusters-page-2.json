@@ -1,0 +1,151 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 240.2496,
+      "bbox_pt": {
+        "height": 249.6,
+        "width": 1.44,
+        "x": 575.04,
+        "y": 203.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, header and text-box outline regions; residual header and rectangle geometry are tracked in the geometry tracker."
+      },
+      "id": "p2-0e8cb9e6b784",
+      "region": "right"
+    },
+    {
+      "area_pt2": 238.2336,
+      "bbox_pt": {
+        "height": 248.16,
+        "width": 0.96,
+        "x": 419.28,
+        "y": 204.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, header and text-box outline regions; residual header and rectangle geometry are tracked in the geometry tracker."
+      },
+      "id": "p2-3c8aa3bb391a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 180.4032,
+      "bbox_pt": {
+        "height": 249.6,
+        "width": 1.2,
+        "x": 418.08,
+        "y": 203.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, header and text-box outline regions; residual header and rectangle geometry are tracked in the geometry tracker."
+      },
+      "id": "p2-89892c6e9222",
+      "region": "right"
+    },
+    {
+      "area_pt2": 178.6752,
+      "bbox_pt": {
+        "height": 248.16,
+        "width": 0.72,
+        "x": 574.32,
+        "y": 204.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, header and text-box outline regions; residual header and rectangle geometry are tracked in the geometry tracker."
+      },
+      "id": "p2-977db199d2a9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.4,
+        "x": 26.64,
+        "y": 44.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, header and text-box outline regions; residual header and rectangle geometry are tracked in the geometry tracker."
+      },
+      "id": "p2-9ab29231cd99",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.4,
+        "x": 26.64,
+        "y": 24.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, header and text-box outline regions; residual header and rectangle geometry are tracked in the geometry tracker."
+      },
+      "id": "p2-781f4f2307d2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.4592,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 8.88,
+        "x": 21.84,
+        "y": 33.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, header and text-box outline regions; residual header and rectangle geometry are tracked in the geometry tracker."
+      },
+      "id": "p2-70c929cd84d9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.4592,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 8.88,
+        "x": 21.84,
+        "y": 53.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, header and text-box outline regions; residual header and rectangle geometry are tracked in the geometry tracker."
+      },
+      "id": "p2-1cc513ebfa0c",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 8,
+    "duplicate": 0,
+    "total": 8,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

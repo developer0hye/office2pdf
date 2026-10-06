@@ -697,6 +697,18 @@ pub(crate) fn compiled_text_runs_with_fonts(
     compiled_text_runs_with_line_seating(typst_source, page_index, true, fonts, &[])
 }
 
+/// Inspect placement for markup that uses both caller-provided faces and
+/// embedded image assets.
+#[cfg(all(test, not(target_arch = "wasm32")))]
+pub(crate) fn compiled_text_runs_with_fonts_and_images(
+    typst_source: &str,
+    images: &[ImageAsset],
+    page_index: usize,
+    fonts: &[Font],
+) -> Result<Vec<PlacedTextRun>, ConvertError> {
+    compiled_text_runs_with_line_seating(typst_source, page_index, true, fonts, images)
+}
+
 /// Inspect Typst's fractional line advances before the completed-frame pass.
 /// These positions test layout height independently of the painted line grid.
 #[cfg(all(test, not(target_arch = "wasm32")))]

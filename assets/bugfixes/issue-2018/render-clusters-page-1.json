@@ -1,0 +1,1991 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 239.4432,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 47.52,
+        "x": 477.12,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-39eb41fab455",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 129.4848,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 26.4,
+        "x": 270.0,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-46440c02d4c0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 126.4896,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 29.28,
+        "x": 465.12,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-bebe4c90cca0",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 103.5072,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 23.28,
+        "x": 295.92,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-dda422ca64d8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 95.04,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 25.68,
+        "x": 545.76,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-0273c9d08370",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 82.1952,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 17.28,
+        "x": 452.64,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-e52f654d5c5f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 65.5488,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 14.16,
+        "x": 407.04,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-bc1476df7a60",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 65.5488,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 14.16,
+        "x": 391.92,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-124b56b32a6f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 65.5488,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 14.16,
+        "x": 297.36,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-6309c568998c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 52.8192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 13.68,
+        "x": 492.0,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-cd25453a462a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 43.6608,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 6.48,
+        "x": 230.16,
+        "y": 172.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-994ca0afc30f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 319.68,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-cdae42377dd2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 489.84,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-c25661aff884",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 340.32,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-01a2b1584962",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 479.28,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-1c05b021d84d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 347.28,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-d901a3fa2aab",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 472.32,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-1586336bb335",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 354.24,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-ba24d1eaccb7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 413.28,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-5592b53bbf70",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 361.2,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-f7a378edb33f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 434.16,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-eeb7431a0400",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 243.12,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-46c61e637c74",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 236.16,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-2c2eae6c746d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 371.76,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-dda254f81513",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 281.28,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-836cd661ed66",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 378.72,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-68a6a7e7aa9c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 406.32,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-38b8d7ac52c2",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 427.2,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-a7e3c9be0c65",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 420.24,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-3aab51de4da8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 461.76,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-62bc2fba9693",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 562.8,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-e5a2b6fb9f9b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 555.84,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-7aa1f55d9755",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 548.88,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-c492590104d1",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 541.92,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-142e895c62fd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 531.36,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-6986834c1c97",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 288.24,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-2f58f8e14f7b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 295.2,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-4dae3f0c66a9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 302.16,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-ff3005807380",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 503.76,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-31e2e16cb5ae",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 312.72,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-16b36f761ebf",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.1472,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 6.24,
+        "x": 496.8,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-6d92dbcaccb7",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 293.76,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-728019503352",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 391.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-d28b1689ec89",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 384.24,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-113f24343a1f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 377.28,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-8565f6260efe",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 370.32,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-afe233692416",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 359.76,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-c31aca3e5441",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 332.16,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-04fd5658cc37",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 325.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-475094d98a1b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 318.24,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-6e1af4f8b2b6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 311.28,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-0ff57cd9852b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 304.32,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-4eaa4e533a8f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 266.16,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-e80124418d25",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 259.2,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-6e48947b7710",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 252.24,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-d227cdbeb260",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 245.28,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-ad1bc6266648",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 234.72,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-997be1f5aaf5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.4976,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 9.84,
+        "x": 327.36,
+        "y": 172.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-93c38e654144",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.424,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.4,
+        "x": 289.68,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-db0f5f910955",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.4448,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 8.16,
+        "x": 248.64,
+        "y": 208.8
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-08b4fedea2fd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 6.72,
+        "x": 264.24,
+        "y": 172.32
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-76bc9cc8f575",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 485.04,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-c23ce364a69a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 6.48,
+        "width": 7.44,
+        "x": 228.0,
+        "y": 122.16
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-04a1a1f9b162",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.7632,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.44,
+        "x": 310.32,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-2aa0f8438cf3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.7056,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.44,
+        "x": 228.0,
+        "y": 115.68
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-6bcfdedebc65",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.6688,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.52,
+        "x": 524.4,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-f33894e9e40c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.4384,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.52,
+        "x": 277.44,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-bf65c72ef222",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.4384,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.52,
+        "x": 271.44,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-71f1ac368650",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.3808,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.48,
+        "x": 570.96,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-ca0ed87e6b12",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.4,
+        "x": 26.64,
+        "y": 24.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and header glyph regions; header-position residuals remain tracked in the geometry tracker."
+      },
+      "id": "p1-3116ddece73e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.4,
+        "x": 26.64,
+        "y": 44.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and header glyph regions; header-position residuals remain tracked in the geometry tracker."
+      },
+      "id": "p1-e4050efb5c09",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5168,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 258.72,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-7a5fb9642a78",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.4592,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 8.88,
+        "x": 21.84,
+        "y": 53.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and header glyph regions; header-position residuals remain tracked in the geometry tracker."
+      },
+      "id": "p1-f5c9c952a85c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.4592,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 8.88,
+        "x": 21.84,
+        "y": 33.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and header glyph regions; header-position residuals remain tracked in the geometry tracker."
+      },
+      "id": "p1-302b94c39d81",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 242.4,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-0d8e309b2c0e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 224.16,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-2b40f7845d70",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 236.4,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-117380f0554b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 578.4,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-3fd25f7bffa2",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 584.4,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-51a2f80e8293",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 375.84,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-dd0bf3911e88",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 243.36,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-141873678f07",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 237.36,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-43e2dcaf1e00",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 578.4,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-6ec9369527bc",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 584.4,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-c062e46c7c18",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 260.64,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-417380e0ec2c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.1344,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 304.32,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-152054054d4b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.1344,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 283.44,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-a49e3b2b6840",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.9248,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.0,
+        "x": 351.84,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-b0cd2375f499",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.9248,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.0,
+        "x": 357.84,
+        "y": 191.76
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-fc0e615c4988",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.9248,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.0,
+        "x": 454.8,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-2cad9c1a0798",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.9248,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.0,
+        "x": 460.8,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-4bc9d75e4808",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.9248,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.0,
+        "x": 473.04,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-dad6a62e7119",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.6944,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 6.48,
+        "x": 556.08,
+        "y": 193.92
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-28eca1a62874",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.2912,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 512.16,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-95ff82c2d697",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.2912,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 518.16,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-bd48e38751cd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.2912,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 506.16,
+        "y": 174.72
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-f19c4a00edb3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 353.04,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-cb42338afc3d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 412.08,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-0332ef9f36bf",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 405.12,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-72c9c1f9f324",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 398.16,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-a180593e103f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 346.08,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-59d2e9847f13",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 339.12,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-28778e93685a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 287.04,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-0bbf2bc198be",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 280.08,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-31ff654b2bf1",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 273.12,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-ef0a20e025f7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 228.0,
+        "y": 143.28
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-f638e353342e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 441.12,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-93cb19f53ba9",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 392.64,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-72921b22d9cb",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 385.68,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-c52b1322426d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 333.6,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-9b117019607d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 326.64,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-8ad7c8a28a05",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 270.96,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-1c1b8f91a97a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 264.0,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-bec7bff88126",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 257.04,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-812d7c426e7a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 250.08,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-a48ce1947136",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 576.72,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-e676072c9903",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 569.76,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-f6b942505cd0",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 524.64,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-ca2a1fc0a30d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 517.68,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-07f9b1fb06e5",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 510.72,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-f50494629efa",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 455.04,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-d38f702177d1",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 448.08,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-43c4ba245684",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 5.04,
+        "width": 6.0,
+        "x": 399.6,
+        "y": 123.6
+      },
+      "disposition": {
+        "issue": "#2020",
+        "kind": "issue",
+        "note": "Inspected full page, diff, and Pullquote glyph regions; the remaining wrap and raster clusters are within the open Pullquote issue."
+      },
+      "id": "p1-9f03949f79d7",
+      "region": "top"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 123,
+    "duplicate": 0,
+    "total": 123,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

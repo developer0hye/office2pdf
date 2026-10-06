@@ -555,18 +555,20 @@ pub(super) fn needs_block_wrapper(style: &ParagraphStyle) -> bool {
 }
 
 /// Line-box settings for a body paragraph: a fixed box spanning Word's full
-/// line advance — the font's hhea line, 1.3 times its gap-free part when the
-/// line carries East Asian text, or a snapping document grid's pitch — with
-/// zero leading.
+/// natural line advance — the font's hhea line, 1.3 times its gap-free part
+/// when the line carries East Asian text, or a snapping document grid's
+/// pitch — or the declared positive exact advance, with zero leading.
 /// Typst's glyph-tight default renders such documents 20-30% shorter and
 /// shifts every page break (issue #354).
 ///
-/// The baseline sits at a constant `hhea ascender + lineGap` below the box
-/// top — bare `hhea ascender` for an East Asian line, which leaves the gap out
-/// entirely (issue #1638) — never at the font's ascender/descender proportion
-/// of it: whatever height the line gains over the font's own — the East Asian
-/// bonus's lower half, or a grid slot's slack — accrues below the baseline,
-/// not around it (issues #508, #518).
+/// For natural and grid advances, the baseline sits at a constant `hhea
+/// ascender + lineGap` below the box top — bare `hhea ascender` for an East
+/// Asian line, which leaves the gap out entirely (issue #1638) — never at the
+/// font's ascender/descender proportion of it. Extra East Asian or grid
+/// height accrues below the baseline (issues #508, #518). For exact spacing,
+/// extra height is split above and below the natural font box; when the
+/// declared advance is shorter, the descent is preserved and the top edge is
+/// reduced, which can clip glyphs.
 ///
 /// Carrying the advance inside the box, rather than recovering the
 /// remainder as `par(leading:)`, is what makes a paragraph's height match
@@ -602,6 +604,33 @@ pub(super) fn word_line_box_em(
     style: &ParagraphStyle,
     line_grid_pitch: Option<f64>,
 ) -> Option<(f64, f64)> {
+    if let Some(LineSpacing::Exact(points)) = style.line_spacing
+        && points > 0.0
+    {
+        let family: &str = word_paragraph_metric_family(runs, style)?;
+        let (ascender_em, descender_em, _pitch_em) =
+            word_line_metrics_em(family, line_takes_east_asian_metrics(runs))?;
+        let font_size_pt: f64 = paragraph_font_size_pt(runs);
+        if !font_size_pt.is_finite() || font_size_pt <= 0.0 {
+            return None;
+        }
+
+        let exact_line_em: f64 = points / font_size_pt;
+        let natural_line_em: f64 = ascender_em + descender_em;
+        if exact_line_em >= natural_line_em {
+            // Word centres the text when an exact line is taller than the
+            // font's metric box; `par(leading:)` alone cannot seat its first
+            // line or keep that extra height from accumulating between lines.
+            let half_extra_em: f64 = (exact_line_em - natural_line_em) / 2.0;
+            return Some((ascender_em + half_extra_em, descender_em + half_extra_em));
+        }
+
+        // An exact line shorter than the font is bottom-aligned and can clip
+        // the top of the glyph, so keep the descent and use the remaining
+        // declared height above the baseline.
+        return Some(((exact_line_em - descender_em).max(0.0), descender_em));
+    }
+
     let (ascender_em, descender_em, leading_em) =
         word_line_box_and_leading(runs, style, line_grid_pitch)?;
     let metric_em: f64 = ascender_em + descender_em;
@@ -2755,7 +2784,8 @@ pub(super) fn word_line_leading_pt(
     // out on any `w:spacing w:line` left those paragraphs to Typst's default
     // leading, which knows nothing of the East Asian line — 15.4pt against
     // Word's 19.9pt on the technical brief (issue #575). An exact rule states
-    // the advance outright and is still handled as a plain `par(leading:)`.
+    // the advance outright and is handled by fixed text-edge geometry in
+    // `word_line_box_em`, so it adds no `par(leading:)` here.
     let proportion: f64 = match style.line_spacing {
         None => 1.0,
         Some(LineSpacing::Proportional(factor)) if factor > 0.0 => factor,
@@ -2830,9 +2860,10 @@ fn write_block_spacing_params(
     should_include_after_spacing: bool,
     after_spacing_adjustment_pt: f64,
 ) {
-    if let Some(above) = style.space_before {
-        let _ = write!(out, ", above: {}pt", format_f64(above));
-    }
+    // An omitted Word before-gap is zero. Leaving it unset lets Typst's
+    // default block spacing enter the flow, which is unrelated to the source.
+    let above: f64 = style.space_before.unwrap_or(0.0);
+    let _ = write!(out, ", above: {}pt", format_f64(above));
     if should_include_after_spacing
         && (style.space_after.is_some() || after_spacing_adjustment_pt > 0.0)
     {
