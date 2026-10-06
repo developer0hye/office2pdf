@@ -2344,10 +2344,13 @@ pub(super) struct CellLineBox {
 /// uncompressed emission the box carries the whole line advance below the
 /// ascent with zero leading, so a single-line cell occupies the full line
 /// height Word gives it rather than only the tighter metric box (which left
-/// auto-height rows too short, issue #396). A Word line compressed below the
-/// face's metric box instead seats its first baseline halfway through the
-/// compressed advance, scales the exterior descent, and carries the remaining
-/// inter-line distance as leading (issue #1460). When
+/// auto-height rows too short, issue #396). When Word exact or at-least line
+/// spacing exceeds the font metrics, the surplus is split across both edges
+/// so the first baseline stays centered in the stated height (issue #2019);
+/// spreadsheet cells keep their own seating rules. A Word line compressed
+/// below the face's metric box instead seats its first baseline halfway
+/// through the compressed advance, scales the exterior descent, and carries
+/// the remaining inter-line distance as leading (issue #1460). When
 /// `seats_text_on_descender` is set (bottom-aligned
 /// spreadsheet cells in fixed-height rows), the box instead ends at the
 /// font's descender and the removed sub-baseline surplus moves into leading,
@@ -2646,7 +2649,7 @@ pub(super) fn word_cell_line_box(
     // redistributing the box around the baseline — its height, and with it the
     // row's advance, is unchanged.
     let mut seat_shortfall_pt: f64 = 0.0;
-    let (top_em, bottom_em, leading_pt): (f64, f64, f64) = match sheet_seat {
+    let (mut top_em, mut bottom_em, leading_pt): (f64, f64, f64) = match sheet_seat {
         None => (top_em, bottom_em, leading_pt),
         Some(seat) if seats_text_on_descender => {
             // Typst rests the box's bottom edge on the inset content bottom;
@@ -2727,6 +2730,18 @@ pub(super) fn word_cell_line_box(
             (top_em, advance_em - top_em, leading_pt)
         }
     };
+    // Word centers text inside an exact/at-least line when that line is taller
+    // than the font metrics. Splitting the extra height across both edges
+    // keeps the line advance unchanged while lowering the first baseline to
+    // its Word seat (issue #2019).
+    if sheet_print_scale.is_none()
+        && matches!(style.line_spacing, Some(LineSpacing::Exact(points)) if points > 0.0)
+        && advance_em > metric_em
+    {
+        let extra_edge_em: f64 = (advance_em - metric_em) / 2.0;
+        top_em += extra_edge_em;
+        bottom_em -= extra_edge_em;
+    }
     // Excel paces a sheet cell's *lines* on a measured per-face advance that
     // is not the face's hhea line, so the surplus rides as leading rather than
     // inside the box: the box, and with it every seat measured against it,

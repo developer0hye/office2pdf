@@ -1198,6 +1198,7 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
                 _ => None,
             })
             .expect("page two contains the anchored text box");
+        let text_box_top_pt: f64 = text_box.offset_y;
         let table = text_box
             .content
             .iter()
@@ -1254,6 +1255,11 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             (quote.left_pt - 424.59).abs() < 0.25,
             "the quote should retain its paragraph indent without the table-level left inset, got {}pt",
             quote.left_pt
+        );
+        let baseline_gap_pt: f64 = quote.baseline_pt - text_box_top_pt;
+        assert!(
+            (baseline_gap_pt - 23.62).abs() <= 1.0,
+            "the first line in the page-anchored box should match Word's 23.62pt baseline gap within 1pt, got {baseline_gap_pt:.5}pt"
         );
     }
 }

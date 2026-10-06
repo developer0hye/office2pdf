@@ -223,6 +223,16 @@ jobs:
               # including ones added later.
               cargo test --locked --workspace --profile ci --test '*' ;;
           esac
+      - name: Export issue 2019 visual audit PDF
+        if: runner.os == 'macOS' && github.event_name == 'pull_request' && github.head_ref == 'fix/issue-2019-textbox-baseline'
+        run: cargo run --locked --profile ci -p office2pdf-cli -- tests/fixtures/docx/libreoffice/tdf105688.docx --output "${RUNNER_TEMP}/issue-2019-after.pdf"
+      - name: Upload issue 2019 visual audit PDF
+        if: success() && runner.os == 'macOS' && github.event_name == 'pull_request' && github.head_ref == 'fix/issue-2019-textbox-baseline'
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-2019-after-pdf
+          path: ${{ runner.temp }}/issue-2019-after.pdf
+          if-no-files-found: error
 
   no-embedded-fonts:
     # A different feature set rebuilds the crate, so it runs beside Test

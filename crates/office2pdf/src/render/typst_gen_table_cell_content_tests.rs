@@ -2378,16 +2378,20 @@ fn a_line_spaced_cell_paragraph_scales_its_line_box() {
     let _ = descender_em;
 }
 
-/// `w:lineRule="exact"` states the advance outright, so the box is that many
-/// points tall whatever the font asks for (issue #727).
+/// `w:lineRule="exact"` fixes line height; Word centers the text when that
+/// height exceeds the font metrics (issue #727).
 #[test]
 fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
-    let Some((ascender_em, _descender_em, _pitch_em)) =
+    let Some((ascender_em, descender_em, _pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
         return;
     };
     let font_size: f64 = 10.0;
+    let exact_line_em: f64 = 18.0 / font_size;
+    let extra_leading_em: f64 = ((exact_line_em - ascender_em - descender_em).max(0.0)) / 2.0;
+    let expected_top_em: f64 = ascender_em + extra_leading_em;
+    let expected_bottom_em: f64 = exact_line_em - expected_top_em;
     let table = Table {
         rows: vec![TableRow {
             minimum_height: None,
@@ -2422,10 +2426,73 @@ fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
     assert!(
         source.contains(&format!(
             "#set text(top-edge: {}em, bottom-edge: -{}em)",
-            format_f64(ascender_em),
-            format_f64(18.0 / font_size - ascender_em)
+            format_f64(expected_top_em),
+            format_f64(expected_bottom_em)
         )),
-        "an exact rule states the advance outright: {source}"
+        "an exact rule states the advance and centers text within added leading: {source}"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn word_table_cell_centers_text_when_exact_line_spacing_exceeds_font_metrics() {
+    let Some((ascender_em, descender_em, _word_pitch_em)) =
+        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
+    else {
+        return;
+    };
+    let font_size_pt: f64 = 10.0;
+    let font_metric_height_pt: f64 = (ascender_em + descender_em) * font_size_pt;
+    let first_line_height_pt: f64 = font_metric_height_pt + 6.0;
+    let second_line_height_pt: f64 = first_line_height_pt + 8.0;
+
+    let baseline_for_exact_height = |line_height_pt: f64| -> f64 {
+        let table = Table {
+            rows: vec![TableRow {
+                minimum_height: None,
+                cells: vec![TableCell {
+                    content: vec![Block::Paragraph(Paragraph {
+                        style: ParagraphStyle {
+                            line_spacing: Some(LineSpacing::Exact(line_height_pt)),
+                            ..ParagraphStyle::default()
+                        },
+                        runs: vec![Run {
+                            text: "Centered line".to_string(),
+                            style: TextStyle {
+                                font_family: Some("Libertinus Serif".to_string()),
+                                font_size: Some(font_size_pt),
+                                ..TextStyle::default()
+                            },
+                            href: None,
+                            footnote: None,
+                            inline_box: None,
+                        }],
+                    })],
+                    ..TableCell::default()
+                }],
+                height: None,
+            }],
+            column_widths: vec![200.0],
+            ..Table::default()
+        };
+        let document = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let source = generate_typst(&document)
+            .expect("the exact-spaced cell should generate")
+            .source;
+        let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+            .expect("the exact-spaced cell should compile");
+        runs.iter()
+            .find(|run| run.text == "Centered line")
+            .expect("the cell text should be placed")
+            .baseline_pt
+    };
+
+    let first_baseline_pt: f64 = baseline_for_exact_height(first_line_height_pt);
+    let second_baseline_pt: f64 = baseline_for_exact_height(second_line_height_pt);
+    let actual_shift_pt: f64 = second_baseline_pt - first_baseline_pt;
+    assert!(
+        (actual_shift_pt - 4.0).abs() < 0.1,
+        "increasing an exact line box by 8pt should center the text 4pt lower, got {actual_shift_pt:.3}pt"
     );
 }
 
