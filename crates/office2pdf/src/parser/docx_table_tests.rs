@@ -55,6 +55,24 @@ fn test_table_simple_2x2() {
 }
 
 #[test]
+fn legacy_justified_pullquote_in_table_cell_uses_the_word_breaker() {
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let parser: DocxParser = DocxParser;
+    let (document, _warnings) = parser
+        .parse(data, &ConvertOptions::default())
+        .expect("the Pullquote fixture parses");
+    let generated = crate::render::typst_gen::generate_typst(&document)
+        .expect("the Pullquote fixture generates Typst");
+
+    assert!(
+        generated
+            .source
+            .contains(r#"set par(linebreaks: "simple")"#),
+        "a legacy justified DOCX table-cell paragraph must use Word's first-fit line breaks"
+    );
+}
+
+#[test]
 fn test_table_column_widths_from_grid() {
     let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
         docx_rs::TableCell::new()
