@@ -22,8 +22,8 @@
     "worst": 0.15512999999998556
    },
    "width": {
-    "mean_abs_pct": 0.6930421261019764,
-    "worst_pct": 2.710560723111305
+    "mean_abs_pct": 0.01765340980372286,
+    "worst_pct": 0.02666465299135899
    },
    "instances": {
     "compared": 8,
@@ -81,7 +81,7 @@
       "out_y": 183.7738,
       "dx": 0.1550720000000183,
       "dy": 2.5737799999999993,
-      "width_pct": -2.7093151882913147
+      "width_pct": 0.009016037290604515
      },
      {
       "label": "xxxxxxxxxxxxxxxxxx,xxxxxxxxxxxxxx,xxxxxxxxxxxxxxxx,xxxxx",
@@ -91,7 +91,7 @@
       "out_y": 200.86365,
       "dx": 0.1550720000000183,
       "dy": 2.62363000000002,
-      "width_pct": -2.710560723111305
+      "width_pct": 0.00775014372598694
      },
      {
       "label": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.\u201d",

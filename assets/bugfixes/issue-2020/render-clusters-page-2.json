@@ -7,7 +7,18 @@
   "minimum_area_pt2": 20.0,
   "page": 2,
   "passed": true,
-  "renderer_observations": [],
+  "renderer_observations": [
+    {
+      "bbox_pt": {
+        "height": 40.0,
+        "width": 160.0,
+        "x": 15.0,
+        "y": 15.0
+      },
+      "class": "glyph-edge-rasterization",
+      "note": "Inspected the page-2 two-line header lettering at full 150-DPI crops; positions and arrangement agree, and its sub-threshold pixel differences are glyph-edge rasterization."
+    }
+  ],
   "schema_version": 1,
   "strict": true,
   "summary": {

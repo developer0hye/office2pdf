@@ -3875,7 +3875,8 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
         out.push_str("#block(");
         write_cell_paragraph_block_params(
             out,
-            align_str.is_some() && !cell.in_spill_cell,
+            (align_str.is_some() || matches!(alignment, Some(Alignment::Justify)))
+                && !cell.in_spill_cell,
             suppress_default_block_spacing,
             indent,
         );
@@ -4076,10 +4077,11 @@ fn write_cell_paragraph_block_params(
         write_param(out, &mut first, "above: 0pt");
         write_param(out, &mut first, "below: 0pt");
     }
-    // Word's `w:ind`, as the block's own padding: the wrapper shrinks to its
-    // content, so a left inset shifts the text right by exactly that much and a
-    // right inset takes the same width off the measure the text wraps in
-    // (issue #938).
+    // Word's `w:ind` is a content inset: a left inset shifts text right and a
+    // right inset reduces its wrapping measure. Shrink-to-content paragraphs
+    // apply that inset to their natural block; justified and explicitly aligned
+    // paragraphs keep the cell measure so the inset is applied within it
+    // (issues #938 and #2020).
     if let Some((left, right)) = indent {
         write_param(
             out,

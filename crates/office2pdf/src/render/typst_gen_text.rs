@@ -3460,9 +3460,8 @@ pub(super) fn write_east_asian_justification_limits(out: &mut String, runs: &[Ru
 /// same export, takes up to 2.5pt of overrun. A justified legacy table-cell
 /// paragraph also follows first-fit: on issue #2020's Pullquote, it reproduces
 /// the native three-line word wrap where Knuth–Plass places one more word on
-/// line one. The first two line extents still differ by about 2.7%, so that
-/// residual remains tracked in #2020. The body-Latin and table-cell cases
-/// therefore remain separate (issues #1130, #2020).
+/// line one. The body-Latin and table-cell cases therefore remain separate
+/// (issues #1130, #2020).
 ///
 /// `linebreaks: "simple"` is Typst's first-fit breaker; a line only ever
 /// shrinks under it when a single unbreakable token

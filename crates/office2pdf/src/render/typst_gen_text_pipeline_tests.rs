@@ -884,6 +884,124 @@ fn a_justified_docx_paragraph_keeps_its_eojeol_frames() {
     );
 }
 
+/// A block wrapper around a justified cell paragraph must retain the cell's
+/// measure; otherwise Typst shrink-wraps the block to its longest natural line
+/// and every non-final justified line stops short of Word's right text edge.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_legacy_justified_table_paragraph_fills_the_cell_measure() {
+    const QUOTE: &str = "“Xxxx Xxxxx xxx Xxxxxxxx, xxxxxxxxx xxxx xxxxxxxx xxxx xx xxxxxxx xxxxxxxxxxx, xxx xxxxxxxxxxx, xxx xxxx xxxxxxxxx, xxxxx xxxxx xx xxxx xxxxxxx xx xxxxx xx xxxxxxx xx xxxxxxxxx xxxxxxx.”";
+    const CELL_WIDTH_PT: f64 = 409.5;
+    const HORIZONTAL_INSET_PT: f64 = 21.6;
+
+    let run_style: TextStyle = TextStyle {
+        font_family: Some("Calibri".to_string()),
+        font_size: Some(14.0),
+        color: Some(Color::new(75, 172, 198)),
+        pair_kerning: Some(PairKerning::Never),
+        ..TextStyle::default()
+    };
+    let make_run = |text: &str| Run {
+        text: text.to_string(),
+        style: run_style.clone(),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let mut runs: Vec<Run> = Vec::new();
+    for (index, word) in QUOTE.split_whitespace().enumerate() {
+        if index > 0 {
+            runs.push(make_run(" "));
+        }
+        runs.push(make_run(word));
+    }
+
+    let cell: TableCell = TableCell {
+        content: vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                alignment: Some(Alignment::Justify),
+                line_spacing: Some(LineSpacing::Exact(14.0)),
+                ..ParagraphStyle::default()
+            },
+            runs,
+        })],
+        ..TableCell::default()
+    };
+    let table: Table = Table {
+        rows: vec![TableRow {
+            cells: vec![cell],
+            height: None,
+            minimum_height: None,
+        }],
+        column_widths: vec![CELL_WIDTH_PT],
+        default_cell_padding: Some(Insets {
+            left: HORIZONTAL_INSET_PT,
+            right: HORIZONTAL_INSET_PT,
+            ..Insets::default()
+        }),
+        ..Table::default()
+    };
+    let mut doc: Document = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+    doc.styles.word_compatibility_mode = Some(crate::ir::WordCompatibilityMode::Legacy);
+
+    let source: String = generate_typst(&doc).expect("generate Typst").source;
+    let placed_runs = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    let first_baseline_pt: f64 = placed_runs
+        .iter()
+        .find(|run| run.text.contains('“'))
+        .expect("the quote's first glyph")
+        .baseline_pt;
+    let mut lines: Vec<Vec<&crate::render::pdf::PlacedTextRun>> = Vec::new();
+    let mut quote_runs: Vec<&crate::render::pdf::PlacedTextRun> = placed_runs
+        .iter()
+        .filter(|run| (run.baseline_pt - first_baseline_pt).abs() < 50.0)
+        .collect();
+    quote_runs.sort_by(|left, right| {
+        left.baseline_pt
+            .total_cmp(&right.baseline_pt)
+            .then_with(|| left.left_pt.total_cmp(&right.left_pt))
+    });
+    for run in quote_runs {
+        match lines.last_mut() {
+            Some(line) if (line[0].baseline_pt - run.baseline_pt).abs() < 0.1 => {
+                line.push(run);
+            }
+            _ => lines.push(vec![run]),
+        }
+    }
+    assert!(lines.len() >= 2, "the quote wraps: {lines:#?}");
+
+    let expected_line_width_pt: f64 = CELL_WIDTH_PT - 2.0 * HORIZONTAL_INSET_PT;
+    for (line_index, line) in lines.iter().take(lines.len() - 1).enumerate() {
+        let first_run: &crate::render::pdf::PlacedTextRun = line
+            .iter()
+            .filter(|run| !run.text.trim().is_empty())
+            .min_by(|left, right| left.left_pt.total_cmp(&right.left_pt))
+            .expect("a painted glyph on each justified line");
+        let last_run: &crate::render::pdf::PlacedTextRun = line
+            .iter()
+            .filter(|run| !run.text.trim().is_empty())
+            .max_by(|left, right| left.left_pt.total_cmp(&right.left_pt))
+            .expect("a painted glyph on each justified line");
+        let last_run_width_pt: f64 = crate::render::pdf::glyph_advances_em_with_typst_fallback(
+            std::slice::from_ref(&last_run.family),
+            false,
+            &last_run.text,
+        )
+        .expect("the compiled face supplies its final run metrics")
+        .iter()
+        .sum::<f64>()
+            * last_run.font_size_pt;
+        let actual_line_width_pt: f64 = last_run.left_pt + last_run_width_pt - first_run.left_pt;
+
+        assert!(
+            (actual_line_width_pt - expected_line_width_pt).abs() < 0.5,
+            "non-final justified line {line_index} should fill {expected_line_width_pt:.2}pt, got {actual_line_width_pt:.2}pt"
+        );
+    }
+}
+
 /// Triangulation for the arm removed by #1084: the justified paragraphs that
 /// *were* measured breaking mid-eojeol — `02_contract_ko`'s, in a package
 /// defining no paragraph style — reach codegen carrying the effective
