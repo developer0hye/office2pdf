@@ -15,6 +15,8 @@ replace those documents.
   PATH --cluster-dispositions PATH --strict-clusters`, and
   `scripts/compare_text_layer.py`, and look at the emitted images. A numeric
   report alone is not a visual pass.
+- Re-derive cluster dispositions from current crops on every audit; never carry
+  an old explanation forward by stable ID or bounding box.
 - Settle an unclear native-application rule with `scripts/probe_harness.py` (one factor
   per variant) rather than by arguing from the corpus.
 - A visual defect fix owes the evidence contract in `AGENTS.md`:

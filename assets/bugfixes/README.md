@@ -289,6 +289,10 @@ every material cluster must be named, so a new cluster cannot inherit an old
 approval. `renderer_observations` may record a bounded crop whose inspected
 renderer-only fragments stay below the material-cluster floor. They never
 disposition a cluster, so a new material cluster inside that bbox still fails.
+For every audit, derive dispositions again from the current crops; a matching
+stable ID or bounding box does not carry an earlier explanation forward. If the
+cluster is absent, it has no current disposition. Keep prior PR reports frozen
+and record re-audits separately.
 Rerun each page in strict mode and commit its passing report:
 
 ```sh
