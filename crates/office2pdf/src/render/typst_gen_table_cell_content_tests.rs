@@ -2383,6 +2383,9 @@ fn a_line_spaced_cell_paragraph_scales_its_line_box() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
+    if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
+        return;
+    }
     let font_size: f64 = 10.0;
     let make_paragraph = |text: &str| {
         Block::Paragraph(Paragraph {

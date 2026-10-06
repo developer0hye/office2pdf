@@ -223,11 +223,22 @@ jobs:
               # including ones added later.
               cargo test --locked --workspace --profile ci --test '*' ;;
           esac
-      - name: Export issue 2019 visual audit PDF
-        if: always() && runner.os == 'macOS' && github.event_name == 'pull_request' && github.head_ref == 'fix/issue-2019-textbox-baseline'
+
+  issue-2019-visual-audit:
+    name: "Export #2019 visual audit PDF"
+    needs: changes
+    if: github.event_name == 'pull_request' && github.head_ref == 'fix/issue-2019-textbox-baseline' && needs.changes.outputs.rust == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: test-ci-profile
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Export PDF for the full-page audit
         run: cargo run --locked --profile ci -p office2pdf-cli -- tests/fixtures/docx/libreoffice/tdf105688.docx --output "${RUNNER_TEMP}/issue-2019-after.pdf"
-      - name: Upload issue 2019 visual audit PDF
-        if: always() && runner.os == 'macOS' && github.event_name == 'pull_request' && github.head_ref == 'fix/issue-2019-textbox-baseline'
+      - name: Upload PDF for the full-page audit
         uses: actions/upload-artifact@v4
         with:
           name: issue-2019-after-pdf

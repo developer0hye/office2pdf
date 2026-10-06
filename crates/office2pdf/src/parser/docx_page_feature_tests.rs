@@ -1186,29 +1186,70 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
 
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let page = match &mut document.pages[1] {
-            Page::Flow(page) | Page::FlowContinuous(page) => page,
-            other => panic!("Expected a flow page, got {other:?}"),
+        let (
+            text_box,
+            text_box_top_pt,
+            table_padding,
+            paragraph_indent,
+            line_spacing,
+            quote_run_sizes,
+        ) = {
+            let page = match &document.pages[1] {
+                Page::Flow(page) | Page::FlowContinuous(page) => page,
+                other => panic!("Expected a flow page, got {other:?}"),
+            };
+            let text_box = page
+                .content
+                .iter()
+                .find_map(|block| match block {
+                    Block::FloatingTextBox(text_box) => Some(text_box),
+                    _ => None,
+                })
+                .expect("page two contains the anchored text box");
+            let table = text_box
+                .content
+                .iter()
+                .find_map(|block| match block {
+                    Block::Table(table) => Some(table),
+                    _ => None,
+                })
+                .expect("the text box contains its pull-quote table");
+            let quote_paragraph = table
+                .rows
+                .iter()
+                .flat_map(|row| row.cells.iter())
+                .flat_map(|cell| cell.content.iter())
+                .find_map(|block| match block {
+                    Block::Paragraph(paragraph)
+                        if paragraph.runs.iter().any(|run| run.text.starts_with('“')) =>
+                    {
+                        Some(paragraph)
+                    }
+                    _ => None,
+                })
+                .expect("the table contains the quote paragraph");
+            let quote_run_sizes: Vec<(String, Option<f64>, Option<String>)> = quote_paragraph
+                .runs
+                .iter()
+                .map(|run| {
+                    (
+                        run.text.clone(),
+                        run.style.font_size,
+                        run.style.font_family.clone(),
+                    )
+                })
+                .collect();
+            (
+                text_box.clone(),
+                text_box.offset_y,
+                table.default_cell_padding,
+                quote_paragraph.style.indent_left,
+                quote_paragraph.style.line_spacing.clone(),
+                quote_run_sizes,
+            )
         };
-        let text_box = page
-            .content
-            .iter()
-            .find_map(|block| match block {
-                Block::FloatingTextBox(text_box) => Some(text_box),
-                _ => None,
-            })
-            .expect("page two contains the anchored text box");
-        let text_box_top_pt: f64 = text_box.offset_y;
-        let table = text_box
-            .content
-            .iter()
-            .find_map(|block| match block {
-                Block::Table(table) => Some(table),
-                _ => None,
-            })
-            .expect("the text box contains its pull-quote table");
         assert_eq!(
-            table.default_cell_padding,
+            table_padding,
             Some(crate::ir::Insets {
                 top: 7.2,
                 right: 7.2,
@@ -1217,31 +1258,20 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             }),
             "only the anchored table's direct left margin should be omitted"
         );
-        let quote_paragraph = table
-            .rows
-            .iter()
-            .flat_map(|row| row.cells.iter())
-            .flat_map(|cell| cell.content.iter())
-            .find_map(|block| match block {
-                Block::Paragraph(paragraph)
-                    if paragraph.runs.iter().any(|run| run.text.starts_with('“')) =>
-                {
-                    Some(paragraph)
-                }
-                _ => None,
-            })
-            .expect("the table contains the quote paragraph");
         assert_eq!(
-            quote_paragraph.style.indent_left,
+            paragraph_indent,
             Some(4.5),
             "the paragraph's independent left indent must remain applied"
         );
+        let page = match &mut document.pages[1] {
+            Page::Flow(page) | Page::FlowContinuous(page) => page,
+            other => panic!("Expected a flow page, got {other:?}"),
+        };
         page.first_header = None;
         page.first_footer = None;
         page.header = None;
         page.footer = None;
-        page.content
-            .retain(|block| matches!(block, Block::FloatingTextBox(_)));
+        page.content = vec![Block::FloatingTextBox(text_box)];
         document.pages.remove(0);
 
         let generated = crate::render::typst_gen::generate_typst(&document).unwrap();
@@ -1262,21 +1292,10 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             .lines()
             .filter(|line| line.contains("top-edge:") || line.contains("bottom-edge:"))
             .collect();
-        let quote_run_sizes: Vec<(String, Option<f64>, Option<String>)> = quote_paragraph
-            .runs
-            .iter()
-            .map(|run| {
-                (
-                    run.text.clone(),
-                    run.style.font_size,
-                    run.style.font_family.clone(),
-                )
-            })
-            .collect();
         assert!(
             (baseline_gap_pt - 23.62).abs() <= 1.0,
             "the first line in the page-anchored box should match Word's 23.62pt baseline gap within 1pt, got {baseline_gap_pt:.5}pt for {quote:?}; exact spacing={:?}, quote run styles={quote_run_sizes:?}, generated line-box settings={line_box_settings:?}",
-            quote_paragraph.style.line_spacing
+            line_spacing
         );
     }
 }
