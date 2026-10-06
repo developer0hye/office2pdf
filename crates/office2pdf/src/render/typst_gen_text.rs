@@ -324,7 +324,7 @@ pub(super) fn generate_paragraph(
         }
         write_line_box_settings(out, style.line_box);
         if !is_empty_paragraph {
-            write_par_settings(out, style, &para.runs);
+            write_par_settings(out, style, &para.runs, false);
         }
         if let Some(ref settings) = line_height_settings {
             out.push_str(settings);
@@ -3370,7 +3370,12 @@ fn write_paragraph_double_border_overlays(
     }
 }
 
-pub(super) fn write_par_settings(out: &mut String, style: &ParagraphStyle, runs: &[Run]) {
+pub(super) fn write_par_settings(
+    out: &mut String,
+    style: &ParagraphStyle,
+    runs: &[Run],
+    is_word_table_cell: bool,
+) {
     if let Some(ref spacing) = style.line_spacing {
         match spacing {
             LineSpacing::Proportional(factor) => {
@@ -3384,7 +3389,7 @@ pub(super) fn write_par_settings(out: &mut String, style: &ParagraphStyle, runs:
     }
     if matches!(style.alignment, Some(Alignment::Justify)) {
         out.push_str("  #set par(justify: true)\n");
-        if justified_lines_take_natural_width_only(runs) {
+        if justified_lines_use_first_fit_breaker(is_word_table_cell, runs) {
             out.push_str("  #set par(linebreaks: \"simple\")\n");
         }
         write_east_asian_justification_limits(out, runs);
@@ -3439,9 +3444,7 @@ pub(super) fn write_east_asian_justification_limits(out: &mut String, runs: &[Ru
     );
 }
 
-/// Whether this justified paragraph fills each line only up to the width its
-/// content naturally occupies, never borrowing from the word spaces to seat one
-/// more token.
+/// Whether this justified paragraph uses Word's first-fit line breaker.
 ///
 /// Typst's justified line breaker is Knuth-Plass, which prices a slightly
 /// squeezed line far below a very loose one and so takes that trade whenever
@@ -3453,18 +3456,21 @@ pub(super) fn write_east_asian_justification_limits(out: &mut String, runs: &[Ru
 /// Word's pre-2013 East Asian justification has no such phase. Swept over
 /// eleven measures either side of the fit boundary, a native legacy export
 /// seats the extra token only while it fits at natural width and refuses a
-/// 0.5pt overrun — even though the same package's Latin paragraph, in the same
-/// export, takes up to 2.5pt of overrun. So the switch is scoped to East Asian
-/// paragraphs: it is not that legacy Word cannot compress, it is that its East
-/// Asian justification does not (issue #1130).
+/// 0.5pt overrun — even though the same package's Latin body paragraph, in the
+/// same export, takes up to 2.5pt of overrun. A justified legacy table-cell
+/// paragraph also follows first-fit: on issue #2020's Pullquote, it reproduces
+/// the native three-line word wrap where Knuth–Plass places one more word on
+/// line one. The first two line extents still differ by about 2.7%, so that
+/// residual remains tracked in #2020. The body-Latin and table-cell cases
+/// therefore remain separate (issues #1130, #2020).
 ///
-/// `linebreaks: "simple"` is Typst's first-fit breaker, which is what Word's
-/// is; a line only ever shrinks under it when a single unbreakable token
+/// `linebreaks: "simple"` is Typst's first-fit breaker; a line only ever
+/// shrinks under it when a single unbreakable token
 /// overflows the measure, where Word overflows too. Typst already uses it for
 /// every unjustified paragraph, which is why left-aligned Korean text has
 /// always broken where Word breaks it.
-fn justified_lines_take_natural_width_only(runs: &[Run]) -> bool {
-    legacy_word_justification_is_active() && has_east_asian_text(runs)
+fn justified_lines_use_first_fit_breaker(is_word_table_cell: bool, runs: &[Run]) -> bool {
+    legacy_word_justification_is_active() && (is_word_table_cell || has_east_asian_text(runs))
 }
 
 pub(super) fn write_line_box_settings(out: &mut String, line_box: Option<LineBox>) {

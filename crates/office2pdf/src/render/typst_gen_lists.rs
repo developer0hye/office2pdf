@@ -1333,7 +1333,7 @@ fn write_fixed_text_list_par_settings(
     if let Some(gap) = line_gap_pt.filter(|gap| *gap > 0.0) {
         let _ = writeln!(out, "  #set par(leading: {}pt)", format_f64(gap));
     } else {
-        write_par_settings(out, style, runs);
+        write_par_settings(out, style, runs, false);
         return;
     }
     if matches!(style.alignment, Some(Alignment::Justify)) {

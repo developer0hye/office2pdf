@@ -559,6 +559,84 @@ fn test_legacy_justified_latin_paragraph_keeps_the_optimized_breaker() {
     );
 }
 
+/// Word's legacy table-cell paragraph uses first-fit breaks, while the same
+/// Latin justification in a body paragraph retains the optimized breaker
+/// (issues #1130, #2020).
+#[test]
+fn test_legacy_justified_latin_table_cell_uses_first_fit_breaker() {
+    let paragraph: Paragraph = Paragraph {
+        style: ParagraphStyle {
+            alignment: Some(Alignment::Justify),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Monthly active users crossed 21,300 in June, up 72% since January.".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+    };
+    let table: Table = Table {
+        rows: vec![TableRow {
+            cells: vec![TableCell {
+                content: vec![Block::Paragraph(paragraph)],
+                ..TableCell::default()
+            }],
+            height: None,
+            minimum_height: None,
+        }],
+        column_widths: vec![180.0],
+        ..Table::default()
+    };
+    let mut doc: Document = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+    doc.styles.word_compatibility_mode = Some(WordCompatibilityMode::Legacy);
+
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains(r#"set par(linebreaks: "simple")"#),
+        "legacy justified text in a table cell uses first-fit breaks: {result}"
+    );
+}
+
+/// The cell-specific first-fit rule belongs to Word's legacy layout engine.
+#[test]
+fn test_word_2013_justified_latin_table_cell_keeps_the_optimized_breaker() {
+    let paragraph: Paragraph = Paragraph {
+        style: ParagraphStyle {
+            alignment: Some(Alignment::Justify),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Monthly active users crossed 21,300 in June, up 72% since January.".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+    };
+    let table: Table = Table {
+        rows: vec![TableRow {
+            cells: vec![TableCell {
+                content: vec![Block::Paragraph(paragraph)],
+                ..TableCell::default()
+            }],
+            height: None,
+            minimum_height: None,
+        }],
+        column_widths: vec![180.0],
+        ..Table::default()
+    };
+    let mut doc: Document = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+    doc.styles.word_compatibility_mode = Some(WordCompatibilityMode::Word2013OrLater);
+
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        !result.contains("linebreaks:"),
+        "modern Word keeps the optimized breaker for justified cell text: {result}"
+    );
+}
+
 /// A presentation and a workbook declare no such setting, and neither is laid
 /// out by Word, so both keep the modern breaker.
 #[test]

@@ -18,8 +18,10 @@ pub enum DeclaredFontClass {
 /// paragraph at eleven measures (issue #1130): declaring mode 15 makes Word
 /// pull one more eojeol onto a justified line and compress its word spaces to
 /// fit, up to at least 3.5pt of overrun, while declaring an earlier mode — or
-/// none, which is how Word treats a pre-2013 document — makes it take only
-/// what fits at natural width and stretch the remainder.
+/// none, which is how Word treats a pre-2013 document — makes legacy East
+/// Asian paragraphs and legacy table-cell paragraphs take only what fits at
+/// natural width and stretch the remainder. Legacy Latin body paragraphs can
+/// still overrun natural width slightly, so they retain the optimized breaker.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WordCompatibilityMode {
     /// `compatibilityMode` 15 or higher.

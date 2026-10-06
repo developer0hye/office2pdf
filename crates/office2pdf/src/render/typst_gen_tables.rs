@@ -3881,7 +3881,7 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
         );
         out.push_str(")[\n");
         write_line_box_settings(out, style.line_box);
-        write_par_settings(out, style, &para.runs);
+        write_par_settings(out, style, &para.runs, true);
         if let Some(align_str) = align_str {
             let _ = writeln!(out, "  #set align({align_str})");
         }
