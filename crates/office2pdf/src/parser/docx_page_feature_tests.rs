@@ -1244,7 +1244,7 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
                 text_box.offset_y,
                 table.default_cell_padding,
                 quote_paragraph.style.indent_left,
-                quote_paragraph.style.line_spacing.clone(),
+                quote_paragraph.style.line_spacing,
                 quote_run_sizes,
             )
         };

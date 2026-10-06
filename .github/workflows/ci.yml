@@ -236,14 +236,23 @@ jobs:
         with:
           shared-key: test-ci-profile
           save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Run focused issue 2019 baseline regression
+        id: issue-2019-test
+        continue-on-error: true
+        run: cargo test --locked -p office2pdf --profile ci --lib anchored_text_box_quote_uses_the_word_left_cell_seat
       - name: Export PDF for the full-page audit
+        if: always()
         run: cargo run --locked --profile ci -p office2pdf-cli -- tests/fixtures/docx/libreoffice/tdf105688.docx --output "${RUNNER_TEMP}/issue-2019-after.pdf"
       - name: Upload PDF for the full-page audit
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: issue-2019-after-pdf
           path: ${{ runner.temp }}/issue-2019-after.pdf
           if-no-files-found: error
+      - name: Require focused issue 2019 baseline regression to pass
+        if: always()
+        run: test "${{ steps.issue-2019-test.outcome }}" = "success"
 
   no-embedded-fonts:
     # A different feature set rebuilds the crate, so it runs beside Test

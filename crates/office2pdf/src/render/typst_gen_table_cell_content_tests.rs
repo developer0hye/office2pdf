@@ -2418,30 +2418,55 @@ fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
         column_widths: vec![200.0],
         ..Table::default()
     };
-    let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-    let source = generate_typst(&doc).unwrap().source;
-    let mut baselines_pt: Vec<f64> = crate::render::pdf::compiled_text_runs(&source, 0)
-        .expect("the exact-spaced cell should compile")
-        .into_iter()
-        .filter(|run| matches!(run.text.as_str(), "First" | "Second"))
-        .map(|run| run.baseline_pt)
-        .collect();
-    baselines_pt.sort_by(f64::total_cmp);
-    assert_eq!(
-        baselines_pt.len(),
-        2,
-        "both exact-spaced paragraphs should render: {baselines_pt:?}"
-    );
-    let actual_advance_pt: f64 = baselines_pt[1] - baselines_pt[0];
+    let baseline_advance_pt = |block: Block| -> f64 {
+        let document = make_doc(vec![make_flow_page(vec![block])]);
+        let source = generate_typst(&document).unwrap().source;
+        let mut baselines_pt: Vec<f64> = crate::render::pdf::compiled_text_runs(&source, 0)
+            .expect("the exact-spaced cell should compile")
+            .into_iter()
+            .filter(|run| matches!(run.text.as_str(), "First" | "Second"))
+            .map(|run| run.baseline_pt)
+            .collect();
+        baselines_pt.sort_by(f64::total_cmp);
+        assert_eq!(
+            baselines_pt.len(),
+            2,
+            "both exact-spaced paragraphs should render: {baselines_pt:?}"
+        );
+        baselines_pt[1] - baselines_pt[0]
+    };
+    let ordinary_cell_advance_pt: f64 = baseline_advance_pt(Block::Table(table.clone()));
     assert!(
-        (actual_advance_pt - 18.0).abs() < 0.01,
-        "exactly spaced cell paragraphs should advance 18pt, got {actual_advance_pt:.4}pt"
+        (ordinary_cell_advance_pt - 18.0).abs() < 0.01,
+        "ordinary exact-spaced cell paragraphs should advance 18pt, got {ordinary_cell_advance_pt:.4}pt"
+    );
+    let top_aligned_text_box: Block = Block::FloatingTextBox(crate::ir::FloatingTextBox {
+        content: vec![Block::Table(table)],
+        wrap_mode: crate::ir::WrapMode::None,
+        width: 200.0,
+        height: 100.0,
+        fill: None,
+        stroke: None,
+        shape_rotation_deg: None,
+        padding: crate::ir::Insets::default(),
+        vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+        vertical_anchor: crate::ir::FrameAnchor::Page,
+        vertical_position_align: None,
+        horizontal_align: None,
+        horizontal_anchor: crate::ir::FrameAnchor::Page,
+        offset_x: 0.0,
+        offset_y: 0.0,
+    });
+    let text_box_advance_pt: f64 = baseline_advance_pt(top_aligned_text_box);
+    assert!(
+        (text_box_advance_pt - 18.0).abs() < 0.01,
+        "exact-spaced paragraphs in a top-aligned text box should keep their 18pt advance, got {text_box_advance_pt:.4}pt"
     );
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn word_table_cell_centers_text_when_exact_line_spacing_exceeds_font_metrics() {
+fn exact_line_spacing_moves_only_top_anchored_text_box_cell_text() {
     let Some((ascender_em, descender_em, _word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
@@ -2452,7 +2477,7 @@ fn word_table_cell_centers_text_when_exact_line_spacing_exceeds_font_metrics() {
     let first_line_height_pt: f64 = font_metric_height_pt + 6.0;
     let second_line_height_pt: f64 = first_line_height_pt + 8.0;
 
-    let baseline_for_exact_height = |line_height_pt: f64| -> f64 {
+    let baseline_for_exact_height = |line_height_pt: f64, in_text_box: bool| -> f64 {
         let table = Table {
             rows: vec![TableRow {
                 minimum_height: None,
@@ -2481,7 +2506,28 @@ fn word_table_cell_centers_text_when_exact_line_spacing_exceeds_font_metrics() {
             column_widths: vec![200.0],
             ..Table::default()
         };
-        let document = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let block: Block = if in_text_box {
+            Block::FloatingTextBox(crate::ir::FloatingTextBox {
+                content: vec![Block::Table(table)],
+                wrap_mode: crate::ir::WrapMode::None,
+                width: 200.0,
+                height: 100.0,
+                fill: None,
+                stroke: None,
+                shape_rotation_deg: None,
+                padding: crate::ir::Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                vertical_anchor: crate::ir::FrameAnchor::Page,
+                vertical_position_align: None,
+                horizontal_align: None,
+                horizontal_anchor: crate::ir::FrameAnchor::Page,
+                offset_x: 0.0,
+                offset_y: 0.0,
+            })
+        } else {
+            Block::Table(table)
+        };
+        let document = make_doc(vec![make_flow_page(vec![block])]);
         let source = generate_typst(&document)
             .expect("the exact-spaced cell should generate")
             .source;
@@ -2493,12 +2539,22 @@ fn word_table_cell_centers_text_when_exact_line_spacing_exceeds_font_metrics() {
             .baseline_pt
     };
 
-    let first_baseline_pt: f64 = baseline_for_exact_height(first_line_height_pt);
-    let second_baseline_pt: f64 = baseline_for_exact_height(second_line_height_pt);
-    let actual_shift_pt: f64 = second_baseline_pt - first_baseline_pt;
+    let first_table_baseline_pt: f64 = baseline_for_exact_height(first_line_height_pt, false);
+    let second_table_baseline_pt: f64 = baseline_for_exact_height(second_line_height_pt, false);
+    let table_shift_pt: f64 = second_table_baseline_pt - first_table_baseline_pt;
     assert!(
-        (actual_shift_pt - 4.0).abs() < 0.1,
-        "increasing an exact line box by 8pt should center the text 4pt lower, got {actual_shift_pt:.3}pt"
+        table_shift_pt.abs() < 0.1,
+        "an ordinary table cell keeps its top seat as an exact line grows, got {table_shift_pt:.3}pt"
+    );
+
+    let first_text_box_baseline_pt: f64 = baseline_for_exact_height(first_line_height_pt, true);
+    let second_text_box_baseline_pt: f64 = baseline_for_exact_height(second_line_height_pt, true);
+    let text_box_shift_pt: f64 = second_text_box_baseline_pt - first_text_box_baseline_pt;
+    let expected_text_box_shift_pt: f64 =
+        (second_line_height_pt - first_line_height_pt) * ascender_em / (ascender_em + descender_em);
+    assert!(
+        (text_box_shift_pt - expected_text_box_shift_pt).abs() < 0.1,
+        "an exact line in a top-aligned floating text box should grow its baseline by the font's ascent share ({expected_text_box_shift_pt:.3}pt), got {text_box_shift_pt:.3}pt"
     );
 }
 

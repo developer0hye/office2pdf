@@ -142,6 +142,8 @@ struct GenCtx {
     images: Vec<ImageAsset>,
     next_image_id: usize,
     next_text_box_id: usize,
+    /// Whether generated table cells belong to their enclosing top-aligned floating text box.
+    in_top_aligned_floating_text_box: bool,
     /// How many sheet drawing layers have been written. Each needs its own
     /// label, because the layer is a page foreground that has to recognise
     /// its own sheet's first printed page (issue #1168).
@@ -277,6 +279,7 @@ impl GenCtx {
             images: Vec::new(),
             next_image_id: 0,
             next_text_box_id: 0,
+            in_top_aligned_floating_text_box: false,
             next_sheet_drawing_layer_id: 0,
             next_excel_fill_id: 0,
             table_depth: 0,
@@ -5897,8 +5900,8 @@ fn generate_floating_text_box_content(
 
     if matches!(ftb.vertical_align, TextBoxVerticalAlign::Top) {
         // Paragraph-first boxes need the correction for Typst's extra line-box
-        // leading. A table carries its own top geometry; shifting it would move
-        // the table border above the page-positioned text-box frame.
+        // leading. A table carries its own top geometry, so its border stays
+        // fixed while its expanded exact cell line is seated in the line box.
         let needs_top_leading_compensation: bool =
             matches!(ftb.content.first(), Some(Block::Paragraph(_)));
         if needs_top_leading_compensation {
@@ -5908,21 +5911,28 @@ fn generate_floating_text_box_content(
                 format_f64(FLOATING_TEXT_BOX_TOP_LEADING_COMPENSATION_PT),
             );
         }
-        let _ = writeln!(out, "#block(width: {}pt)[", format_f64(inner_width));
-        for (index, block) in ftb.content.iter().enumerate() {
-            if index > 0 {
-                out.push('\n');
+        let was_in_top_aligned_floating_text_box: bool =
+            std::mem::replace(&mut ctx.in_top_aligned_floating_text_box, true);
+        let generation_result: Result<(), ConvertError> = (|| {
+            let _ = writeln!(out, "#block(width: {}pt)[", format_f64(inner_width));
+            for (index, block) in ftb.content.iter().enumerate() {
+                if index > 0 {
+                    out.push('\n');
+                }
+                generate_fixed_text_box_block(
+                    out,
+                    block,
+                    ctx,
+                    Some(inner_width),
+                    false,
+                    PowerPointBaselineMode::Disabled,
+                )?;
             }
-            generate_fixed_text_box_block(
-                out,
-                block,
-                ctx,
-                Some(inner_width),
-                false,
-                PowerPointBaselineMode::Disabled,
-            )?;
-        }
-        out.push_str("]\n");
+            out.push_str("]\n");
+            Ok(())
+        })();
+        ctx.in_top_aligned_floating_text_box = was_in_top_aligned_floating_text_box;
+        generation_result?;
         if needs_top_leading_compensation {
             out.push_str("]\n");
         }
@@ -5936,19 +5946,26 @@ fn generate_floating_text_box_content(
         "#let floating_text_box_content_{text_box_id} = block(width: {}pt)[",
         format_f64(inner_width)
     );
-    for (index, block) in ftb.content.iter().enumerate() {
-        if index > 0 {
-            out.push('\n');
+    let was_in_top_aligned_floating_text_box: bool =
+        std::mem::replace(&mut ctx.in_top_aligned_floating_text_box, false);
+    let generation_result: Result<(), ConvertError> = (|| {
+        for (index, block) in ftb.content.iter().enumerate() {
+            if index > 0 {
+                out.push('\n');
+            }
+            generate_fixed_text_box_block(
+                out,
+                block,
+                ctx,
+                Some(inner_width),
+                false,
+                PowerPointBaselineMode::Disabled,
+            )?;
         }
-        generate_fixed_text_box_block(
-            out,
-            block,
-            ctx,
-            Some(inner_width),
-            false,
-            PowerPointBaselineMode::Disabled,
-        )?;
-    }
+        Ok(())
+    })();
+    ctx.in_top_aligned_floating_text_box = was_in_top_aligned_floating_text_box;
+    generation_result?;
     out.push_str("]\n#context {\n");
     let _ = writeln!(
         out,

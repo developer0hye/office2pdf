@@ -2344,10 +2344,12 @@ pub(super) struct CellLineBox {
 /// uncompressed emission the box carries the whole line advance below the
 /// ascent with zero leading, so a single-line cell occupies the full line
 /// height Word gives it rather than only the tighter metric box (which left
-/// auto-height rows too short, issue #396). When Word exact or at-least line
-/// spacing exceeds the font metrics, the surplus is split across both edges
-/// so the first baseline stays centered in the stated height (issue #2019);
-/// spreadsheet cells keep their own seating rules. A Word line compressed
+/// auto-height rows too short, issue #396). For an expanded exact line in a
+/// top-aligned floating text box, it assigns the added height to the ascent
+/// and descent in their font-metric ratio, preserving the line advance while
+/// seating its first baseline as Word does (issue #2019). Ordinary Word cells
+/// retain the measured ascender seat, and spreadsheet cells keep their own
+/// seating rules. A Word line compressed
 /// below the face's metric box instead seats its first baseline halfway
 /// through the compressed advance, scales the exterior descent, and carries
 /// the remaining inter-line distance as leading (issue #1460). When
@@ -2406,6 +2408,7 @@ pub(super) fn word_cell_line_box_settings(
     sheet_row_line: Option<&SheetRowLine>,
     sheet_seat: Option<SheetCellSeat>,
     sheet_print_scale: Option<f64>,
+    in_top_aligned_floating_text_box: bool,
 ) -> Option<String> {
     let line_box: CellLineBox = word_cell_line_box(
         runs,
@@ -2417,6 +2420,7 @@ pub(super) fn word_cell_line_box_settings(
         sheet_row_line,
         sheet_seat,
         sheet_print_scale,
+        in_top_aligned_floating_text_box,
     )?;
     Some(format!(
         // The descent is negated here rather than written behind a literal
@@ -2447,6 +2451,7 @@ pub(super) fn word_cell_line_box(
     sheet_row_line: Option<&SheetRowLine>,
     sheet_seat: Option<SheetCellSeat>,
     sheet_print_scale: Option<f64>,
+    in_top_aligned_floating_text_box: bool,
 ) -> Option<CellLineBox> {
     if style.line_box.is_some() {
         return None;
@@ -2730,17 +2735,20 @@ pub(super) fn word_cell_line_box(
             (top_em, advance_em - top_em, leading_pt)
         }
     };
-    // Word centers text inside an exact/at-least line when that line is taller
-    // than the font metrics. Splitting the extra height across both edges
-    // keeps the line advance unchanged while lowering the first baseline to
-    // its Word seat (issue #2019).
-    if sheet_print_scale.is_none()
+    // In a top-aligned floating text box, Word seats an expanded exact line
+    // proportionally to the font's ascent and descent. The ordinary cell path
+    // keeps its measured ascender seat; changing it globally moved unrelated
+    // table text (issue #2019).
+    if in_top_aligned_floating_text_box
+        && vertical_align.unwrap_or(CellVerticalAlign::Top) == CellVerticalAlign::Top
+        && sheet_print_scale.is_none()
         && matches!(style.line_spacing, Some(LineSpacing::Exact(points)) if points > 0.0)
         && advance_em > metric_em
     {
-        let extra_edge_em: f64 = (advance_em - metric_em) / 2.0;
-        top_em += extra_edge_em;
-        bottom_em -= extra_edge_em;
+        let extra_em: f64 = advance_em - metric_em;
+        let top_extra_em: f64 = extra_em * ascender_em / metric_em;
+        top_em += top_extra_em;
+        bottom_em -= top_extra_em;
     }
     // Excel paces a sheet cell's *lines* on a measured per-face advance that
     // is not the face's hhea line, so the surplus rides as leading rather than
