@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://github.com/user-attachments/files/31185149/GENERAL.SERVICES.pptx",
+    "sha256": "17924ec3b27646a2c1b2bb711b845360b713cc7052b3cdde9df752f9ceded3a9"
+  },
+  "reference_export": {
+    "application": "LibreOffice Impress",
+    "version": "26.2.5.2 (X86_64)",
+    "platform": "Unspecified in supplied PDF metadata",
+    "pdf_sha256": "8c8f471d8baaf0abd79e752ef49951c240752d36e4512651f6cb9a7cfffb650f",
+    "evidence_path": "assets/bugfixes/issue-1860/gt.jpg",
+    "evidence_sha256": "635b7b5d77b247bbe95f1811379a67be0438d8a7ebfce226f309e6d14dd7f5de"
+  },
+  "native_export": {
+    "application": "Microsoft PowerPoint",
+    "version": "16.113.3",
+    "platform": "macOS 26.6.2 build 25G83",
+    "pdf_sha256": "6a18edd852804ae4cfd5fe10438b25fbbe4a140871b1506eacee2f7bc134bbc8",
+    "evidence_path": "assets/bugfixes/issue-1860/native.jpg",
+    "evidence_sha256": "edd112334c35ec0260aee44d85e56421f0303a5ea8ebc6bb136daab3de1499a0"
+  },
+  "verification_url": "https://github.com/developer0hye/office2pdf/issues/1860#issuecomment-6019065994",
+  "differences": [
+    {
+      "id": "page-8-column-plot-seat-native-match",
+      "page": 8,
+      "kind": "render-clusters",
+      "render_cluster_ids": [
+        "p8-0207da669028",
+        "p8-0ce411d89424",
+        "p8-0e7c226701f1",
+        "p8-205914be9a6d",
+        "p8-24be4ab4376d",
+        "p8-29d72f91446f",
+        "p8-2ac527306b30",
+        "p8-3078fe9d1f83",
+        "p8-47c751152f3d",
+        "p8-4d12d6867a64",
+        "p8-5274967511b6",
+        "p8-53f227ee32a7",
+        "p8-5d090357cadf",
+        "p8-68cada27bac4",
+        "p8-7e467ffc95ca",
+        "p8-8e53eb0726a0",
+        "p8-cf179ca1ec1b",
+        "p8-d1f9c0c1997f",
+        "p8-df0fea8c025c",
+        "p8-f3b4aa11a60d"
+      ]
+    },
+    {
+      "id": "page-8-legend-seat-native-match",
+      "page": 8,
+      "kind": "render-clusters",
+      "render_cluster_ids": [
+        "p8-010c8e60ef35",
+        "p8-07c27c7581f7",
+        "p8-07e5df5f0867",
+        "p8-12d0f2a6e702",
+        "p8-79d6ccd3a8ad",
+        "p8-8f15602769f8",
+        "p8-ade2fb9a6b1a",
+        "p8-d1c981fea1e9",
+        "p8-e2cf0b7a513d",
+        "p8-ee88517b0787"
+      ]
+    },
+    {
+      "id": "page-8-substituted-face-native-match",
+      "page": 8,
+      "kind": "render-clusters",
+      "render_cluster_ids": [
+        "p8-0de38e298473",
+        "p8-120e9d963a9e",
+        "p8-21f8a8066377",
+        "p8-2fcb5932d7d8",
+        "p8-34bb784284e9",
+        "p8-40734294339f",
+        "p8-40d3d7f64eab",
+        "p8-45b5a9f13ec3",
+        "p8-463e590b4e02",
+        "p8-47a4b4ac6786",
+        "p8-48003d8b8671",
+        "p8-4b276d38e405",
+        "p8-75c47b8ebd07",
+        "p8-81a27cf96520",
+        "p8-8236f7b3cf81",
+        "p8-9806356414ae",
+        "p8-ad708c4cdae6",
+        "p8-b518099366c1",
+        "p8-be8ce4aaa525",
+        "p8-d6bf30644d7c",
+        "p8-d73f0a47d034",
+        "p8-dc7160259174",
+        "p8-e627208e1b07",
+        "p8-ec39a3feb1f8",
+        "p8-f40b81a23f4a"
+      ]
+    },
+    {
+      "id": "page-8-chart-title-seat-native-match",
+      "page": 8,
+      "kind": "render-clusters",
+      "render_cluster_ids": [
+        "p8-09510b96afae",
+        "p8-09b5b9c174be",
+        "p8-0c802748bc67",
+        "p8-11592997d569",
+        "p8-1484d2507b7f",
+        "p8-1d469377641f",
+        "p8-1def0688b1f6",
+        "p8-2b1716170ec2",
+        "p8-2bf6cd8f7203",
+        "p8-3709540909bd",
+        "p8-38524ca32d74",
+        "p8-426d244c8b9f",
+        "p8-487c4408979e",
+        "p8-631eb83dfef3",
+        "p8-7224287b8532",
+        "p8-93df3174c502",
+        "p8-94634d9bc87c",
+        "p8-b6a823096cc7",
+        "p8-c389c7d8d029",
+        "p8-c48bdc6d426d",
+        "p8-c96d9762a19e",
+        "p8-ce15aaa70ffc",
+        "p8-d299ffb2fd4f",
+        "p8-d5fa5fdf04c8",
+        "p8-d636d23a68bc",
+        "p8-d696579540ec",
+        "p8-dd96b6dd9ccb",
+        "p8-e3bc383217f3",
+        "p8-f5de99af67f6",
+        "p8-fde106097c94",
+        "p8-ffc28a965707"
+      ]
+    },
+    {
+      "id": "page-8-value-axis-native-match",
+      "page": 8,
+      "kind": "render-clusters",
+      "render_cluster_ids": [
+        "p8-3b02093ec792",
+        "p8-85a563fd7ab2",
+        "p8-8c82d4ac7a6a"
+      ]
+    },
+    {
+      "id": "page-8-value-800-native-match",
+      "page": 8,
+      "kind": "text-shift",
+      "layout_finding": {
+        "label": "800",
+        "occurrence": 1,
+        "dx": -7.300690000000003,
+        "dy": -8.934349999999938
+      }
+    },
+    {
+      "id": "page-8-value-600-native-match",
+      "page": 8,
+      "kind": "text-shift",
+      "layout_finding": {
+        "label": "600",
+        "occurrence": 1,
+        "dx": -7.300690000000003,
+        "dy": -8.409400000000005
+      }
+    },
+    {
+      "id": "page-8-value-400-native-match",
+      "page": 8,
+      "kind": "text-shift",
+      "layout_finding": {
+        "label": "400",
+        "occurrence": 1,
+        "dx": -7.300690000000003,
+        "dy": -7.912460000000067
+      }
+    },
+    {
+      "id": "page-8-value-200-native-match",
+      "page": 8,
+      "kind": "text-shift",
+      "layout_finding": {
+        "label": "200",
+        "occurrence": 1,
+        "dx": -7.300690000000003,
+        "dy": -7.387519999999995
+      }
+    },
+    {
+      "id": "page-8-value-0-native-match",
+      "page": 8,
+      "kind": "text-shift",
+      "layout_finding": {
+        "label": "0",
+        "occurrence": 1,
+        "dx": -7.337400000000002,
+        "dy": -6.890600000000006
+      }
+    }
+  ]
+}
