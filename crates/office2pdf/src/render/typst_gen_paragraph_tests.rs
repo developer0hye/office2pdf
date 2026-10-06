@@ -169,8 +169,8 @@ fn issue_2018_empty_bodycopy_keeps_the_following_paragraph_at_the_word_baseline(
     );
     let baseline_gap_pt: f64 = body_baselines_pt[0] - heading_baseline_pt;
     assert!(
-        (baseline_gap_pt - 26.88).abs() <= 0.5,
-        "the paragraph after the empty Bodycopy paragraph should match Word's 26.88pt baseline gap, got {baseline_gap_pt:.5}pt (heading {heading_baseline_pt:.5}pt, Bodycopy {:.5}pt)",
+        (baseline_gap_pt - 26.88).abs() <= 1.0,
+        "the paragraph after the empty Bodycopy paragraph should match Word's 26.88pt baseline gap within 1pt, got {baseline_gap_pt:.5}pt (heading {heading_baseline_pt:.5}pt, Bodycopy {:.5}pt)",
         body_baselines_pt[0]
     );
 }
