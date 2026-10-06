@@ -4611,6 +4611,7 @@ fn substituted_sheet_face_keeps_the_declared_excel_wrapped_advance() {
         Some(&painted_row_line),
         None,
         Some(1.0),
+        false,
     )
     .expect("the embedded painted face has line metrics");
     let emitted_advance_pt: f64 =
