@@ -1189,6 +1189,7 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
         let (
             text_box,
             text_box_top_pt,
+            text_box_height_pt,
             table_padding,
             paragraph_indent,
             _line_spacing,
@@ -1242,6 +1243,7 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             (
                 text_box.clone(),
                 text_box.offset_y,
+                text_box.height,
                 table.default_cell_padding,
                 quote_paragraph.style.indent_left,
                 quote_paragraph.style.line_spacing,
@@ -1361,7 +1363,7 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             .filter(|line| line.contains("top-edge:") || line.contains("bottom-edge:"))
             .collect();
         assert!(
-            baseline_gap_pt > 0.0 && baseline_gap_pt < text_box.height,
+            baseline_gap_pt > 0.0 && baseline_gap_pt < text_box_height_pt,
             "the first line should remain inside the page-anchored box, got {baseline_gap_pt:.5}pt for {quote:?}"
         );
         // The native reference was exported with Word on macOS. Linux replaces
