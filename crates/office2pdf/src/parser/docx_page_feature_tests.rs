@@ -1283,9 +1283,9 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             "the comparison document should omit only the target page-anchored text box"
         );
 
-        let first_page_header_runs = |candidate: &crate::ir::Document| {
+        let target_page_header_runs = |candidate: &crate::ir::Document| {
             let generated = crate::render::typst_gen::generate_typst(candidate).unwrap();
-            let runs = crate::render::pdf::compiled_text_runs(&generated.source, 0).unwrap();
+            let runs = crate::render::pdf::compiled_text_runs(&generated.source, 1).unwrap();
             let mut header_runs: Vec<(String, f64)> = runs
                 .into_iter()
                 .filter(|run| run.left_pt < 50.0 && run.baseline_pt < 80.0)
@@ -1294,18 +1294,18 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             header_runs.sort_by(|left, right| left.1.total_cmp(&right.1));
             header_runs
         };
-        let header_runs_with_text_box: Vec<(String, f64)> = first_page_header_runs(&document);
+        let header_runs_with_text_box: Vec<(String, f64)> = target_page_header_runs(&document);
         let header_runs_without_text_box: Vec<(String, f64)> =
-            first_page_header_runs(&document_without_text_box);
+            target_page_header_runs(&document_without_text_box);
         assert_eq!(
             header_runs_with_text_box.len(),
             2,
-            "the fixture's first-page header should contain two runs: {header_runs_with_text_box:?}"
+            "the target page's header should contain two runs: {header_runs_with_text_box:?}"
         );
         assert_eq!(
             header_runs_without_text_box.len(),
             2,
-            "the control document should keep both first-page header runs: {header_runs_without_text_box:?}"
+            "the control document should keep both target-page header runs: {header_runs_without_text_box:?}"
         );
         for (with_text_box, without_text_box) in header_runs_with_text_box
             .iter()
@@ -1317,7 +1317,7 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             );
             assert!(
                 (with_text_box.1 - without_text_box.1).abs() <= 0.1,
-                "the anchored text box must not move the first-page header baseline: with={with_text_box:?}, without={without_text_box:?}"
+                "the anchored text box must not move the target-page header baseline: with={with_text_box:?}, without={without_text_box:?}"
             );
         }
 
