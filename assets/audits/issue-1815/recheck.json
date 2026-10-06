@@ -1,0 +1,464 @@
+{
+  "schema_version": 1,
+  "issue": 1815,
+  "audit_date": "2026-10-07",
+  "status": "targeted_defect_resolved_with_tracked_residuals",
+  "runtime": {
+    "built_from_commit": "e1537dee5767f3f46a871b8c5aa76e0e82d08639",
+    "current_main_commit": "4408f9ced33670b1c99b32d2c4a7fd0aafa35d4a",
+    "current_main_first_parent": "e1537dee5767f3f46a871b8c5aa76e0e82d08639",
+    "equivalence_note": "The intervening main merge was the documentation and evidence-only PR #2030; no runtime source or configuration changed after the audited runtime commit."
+  },
+  "fixture": {
+    "path": "tests/visual_audits/issue-1815/source.xlsx",
+    "sha256": "62d739bbb3be7370b9e23c6ae6963f18121d12aae642c55a50edb460c090583c",
+    "native_baselines_path": "tests/visual_audits/issue-1815/native-baselines.json"
+  },
+  "native_reference": {
+    "application": "Microsoft Excel for Mac; Quartz PDF export",
+    "pdf_sha256_recorded": "719fe4dd391e6e2e2baf0b9a3a9817161fb3e06602ec788a7429aa0fe1215e75",
+    "pdf_available_for_this_audit": false,
+    "retained_raster_path": "assets/audits/issue-1815/native-page-1.jpg",
+    "retained_raster_sha256": "e5984ff6108cedc25ecdaa1c3859dc7d72b3087a60942d3061f9f053d8f64e15",
+    "raster_resolution_dpi": 150
+  },
+  "current_output": {
+    "pdf_path": "assets/audits/issue-1815/current-output.pdf",
+    "pdf_sha256": "3a6e24eb9069efe1121b4b5e11e9dc9e868849e3443cc26aa49cd6967c816713",
+    "creator": "Typst 0.15.1",
+    "page_count": 1,
+    "page_size_pt": [
+      612,
+      792
+    ],
+    "raster_resolution_dpi": 150,
+    "raster_dimensions_px": [
+      1275,
+      1650
+    ],
+    "embedded_fonts": [
+      "Malgun Gothic",
+      "Gulim",
+      "Batang",
+      "Arial"
+    ],
+    "raster_png_path": "assets/audits/issue-1815/current-page-1.png",
+    "raster_png_sha256": "fe647a260ec387caa76a429b5d368d217bf99b1fe91849f4c2eec89f45cbeb14"
+  },
+  "results": {
+    "label_count": 22,
+    "labels_in_order": [
+      "Malgun size 8",
+      "Gulim size 8",
+      "Batang size 8",
+      "Malgun size 9",
+      "Gulim size 9",
+      "Batang size 9",
+      "Malgun size 10",
+      "Gulim size 10",
+      "Batang size 10",
+      "Malgun size 11",
+      "Gulim size 11",
+      "Batang size 11",
+      "Malgun size 12",
+      "Gulim size 12",
+      "Batang size 12",
+      "Malgun size 13",
+      "Gulim size 13",
+      "Batang size 13",
+      "Malgun size 14",
+      "Gulim size 14",
+      "Batang size 14",
+      "Arial size 4"
+    ],
+    "malgun_sizes_8_through_14_delta_y_pt": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "all_malgun_x_anchors_match_native": true,
+    "tracked_issue_1814_rows_with_delta_y_plus_1_pt": [
+      "Gulim size 8",
+      "Batang size 8",
+      "Gulim size 9",
+      "Batang size 9",
+      "Gulim size 10",
+      "Batang size 10",
+      "Arial size 4"
+    ],
+    "max_abs_non_space_glyph_dx_pt": 0.0321,
+    "horizontal_rule_count": 23,
+    "horizontal_rule_y_positions_pt": [
+      82.5,
+      107.5,
+      132.5,
+      157.5,
+      182.5,
+      207.5,
+      232.5,
+      257.5,
+      282.5,
+      307.5,
+      332.5,
+      357.5,
+      382.5,
+      407.5,
+      432.5,
+      457.5,
+      482.5,
+      507.5,
+      532.5,
+      557.5,
+      582.5,
+      607.5,
+      632.5
+    ],
+    "extracted_text_labels_match_native_baseline_census_in_order": true,
+    "baseline_measurements": {
+      "Malgun size 8": {
+        "native_baseline_y_pt": 104.0,
+        "current_baseline_y_pt": 104.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 3.0,
+        "current_seat_above_row_bottom_pt": 3.0,
+        "native_x_pt": 52.0,
+        "current_x_pt": 52.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 11,
+        "max_abs_non_space_glyph_dx_pt": 0.0022
+      },
+      "Gulim size 8": {
+        "native_baseline_y_pt": 130.0,
+        "current_baseline_y_pt": 131.0,
+        "delta_y_pt": 1.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 1.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 10,
+        "max_abs_non_space_glyph_dx_pt": 0.0146
+      },
+      "Batang size 8": {
+        "native_baseline_y_pt": 155.0,
+        "current_baseline_y_pt": 156.0,
+        "delta_y_pt": 1.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 1.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 11,
+        "max_abs_non_space_glyph_dx_pt": 0.0056
+      },
+      "Malgun size 9": {
+        "native_baseline_y_pt": 179.0,
+        "current_baseline_y_pt": 179.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 3.0,
+        "current_seat_above_row_bottom_pt": 3.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 11,
+        "max_abs_non_space_glyph_dx_pt": 0.0117
+      },
+      "Gulim size 9": {
+        "native_baseline_y_pt": 205.0,
+        "current_baseline_y_pt": 206.0,
+        "delta_y_pt": 1.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 1.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 10,
+        "max_abs_non_space_glyph_dx_pt": 0.004
+      },
+      "Batang size 9": {
+        "native_baseline_y_pt": 230.0,
+        "current_baseline_y_pt": 231.0,
+        "delta_y_pt": 1.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 1.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 11,
+        "max_abs_non_space_glyph_dx_pt": 0.0268
+      },
+      "Malgun size 10": {
+        "native_baseline_y_pt": 254.0,
+        "current_baseline_y_pt": 254.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 3.0,
+        "current_seat_above_row_bottom_pt": 3.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.0042
+      },
+      "Gulim size 10": {
+        "native_baseline_y_pt": 280.0,
+        "current_baseline_y_pt": 281.0,
+        "delta_y_pt": 1.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 1.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 11,
+        "max_abs_non_space_glyph_dx_pt": 0.0205
+      },
+      "Batang size 10": {
+        "native_baseline_y_pt": 305.0,
+        "current_baseline_y_pt": 306.0,
+        "delta_y_pt": 1.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 1.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.007
+      },
+      "Malgun size 11": {
+        "native_baseline_y_pt": 328.0,
+        "current_baseline_y_pt": 328.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 4.0,
+        "current_seat_above_row_bottom_pt": 4.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.0183
+      },
+      "Gulim size 11": {
+        "native_baseline_y_pt": 355.0,
+        "current_baseline_y_pt": 355.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 2.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 11,
+        "max_abs_non_space_glyph_dx_pt": 0.0066
+      },
+      "Batang size 11": {
+        "native_baseline_y_pt": 380.0,
+        "current_baseline_y_pt": 380.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 2.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.0262
+      },
+      "Malgun size 12": {
+        "native_baseline_y_pt": 403.0,
+        "current_baseline_y_pt": 403.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 4.0,
+        "current_seat_above_row_bottom_pt": 4.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.0121
+      },
+      "Gulim size 12": {
+        "native_baseline_y_pt": 430.0,
+        "current_baseline_y_pt": 430.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 2.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 11,
+        "max_abs_non_space_glyph_dx_pt": 0.0222
+      },
+      "Batang size 12": {
+        "native_baseline_y_pt": 455.0,
+        "current_baseline_y_pt": 455.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 2.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.0069
+      },
+      "Malgun size 13": {
+        "native_baseline_y_pt": 478.0,
+        "current_baseline_y_pt": 478.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 4.0,
+        "current_seat_above_row_bottom_pt": 4.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.0205
+      },
+      "Gulim size 13": {
+        "native_baseline_y_pt": 505.0,
+        "current_baseline_y_pt": 505.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 2.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 11,
+        "max_abs_non_space_glyph_dx_pt": 0.0225
+      },
+      "Batang size 13": {
+        "native_baseline_y_pt": 530.0,
+        "current_baseline_y_pt": 530.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 2.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.0321
+      },
+      "Malgun size 14": {
+        "native_baseline_y_pt": 553.0,
+        "current_baseline_y_pt": 553.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 4.0,
+        "current_seat_above_row_bottom_pt": 4.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.0126
+      },
+      "Gulim size 14": {
+        "native_baseline_y_pt": 580.0,
+        "current_baseline_y_pt": 580.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 2.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 11,
+        "max_abs_non_space_glyph_dx_pt": 0.026
+      },
+      "Batang size 14": {
+        "native_baseline_y_pt": 605.0,
+        "current_baseline_y_pt": 605.0,
+        "delta_y_pt": 0.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 2.0,
+        "native_x_pt": 53.0,
+        "current_x_pt": 53.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 12,
+        "max_abs_non_space_glyph_dx_pt": 0.0079
+      },
+      "Arial size 4": {
+        "native_baseline_y_pt": 630.0,
+        "current_baseline_y_pt": 631.0,
+        "delta_y_pt": 1.0,
+        "native_seat_above_row_bottom_pt": 2.0,
+        "current_seat_above_row_bottom_pt": 1.0,
+        "native_x_pt": 52.0,
+        "current_x_pt": 52.0,
+        "delta_x_pt": 0.0,
+        "non_space_glyph_count": 10,
+        "max_abs_non_space_glyph_dx_pt": 0.002
+      }
+    },
+    "all_22_current_trace_labels_matched_retained_native_census": true
+  },
+  "raster_comparison": {
+    "reference": "Retained native Excel raster versus current output page render",
+    "dimensions_px": [
+      1275,
+      1650
+    ],
+    "fuzz_percent": 5,
+    "absolute_error_pixels": 6260,
+    "fraction_of_pixels": 0.00297564,
+    "interpretation": "The inspected differences are localized to glyph rasterization, with the visible one-point seat residuals confined to the seven rows tracked by #1814. No independent page-flow, missing-element, fill, clipping, or rule-geometry deviation was observed.",
+    "visual_inspection": {
+      "full_native_and_current_pages": "inspected side by side at 150 DPI",
+      "pixel_diff": "inspected at 150 DPI; changed pixels remain localized to text",
+      "matched_row_crops": "all 22 text rows inspected in paired crops; native is left and current is right",
+      "hairlines": "all 23 thin gray horizontal rules are present; no dash or width discrepancy observed",
+      "emphasis": "no bold, italic, or underline runs are declared or visually present"
+    },
+    "measurement_inputs": {
+      "native": "assets/audits/issue-1815/native-page-1.jpg",
+      "current": "assets/audits/issue-1815/current-page-1.png",
+      "lossless_diff": "assets/audits/issue-1815/pixel-diff-5pct.png"
+    },
+    "visualization_note": "The JPEGs are direct-link display copies; current-page-1.png and pixel-diff-5pct.png preserve the exact pixels used for the reported AE measurement."
+  },
+  "dispositions": {
+    "issue_1815": "Resolved: all seven Malgun Gothic baselines at 8–14pt match native positions exactly.",
+    "issue_1814": "Open: Gulim and Batang 8–10pt and Arial 4 remain one point below the native baseline; these seven rows are separate from #1815.",
+    "issue_1659": "No current material horizontal glyph displacement observed; maximum measured non-space glyph-origin delta is 0.0321pt."
+  },
+  "limitations": [
+    "The native Excel PDF bytes are absent from the repository and local audit directories; only the recorded PDF hash, native raster, and trace-derived baseline census remain.",
+    "Because the native PDF is unavailable and no Office desktop app is installed, this re-audit could not rerun compare_layout.py, compare_render.py, compare_text_layer.py, or generate a fresh native Excel export. Geometry was checked against the retained 22-label native baseline census and full-page raster; current searchable text was checked against the retained label census.",
+    "This result closes only the Malgun Gothic bottom-seat finding; it makes no whole-document equivalence claim."
+  ],
+  "commands": [
+    "CARGO_TARGET_DIR=/private/tmp/office2pdf-1815-target CARGO_INCREMENTAL=0 cargo test --locked --profile ci -p office2pdf --lib small_malgun_sheet_baselines_match_native_isolated_rows -- --nocapture",
+    "CARGO_TARGET_DIR=/private/tmp/office2pdf-1815-target CARGO_INCREMENTAL=0 cargo run --locked --profile ci -p office2pdf-cli -- tests/visual_audits/issue-1815/source.xlsx -o assets/audits/issue-1815/current-output.pdf",
+    "pdftotext -layout assets/audits/issue-1815/current-output.pdf -",
+    "mutool draw -F trace -o current-output-trace.xml assets/audits/issue-1815/current-output.pdf 1",
+    "magick compare -metric AE -fuzz 5% assets/audits/issue-1815/native-page-1.jpg assets/audits/issue-1815/current-page-1.png assets/audits/issue-1815/pixel-diff-5pct.png"
+  ],
+  "artifacts": {
+    "comparison-page-1.jpg": {
+      "sha256": "702d80de96eabe912d9fc3162c205db1f18cb05a06a33f3cb6b6d3b754f4db6b",
+      "bytes": 112254
+    },
+    "current-output.pdf": {
+      "sha256": "3a6e24eb9069efe1121b4b5e11e9dc9e868849e3443cc26aa49cd6967c816713",
+      "bytes": 25315
+    },
+    "current-page-1.jpg": {
+      "sha256": "4c70ca940de94a205acff09d61c2a527e14aaea16ff7c742e0298cd1a30eb413",
+      "bytes": 55940
+    },
+    "current-page-1.png": {
+      "sha256": "fe647a260ec387caa76a429b5d368d217bf99b1fe91849f4c2eec89f45cbeb14",
+      "bytes": 71836
+    },
+    "native-page-1.jpg": {
+      "sha256": "e5984ff6108cedc25ecdaa1c3859dc7d72b3087a60942d3061f9f053d8f64e15",
+      "bytes": 55964
+    },
+    "pixel-diff-5pct.jpg": {
+      "sha256": "920ec3540ae85ccfc81b055a05dbcb838d4ad8e45134c3797261a7cd0d9b05e6",
+      "bytes": 45015
+    },
+    "pixel-diff-5pct.png": {
+      "sha256": "41662615af9ef9948c24aa0dd282940219d7e4a34808f135052b5d6aaf07f172",
+      "bytes": 49346
+    },
+    "row-crops-page-1.jpg": {
+      "sha256": "4627eca0c1bfdc634f46b7f1af8958cc21cecc0f715d75a2833e008ae03387f0",
+      "bytes": 108288
+    }
+  }
+}
