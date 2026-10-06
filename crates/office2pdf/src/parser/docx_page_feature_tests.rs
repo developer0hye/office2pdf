@@ -1366,15 +1366,17 @@ fn anchored_text_box_quote_uses_the_word_left_cell_seat() {
             baseline_gap_pt > 0.0 && baseline_gap_pt < text_box_height_pt,
             "the first line should remain inside the page-anchored box, got {baseline_gap_pt:.5}pt for {quote:?}"
         );
-        // The native reference was exported with Word on macOS. Linux replaces
-        // the fixture's Segoe UI with a different face, so its baseline metric
-        // cannot be compared to that absolute native position.
+        // The native reference was exported with Word using Segoe UI. A
+        // substituted face has different baseline metrics, so its gap cannot
+        // be compared to that absolute native position.
         #[cfg(target_os = "macos")]
-        assert!(
-            (baseline_gap_pt - 23.62).abs() <= 1.0,
-            "the first line in the page-anchored box should match Word's 23.62pt baseline gap within 1pt, got {baseline_gap_pt:.5}pt for {quote:?}; exact spacing={:?}, quote run styles={_quote_run_sizes:?}, generated line-box settings={_line_box_settings:?}",
-            _line_spacing
-        );
+        if quote.family == "Segoe UI" {
+            assert!(
+                (baseline_gap_pt - 23.62).abs() <= 1.0,
+                "the first line in the page-anchored box should match Word's 23.62pt baseline gap within 1pt, got {baseline_gap_pt:.5}pt for {quote:?}; exact spacing={:?}, quote run styles={_quote_run_sizes:?}, generated line-box settings={_line_box_settings:?}",
+                _line_spacing
+            );
+        }
     }
 }
 
