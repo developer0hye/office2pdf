@@ -48,6 +48,42 @@ struct GroupTransform {
 }
 
 impl GroupTransform {
+    fn transform_line_point(
+        &self,
+        element: &FixedElement,
+        point: (f64, f64),
+        child_rotation_radians: f64,
+        scale_x: f64,
+        scale_y: f64,
+    ) -> (f64, f64) {
+        let element_center_x: f64 = element.x + element.width / 2.0;
+        let element_center_y: f64 = element.y + element.height / 2.0;
+        let local_x: f64 = point.0 - element.width / 2.0;
+        let local_y: f64 = point.1 - element.height / 2.0;
+        let (child_sin, child_cos): (f64, f64) = child_rotation_radians.sin_cos();
+        let child_x: f64 = element_center_x + local_x * child_cos - local_y * child_sin;
+        let child_y: f64 = element_center_y + local_x * child_sin + local_y * child_cos;
+
+        let offset_x_pt: f64 = emu_to_pt(self.off_x);
+        let offset_y_pt: f64 = emu_to_pt(self.off_y);
+        let child_offset_x_pt: f64 = emu_to_pt(self.ch_off_x);
+        let child_offset_y_pt: f64 = emu_to_pt(self.ch_off_y);
+        let mut parent_x: f64 = offset_x_pt + (child_x - child_offset_x_pt) * scale_x;
+        let mut parent_y: f64 = offset_y_pt + (child_y - child_offset_y_pt) * scale_y;
+
+        if self.rot_deg != 0.0 {
+            let group_center_x: f64 = offset_x_pt + emu_to_pt(self.ext_cx) / 2.0;
+            let group_center_y: f64 = offset_y_pt + emu_to_pt(self.ext_cy) / 2.0;
+            let dx: f64 = parent_x - group_center_x;
+            let dy: f64 = parent_y - group_center_y;
+            let (group_sin, group_cos): (f64, f64) = self.rot_deg.to_radians().sin_cos();
+            parent_x = group_center_x + dx * group_cos - dy * group_sin;
+            parent_y = group_center_y + dx * group_sin + dy * group_cos;
+        }
+
+        (parent_x, parent_y)
+    }
+
     /// Apply the transform to a `FixedElement` whose coordinates are already in points.
     fn apply(&self, elem: &mut FixedElement) {
         let scale_x = if self.ch_ext_cx != 0 {
@@ -60,6 +96,68 @@ impl GroupTransform {
         } else {
             1.0
         };
+
+        // A child rotation and non-uniform group scaling do not commute. Bake
+        // the transformed endpoints into parent coordinates so rotated
+        // connectors keep the group's true vertical and horizontal scale.
+        let transformed_line_points: Option<[(f64, f64); 2]> = if (scale_x - scale_y).abs() > 1e-9 {
+            match &elem.kind {
+                FixedElementKind::Shape(shape)
+                    if shape
+                        .rotation_deg
+                        .is_some_and(|rotation| rotation.rem_euclid(360.0).abs() > 1e-9) =>
+                {
+                    match &shape.kind {
+                        ShapeKind::Line { x1, y1, x2, y2, .. } => {
+                            let rotation_radians: f64 =
+                                shape.rotation_deg.unwrap_or_default().to_radians();
+                            Some([
+                                self.transform_line_point(
+                                    elem,
+                                    (*x1, *y1),
+                                    rotation_radians,
+                                    scale_x,
+                                    scale_y,
+                                ),
+                                self.transform_line_point(
+                                    elem,
+                                    (*x2, *y2),
+                                    rotation_radians,
+                                    scale_x,
+                                    scale_y,
+                                ),
+                            ])
+                        }
+                        _ => None,
+                    }
+                }
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        if let Some(points) = transformed_line_points {
+            let min_x: f64 = points[0].0.min(points[1].0);
+            let min_y: f64 = points[0].1.min(points[1].1);
+            let max_x: f64 = points[0].0.max(points[1].0);
+            let max_y: f64 = points[0].1.max(points[1].1);
+            elem.x = min_x;
+            elem.y = min_y;
+            elem.width = max_x - min_x;
+            elem.height = max_y - min_y;
+
+            if let FixedElementKind::Shape(shape) = &mut elem.kind {
+                if let ShapeKind::Line { x1, y1, x2, y2, .. } = &mut shape.kind {
+                    *x1 = points[0].0 - min_x;
+                    *y1 = points[0].1 - min_y;
+                    *x2 = points[1].0 - min_x;
+                    *y2 = points[1].1 - min_y;
+                }
+                shape.rotation_deg = None;
+            }
+            return;
+        }
 
         let off_x_pt = emu_to_pt(self.off_x);
         let off_y_pt = emu_to_pt(self.off_y);

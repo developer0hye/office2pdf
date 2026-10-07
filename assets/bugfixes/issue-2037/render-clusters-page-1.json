@@ -1,0 +1,695 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 246.9888,
+      "bbox_pt": {
+        "height": 21.12,
+        "width": 35.04,
+        "x": 118.08,
+        "y": 419.04
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-fc2bfd6a3dc7",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 172.5696,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 21.6,
+        "x": 188.16,
+        "y": 420.96
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-2dc87c483d5e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 118.656,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 14.88,
+        "x": 93.12,
+        "y": 420.48
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-41d59d1de6b6",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 96.5376,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 12.96,
+        "x": 109.44,
+        "y": 451.68
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-9afb59570069",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 91.9296,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 12.96,
+        "x": 62.4,
+        "y": 423.36
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-2ccd5ac9ae8d",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 67.7376,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 7.2,
+        "x": 112.32,
+        "y": 421.92
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-b9145b63bc32",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 67.7376,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 10.08,
+        "x": 234.72,
+        "y": 423.36
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-21fcf814bf25",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 59.4432,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 10.08,
+        "x": 157.92,
+        "y": 423.36
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-d3c2329d84bf",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 11.04,
+        "x": 564.48,
+        "y": 38.4
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-73a7ebe96899",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 53.4528,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 8.16,
+        "x": 120.96,
+        "y": 449.28
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-4ce278cd08e1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 53.2224,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 576.48,
+        "y": 36.0
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-52990967eecd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 52.3008,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 11.04,
+        "x": 216.96,
+        "y": 426.72
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-fe662ba14db2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 44.928,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 5.28,
+        "x": 81.12,
+        "y": 448.8
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-101f1ab574ec",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.08,
+        "x": 89.76,
+        "y": 450.24
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-45b00ca6c36b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 43.3152,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.6,
+        "x": 129.12,
+        "y": 451.68
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-23a405ce90eb",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 60.96,
+        "y": 451.68
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-e75e9c73d3ee",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 42.624,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 121.44,
+        "y": 475.2
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-44f6eb9da772",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 637.92,
+        "y": 38.4
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-840f3b6094a8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.64,
+        "x": 677.76,
+        "y": 36.48
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-02530f580ff9",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 9.6,
+        "x": 726.72,
+        "y": 36.96
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-96a64c5b87f4",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.64,
+        "x": 615.84,
+        "y": 39.36
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-b64cf2bfaa53",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.64,
+        "x": 144.96,
+        "y": 451.68
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-2865e68e3a46",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 11.04,
+        "x": 97.92,
+        "y": 451.68
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-fbf8376df49f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 136.8,
+        "y": 475.68
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-d7d9be03a6d0",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 88.8,
+        "y": 425.76
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-f5d18221ec76",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.28,
+        "x": 152.64,
+        "y": 424.8
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-93be3bfa534c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 96.96,
+        "y": 478.08
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-aaf62b52c782",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 30.6432,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 55.68,
+        "y": 451.68
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-e7ea10e202e1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 82.56,
+        "y": 428.16
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-a192d50d7a7b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 73.44,
+        "y": 451.68
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-69e3a12b29db",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 607.2,
+        "y": 36.48
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-f072d4552b29",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 113.76,
+        "y": 475.2
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-54433126ff2d",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 692.16,
+        "y": 38.88
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-7bc8d005dd36",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 224.64,
+        "y": 423.36
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-e4d6ae72a5f4",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 172.8,
+        "y": 420.48
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-2c5e03a9ecb9",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 3.36,
+        "x": 230.88,
+        "y": 425.28
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-cd4c0d47abec",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 601.44,
+        "y": 36.0
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-b39abc2e1887",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 2.88,
+        "x": 48.48,
+        "y": 448.8
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-fff559d62f84",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 556.8,
+        "y": 36.48
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-45cc9668568c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 699.84,
+        "y": 38.4
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-23bc2421ca92",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 737.28,
+        "y": 38.4
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-81ef97253f79",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 3.36,
+        "x": 142.08,
+        "y": 454.08
+      },
+      "disposition": {
+        "issue": "#2038",
+        "kind": "issue",
+        "note": "Inspected page-one text-rendering differences are tracked by open issue #2038."
+      },
+      "id": "p1-32017d2b49ae",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 42,
+    "duplicate": 0,
+    "total": 42,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
