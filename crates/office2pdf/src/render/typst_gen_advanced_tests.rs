@@ -725,8 +725,9 @@ fn test_font_substitution_arial_produces_fallback_list() {
     })])]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(
-        result
-            .contains(r#"font: ("Arial", "Liberation Sans", "Arimo", "DejaVu Sans", "Helvetica")"#),
+        result.contains(
+            r#"font: ("Arial", "Liberation Sans", "Arimo", "Calibri", "DejaVu Sans", "Helvetica")"#
+        ),
         "Expected font fallback list for Arial in: {result}"
     );
 }

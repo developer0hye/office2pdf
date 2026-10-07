@@ -1,0 +1,279 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 49.7664,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 11.04,
+        "x": 134.4,
+        "y": 305.76
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-29f38225c5c4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 212.16,
+        "y": 351.84
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-f75aed481870",
+      "region": "left"
+    },
+    {
+      "area_pt2": 36.864,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 197.28,
+        "y": 351.36
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-6804de8c3914",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 206.88,
+        "y": 371.52
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-cfce4e49a53f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 182.88,
+        "y": 418.08
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-5faddf53417f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 198.24,
+        "y": 369.6
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-492452fc25d7",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 112.32,
+        "y": 418.56
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-a42b592ccb66",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 130.08,
+        "y": 418.56
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-569b7a5a4285",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 166.56,
+        "y": 369.6
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-26c07de77da6",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.28,
+        "x": 204.96,
+        "y": 353.28
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-cae55f43bd04",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 112.32,
+        "y": 350.88
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-e5022198bf0e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.68,
+        "x": 147.36,
+        "y": 369.6
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-1187b790919c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 182.88,
+        "y": 303.84
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-3d7b73a3148d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 111.84,
+        "y": 370.08
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-86866b6e2a1a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 158.88,
+        "y": 352.8
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-85d456172751",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 3.84,
+        "x": 179.52,
+        "y": 419.04
+      },
+      "disposition": {
+        "issue": "#2041",
+        "kind": "issue",
+        "note": "All 16 clusters lie on the four contents-table labels with the verified 18 pt first-line indent residual; see #2041."
+      },
+      "id": "p2-5bb8bbfdb949",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 16,
+    "duplicate": 0,
+    "total": 16,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

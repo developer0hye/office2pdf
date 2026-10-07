@@ -501,6 +501,28 @@ fn missing_typewriter_face_resolves_to_an_available_monospace_face() {
 }
 
 #[test]
+fn missing_theme_sans_fonts_prefer_an_installed_office_calibri_face() {
+    let context: FontSearchContext = FontSearchContext::for_test(
+        Vec::new(),
+        &["Liberation Sans", "Calibri", "Helvetica"],
+        &["Calibri"],
+        &[],
+    );
+    let requested_fonts: [&str; 2] = ["Expert Sans Regular", "Example Sans Display"];
+
+    for requested_font in requested_fonts {
+        let fallback: Option<String> =
+            resolve_available_fallback(requested_font, TextScript::Latin, &context);
+
+        assert_eq!(
+            fallback.as_deref(),
+            Some("Calibri"),
+            "an Office-installed Calibri face should outrank generic system sans faces for {requested_font}"
+        );
+    }
+}
+
+#[test]
 fn a_listed_family_whose_substitutes_are_all_absent_keeps_its_own_class() {
     // Every name in the substitution table is a real font, so a chain of them
     // can run out: a host with neither Carlito nor Liberation Sans left a
@@ -688,7 +710,7 @@ fn test_font_with_fallbacks_single_named_substitute_then_the_class_tail() {
     let result = font_with_fallbacks_for_text("Comic Sans MS", "");
     assert_eq!(
         result,
-        r#"("Comic Sans MS", "Comic Neue", "Liberation Sans", "Arimo", "DejaVu Sans", "Helvetica")"#
+        r#"("Comic Sans MS", "Comic Neue", "Liberation Sans", "Calibri", "Arimo", "DejaVu Sans", "Helvetica")"#
     );
 }
 
@@ -1697,7 +1719,13 @@ fn named_sans_serif_families_get_a_sans_serif_fallback_chain() {
             .unwrap_or_else(|| panic!("{family} should have class-preserving substitutes"));
         assert_eq!(
             substitutes,
-            &["Liberation Sans", "Arimo", "DejaVu Sans", "Helvetica"],
+            &[
+                "Liberation Sans",
+                "Calibri",
+                "Arimo",
+                "DejaVu Sans",
+                "Helvetica"
+            ],
             "{family} must not fall through to a proportional serif"
         );
     }
