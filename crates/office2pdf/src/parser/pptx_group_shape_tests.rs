@@ -331,3 +331,71 @@ fn test_group_scaling_stretches_line_endpoints() {
     // Child 1_000_000 EMU wide scaled 2x -> 2_000_000 EMU = 157.48pt.
     assert!((x2 - 157.48).abs() < 0.1, "x2 {x2}");
 }
+
+#[test]
+fn group_transform_applies_anisotropic_scale_after_line_rotation() {
+    fn to_page_point(element: &FixedElement, rotation_radians: f64, x: f64, y: f64) -> (f64, f64) {
+        let center_x: f64 = element.width / 2.0;
+        let center_y: f64 = element.height / 2.0;
+        let dx: f64 = x - center_x;
+        let dy: f64 = y - center_y;
+        let (sin, cos): (f64, f64) = rotation_radians.sin_cos();
+        (
+            element.x + center_x + dx * cos - dy * sin,
+            element.y + center_y + dx * sin + dy * cos,
+        )
+    }
+
+    let child: String = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Rotated line"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm rot="5400000"><a:off x="500000" y="500000"/><a:ext cx="1000000" cy="0"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:noFill/><a:ln w="63500"><a:solidFill><a:srgbClr val="00AEEF"/></a:solidFill><a:round/></a:ln></p:spPr></p:sp>"#.to_string();
+    let group: String = make_group_shape(
+        100_000,
+        200_000,
+        2_000_000,
+        3_000_000,
+        0,
+        0,
+        1_000_000,
+        1_000_000,
+        &[child],
+    );
+    let slide_xml: String = make_slide_xml(&[group]);
+    let data: Vec<u8> = build_test_pptx(SLIDE_CX, SLIDE_CY, &[slide_xml]);
+
+    let (document, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page: &FixedPage = first_fixed_page(&document);
+    let element: &FixedElement = &page.elements[0];
+    let FixedElementKind::Shape(shape) = &element.kind else {
+        panic!("expected a transformed connector shape");
+    };
+    let ShapeKind::Line { x1, y1, x2, y2, .. } = &shape.kind else {
+        panic!("expected a line, got {:?}", shape.kind);
+    };
+
+    let rotation_radians: f64 = shape.rotation_deg.unwrap_or(0.0).to_radians();
+    let endpoints: [(f64, f64); 2] = [
+        to_page_point(element, rotation_radians, *x1, *y1),
+        to_page_point(element, rotation_radians, *x2, *y2),
+    ];
+    let (top, bottom): ((f64, f64), (f64, f64)) = if endpoints[0].1 <= endpoints[1].1 {
+        (endpoints[0], endpoints[1])
+    } else {
+        (endpoints[1], endpoints[0])
+    };
+
+    assert!(
+        (top.0 - emu_to_pt(2_100_000)).abs() < 0.1,
+        "top x {}",
+        top.0
+    );
+    assert!(
+        (bottom.0 - emu_to_pt(2_100_000)).abs() < 0.1,
+        "bottom x {}",
+        bottom.0
+    );
+    assert!((top.1 - emu_to_pt(200_000)).abs() < 0.1, "top y {}", top.1);
+    assert!(
+        (bottom.1 - emu_to_pt(3_200_000)).abs() < 0.1,
+        "bottom y {}",
+        bottom.1
+    );
+}
