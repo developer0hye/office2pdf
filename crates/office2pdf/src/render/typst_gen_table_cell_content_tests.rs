@@ -2305,6 +2305,76 @@ fn cell_paragraph_carries_its_right_indent() {
     );
 }
 
+/// DrawingML's signed first-line indent offsets only the first line inside a
+/// PowerPoint table cell; wrapped lines keep the paragraph's `marL` inset
+/// (issue #2041).
+#[test]
+fn powerpoint_table_cell_applies_signed_first_line_indent() {
+    let paragraph = |text: &str, indent_first_line: f64| -> Block {
+        Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                indent_left: Some(60.75),
+                indent_first_line: Some(indent_first_line),
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: text.to_string(),
+                style: TextStyle::default(),
+                href: None,
+                footnote: None,
+                inline_box: None,
+            }],
+        })
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            minimum_height: None,
+            cells: vec![TableCell {
+                content: vec![
+                    paragraph("European ex-UK", -18.0),
+                    paragraph("Positive first line", 6.0),
+                ],
+                ..TableCell::default()
+            }],
+            height: None,
+        }],
+        column_widths: vec![480.0],
+        default_cell_padding: Some(Insets::default()),
+        use_content_driven_row_heights: true,
+        ..Table::default()
+    };
+    let document: Document = make_doc(vec![make_fixed_page(
+        720.0,
+        540.0,
+        vec![FixedElement {
+            x: 120.6,
+            y: 254.82,
+            width: 480.0,
+            height: 60.0,
+            kind: FixedElementKind::Table(table),
+        }],
+    )]);
+    let result: String = generate_typst(&document).unwrap().source;
+    let text_start: usize = result
+        .find("European ex-UK")
+        .expect("the cell text is emitted");
+    let paragraph_start: usize = result[..text_start]
+        .rfind("#par(hanging-indent: 18pt)[")
+        .expect("the negative first-line indent hangs the first line");
+    let block_start: usize = result[..paragraph_start]
+        .rfind("#block(")
+        .expect("the cell paragraph opens a block");
+
+    assert!(
+        result[block_start..paragraph_start].contains("inset: (left: 60.75pt, right: 0pt)"),
+        "the hanging indent stays relative to the cell paragraph's left inset: {result}"
+    );
+    assert!(
+        result.contains("#par(first-line-indent: (amount: 6pt, all: true))["),
+        "a positive first-line indent keeps its normal Typst paragraph behavior: {result}"
+    );
+}
+
 /// A cell paragraph's `w:spacing w:line` scales its line box, exactly as it
 /// scales a body paragraph's. `word_cell_line_box` bailed on any declared line
 /// spacing, so the multiple never applied inside a cell and the paragraph fell

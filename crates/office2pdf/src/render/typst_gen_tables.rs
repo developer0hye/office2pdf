@@ -3878,6 +3878,11 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
     // paints no `w:shd` or `w:pBdr` of its own, so nothing has to span the
     // un-inset width.
     let indent: Option<(f64, f64)> = paragraph_indent_pt(style);
+    // Keep the signed first-line offset separate from the cell inset so only
+    // the first visual line moves while wrapped lines retain the inset origin.
+    let first_line_indent_pt: Option<f64> = style
+        .indent_first_line
+        .filter(|indent| indent.abs() > 0.0001 && !para.runs.is_empty());
     let has_block_wrapper = cell_paragraph_needs_block_wrapper(style)
         || align_str.is_some()
         || line_height_settings.is_some()
@@ -3931,6 +3936,21 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
 
     if let Some(space_before) = style.space_before {
         let _ = writeln!(out, "#v({}pt)", format_f64(space_before));
+    }
+    if let Some(first_line_indent_pt) = first_line_indent_pt {
+        if first_line_indent_pt < 0.0 {
+            let _ = write!(
+                out,
+                "#par(hanging-indent: {}pt)[",
+                format_f64(-first_line_indent_pt)
+            );
+        } else {
+            let _ = write!(
+                out,
+                "#par(first-line-indent: (amount: {}pt, all: true))[",
+                format_f64(first_line_indent_pt)
+            );
+        }
     }
     match paragraph_mark_line_pt {
         Some(height_pt) => {
@@ -3999,6 +4019,9 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
                 }
             }
         }
+    }
+    if first_line_indent_pt.is_some() {
+        out.push(']');
     }
 
     // Suppressed when the grid-snapped line box already contains it, or the
