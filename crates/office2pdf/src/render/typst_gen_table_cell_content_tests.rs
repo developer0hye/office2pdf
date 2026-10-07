@@ -5424,14 +5424,12 @@ fn a_blank_row_takes_the_same_line_as_a_text_row() {
     );
 }
 
-/// A blank paragraph that *does* have a sibling paragraph in its cell keeps
-/// borrowing that sibling's runs (issue #625). The mark resolution is the
-/// fallback for a cell with nothing to borrow from, not a replacement: Word's
-/// own rule is the mark's formatting either way, but no native export here
-/// measures a document whose runs and mark disagree, so the settled path stays
-/// as it is.
+/// A blank paragraph after a sibling paragraph in its cell keeps borrowing
+/// that preceding sibling's runs (issue #625). The mark's formatting applies
+/// when there is no preceding sibling, as with a leading blank paragraph
+/// (issue #2034).
 #[test]
-fn a_blank_cell_paragraph_with_a_sibling_still_borrows_it() {
+fn a_blank_cell_paragraph_with_a_preceding_sibling_still_borrows_it() {
     let Some((_ascender, _descender, word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
@@ -5486,15 +5484,172 @@ fn a_blank_cell_paragraph_with_a_sibling_still_borrows_it() {
             "#box(width: 0pt, height: {}pt)",
             format_f64(word_pitch_em * sibling_size)
         )),
-        "the sibling's line stays the spacer's height: {result}"
+        "the preceding sibling's line stays the spacer's height: {result}"
     );
     assert!(
         !result.contains(&format!(
             "#box(width: 0pt, height: {}pt)",
             format_f64(word_pitch_em * mark_size)
         )),
-        "the mark's own size must not take over a cell that has a sibling: {result}"
+        "the mark's own size must not take over a cell with a preceding sibling: {result}"
     );
+}
+
+/// A leading empty paragraph has no preceding text whose style can describe
+/// its spacer line. When its paragraph mark resolves a size of its own, that
+/// size determines the line even if the following paragraph uses another one.
+#[test]
+fn a_leading_blank_cell_paragraph_uses_its_own_mark_before_following_text() {
+    let Some((_ascender, _descender, word_pitch_em)) =
+        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
+    else {
+        return; // no font book available (e.g. exotic CI sandbox)
+    };
+    let mark_size_pt: f64 = 14.0;
+    let following_text_size_pt: f64 = 16.0;
+    let cell = TableCell {
+        content: vec![
+            Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    paragraph_mark_text_style: Some(Box::new(TextStyle {
+                        font_family: Some("Libertinus Serif".to_string()),
+                        font_size: Some(mark_size_pt),
+                        ..TextStyle::default()
+                    })),
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![],
+            }),
+            Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Following text".to_string(),
+                    style: TextStyle {
+                        font_family: Some("Libertinus Serif".to_string()),
+                        font_size: Some(following_text_size_pt),
+                        ..TextStyle::default()
+                    },
+                    href: None,
+                    footnote: None,
+                    inline_box: None,
+                }],
+            }),
+        ],
+        ..TableCell::default()
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            minimum_height: None,
+            cells: vec![cell],
+            height: None,
+        }],
+        column_widths: vec![225.65],
+        ..Table::default()
+    };
+    let source = generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])]))
+        .unwrap()
+        .source;
+
+    assert!(
+        source.contains(&format!(
+            "#box(width: 0pt, height: {}pt)",
+            format_f64(word_pitch_em * mark_size_pt)
+        )),
+        "the leading blank line must use the paragraph mark's resolved size: {source}"
+    );
+    assert!(
+        !source.contains(&format!(
+            "#box(width: 0pt, height: {}pt)",
+            format_f64(word_pitch_em * following_text_size_pt)
+        )),
+        "the following paragraph must not override a resolved mark: {source}"
+    );
+}
+
+/// The page-anchored table in this real DOCX fixture starts its text cell with
+/// an empty paragraph whose 14pt mark precedes 16pt text. Word places the
+/// first visible table line at 126pt; borrowing the following run's metrics
+/// moves the whole stack down by about 2.6pt (issue #2034).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn issue_2034_floating_table_first_line_matches_the_word_baseline() {
+    use crate::parser::Parser;
+
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (mut document, _warnings) = crate::parser::docx::DocxParser
+        .parse(fixture, &crate::config::ConvertOptions::default())
+        .expect("the reported DOCX should parse");
+    let page = match &mut document.pages[0] {
+        Page::Flow(page) | Page::FlowContinuous(page) => page,
+        other => panic!("expected a flow page, got {other:?}"),
+    };
+    let floating_table = page
+        .content
+        .iter()
+        .find(|block| matches!(block, Block::FloatingTable(_)))
+        .expect("the page-anchored body table should be present")
+        .clone();
+    page.first_header = None;
+    page.first_footer = None;
+    page.header = None;
+    page.footer = None;
+    page.content = vec![floating_table];
+
+    let output = generate_typst(&document).expect("the fixture should generate Typst");
+    let runs =
+        crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 0)
+            .expect("the first page should compile");
+    let first_table_baseline_pt: f64 = runs
+        .iter()
+        .filter(|run| {
+            (200.0..250.0).contains(&run.left_pt) && (100.0..150.0).contains(&run.baseline_pt)
+        })
+        .map(|run| run.baseline_pt)
+        .min_by(f64::total_cmp)
+        .expect("the first visible line in the table's right cell should be searchable");
+
+    assert!(
+        (first_table_baseline_pt - 126.0).abs() <= 0.5,
+        "Word places the first visible line at 126pt; got {first_table_baseline_pt:.3}pt"
+    );
+}
+
+/// Selecting a leading paragraph mark for its blank line must not also change
+/// a floating picture's paragraph-relative anchor. The header picture remains
+/// at Word's measured 34.08pt on both pages (issue #1994).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_blank_cell_mark_does_not_reseat_a_paragraph_anchored_picture() {
+    use crate::parser::Parser;
+    use crate::render::pdf::{PaintedKind, compiled_paint_sequence};
+
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = crate::parser::docx::DocxParser
+        .parse(fixture, &crate::config::ConvertOptions::default())
+        .expect("the reported DOCX should parse");
+    let output = generate_typst(&document).expect("the fixture should generate Typst");
+
+    for page_index in 0..2 {
+        let paints = compiled_paint_sequence(&output.source, &output.images, page_index)
+            .expect("each page should compile");
+        let picture = paints
+            .iter()
+            .find(|paint| {
+                paint.kind == PaintedKind::Image
+                    && ((paint.bounds.2 - paint.bounds.0) - 37.4).abs() < 0.1
+                    && ((paint.bounds.3 - paint.bounds.1) - 28.2).abs() < 0.1
+            })
+            .expect("the header picture should be painted on each page");
+
+        assert!(
+            (picture.bounds.1 - 34.08).abs() < 0.5,
+            "the picture on page {} should keep Word's 34.08pt top, got {:.3}pt",
+            page_index + 1,
+            picture.bounds.1
+        );
+    }
 }
 
 /// A blank cell whose mark resolves no formatting at all — every PowerPoint
