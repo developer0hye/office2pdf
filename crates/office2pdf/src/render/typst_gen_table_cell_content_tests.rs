@@ -5566,13 +5566,97 @@ fn a_leading_blank_cell_paragraph_uses_its_own_mark_before_following_text() {
     );
 }
 
+fn paragraph_runs_in_table_cell(block: &Block) -> Option<&[Run]> {
+    match block {
+        Block::Paragraph(paragraph) => Some(&paragraph.runs),
+        Block::Caption(caption) => Some(&caption.paragraph.runs),
+        _ => None,
+    }
+}
+
+fn mutate_leading_blank_marks_in_table(
+    table: &mut Table,
+    mut mutate: impl FnMut(&mut Paragraph, &[Run]) -> bool,
+) -> usize {
+    let mut changed: usize = 0;
+    for row in &mut table.rows {
+        for cell in &mut row.cells {
+            for index in 0..cell.content.len() {
+                let (preceding_blocks, current_and_following) = cell.content.split_at_mut(index);
+                let (current_block, following_blocks) = current_and_following
+                    .split_first_mut()
+                    .expect("the current cell paragraph should exist");
+                let is_empty_paragraph: bool = matches!(
+                    &*current_block,
+                    Block::Paragraph(paragraph) if paragraph.runs.is_empty()
+                );
+                if !is_empty_paragraph {
+                    continue;
+                }
+                let has_preceding_text: bool = preceding_blocks
+                    .iter()
+                    .rev()
+                    .filter_map(paragraph_runs_in_table_cell)
+                    .any(|runs| !runs.is_empty());
+                if has_preceding_text {
+                    continue;
+                }
+                let following_runs: Option<&[Run]> = following_blocks
+                    .iter()
+                    .filter_map(paragraph_runs_in_table_cell)
+                    .find(|runs| !runs.is_empty());
+                let Some(following_runs) = following_runs else {
+                    continue;
+                };
+                if let Block::Paragraph(paragraph) = current_block
+                    && mutate(paragraph, following_runs)
+                {
+                    changed += 1;
+                }
+            }
+        }
+    }
+    changed
+}
+
+fn perturb_header_story_table_marks(table: &mut Table) -> usize {
+    mutate_leading_blank_marks_in_table(table, |paragraph, _following_runs| {
+        let Some(mark_style) = paragraph.style.paragraph_mark_text_style.as_deref_mut() else {
+            return false;
+        };
+        let Some(font_size) = mark_style.font_size.as_mut() else {
+            return false;
+        };
+        *font_size += 20.0;
+        true
+    })
+}
+
+fn perturb_header_footer_marks(story: &mut Option<HeaderFooter>) -> usize {
+    story
+        .as_mut()
+        .map(|story| {
+            story
+                .shapes
+                .iter_mut()
+                .map(|shape| match &mut shape.content {
+                    HeaderFooterShapeContent::Table(table) => {
+                        perturb_header_story_table_marks(table)
+                    }
+                    HeaderFooterShapeContent::Shape(_) => 0,
+                })
+                .sum()
+        })
+        .unwrap_or_default()
+}
+
 /// The page-anchored table in this real DOCX fixture starts its text cell with
-/// an empty paragraph whose 14pt mark precedes 16pt text. Word places the
-/// first visible table line at 126pt; borrowing the following run's metrics
-/// moves the whole stack down by about 2.6pt (issue #2034).
+/// an empty paragraph whose 14pt mark precedes 16pt text. Removing that mark
+/// must move the first visible line down because the following run then
+/// supplies the blank line's metrics (issue #2034).
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn issue_2034_floating_table_first_line_matches_the_word_baseline() {
+fn issue_2034_floating_table_leading_mark_changes_first_line_position() {
     use crate::parser::Parser;
 
     let fixture: &[u8] =
@@ -5596,28 +5680,58 @@ fn issue_2034_floating_table_first_line_matches_the_word_baseline() {
     page.footer = None;
     page.content = vec![floating_table];
 
-    let output = generate_typst(&document).expect("the fixture should generate Typst");
-    let runs =
-        crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 0)
-            .expect("the first page should compile");
-    let first_table_baseline_pt: f64 = runs
-        .iter()
-        .filter(|run| {
-            (200.0..250.0).contains(&run.left_pt) && (100.0..150.0).contains(&run.baseline_pt)
-        })
-        .map(|run| run.baseline_pt)
-        .min_by(f64::total_cmp)
-        .expect("the first visible line in the table's right cell should be searchable");
+    fn first_table_baseline_pt(document: &Document) -> f64 {
+        let output = generate_typst(document).expect("the fixture should generate Typst");
+        let runs =
+            crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 0)
+                .expect("the first page should compile");
+        runs.iter()
+            .filter(|run| (200.0..250.0).contains(&run.left_pt))
+            .map(|run| run.baseline_pt)
+            .min_by(f64::total_cmp)
+            .expect("the first visible line in the table's right cell should be searchable")
+    }
+
+    let marked_baseline_pt: f64 = first_table_baseline_pt(&document);
+    let mut following_text_fallback: Document = document.clone();
+    let page = match &mut following_text_fallback.pages[0] {
+        Page::Flow(page) | Page::FlowContinuous(page) => page,
+        other => panic!("expected a flow page, got {other:?}"),
+    };
+    let Block::FloatingTable(floating_table) = &mut page.content[0] else {
+        panic!("the isolated page should contain its floating table")
+    };
+    let cleared_marks: usize = mutate_leading_blank_marks_in_table(
+        &mut floating_table.table,
+        |paragraph, following_runs| {
+            let has_issue_mark_and_following_text: bool = paragraph
+                .style
+                .paragraph_mark_text_style
+                .as_deref()
+                .and_then(|style| style.font_size)
+                == Some(14.0)
+                && following_runs
+                    .iter()
+                    .any(|run| run.style.font_size == Some(16.0));
+            if has_issue_mark_and_following_text {
+                paragraph.style.paragraph_mark_text_style = None;
+            }
+            has_issue_mark_and_following_text
+        },
+    );
+    assert!(cleared_marks > 0, "the 14pt leading mark must be found");
+    let fallback_baseline_pt: f64 = first_table_baseline_pt(&following_text_fallback);
 
     assert!(
-        (first_table_baseline_pt - 126.0).abs() <= 0.5,
-        "Word places the first visible line at 126pt; got {first_table_baseline_pt:.3}pt"
+        fallback_baseline_pt - marked_baseline_pt >= 1.0,
+        "using the following 16pt run should lower the table line on this host; marked={marked_baseline_pt:.3}pt, fallback={fallback_baseline_pt:.3}pt"
     );
 }
 
-/// Selecting a leading paragraph mark for its blank line must not also change
-/// a floating picture's paragraph-relative anchor. The header picture remains
-/// at Word's measured 34.08pt on both pages (issue #1994).
+/// Selecting a leading paragraph mark for a body table's blank line must not
+/// also change a header picture's paragraph-relative anchor. Perturbing the
+/// header table's own leading mark leaves the picture at the same position on
+/// this host (issue #1994).
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_blank_cell_mark_does_not_reseat_a_paragraph_anchored_picture() {
@@ -5629,25 +5743,54 @@ fn a_blank_cell_mark_does_not_reseat_a_paragraph_anchored_picture() {
     let (document, _warnings) = crate::parser::docx::DocxParser
         .parse(fixture, &crate::config::ConvertOptions::default())
         .expect("the reported DOCX should parse");
-    let output = generate_typst(&document).expect("the fixture should generate Typst");
-
-    for page_index in 0..2 {
-        let paints = compiled_paint_sequence(&output.source, &output.images, page_index)
-            .expect("each page should compile");
-        let picture = paints
-            .iter()
-            .find(|paint| {
-                paint.kind == PaintedKind::Image
-                    && ((paint.bounds.2 - paint.bounds.0) - 37.4).abs() < 0.1
-                    && ((paint.bounds.3 - paint.bounds.1) - 28.2).abs() < 0.1
+    fn header_picture_tops(document: &Document) -> Vec<f64> {
+        let output = generate_typst(document).expect("the fixture should generate Typst");
+        (0..2)
+            .map(|page_index| {
+                let paints = compiled_paint_sequence(&output.source, &output.images, page_index)
+                    .expect("each page should compile");
+                paints
+                    .iter()
+                    .find(|paint| {
+                        paint.kind == PaintedKind::Image
+                            && ((paint.bounds.2 - paint.bounds.0) - 37.4).abs() < 0.1
+                            && ((paint.bounds.3 - paint.bounds.1) - 28.2).abs() < 0.1
+                    })
+                    .expect("the header picture should be painted on each page")
+                    .bounds
+                    .1
             })
-            .expect("the header picture should be painted on each page");
+            .collect()
+    }
 
+    let baseline_tops: Vec<f64> = header_picture_tops(&document);
+    let mut changed_document: Document = document.clone();
+    let changed_marks: usize = changed_document
+        .pages
+        .iter_mut()
+        .map(|page| match page {
+            Page::Flow(page) | Page::FlowContinuous(page) => {
+                perturb_header_footer_marks(&mut page.first_header)
+                    + perturb_header_footer_marks(&mut page.header)
+                    + perturb_header_footer_marks(&mut page.first_footer)
+                    + perturb_header_footer_marks(&mut page.footer)
+            }
+            _ => 0,
+        })
+        .sum();
+    assert!(
+        changed_marks > 0,
+        "a leading header-table mark must be found"
+    );
+    let perturbed_tops: Vec<f64> = header_picture_tops(&changed_document);
+
+    assert_eq!(baseline_tops.len(), perturbed_tops.len());
+    for (page_index, (baseline, perturbed)) in baseline_tops.iter().zip(perturbed_tops).enumerate()
+    {
         assert!(
-            (picture.bounds.1 - 34.08).abs() < 0.5,
-            "the picture on page {} should keep Word's 34.08pt top, got {:.3}pt",
-            page_index + 1,
-            picture.bounds.1
+            (baseline - perturbed).abs() <= 0.1,
+            "changing a header table's paragraph mark must not reseat its anchored picture on page {}; baseline={baseline:.3}pt, perturbed={perturbed:.3}pt",
+            page_index + 1
         );
     }
 }
