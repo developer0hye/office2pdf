@@ -5424,14 +5424,12 @@ fn a_blank_row_takes_the_same_line_as_a_text_row() {
     );
 }
 
-/// A blank paragraph that *does* have a sibling paragraph in its cell keeps
-/// borrowing that sibling's runs (issue #625). The mark resolution is the
-/// fallback for a cell with nothing to borrow from, not a replacement: Word's
-/// own rule is the mark's formatting either way, but no native export here
-/// measures a document whose runs and mark disagree, so the settled path stays
-/// as it is.
+/// A blank paragraph after a sibling paragraph in its cell keeps borrowing
+/// that preceding sibling's runs (issue #625). The mark's formatting applies
+/// when there is no preceding sibling, as with a leading blank paragraph
+/// (issue #2034).
 #[test]
-fn a_blank_cell_paragraph_with_a_sibling_still_borrows_it() {
+fn a_blank_cell_paragraph_with_a_preceding_sibling_still_borrows_it() {
     let Some((_ascender, _descender, word_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Libertinus Serif")
     else {
@@ -5486,15 +5484,287 @@ fn a_blank_cell_paragraph_with_a_sibling_still_borrows_it() {
             "#box(width: 0pt, height: {}pt)",
             format_f64(word_pitch_em * sibling_size)
         )),
-        "the sibling's line stays the spacer's height: {result}"
+        "the preceding sibling's line stays the spacer's height: {result}"
     );
     assert!(
         !result.contains(&format!(
             "#box(width: 0pt, height: {}pt)",
             format_f64(word_pitch_em * mark_size)
         )),
-        "the mark's own size must not take over a cell that has a sibling: {result}"
+        "the mark's own size must not take over a cell with a preceding sibling: {result}"
     );
+}
+
+/// A leading empty paragraph has no preceding text whose style can describe
+/// its spacer line. When its paragraph mark resolves a size of its own, that
+/// size determines the line even if the following paragraph uses another one.
+#[test]
+fn a_leading_blank_cell_paragraph_uses_its_own_mark_before_following_text() {
+    let Some((_ascender, _descender, word_pitch_em)) =
+        crate::render::pdf::font_line_metrics_em("Libertinus Serif")
+    else {
+        return; // no font book available (e.g. exotic CI sandbox)
+    };
+    let mark_size_pt: f64 = 14.0;
+    let following_text_size_pt: f64 = 16.0;
+    let cell = TableCell {
+        content: vec![
+            Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    paragraph_mark_text_style: Some(Box::new(TextStyle {
+                        font_family: Some("Libertinus Serif".to_string()),
+                        font_size: Some(mark_size_pt),
+                        ..TextStyle::default()
+                    })),
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![],
+            }),
+            Block::Paragraph(Paragraph {
+                style: ParagraphStyle::default(),
+                runs: vec![Run {
+                    text: "Following text".to_string(),
+                    style: TextStyle {
+                        font_family: Some("Libertinus Serif".to_string()),
+                        font_size: Some(following_text_size_pt),
+                        ..TextStyle::default()
+                    },
+                    href: None,
+                    footnote: None,
+                    inline_box: None,
+                }],
+            }),
+        ],
+        ..TableCell::default()
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            minimum_height: None,
+            cells: vec![cell],
+            height: None,
+        }],
+        column_widths: vec![225.65],
+        ..Table::default()
+    };
+    let source = generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])]))
+        .unwrap()
+        .source;
+
+    assert!(
+        source.contains(&format!(
+            "#box(width: 0pt, height: {}pt)",
+            format_f64(word_pitch_em * mark_size_pt)
+        )),
+        "the leading blank line must use the paragraph mark's resolved size: {source}"
+    );
+    assert!(
+        !source.contains(&format!(
+            "#box(width: 0pt, height: {}pt)",
+            format_f64(word_pitch_em * following_text_size_pt)
+        )),
+        "the following paragraph must not override a resolved mark: {source}"
+    );
+}
+
+fn paragraph_runs_in_table_cell(block: &Block) -> Option<&[Run]> {
+    match block {
+        Block::Paragraph(paragraph) => Some(&paragraph.runs),
+        Block::Caption(caption) => Some(&caption.paragraph.runs),
+        _ => None,
+    }
+}
+
+fn visit_leading_blank_paragraphs_in_table(
+    table: &mut Table,
+    mut visit: impl FnMut(&mut Paragraph, &[Run]),
+) -> usize {
+    let mut visited: usize = 0;
+    for row in &mut table.rows {
+        for cell in &mut row.cells {
+            for index in 0..cell.content.len() {
+                let (preceding_blocks, current_and_following) = cell.content.split_at_mut(index);
+                let (current_block, following_blocks) = current_and_following
+                    .split_first_mut()
+                    .expect("the current cell paragraph should exist");
+                let is_empty_paragraph: bool = matches!(
+                    &*current_block,
+                    Block::Paragraph(paragraph) if paragraph.runs.is_empty()
+                );
+                if !is_empty_paragraph {
+                    continue;
+                }
+                let has_preceding_text: bool = preceding_blocks
+                    .iter()
+                    .rev()
+                    .filter_map(paragraph_runs_in_table_cell)
+                    .any(|runs| !runs.is_empty());
+                if has_preceding_text {
+                    continue;
+                }
+                let following_runs: Option<&[Run]> = following_blocks
+                    .iter()
+                    .filter_map(paragraph_runs_in_table_cell)
+                    .find(|runs| !runs.is_empty());
+                let Some(following_runs) = following_runs else {
+                    continue;
+                };
+                if let Block::Paragraph(paragraph) = current_block {
+                    visit(paragraph, following_runs);
+                    visited += 1;
+                }
+            }
+        }
+    }
+    visited
+}
+
+fn perturb_header_story_table_marks(table: &mut Table) -> usize {
+    let mut changed: usize = 0;
+    visit_leading_blank_paragraphs_in_table(table, |paragraph, _following_runs| {
+        let Some(mark_style) = paragraph.style.paragraph_mark_text_style.as_deref_mut() else {
+            return;
+        };
+        let Some(font_size) = mark_style.font_size.as_mut() else {
+            return;
+        };
+        *font_size += 20.0;
+        changed += 1;
+    });
+    changed
+}
+
+fn perturb_header_footer_marks(story: &mut Option<HeaderFooter>) -> usize {
+    story
+        .as_mut()
+        .map(|story| {
+            story
+                .shapes
+                .iter_mut()
+                .map(|shape| match &mut shape.content {
+                    HeaderFooterShapeContent::Table(table) => {
+                        perturb_header_story_table_marks(table)
+                    }
+                    HeaderFooterShapeContent::Shape(_) => 0,
+                })
+                .sum()
+        })
+        .unwrap_or_default()
+}
+
+/// The reported DOCX retains a 14pt mark on the leading empty cell paragraph
+/// before its following 16pt text (issue #2034).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn issue_2034_fixture_preserves_leading_mark_before_following_text() {
+    use crate::parser::Parser;
+
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (mut document, _warnings) = crate::parser::docx::DocxParser
+        .parse(fixture, &crate::config::ConvertOptions::default())
+        .expect("the reported DOCX should parse");
+    let page = match &mut document.pages[0] {
+        Page::Flow(page) | Page::FlowContinuous(page) => page,
+        other => panic!("expected a flow page, got {other:?}"),
+    };
+    let floating_table = page
+        .content
+        .iter_mut()
+        .find_map(|block| match block {
+            Block::FloatingTable(table) => Some(table),
+            _ => None,
+        })
+        .expect("the page-anchored body table should be present");
+    let mut found_issue_mark: bool = false;
+    let visited_paragraphs: usize = visit_leading_blank_paragraphs_in_table(
+        &mut floating_table.table,
+        |paragraph, following_runs| {
+            found_issue_mark |= paragraph
+                .style
+                .paragraph_mark_text_style
+                .as_deref()
+                .and_then(|style| style.font_size)
+                == Some(14.0)
+                && following_runs
+                    .iter()
+                    .any(|run| run.style.font_size == Some(16.0));
+        },
+    );
+    assert!(
+        visited_paragraphs > 0,
+        "the table should have leading blank paragraphs"
+    );
+    assert!(
+        found_issue_mark,
+        "the fixture's leading blank paragraph should retain its 14pt mark before 16pt text"
+    );
+}
+
+/// Selecting a leading paragraph mark for a body table's blank line must not
+/// also change a header picture's paragraph-relative anchor. Perturbing the
+/// header table's own leading mark leaves the picture at the same position on
+/// this host (issue #1994).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_blank_cell_mark_does_not_reseat_a_paragraph_anchored_picture() {
+    use crate::parser::Parser;
+    use crate::render::pdf::{PaintedKind, compiled_paint_sequence};
+
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/libreoffice/tdf105688.docx");
+    let (document, _warnings) = crate::parser::docx::DocxParser
+        .parse(fixture, &crate::config::ConvertOptions::default())
+        .expect("the reported DOCX should parse");
+    fn header_picture_tops(document: &Document) -> Vec<f64> {
+        let output = generate_typst(document).expect("the fixture should generate Typst");
+        (0..2)
+            .map(|page_index| {
+                let paints = compiled_paint_sequence(&output.source, &output.images, page_index)
+                    .expect("each page should compile");
+                paints
+                    .iter()
+                    .find(|paint| {
+                        paint.kind == PaintedKind::Image
+                            && ((paint.bounds.2 - paint.bounds.0) - 37.4).abs() < 0.1
+                            && ((paint.bounds.3 - paint.bounds.1) - 28.2).abs() < 0.1
+                    })
+                    .expect("the header picture should be painted on each page")
+                    .bounds
+                    .1
+            })
+            .collect()
+    }
+
+    let baseline_tops: Vec<f64> = header_picture_tops(&document);
+    let mut changed_document: Document = document.clone();
+    let changed_marks: usize = changed_document
+        .pages
+        .iter_mut()
+        .map(|page| match page {
+            Page::Flow(page) | Page::FlowContinuous(page) => {
+                perturb_header_footer_marks(&mut page.first_header)
+                    + perturb_header_footer_marks(&mut page.header)
+                    + perturb_header_footer_marks(&mut page.first_footer)
+                    + perturb_header_footer_marks(&mut page.footer)
+            }
+            _ => 0,
+        })
+        .sum();
+    assert!(
+        changed_marks > 0,
+        "a leading header-table mark must be found"
+    );
+    let perturbed_tops: Vec<f64> = header_picture_tops(&changed_document);
+
+    assert_eq!(baseline_tops.len(), perturbed_tops.len());
+    for (page_index, (baseline, perturbed)) in baseline_tops.iter().zip(perturbed_tops).enumerate()
+    {
+        assert!(
+            (baseline - perturbed).abs() <= 0.1,
+            "changing a header table's paragraph mark must not reseat its anchored picture on page {}; baseline={baseline:.3}pt, perturbed={perturbed:.3}pt",
+            page_index + 1
+        );
+    }
 }
 
 /// A blank cell whose mark resolves no formatting at all — every PowerPoint

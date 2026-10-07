@@ -2536,7 +2536,12 @@ fn auto_row_frame_height_estimate_pt(
             // keys on a fixed row height — so the estimate must not either,
             // and no shared row line exists for it to resolve against.
             let metric_runs: Option<Cow<'_, [Run]>> = if paragraph.runs.is_empty() {
-                cell_paragraph_mark_metric_runs(&cell.content, paragraph_index, &paragraph.style)
+                cell_paragraph_mark_metric_runs(
+                    &cell.content,
+                    paragraph_index,
+                    &paragraph.style,
+                    ctx.prefer_sibling_metrics_for_empty_cell_paragraphs,
+                )
             } else {
                 None
             };
@@ -3459,7 +3464,19 @@ fn cell_paragraph_context<'a>(
         paragraph_mark_metric_runs: paragraph
             .runs
             .is_empty()
-            .then(|| cell_paragraph_mark_metric_runs(blocks, index, &paragraph.style))
+            .then(|| {
+                cell_paragraph_mark_metric_runs(
+                    blocks,
+                    index,
+                    &paragraph.style,
+                    ctx.prefer_sibling_metrics_for_empty_cell_paragraphs,
+                )
+            })
+            .flatten(),
+        paragraph_anchor_metric_runs: paragraph
+            .runs
+            .is_empty()
+            .then(|| empty_cell_paragraph_sibling_metric_runs(blocks, index))
             .flatten(),
         breaks_hangul_at_eojeol: ctx.breaks_hangul_at_eojeol,
         available_measure_pt: ctx.available_measure_pt,
@@ -3496,8 +3513,8 @@ fn cell_paragraph_anchor_offset_pt(paragraph: &Paragraph, cell: &CellParagraphCt
     // the same anchor point (#1994).
     let space_before_pt: f64 = paragraph.style.space_before.unwrap_or(0.0);
     let runs: &[Run] = if paragraph.runs.is_empty() {
-        cell.paragraph_mark_metric_runs
-            .as_deref()
+        cell.paragraph_anchor_metric_runs
+            .or(cell.paragraph_mark_metric_runs.as_deref())
             .unwrap_or_default()
     } else {
         &paragraph.runs
@@ -3561,6 +3578,10 @@ struct CellParagraphCtx<'a> {
     /// Runs standing in for the paragraph mark's own font when the paragraph
     /// has none of its own — see [`cell_paragraph_mark_metric_runs`].
     paragraph_mark_metric_runs: Option<Cow<'a, [Run]>>,
+    /// Sibling line metrics used for paragraph-relative floating-image
+    /// anchors. A blank paragraph's own mark can size its strut differently,
+    /// but must not move an established image anchor (#1994, #2034).
+    paragraph_anchor_metric_runs: Option<&'a [Run]>,
     /// Whether the enclosing page is a Word flow page, whose Hangul lines
     /// break only at eojeol boundaries (issue #626). False for a slide or a
     /// sheet, which keep the engine's syllable breaking.
@@ -3595,20 +3616,19 @@ fn cell_block_has_flow_extent(block: &Block) -> bool {
 /// The runs an empty `<w:p>` in a cell resolves its line box from.
 ///
 /// Word lays a blank cell paragraph out on a full line, sized from the
-/// paragraph mark's own resolved `w:rPr`. Two sources answer that, in this
-/// order:
+/// paragraph mark's own resolved `w:rPr`. When that is unavailable, sibling
+/// text can stand in for its metrics. The sources are tried in this order:
 ///
-/// 1. **A sibling paragraph in the same cell** — the one above by preference,
-///    since a spacer line follows the text it separates (issue #625). Kept
-///    first because that is the shape every native export behind #625
-///    measured, and no export here measures a cell whose runs and mark
-///    disagree.
+/// 1. **A preceding sibling paragraph** — a spacer after text takes the line
+///    metrics of the text it separates (issue #625).
 /// 2. **The mark's own resolved formatting**, carried from the parser as
-///    `paragraph_mark_text_style`. A cell holding nothing but empty paragraphs
-///    has no sibling to borrow from, and used to emit no line at all: the
-///    probe of issue #1700 collapsed its blank row to the 0.500pt its rule
-///    alone takes, where native Word for Mac prints 13.200pt of rule and line
-///    together — the same as the text rows above and below it.
+///    `paragraph_mark_text_style`. Body tables use it when a leading blank
+///    paragraph differs from the following text (issue #2034); an all-blank
+///    cell also needs it to hold a line (issue #1700).
+/// 3. **A following sibling paragraph**, when the mark has no resolved
+///    formatting. Header/footer story tables preserve their existing sibling
+///    preference ahead of the mark because paragraph-relative artwork is
+///    positioned from that line box (issue #1994).
 ///
 /// `None` when neither answers — a blank cell in a slide or a worksheet, whose
 /// mark the parser resolves no formatting for, so nothing here invents a line
@@ -3617,46 +3637,63 @@ fn cell_paragraph_mark_metric_runs<'a>(
     blocks: &'a [Block],
     index: usize,
     style: &ParagraphStyle,
+    prefer_sibling_metrics: bool,
 ) -> Option<Cow<'a, [Run]>> {
-    if let Some(sibling_runs) = empty_cell_paragraph_metric_runs(blocks, index) {
-        return Some(Cow::Borrowed(sibling_runs));
+    if let Some(preceding_runs) = preceding_cell_paragraph_metric_runs(blocks, index) {
+        return Some(Cow::Borrowed(preceding_runs));
+    }
+    if prefer_sibling_metrics
+        && let Some(following_runs) = following_cell_paragraph_metric_runs(blocks, index)
+    {
+        return Some(Cow::Borrowed(following_runs));
     }
     // The mark paints no glyph, so the stand-in run carries its formatting and
     // no text: every metric the line box needs is read off the style, and an
     // empty string keeps the run out of the script and width decisions that
     // read the text itself.
-    let mark: &TextStyle = style.paragraph_mark_text_style.as_deref()?;
-    Some(Cow::Owned(vec![Run {
-        text: String::new(),
-        style: mark.clone(),
-        href: None,
-        footnote: None,
-        inline_box: None,
-    }]))
+    if let Some(mark) = style.paragraph_mark_text_style.as_deref() {
+        return Some(Cow::Owned(vec![Run {
+            text: String::new(),
+            style: mark.clone(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }]));
+    }
+    following_cell_paragraph_metric_runs(blocks, index).map(Cow::Borrowed)
 }
 
-/// The runs a sibling paragraph in the same cell lends an empty `<w:p>`.
-///
-/// `None` when the cell holds no other text at all.
-fn empty_cell_paragraph_metric_runs(blocks: &[Block], index: usize) -> Option<&[Run]> {
-    fn paragraph_runs(block: &Block) -> Option<&[Run]> {
-        match block {
-            Block::Paragraph(paragraph) => Some(paragraph.runs.as_slice()),
-            Block::Caption(caption) => Some(caption.paragraph.runs.as_slice()),
-            _ => None,
-        }
-    }
-    let preceding = blocks[..index]
+/// The nearest nonempty paragraph runs above this blank paragraph, if any.
+fn preceding_cell_paragraph_metric_runs(blocks: &[Block], index: usize) -> Option<&[Run]> {
+    blocks[..index]
         .iter()
         .rev()
-        .filter_map(paragraph_runs)
-        .find(|runs| !runs.is_empty());
-    preceding.or_else(|| {
-        blocks[index + 1..]
-            .iter()
-            .filter_map(paragraph_runs)
-            .find(|runs| !runs.is_empty())
-    })
+        .filter_map(cell_paragraph_block_runs)
+        .find(|runs| !runs.is_empty())
+}
+
+/// The nearest nonempty paragraph runs below this blank paragraph, if any.
+fn following_cell_paragraph_metric_runs(blocks: &[Block], index: usize) -> Option<&[Run]> {
+    blocks[index + 1..]
+        .iter()
+        .filter_map(cell_paragraph_block_runs)
+        .find(|runs| !runs.is_empty())
+}
+
+/// The sibling metric source used to preserve existing paragraph-relative
+/// floating-image anchors; unlike a blank-line strut, the anchor stays aligned
+/// with the neighboring cell text when the paragraph mark has its own size.
+fn empty_cell_paragraph_sibling_metric_runs(blocks: &[Block], index: usize) -> Option<&[Run]> {
+    preceding_cell_paragraph_metric_runs(blocks, index)
+        .or_else(|| following_cell_paragraph_metric_runs(blocks, index))
+}
+
+fn cell_paragraph_block_runs(block: &Block) -> Option<&[Run]> {
+    match block {
+        Block::Paragraph(paragraph) => Some(paragraph.runs.as_slice()),
+        Block::Caption(caption) => Some(caption.paragraph.runs.as_slice()),
+        _ => None,
+    }
 }
 
 /// Put an accounting-format prefix at the cell's left edge and its value at
@@ -3762,14 +3799,15 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
     });
     // An empty `<w:p>` has no runs, so it resolves no line box above and would
     // otherwise emit nothing at all — zero height, where Word gives the
-    // paragraph mark a full blank line (issue #625). Size that line from the
-    // neighbours' metrics and hold it with a zero-width strut, the same shape
-    // the spill wrapper uses. This mirrors the body path's `#v` branch for an
-    // empty paragraph, at the cell's fixed line box instead of a flat 12pt.
+    // paragraph mark a full blank line (issue #625). Its metric runs were
+    // resolved upstream: body blanks prefer a preceding sibling, then the
+    // mark's formatting, then a following sibling; header/footer stories can
+    // retain sibling-first resolution to preserve floating-image anchors
+    // (issue #1994). Hold the line with a zero-width strut, the same shape the
+    // spill wrapper uses, at the cell's fixed line box instead of a flat 12pt.
     //
-    // The blank line has to come from the same model as its neighbours, or a
-    // slide's empty cell keeps Word's hhea height while the cell beside it
-    // takes PowerPoint's 1.2em one (issue #663).
+    // The line-height calculation still follows the source format: Word uses
+    // hhea metrics, while PowerPoint uses its 1.2em model (issue #663).
     let paragraph_mark_line_pt: Option<f64> =
         cell.paragraph_mark_metric_runs.as_deref().and_then(|runs| {
             if cell.uses_powerpoint_line_box {

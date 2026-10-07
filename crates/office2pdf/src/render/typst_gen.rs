@@ -144,6 +144,9 @@ struct GenCtx {
     next_text_box_id: usize,
     /// Whether generated table cells belong to their enclosing top-aligned floating text box.
     in_top_aligned_floating_text_box: bool,
+    /// Header/footer story tables preserve their sibling-derived blank
+    /// paragraph metrics so paragraph-anchored artwork keeps its native seat.
+    prefer_sibling_metrics_for_empty_cell_paragraphs: bool,
     /// How many sheet drawing layers have been written. Each needs its own
     /// label, because the layer is a page foreground that has to recognise
     /// its own sheet's first printed page (issue #1168).
@@ -280,6 +283,7 @@ impl GenCtx {
             next_image_id: 0,
             next_text_box_id: 0,
             in_top_aligned_floating_text_box: false,
+            prefer_sibling_metrics_for_empty_cell_paragraphs: false,
             next_sheet_drawing_layer_id: 0,
             next_excel_fill_id: 0,
             table_depth: 0,
@@ -3420,7 +3424,12 @@ fn generate_page_anchored_hf_elements(
                     format_f64(x),
                     format_f64(y)
                 );
-                generate_table(out, table, ctx)?;
+                let previous_preference: bool =
+                    ctx.prefer_sibling_metrics_for_empty_cell_paragraphs;
+                ctx.prefer_sibling_metrics_for_empty_cell_paragraphs = true;
+                let result: Result<(), ConvertError> = generate_table(out, table, ctx);
+                ctx.prefer_sibling_metrics_for_empty_cell_paragraphs = previous_preference;
+                result?;
                 out.push(']');
             }
         }
