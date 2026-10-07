@@ -410,6 +410,30 @@ pub(crate) fn apply_image_alpha(data: &[u8], alpha: f64) -> Option<(Vec<u8>, Ima
     Some((out.into_inner(), ImageFormat::Png))
 }
 
+/// Convert an image's RGB channels to luma while leaving alpha unchanged.
+///
+/// DrawingML's `<a:grayscl>` effect has no direct equivalent in Typst, so it
+/// is baked into supported raster assets. Unsupported image data is left to
+/// the caller unchanged, matching the alpha-effect fallback above.
+pub(crate) fn apply_image_grayscale(data: &[u8]) -> Option<(Vec<u8>, ImageFormat)> {
+    let decoded = image::load_from_memory(data).ok()?;
+    let mut rgba = decoded.into_rgba8();
+    for pixel in rgba.pixels_mut() {
+        let red = f64::from(pixel[0]);
+        let green = f64::from(pixel[1]);
+        let blue = f64::from(pixel[2]);
+        let luma = (0.299 * red + 0.587 * green + 0.114 * blue).round() as u8;
+        pixel[0] = luma;
+        pixel[1] = luma;
+        pixel[2] = luma;
+    }
+    let mut out = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(rgba)
+        .write_to(&mut out, image::ImageFormat::Png)
+        .ok()?;
+    Some((out.into_inner(), ImageFormat::Png))
+}
+
 fn theme_color_element(element: &BytesStart<'_>) -> Option<Color> {
     match element.local_name().as_ref() {
         b"srgbClr" => get_attr_str(element, b"val").and_then(|hex| parse_hex_color(&hex)),

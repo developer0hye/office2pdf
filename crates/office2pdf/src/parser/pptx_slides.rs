@@ -649,6 +649,8 @@ struct PictureState {
     blip_embed: Option<String>,
     /// Fill alpha from `<a:blip><a:alphaModFix amt>` (0.0-1.0).
     blip_alpha: Option<f64>,
+    /// True when `<a:blip><a:grayscl/>` applies a grayscale picture effect.
+    blip_grayscale: bool,
     /// Preset geometry name from `<a:prstGeom prst>` ("crop to shape").
     prst_geom: Option<String>,
     /// Subpaths flattened from `<a:custGeom>`, normalized to the picture box.
@@ -750,6 +752,8 @@ struct ShapeState {
     blip_embed: Option<String>,
     /// Fill alpha from `<a:blip><a:alphaModFix amt>` (0.0-1.0).
     blip_alpha: Option<f64>,
+    /// True when `<a:blip><a:grayscl/>` applies a grayscale shape-fill effect.
+    blip_grayscale: bool,
     /// Source crop from the shape fill's `<a:srcRect>`.
     blip_crop: Option<ImageCrop>,
     in_blip_fill: bool,
@@ -822,6 +826,7 @@ impl Default for ShapeState {
             pattern_fill: None,
             blip_embed: None,
             blip_alpha: None,
+            blip_grayscale: false,
             blip_crop: None,
             in_blip_fill: false,
             in_xfrm: false,
@@ -937,6 +942,7 @@ fn finalize_shape(
             cy: shape.cy,
             blip_embed: shape.blip_embed.clone(),
             blip_alpha: shape.blip_alpha,
+            blip_grayscale: shape.blip_grayscale,
             prst_geom: shape.prst_geom.clone(),
             custom_geometry: shape.custom_geometry.clone(),
             crop: shape.blip_crop,
@@ -1245,12 +1251,18 @@ fn finalize_picture(
     let element = selected_asset.and_then(|asset| {
         asset.format().map(|format| {
             let mut clip_shape = picture_clip_shape(pic.prst_geom.as_deref(), pic.prst_adj);
+            let (data, format) = if pic.blip_grayscale {
+                crate::parser::drawingml::apply_image_grayscale(&asset.data)
+                    .unwrap_or_else(|| (asset.data.clone(), format))
+            } else {
+                (asset.data.clone(), format)
+            };
             let (data, format) = match pic.blip_alpha {
                 Some(alpha) if alpha < 1.0 => {
-                    crate::parser::drawingml::apply_image_alpha(&asset.data, alpha)
-                        .unwrap_or_else(|| (asset.data.clone(), format))
+                    crate::parser::drawingml::apply_image_alpha(&data, alpha)
+                        .unwrap_or_else(|| (data.clone(), format))
                 }
-                _ => (asset.data.clone(), format),
+                _ => (data, format),
             };
             // DrawingML `a:stretch` normally scales non-uniformly. PowerPoint
             // makes Office 2021 live-feed (Cameo) artwork an exception: it
@@ -2348,6 +2360,9 @@ impl<'a> SlideXmlParser<'a> {
                     self.shape.blip_alpha = Some(alpha);
                 }
             }
+            b"grayscl" if self.shape.in_blip_fill => {
+                self.shape.blip_grayscale = true;
+            }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.solid_fill_ctx != SolidFillCtx::None => {
                 let parsed = parse_color_from_start(reader, e, self.ctx.theme, self.ctx.color_map);
                 apply_solid_fill_color(
@@ -2468,6 +2483,9 @@ impl<'a> SlideXmlParser<'a> {
                     self.pic.blip_alpha = Some(alpha);
                 }
             }
+            b"grayscl" if self.in_pic => {
+                self.pic.blip_grayscale = true;
+            }
             b"svgBlip" if self.in_pic => {
                 self.pic.svg_blip_embed = get_attr_str(e, b"r:embed");
             }
@@ -2534,6 +2552,9 @@ impl<'a> SlideXmlParser<'a> {
                 if let Some(alpha) = crate::parser::drawingml::parse_alpha_mod_fix(e) {
                     self.pic.blip_alpha = Some(alpha);
                 }
+            }
+            b"grayscl" if self.in_pic => {
+                self.pic.blip_grayscale = true;
             }
             b"svgBlip" if self.in_pic => {
                 self.pic.svg_blip_embed = get_attr_str(e, b"r:embed");
@@ -2675,6 +2696,9 @@ impl<'a> SlideXmlParser<'a> {
                 if let Some(alpha) = crate::parser::drawingml::parse_alpha_mod_fix(e) {
                     self.shape.blip_alpha = Some(alpha);
                 }
+            }
+            b"grayscl" if self.shape.in_blip_fill => {
+                self.shape.blip_grayscale = true;
             }
             b"srcRect" if self.shape.in_blip_fill => {
                 self.shape.blip_crop = parse_src_rect(e);
