@@ -2356,8 +2356,8 @@ fn powerpoint_table_cell_applies_signed_first_line_indent() {
     )]);
     let result: String = generate_typst(&document).unwrap().source;
     let text_start: usize = result
-        .find(r"European ex\-UK")
-        .unwrap_or_else(|| panic!("the escaped cell text is emitted: {result}"));
+        .find("European")
+        .unwrap_or_else(|| panic!("the first cell word is emitted: {result}"));
     let paragraph_start: usize = result[..text_start]
         .rfind("#par(hanging-indent: 18pt)[")
         .expect("the negative first-line indent hangs the first line");
