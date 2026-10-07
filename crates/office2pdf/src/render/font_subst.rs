@@ -49,8 +49,15 @@ const MONOSPACE_SUBSTITUTES: &[&str] = &[
 
 /// Where a missing sans-serif family lands. Liberation Sans leads because it
 /// is metric-compatible with Arial, which most Office sans faces are sized
-/// against (issue #848).
-const SANS_SERIF_SUBSTITUTES: &[&str] = &["Liberation Sans", "Arimo", "DejaVu Sans", "Helvetica"];
+/// against (issue #848). Calibri stays in the chain so an installed Office
+/// face can outrank generic system fonts for an unknown theme face.
+const SANS_SERIF_SUBSTITUTES: &[&str] = &[
+    "Liberation Sans",
+    "Calibri",
+    "Arimo",
+    "DejaVu Sans",
+    "Helvetica",
+];
 
 /// Where a family that is known to be serif lands when it is missing. A
 /// family with no class signal at all still falls through to the document's
