@@ -38,7 +38,7 @@ fn build_docx_with_custom_image_document(document_xml: &str) -> Vec<u8> {
 
 /// A DOCX whose `word/document.xml` is `document_xml` and whose only media
 /// part, `word/<media_target>`, is referenced as relationship `rIdImage1`.
-fn build_docx_with_custom_media_document(
+pub(super) fn build_docx_with_custom_media_document(
     document_xml: &str,
     media_target: &str,
     media_bytes: &[u8],

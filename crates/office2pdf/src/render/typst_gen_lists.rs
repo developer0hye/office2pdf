@@ -422,13 +422,21 @@ fn common_list_line_box(list: &List) -> Option<LineBox> {
 /// reached the boundary and the outer wrapper fell back to Typst's own 1.2em
 /// `block.spacing` — about 10pt too much after a one-item numbered list
 /// (issue #463).
-pub(super) fn generate_list(
+pub(super) fn generate_list_with_gen_ctx(
     out: &mut String,
     list: &List,
     line_height_settings: Option<&str>,
     eojeol_wrap: ListEojeolWrap,
+    ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
-    generate_list_with_spacing_model(out, list, line_height_settings, false, eojeol_wrap)
+    generate_list_with_spacing_model_and_gen_ctx(
+        out,
+        list,
+        line_height_settings,
+        false,
+        eojeol_wrap,
+        Some(ctx),
+    )
 }
 
 /// `per_item_gaps` selects PowerPoint's paragraph spacing model over Word's:
@@ -440,7 +448,25 @@ pub(super) fn generate_list_with_spacing_model(
     list: &List,
     line_height_settings: Option<&str>,
     per_item_gaps: bool,
+    eojeol_wrap: ListEojeolWrap,
+) -> Result<(), ConvertError> {
+    generate_list_with_spacing_model_and_gen_ctx(
+        out,
+        list,
+        line_height_settings,
+        per_item_gaps,
+        eojeol_wrap,
+        None,
+    )
+}
+
+fn generate_list_with_spacing_model_and_gen_ctx(
+    out: &mut String,
+    list: &List,
+    line_height_settings: Option<&str>,
+    per_item_gaps: bool,
     mut eojeol_wrap: ListEojeolWrap,
+    mut ctx: Option<&mut GenCtx>,
 ) -> Result<(), ConvertError> {
     if let Some((normalized, blank_height_pt)) = normalize_pptx_blank_list_items(list) {
         if normalized.items.is_empty() {
@@ -454,12 +480,13 @@ pub(super) fn generate_list_with_spacing_model(
             .and_then(|paragraph| {
                 powerpoint_line_height_settings(&paragraph.runs, &paragraph.style)
             });
-        return generate_list_with_spacing_model(
+        return generate_list_with_spacing_model_and_gen_ctx(
             out,
             &normalized,
             normalized_line_settings.as_deref(),
             per_item_gaps,
             eojeol_wrap,
+            ctx,
         );
     }
 
@@ -540,6 +567,7 @@ pub(super) fn generate_list_with_spacing_model(
         spacing_pt.is_some() || !per_item_gaps,
         per_item_gaps,
         &eojeol_wrap,
+        ctx.as_deref_mut(),
     )?;
     out.push_str(")\n");
     if adjusts_lines {
@@ -1618,19 +1646,26 @@ fn write_list_item_trailing_gap(
 /// effective `w:wordWrap` and its indents — but against the *list's* fixed
 /// line box: whatever [`generate_list_with_spacing_model`] put in force on the
 /// wrapper is what a framed eojeol has to restore inside itself (issue #626).
-fn write_list_item_content(out: &mut String, item: &crate::ir::ListItem, wrap: &ListEojeolWrap) {
+fn write_list_item_content(
+    out: &mut String,
+    item: &crate::ir::ListItem,
+    wrap: &ListEojeolWrap,
+    mut ctx: Option<&mut GenCtx>,
+) -> Result<(), ConvertError> {
     for para in &item.content {
-        generate_runs(
-            out,
-            &para.runs,
-            paragraph_eojeol_wrap(
-                wrap.breaks_hangul_at_eojeol,
-                &para.style,
-                wrap.line_box_em,
-                wrap.available_measure_pt,
-            ),
+        let eojeol_wrap: EojeolWrap = paragraph_eojeol_wrap(
+            wrap.breaks_hangul_at_eojeol,
+            &para.style,
+            wrap.line_box_em,
+            wrap.available_measure_pt,
         );
+        if let Some(ctx) = ctx.as_deref_mut() {
+            generate_runs_with_gen_ctx(out, &para.runs, eojeol_wrap, ctx)?;
+        } else {
+            generate_runs(out, &para.runs, eojeol_wrap);
+        }
     }
+    Ok(())
 }
 
 /// What a list's items need to decide their Hangul line breaking (issue #626).
@@ -1659,6 +1694,7 @@ fn generate_list_items(
     has_uniform_spacing: bool,
     per_item_gaps: bool,
     eojeol_wrap: &ListEojeolWrap,
+    mut ctx: Option<&mut GenCtx>,
 ) -> Result<(), ConvertError> {
     let style = list_style_for_level(list, base_level);
     let (_, item_func) = list_funcs(style.kind);
@@ -1676,7 +1712,7 @@ fn generate_list_items(
         if let Some(snap) = eojeol_wrap.baseline_snap {
             snap.write_open(out);
         }
-        write_list_item_content(out, item, eojeol_wrap);
+        write_list_item_content(out, item, eojeol_wrap, ctx.as_deref_mut())?;
         if eojeol_wrap.baseline_snap.is_some() {
             out.push(']');
         }
@@ -1761,6 +1797,7 @@ fn generate_list_items(
                     spacing_pt.is_some() || !per_item_gaps,
                     per_item_gaps,
                     eojeol_wrap,
+                    ctx.as_deref_mut(),
                 )?;
                 out.push(')');
                 if nested_gap.is_some() {

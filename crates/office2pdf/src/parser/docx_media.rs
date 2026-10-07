@@ -1,9 +1,8 @@
 use super::contexts::DocxConversionContext;
 use super::{
     Block, DrawingTextBoxInfo, FloatingImage, FloatingImageVerticalAnchor, FloatingTextBox,
-    HyperlinkMap, ImageData, ImageMap, InlineTextBox, Paragraph, StyleMap, VmlTextBoxInfo,
-    WrapContext, convert_paragraph_blocks, convert_table, convert_table_in_text_box,
-    withheld_paragraph_block,
+    HyperlinkMap, ImageData, ImageMap, InlineTextBox, StyleMap, VmlTextBoxInfo, WrapContext,
+    convert_paragraph_blocks, convert_table, convert_table_in_text_box, withheld_paragraph_block,
 };
 use crate::parser::units::emu_to_pt;
 
@@ -251,11 +250,6 @@ pub(super) enum DrawingTextBoxPlacement {
     /// `wp:inline`: a box on the line of the paragraph that anchors it,
     /// carried by the run it was anchored to (issue #1690).
     Inline(Box<InlineTextBox>),
-    /// `wp:inline` holding content the inline box cannot yet lay out — a table,
-    /// or a picture. Those keep the flattened flow blocks this path always
-    /// emitted.
-    /// TODO(#1889): lay a table or a picture out inside the inline box too.
-    InlineFlattened(Vec<Block>),
 }
 
 pub(super) fn extract_drawing_text_box_blocks(
@@ -303,18 +297,8 @@ pub(super) fn extract_drawing_text_box_blocks(
 
     if text_box.position_type != docx_rs::DrawingPositionType::Anchor {
         let (width, height) = resolve_drawing_text_box_size(text_box, &layout);
-        // Only paragraphs lay out inside the box so far. A box holding a table
-        // or a picture keeps the flattened flow blocks this path always emitted,
-        // so its content still reaches the page (issue #1889).
-        let mut paragraphs: Vec<Paragraph> = Vec::with_capacity(blocks.len());
-        for block in &blocks {
-            match block {
-                Block::Paragraph(paragraph) => paragraphs.push(paragraph.clone()),
-                _ => return DrawingTextBoxPlacement::InlineFlattened(blocks),
-            }
-        }
         return DrawingTextBoxPlacement::Inline(Box::new(InlineTextBox {
-            content: paragraphs,
+            content: blocks,
             width,
             height,
             padding: layout.padding,

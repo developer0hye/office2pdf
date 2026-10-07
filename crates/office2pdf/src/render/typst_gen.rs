@@ -27,7 +27,7 @@ use self::fmt::*;
 use self::lists::{
     ListEojeolWrap, can_render_fixed_text_list_inline, common_text_style,
     fixed_text_paragraph_hanging_indent_pt, fixed_text_paragraph_inset, generate_fixed_text_list,
-    generate_list, generate_list_with_spacing_model, write_common_text_settings,
+    generate_list_with_gen_ctx, generate_list_with_spacing_model, write_common_text_settings,
     write_fixed_text_default_par_settings,
 };
 use self::shapes::{
@@ -223,7 +223,10 @@ struct GenCtx {
     /// lists of a flow page. It deliberately does NOT reach a *floating* text
     /// box: those go through [`generate_fixed_text_paragraph`], which pins
     /// `EojeolWrap::Syllable` because that path resolves neither the frame's
-    /// fixed text edges nor the box's inner measure — see the note there.
+    /// fixed text edges nor the box's inner measure — see the note there. The
+    /// inline DrawingML text-box emitter also clears the flag for its inner
+    /// block flow; until Word's Hangul wrapping there is calibrated, that
+    /// content keeps the engine's syllable breaking.
     ///
     /// The flag is the flow page's *default*, not the last word. A paragraph
     /// carrying `w:wordWrap w:val="0"` — how a document asks Word for
@@ -5325,14 +5328,7 @@ fn caption_label(identifier: &str) -> String {
 
 fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(), ConvertError> {
     match block {
-        Block::Paragraph(para) => generate_paragraph(
-            out,
-            para,
-            ctx.line_grid_pitch,
-            ctx.default_tab_width_pt,
-            ctx.breaks_hangul_at_eojeol,
-            ctx.available_measure_pt,
-        ),
+        Block::Paragraph(para) => generate_paragraph(out, para, ctx),
         Block::TableOfContents(contents) => {
             generate_table_of_contents(out, contents, ctx);
             Ok(())
@@ -5344,14 +5340,7 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
                 escape_typst(&caption.entry_text),
                 caption_label(&caption.identifier)
             );
-            generate_paragraph(
-                out,
-                &caption.paragraph,
-                ctx.line_grid_pitch,
-                ctx.default_tab_width_pt,
-                ctx.breaks_hangul_at_eojeol,
-                ctx.available_measure_pt,
-            )
+            generate_paragraph(out, &caption.paragraph, ctx)
         }
         Block::PageBreak => {
             out.push_str("#pagebreak()\n");
@@ -5472,12 +5461,12 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             let settings: Option<String> = first_paragraph.and_then(|paragraph| {
                 word_line_height_settings(&paragraph.runs, &paragraph.style, ctx.line_grid_pitch)
             });
-            // `generate_list` emits the wrapper itself, so the line box and
+            // The list emitter builds its wrapper, so the line box and
             // the list's own `w:spacing` gaps share one block (issue #463).
             let line_box_em: Option<(f64, f64)> = first_paragraph.and_then(|paragraph| {
                 word_line_box_em(&paragraph.runs, &paragraph.style, ctx.line_grid_pitch)
             });
-            generate_list(
+            generate_list_with_gen_ctx(
                 out,
                 list,
                 settings.as_deref(),
@@ -5487,6 +5476,7 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
                     available_measure_pt: ctx.available_measure_pt,
                     baseline_snap: None,
                 },
+                ctx,
             )
         }
         Block::MathEquation(math) => {

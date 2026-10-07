@@ -168,7 +168,12 @@ fn test_docx_inline_drawing_text_box_rides_its_anchor_paragraph() {
     let box_text: Vec<String> = inline_box
         .content
         .iter()
-        .map(|paragraph| paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => {
+                Some(paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+            }
+            _ => None,
+        })
         .collect();
     assert_eq!(box_text, vec!["Inside box".to_string()]);
 }
@@ -502,7 +507,12 @@ fn test_docx_drawing_text_box_multiple_paragraphs_are_emitted_in_order() {
     let box_texts: Vec<String> = inline_box
         .content
         .iter()
-        .map(|paragraph| paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => {
+                Some(paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+            }
+            _ => None,
+        })
         .collect();
     assert_eq!(
         box_texts,
@@ -521,16 +531,20 @@ fn test_docx_drawing_text_box_table_is_emitted() {
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
             mc:Ignorable="wps">
     <w:body>
-        <w:p><w:r><w:t>Before table box</w:t></w:r></w:p>
         <w:p>
+            <w:r><w:t xml:space="preserve">Order summary: </w:t></w:r>
             <w:r>
                 <w:drawing>
                     <wp:inline distT="0" distB="0" distL="0" distR="0">
-                        <wp:extent cx="914400" cy="457200"/>
+                        <wp:extent cx="2743200" cy="914400"/>
                         <wp:docPr id="1" name="Text Box Table"/>
                         <a:graphic>
                             <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
                                 <wps:wsp>
+                                    <wps:spPr>
+                                        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                                        <a:ln w="9525"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>
+                                    </wps:spPr>
                                     <wps:txbx>
                                         <w:txbxContent>
                                             <w:tbl>
@@ -540,8 +554,12 @@ fn test_docx_drawing_text_box_table_is_emitted() {
                                                     <w:gridCol w:w="2000"/>
                                                 </w:tblGrid>
                                                 <w:tr>
-                                                    <w:tc><w:p><w:r><w:t>A</w:t></w:r></w:p></w:tc>
-                                                    <w:tc><w:p><w:r><w:t>B</w:t></w:r></w:p></w:tc>
+                                                    <w:tc><w:p><w:r><w:t>Qty</w:t></w:r></w:p></w:tc>
+                                                    <w:tc><w:p><w:r><w:t>Item</w:t></w:r></w:p></w:tc>
+                                                </w:tr>
+                                                <w:tr>
+                                                    <w:tc><w:p><w:r><w:t>12</w:t></w:r></w:p></w:tc>
+                                                    <w:tc><w:p><w:r><w:t>Widgets</w:t></w:r></w:p></w:tc>
                                                 </w:tr>
                                             </w:tbl>
                                         </w:txbxContent>
@@ -554,7 +572,7 @@ fn test_docx_drawing_text_box_table_is_emitted() {
                 </w:drawing>
             </w:r>
         </w:p>
-        <w:p><w:r><w:t>After table box</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Plain paragraph below the box</w:t></w:r></w:p>
         <w:sectPr/>
     </w:body>
 </w:document>"#;
@@ -568,25 +586,67 @@ fn test_docx_drawing_text_box_table_is_emitted() {
         _ => panic!("Expected FlowPage"),
     };
 
-    let has_table = flow
+    let has_top_level_table = flow
         .content
         .iter()
         .any(|block| matches!(block, Block::Table(_)));
-    assert!(has_table, "Expected a table extracted from text box");
-
-    let table = first_table(&doc);
-    assert_eq!(table.rows.len(), 1);
-    assert_eq!(table.rows[0].cells.len(), 2);
-
-    let cell_text: Vec<String> = table.rows[0]
-        .cells
+    assert!(
+        !has_top_level_table,
+        "an inline text box's table must not be flattened into the document flow"
+    );
+    let body_paragraphs: Vec<String> = flow
+        .content
         .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => {
+                Some(paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        body_paragraphs,
+        vec![
+            "Order summary: ".to_string(),
+            "Plain paragraph below the box".to_string()
+        ],
+        "the anchor and following paragraph remain in body order"
+    );
+    assert!(
+        flow.content.iter().any(|block| match block {
+            Block::Paragraph(paragraph) =>
+                paragraph.runs.iter().any(|run| run.inline_box.is_some()),
+            _ => false,
+        }),
+        "the table's inline text box must remain on its anchor paragraph"
+    );
+
+    let inline_box = only_inline_text_box(&flow.content);
+    assert_eq!(inline_box.width, 216.0);
+    assert_eq!(inline_box.height, 72.0);
+    assert_eq!(inline_box.stroke.as_ref().unwrap().width, 0.75);
+    let table = inline_box
+        .content
+        .iter()
+        .find_map(|block| match block {
+            Block::Table(table) => Some(table),
+            _ => None,
+        })
+        .expect("the inline box retains its table content");
+    assert_eq!(table.rows.len(), 2);
+    assert!(table.rows.iter().all(|row| row.cells.len() == 2));
+
+    let cell_text: Vec<String> = table
+        .rows
+        .iter()
+        .flat_map(|row| row.cells.iter())
         .map(|cell| {
             cell.content
                 .iter()
                 .filter_map(|block| match block {
-                    Block::Paragraph(p) => Some(
-                        p.runs
+                    Block::Paragraph(paragraph) => Some(
+                        paragraph
+                            .runs
                             .iter()
                             .map(|run| run.text.as_str())
                             .collect::<String>(),
@@ -596,7 +656,139 @@ fn test_docx_drawing_text_box_table_is_emitted() {
                 .collect::<String>()
         })
         .collect();
-    assert_eq!(cell_text, vec!["A".to_string(), "B".to_string()]);
+    assert_eq!(
+        cell_text,
+        vec![
+            "Qty".to_string(),
+            "Item".to_string(),
+            "12".to_string(),
+            "Widgets".to_string(),
+        ]
+    );
+
+    let typst_source = crate::render::typst_gen::generate_typst(&doc)
+        .expect("the inline box's table should be included in generated Typst")
+        .source;
+    let inline_box_start = typst_source
+        .find("#box(width: 216pt, height: 72pt")
+        .expect("the inline box keeps its declared extent");
+    let table_start = typst_source[inline_box_start..]
+        .find("#table(")
+        .map(|offset| inline_box_start + offset)
+        .expect("the table is generated inside the inline box");
+    assert!(
+        table_start
+            < typst_source[inline_box_start..]
+                .find("]]]")
+                .map(|offset| inline_box_start + offset)
+                .expect("the inline box content is closed"),
+        "the table must be nested within the inline box"
+    );
+}
+
+#[test]
+fn test_docx_inline_drawing_text_box_keeps_picture_inside_box() {
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+            xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="wps">
+    <w:body>
+        <w:p>
+            <w:r><w:t>Chart: </w:t></w:r>
+            <w:r>
+                <w:drawing>
+                    <wp:inline distT="0" distB="0" distL="0" distR="0">
+                        <wp:extent cx="2743200" cy="914400"/>
+                        <wp:docPr id="1" name="Inline picture box"/>
+                        <a:graphic>
+                            <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                                <wps:wsp>
+                                    <wps:txbx>
+                                        <w:txbxContent>
+                                            <w:p><w:r><w:drawing>
+                                                <wp:inline distT="0" distB="0" distL="0" distR="0">
+                                                    <wp:extent cx="322580" cy="322580"/>
+                                                    <wp:docPr id="2" name="image1.bmp"/>
+                                                    <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                                                        <pic:pic>
+                                                            <pic:nvPicPr><pic:cNvPr id="2" name="image1.bmp"/><pic:cNvPicPr/></pic:nvPicPr>
+                                                            <pic:blipFill><a:blip r:embed="rIdImage1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+                                                            <pic:spPr>
+                                                                <a:xfrm><a:off x="0" y="0"/><a:ext cx="322580" cy="322580"/></a:xfrm>
+                                                                <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                                                            </pic:spPr>
+                                                        </pic:pic>
+                                                    </a:graphicData></a:graphic>
+                                                </wp:inline>
+                                            </w:drawing></w:r></w:p>
+                                        </w:txbxContent>
+                                    </wps:txbx>
+                                    <wps:bodyPr/>
+                                </wps:wsp>
+                            </a:graphicData>
+                        </a:graphic>
+                    </wp:inline>
+                </w:drawing>
+            </w:r>
+            <w:r><w:t> details.</w:t></w:r>
+        </w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+    let image_bytes: Vec<u8> = super::image_tests::make_test_bmp();
+    let data: Vec<u8> = super::image_tests::build_docx_with_custom_media_document(
+        document_xml,
+        "media/image1.bmp",
+        &image_bytes,
+    );
+    let (doc, _warnings) = DocxParser
+        .parse(&data, &ConvertOptions::default())
+        .expect("the DrawingML image inside the text box should parse");
+    let flow = match &doc.pages[0] {
+        Page::Flow(flow) => flow,
+        _ => panic!("Expected FlowPage"),
+    };
+
+    assert!(
+        !flow
+            .content
+            .iter()
+            .any(|block| matches!(block, Block::Image(_))),
+        "the image must not be emitted as body-flow content"
+    );
+    let inline_box = only_inline_text_box(&flow.content);
+    let image = inline_box
+        .content
+        .iter()
+        .find_map(|block| match block {
+            Block::Image(image) => Some(image),
+            _ => None,
+        })
+        .expect("the inline box retains its image block");
+    assert!(!image.data.is_empty());
+    assert_eq!(image.format, ImageFormat::Png);
+
+    let typst_output = crate::render::typst_gen::generate_typst(&doc)
+        .expect("the inline image should be included in generated Typst");
+    assert_eq!(typst_output.images.len(), 1);
+    let inline_box_start = typst_output
+        .source
+        .find("#box(width: 216pt, height: 72pt")
+        .expect("the box keeps its declared extent");
+    let image_start = typst_output.source[inline_box_start..]
+        .find("#image(")
+        .map(|offset| inline_box_start + offset)
+        .expect("the image is rendered inside the inline box");
+    let box_end = typst_output.source[inline_box_start..]
+        .find("]]]")
+        .map(|offset| inline_box_start + offset)
+        .expect("the inline box content is closed");
+    assert!(image_start < box_end);
 }
 
 #[test]

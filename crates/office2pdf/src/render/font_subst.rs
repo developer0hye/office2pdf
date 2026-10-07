@@ -1915,15 +1915,11 @@ fn visit_paragraph_fonts(
         {
             return false;
         }
-        // An inline text box's paragraphs declare their own faces. They are not
-        // in the body flow, so nothing else reaches them and the box's text
-        // would fall back to the engine default (issue #1690).
-        run.inline_box.as_ref().is_none_or(|inline_box| {
-            inline_box
-                .content
-                .iter()
-                .all(|paragraph| visit_paragraph_fonts(paragraph, visitor))
-        })
+        // Its own block flow is outside the body flow, so walk it here or its
+        // text and table-cell fonts would fall back to the engine default.
+        run.inline_box
+            .as_ref()
+            .is_none_or(|inline_box| visit_blocks_fonts(&inline_box.content, visitor))
     })
 }
 

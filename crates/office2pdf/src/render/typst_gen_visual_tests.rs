@@ -2080,7 +2080,7 @@ fn test_inline_text_box_is_emitted_inside_its_anchor_paragraph() {
                 href: None,
                 footnote: None,
                 inline_box: Some(Box::new(InlineTextBox {
-                    content: vec![Paragraph {
+                    content: vec![Block::Paragraph(Paragraph {
                         style: ParagraphStyle::default(),
                         runs: vec![Run {
                             text: "Box text".to_string(),
@@ -2089,7 +2089,7 @@ fn test_inline_text_box_is_emitted_inside_its_anchor_paragraph() {
                             footnote: None,
                             inline_box: None,
                         }],
-                    }],
+                    })],
                     width: 144.0,
                     height: 36.0,
                     padding: Insets {
@@ -2175,7 +2175,7 @@ fn test_inline_text_box_survives_a_tab_and_a_table_cell() {
                 href: None,
                 footnote: None,
                 inline_box: Some(Box::new(InlineTextBox {
-                    content: vec![Paragraph {
+                    content: vec![Block::Paragraph(Paragraph {
                         style: ParagraphStyle::default(),
                         runs: vec![Run {
                             text: "Box text".to_string(),
@@ -2184,7 +2184,7 @@ fn test_inline_text_box_survives_a_tab_and_a_table_cell() {
                             footnote: None,
                             inline_box: None,
                         }],
-                    }],
+                    })],
                     width: 144.0,
                     height: 36.0,
                     padding: Insets::default(),
