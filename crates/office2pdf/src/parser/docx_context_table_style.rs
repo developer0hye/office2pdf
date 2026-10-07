@@ -93,6 +93,7 @@ impl TableRegionStyle {
 
 #[derive(Debug, Clone, Default)]
 struct TableStyleDefinition {
+    name: Option<String>,
     base: TableRegionStyle,
     first_row: TableRegionStyle,
     last_row: TableRegionStyle,
@@ -188,16 +189,52 @@ impl TableStyleContext {
             .default_style_id
             .as_deref()
             .and_then(|default_id| self.styles.get(default_id))
-            .map(|default| default.base.cell_margins)
+            .map(TableStyleDefinition::base_cell_margins)
             .unwrap_or_default();
-        let default_cell_padding = inherited_margins
-            .overlay(definition.base.cell_margins)
+        let default_cell_padding = PartialInsets::zero_margins()
+            .overlay(inherited_margins)
+            .overlay(definition.base_cell_margins())
             .complete();
         Some(ResolvedTableStyle {
             definition,
             look: application.look,
             default_cell_padding,
         })
+    }
+}
+
+impl TableStyleDefinition {
+    fn base_cell_margins(&self) -> PartialInsets {
+        // Word resolves this built-in by its display name, replacing even a
+        // partial authored margin element with the full built-in inset.
+        if self
+            .name
+            .as_deref()
+            .is_some_and(|name| name.trim().eq_ignore_ascii_case("Normal Table"))
+        {
+            let horizontal = twips_to_pt(108);
+            PartialInsets {
+                top: Some(0.0),
+                right: Some(horizontal),
+                bottom: Some(0.0),
+                left: Some(horizontal),
+            }
+        } else {
+            self.base.cell_margins
+        }
+    }
+}
+
+impl PartialInsets {
+    fn zero_margins() -> Self {
+        // Zero is the baseline for resolved styles; default and selected
+        // style declarations overlay it in the existing cascade.
+        Self {
+            top: Some(0.0),
+            right: Some(0.0),
+            bottom: Some(0.0),
+            left: Some(0.0),
+        }
     }
 }
 
@@ -502,6 +539,9 @@ fn scan_table_styles(xml: &str) -> ScannedTableStyles {
                         current_definition = TableStyleDefinition::default();
                         current_region = TableStyleRegion::Base;
                     }
+                    b"name" if current_style_id.is_some() => {
+                        current_definition.name = attribute_value(element, b"val");
+                    }
                     b"tblStylePr" if current_style_id.is_some() => {
                         current_region = attribute_value(element, b"type")
                             .as_deref()
@@ -531,6 +571,9 @@ fn scan_table_styles(xml: &str) -> ScannedTableStyles {
                 );
             }
             Ok(quick_xml::events::Event::Empty(ref element)) => {
+                if element.local_name().as_ref() == b"name" && current_style_id.is_some() {
+                    current_definition.name = attribute_value(element, b"val");
+                }
                 apply_style_element(
                     element,
                     &mut current_definition,

@@ -62,8 +62,10 @@ left and right.
 
 `convert_table` in `crates/office2pdf/src/parser/docx_tables.rs` gains a last
 arm: a table whose margins neither a direct `w:tblCellMar` nor a resolved table
-style states takes `WORD_STYLELESS_TABLE_CELL_MARGINS`. A package that resolves
-a table style is unchanged, which is what #1466 landed.
+style states takes `WORD_STYLELESS_TABLE_CELL_MARGINS`. The table-style
+resolver separately applies Word's `Normal Table` margins by recognized style
+name, overlays selected-style margins on the package default, and uses zero
+only for sides the applicable style cascade leaves unstated (issue #1884).
 
 ## Evidence page
 

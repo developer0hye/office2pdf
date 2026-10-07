@@ -843,10 +843,141 @@ fn test_table_cell_margins_override_table_defaults() {
     );
 }
 
-/// A table with no `w:tblStyle` still inherits the package's default table
-/// style. The poster of issue #1466 puts its 0/5.4/0/5.4pt cell margins only
-/// on default `TableNormal`; dropping them lets Typst's unrelated 5pt inset
-/// leak into every unoverridden cell.
+/// Word applies the built-in inset by style name even when the package uses a
+/// different style ID and omits the corresponding `w:tblCellMar`.
+#[test]
+fn recognized_normal_table_default_uses_builtin_margins_without_xml_margins() {
+    let data = build_docx_with_table_style(
+        r#"<w:style w:type="table" w:default="1" w:styleId="CustomStyleId">
+            <w:name w:val="Normal Table"/>
+        </w:style>"#,
+        TABLE_WITHOUT_STYLE,
+    );
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_table(&doc).default_cell_padding,
+        Some(Insets {
+            top: 0.0,
+            right: 5.4,
+            bottom: 0.0,
+            left: 5.4,
+        })
+    );
+}
+
+#[test]
+fn recognized_normal_table_ignores_partial_xml_margins() {
+    let data = build_docx_with_table_style(
+        r#"<w:style w:type="table" w:default="1" w:styleId="CustomStyleId">
+            <w:name w:val="Normal Table"/>
+            <w:tblPr><w:tblCellMar><w:top w:w="200" w:type="dxa"/></w:tblCellMar></w:tblPr>
+        </w:style>"#,
+        TABLE_WITHOUT_STYLE,
+    );
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_table(&doc).default_cell_padding,
+        Some(Insets {
+            top: 0.0,
+            right: 5.4,
+            bottom: 0.0,
+            left: 5.4,
+        })
+    );
+}
+
+#[test]
+fn unrecognized_default_table_style_uses_zero_for_unstated_margins() {
+    let cases: [(&str, Insets); 2] = [
+        (
+            "",
+            Insets {
+                top: 0.0,
+                right: 0.0,
+                bottom: 0.0,
+                left: 0.0,
+            },
+        ),
+        (
+            r#"<w:tblPr><w:tblCellMar><w:top w:w="200" w:type="dxa"/></w:tblCellMar></w:tblPr>"#,
+            Insets {
+                top: 10.0,
+                right: 0.0,
+                bottom: 0.0,
+                left: 0.0,
+            },
+        ),
+    ];
+
+    for (properties, expected) in cases {
+        let style = format!(
+            r#"<w:style w:type="table" w:default="1" w:styleId="GridProbe">
+                <w:name w:val="Grid Probe"/>{properties}
+            </w:style>"#
+        );
+        let data = build_docx_with_table_style(&style, TABLE_WITHOUT_STYLE);
+        let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+        assert_eq!(
+            first_table(&doc).default_cell_padding,
+            Some(expected),
+            "unexpected padding for default style properties {properties:?}"
+        );
+    }
+}
+
+#[test]
+fn explicitly_selected_table_style_resolves_unstated_margins_from_its_name() {
+    let styles = r#"<w:style w:type="table" w:styleId="GridProbe">
+            <w:name w:val="Grid Probe"/>
+            <w:tblPr><w:tblCellMar><w:top w:w="200" w:type="dxa"/></w:tblCellMar></w:tblPr>
+        </w:style>"#;
+    let table = TABLE_WITHOUT_STYLE.replace(
+        "<w:tblPr/>",
+        r#"<w:tblPr><w:tblStyle w:val="GridProbe"/></w:tblPr>"#,
+    );
+    let data = build_docx_with_table_style(styles, &table);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_table(&doc).default_cell_padding,
+        Some(Insets {
+            top: 10.0,
+            right: 0.0,
+            bottom: 0.0,
+            left: 0.0,
+        })
+    );
+}
+
+#[test]
+fn explicitly_selected_normal_table_uses_builtin_margins_by_name() {
+    let styles = r#"<w:style w:type="table" w:styleId="CustomNormalId">
+            <w:name w:val="Normal Table"/>
+            <w:tblPr><w:tblCellMar><w:top w:w="200" w:type="dxa"/></w:tblCellMar></w:tblPr>
+        </w:style>"#;
+    let table = TABLE_WITHOUT_STYLE.replace(
+        "<w:tblPr/>",
+        r#"<w:tblPr><w:tblStyle w:val="CustomNormalId"/></w:tblPr>"#,
+    );
+    let data = build_docx_with_table_style(styles, &table);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_table(&doc).default_cell_padding,
+        Some(Insets {
+            top: 0.0,
+            right: 5.4,
+            bottom: 0.0,
+            left: 5.4,
+        })
+    );
+}
+
+/// A table with no `w:tblStyle` inherits margins from the package's default
+/// table style, as used by issue #1466.
 #[test]
 fn default_table_style_supplies_undeclared_cell_margins() {
     let data = build_docx_with_table_style(
