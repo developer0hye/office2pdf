@@ -104,7 +104,9 @@ fn extract_table_alignment(prop_json: Option<&serde_json::Value>) -> Option<Alig
 /// quantises a cell inset to its 0.24pt device grid, and bracketing probes put
 /// the unquantised default between 9 and 11 twips, so 0.48pt is what reaches
 /// the page rather than a declared width. This is *not* the built-in Normal
-/// Table's 108 twips — that only applies once a table style resolves.
+/// Table's 108 twips — that applies when the resolved style is named `Normal
+/// Table`; other resolved styles use their declared sides over a zero-margin
+/// base.
 const WORD_STYLELESS_TABLE_CELL_MARGINS: Insets = Insets {
     top: 0.0,
     right: 0.48,

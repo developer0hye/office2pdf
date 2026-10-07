@@ -32,7 +32,26 @@ impl PartialInsets {
             left: self.left?,
         })
     }
+
+    fn overlay_onto(self, inherited: Insets) -> Insets {
+        Insets {
+            top: self.top.unwrap_or(inherited.top),
+            right: self.right.unwrap_or(inherited.right),
+            bottom: self.bottom.unwrap_or(inherited.bottom),
+            left: self.left.unwrap_or(inherited.left),
+        }
+    }
 }
+
+const NORMAL_TABLE_STYLE_NAME: &str = "Normal Table";
+
+/// Word's latent built-in `Normal Table` cell margins are 0/108/0/108 twips.
+const NORMAL_TABLE_CELL_MARGINS: Insets = Insets {
+    top: 0.0,
+    right: 5.4,
+    bottom: 0.0,
+    left: 5.4,
+};
 
 #[derive(Debug, Clone, Default)]
 struct RegionBorders {
@@ -93,6 +112,7 @@ impl TableRegionStyle {
 
 #[derive(Debug, Clone, Default)]
 struct TableStyleDefinition {
+    name: Option<String>,
     base: TableRegionStyle,
     first_row: TableRegionStyle,
     last_row: TableRegionStyle,
@@ -184,21 +204,42 @@ impl TableStyleContext {
             .as_deref()
             .or(self.default_style_id.as_deref())?;
         let definition = self.styles.get(style_id)?.clone();
-        let inherited_margins = self
+        let default_style_margins = self
             .default_style_id
             .as_deref()
             .and_then(|default_id| self.styles.get(default_id))
-            .map(|default| default.base.cell_margins)
+            .map(|default| resolve_table_style_cell_margins(default, Insets::default()))
             .unwrap_or_default();
-        let default_cell_padding = inherited_margins
-            .overlay(definition.base.cell_margins)
-            .complete();
+        let default_cell_padding = if self.default_style_id.as_deref() == Some(style_id) {
+            default_style_margins
+        } else {
+            resolve_table_style_cell_margins(&definition, default_style_margins)
+        };
         Some(ResolvedTableStyle {
             definition,
             look: application.look,
-            default_cell_padding,
+            default_cell_padding: Some(default_cell_padding),
         })
     }
+}
+
+fn resolve_table_style_cell_margins(
+    definition: &TableStyleDefinition,
+    inherited: Insets,
+) -> Insets {
+    if definition
+        .name
+        .as_deref()
+        .is_some_and(|name| name.eq_ignore_ascii_case(NORMAL_TABLE_STYLE_NAME))
+    {
+        return definition
+            .base
+            .cell_margins
+            .complete()
+            .unwrap_or(NORMAL_TABLE_CELL_MARGINS);
+    }
+
+    definition.base.cell_margins.overlay_onto(inherited)
 }
 
 impl ResolvedTableStyle {
@@ -517,6 +558,9 @@ fn scan_table_styles(xml: &str) -> ScannedTableStyles {
                     }
                     _ => {}
                 }
+                if current_style_id.is_some() && element.local_name().as_ref() == b"name" {
+                    current_definition.name = attribute_value(element, b"val");
+                }
                 apply_style_element(
                     element,
                     &mut current_definition,
@@ -531,6 +575,9 @@ fn scan_table_styles(xml: &str) -> ScannedTableStyles {
                 );
             }
             Ok(quick_xml::events::Event::Empty(ref element)) => {
+                if current_style_id.is_some() && element.local_name().as_ref() == b"name" {
+                    current_definition.name = attribute_value(element, b"val");
+                }
                 apply_style_element(
                     element,
                     &mut current_definition,
