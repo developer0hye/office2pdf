@@ -3514,7 +3514,7 @@ fn cell_paragraph_anchor_offset_pt(paragraph: &Paragraph, cell: &CellParagraphCt
     let space_before_pt: f64 = paragraph.style.space_before.unwrap_or(0.0);
     let runs: &[Run] = if paragraph.runs.is_empty() {
         cell.paragraph_anchor_metric_runs
-            .or_else(|| cell.paragraph_mark_metric_runs.as_deref())
+            .or(cell.paragraph_mark_metric_runs.as_deref())
             .unwrap_or_default()
     } else {
         &paragraph.runs
