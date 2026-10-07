@@ -1110,6 +1110,105 @@ fn test_picture_alpha_mod_fix_bakes_transparency() {
 }
 
 #[test]
+fn grayscale_blip_effect_converts_the_layout_photo_to_luminance() {
+    let presentation_data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/pptx/oxp_PB001-Input1.pptx");
+    let parser: PptxParser = PptxParser;
+    let (document, _warnings) = parser
+        .parse(presentation_data, &ConvertOptions::default())
+        .unwrap();
+    let page = first_fixed_page(&document);
+    let photo_element = page
+        .elements
+        .iter()
+        .find(|element| {
+            matches!(element.kind, FixedElementKind::Image(_))
+                && element.width > 400.0
+                && element.height > 200.0
+        })
+        .expect("the title-slide photo from its layout is present");
+    let photo = get_image(photo_element);
+
+    assert_eq!(photo.format, ImageFormat::Png);
+    let rgba = image::load_from_memory(&photo.data).unwrap().into_rgba8();
+    assert!(
+        rgba.pixels()
+            .all(|pixel| pixel[0] == pixel[1] && pixel[1] == pixel[2]),
+        "a:grayscl must map every photo pixel to equal RGB channels"
+    );
+}
+
+#[test]
+fn picture_grayscale_effect_preserves_alpha_mod_fix() {
+    let pic_xml = r#"<p:pic><p:nvPicPr><p:cNvPr id="5" name="P"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId7"><a:grayscl/><a:alphaModFix amt="40000"/></a:blip><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm></p:spPr></p:pic>"#;
+    let slide_xml = make_slide_xml(&[pic_xml.to_string()]);
+    let source_pixels = image::RgbaImage::from_fn(3, 1, |x, _| match x {
+        0 => image::Rgba([255, 0, 0, 128]),
+        1 => image::Rgba([0, 255, 0, 64]),
+        _ => image::Rgba([0, 0, 255, 255]),
+    });
+    let mut source_png = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(source_pixels)
+        .write_to(&mut source_png, image::ImageFormat::Png)
+        .unwrap();
+    let data = build_test_pptx_with_images(
+        SLIDE_CX,
+        SLIDE_CY,
+        &[(
+            slide_xml,
+            vec![TestSlideImage {
+                rid: "rId7".to_string(),
+                path: "image1.png".to_string(),
+                data: source_png.into_inner(),
+                relationship_type: None,
+            }],
+        )],
+    );
+
+    let (document, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let image = get_image(&first_fixed_page(&document).elements[0]);
+    assert_eq!(image.format, ImageFormat::Png);
+    let output = image::load_from_memory(&image.data).unwrap().into_rgba8();
+    let lumas = output.pixels().map(|pixel| pixel[0]).collect::<Vec<_>>();
+    assert!(lumas[1] > lumas[0] && lumas[0] > lumas[2]);
+    assert!(
+        output
+            .pixels()
+            .all(|pixel| pixel[0] == pixel[1] && pixel[1] == pixel[2])
+    );
+    let alphas = output.pixels().map(|pixel| pixel[3]).collect::<Vec<_>>();
+    assert_eq!(alphas, [51, 26, 102]);
+}
+
+#[test]
+fn ordinary_shape_picture_fill_honors_grayscale_effect() {
+    let shape = r#"<p:sp><p:nvSpPr><p:cNvPr id="5" name="Photo rectangle"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:blipFill><a:blip r:embed="rId3"><a:grayscl/></a:blip></a:blipFill></p:spPr></p:sp>"#.to_string();
+    let slide_xml = make_slide_xml(&[shape]);
+    let data = build_test_pptx_with_images(
+        SLIDE_CX,
+        SLIDE_CY,
+        &[(
+            slide_xml,
+            vec![TestSlideImage {
+                rid: "rId3".to_string(),
+                path: "image1.bmp".to_string(),
+                data: make_test_bmp(),
+                relationship_type: None,
+            }],
+        )],
+    );
+
+    let (document, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let image = get_image(&first_fixed_page(&document).elements[0]);
+    assert_eq!(image.format, ImageFormat::Png);
+    let rgba = image::load_from_memory(&image.data).unwrap().into_rgba8();
+    assert!(
+        rgba.pixels()
+            .all(|pixel| pixel[0] == pixel[1] && pixel[1] == pixel[2])
+    );
+}
+
+#[test]
 fn test_picture_without_alpha_keeps_original_bytes() {
     let bmp_data = make_test_bmp();
     let pic_xml = make_pic_xml(0, 0, 914_400, 914_400, "rId7");

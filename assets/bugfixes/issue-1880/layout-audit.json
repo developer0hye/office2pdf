@@ -1,0 +1,210 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 4,
+    "out": 4,
+    "matched": 4,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 1,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.30150999999997197,
+    "worst_dy": 1.0757499999999993,
+    "worst_dy_signed": 1.0757499999999993,
+    "worst_line": "WealthandInvestmentManagement"
+   },
+   "dx0": {
+    "mean_abs": 2.175000000548266e-05,
+    "worst": 8.000000002539309e-05
+   },
+   "width": {
+    "mean_abs_pct": 7.495830345746915,
+    "worst_pct": 9.114781746376547
+   },
+   "instances": {
+    "compared": 4,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 1,
+    "fine_shifts": [
+     {
+      "label": "WealthandInvestmentManagement",
+      "gt_x": 551.3769,
+      "gt_y": 44.39999,
+      "out_x": 551.37698,
+      "out_y": 45.47574,
+      "dx": 8.000000002539309e-05,
+      "dy": 1.0757499999999993,
+      "width_pct": 7.676474079480755
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 3,
+    "worst_delta": 0.9851600000000644
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 4,
+    "out_count": 3,
+    "canonical_gt_count": 2,
+    "canonical_out_count": 3,
+    "matched": 1,
+    "unmatched_gt": 1,
+    "unmatched_out": 2,
+    "mean_center_delta": 7.04080002833507e-06,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 1,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       1
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       0.0,
+       0.0,
+       780.0,
+       539.9999859184
+      ],
+      "out_bbox": [
+       0.0,
+       0.0,
+       780.0,
+       540.0
+      ],
+      "dx": 0.0,
+      "dy": 0.0,
+      "dwidth": 0.0,
+      "dheight": 1.408160005667014e-05,
+      "edges": {
+       "left": 0.0,
+       "top": 0.0,
+       "right": 0.0,
+       "bottom": 1.408160005667014e-05
+      },
+      "center_dx": 0.0,
+      "center_dy": 7.04080002833507e-06,
+      "max_abs_delta": 1.408160005667014e-05,
+      "visible_coverage": {
+       "status": "unmodeled",
+       "mismatch_area_pt2": 0.0,
+       "unmodeled_area_pt2": 131283.45150997874,
+       "unmodeled_samples": [
+        [
+         35.763938499999995,
+         135.13158,
+         541.8171335000001,
+         261.5
+        ],
+        [
+         35.763938499999995,
+         261.5,
+         541.8171335000001,
+         279.0
+        ],
+        [
+         35.763938499999995,
+         279.0,
+         541.8171335000001,
+         391.15583
+        ],
+        [
+         550.500535,
+         261.5,
+         648.875495,
+         279.0
+        ]
+       ],
+       "mismatch_samples": [],
+       "raw_edge_coverage": {
+        "left": "unchanged",
+        "right": "unchanged",
+        "top": "unchanged",
+        "bottom": "unchanged"
+       }
+      }
+     }
+    ],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 1.408160005667014e-05,
+     "worst": 1.408160005667014e-05
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 1.408160005667014e-05,
+      "worst": 1.408160005667014e-05
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}
