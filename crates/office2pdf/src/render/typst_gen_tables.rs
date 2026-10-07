@@ -3938,19 +3938,13 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
         let _ = writeln!(out, "#v({}pt)", format_f64(space_before));
     }
     if let Some(first_line_indent_pt) = first_line_indent_pt {
-        if first_line_indent_pt < 0.0 {
-            let _ = write!(
-                out,
-                "#par(hanging-indent: {}pt)[",
-                format_f64(-first_line_indent_pt)
-            );
-        } else {
-            let _ = write!(
-                out,
-                "#par(first-line-indent: (amount: {}pt, all: true))[",
-                format_f64(first_line_indent_pt)
-            );
-        }
+        // Typst's hanging-indent moves every later line, while DrawingML's
+        // signed offset moves only the first line in either direction.
+        let _ = write!(
+            out,
+            "#par(first-line-indent: (amount: {}pt, all: true))[",
+            format_f64(first_line_indent_pt)
+        );
     }
     match paragraph_mark_line_pt {
         Some(height_pt) => {
