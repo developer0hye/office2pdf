@@ -501,7 +501,7 @@ fn missing_typewriter_face_resolves_to_an_available_monospace_face() {
 }
 
 #[test]
-fn missing_theme_sans_fonts_prefer_an_installed_office_calibri_face() -> () {
+fn missing_theme_sans_fonts_prefer_an_installed_office_calibri_face() {
     let context: FontSearchContext = FontSearchContext::for_test(
         Vec::new(),
         &["Liberation Sans", "Calibri", "Helvetica"],
