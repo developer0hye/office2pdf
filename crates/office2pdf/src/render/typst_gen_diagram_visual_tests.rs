@@ -10809,6 +10809,69 @@ fn a_bar_past_the_value_axis_maximum_paints_its_full_length_under_a_plot_clip() 
     }
 }
 
+/// Exercise the reported XLSX chart after OOXML parsing as well as the
+/// synthetic boundary cases above: the fixture's cached 0.53503787878787878
+/// expense value is above the explicit 0.5 axis maximum, so its own generated
+/// rectangle must retain the approximately 1.0701 plot-width ratio.
+#[test]
+fn the_reported_expense_chart_keeps_its_over_axis_bar_geometry() {
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx");
+    let (document, _warnings) = crate::parser::Parser::parse(
+        &crate::parser::xlsx::XlsxParser,
+        data,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("the reported budget workbook parses");
+    let chart: Chart = document
+        .pages
+        .iter()
+        .find_map(|page| match page {
+            crate::ir::Page::Sheet(sheet) => sheet
+                .charts
+                .iter()
+                .find(|anchored| {
+                    anchored.chart.title.as_deref().is_some_and(|title| {
+                        title.to_ascii_lowercase().contains("january expenses")
+                    })
+                })
+                .map(|anchored| anchored.chart.clone()),
+            _ => None,
+        })
+        .expect("the workbook contains the reported january expenses chart");
+
+    assert_eq!(chart.chart_type, ChartType::Bar);
+    assert_eq!(chart.value_axis_min, Some(0.0));
+    assert_eq!(chart.value_axis_max, Some(0.5));
+    let category_index: usize = chart
+        .categories
+        .iter()
+        .position(|category| category.eq_ignore_ascii_case("room & board"))
+        .expect("the chart contains the room & board category");
+    let value: f64 = chart.series[0].values[category_index];
+    assert!(
+        (value - 0.53503787878787878).abs() < 1e-12,
+        "cached expense value is {value}"
+    );
+
+    let source: String = chart_source(chart);
+    let (plot_x, _, plot_width) = horizontal_axis_line(&source);
+    let geometry: ClippedBarGeometry = clipped_bar_geometry(&source);
+    let expected_width: f64 = value / 0.5 * plot_width;
+
+    assert!(
+        (geometry.clip_x - plot_x).abs() < 0.01 && (geometry.clip_width - plot_width).abs() < 0.01,
+        "the parsed chart clip must match its plot bounds: plot x={plot_x}, width={plot_width}; clip x={}, width={}",
+        geometry.clip_x,
+        geometry.clip_width
+    );
+    assert!(
+        (geometry.bar_width - expected_width).abs() < 0.01,
+        "the parsed room & board bar must retain its full {expected_width}pt width, got {}pt",
+        geometry.bar_width
+    );
+}
+
 /// The same overrun rule applies to a column (vertical) chart's value axis,
 /// which is the code path's other branch: a value past the maximum grows the
 /// bar's true height up past the plot's top edge rather than stopping there.
