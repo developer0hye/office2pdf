@@ -568,11 +568,24 @@ fn test_docx_drawing_text_box_table_is_emitted() {
         _ => panic!("Expected FlowPage"),
     };
 
-    let has_table = flow
-        .content
-        .iter()
-        .any(|block| matches!(block, Block::Table(_)));
-    assert!(has_table, "Expected a table extracted from text box");
+    let inline_text_box = flow.content.iter().find_map(|block| match block {
+        Block::Paragraph(paragraph) => paragraph
+            .runs
+            .iter()
+            .find_map(|run| run.inline_box.as_deref()),
+        _ => None,
+    });
+    assert!(
+        inline_text_box.is_some(),
+        "an inline text box holding a table stays attached to its anchor run"
+    );
+    assert!(
+        !flow
+            .content
+            .iter()
+            .any(|block| matches!(block, Block::Table(_))),
+        "a table inside an inline text box must not flatten into body flow"
+    );
 
     let table = first_table(&doc);
     assert_eq!(table.rows.len(), 1);
