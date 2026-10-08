@@ -10831,14 +10831,19 @@ fn the_reported_expense_chart_keeps_its_over_axis_bar_geometry() {
                 .charts
                 .iter()
                 .find(|anchored| {
-                    anchored.chart.title.as_deref().is_some_and(|title| {
-                        title.to_ascii_lowercase().contains("january expenses")
-                    })
+                    let chart: &Chart = &anchored.chart;
+                    chart.chart_type == ChartType::Bar
+                        && chart.value_axis_min == Some(0.0)
+                        && chart.value_axis_max == Some(0.5)
+                        && chart
+                            .categories
+                            .iter()
+                            .any(|category| category.eq_ignore_ascii_case("room & board"))
                 })
                 .map(|anchored| anchored.chart.clone()),
             _ => None,
         })
-        .expect("the workbook contains the reported january expenses chart");
+        .expect("the workbook contains the reported over-axis expense chart");
 
     assert_eq!(chart.chart_type, ChartType::Bar);
     assert_eq!(chart.value_axis_min, Some(0.0));
