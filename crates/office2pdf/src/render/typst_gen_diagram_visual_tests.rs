@@ -10850,7 +10850,7 @@ fn the_reported_expense_chart_keeps_its_over_axis_bar_geometry() {
         .expect("the chart contains the room & board category");
     let value: f64 = chart.series[0].values[category_index];
     assert!(
-        (value - 0.53503787878787878).abs() < 1e-12,
+        (value - 0.535_037_878_787_878_8).abs() < 1e-12,
         "cached expense value is {value}"
     );
 
