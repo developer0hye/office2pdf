@@ -5914,10 +5914,15 @@ fn issue_1721_bottom_aligned_cells_match_native_baselines() {
         &ConvertOptions::default(),
     )
     .unwrap();
-    let source = generate_typst(&document).unwrap().source;
-    let runs = crate::render::pdf::compiled_text_runs(&source, 1).unwrap_or_else(|error| {
-        panic!("issue #1721's second page should compile: {error}\n{source}")
-    });
+    let generated = generate_typst(&document).unwrap();
+    let runs =
+        crate::render::pdf::compiled_text_runs_with_images(&generated.source, &generated.images, 1)
+            .unwrap_or_else(|error| {
+                panic!(
+                    "issue #1721's second page should compile: {error}\n{}",
+                    generated.source
+                )
+            });
     let mut differences: Vec<String> = Vec::new();
     for (text, native_y) in [
         ("january income:", 141.180),
