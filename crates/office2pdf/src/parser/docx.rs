@@ -279,7 +279,10 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 .unwrap_or_default();
             let notes = build_note_context_from_xml(doc_xml.as_deref(), &mut archive, &theme_fonts);
             let wraps = build_wrap_context_from_xml(doc_xml.as_deref());
-            let drawing_text_boxes = DrawingTextBoxContext::from_xml(doc_xml.as_deref());
+            let drawing_text_boxes = DrawingTextBoxContext::from_xml_with_theme(
+                doc_xml.as_deref(),
+                theme_xml.as_deref(),
+            );
             let drawing_shapes =
                 DrawingShapeContext::from_xml_with_theme(doc_xml.as_deref(), theme_xml.as_deref());
             let table_headers = TableHeaderContext::from_xml(doc_xml.as_deref());

@@ -229,6 +229,7 @@ pub(super) fn load_chart_data<R: Read + std::io::Seek>(
     archive: &mut ZipArchive<R>,
     scheme: &crate::parser::drawingml::SchemeColors<'_>,
     theme_fonts: &crate::parser::drawingml::ThemeFontScheme,
+    theme_line_styles: &[super::ThemeLineStyle],
 ) -> ChartMap {
     let mut charts = ChartMap::new();
 
@@ -270,6 +271,7 @@ pub(super) fn load_chart_data<R: Read + std::io::Seek>(
                 &chart_xml,
                 scheme,
                 theme_fonts,
+                theme_line_styles,
             );
             charts.insert(id.clone(), chart);
         }

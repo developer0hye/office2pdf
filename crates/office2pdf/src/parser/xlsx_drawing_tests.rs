@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::*;
-use crate::ir::Color;
+use crate::ir::{Color, LineCap, LineJoin};
 use crate::parser::drawingml::ThemeFontScheme;
 
 fn accent_theme() -> HashMap<String, Color> {
@@ -13,6 +13,12 @@ fn accent_theme() -> HashMap<String, Color> {
         ("lt2".to_string(), Color::new(231, 230, 230)),
         ("accent1".to_string(), Color::new(68, 114, 196)),
     ])
+}
+
+fn cap_join_theme() -> Vec<crate::parser::pptx::ThemeLineStyle> {
+    crate::parser::pptx::parse_theme_line_styles(
+        r#"<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:fmtScheme><a:lnStyleLst><a:ln cap="rnd"><a:miter/></a:ln></a:lnStyleLst></a:fmtScheme></a:theme>"#,
+    )
 }
 
 fn drawing_with_fill(color_markup: &str) -> String {
@@ -222,6 +228,42 @@ fn drawing_run_resolves_theme_typeface_placeholders() {
         ),
         Some("Calibri".to_string())
     );
+}
+
+#[test]
+fn drawing_text_box_outline_keeps_explicit_drawingml_cap_and_join() {
+    let xml: String = drawing_with_fill(r#"<a:srgbClr val="FF0000"/>"#).replace(
+        "</xdr:spPr>",
+        r#"<a:ln cap="sq"><a:bevel/><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></xdr:spPr><xdr:style><a:lnRef idx="1"/></xdr:style>"#,
+    );
+    let boxes = parse_drawing_text_boxes_with_theme_lines(
+        &xml,
+        &accent_theme(),
+        &ThemeFontScheme::default(),
+        &cap_join_theme(),
+    );
+    let border = boxes[0].border.as_ref().expect("text box has an outline");
+
+    assert_eq!(border.cap, LineCap::Square);
+    assert_eq!(border.join, LineJoin::Bevel);
+}
+
+#[test]
+fn drawing_text_box_outline_inherits_cap_and_join_from_its_theme_line_reference() {
+    let xml: String = drawing_with_fill(r#"<a:srgbClr val="FF0000"/>"#).replace(
+        "</xdr:spPr>",
+        r#"<a:ln><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></xdr:spPr><xdr:style><a:lnRef idx="1"/></xdr:style>"#,
+    );
+    let boxes = parse_drawing_text_boxes_with_theme_lines(
+        &xml,
+        &accent_theme(),
+        &ThemeFontScheme::default(),
+        &cap_join_theme(),
+    );
+    let border = boxes[0].border.as_ref().expect("text box has an outline");
+
+    assert_eq!(border.cap, LineCap::Round);
+    assert_eq!(border.join, LineJoin::Miter);
 }
 
 #[test]
@@ -537,6 +579,38 @@ fn connector_line_shape_yields_its_anchor_stroke_and_colour() {
     );
     assert_eq!(line.stroke.color, Color::new(217, 217, 217));
     assert!(!line.flip_h && !line.flip_v);
+}
+
+#[test]
+fn worksheet_line_shape_keeps_explicit_drawingml_cap_and_join() {
+    let xml = drawing_with_line_shape(
+        "cxnSp",
+        &format!(
+            r#"{LINE_XFRM}<a:ln w="12700" cap="sq"><a:bevel/><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>"#
+        ),
+        ACCENT_LINE_REFERENCE,
+    );
+    let lines =
+        parse_drawing_line_shapes_with_theme_lines(&xml, &accent_theme(), &cap_join_theme());
+
+    assert_eq!(lines[0].stroke.cap, LineCap::Square);
+    assert_eq!(lines[0].stroke.join, LineJoin::Bevel);
+}
+
+#[test]
+fn worksheet_line_shape_inherits_cap_and_join_from_its_theme_line_reference() {
+    let xml = drawing_with_line_shape(
+        "cxnSp",
+        &format!(
+            r#"{LINE_XFRM}<a:ln w="12700"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>"#
+        ),
+        ACCENT_LINE_REFERENCE,
+    );
+    let lines =
+        parse_drawing_line_shapes_with_theme_lines(&xml, &accent_theme(), &cap_join_theme());
+
+    assert_eq!(lines[0].stroke.cap, LineCap::Round);
+    assert_eq!(lines[0].stroke.join, LineJoin::Miter);
 }
 
 #[test]

@@ -3,7 +3,7 @@ use super::*;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use crate::ir::{ChartUserShapeExtent, Color};
+use crate::ir::{ChartUserShapeExtent, Color, LineCap, LineJoin};
 
 static NO_ALIASES: LazyLock<HashMap<String, String>> = LazyLock::new(HashMap::new);
 
@@ -29,6 +29,12 @@ fn cambria_theme() -> ThemeFontScheme {
         major_latin: Some("Cambria".to_string()),
         minor_latin: Some("Trebuchet MS".to_string()),
     }
+}
+
+fn cap_join_theme() -> Vec<crate::parser::pptx::ThemeLineStyle> {
+    crate::parser::pptx::parse_theme_line_styles(
+        r#"<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:fmtScheme><a:lnStyleLst><a:ln cap="rnd"><a:miter/></a:ln></a:lnStyleLst></a:fmtScheme></a:theme>"#,
+    )
 }
 
 /// `xl/drawings/drawing2.xml` of `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx`,
@@ -96,6 +102,48 @@ fn shape_text_carries_its_run_size_weight_face_and_resolved_scheme_color() {
     // `accent1` at half the luminance: Excel's own export of this caption
     // prints it in `#246778`.
     assert_eq!(runs[0].style.color, Some(Color::new(0x24, 0x67, 0x78)));
+}
+
+#[test]
+fn chart_user_shape_outline_keeps_explicit_drawingml_cap_and_join() {
+    let xml: String = CASH_FLOW_CAPTION.replace(
+        "</cdr:spPr>",
+        r#"<a:ln xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" cap="sq"><a:bevel/><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></cdr:spPr><cdr:style><a:lnRef xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" idx="1"/></cdr:style>"#,
+    );
+    let shapes = parse_chart_user_shapes_with_theme_lines(
+        &xml,
+        &workbook_scheme(),
+        &cambria_theme(),
+        &cap_join_theme(),
+    );
+    let border = shapes[0]
+        .border
+        .as_ref()
+        .expect("chart text box has an outline");
+
+    assert_eq!(border.cap, LineCap::Square);
+    assert_eq!(border.join, LineJoin::Bevel);
+}
+
+#[test]
+fn chart_user_shape_outline_inherits_cap_and_join_from_its_theme_line_reference() {
+    let xml: String = CASH_FLOW_CAPTION.replace(
+        "</cdr:spPr>",
+        r#"<a:ln xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></cdr:spPr><cdr:style><a:lnRef xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" idx="1"/></cdr:style>"#,
+    );
+    let shapes = parse_chart_user_shapes_with_theme_lines(
+        &xml,
+        &workbook_scheme(),
+        &cambria_theme(),
+        &cap_join_theme(),
+    );
+    let border = shapes[0]
+        .border
+        .as_ref()
+        .expect("chart text box has an outline");
+
+    assert_eq!(border.cap, LineCap::Round);
+    assert_eq!(border.join, LineJoin::Miter);
 }
 
 /// `<a:bodyPr>` states the insets in EMU when it states them at all; the

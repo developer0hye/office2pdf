@@ -25,6 +25,7 @@ use quick_xml::events::Event;
 use zip::ZipArchive;
 
 use super::drawingml::{self, SchemeColors, ThemeFontScheme};
+use super::pptx::ThemeLineStyle;
 use super::xlsx::xlsx_drawing::{apply_run_properties, parse_rels_targets, resolved_or_legacy};
 use super::xml_util;
 use crate::ir::{
@@ -76,6 +77,7 @@ pub(crate) fn load_chart_user_shapes<R: Read + Seek>(
     chart_xml: &str,
     scheme: &SchemeColors<'_>,
     theme_fonts: &ThemeFontScheme,
+    theme_line_styles: &[ThemeLineStyle],
 ) -> Vec<ChartUserShape> {
     let Some(rid) = user_shapes_rid(chart_xml) else {
         return Vec::new();
@@ -95,7 +97,7 @@ pub(crate) fn load_chart_user_shapes<R: Read + Seek>(
     let Some(drawing_xml) = read_part(archive, &drawing_path) else {
         return Vec::new();
     };
-    parse_chart_user_shapes(&drawing_xml, scheme, theme_fonts)
+    parse_chart_user_shapes_with_theme_lines(&drawing_xml, scheme, theme_fonts, theme_line_styles)
 }
 
 fn read_part<R: Read + Seek>(archive: &mut ZipArchive<R>, path: &str) -> Option<String> {
@@ -125,10 +127,20 @@ fn resolve_relative_part(base_dir: &str, target: &str) -> String {
 }
 
 /// Parse a chart drawing part into the shapes it anchors over the chart area.
+#[cfg(test)]
 pub(crate) fn parse_chart_user_shapes(
     xml: &str,
     scheme: &SchemeColors<'_>,
     theme_fonts: &ThemeFontScheme,
+) -> Vec<ChartUserShape> {
+    parse_chart_user_shapes_with_theme_lines(xml, scheme, theme_fonts, &[])
+}
+
+fn parse_chart_user_shapes_with_theme_lines(
+    xml: &str,
+    scheme: &SchemeColors<'_>,
+    theme_fonts: &ThemeFontScheme,
+    theme_line_styles: &[ThemeLineStyle],
 ) -> Vec<ChartUserShape> {
     let mut shapes: Vec<ChartUserShape> = Vec::new();
     let mut reader = Reader::from_str(xml);
@@ -164,7 +176,7 @@ pub(crate) fn parse_chart_user_shapes(
                 match local.as_ref() {
                     b"relSizeAnchor" | b"absSizeAnchor" => {
                         if let Some(state) = anchor.take()
-                            && let Some(shape) = state.finish()
+                            && let Some(shape) = state.finish(theme_line_styles)
                         {
                             shapes.push(shape);
                         }
@@ -210,6 +222,9 @@ struct AnchorState {
     fill: Option<Color>,
     border_color: Option<Color>,
     border_width_pt: f64,
+    border_cap: Option<LineCap>,
+    border_join: Option<LineJoin>,
+    line_reference_index: Option<usize>,
     paragraphs: Vec<Paragraph>,
     current_paragraph: Option<Paragraph>,
     current_style: TextStyle,
@@ -240,11 +255,20 @@ impl AnchorState {
             b"solidFill" if !self.in_tx_body && !self.in_line => self.in_shape_fill = true,
             b"ln" if !self.in_tx_body => {
                 self.in_line = true;
+                self.border_cap = drawingml::line_cap(element).or(self.border_cap);
                 if let Some(width) = xml_util::get_attr_str(element, b"w")
                     .and_then(|value| value.parse::<f64>().ok())
                 {
                     self.border_width_pt = width / EMU_PER_POINT;
                 }
+            }
+            b"lnRef" => {
+                self.line_reference_index = xml_util::get_attr_str(element, b"idx")
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .filter(|index| *index > 0);
+            }
+            b"round" | b"bevel" | b"miter" if self.in_line => {
+                self.border_join = super::pptx::drawingml_line_join(tag).or(self.border_join);
             }
             b"p" if self.in_tx_body => {
                 self.current_paragraph = Some(Paragraph {
@@ -283,6 +307,22 @@ impl AnchorState {
         theme_fonts: &ThemeFontScheme,
     ) {
         match tag {
+            b"ln" if !self.in_tx_body => {
+                self.border_cap = drawingml::line_cap(element).or(self.border_cap);
+                if let Some(width) = xml_util::get_attr_str(element, b"w")
+                    .and_then(|value| value.parse::<f64>().ok())
+                {
+                    self.border_width_pt = width / EMU_PER_POINT;
+                }
+            }
+            b"lnRef" => {
+                self.line_reference_index = xml_util::get_attr_str(element, b"idx")
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .filter(|index| *index > 0);
+            }
+            b"round" | b"bevel" | b"miter" if self.in_line => {
+                self.border_join = super::pptx::drawingml_line_join(tag).or(self.border_join);
+            }
             b"bodyPr" => self.read_body_insets(element),
             b"pPr" if self.current_paragraph.is_some() => self.read_alignment(element),
             b"rPr" if self.in_run => apply_run_properties(&mut self.current_style, element),
@@ -407,7 +447,7 @@ impl AnchorState {
         }
     }
 
-    fn finish(self) -> Option<ChartUserShape> {
+    fn finish(self, theme_line_styles: &[ThemeLineStyle]) -> Option<ChartUserShape> {
         if !self.saw_shape {
             return None;
         }
@@ -438,8 +478,24 @@ impl AnchorState {
                 width: self.border_width_pt,
                 color,
                 style: BorderLineStyle::Solid,
-                join: LineJoin::Round,
-                cap: LineCap::Flat,
+                join: self
+                    .border_join
+                    .or_else(|| {
+                        self.line_reference_index
+                            .and_then(|index| index.checked_sub(1))
+                            .and_then(|index| theme_line_styles.get(index))
+                            .and_then(|style| style.join)
+                    })
+                    .unwrap_or(LineJoin::Round),
+                cap: self
+                    .border_cap
+                    .or_else(|| {
+                        self.line_reference_index
+                            .and_then(|index| index.checked_sub(1))
+                            .and_then(|index| theme_line_styles.get(index))
+                            .and_then(|style| style.cap)
+                    })
+                    .unwrap_or(LineCap::Flat),
             }),
         })
     }

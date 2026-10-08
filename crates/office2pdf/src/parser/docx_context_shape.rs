@@ -24,11 +24,12 @@ use crate::ir::{
     LineJoin, Shape, ShapeKind, Subpath, TextBoxVerticalAlign, WrapMode,
 };
 use crate::parser::drawingml::{
-    ParsedColor, SchemeColors, parse_color_from_empty, parse_color_from_start,
+    ParsedColor, SchemeColors, line_cap, parse_color_from_empty, parse_color_from_start,
     parse_theme_color_scheme,
 };
 use crate::parser::pptx::custom_geometry::parse_custom_geometry;
 use crate::parser::pptx::geometry_guides::ShapeExtent;
+use crate::parser::pptx::{self, ThemeLineStyle, drawingml_line_join};
 use crate::parser::units::emu_to_pt;
 use crate::parser::xml_util::parse_hex_color;
 
@@ -89,11 +90,16 @@ impl DrawingShapeContext {
         xml: Option<&str>,
         theme_xml: Option<&str>,
     ) -> Self {
+        let theme_line_styles: Vec<ThemeLineStyle> = theme_xml
+            .map(|xml| pptx::parse_theme_line_styles(xml))
+            .unwrap_or_default();
         Self {
-            shapes: xml.map(scan_drawing_shapes).unwrap_or_default(),
+            shapes: xml
+                .map(|xml| scan_drawing_shapes_with_theme(xml, &theme_line_styles))
+                .unwrap_or_default(),
             cursor: Cell::new(0),
             wpg_drawings: xml
-                .map(|xml| scan_wpg_drawings(xml, theme_xml))
+                .map(|xml| scan_wpg_drawings_with_theme(xml, theme_xml, &theme_line_styles))
                 .unwrap_or_default(),
             wpg_cursor: Cell::new(0),
             canvas_image_offsets: xml.map(scan_canvas_image_offsets).unwrap_or_default(),
@@ -158,6 +164,9 @@ pub(super) struct ShapeBuilder {
     line_width_pt: Option<f64>,
     line_none: bool,
     has_line: bool,
+    line_cap: Option<LineCap>,
+    line_join: Option<LineJoin>,
+    line_reference_index: Option<usize>,
     head_arrow: bool,
     tail_arrow: bool,
     custom_subpaths: Vec<Subpath>,
@@ -172,15 +181,19 @@ impl ShapeBuilder {
     /// Build a [`FloatingShape`] from the accumulated geometry, or `None` when
     /// this drawing is not a geometry-only shape (it is a picture or a text box,
     /// both handled by docx-rs).
-    fn finish(self) -> Option<FloatingShape> {
-        self.finish_with_text_box(false)
+    fn finish(self, theme_line_styles: &[ThemeLineStyle]) -> Option<FloatingShape> {
+        self.finish_with_text_box(false, theme_line_styles)
     }
 
-    fn finish_wpg(self) -> Option<FloatingShape> {
-        self.finish_with_text_box(true)
+    fn finish_wpg(self, theme_line_styles: &[ThemeLineStyle]) -> Option<FloatingShape> {
+        self.finish_with_text_box(true, theme_line_styles)
     }
 
-    fn finish_with_text_box(self, allow_text_box: bool) -> Option<FloatingShape> {
+    fn finish_with_text_box(
+        self,
+        allow_text_box: bool,
+        theme_line_styles: &[ThemeLineStyle],
+    ) -> Option<FloatingShape> {
         if !self.has_wsp || self.has_wpg || (self.has_text_box && !allow_text_box) {
             return None;
         }
@@ -189,7 +202,7 @@ impl ShapeBuilder {
         let height: f64 = self.box_height_pt.unwrap_or(0.0);
         let mut kind: ShapeKind = self.resolve_kind(width, height);
         mirror_shape_kind(&mut kind, self.flip_h, self.flip_v);
-        let stroke: Option<BorderSide> = self.resolve_stroke();
+        let stroke: Option<BorderSide> = self.resolve_stroke(theme_line_styles);
 
         let mut gradient_fill: Option<GradientFill> = self.gradient_fill;
         if let Some(gradient) = gradient_fill.as_mut() {
@@ -291,13 +304,16 @@ impl ShapeBuilder {
     /// `finish_with_text_box` discards a text box drawing, so the inline box of
     /// issue #1690 resolves its frame from the same accumulated `a:ln` and
     /// `a:solidFill` rather than parsing them a second way.
-    pub(super) fn text_box_frame(&self) -> (Option<BorderSide>, Option<Color>) {
+    pub(super) fn text_box_frame(
+        &self,
+        theme_line_styles: &[ThemeLineStyle],
+    ) -> (Option<BorderSide>, Option<Color>) {
         let fill: Option<Color> = if self.fill_none {
             None
         } else {
             self.fill_color
         };
-        (self.resolve_stroke(), fill)
+        (self.resolve_stroke(theme_line_styles), fill)
     }
 
     /// Where the box's text starts inside it, from `wps:bodyPr`.
@@ -318,7 +334,7 @@ impl ShapeBuilder {
         }
     }
 
-    fn resolve_stroke(&self) -> Option<BorderSide> {
+    fn resolve_stroke(&self, theme_line_styles: &[ThemeLineStyle]) -> Option<BorderSide> {
         if self.line_none || !self.has_line {
             return None;
         }
@@ -326,12 +342,23 @@ impl ShapeBuilder {
             Some(width) if width > 0.0 => width,
             _ => DEFAULT_STROKE_WIDTH_PT,
         };
+        let theme_style: Option<&ThemeLineStyle> = self.line_reference_index.and_then(|index| {
+            index
+                .checked_sub(1)
+                .and_then(|index| theme_line_styles.get(index))
+        });
         Some(BorderSide {
             width,
             color: self.line_color.unwrap_or(Color { r: 0, g: 0, b: 0 }),
             style: BorderLineStyle::Solid,
-            join: LineJoin::Round,
-            cap: LineCap::Flat,
+            join: self
+                .line_join
+                .or_else(|| theme_style.and_then(|style| style.join))
+                .unwrap_or(LineJoin::Round),
+            cap: self
+                .line_cap
+                .or_else(|| theme_style.and_then(|style| style.cap))
+                .unwrap_or(LineCap::Flat),
         })
     }
 }
@@ -409,7 +436,15 @@ fn rotation_attr_degrees(element: &BytesStart<'_>) -> Option<f64> {
 
 /// Scan `word/document.xml`, returning one [`FloatingShape`] per geometry-only
 /// `wps:wsp` drawing, in document order.
+#[cfg(test)]
 fn scan_drawing_shapes(xml: &str) -> Vec<FloatingShape> {
+    scan_drawing_shapes_with_theme(xml, &[])
+}
+
+fn scan_drawing_shapes_with_theme(
+    xml: &str,
+    theme_line_styles: &[ThemeLineStyle],
+) -> Vec<FloatingShape> {
     let mut reader = quick_xml::Reader::from_str(xml);
     let mut buffer: Vec<u8> = Vec::new();
     let mut result: Vec<FloatingShape> = Vec::new();
@@ -460,7 +495,9 @@ fn scan_drawing_shapes(xml: &str) -> Vec<FloatingShape> {
                 b"drawing" if drawing_depth > 0 => {
                     drawing_depth -= 1;
                     if drawing_depth == 0
-                        && let Some(shape) = builder.take().and_then(ShapeBuilder::finish)
+                        && let Some(shape) = builder
+                            .take()
+                            .and_then(|builder| builder.finish(theme_line_styles))
                     {
                         result.push(shape);
                     }
@@ -500,6 +537,17 @@ impl ShapeScanState {
                 if let Some(builder) = builder {
                     builder.has_line = true;
                     builder.line_width_pt = emu_attr_to_pt(element, b"w").or(builder.line_width_pt);
+                    builder.line_cap = line_cap(element).or(builder.line_cap);
+                }
+            }
+            b"lnRef" if builder.is_some() => {
+                if let Some(index) = attribute_value(element, b"idx")
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .filter(|index| *index > 0)
+                    && let Some(builder) = builder
+                {
+                    builder.line_reference_index = Some(index);
+                    builder.has_line = true;
                 }
             }
             other => {
@@ -510,6 +558,25 @@ impl ShapeScanState {
 
     /// Feed an empty element to the builder.
     pub(super) fn empty(&mut self, builder: Option<&mut ShapeBuilder>, element: &BytesStart<'_>) {
+        if element.local_name().as_ref() == b"ln" {
+            if let Some(builder) = builder {
+                builder.has_line = true;
+                builder.line_width_pt = emu_attr_to_pt(element, b"w").or(builder.line_width_pt);
+                builder.line_cap = line_cap(element).or(builder.line_cap);
+            }
+            return;
+        }
+        if element.local_name().as_ref() == b"lnRef" {
+            if let Some(index) = attribute_value(element, b"idx")
+                .and_then(|value| value.parse::<usize>().ok())
+                .filter(|index| *index > 0)
+                && let Some(builder) = builder
+            {
+                builder.line_reference_index = Some(index);
+                builder.has_line = true;
+            }
+            return;
+        }
         handle_geometry_element(
             builder,
             element.local_name().as_ref(),
@@ -598,6 +665,9 @@ pub(super) fn handle_geometry_element(
         }
         b"tailEnd" if line_depth > 0 => builder.tail_arrow = arrow_type_present(element),
         b"headEnd" if line_depth > 0 => builder.head_arrow = arrow_type_present(element),
+        name if line_depth > 0 => {
+            builder.line_join = drawingml_line_join(name).or(builder.line_join);
+        }
         _ => {}
     }
 }
@@ -824,7 +894,7 @@ impl WpgDrawingBuilder {
         }
     }
 
-    fn finish_child(&mut self) {
+    fn finish_child(&mut self, theme_line_styles: &[ThemeLineStyle]) {
         let Some(mut child) = self.child.take() else {
             return;
         };
@@ -841,7 +911,7 @@ impl WpgDrawingBuilder {
         child.shape.box_height_pt = Some(height);
         child.shape.offset_x_pt = offset_x;
         child.shape.offset_y_pt = offset_y;
-        let shape: Option<FloatingShape> = child.shape.finish_wpg();
+        let shape: Option<FloatingShape> = child.shape.finish_wpg(theme_line_styles);
         let padding: Insets = shape
             .as_ref()
             .map(|shape| shape_text_padding(&shape.shape.kind, width, height, child.padding))
@@ -896,7 +966,16 @@ fn numeric_attr(element: &BytesStart<'_>, name: &[u8]) -> Option<f64> {
     attribute_value(element, name).and_then(|value| value.parse::<f64>().ok())
 }
 
+#[cfg(test)]
 fn scan_wpg_drawings(xml: &str, theme_xml: Option<&str>) -> Vec<Option<WpgDrawingInfo>> {
+    scan_wpg_drawings_with_theme(xml, theme_xml, &[])
+}
+
+fn scan_wpg_drawings_with_theme(
+    xml: &str,
+    theme_xml: Option<&str>,
+    theme_line_styles: &[ThemeLineStyle],
+) -> Vec<Option<WpgDrawingInfo>> {
     let text_box_contents: Vec<Vec<docx_rs::DocumentChild>> = scan_wpg_text_box_contents(xml);
     let mut text_box_cursor: usize = 0;
     let theme_colors: HashMap<String, Color> =
@@ -936,6 +1015,7 @@ fn scan_wpg_drawings(xml: &str, theme_xml: Option<&str>) -> Vec<Option<WpgDrawin
                             element,
                             &text_box_contents,
                             &mut text_box_cursor,
+                            theme_line_styles,
                         );
                     }
                 }
@@ -968,7 +1048,7 @@ fn scan_wpg_drawings(xml: &str, theme_xml: Option<&str>) -> Vec<Option<WpgDrawin
             }
             Ok(Event::End(ref element)) if element.local_name().as_ref() == b"drawing" => {
                 if let Some(mut drawing) = drawings.pop() {
-                    drawing.finish_child();
+                    drawing.finish_child(theme_line_styles);
                     if drawing.is_wpg {
                         records[drawing.record_index] = Some(WpgDrawingInfo {
                             children: drawing.children,
@@ -978,7 +1058,7 @@ fn scan_wpg_drawings(xml: &str, theme_xml: Option<&str>) -> Vec<Option<WpgDrawin
             }
             Ok(Event::End(ref element)) => {
                 if let Some(drawing) = drawings.last_mut() {
-                    handle_wpg_end(drawing, element.local_name().as_ref());
+                    handle_wpg_end(drawing, element.local_name().as_ref(), theme_line_styles);
                 }
             }
             Ok(Event::Eof) => break,
@@ -1076,6 +1156,7 @@ fn handle_wpg_start(
     element: &BytesStart<'_>,
     text_box_contents: &[Vec<docx_rs::DocumentChild>],
     text_box_cursor: &mut usize,
+    theme_line_styles: &[ThemeLineStyle],
 ) {
     match element.local_name().as_ref() {
         b"positionH" => drawing.position_axis = PositionAxis::Horizontal,
@@ -1098,7 +1179,7 @@ fn handle_wpg_start(
             drawing.group_transform_builder = Some(GroupTransformBuilder::default());
         }
         b"wsp" if drawing.is_wpg => {
-            drawing.finish_child();
+            drawing.finish_child(theme_line_styles);
             let mut child = WpgChildBuilder {
                 parent_transform: drawing.group_transforms.last().copied().unwrap_or_default(),
                 ..WpgChildBuilder::default()
@@ -1130,6 +1211,7 @@ fn handle_wpg_start(
                 child.shape.has_line = true;
                 child.shape.line_width_pt =
                     emu_attr_to_pt(element, b"w").or(child.shape.line_width_pt);
+                child.shape.line_cap = line_cap(element).or(child.shape.line_cap);
             }
         }
         b"fillRef" if drawing.child.is_some() => {
@@ -1142,6 +1224,9 @@ fn handle_wpg_start(
                 child.line_reference_depth += 1;
                 if numeric_attr(element, b"idx").unwrap_or_default() > 0.0 {
                     child.shape.has_line = true;
+                    child.shape.line_reference_index = attribute_value(element, b"idx")
+                        .and_then(|value| value.parse::<usize>().ok())
+                        .filter(|index| *index > 0);
                 }
             }
         }
@@ -1180,6 +1265,29 @@ fn handle_wpg_start(
 }
 
 fn handle_wpg_empty(drawing: &mut WpgDrawingBuilder, element: &BytesStart<'_>) {
+    match element.local_name().as_ref() {
+        b"ln" => {
+            if let Some(child) = drawing.child.as_mut() {
+                child.shape.has_line = true;
+                child.shape.line_width_pt =
+                    emu_attr_to_pt(element, b"w").or(child.shape.line_width_pt);
+                child.shape.line_cap = line_cap(element).or(child.shape.line_cap);
+            }
+            return;
+        }
+        b"lnRef" => {
+            if let Some(child) = drawing.child.as_mut()
+                && let Some(index) = attribute_value(element, b"idx")
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .filter(|index| *index > 0)
+            {
+                child.shape.has_line = true;
+                child.shape.line_reference_index = Some(index);
+            }
+            return;
+        }
+        _ => {}
+    }
     handle_wpg_geometry_element(drawing, element);
 }
 
@@ -1237,7 +1345,11 @@ fn handle_wpg_geometry_element(drawing: &mut WpgDrawingBuilder, element: &BytesS
     );
 }
 
-fn handle_wpg_end(drawing: &mut WpgDrawingBuilder, local_name: &[u8]) {
+fn handle_wpg_end(
+    drawing: &mut WpgDrawingBuilder,
+    local_name: &[u8],
+    theme_line_styles: &[ThemeLineStyle],
+) {
     match local_name {
         b"posOffset" => drawing.in_position_offset = false,
         b"positionH" | b"positionV" => drawing.position_axis = PositionAxis::None,
@@ -1301,7 +1413,7 @@ fn handle_wpg_end(drawing: &mut WpgDrawingBuilder, local_name: &[u8]) {
                 child.font_reference_depth -= 1;
             }
         }
-        b"wsp" => drawing.finish_child(),
+        b"wsp" => drawing.finish_child(theme_line_styles),
         b"grpSpPr" if drawing.group_properties_depth > 0 => {
             drawing.group_properties_depth -= 1;
         }

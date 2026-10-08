@@ -1,0 +1,27 @@
+{
+  "name": "issue-1881-docx-shape-line-cap",
+  "base": "../../tests/fixtures/docx/issue_176_office2pdf_test.docx",
+  "part": "word/document.xml",
+  "factor": "a:ln/@cap on the visible open line",
+  "page": 1,
+  "variants": [
+    {
+      "value": "flat",
+      "find": "<a:ln w=\"0\"><a:solidFill><a:srgbClr val=\"3465a4\"/></a:solidFill><a:tailEnd len=\"med\" type=\"triangle\" w=\"med\"/></a:ln>",
+      "replace": "<a:ln w=\"0\" cap=\"flat\"><a:solidFill><a:srgbClr val=\"3465a4\"/></a:solidFill><a:tailEnd len=\"med\" type=\"triangle\" w=\"med\"/></a:ln>",
+      "count": 1
+    },
+    {
+      "value": "rnd",
+      "find": "<a:ln w=\"0\"><a:solidFill><a:srgbClr val=\"3465a4\"/></a:solidFill><a:tailEnd len=\"med\" type=\"triangle\" w=\"med\"/></a:ln>",
+      "replace": "<a:ln w=\"0\" cap=\"rnd\"><a:solidFill><a:srgbClr val=\"3465a4\"/></a:solidFill><a:tailEnd len=\"med\" type=\"triangle\" w=\"med\"/></a:ln>",
+      "count": 1
+    },
+    {
+      "value": "sq",
+      "find": "<a:ln w=\"0\"><a:solidFill><a:srgbClr val=\"3465a4\"/></a:solidFill><a:tailEnd len=\"med\" type=\"triangle\" w=\"med\"/></a:ln>",
+      "replace": "<a:ln w=\"0\" cap=\"sq\"><a:solidFill><a:srgbClr val=\"3465a4\"/></a:solidFill><a:tailEnd len=\"med\" type=\"triangle\" w=\"med\"/></a:ln>",
+      "count": 1
+    }
+  ]
+}
