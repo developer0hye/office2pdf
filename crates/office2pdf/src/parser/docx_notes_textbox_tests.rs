@@ -666,9 +666,9 @@ fn test_docx_drawing_text_box_table_is_emitted() {
         ]
     );
 
-    let typst_source = crate::render::typst_gen::generate_typst(&doc)
-        .expect("the inline box's table should be included in generated Typst")
-        .source;
+    let typst_output = crate::render::typst_gen::generate_typst(&doc)
+        .expect("the inline box's table should be included in generated Typst");
+    let typst_source: &str = &typst_output.source;
     let inline_box_start = typst_source
         .find("#box(width: 216pt, height: 72pt")
         .expect("the inline box keeps its declared extent");
@@ -684,6 +684,9 @@ fn test_docx_drawing_text_box_table_is_emitted() {
                 .expect("the inline box content is closed"),
         "the table must be nested within the inline box"
     );
+    let pdf: Vec<u8> =
+        crate::render_document(&doc).expect("the inline text box's table should compile to PDF");
+    assert!(pdf.starts_with(b"%PDF"));
 }
 
 #[test]
@@ -789,6 +792,9 @@ fn test_docx_inline_drawing_text_box_keeps_picture_inside_box() {
         .map(|offset| inline_box_start + offset)
         .expect("the inline box content is closed");
     assert!(image_start < box_end);
+    let pdf: Vec<u8> =
+        crate::render_document(&doc).expect("the inline text box's image should compile to PDF");
+    assert!(pdf.starts_with(b"%PDF"));
 }
 
 #[test]
