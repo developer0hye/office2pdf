@@ -10809,41 +10809,32 @@ fn a_bar_past_the_value_axis_maximum_paints_its_full_length_under_a_plot_clip() 
     }
 }
 
-/// Exercise the reported XLSX chart after OOXML parsing as well as the
-/// synthetic boundary cases above: the fixture's cached 0.53503787878787878
-/// expense value is above the explicit 0.5 axis maximum, so its own generated
-/// rectangle must retain the approximately 1.0701 plot-width ratio.
+/// Exercise the reported XLSX chart part through the OOXML parser as well as
+/// the synthetic boundary cases above: its cached 0.53503787878787878 expense
+/// value is above the explicit 0.5 axis maximum, so its generated rectangle
+/// must retain the approximately 1.0701 plot-width ratio.
 #[test]
 fn the_reported_expense_chart_keeps_its_over_axis_bar_geometry() {
+    use std::io::Read;
+
     let data: &[u8] =
         include_bytes!("../../../../tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx");
-    let (document, _warnings) = crate::parser::Parser::parse(
-        &crate::parser::xlsx::XlsxParser,
-        data,
-        &crate::config::ConvertOptions::default(),
-    )
-    .expect("the reported budget workbook parses");
-    let chart: Chart = document
-        .pages
-        .iter()
-        .find_map(|page| match page {
-            crate::ir::Page::Sheet(sheet) => sheet
-                .charts
-                .iter()
-                .find(|anchored| {
-                    let chart: &Chart = &anchored.chart;
-                    chart.chart_type == ChartType::Bar
-                        && chart.value_axis_min == Some(0.0)
-                        && chart.value_axis_max == Some(0.5)
-                        && chart
-                            .categories
-                            .iter()
-                            .any(|category| category.eq_ignore_ascii_case("room & board"))
-                })
-                .map(|anchored| anchored.chart.clone()),
-            _ => None,
-        })
-        .expect("the workbook contains the reported over-axis expense chart");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data))
+        .expect("the reported budget workbook is a valid XLSX archive");
+    let mut chart_xml: String = String::new();
+    archive
+        .by_name("xl/charts/chart4.xml")
+        .expect("the workbook contains the reported expense chart part")
+        .read_to_string(&mut chart_xml)
+        .expect("the expense chart XML is valid UTF-8");
+    let colors = std::collections::HashMap::new();
+    let aliases = std::collections::HashMap::new();
+    let scheme = crate::parser::drawingml::SchemeColors {
+        colors: &colors,
+        aliases: &aliases,
+    };
+    let mut chart: Chart = crate::parser::chart::parse_chart_xml(&chart_xml, &scheme)
+        .expect("the reported expense chart parses");
 
     assert_eq!(chart.chart_type, ChartType::Bar);
     assert_eq!(chart.value_axis_min, Some(0.0));
@@ -10858,6 +10849,13 @@ fn the_reported_expense_chart_keeps_its_over_axis_bar_geometry() {
         (value - 0.535_037_878_787_878_8).abs() < 1e-12,
         "cached expense value is {value}"
     );
+
+    // The geometry helper measures one painted bar, so retain the reported
+    // category and cached value while removing the chart's other five bars.
+    let category: String = chart.categories[category_index].clone();
+    assert_eq!(chart.series.len(), 1);
+    chart.categories = vec![category];
+    chart.series[0].values = vec![value];
 
     let source: String = chart_source(chart);
     let (plot_x, _, plot_width) = horizontal_axis_line(&source);
