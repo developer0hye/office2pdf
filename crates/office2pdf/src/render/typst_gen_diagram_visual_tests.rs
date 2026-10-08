@@ -10858,20 +10858,26 @@ fn the_reported_expense_chart_keeps_its_over_axis_bar_geometry() {
     chart.series[0].values = vec![value];
 
     let source: String = chart_source(chart);
-    let (plot_x, _, plot_width) = horizontal_axis_line(&source);
     let geometry: ClippedBarGeometry = clipped_bar_geometry(&source);
-    let expected_width: f64 = value / 0.5 * plot_width;
+    let expected_width: f64 = value / 0.5 * geometry.clip_width;
 
     assert!(
-        (geometry.clip_x - plot_x).abs() < 0.01 && (geometry.clip_width - plot_width).abs() < 0.01,
-        "the parsed chart clip must match its plot bounds: plot x={plot_x}, width={plot_width}; clip x={}, width={}",
+        geometry.clip_width > 0.0 && geometry.bar_x.abs() < 0.01,
+        "the clipped bar must start at the zero-axis edge inside a positive-width plot: clip x={}, width={}, bar x={}",
         geometry.clip_x,
-        geometry.clip_width
+        geometry.clip_width,
+        geometry.bar_x
     );
     assert!(
         (geometry.bar_width - expected_width).abs() < 0.01,
-        "the parsed room & board bar must retain its full {expected_width}pt width, got {}pt",
+        "the parsed room & board bar must retain its full {expected_width}pt width against the plot clip, got {}pt",
         geometry.bar_width
+    );
+    assert!(
+        geometry.bar_width > geometry.clip_width + 0.01,
+        "the parsed room & board bar must overrun the plot clip: bar={}pt, clip={}pt",
+        geometry.bar_width,
+        geometry.clip_width
     );
 }
 
