@@ -202,11 +202,12 @@ fn east_asian_auto_space(run: &Run) -> String {
 pub(super) fn generate_paragraph(
     out: &mut String,
     para: &Paragraph,
-    line_grid_pitch: Option<f64>,
-    default_tab_width_pt: f64,
-    breaks_hangul_at_eojeol: bool,
-    available_measure_pt: Option<f64>,
+    ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
+    let line_grid_pitch: Option<f64> = ctx.line_grid_pitch;
+    let default_tab_width_pt: f64 = ctx.default_tab_width_pt;
+    let breaks_hangul_at_eojeol: bool = ctx.breaks_hangul_at_eojeol;
+    let available_measure_pt: Option<f64> = ctx.available_measure_pt;
     let style = &para.style;
     let paragraph_tab_width_pt: f64 = paragraph_default_tab_width_pt(style, default_tab_width_pt);
 
@@ -408,18 +409,20 @@ pub(super) fn generate_paragraph(
         Some(level) => {
             let _ = write!(out, "#heading(level: {level})[");
             write_paragraph_before_spacing_overlay(out, style, true, false);
-            generate_runs_with_tabs(
+            generate_runs_with_tabs_and_metrics_in_context(
                 out,
                 &para.runs,
                 style.tab_stops.as_deref(),
                 paragraph_tab_width_pt,
                 eojeol_wrap,
-            );
+                None,
+                ctx,
+            )?;
             out.push(']');
         }
         None => {
             write_paragraph_before_spacing_overlay(out, style, true, false);
-            generate_word_runs_with_tabs(
+            generate_word_runs_with_tabs_in_context(
                 out,
                 &para.runs,
                 style.tab_stops.as_deref(),
@@ -427,7 +430,8 @@ pub(super) fn generate_paragraph(
                 eojeol_wrap,
                 style,
                 line_grid_pitch,
-            );
+                ctx,
+            )?;
         }
     }
 
@@ -3894,7 +3898,7 @@ fn split_runs_on_hard_breaks(runs: &[Run]) -> Option<Vec<PowerPointHardBreakLine
     Some(lines)
 }
 
-fn generate_word_runs_with_tabs(
+fn generate_word_runs_with_tabs_in_context(
     out: &mut String,
     runs: &[Run],
     tab_stops: Option<&[TabStop]>,
@@ -3902,17 +3906,152 @@ fn generate_word_runs_with_tabs(
     eojeol_wrap: EojeolWrap,
     style: &ParagraphStyle,
     line_grid_pitch: Option<f64>,
-) {
+    ctx: &mut super::GenCtx,
+) -> Result<(), ConvertError> {
     let metrics: Option<WordRunLineMetrics<'_>> =
         WordRunLineMetrics::for_mixed_declared_families(runs, style, line_grid_pitch);
-    generate_runs_with_tabs_and_metrics(
+    generate_runs_with_tabs_and_metrics_in_context(
         out,
         runs,
         tab_stops,
         default_tab_width_pt,
         eojeol_wrap,
         metrics.map(RunLineMetrics::Word),
-    );
+        ctx,
+    )
+}
+
+fn generate_runs_with_tabs_and_metrics_in_context(
+    out: &mut String,
+    runs: &[Run],
+    tab_stops: Option<&[TabStop]>,
+    default_tab_width_pt: f64,
+    eojeol_wrap: EojeolWrap,
+    run_line_metrics: Option<RunLineMetrics<'_>>,
+    ctx: &mut super::GenCtx,
+) -> Result<(), ConvertError> {
+    if !paragraph_contains_tabs(runs) {
+        return generate_runs_with_metrics_in_context(
+            out,
+            runs,
+            eojeol_wrap,
+            run_line_metrics,
+            ctx,
+        );
+    }
+
+    let segments: Vec<Vec<Run>> = split_runs_on_tabs(runs);
+    write_measured_tab_segments_with_result(
+        out,
+        &segments,
+        tab_stops,
+        default_tab_width_pt,
+        |out, index| {
+            generate_runs_with_metrics_in_context(
+                out,
+                &segments[index],
+                eojeol_wrap,
+                run_line_metrics,
+                ctx,
+            )
+        },
+    )
+}
+
+fn write_measured_tab_segments_with_result(
+    out: &mut String,
+    segment_runs: &[Vec<Run>],
+    tab_stops: Option<&[TabStop]>,
+    default_tab_width_pt: f64,
+    mut write_segment: impl FnMut(&mut String, usize) -> Result<(), ConvertError>,
+) -> Result<(), ConvertError> {
+    out.push_str("#context {\n");
+
+    for (index, segment) in segment_runs.iter().enumerate() {
+        let _ = write!(out, "  let tab_segment_{index} = [");
+        write_segment(out, index)?;
+        out.push_str("]\n");
+
+        if index == 0 {
+            out.push_str("  let tab_prefix_0 = tab_segment_0\n");
+            continue;
+        }
+
+        write_tab_segment_bindings(out, index, segment, tab_stops, default_tab_width_pt);
+    }
+
+    let _ = writeln!(out, "  tab_prefix_{}", segment_runs.len() - 1);
+    out.push('}');
+    Ok(())
+}
+
+pub(super) fn generate_runs_with_context(
+    out: &mut String,
+    runs: &[Run],
+    eojeol_wrap: EojeolWrap,
+    ctx: &mut super::GenCtx,
+) -> Result<(), ConvertError> {
+    generate_runs_with_metrics_in_context(out, runs, eojeol_wrap, None, ctx)
+}
+
+pub(super) fn generate_runs_with_tabs_context(
+    out: &mut String,
+    runs: &[Run],
+    tab_stops: Option<&[TabStop]>,
+    default_tab_width_pt: f64,
+    eojeol_wrap: EojeolWrap,
+    ctx: &mut super::GenCtx,
+) -> Result<(), ConvertError> {
+    generate_runs_with_tabs_and_metrics_in_context(
+        out,
+        runs,
+        tab_stops,
+        default_tab_width_pt,
+        eojeol_wrap,
+        None,
+        ctx,
+    )
+}
+
+pub(super) fn generate_run_with_context(
+    out: &mut String,
+    run: &Run,
+    ctx: &mut super::GenCtx,
+) -> Result<(), ConvertError> {
+    if let Some(inline_box) = run.inline_box.as_deref() {
+        return write_inline_text_box(out, inline_box, ctx);
+    }
+    if let Some(content) = run.footnote.as_deref() {
+        out.push_str("#footnote[");
+        generate_runs_with_context(out, content, EojeolWrap::Syllable, ctx)?;
+        out.push(']');
+        return Ok(());
+    }
+
+    generate_run(out, run);
+    Ok(())
+}
+
+fn generate_runs_with_metrics_in_context(
+    out: &mut String,
+    runs: &[Run],
+    eojeol_wrap: EojeolWrap,
+    run_line_metrics: Option<RunLineMetrics<'_>>,
+    ctx: &mut super::GenCtx,
+) -> Result<(), ConvertError> {
+    if runs.iter().any(|run| run.inline_box.is_some()) {
+        for (index, run) in runs.iter().enumerate() {
+            if run.inline_box.is_some() || run.footnote.is_some() {
+                generate_run_with_context(out, run, ctx)?;
+            } else {
+                generate_run_at_with_metrics(out, run, index == 0, run_line_metrics);
+            }
+        }
+        return Ok(());
+    }
+
+    generate_runs_with_metrics(out, runs, eojeol_wrap, run_line_metrics);
+    Ok(())
 }
 
 fn generate_runs_with_tabs_and_metrics(
@@ -5113,7 +5252,11 @@ fn generate_run_at_with_metrics(
 /// below the line instead of standing on it: measured at 85.92pt for that same
 /// anchor baseline. With the content placed, the box's own bottom edge is its
 /// baseline. The anchored text box path uses the same `#place(top + left)`.
-fn write_inline_text_box(out: &mut String, inline_box: &InlineTextBox) {
+fn write_inline_text_box(
+    out: &mut String,
+    inline_box: &InlineTextBox,
+    ctx: &mut super::GenCtx,
+) -> Result<(), ConvertError> {
     let padding: &Insets = &inline_box.padding;
     let inner_width: f64 = (inline_box.width - padding.left - padding.right).max(0.0);
     let _ = write!(
@@ -5132,19 +5275,64 @@ fn write_inline_text_box(out: &mut String, inline_box: &InlineTextBox) {
         ")[#place(top + left)[#block(width: {}pt)[",
         format_f64(inner_width)
     );
-    for paragraph in &inline_box.content {
-        // The box carries its own flow: Word lays its paragraphs out by the
-        // same model as the body's, so they take the same emitter. It writes
-        // markup into `out` and has no failure path of its own; the `Result` is
-        // the block generator's uniform signature.
-        let _ = generate_paragraph(
-            out,
-            paragraph,
-            None,
-            DEFAULT_TAB_WIDTH_PT,
-            false,
-            Some(inner_width),
-        );
+    let previous_measure_pt: Option<f64> = ctx.available_measure_pt;
+    let previous_line_grid_pitch: Option<f64> = ctx.line_grid_pitch;
+    let previous_default_tab_width_pt: f64 = ctx.default_tab_width_pt;
+    let previous_breaks_hangul_at_eojeol: bool = ctx.breaks_hangul_at_eojeol;
+    ctx.available_measure_pt = Some(inner_width);
+    ctx.line_grid_pitch = None;
+    ctx.default_tab_width_pt = DEFAULT_TAB_WIDTH_PT;
+    ctx.breaks_hangul_at_eojeol = false;
+    let result: Result<(), ConvertError> = super::generate_blocks(out, &inline_box.content, ctx);
+    ctx.available_measure_pt = previous_measure_pt;
+    ctx.line_grid_pitch = previous_line_grid_pitch;
+    ctx.default_tab_width_pt = previous_default_tab_width_pt;
+    ctx.breaks_hangul_at_eojeol = previous_breaks_hangul_at_eojeol;
+    result?;
+    out.push_str("]]]");
+    Ok(())
+}
+
+fn write_inline_text_box_without_context(out: &mut String, inline_box: &InlineTextBox) {
+    // Legacy markup-only callers have no image registry or block-generation
+    // context. DOCX flow paragraphs, table cells, lists, and headers use the
+    // context-aware writer above; this path remains for paragraph-only metric
+    // helpers that cannot contain a table or picture.
+    debug_assert!(
+        inline_box
+            .content
+            .iter()
+            .all(|block| matches!(block, Block::Paragraph(_))),
+        "block-bearing inline text boxes require a generation context"
+    );
+    let padding: &Insets = &inline_box.padding;
+    let inner_width: f64 = (inline_box.width - padding.left - padding.right).max(0.0);
+    let _ = write!(
+        out,
+        "#box(width: {}pt, height: {}pt, inset: {}",
+        format_f64(inline_box.width),
+        format_f64(inline_box.height),
+        super::format_insets(padding),
+    );
+    if let Some(fill) = inline_box.fill {
+        let _ = write!(out, ", fill: {}", rgb(&fill));
+    }
+    super::write_shape_stroke(out, &inline_box.stroke);
+    let _ = write!(
+        out,
+        ")[#place(top + left)[#block(width: {}pt)[",
+        format_f64(inner_width)
+    );
+    for block in &inline_box.content {
+        if let Block::Paragraph(paragraph) = block {
+            generate_runs_with_tabs(
+                out,
+                &paragraph.runs,
+                paragraph.style.tab_stops.as_deref(),
+                paragraph_default_tab_width_pt(&paragraph.style, DEFAULT_TAB_WIDTH_PT),
+                EojeolWrap::Syllable,
+            );
+        }
     }
     out.push_str("]]]");
 }
@@ -5171,7 +5359,7 @@ fn generate_run_seated_with_metrics(
     // The box is the run's whole content: Word anchors a `wp:inline` drawing to
     // a run that carries no text of its own (issue #1690).
     if let Some(inline_box) = run.inline_box.as_deref() {
-        write_inline_text_box(out, inline_box);
+        let _ = write_inline_text_box_without_context(out, inline_box);
         return;
     }
 

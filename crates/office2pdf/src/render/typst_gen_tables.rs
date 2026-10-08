@@ -3366,7 +3366,7 @@ fn generate_cell_content(
                     cell_paragraph_anchor_offset_pt(&caption.paragraph, &paragraph),
                 );
                 pending_floating_images.clear();
-                generate_cell_paragraph(out, &caption.paragraph, &paragraph);
+                generate_cell_paragraph(out, &caption.paragraph, &paragraph, ctx)?;
             }
             Block::Paragraph(para) => {
                 let paragraph: CellParagraphCtx<'_> =
@@ -3378,7 +3378,7 @@ fn generate_cell_content(
                     cell_paragraph_anchor_offset_pt(para, &paragraph),
                 );
                 pending_floating_images.clear();
-                generate_cell_paragraph(out, para, &paragraph);
+                generate_cell_paragraph(out, para, &paragraph, ctx)?;
             }
             Block::Table(table) => {
                 if ctx.table_depth < MAX_TABLE_DEPTH {
@@ -3427,6 +3427,7 @@ fn generate_cell_content(
                             available_measure_pt: ctx.available_measure_pt,
                             baseline_snap: None,
                         },
+                        ctx,
                     )?;
                 }
             }
@@ -3738,7 +3739,12 @@ fn generate_sheet_accounting_number_format(
     out.push_str("],\n)\n");
 }
 
-fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagraphCtx) {
+fn generate_cell_paragraph(
+    out: &mut String,
+    para: &Paragraph,
+    cell: &CellParagraphCtx,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
     let style: &ParagraphStyle = &para.style;
     let alignment = style.alignment;
     let align_str: Option<&str> = match alignment {
@@ -3987,13 +3993,14 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
                     let _ = write!(out, "#h({}pt)", format_f64(spacing));
                 }
             } else {
-                generate_runs_with_tabs(
+                generate_runs_with_tabs_context(
                     out,
                     &para.runs,
                     style.tab_stops.as_deref(),
                     paragraph_default_tab_width_pt(style, cell.default_tab_width_pt),
                     eojeol_wrap,
-                );
+                    ctx,
+                )?;
                 if let Some(space_pt) = sheet_trailing_advance_space_pt(style, &para.runs) {
                     let _ = write!(out, "#h({}pt)", format_geometry(space_pt));
                 }
@@ -4037,6 +4044,7 @@ fn generate_cell_paragraph(out: &mut String, para: &Paragraph, cell: &CellParagr
     if centered_sheet_line_start_shift_pt.is_some() {
         out.push(']');
     }
+    Ok(())
 }
 
 /// The measured line model needed to distinguish an odd wrapped spreadsheet

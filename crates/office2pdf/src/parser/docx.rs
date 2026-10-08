@@ -972,8 +972,7 @@ fn extract_run_children_media(
                 }
                 match extract_drawing_text_box_blocks(drawing, images, hyperlinks, style_map, ctx) {
                     DrawingTextBoxPlacement::Absent => {}
-                    DrawingTextBoxPlacement::Floating(blocks)
-                    | DrawingTextBoxPlacement::InlineFlattened(blocks) => {
+                    DrawingTextBoxPlacement::Floating(blocks) => {
                         text_box_blocks.extend(blocks);
                     }
                     DrawingTextBoxPlacement::Inline(inline_box) => {

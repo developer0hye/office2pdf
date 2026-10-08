@@ -32,7 +32,7 @@ fn build_docx_with_image(width_px: u32, height_px: u32) -> Vec<u8> {
     cursor.into_inner()
 }
 
-fn build_docx_with_custom_image_document(document_xml: &str) -> Vec<u8> {
+pub(super) fn build_docx_with_custom_image_document(document_xml: &str) -> Vec<u8> {
     build_docx_with_custom_media_document(document_xml, "media/image1.bmp", &make_test_bmp())
 }
 

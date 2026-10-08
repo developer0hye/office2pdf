@@ -2080,16 +2080,69 @@ fn test_inline_text_box_is_emitted_inside_its_anchor_paragraph() {
                 href: None,
                 footnote: None,
                 inline_box: Some(Box::new(InlineTextBox {
-                    content: vec![Paragraph {
-                        style: ParagraphStyle::default(),
-                        runs: vec![Run {
-                            text: "Box text".to_string(),
-                            style: TextStyle::default(),
-                            href: None,
-                            footnote: None,
-                            inline_box: None,
-                        }],
-                    }],
+                    content: vec![
+                        Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "Box text".to_string(),
+                                style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
+                                inline_box: None,
+                            }],
+                        }),
+                        Block::Table(Table {
+                            rows: vec![TableRow {
+                                cells: vec![
+                                    TableCell {
+                                        content: vec![Block::Paragraph(Paragraph {
+                                            style: ParagraphStyle::default(),
+                                            runs: vec![Run {
+                                                text: "Table cell A".to_string(),
+                                                style: TextStyle::default(),
+                                                href: None,
+                                                footnote: None,
+                                                inline_box: None,
+                                            }],
+                                        })],
+                                        ..TableCell::default()
+                                    },
+                                    TableCell {
+                                        content: vec![Block::Paragraph(Paragraph {
+                                            style: ParagraphStyle::default(),
+                                            runs: vec![Run {
+                                                text: "Table cell B".to_string(),
+                                                style: TextStyle::default(),
+                                                href: None,
+                                                footnote: None,
+                                                inline_box: None,
+                                            }],
+                                        })],
+                                        ..TableCell::default()
+                                    },
+                                ],
+                                height: None,
+                                minimum_height: None,
+                            }],
+                            column_widths: vec![48.0, 48.0],
+                            ..Table::default()
+                        }),
+                        Block::Image(ImageData {
+                            rotation_deg: None,
+                            flip_h: false,
+                            flip_v: false,
+                            data: vec![0x89, 0x50, 0x4E, 0x47],
+                            format: ImageFormat::Png,
+                            width: Some(24.0),
+                            height: Some(24.0),
+                            crop: None,
+                            stroke: None,
+                            alignment: None,
+                            clip_shape: None,
+                            shadow: None,
+                            paragraph_spacing: None,
+                        }),
+                    ],
                     width: 144.0,
                     height: 36.0,
                     padding: Insets {
@@ -2152,14 +2205,55 @@ fn test_inline_text_box_is_emitted_inside_its_anchor_paragraph() {
         source.contains("Box text"),
         "the box's text is emitted inside it, got:\n{source}"
     );
+    let inline_box_start: usize = source
+        .find("#box(width: 144pt, height: 36pt")
+        .expect("the inline text box is emitted");
+    let table_start: usize = source
+        .find("#table(")
+        .expect("the inline text box's table is emitted");
+    assert!(
+        table_start > inline_box_start,
+        "the table is emitted inside the inline text box, got:\n{source}"
+    );
+    assert!(
+        source.contains("Table cell A") && source.contains("Table cell B"),
+        "both table cells remain readable inside the box, got:\n{source}"
+    );
+    assert!(
+        source.contains("#image(\"img-0.png\""),
+        "the inline text box's picture is emitted with the rest of its flow, got:\n{source}"
+    );
 }
 
-/// The box travels with the run, so it reaches the page from every paragraph
-/// path — not only the body's. Carrying the rendered markup beside the runs
-/// instead left the box out of the table-cell, list and tabbed-paragraph paths,
-/// where a run with no text of its own emits nothing at all (issue #1690).
+/// The box travels with the run, so it reaches body, table-cell, list and
+/// tabbed-paragraph paths. Carrying its markup beside the runs left it out of
+/// each path, where a run with no text of its own emits nothing (issues #1690,
+/// #1889).
 #[test]
 fn test_inline_text_box_survives_a_tab_and_a_table_cell() {
+    let nested_table = || {
+        Block::Table(Table {
+            rows: vec![TableRow {
+                cells: vec![TableCell {
+                    content: vec![Block::Paragraph(Paragraph {
+                        style: ParagraphStyle::default(),
+                        runs: vec![Run {
+                            text: "Nested table cell".to_string(),
+                            style: TextStyle::default(),
+                            href: None,
+                            footnote: None,
+                            inline_box: None,
+                        }],
+                    })],
+                    ..TableCell::default()
+                }],
+                height: None,
+                minimum_height: None,
+            }],
+            column_widths: vec![72.0],
+            ..Table::default()
+        })
+    };
     let anchor_runs = |leading: &str| {
         vec![
             Run {
@@ -2175,16 +2269,19 @@ fn test_inline_text_box_survives_a_tab_and_a_table_cell() {
                 href: None,
                 footnote: None,
                 inline_box: Some(Box::new(InlineTextBox {
-                    content: vec![Paragraph {
-                        style: ParagraphStyle::default(),
-                        runs: vec![Run {
-                            text: "Box text".to_string(),
-                            style: TextStyle::default(),
-                            href: None,
-                            footnote: None,
-                            inline_box: None,
-                        }],
-                    }],
+                    content: vec![
+                        Block::Paragraph(Paragraph {
+                            style: ParagraphStyle::default(),
+                            runs: vec![Run {
+                                text: "Box text".to_string(),
+                                style: TextStyle::default(),
+                                href: None,
+                                footnote: None,
+                                inline_box: None,
+                            }],
+                        }),
+                        nested_table(),
+                    ],
                     width: 144.0,
                     height: 36.0,
                     padding: Insets::default(),
@@ -2209,6 +2306,18 @@ fn test_inline_text_box_survives_a_tab_and_a_table_cell() {
     assert!(
         tabbed_source.contains("Box text"),
         "a tabbed paragraph still writes the box's text, got:\n{tabbed_source}"
+    );
+    let tabbed_box_start: usize = tabbed_source
+        .find("#box(width: 144pt, height: 36pt")
+        .expect("the tabbed box is emitted");
+    let tabbed_box_end: usize = tabbed_source[tabbed_box_start..]
+        .find("]]]")
+        .map(|offset| tabbed_box_start + offset)
+        .expect("the tabbed box closes");
+    assert!(
+        tabbed_source[tabbed_box_start..tabbed_box_end].contains("#table(")
+            && tabbed_source[tabbed_box_start..tabbed_box_end].contains("Nested table cell"),
+        "the tabbed box keeps its nested table inside its bounds, got:\n{tabbed_source}"
     );
 
     // A table cell's paragraphs go through the table generator, not the body's.
@@ -2235,5 +2344,43 @@ fn test_inline_text_box_survives_a_tab_and_a_table_cell() {
     assert!(
         celled_source.contains("Box text"),
         "a table cell still writes the box's text, got:\n{celled_source}"
+    );
+    let celled_box_start: usize = celled_source
+        .find("#box(width: 144pt, height: 36pt")
+        .expect("the cell's inline box is emitted");
+    let celled_box_end: usize = celled_source[celled_box_start..]
+        .find("]]]")
+        .map(|offset| celled_box_start + offset)
+        .expect("the cell's inline box closes");
+    assert!(
+        celled_source[celled_box_start..celled_box_end].contains("#table(")
+            && celled_source[celled_box_start..celled_box_end].contains("Nested table cell"),
+        "the cell's inline box keeps its nested table inside its bounds, got:\n{celled_source}"
+    );
+
+    let listed = make_doc(vec![make_flow_page(vec![Block::List(List {
+        kind: ListKind::Unordered,
+        items: vec![crate::ir::ListItem {
+            content: vec![Paragraph {
+                style: ParagraphStyle::default(),
+                runs: anchor_runs("List item: "),
+            }],
+            level: 0,
+            start_at: None,
+        }],
+        level_styles: Default::default(),
+    })])]);
+    let listed_source = generate_typst(&listed).unwrap().source;
+    let listed_box_start: usize = listed_source
+        .find("#box(width: 144pt, height: 36pt")
+        .expect("the list item's inline box is emitted");
+    let listed_box_end: usize = listed_source[listed_box_start..]
+        .find("]]]")
+        .map(|offset| listed_box_start + offset)
+        .expect("the list item's inline box closes");
+    assert!(
+        listed_source[listed_box_start..listed_box_end].contains("#table(")
+            && listed_source[listed_box_start..listed_box_end].contains("Nested table cell"),
+        "the list item's inline box keeps its nested table inside its bounds, got:\n{listed_source}"
     );
 }
