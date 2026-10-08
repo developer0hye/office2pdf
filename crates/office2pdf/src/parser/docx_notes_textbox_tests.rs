@@ -488,7 +488,7 @@ fn test_docx_drawing_text_box_multiple_paragraphs_are_emitted_in_order() {
 
     // The body keeps only its own three paragraphs: the lead-in, the one that
     // anchors the box, and the tail. The box's two paragraphs stay inside the
-    // box (issue #1690).
+    // box (issues #1690 and #1889).
     let body_texts: Vec<String> = blocks
         .iter()
         .filter_map(|block| match block {
@@ -507,7 +507,12 @@ fn test_docx_drawing_text_box_multiple_paragraphs_are_emitted_in_order() {
     let box_texts: Vec<String> = inline_box
         .content
         .iter()
-        .map(|paragraph| paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => {
+                Some(paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+            }
+            _ => None,
+        })
         .collect();
     assert_eq!(
         box_texts,
