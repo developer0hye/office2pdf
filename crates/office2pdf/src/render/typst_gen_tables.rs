@@ -356,10 +356,9 @@ fn generate_table_rows(
                 && (has_east_asian_text || row_is_set_in_east_asian_face(row)),
         };
 
-        // A spreadsheet row whose fixed track cannot hold more than one line
-        // seats every cell on that one line, whatever each cell's declared
-        // vertical alignment says — Excel's native exports print such rows on
-        // a single baseline (issue #839).
+        // A fixed spreadsheet row with room for one line shares row metrics
+        // among centered cells. Top- and bottom-aligned cells keep their own
+        // seats (#839, #1721).
         let row_shared_line: Option<SheetRowLine> = sheet_row_shared_line(
             row,
             row.height.filter(|_| fixed_row_heights),
@@ -538,28 +537,10 @@ fn block_is_set_in_east_asian_face(block: &Block) -> bool {
 /// room for per-cell vertical alignment (issue #839).
 const SHEET_ROW_TRACK_QUANTISATION_SLACK_PT: f64 = 0.5;
 
-/// The one line a tight spreadsheet row seats every cell on, or `None` when
-/// the row is not in that regime (issue #839).
-///
-/// Excel prints every cell of a single-line sheet row on one baseline: the
-/// native export of `09_expense_report_en` puts a `vertical="bottom"` amount
-/// column and its `vertical="center"` neighbours all at y=143.00, and
-/// `04_payroll_ko`'s fixed 합계 row seats its centred Korean label with its
-/// bottom-aligned numbers at y=218.00. The alignments coincide because the
-/// track holds essentially the line alone: there is no slack to distribute,
-/// so the declared alignments have nowhere to differ.
-///
-/// Both gates key on the row's *bare hhea* line, not the 1.3-factor East
-/// Asian box (#518): the tight regime is a property of Excel's geometry, and
-/// Excel's own line never carries that Word factor — judging a 23pt Korean
-/// title track against the inflated box would misread its real ~3pt of slack
-/// as none. Two regimes stay out. A row with more content room than the line
-/// — a tall header, a spanned merge — keeps per-cell alignment, which Excel
-/// honours and #618 measured. A row whose track is *shorter* than the line
-/// holds text deliberately oversized for it (a 42pt title in a 23pt track),
-/// where the alignments pick which part of the overflowing line shows and
-/// stay honoured too; a track an auto-fit produced is never shorter than its
-/// own font's line.
+/// Shared metrics for centered cells in a tight spreadsheet row (#839).
+/// Top and bottom cells retain their own alignment even when these metrics
+/// exist: a tight track does not prove that the three native seats coincide
+/// (#1721). Oversized text and roomy rows keep per-cell metrics as well.
 fn sheet_row_shared_line(
     row: &TableRow,
     row_track_pt: Option<f64>,
@@ -980,12 +961,14 @@ fn generate_table_cell(
     row_shared_line: Option<&SheetRowLine>,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
-    // Whether this cell joins its tight row's one baseline (issue #839). A
-    // cell spanning several tracks has more room than the row's single track,
-    // and a cell stacking several blocks holds more than the row's one line;
-    // both keep their declared alignment, which is what Excel honours when
-    // there is room. A cell with no paragraph has no line to seat.
+    // A tight track can still give top, center and bottom distinct native
+    // baselines (#1721). Share centered-row metrics only with cells that
+    // request centering; never replace the declared or default alignment.
+    // Resolve the table default too; untouched spreadsheet cells inherit bottom.
+    let effective_vertical_align: Option<CellVerticalAlign> =
+        cell.vertical_align.or(ctx.table_default_vertical_align);
     let seats_on_row_line: bool = row_shared_line.is_some()
+        && effective_vertical_align == Some(CellVerticalAlign::Center)
         && cell.row_span <= 1
         && cell
             .content
@@ -1011,27 +994,6 @@ fn generate_table_cell(
         || cell.padding.is_some()
         || seats_on_row_line;
 
-    // The alignment the cell actually renders with: its own, or the table's
-    // default (Excel's bottom). The paragraph codegen needs the effective
-    // answer, not the cell's declaration, because Excel's untouched default
-    // cells are exactly the bottom-aligned ones (issue #618).
-    //
-    // In a tight spreadsheet row the declared alignment has no room to act in
-    // Excel, so the choice of anchor here is free — and it is taken as the
-    // *centred* symmetric box for every cell, not the descender seat. The
-    // centred baseline — `sheet_cell_baseline_from_track_top_pt`'s rounded,
-    // track-centred seat since issue #1063 — carries no dependence on the
-    // East Asian 1.3 line factor at all, so it is immune to that factor's
-    // known overshoot (#709); the bottom seat inherits the row-track error in
-    // full. Measured on the business corpus
-    // baseline gate, centring is the anchor that moves every deviating cell
-    // toward its GT — the descender seat moved every Korean page 1.2–1.8pt
-    // further away (issue #839).
-    let effective_vertical_align: Option<CellVerticalAlign> = if seats_on_row_line {
-        Some(CellVerticalAlign::Center)
-    } else {
-        cell.vertical_align.or(ctx.table_default_vertical_align)
-    };
     let enclosing_cell_seats_on_descender: bool = ctx.cell_seats_text_on_descender;
     let enclosing_cell_vertical_align: Option<CellVerticalAlign> = ctx.cell_vertical_align;
     let enclosing_cell_sheet_row_line: Option<SheetRowLine> = ctx.cell_sheet_row_line.take();
@@ -3065,10 +3027,8 @@ fn write_cell_params(
     default_cell_padding: Insets,
     paints_boundary_bands: bool,
     uses_powerpoint_table_layout: bool,
-    // `Some` replaces whatever vertical alignment the cell declares or
-    // inherits: a tight spreadsheet row anchors every cell on its one centred
-    // line (issue #839). Emitted even for a cell declaring nothing, because
-    // the sheet table's default it would inherit is bottom.
+    // Emit the resolved centered alignment when sharing a tight row's
+    // metrics, including when that alignment comes from the table default.
     forced_vertical_align: Option<CellVerticalAlign>,
 ) {
     let mut first = true;
@@ -3540,14 +3500,13 @@ fn cell_paragraph_anchor_offset_pt(paragraph: &Paragraph, cell: &CellParagraphCt
 struct CellParagraphCtx<'a> {
     default_tab_width_pt: f64,
     line_grid_pitch: Option<f64>,
-    /// Decided once per row so every cell in it shares a baseline (issue #498).
+    /// East Asian line metrics computed once for the row (issue #498).
     row_east_asian: RowEastAsianMetrics,
     /// The cell's effective Word vertical anchor, including the table default.
     vertical_align: Option<CellVerticalAlign>,
     seats_text_on_descender: bool,
-    /// The one line the cell's tight spreadsheet row seats every cell on, so
-    /// this paragraph's box resolves at the row's family and size rather than
-    /// its own (issue #839). `None` outside that regime.
+    /// Shared family and size for centered cells in a tight sheet row.
+    /// Top and bottom cells keep their own metrics (#1721).
     sheet_row_line: Option<SheetRowLine>,
     /// The fixed sheet track the cell sits in, so its line seats where Excel
     /// prints it (issue #1063). `None` outside that regime.

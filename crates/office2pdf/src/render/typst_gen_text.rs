@@ -1773,8 +1773,8 @@ fn largest_font_size_pt(sizes: impl Iterator<Item = f64>) -> f64 {
     if largest.is_nan() { 11.0 } else { largest }
 }
 
-/// The row-level East Asian answer every cell in a table row shares, decided
-/// once per row so the whole row sits on one baseline (issue #498).
+/// The row-level East Asian line metrics shared by cells, decided once per
+/// row so cell text cannot shift the row's answer (issue #498).
 ///
 /// The two gates deliberately differ, mirroring the body path's asymmetry:
 /// the line *box* keys on the face the row's lines are set in (issues #643,
@@ -1813,19 +1813,9 @@ pub(super) fn cell_grid_absorbs_space_after(
         && line_grid_pitch.is_some_and(|pitch| pitch > 0.0)
 }
 
-/// The one text line every cell of a *tight* spreadsheet row seats on
-/// (issue #839).
-///
-/// Excel prints a single-line sheet row's cells on one baseline: the native
-/// export of `09_expense_report_en` puts a `vertical="bottom"` amount column
-/// and its `vertical="center"` neighbours all at y=143.00 in a 14pt track,
-/// and `04_payroll_ko`'s fixed 합계 row seats its centred Korean label and
-/// bottom-aligned numbers together at y=218.00. A track that cannot hold more
-/// than one line leaves the alignments nowhere to differ, so the row's line
-/// is resolved once — one metric family, one size — and every cell centres
-/// that one box (see `generate_table_cell` for why centring is the anchor
-/// taken). Reading each cell's own face and alignment instead split one row
-/// across baselines 0.13–1.40pt apart, keyed to the cell's column.
+/// Shared line metrics for centered cells in a tight spreadsheet row.
+/// Native top and bottom baselines can differ even in that regime (#1721),
+/// so only centered cells consume these row-level metrics (#839).
 #[derive(Clone)]
 pub(super) struct SheetRowLine {
     /// The family whose metrics pace the row's shared line.
@@ -2366,12 +2356,10 @@ pub(super) struct CellLineBox {
 /// grid is in force, because Word snaps the line and that gap together (issues
 /// #500, #503).
 ///
-/// When `sheet_row_line` is `Some` — a tight fixed-track spreadsheet row,
-/// gated by `sheet_row_shared_line` in the table codegen — the box resolves
-/// at the row's shared metric family and size instead of this paragraph's
-/// own, so every cell of the row carries the same box and lands on one
-/// baseline as Excel prints it (issue #839). Spreadsheet cells are excluded
-/// from Word's compressed-line redistribution.
+/// When `sheet_row_line` is `Some`, a centered cell in a tight spreadsheet
+/// row resolves its box at the row's shared family and size (#839). Top and
+/// bottom cells keep their own metrics and seats (#1721). Spreadsheet cells
+/// are excluded from Word's compressed-line redistribution.
 ///
 /// When `sheet_seat` is `Some` — a spreadsheet cell in a fixed row track,
 /// gated by `generate_table_cell` — the box is redistributed around the
@@ -2456,13 +2444,11 @@ pub(super) fn word_cell_line_box(
     if style.line_box.is_some() {
         return None;
     }
-    // A tight spreadsheet row's box resolves at the row's one family and
-    // size, not this cell's: Excel prints every cell of such a row on one
-    // baseline, and per-cell metrics split it by the descender difference
-    // (issue #839). A centred fixed-track cell instead resolves the face that
-    // paints its text (#1239). Bottom-aligned cells keep their separately
-    // measured descender-seat model; this issue supplies no new bottom-seat
-    // measurement.
+    // Only centered cells in a tight spreadsheet row use the shared row
+    // family's metrics; top- and bottom-aligned cells retain their own seats
+    // (#839, #1721). A centered fixed-track cell resolves the face that paints
+    // its text (#1239). Bottom-aligned cells keep their separately measured
+    // descender-seat model.
     let painted_sheet_family: Option<String> = (sheet_seat.is_some() && !seats_text_on_descender)
         .then(|| sheet_cell_metric_family(runs))
         .flatten();
