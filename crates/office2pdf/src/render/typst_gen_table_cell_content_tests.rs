@@ -947,6 +947,7 @@ fn latin_only_spreadsheet_row_in_east_asian_face_keeps_the_hhea_line_box() {
                 inline_box: None,
             }],
         })],
+        vertical_align: Some(CellVerticalAlign::Center),
         ..TableCell::default()
     };
     let table = Table {
@@ -970,7 +971,7 @@ fn latin_only_spreadsheet_row_in_east_asian_face_keeps_the_hhea_line_box() {
     assert_eq!(boxes.len(), 1, "one cell, one line box: {result}");
     assert!(
         (boxes[0].0 + boxes[0].1 - word_pitch_em).abs() < 1e-9,
-        "a sheet's Latin-only row keeps the bare hhea line: {boxes:?}"
+        "a centered sheet cell keeps the bare hhea line: {boxes:?}"
     );
     assert!(
         !result.contains(&format!("top-edge: {}em", format_f64(east_asian_top_em))),
@@ -2614,14 +2615,10 @@ fn a_grid_snapped_line_spaced_cell_emits_its_space_after_once() {
     );
 }
 
-/// Excel prints every cell of a single-line sheet row on one baseline: the
-/// native export of `09_expense_report_en` puts a `vertical="bottom"` amount
-/// column and its `vertical="center"` neighbours all at y=143.00 in a 14pt
-/// track, because the track has no room for the alignments to differ.
-/// Honouring the declared alignments split the row 0.50pt (issue #839): a
-/// tight row must anchor every cell on its one centred line.
+/// Tight tracks preserve the table's default bottom alignment and an
+/// explicit center alignment instead of forcing both onto one seat (#1721).
 #[test]
-fn mixed_alignment_tight_sheet_row_seats_every_cell_on_one_baseline() {
+fn mixed_alignment_tight_sheet_row_preserves_default_and_explicit_alignment() {
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
         return; // no font book available (e.g. exotic CI sandbox)
     }
@@ -2668,29 +2665,19 @@ fn mixed_alignment_tight_sheet_row_seats_every_cell_on_one_baseline() {
 
     assert_eq!(
         result.matches("align: horizon").count(),
-        2,
-        "both cells — the bottom-defaulted number included — must anchor on \
-         the row's one centred line: {result}"
+        1,
+        "only the explicitly centered cell uses the centered line: {result}"
     );
-    // The table-level default emission is `align: bottom,` — the check that
-    // no *cell* anchors bottom keys on the cell parameter's closing paren.
     assert!(
-        !result.contains("align: bottom)"),
-        "no cell of a tight row may keep a bottom anchor of its own: {result}"
+        result.contains("align: bottom,"),
+        "the default-bottom cell keeps its bottom anchor: {result}"
     );
 }
 
-/// The tight row's one line resolves one metric family for every cell: reading
-/// each cell's own face gave a Korean cell and its Latin neighbour boxes of
-/// different heights, so their anchors still split by the box difference —
-/// `04_payroll_ko`'s `E-1021` column sat 0.25pt off its Korean neighbours
-/// (issue #839).
-///
-/// Which family that is keys on the row's characters, and the cell order must
-/// not decide it: the Hangul picks Malgun Gothic whichever column carries it.
-/// The row's *box* is Malgun's bare hhea line either way (issue #1060).
+/// Centered cells retain the row's shared metric family across scripts;
+/// honoring top/bottom alignment must not change centered-cell line advance.
 #[test]
-fn tight_sheet_row_resolves_one_metric_family_for_every_cell() {
+fn tight_sheet_row_resolves_one_metric_family_for_centered_cells() {
     let Some((malgun_ascender, _malgun_descender, malgun_pitch_em)) =
         crate::render::pdf::font_line_metrics_em("Malgun Gothic")
     else {
@@ -2715,6 +2702,7 @@ fn tight_sheet_row_resolves_one_metric_family_for_every_cell() {
                 inline_box: None,
             }],
         })],
+        vertical_align: Some(CellVerticalAlign::Center),
         ..TableCell::default()
     };
     let make_row = |cells: Vec<TableCell>| TableRow {
@@ -2765,10 +2753,8 @@ fn tight_sheet_row_resolves_one_metric_family_for_every_cell() {
     );
 }
 
-/// Triangulation: the collapse is the tight row's, not every fixed row's. A
-/// cell spanning several tracks has real room, and Excel honours its declared
-/// alignment there — the merge must keep it while its single-track
-/// neighbours join the row line (issue #839).
+/// A bottom-aligned multi-row merge keeps its declared alignment beside
+/// explicitly centered single-track cells.
 #[test]
 fn row_spanning_cell_keeps_its_declared_alignment_in_a_tight_row() {
     if crate::render::pdf::font_line_metrics_em("Libertinus Serif").is_none() {
@@ -2801,13 +2787,13 @@ fn row_spanning_cell_keeps_its_declared_alignment_in_a_tight_row() {
                 minimum_height: None,
                 cells: vec![
                     make_cell("Merged", 2, Some(CellVerticalAlign::Bottom)),
-                    make_cell("A", 1, None),
+                    make_cell("A", 1, Some(CellVerticalAlign::Center)),
                 ],
                 height: Some(14.0),
             },
             TableRow {
                 minimum_height: None,
-                cells: vec![make_cell("B", 1, None)],
+                cells: vec![make_cell("B", 1, Some(CellVerticalAlign::Center))],
                 height: Some(14.0),
             },
         ],
@@ -2928,10 +2914,7 @@ fn boundary_rule_does_not_make_a_roomy_sheet_row_tight() {
     );
 }
 
-/// Triangulation: the rule's layout share is what must not count, not the
-/// tightness gate itself. A row already tight without any rule keeps
-/// anchoring every cell on its one centred line when a rule lands on its
-/// boundary (issues #839, #1277).
+/// A boundary rule must not change a tight row's explicit centered seat.
 #[test]
 fn boundary_rule_leaves_a_tight_sheet_row_tight() {
     let Some((_, _, pitch_em)) = crate::render::pdf::font_line_metrics_em("Libertinus Serif")
@@ -2976,6 +2959,7 @@ fn boundary_rule_leaves_a_tight_sheet_row_tight() {
                     left: None,
                     right: None,
                 }),
+                vertical_align: Some(CellVerticalAlign::Center),
                 ..TableCell::default()
             }],
             height: Some(track_pt),
@@ -5906,6 +5890,53 @@ fn explicit_sheet_print_percentage_scales_cell_origins() {
                 differences.push(format!(
                     "{mode}, {percentage}%: expected {expected_spacing}pt, got {spacing}pt"
                 ));
+            }
+        }
+    }
+    assert!(differences.is_empty(), "{}", differences.join("\n"));
+}
+
+/// The native matrix contains unrelated seating differences too. Gate this
+/// issue on its two reported bottom-aligned 19.5pt rows, using different
+/// faces and sizes through the complete XLSX parser path.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn tight_sheet_bottom_cells_match_native_baselines() {
+    for family in ["Trebuchet MS", "Cambria"] {
+        if crate::render::pdf::font_line_metrics_em(family).is_none() {
+            return;
+        }
+    }
+    let data = include_bytes!("../../../../tests/fixtures/xlsx/issue_1721_alignment_matrix.xlsx");
+    let (doc, _) = crate::parser::Parser::parse(
+        &crate::parser::xlsx::XlsxParser,
+        data,
+        &ConvertOptions::default(),
+    )
+    .unwrap();
+    let source = generate_typst(&doc).unwrap().source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+    let expected: std::collections::BTreeMap<String, serde_json::Value> = serde_json::from_str(
+        include_str!("../../../../tests/visual_audits/issue-1721/native-alignment-baselines.json"),
+    )
+    .unwrap();
+    assert_eq!(expected.len(), 45);
+    let mut differences: Vec<String> = Vec::new();
+    for text in ["Bottom row 11", "Bottom row 14"] {
+        let run = runs.iter().find(|run| {
+            run.text.split_whitespace().collect::<String>()
+                == text.split_whitespace().collect::<String>()
+        });
+        match run {
+            None => differences.push(format!("missing {text}")),
+            Some(run) => {
+                let native_y: f64 = expected[text]["y"].as_f64().unwrap();
+                if (run.baseline_pt - native_y).abs() > 0.01 {
+                    differences.push(format!(
+                        "{text}: native {native_y}, output {}",
+                        run.baseline_pt
+                    ));
+                }
             }
         }
     }
