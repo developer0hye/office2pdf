@@ -3898,6 +3898,7 @@ fn split_runs_on_hard_breaks(runs: &[Run]) -> Option<Vec<PowerPointHardBreakLine
     Some(lines)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_word_runs_with_tabs_in_context(
     out: &mut String,
     runs: &[Run],
@@ -5359,7 +5360,7 @@ fn generate_run_seated_with_metrics(
     // The box is the run's whole content: Word anchors a `wp:inline` drawing to
     // a run that carries no text of its own (issue #1690).
     if let Some(inline_box) = run.inline_box.as_deref() {
-        let _ = write_inline_text_box_without_context(out, inline_box);
+        write_inline_text_box_without_context(out, inline_box);
         return;
     }
 
