@@ -81,6 +81,7 @@ fn parse_layer_elements<R: Read + std::io::Seek>(
     theme: &ThemeData,
     slide_number: u32,
     default_text_size_pt: Option<f64>,
+    background: &ResolvedBackground,
     archive: &mut ZipArchive<R>,
 ) -> (Vec<FixedElement>, Vec<ConvertWarning>) {
     let images: SlideImageMap = load_slide_images(layer.path, archive);
@@ -94,6 +95,7 @@ fn parse_layer_elements<R: Read + std::io::Seek>(
         inherited_text_body_defaults: layer.text_style_defaults,
         table_styles: &empty_table_styles,
         default_text_size_pt,
+        background,
     };
     // Skip placeholder shapes in master/layout layers.
     parse_slide_xml_inner(layer.xml, &ctx, true, None).unwrap_or_default()
@@ -216,6 +218,11 @@ pub(super) fn parse_smartart_drawing(
     let table_styles: table_styles::TableStyleMap = table_styles::TableStyleMap::new();
     let inherited_text_body_defaults: PptxTextBodyStyleDefaults =
         PptxTextBodyStyleDefaults::default();
+    let background: ResolvedBackground = ResolvedBackground {
+        color: None,
+        gradient: None,
+        image: None,
+    };
     let ctx = SlideParseContext {
         images: &images,
         slide_number: 1,
@@ -225,6 +232,7 @@ pub(super) fn parse_smartart_drawing(
         inherited_text_body_defaults: &inherited_text_body_defaults,
         table_styles: &table_styles,
         default_text_size_pt: None,
+        background: &background,
     };
     let Ok((mut elements, _warnings)) = parse_slide_xml_inner(drawing_xml, &ctx, false, None)
     else {
@@ -447,6 +455,8 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
         return Ok(None);
     }
 
+    let background: ResolvedBackground = resolve_slide_background(&chain, slide_path, theme);
+
     let slide_images: SlideImageMap = load_slide_images(slide_path, archive);
     let mut warnings: Vec<ConvertWarning> = Vec::new();
 
@@ -471,6 +481,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
         inherited_text_body_defaults: &chain.master_text_styles.other,
         table_styles,
         default_text_size_pt,
+        background: &background,
     };
     let (slide_elements, slide_warnings) =
         parse_slide_xml(&chain.slide_xml, &slide_ctx, Some(&placeholder_geometry))?;
@@ -494,6 +505,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
             theme,
             slide_number,
             default_text_size_pt,
+            &background,
             archive,
         );
         elements.extend(master_elems);
@@ -517,6 +529,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
             theme,
             slide_number,
             default_text_size_pt,
+            &background,
             archive,
         );
         elements.extend(layout_elems);
@@ -542,7 +555,6 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
         &chain.slide_color_map,
     ));
 
-    let background: ResolvedBackground = resolve_slide_background(&chain, slide_path, theme);
     if let Some((layer_path, rid)) = &background.image
         && let Some(element) = build_background_image_element(layer_path, rid, slide_size, archive)
     {
@@ -785,6 +797,8 @@ struct ShapeState {
     style_fill_color: Option<Color>,
     /// 1-based theme `fillStyleLst` entry named by `<a:fillRef idx>`.
     style_fill_idx: Option<usize>,
+    /// The shape uses the slide background instead of its own fill.
+    use_bg_fill: bool,
     /// Fallback text color from `<p:style><a:fontRef>` scheme reference.
     style_font_color: Option<Color>,
     /// Theme face selected by `<p:style><a:fontRef idx>`.
@@ -843,6 +857,7 @@ impl Default for ShapeState {
             style_ln_idx: None,
             style_fill_color: None,
             style_fill_idx: None,
+            use_bg_fill: false,
             style_font_color: None,
             style_font_family: None,
             explicit_no_fill: false,
@@ -870,6 +885,7 @@ fn finalize_shape(
     text_box: PptxTextBoxSettings,
     theme_line_styles: &[ThemeLineStyle],
     images: &SlideImageMap,
+    background: &ResolvedBackground,
     warning_context: &str,
     warnings: &mut Vec<ConvertWarning>,
 ) -> Vec<FixedElement> {
@@ -899,13 +915,27 @@ fn finalize_shape(
         .or_else(|| referenced_line_style.and_then(|style| style.cap))
         .unwrap_or_default();
 
-    // Resolve effective fill: explicit > noFill > style fallback.
-    let effective_fill: Option<Color> = if shape.fill.is_some() {
+    // Solid/gradient backgrounds replace the shape's direct and style fills.
+    // This path does not map a slide-background picture into shape geometry,
+    // so picture backgrounds remain page-level images here.
+    let effective_fill: Option<Color> = if shape.use_bg_fill {
+        background.color
+    } else if shape.fill.is_some() {
         shape.fill
     } else if shape.explicit_no_fill {
         None
     } else {
         shape.style_fill_color
+    };
+    let effective_gradient_fill: Option<GradientFill> = if shape.use_bg_fill {
+        background.gradient.clone()
+    } else {
+        shape.gradient_fill.clone()
+    };
+    let effective_pattern_fill: Option<PatternFill> = if shape.use_bg_fill {
+        None
+    } else {
+        shape.pattern_fill.clone()
     };
 
     // The outline is shared by solid/gradient shape paint and by an ordinary
@@ -934,7 +964,8 @@ fn finalize_shape(
             cap: effective_ln_cap,
         })
     };
-    let mut picture_fill: Option<FixedElement> = if shape.blip_embed.is_some() {
+    let mut picture_fill: Option<FixedElement> = if !shape.use_bg_fill && shape.blip_embed.is_some()
+    {
         let picture = PictureState {
             x: shape.x,
             y: shape.y,
@@ -985,8 +1016,8 @@ fn finalize_shape(
         // has nowhere to put a shadow, so the theme shadow of issue #740 was
         // resolved and then dropped here. Emitting the shape background makes
         // the existing shape renderer draw it.
-        let needs_shape_background = shape.gradient_fill.is_some()
-            || shape.pattern_fill.is_some()
+        let needs_shape_background = effective_gradient_fill.is_some()
+            || effective_pattern_fill.is_some()
             || picture_fill.is_some()
             || shape.shadow.is_some()
             || shape.top_bevel.is_some();
@@ -1036,8 +1067,8 @@ fn finalize_shape(
                     kind: FixedElementKind::Shape(Shape {
                         kind,
                         fill: effective_fill,
-                        gradient_fill: shape.gradient_fill.take(),
-                        pattern_fill: shape.pattern_fill.take(),
+                        gradient_fill: effective_gradient_fill.clone(),
+                        pattern_fill: effective_pattern_fill.clone(),
                         stroke: stroke.clone(),
                         rotation_deg: shape.rotation_deg,
                         opacity: shape.opacity,
@@ -1186,8 +1217,8 @@ fn finalize_shape(
             kind: FixedElementKind::Shape(Shape {
                 kind,
                 fill: effective_fill,
-                gradient_fill: shape.gradient_fill.take(),
-                pattern_fill: shape.pattern_fill.take(),
+                gradient_fill: effective_gradient_fill,
+                pattern_fill: effective_pattern_fill,
                 stroke,
                 rotation_deg: shape.rotation_deg,
                 opacity: shape.opacity,
@@ -1718,6 +1749,8 @@ pub(super) struct SlideParseContext<'a> {
     /// `p:defaultTextStyle/a:lvl1pPr/a:defRPr/@sz`, the size a text body
     /// falls back to when its own chain declares none (issue #675).
     pub(super) default_text_size_pt: Option<f64>,
+    /// Resolved slide fill for shapes that set `useBgFill="1"`.
+    background: &'a ResolvedBackground,
 }
 
 /// Bundles the 20+ mutable state variables of the slide XML event loop
@@ -1945,6 +1978,9 @@ impl<'a> SlideXmlParser<'a> {
                 self.in_shape = true;
                 self.shape.reset();
                 self.shape.depth = 1;
+                self.shape.use_bg_fill = e.local_name().as_ref() == b"sp"
+                    && get_attr_str(e, b"useBgFill")
+                        .is_some_and(|value| value == "1" || value == "true");
                 self.in_txbody = false;
                 self.paragraphs.clear();
                 self.text_box = PptxTextBoxSettings::default();
@@ -2950,6 +2986,7 @@ impl<'a> SlideXmlParser<'a> {
                         && self.shape.gradient_fill.is_none()
                         && self.shape.pattern_fill.is_none()
                         && !self.shape.explicit_no_fill
+                        && !self.shape.use_bg_fill
                         && let Some(fill_idx) = self.shape.style_fill_idx.take()
                         && let Some((color, gradient)) = resolve_fill_ref(
                             fill_idx,
@@ -2974,6 +3011,7 @@ impl<'a> SlideXmlParser<'a> {
                         && self.shape.gradient_fill.is_none()
                         && self.shape.pattern_fill.is_none()
                         && !self.shape.explicit_no_fill
+                        && !self.shape.use_bg_fill
                         && let Some(map) = self.placeholder_geometry
                         && let Some(inherited) = map.lookup_fill(
                             self.shape.ph_type.as_deref(),
@@ -2992,14 +3030,18 @@ impl<'a> SlideXmlParser<'a> {
                     // placeholder's bounding box (issue #1029). Gated on the
                     // shape painting something, so a text-only placeholder
                     // does not grow an invisible background element.
-                    let paints_something: bool = self.shape.fill.is_some()
-                        || self.shape.gradient_fill.is_some()
-                        || self.shape.pattern_fill.is_some()
-                        || self.shape.blip_embed.is_some()
-                        || (!self.shape.explicit_no_fill && self.shape.style_fill_color.is_some())
-                        || (!self.shape.explicit_no_line
-                            && (self.shape.ln_color.is_some()
-                                || self.shape.style_ln_color.is_some()));
+                    let paints_something: bool = if self.shape.use_bg_fill {
+                        self.ctx.background.color.is_some()
+                            || self.ctx.background.gradient.is_some()
+                    } else {
+                        self.shape.fill.is_some()
+                            || self.shape.gradient_fill.is_some()
+                            || self.shape.pattern_fill.is_some()
+                            || self.shape.blip_embed.is_some()
+                            || (!self.shape.explicit_no_fill
+                                && self.shape.style_fill_color.is_some())
+                    } || (!self.shape.explicit_no_line
+                        && (self.shape.ln_color.is_some() || self.shape.style_ln_color.is_some()));
                     if self.shape.has_placeholder
                         && self.shape.prst_geom.is_none()
                         && self.shape.custom_geometry.is_empty()
@@ -3023,6 +3065,7 @@ impl<'a> SlideXmlParser<'a> {
                             self.text_box,
                             &self.ctx.theme.line_styles,
                             self.ctx.images,
+                            self.ctx.background,
                             self.ctx.warning_context,
                             &mut self.warnings,
                         ));

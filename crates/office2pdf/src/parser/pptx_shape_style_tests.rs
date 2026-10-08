@@ -777,6 +777,63 @@ fn test_shape_fill_from_style_fill_ref() {
 }
 
 #[test]
+fn use_background_fill_replaces_the_shape_style_fill() {
+    let lower_shape = r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Red underlay"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></p:spPr></p:sp>"#;
+    let use_background_shape = r#"<p:sp useBgFill="1"><p:nvSpPr><p:cNvPr id="3" name="Background sample"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr><p:style><a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef></p:style></p:sp>"#;
+    let background_xml = r#"<p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>"#;
+    let slide_xml = make_slide_xml_with_bg(
+        background_xml,
+        &[lower_shape.to_string(), use_background_shape.to_string()],
+    );
+    let theme_xml = make_theme_xml(&standard_theme_colors(), "Calibri", "Calibri");
+    let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide_xml], &theme_xml);
+
+    let (doc, _warnings) = PptxParser
+        .parse(&data, &ConvertOptions::default())
+        .expect("the PPTX should parse");
+
+    let page = first_fixed_page(&doc);
+    assert_eq!(page.background_color, Some(Color::new(255, 255, 255)));
+    assert_eq!(page.elements.len(), 2);
+    assert_eq!(
+        get_shape(&page.elements[1]).fill,
+        Some(Color::new(255, 255, 255)),
+        "useBgFill should sample the slide background instead of style fillRef"
+    );
+}
+
+#[test]
+fn issue_1879_full_slide_shape_uses_the_slide_background() {
+    let fixture: &[u8] = include_bytes!("../../../../tests/fixtures/pptx/1-slide.pptx");
+    let (doc, _warnings) = PptxParser
+        .parse(fixture, &ConvertOptions::default())
+        .expect("the issue fixture should parse");
+
+    let page = first_fixed_page(&doc);
+    assert_eq!(page.background_color, Some(Color::new(255, 255, 255)));
+    let background_shape = page
+        .elements
+        .iter()
+        .find_map(|element| match &element.kind {
+            FixedElementKind::Shape(shape)
+                if (element.x - 0.0).abs() < 0.01
+                    && (element.y - 0.0).abs() < 0.01
+                    && (element.width - page.size.width).abs() < 0.01
+                    && (element.height - page.size.height).abs() < 0.01 =>
+            {
+                Some(shape)
+            }
+            _ => None,
+        })
+        .expect("the fixture has a full-slide shape");
+    assert_eq!(
+        background_shape.fill,
+        Some(Color::new(255, 255, 255)),
+        "useBgFill should suppress the accent fillRef on the full-slide shape"
+    );
+}
+
+#[test]
 fn test_shape_explicit_fill_overrides_fill_ref() {
     // Shape with explicit solidFill AND <p:style><a:fillRef>.
     // Explicit fill should win.
