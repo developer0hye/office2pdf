@@ -548,18 +548,25 @@ fn test_docx_drawing_text_box_table_is_emitted() {
                                     <wps:txbx>
                                         <w:txbxContent>
                                             <w:tbl>
-                                                <w:tblPr/>
+                                                <w:tblPr><w:tblBorders>
+                                                    <w:top w:val="single" w:sz="4" w:color="000000"/>
+                                                    <w:left w:val="single" w:sz="4" w:color="000000"/>
+                                                    <w:bottom w:val="single" w:sz="4" w:color="000000"/>
+                                                    <w:right w:val="single" w:sz="4" w:color="000000"/>
+                                                    <w:insideH w:val="single" w:sz="4" w:color="000000"/>
+                                                    <w:insideV w:val="single" w:sz="4" w:color="000000"/>
+                                                </w:tblBorders></w:tblPr>
                                                 <w:tblGrid>
-                                                    <w:gridCol w:w="2000"/>
-                                                    <w:gridCol w:w="2000"/>
+                                                    <w:gridCol w:w="1800"/>
+                                                    <w:gridCol w:w="1800"/>
                                                 </w:tblGrid>
                                                 <w:tr>
-                                                    <w:tc><w:p><w:r><w:t>Qty</w:t></w:r></w:p></w:tc>
-                                                    <w:tc><w:p><w:r><w:t>Item</w:t></w:r></w:p></w:tc>
+                                                    <w:tc><w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>Qty</w:t></w:r></w:p></w:tc>
+                                                    <w:tc><w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>Price</w:t></w:r></w:p></w:tc>
                                                 </w:tr>
                                                 <w:tr>
-                                                    <w:tc><w:p><w:r><w:t>12</w:t></w:r></w:p></w:tc>
-                                                    <w:tc><w:p><w:r><w:t>Widgets</w:t></w:r></w:p></w:tc>
+                                                    <w:tc><w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>12</w:t></w:r></w:p></w:tc>
+                                                    <w:tc><w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>4.50</w:t></w:r></w:p></w:tc>
                                                 </w:tr>
                                             </w:tbl>
                                         </w:txbxContent>
@@ -577,7 +584,23 @@ fn test_docx_drawing_text_box_table_is_emitted() {
     </w:body>
 </w:document>"#;
 
-    let data = build_docx_with_columns(document_xml);
+    // The synthetic reproduction uses a ruled 180pt grid and an 8pt Normal
+    // paragraph gap; cell paragraphs override that gap to keep row pitch clear.
+    let styles_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:docDefaults>
+    <w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault>
+    <w:pPrDefault><w:pPr><w:spacing w:after="160"/></w:pPr></w:pPrDefault>
+  </w:docDefaults>
+  <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+    <w:name w:val="Normal"/>
+    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>
+    <w:pPr><w:spacing w:after="160"/></w:pPr>
+  </w:style>
+</w:styles>"#;
+    let footnotes_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+    let data = build_docx_with_notes_xml(document_xml, styles_xml, footnotes_xml);
     let parser = DocxParser;
     let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
 
@@ -612,6 +635,22 @@ fn test_docx_drawing_text_box_table_is_emitted() {
         ],
         "the anchor and following paragraph remain in body order"
     );
+    let anchor_space_after = flow
+        .content
+        .iter()
+        .find_map(|block| match block {
+            Block::Paragraph(paragraph)
+                if paragraph
+                    .runs
+                    .iter()
+                    .any(|run| run.text.contains("Order summary")) =>
+            {
+                Some(paragraph.style.space_after)
+            }
+            _ => None,
+        })
+        .expect("the anchor paragraph carries its Normal style spacing");
+    assert_eq!(anchor_space_after, Some(8.0));
     assert!(
         flow.content.iter().any(|block| match block {
             Block::Paragraph(paragraph) =>
@@ -635,6 +674,26 @@ fn test_docx_drawing_text_box_table_is_emitted() {
         .expect("the inline box retains its table content");
     assert_eq!(table.rows.len(), 2);
     assert!(table.rows.iter().all(|row| row.cells.len() == 2));
+    let first_cell_space_after = table.rows[0].cells[0]
+        .content
+        .iter()
+        .find_map(|block| match block {
+            Block::Paragraph(paragraph) => Some(paragraph.style.space_after),
+            _ => None,
+        })
+        .expect("the first table cell carries its paragraph");
+    assert_eq!(first_cell_space_after, Some(0.0));
+    let first_cell_border = table.rows[0].cells[0]
+        .border
+        .as_ref()
+        .expect("the inline table keeps its Word grid border");
+    assert_eq!(
+        first_cell_border.top.as_ref().map(|side| side.width),
+        Some(0.5)
+    );
+    assert!(first_cell_border.bottom.is_some());
+    assert!(first_cell_border.left.is_some());
+    assert!(first_cell_border.right.is_some());
 
     let cell_text: Vec<String> = table
         .rows
@@ -660,9 +719,9 @@ fn test_docx_drawing_text_box_table_is_emitted() {
         cell_text,
         vec![
             "Qty".to_string(),
-            "Item".to_string(),
+            "Price".to_string(),
             "12".to_string(),
-            "Widgets".to_string(),
+            "4.50".to_string(),
         ]
     );
 
