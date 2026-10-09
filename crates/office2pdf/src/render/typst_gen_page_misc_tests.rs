@@ -4533,6 +4533,126 @@ fn a_header_taller_than_its_band_pushes_the_body_down() {
     );
 }
 
+/// The first body baseline under a 12pt Arial header in a 36pt band.
+///
+/// `w:top` 72pt and `w:header` 36pt leave the header 36pt of band, and three
+/// single-spaced 12pt Arial lines (13.8pt each, 41.4pt) already overflow it, so
+/// every variant below grows the margin and the body's first baseline moves
+/// with the header's height point for point.
+#[cfg(not(target_arch = "wasm32"))]
+fn body_baseline_below_arial_header(paragraphs: Vec<crate::ir::HeaderFooterParagraph>) -> f64 {
+    let doc = doc_with_header(Some(36.0), 72.0, paragraphs);
+    *baselines_of(&doc, "Body")
+        .first()
+        .expect("the body's first line is placed")
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn arial_header_lines(texts: &[&str]) -> Vec<crate::ir::HeaderFooterParagraph> {
+    texts
+        .iter()
+        .map(|text| header_text_paragraph(text, arial(12.0)))
+        .collect()
+}
+
+/// A header paragraph that wraps grows the margin by every line it takes.
+///
+/// Word starts the body at `max(w:top, w:header + header height)`, and the
+/// header's height counts the lines a paragraph wraps to, not the paragraphs.
+/// So one paragraph that wraps to three lines reaches exactly as far down as
+/// three one-line paragraphs of the same face: same line pitch, same count.
+/// Counting the wrapped paragraph as one line left its 27.6pt fitting the
+/// 36pt band, and the third header line overprinted the body.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_wrapped_header_paragraph_grows_the_margin_by_its_lines() {
+    let three_paragraphs: f64 =
+        body_baseline_below_arial_header(arial_header_lines(&["Header", "Header", "Header"]));
+
+    // About ten "Header " words fit the 453.58pt column, so 25 take three
+    // lines; the count is asserted below rather than assumed.
+    let wrapping: String = "Header ".repeat(25);
+    let wrapped_doc = doc_with_header(Some(36.0), 72.0, arial_header_lines(&[wrapping.trim_end()]));
+    let wrapped_lines: usize = baselines_of(&wrapped_doc, "Header").len();
+    assert_eq!(
+        wrapped_lines, 3,
+        "the header paragraph must wrap to three lines"
+    );
+    let one_wrapped_paragraph: f64 =
+        body_baseline_below_arial_header(arial_header_lines(&[wrapping.trim_end()]));
+
+    assert!(
+        (one_wrapped_paragraph - three_paragraphs).abs() < 0.01,
+        "a paragraph wrapping to three lines must push the body as far as three \
+         one-line paragraphs: {one_wrapped_paragraph}pt against {three_paragraphs}pt"
+    );
+}
+
+/// An empty header paragraph still takes one line of its mark's face.
+///
+/// Word gives a `<w:p>` with no runs the line its paragraph mark would take,
+/// so a header of a line, two empty paragraphs and a line is four lines high —
+/// as high as four lines of text in the same face and size. An empty paragraph
+/// used to make the whole height unmeasurable, which left the margin at
+/// `w:top` and the body under the header.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn empty_header_paragraphs_grow_the_margin_by_their_lines() {
+    let four_lines: f64 = body_baseline_below_arial_header(arial_header_lines(&[
+        "Header", "Header", "Header", "Header",
+    ]));
+
+    let empty_line = || crate::ir::HeaderFooterParagraph {
+        style: ParagraphStyle {
+            paragraph_mark_text_style: Some(Box::new(arial(12.0))),
+            ..ParagraphStyle::default()
+        },
+        elements: Vec::new(),
+        border: None,
+        border_space: None,
+        sheet_section_is_rich: false,
+        frame: None,
+    };
+    let mut with_empty_lines: Vec<crate::ir::HeaderFooterParagraph> =
+        arial_header_lines(&["Header"]);
+    with_empty_lines.push(empty_line());
+    with_empty_lines.push(empty_line());
+    with_empty_lines.extend(arial_header_lines(&["Header"]));
+    let two_lines_around_two_empty: f64 = body_baseline_below_arial_header(with_empty_lines);
+
+    assert!(
+        (two_lines_around_two_empty - four_lines).abs() < 0.01,
+        "two empty header paragraphs must reserve two lines: the body sits at \
+         {two_lines_around_two_empty}pt against {four_lines}pt under four text lines"
+    );
+}
+
+/// Header paragraph spacing is part of the header's height.
+///
+/// The header's height runs from the top of its first line to the bottom of
+/// its last paragraph, `w:spacing w:after` included, so three paragraphs with
+/// 12pt after each reach 36pt further down than the same three without it.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn header_paragraph_spacing_grows_the_margin() {
+    let without_spacing: f64 =
+        body_baseline_below_arial_header(arial_header_lines(&["Header", "Header", "Header"]));
+
+    let mut spaced: Vec<crate::ir::HeaderFooterParagraph> =
+        arial_header_lines(&["Header", "Header", "Header"]);
+    for paragraph in &mut spaced {
+        paragraph.style.space_after = Some(12.0);
+    }
+    let with_spacing: f64 = body_baseline_below_arial_header(spaced);
+
+    assert!(
+        (with_spacing - without_spacing - 36.0).abs() < 0.01,
+        "12pt after each of three header paragraphs must move the body 36pt, \
+         moved {}pt",
+        with_spacing - without_spacing
+    );
+}
+
 /// An inherited floating header table must leave enough room for a continuous
 /// section's first body lines on the page where its rendered break lands.
 #[cfg(not(target_arch = "wasm32"))]

@@ -2908,8 +2908,8 @@ fn flow_header_value(
 ///
 /// Otherwise `w:top` is left alone, so the common case emits exactly what it
 /// always did. When a header face cannot be measured, its nonempty text cannot
-/// contribute a guessed height. Empty flow lines after a known overlay still
-/// reserve their declared/default font size and paragraph spacing.
+/// contribute a guessed height. Empty flow lines still reserve their
+/// declared/default font size and paragraph spacing.
 fn flow_page_top_margin_pt(
     page: &FlowPage,
     size: &PageSize,
@@ -2932,12 +2932,17 @@ fn flow_page_top_margin_pt(
             }
 
             // The band runs from the `w:header` line down, so a story that
-            // overflows needs the margin to reach the bottom of its content.
-            // On continuation pages, also retain the empty flow paragraphs
-            // that follow a page-anchored header overlay; Word reserves their
-            // line boxes even though they paint no text.
-            let content_height: Option<f64> =
-                hf_content_height_pt(header, default_text, overlay_bottom.is_some());
+            // overflows needs the margin to reach the bottom of its content,
+            // counting its empty paragraphs' line boxes, which Word reserves
+            // even though they paint no text. Where a page-anchored overlay
+            // is reserved, page-anchored framed paragraphs are drawn outside
+            // the story and skipped.
+            let content_height: Option<f64> = hf_content_height_pt(
+                header,
+                default_text,
+                overlay_bottom.is_some(),
+                size.width - page.margins.left - page.margins.right,
+            );
             if content_height.is_none() && overlay_bottom.is_none() {
                 return None;
             }
@@ -2971,27 +2976,98 @@ fn flow_page_top_margin_pt(
 
 /// Height a header or footer story's lines take, in points.
 ///
-/// One natural line per paragraph plus whatever its `w:pBdr` rules and their
-/// `w:space` reserve. Wrapping is not modelled: a header paragraph that wraps
-/// would measure short, which grows the margin less than it should rather than
-/// more, so the failure stays on the side of the current behaviour.
+/// Word starts the body at `max(w:top, w:header + header height)`, and the
+/// height is every line the story's paragraphs take — a paragraph that wraps
+/// in `text_width_pt` counts each line, and an empty one the line of its
+/// paragraph mark — plus the paragraphs' `w:spacing` and whatever their
+/// `w:pBdr` rules and `w:space` reserve. The first paragraph's space before
+/// is left out, as at the top of a page.
+///
+/// Page-anchored framed paragraphs are drawn outside the story, so they are
+/// skipped where a page-anchored overlay is being reserved
+/// (`skips_page_anchored_frames`, issue #1995).
 fn hf_content_height_pt(
     hf: &HeaderFooter,
     default_text: Option<&TextStyle>,
-    include_empty_flow_paragraphs: bool,
+    skips_page_anchored_frames: bool,
+    text_width_pt: f64,
 ) -> Option<f64> {
     let mut total: f64 = 0.0;
+    let mut is_first_paragraph: bool = true;
     for paragraph in &hf.paragraphs {
-        if include_empty_flow_paragraphs {
-            if paragraph.frame.as_ref().is_some_and(is_page_anchored_frame) {
-                continue;
-            }
-            total += hf_paragraph_height_pt(paragraph, default_text, true)?;
-        } else {
-            total += hf_paragraph_height_pt(paragraph, None, false)?;
+        if skips_page_anchored_frames
+            && paragraph.frame.as_ref().is_some_and(is_page_anchored_frame)
+        {
+            continue;
         }
+        total += hf_paragraph_height_pt(paragraph, default_text, true)?;
+        let wrapped_lines: usize = hf_paragraph_line_count(paragraph, text_width_pt) - 1;
+        if wrapped_lines > 0 {
+            let line_pt: f64 = text::word_line_advance_pt(&hf_paragraph_metric_runs(paragraph))?;
+            total += wrapped_lines as f64 * line_pt;
+        }
+        if !is_first_paragraph {
+            total += paragraph.style.space_before.unwrap_or(0.0);
+        }
+        total += paragraph.style.space_after.unwrap_or(0.0);
+        is_first_paragraph = false;
     }
     Some(total)
+}
+
+/// How many lines a header or footer paragraph takes in `width_pt`.
+///
+/// Its words are laid greedily on the faces' own advances, as a line breaker
+/// fills them, and a hard break starts a line. Kerning is ignored, which the
+/// one-line-per-paragraph estimate this replaced ignored as well. A paragraph
+/// that cannot be measured — a run without a face, a tab, a face that does
+/// not resolve — counts one line, so the margin never grows on a guess.
+fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_pt: f64) -> usize {
+    let available_pt: f64 = width_pt
+        - paragraph.style.indent_left.unwrap_or(0.0)
+        - paragraph.style.indent_right.unwrap_or(0.0);
+    let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
+    if available_pt <= 0.0 || runs.iter().any(|run| run.text.contains('\t')) {
+        return 1;
+    }
+    let mut lines: usize = 1;
+    let mut line_width_pt: f64 = 0.0;
+    for run in &runs {
+        let Some(family) = run.style.font_family.as_deref() else {
+            return 1;
+        };
+        let is_bold: bool = matches!(run.style.bold, Some(true));
+        let font_size_pt: f64 = run
+            .style
+            .font_size
+            .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT);
+        let advance_pt = |text: &str| -> Option<f64> {
+            Some(crate::render::pdf::text_advance_em(family, is_bold, text)? * font_size_pt)
+        };
+        for (piece_index, piece) in run.text.split(['\n', '\r', '\u{000B}']).enumerate() {
+            if piece_index > 0 {
+                lines += 1;
+                line_width_pt = 0.0;
+            }
+            for word in piece.split_inclusive(' ') {
+                let Some(word_pt) = advance_pt(word) else {
+                    return 1;
+                };
+                // A trailing space may hang past the edge; only the word's
+                // ink has to fit.
+                let Some(ink_pt) = advance_pt(word.trim_end_matches(' ')) else {
+                    return 1;
+                };
+                if line_width_pt > 0.0 && line_width_pt + ink_pt > available_pt {
+                    lines += 1;
+                    line_width_pt = word_pt;
+                } else {
+                    line_width_pt += word_pt;
+                }
+            }
+        }
+    }
+    lines
 }
 
 /// The bottom of a page-anchored header shape that crosses the body's top edge.
@@ -3031,9 +3107,10 @@ fn hf_last_flow_paragraph_height_pt(
 }
 
 /// The height one header or footer paragraph takes: Word's line for its face,
-/// plus whatever its `w:pBdr` rules and their `w:space` gaps reserve. For an
-/// empty flow paragraph retained after a page-anchored overlay, missing face
-/// metrics fall back to its paragraph-mark/default font size and line spacing.
+/// plus whatever its `w:pBdr` rules and their `w:space` gaps reserve. An empty
+/// flow paragraph measured with `use_default_for_empty` takes its paragraph
+/// mark's (else the document default's) line, and where that face cannot be
+/// measured, its font size under its line spacing.
 ///
 /// Shared with [`generate_stacked_hf_paragraphs`], which states it on the
 /// paragraph's block, so the height a ruled story reserves in the band is the
