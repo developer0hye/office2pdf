@@ -654,6 +654,7 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
     // Emit document metadata (title/author) if present
     generate_document_metadata(&mut out, &doc.metadata);
     write_page_format_state(&mut out);
+    write_hyphenation_rule(&mut out, doc.styles.hyphenates_automatically);
     if doc.pages.iter().any(|page| matches!(page, Page::Fixed(_))) {
         write_powerpoint_ligature_state(&mut out);
         write_powerpoint_advance_grid_helpers(&mut out);
@@ -5247,6 +5248,21 @@ fn write_page_format_state(out: &mut String) {
          link(target, it.indented(it.prefix(), \
          it.body() + box(width: 1fr, repeat[.]) + shown)) }}"
     );
+}
+
+/// State whether words may be hyphenated at a line end.
+///
+/// Typst's `hyphenate: auto` hyphenates every justified paragraph. Word,
+/// Excel and PowerPoint hyphenate nothing unless the document turns it on, so
+/// a justified paragraph wrapped at different points than Word's and the page
+/// breaks after it could move. Only a Word document can turn it on
+/// (`w:autoHyphenation`), and Word then hyphenates ragged paragraphs as well
+/// as justified ones, which is `true` rather than `auto`.
+///
+/// Set once for the document so header and footer bands, table cells and
+/// slide text boxes are all covered.
+fn write_hyphenation_rule(out: &mut String, hyphenates_automatically: bool) {
+    let _ = writeln!(out, "#set text(hyphenate: {hyphenates_automatically})");
 }
 
 /// Emit a `TOC` field's result.

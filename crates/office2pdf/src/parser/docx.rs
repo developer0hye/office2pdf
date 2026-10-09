@@ -385,6 +385,7 @@ impl Parser for DocxParser {
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let default_tab_stop_pt: Option<f64> = extract_default_tab_stop_pt(data);
         let word_compatibility_mode: WordCompatibilityMode = extract_compatibility_mode(data);
+        let hyphenates_automatically: bool = extract_auto_hyphenation(data);
         let ZipPreParseAssets {
             metadata,
             mut ctx,
@@ -620,6 +621,7 @@ impl Parser for DocxParser {
                         &pair_kerning,
                     )),
                     word_compatibility_mode: Some(word_compatibility_mode),
+                    hyphenates_automatically,
                     ..StyleSheet::default()
                 },
             },
@@ -664,6 +666,41 @@ fn extract_compatibility_mode(data: &[u8]) -> WordCompatibilityMode {
     } else {
         WordCompatibilityMode::Legacy
     }
+}
+
+/// Whether `word/settings.xml` turns automatic hyphenation on. Read from the
+/// raw part because docx-rs does not parse `w:autoHyphenation`.
+///
+/// TODO(docx-rs parses no hyphenation controls): the paragraph-level
+/// `w:suppressAutoHyphens` and the document's `w:doNotHyphenateCaps`,
+/// `w:hyphenationZone` and `w:consecutiveHyphenLimit` are not honoured yet, so
+/// a document that turns hyphenation on is hyphenated wherever Typst can.
+fn extract_auto_hyphenation(data: &[u8]) -> bool {
+    let Ok(mut archive) = crate::parser::open_zip(data) else {
+        return false;
+    };
+    let Some(settings_xml) = read_zip_text(&mut archive, "word/settings.xml") else {
+        return false;
+    };
+    const ELEMENT: &str = "<w:autoHyphenation";
+    settings_xml
+        .match_indices(ELEMENT)
+        .find_map(|(start, _)| {
+            let rest: &str = &settings_xml[start + ELEMENT.len()..];
+            // The tag name must end here, not continue into a longer name.
+            let is_whole_name: bool =
+                rest.starts_with(|ch: char| ch.is_ascii_whitespace() || ch == '/' || ch == '>');
+            is_whole_name.then(|| &rest[..rest.find('>').unwrap_or(rest.len())])
+        })
+        .is_some_and(|attributes: &str| {
+            // `w:val` is an ST_OnOff; an absent value means on.
+            let Some(value_start) = attributes.find(r#"w:val=""#) else {
+                return true;
+            };
+            let value: &str = &attributes[value_start + r#"w:val=""#.len()..];
+            let value: &str = &value[..value.find('"').unwrap_or(value.len())];
+            !matches!(value, "0" | "false" | "off")
+        })
 }
 
 fn declared_compatibility_mode(data: &[u8]) -> Option<u32> {

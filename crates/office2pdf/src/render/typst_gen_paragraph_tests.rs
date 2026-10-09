@@ -682,6 +682,73 @@ fn test_punctuation_never_hangs_regardless_of_alignment() {
     );
 }
 
+/// Typst hyphenates every justified paragraph by default. Word, Excel and
+/// PowerPoint hyphenate nothing unless the document turns it on, so a
+/// justified paragraph broke its lines at different points than Word did and
+/// page breaks could move with them.
+#[test]
+fn test_hyphenation_is_off_for_every_format_by_default() {
+    let flow = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            alignment: Some(Alignment::Justify),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Internationalization considerations notwithstanding".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+    })])]);
+    let slide = make_doc(vec![make_fixed_page(
+        720.0,
+        540.0,
+        vec![make_text_box(
+            10.0,
+            10.0,
+            200.0,
+            100.0,
+            "Telecommunications infrastructure",
+        )],
+    )]);
+    let sheet = make_doc(vec![make_sheet_page(
+        "Sheet1",
+        595.0,
+        842.0,
+        Margins::default(),
+        make_simple_table(vec![vec!["Interoperability characteristics"]]),
+    )]);
+    for (format, doc) in [("DOCX", flow), ("PPTX", slide), ("XLSX", sheet)] {
+        let result = generate_typst(&doc).unwrap().source;
+        let preamble_end = result.find("#set page").unwrap_or(result.len());
+        assert!(
+            result[..preamble_end].contains("#set text(hyphenate: false)"),
+            "{format}: hyphenation must be off before the first page: {result}"
+        );
+    }
+}
+
+/// A Word document that declares `w:autoHyphenation` asks for hyphenation in
+/// every paragraph, ragged or justified.
+#[test]
+fn test_document_auto_hyphenation_turns_hyphenation_on() {
+    let mut doc = make_doc(vec![make_flow_page(vec![make_paragraph(
+        "Internationalization considerations notwithstanding",
+    )])]);
+    doc.styles.hyphenates_automatically = true;
+    let result = generate_typst(&doc).unwrap().source;
+    let preamble_end = result.find("#set page").unwrap_or(result.len());
+    assert!(
+        result[..preamble_end].contains("#set text(hyphenate: true)"),
+        "auto hyphenation must reach the document text: {result}"
+    );
+    assert!(
+        !result.contains("hyphenate: false"),
+        "auto hyphenation must not also be switched off: {result}"
+    );
+}
+
 #[test]
 fn test_generate_line_spacing_proportional() {
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
