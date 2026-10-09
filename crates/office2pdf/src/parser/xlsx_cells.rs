@@ -1,3 +1,4 @@
+use crate::config::XlsxUiScript;
 use crate::parser::xml_util::OOXML_XML_VERSION;
 use std::collections::{HashMap, HashSet};
 
@@ -736,15 +737,20 @@ fn round_half_up_pt(value: f64) -> f64 {
 /// entry at another `fontId`, one factor with a byte-identical re-zip control,
 /// left both the probe workbook of issue #1094 and `03_inventory_en.xlsx`
 /// exporting identically, while editing the first `<font>` moved every track.
+///
+/// `ui_script` is the user-interface script of the Excel being reproduced; it
+/// picks the theme face a `<scheme>` font resolves to.
 pub(super) fn extract_normal_font(
     data: &[u8],
     theme: Option<&umya_spreadsheet::structs::drawing::Theme>,
+    ui_script: XlsxUiScript,
 ) -> Option<NormalFont> {
     use quick_xml::events::Event;
     use std::io::Read;
 
     let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data)).ok()?;
-    let theme_ui_script_faces: ThemeUiScriptFaces = read_theme_ui_script_faces(&mut archive);
+    let theme_ui_script_faces: ThemeUiScriptFaces =
+        read_theme_ui_script_faces(&mut archive, ui_script);
     let mut file = archive.by_name("xl/styles.xml").ok()?;
     let mut xml = String::new();
     file.read_to_string(&mut xml).ok()?;
@@ -779,8 +785,24 @@ pub(super) fn extract_normal_font(
             _ => {}
         }
     }
+    let declared_family: String = name?;
+    let (family, theme_scheme): (String, Option<ThemeFontSlot>) = match ui_script {
+        XlsxUiScript::Hangul => (declared_family, theme_scheme),
+        // A Latin UI resolves the scheme to the theme's Latin face, and that
+        // face then behaves like one the font names outright: the issue #1094
+        // probe prints the grid of a named Calibri once its theme points the
+        // UI-script entry at Calibri. Folding it into `family` keeps every
+        // measured named-face rule (row series, grid compaction, descent
+        // floor) on the resolved face instead of the Hang face's series.
+        XlsxUiScript::Latin => (
+            theme_scheme
+                .and_then(|slot| theme_ui_script_faces.face(slot))
+                .map_or(declared_family, str::to_string),
+            None,
+        ),
+    };
     Some(NormalFont {
-        family: name?,
+        family,
         size_pt: size.unwrap_or(11.0),
         color: font_color,
         theme_scheme,
@@ -875,13 +897,14 @@ fn normal_font_color(
     None
 }
 
-/// The script whose theme face Excel resolves a scheme font to on the
-/// reference machine. Excel resolves a `<scheme>` font through the theme's
-/// per-script face list by the *UI* script, not by the text's own script:
-/// the reference Mac runs a Korean UI, so even ASCII cells of a scheme font
-/// paint and lay out in the `Hang` face (issues #1047, #1094, #1380). Every
-/// native ground truth in this repository was exported there.
-const UI_SCRIPT: &str = "Hang";
+/// The theme script tag of a Korean user interface. Excel resolves a
+/// `<scheme>` font through the theme's per-script face list by the *UI*
+/// script, not by the text's own script: the reference Mac runs a Korean UI,
+/// so even ASCII cells of a scheme font paint and lay out in the `Hang` face
+/// (issues #1047, #1094, #1380). Every native ground truth in this repository
+/// was exported there, which is why [`XlsxUiScript::Hangul`] is the default;
+/// a Latin-script UI resolves to the theme's `<a:latin>` face instead.
+const HANGUL_SCRIPT_TAG: &str = "Hang";
 
 /// Which of the theme's two font schemes a `<scheme val="..."/>` defers to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -905,9 +928,10 @@ impl ThemeFontSlot {
 }
 
 /// The resolved UI-script face in each of the workbook's two font schemes.
-/// Excel uses the `<a:font script="Hang" .../>` face when present; if it is
-/// absent, it uses the scheme's `<a:ea typeface="..."/>` face before falling
-/// back to the font's declared family.
+/// Under a Korean UI, Excel uses the `<a:font script="Hang" .../>` face when
+/// present; if it is absent, it uses the scheme's `<a:ea typeface="..."/>`
+/// face before falling back to the font's declared family. Under a Latin UI
+/// it uses the scheme's `<a:latin typeface="..."/>` face.
 ///
 /// Excel resolves a `<scheme>` font's face through these theme entries rather
 /// than always using its declared family, which is what makes the same Calibri
@@ -929,9 +953,11 @@ impl ThemeUiScriptFaces {
     }
 }
 
-/// Read each scheme's Hang face, falling back to its nonempty East Asian face.
+/// Read each scheme's face for `ui_script`: for Hangul its Hang face, falling
+/// back to its nonempty East Asian face; for Latin its nonempty Latin face.
 fn read_theme_ui_script_faces(
     archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
+    ui_script: XlsxUiScript,
 ) -> ThemeUiScriptFaces {
     use quick_xml::events::Event;
     use std::io::Read;
@@ -963,6 +989,7 @@ fn read_theme_ui_script_faces(
 
     let mut hang_faces = ThemeUiScriptFaces::default();
     let mut east_asian_faces = ThemeUiScriptFaces::default();
+    let mut latin_faces = ThemeUiScriptFaces::default();
     let mut reader = quick_xml::Reader::from_str(&xml);
     let mut open_slot: Option<ThemeFontSlot> = None;
     loop {
@@ -971,7 +998,7 @@ fn read_theme_ui_script_faces(
                 b"majorFont" => open_slot = Some(ThemeFontSlot::Major),
                 b"minorFont" => open_slot = Some(ThemeFontSlot::Minor),
                 b"font" => {
-                    if theme_font_names_ui_script(e)
+                    if theme_font_names_hangul_script(e)
                         && let Some(slot) = open_slot
                     {
                         set_theme_font_face(&mut hang_faces, slot, theme_font_typeface(e));
@@ -980,6 +1007,11 @@ fn read_theme_ui_script_faces(
                 b"ea" => {
                     if let Some(slot) = open_slot {
                         set_theme_font_face(&mut east_asian_faces, slot, theme_font_typeface(e));
+                    }
+                }
+                b"latin" => {
+                    if let Some(slot) = open_slot {
+                        set_theme_font_face(&mut latin_faces, slot, theme_font_typeface(e));
                     }
                 }
                 _ => {}
@@ -991,7 +1023,7 @@ fn read_theme_ui_script_faces(
             }
             Ok(Event::Empty(ref e)) => match e.local_name().as_ref() {
                 b"font" => {
-                    if theme_font_names_ui_script(e)
+                    if theme_font_names_hangul_script(e)
                         && let Some(slot) = open_slot
                     {
                         set_theme_font_face(&mut hang_faces, slot, theme_font_typeface(e));
@@ -1002,15 +1034,23 @@ fn read_theme_ui_script_faces(
                         set_theme_font_face(&mut east_asian_faces, slot, theme_font_typeface(e));
                     }
                 }
+                b"latin" => {
+                    if let Some(slot) = open_slot {
+                        set_theme_font_face(&mut latin_faces, slot, theme_font_typeface(e));
+                    }
+                }
                 _ => {}
             },
             Ok(Event::Eof) | Err(_) => break,
             _ => {}
         }
     }
-    ThemeUiScriptFaces {
-        major: hang_faces.major.or(east_asian_faces.major),
-        minor: hang_faces.minor.or(east_asian_faces.minor),
+    match ui_script {
+        XlsxUiScript::Hangul => ThemeUiScriptFaces {
+            major: hang_faces.major.or(east_asian_faces.major),
+            minor: hang_faces.minor.or(east_asian_faces.minor),
+        },
+        XlsxUiScript::Latin => latin_faces,
     }
 }
 
@@ -1090,13 +1130,13 @@ fn package_part_path(source_part: &str, target: &str) -> Option<String> {
     (!segments.is_empty()).then(|| segments.join("/"))
 }
 
-/// Whether a theme `<a:font>` entry supplies the reference machine's UI face.
-fn theme_font_names_ui_script(element: &quick_xml::events::BytesStart<'_>) -> bool {
+/// Whether a theme `<a:font>` entry supplies the Korean UI's face.
+fn theme_font_names_hangul_script(element: &quick_xml::events::BytesStart<'_>) -> bool {
     element
         .try_get_attribute("script")
         .ok()
         .flatten()
-        .is_some_and(|script| script.value.as_ref() == UI_SCRIPT.as_bytes())
+        .is_some_and(|script| script.value.as_ref() == HANGUL_SCRIPT_TAG.as_bytes())
 }
 
 /// Decode a nonempty theme typeface name, including numeric XML references.
@@ -1127,11 +1167,15 @@ fn set_theme_font_face(
 /// Excel derives every column print metric from.
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct NormalFont {
+    /// The family the font declares — or, under a Latin UI script, the
+    /// theme's Latin face its `<scheme>` resolves to (see `theme_scheme`).
     pub(super) family: String,
     pub(super) size_pt: f64,
     pub(super) color: Option<Color>,
     /// The theme font scheme the font defers its face to
     /// (`<scheme val="minor"/>`), or `None` when it names the face outright.
+    /// Under a Latin UI script it is always `None`: the scheme's Latin face
+    /// is already folded into `family` and lays out as a named face would.
     ///
     /// Excel then lays rows out, paints cells and prices columns against
     /// whatever the scheme resolves to, which is not necessarily `family`:
@@ -1141,10 +1185,11 @@ pub(super) struct NormalFont {
     /// 15pt (issue #1047), and a declared Calibri 12 embeds Malgun Gothic and
     /// prices a 7pt column unit against Calibri's 6pt (issue #1380).
     pub(super) theme_scheme: Option<ThemeFontSlot>,
-    /// The theme-resolved UI-script faces, preferring Hang over the East
-    /// Asian face when present. Only bears on a font with a `theme_scheme`:
-    /// that is the list Excel resolves such a font through (issues #1094,
-    /// #1711), including cell fonts carrying a `<scheme>` of their own.
+    /// The theme-resolved UI-script faces: under a Korean UI the Hang face,
+    /// else the nonempty East Asian face; under a Latin UI the Latin face.
+    /// Only bears on a font with a `<scheme>`: that is the list Excel
+    /// resolves such a font through (issues #1094, #1711), including cell
+    /// fonts carrying a `<scheme>` of their own.
     pub(super) theme_ui_script_faces: ThemeUiScriptFaces,
 }
 
@@ -1157,7 +1202,8 @@ impl NormalFont {
     /// The face Excel resolves this font to on the reference machine: the
     /// theme's Hang face, then its nonempty East Asian face, else the family
     /// it declares. A scheme font over a theme with neither usable face stays
-    /// on its declared family, exactly as issue #1141 measured it.
+    /// on its declared family, exactly as issue #1141 measured it. Under a
+    /// Latin UI script this is `family`, which already holds the Latin face.
     pub(super) fn resolved_family(&self) -> &str {
         self.theme_scheme
             .and_then(|slot| self.theme_ui_script_faces.face(slot))
@@ -3296,8 +3342,9 @@ fn auto_row_height_pt(
 /// from the Normal font's series printed the UI face's 27pt over Arial's 23.
 ///
 /// A cell font deferring to a theme scheme resolves the way the Normal font
-/// does — through the theme's Hang face, then its nonempty `ea` face, else on
-/// its declared family — and a font naming no family at all inherits the
+/// does — through the theme's UI-script face (Hang, then a nonempty `ea`
+/// face, under a Korean UI; Latin under a Latin UI), else on its declared
+/// family — and a font naming no family at all inherits the
 /// Normal font's resolved face.
 fn cell_font_row_height_pt(
     cell_font: &umya_spreadsheet::structs::Font,

@@ -1,4 +1,5 @@
 use super::*;
+use crate::config::XlsxUiScript;
 use crate::ir::*;
 
 /// Helper: build a minimal XLSX as bytes with a single sheet.
@@ -969,8 +970,8 @@ fn test_extract_normal_font_reads_first_styles_font() {
     umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
     let data = cursor.into_inner();
 
-    let normal_font =
-        extract_normal_font(&data, Some(book.get_theme())).expect("styles.xml has a Normal font");
+    let normal_font = extract_normal_font(&data, Some(book.get_theme()), XlsxUiScript::Hangul)
+        .expect("styles.xml has a Normal font");
     assert_eq!(normal_font.family, "Calibri");
     assert_eq!(normal_font.size_pt, 11.0);
 }
@@ -986,8 +987,8 @@ fn test_extract_normal_font_resolves_its_theme_colour() {
     let book = umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(&data), true)
         .expect("readable workbook");
 
-    let normal_font =
-        extract_normal_font(&data, Some(book.get_theme())).expect("styles.xml has a Normal font");
+    let normal_font = extract_normal_font(&data, Some(book.get_theme()), XlsxUiScript::Hangul)
+        .expect("styles.xml has a Normal font");
     assert_eq!(normal_font.family, "Segoe UI");
     assert_eq!(normal_font.size_pt, 10.0);
     assert_eq!(normal_font.color, Some(Color::new(0x44, 0x54, 0x6A)));
@@ -1472,7 +1473,8 @@ fn a_theme_scheme_normal_font_paints_and_prices_columns_in_the_ui_script_face() 
     let book = umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(data), true)
         .expect("the customer fixture should load");
     let normal_font: NormalFont =
-        extract_normal_font(data, Some(book.get_theme())).expect("a Normal font");
+        extract_normal_font(data, Some(book.get_theme()), XlsxUiScript::Hangul)
+            .expect("a Normal font");
 
     assert_eq!(normal_font.family, "Calibri", "the declared name is kept");
     assert_eq!(normal_font.size_pt, 12.0);
@@ -1512,7 +1514,8 @@ fn a_theme_scheme_normal_font_resolves_through_the_theme_it_ships_with() {
                 umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(data.as_slice()), true)
                     .expect("the built workbook should load");
             let normal_font: NormalFont =
-                extract_normal_font(data, Some(book.get_theme())).expect("a Normal font");
+                extract_normal_font(data, Some(book.get_theme()), XlsxUiScript::Hangul)
+                    .expect("a Normal font");
             assert_eq!(normal_font.family, "Calibri", "Calibri {size_pt}");
             assert_eq!(
                 normal_font.resolved_family(),
@@ -1552,7 +1555,8 @@ fn a_theme_scheme_normal_font_falls_back_to_the_east_asian_theme_face() {
         let book = umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(data.as_slice()), true)
             .expect("the built workbook should load");
         let normal_font: NormalFont =
-            extract_normal_font(data, Some(book.get_theme())).expect("a Normal font");
+            extract_normal_font(data, Some(book.get_theme()), XlsxUiScript::Hangul)
+                .expect("a Normal font");
 
         assert_eq!(normal_font.resolved_family(), expected_face);
         assert_eq!(
@@ -1577,7 +1581,8 @@ fn a_theme_scheme_font_uses_the_theme_named_by_the_workbook_relationship() {
     let book = umya_spreadsheet::reader::xlsx::read_reader(Cursor::new(data.as_slice()), true)
         .expect("the built workbook should load");
     let normal_font: NormalFont =
-        extract_normal_font(&data, Some(book.get_theme())).expect("a Normal font");
+        extract_normal_font(&data, Some(book.get_theme()), XlsxUiScript::Hangul)
+            .expect("a Normal font");
 
     assert_eq!(normal_font.resolved_family(), "Arial");
     assert_eq!(
@@ -3839,8 +3844,16 @@ const THEME_SCHEME_PROBE: &[u8] =
 
 /// Every declared row track a workbook prints, across all of its sheet pages.
 fn printed_row_heights_over_all_pages(data: &[u8]) -> Vec<Option<f64>> {
+    printed_row_heights_over_all_pages_with(data, &ConvertOptions::default())
+}
+
+/// [`printed_row_heights_over_all_pages`] under explicit conversion options.
+fn printed_row_heights_over_all_pages_with(
+    data: &[u8],
+    options: &ConvertOptions,
+) -> Vec<Option<f64>> {
     let parser = XlsxParser;
-    let (doc, _warnings) = parser.parse(data, &ConvertOptions::default()).unwrap();
+    let (doc, _warnings) = parser.parse(data, options).unwrap();
     doc.pages
         .iter()
         .filter_map(|page| match page {
@@ -3957,6 +3970,268 @@ fn a_scheme_normal_font_over_a_theme_without_usable_ui_face_compacts() {
     let bare_theme: Vec<u8> = strip_theme_minor_font_script_faces(THEME_SCHEME_PROBE);
 
     let heights: Vec<Option<f64>> = printed_row_heights_over_all_pages(&bare_theme);
+
+    assert_eq!(
+        heights
+            .iter()
+            .filter(|height| **height == Some(33.0))
+            .count(),
+        16,
+        "16 ht=36 rows compact to 33pt, got {heights:?}"
+    );
+    assert_eq!(
+        heights
+            .iter()
+            .filter(|height| **height == Some(11.0))
+            .count(),
+        5,
+        "5 ht=12 rows compact to 11pt, got {heights:?}"
+    );
+}
+
+// ── The UI script a scheme font resolves through ─────────────────────
+
+/// Parse options for an Excel whose user interface runs `ui_script`.
+fn ui_script_options(ui_script: XlsxUiScript) -> ConvertOptions {
+    ConvertOptions {
+        xlsx_ui_script: ui_script,
+        ..ConvertOptions::default()
+    }
+}
+
+/// The first cell's font family and every row track of a workbook parsed
+/// for an Excel whose user interface runs `ui_script`.
+fn first_cell_family_and_row_heights(
+    data: &[u8],
+    ui_script: XlsxUiScript,
+) -> (Option<String>, Vec<Option<f64>>) {
+    let (doc, _warnings) = XlsxParser
+        .parse(data, &ui_script_options(ui_script))
+        .expect("workbook should parse");
+    let table = &get_sheet_page(&doc, 0).table;
+    let family: Option<String> =
+        table
+            .rows
+            .iter()
+            .flat_map(|row| row.cells.iter())
+            .find_map(|cell| {
+                cell.content.iter().find_map(|block| match block {
+                    Block::Paragraph(paragraph) => paragraph
+                        .runs
+                        .first()
+                        .and_then(|run| run.style.font_family.clone()),
+                    _ => None,
+                })
+            });
+    let heights: Vec<Option<f64>> = table.rows.iter().map(|row| row.height).collect();
+    (family, heights)
+}
+
+/// Point the theme's minor font scheme's `<a:latin>` entry at `face`.
+fn rewrite_theme_minor_font_latin_face(data: &[u8], face: &str) -> Vec<u8> {
+    rewrite_zip_parts(
+        data,
+        |name| name.starts_with("xl/theme/") && name.ends_with(".xml"),
+        |xml| {
+            let start: usize = xml.find("<a:minorFont>").expect("theme has a minor font");
+            let end: usize = xml[start..]
+                .find("</a:minorFont>")
+                .expect("minor font is closed")
+                + start;
+            let block: &str = &xml[start..end];
+            let latin_start: usize = block.find("<a:latin ").expect("minor font has latin face");
+            let latin_end: usize = block[latin_start..]
+                .find("/>")
+                .expect("latin face is closed")
+                + latin_start
+                + 2;
+            format!(
+                "{}{}<a:latin typeface=\"{face}\"/>{}{}",
+                &xml[..start],
+                &block[..latin_start],
+                &block[latin_end..],
+                &xml[end..]
+            )
+        },
+    )
+}
+
+/// The default UI script stays the Korean one every native ground truth in
+/// this repository was exported under: a scheme Normal font paints in the
+/// theme's `Hang` face and recomputes its dimension-less rows from that
+/// face's 17pt series at 11pt (issues #1047, #1380).
+#[test]
+fn the_default_ui_script_resolves_scheme_fonts_through_the_hang_face() {
+    assert_eq!(
+        ConvertOptions::default().xlsx_ui_script,
+        XlsxUiScript::Hangul
+    );
+    let data: Vec<u8> = build_xlsx_with_theme_scheme_normal_font("Calibri", 11.0);
+
+    let (family, heights) = first_cell_family_and_row_heights(&data, XlsxUiScript::default());
+
+    assert_eq!(family.as_deref(), Some("맑은 고딕"));
+    assert_eq!(heights, vec![Some(17.0)]);
+}
+
+/// An Excel with a Latin-script user interface (English, Danish, German, ...)
+/// resolves a scheme font to the theme's `<a:latin>` face, and that face then
+/// lays out exactly like a Normal font naming it outright: same face, same
+/// dimension-less row, never the Hang face's 17pt series.
+///
+/// Triangulated over three theme faces and two sizes: the face comes from the
+/// theme's Latin entry, not from the `<name>` the Normal font declares.
+#[test]
+fn a_latin_ui_script_resolves_a_scheme_normal_font_to_the_theme_latin_face() {
+    for (size_pt, theme_latin_face) in [
+        (11.0, "Calibri"),
+        (14.0, "Calibri"),
+        (11.0, "Georgia"),
+        (14.0, "Georgia"),
+        (11.0, "Aptos"),
+    ] {
+        let scheme_font: Vec<u8> = rewrite_theme_minor_font_latin_face(
+            &build_xlsx_with_theme_scheme_normal_font("Calibri", size_pt),
+            theme_latin_face,
+        );
+        let named_font: Vec<u8> = build_xlsx_with_normal_font(theme_latin_face, size_pt);
+
+        let (family, heights) =
+            first_cell_family_and_row_heights(&scheme_font, XlsxUiScript::Latin);
+        let (named_family, named_heights) =
+            first_cell_family_and_row_heights(&named_font, XlsxUiScript::Latin);
+        let (_hang_family, hang_heights) =
+            first_cell_family_and_row_heights(&scheme_font, XlsxUiScript::Hangul);
+
+        assert_eq!(
+            family.as_deref(),
+            Some(theme_latin_face),
+            "Calibri {size_pt} over a theme naming {theme_latin_face}"
+        );
+        assert_eq!(named_family.as_deref(), Some(theme_latin_face));
+        assert_eq!(
+            heights, named_heights,
+            "{theme_latin_face} {size_pt} lays out as the named face"
+        );
+        assert_ne!(
+            heights, hang_heights,
+            "{theme_latin_face} {size_pt} must leave the Hang face's series"
+        );
+    }
+}
+
+/// Georgia has a measured series of its own and is not one of the families
+/// the printed grid compacts, so its rows show the series directly: 11pt and
+/// 14pt print 14pt and 18pt where the Hang face prints 17pt and 20pt.
+#[test]
+fn a_latin_ui_script_recomputes_rows_from_the_latin_face_series() {
+    for (size_pt, latin_row_pt, hang_row_pt) in [(11.0, 14.0, 17.0), (14.0, 18.0, 20.0)] {
+        let data: Vec<u8> = rewrite_theme_minor_font_latin_face(
+            &build_xlsx_with_theme_scheme_normal_font("Calibri", size_pt),
+            "Georgia",
+        );
+
+        let (_family, latin_heights) =
+            first_cell_family_and_row_heights(&data, XlsxUiScript::Latin);
+        let (_family, hang_heights) =
+            first_cell_family_and_row_heights(&data, XlsxUiScript::Hangul);
+
+        assert_eq!(latin_heights, vec![Some(latin_row_pt)], "Georgia {size_pt}");
+        assert_eq!(hang_heights, vec![Some(hang_row_pt)], "Hang face {size_pt}");
+    }
+}
+
+/// The East Asian fallback belongs to the Korean UI: a Latin UI never reads
+/// the theme's `Hang` or `ea` entries, and a theme with no usable Latin face
+/// leaves the scheme font on the family it declares.
+#[test]
+fn a_latin_ui_script_ignores_the_east_asian_theme_faces() {
+    let office_theme: Vec<u8> = build_xlsx_with_theme_scheme_normal_font("Calibri", 11.0);
+    let east_asian_only: Vec<u8> = rewrite_theme_minor_font_ea_face(
+        &strip_theme_minor_font_script_faces(&office_theme),
+        "Arial",
+    );
+    let no_latin_face: Vec<u8> = rewrite_theme_minor_font_latin_face(&office_theme, "");
+    let (_family, named_calibri_heights) = first_cell_family_and_row_heights(
+        &build_xlsx_with_normal_font("Calibri", 11.0),
+        XlsxUiScript::Latin,
+    );
+
+    for data in [&east_asian_only, &no_latin_face] {
+        let (family, heights) = first_cell_family_and_row_heights(data, XlsxUiScript::Latin);
+
+        assert_eq!(family.as_deref(), Some("Calibri"));
+        assert_eq!(heights, named_calibri_heights);
+    }
+}
+
+/// A cell font carrying its own `<scheme>` resolves slot by slot through the
+/// same Latin list: `major` to the theme's Latin heading face, `minor` to
+/// its Latin body face, while a font naming its face outright keeps it.
+#[test]
+fn a_latin_ui_script_resolves_cell_scheme_fonts_through_their_latin_slot() {
+    let mut book = umya_spreadsheet::new_file();
+    {
+        let sheet = book.get_sheet_mut(&0).unwrap();
+        let heading = sheet.get_cell_mut("A1");
+        heading.set_value("Title");
+        heading
+            .get_style_mut()
+            .get_font_mut()
+            .set_name_with_scheme("Calibri Light", "major");
+        let body = sheet.get_cell_mut("A2");
+        body.set_value("body");
+        body.get_style_mut()
+            .get_font_mut()
+            .set_name_with_scheme("Calibri", "minor");
+        let named = sheet.get_cell_mut("A3");
+        named.set_value("named");
+        named.get_style_mut().get_font_mut().set_name("Georgia");
+    }
+    let mut cursor = Cursor::new(Vec::new());
+    umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+    let data: Vec<u8> = rewrite_theme_minor_font_latin_face(&cursor.into_inner(), "Trebuchet MS");
+
+    let (doc, _warnings) = XlsxParser
+        .parse(&data, &ui_script_options(XlsxUiScript::Latin))
+        .expect("workbook should parse");
+    let families: Vec<Option<String>> = get_sheet_page(&doc, 0)
+        .table
+        .rows
+        .iter()
+        .flat_map(|row| row.cells.iter())
+        .filter_map(|cell| {
+            cell.content.iter().find_map(|block| match block {
+                Block::Paragraph(paragraph) => paragraph
+                    .runs
+                    .first()
+                    .map(|run| run.style.font_family.clone()),
+                _ => None,
+            })
+        })
+        .collect();
+
+    assert_eq!(
+        families,
+        vec![
+            Some("Calibri Light".to_string()),
+            Some("Trebuchet MS".to_string()),
+            Some("Georgia".to_string()),
+        ]
+    );
+}
+
+/// Under a Latin UI the probe workbook of issue #1094 resolves its scheme
+/// Normal font to the theme's Latin Calibri, so its printed grid compacts the
+/// way the same probe measured when its theme pointed the UI-script entry at
+/// Calibri (`script="Hang" -> Calibri`: 36 -> 33): the resolved face, not the
+/// scheme flag, decides the grid.
+#[test]
+fn a_latin_ui_script_compacts_the_grid_of_a_latin_calibri_scheme_font() {
+    let heights: Vec<Option<f64>> = printed_row_heights_over_all_pages_with(
+        THEME_SCHEME_PROBE,
+        &ui_script_options(XlsxUiScript::Latin),
+    );
 
     assert_eq!(
         heights
