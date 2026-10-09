@@ -5853,6 +5853,19 @@ fn write_text_params_inner(out: &mut String, style: &TextStyle, kerning_text: Ke
     if let Some(weight) = effective_font_weight(style) {
         write_param(out, &mut first, &format!("weight: \"{weight}\""));
     }
+    // A width member — `Arial Narrow` — is filed under its base family at
+    // that stretch, which the font list reaches; the stretch selects it.
+    if let Some(stretch) = style
+        .font_family
+        .as_deref()
+        .and_then(font_subst::stretch_stated_by_family_name)
+    {
+        write_param(
+            out,
+            &mut first,
+            &format!("stretch: {}%", format_f64(stretch.to_ratio().get() * 100.0)),
+        );
+    }
     if matches!(style.italic, Some(true)) {
         write_param(out, &mut first, "style: \"italic\"");
     }

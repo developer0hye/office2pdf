@@ -1955,7 +1955,7 @@ fn a_run_stating_a_heavier_weight_escalates_past_the_name_it_asked_for() {
         "a name stating no weight leaves selection to the nearest-weight search"
     );
 
-    // Nor is a stretch suffix, which names a family rather than a member.
+    // Nor is a stretch suffix, which states a width rather than a weight.
     assert_eq!(
         member_carrying_requested_name(&book, "Noto Condensed", at(400), face),
         None,
@@ -1964,16 +1964,96 @@ fn a_run_stating_a_heavier_weight_escalates_past_the_name_it_asked_for() {
 }
 
 #[test]
-fn a_family_name_stating_no_weight_keeps_its_base_family_out_of_both_chains() {
-    // A stretch suffix names a family of its own — `Arial Narrow` is not a
-    // member of Arial — so neither chain may fall back on the base family.
+fn a_width_member_reaches_its_base_family_in_both_chains() {
+    // The book files `Arial Narrow.ttf` as `Arial` at 75% width, so the
+    // narrow member is only reachable through the base family, at the
+    // stretch the name states — which the run asks for alongside the list.
     for purpose in [ChainPurpose::Paint, ChainPurpose::Metrics] {
         let candidates: Vec<String> = fallback_candidates("Arial Narrow", None, purpose);
-        assert!(
-            !candidates.iter().any(|candidate| candidate == "Arial"),
-            "{purpose:?} chain for Arial Narrow must not reach Arial: {candidates:?}"
+        assert_eq!(
+            candidates.first().map(String::as_str),
+            Some("Arial"),
+            "{purpose:?} chain for Arial Narrow must lead with its base family: {candidates:?}"
         );
     }
+}
+
+#[test]
+fn a_family_name_stating_neither_weight_nor_width_keeps_its_base_family_out_of_both_chains() {
+    // A style word that is not a trailing weight or width suffix names a
+    // family of its own, so no chain may reach a shorter family for it.
+    for purpose in [ChainPurpose::Paint, ChainPurpose::Metrics] {
+        let candidates: Vec<String> = fallback_candidates("Arial Italic", None, purpose);
+        assert!(
+            !candidates.iter().any(|candidate| candidate == "Arial"),
+            "{purpose:?} chain for Arial Italic must not reach Arial: {candidates:?}"
+        );
+    }
+}
+
+#[test]
+fn a_width_suffix_states_the_stretch_of_the_member_it_names() {
+    use typst::text::FontStretch;
+    assert_eq!(
+        stretch_stated_by_family_name("Arial Narrow"),
+        Some(FontStretch::CONDENSED)
+    );
+    assert_eq!(
+        stretch_stated_by_family_name("Aptos Narrow"),
+        Some(FontStretch::CONDENSED)
+    );
+    assert_eq!(
+        stretch_stated_by_family_name("Roboto Condensed"),
+        Some(FontStretch::CONDENSED)
+    );
+    assert_eq!(
+        stretch_stated_by_family_name("Noto Sans SemiCondensed"),
+        Some(FontStretch::SEMI_CONDENSED)
+    );
+    assert_eq!(
+        stretch_stated_by_family_name("Noto Sans Extra Condensed"),
+        Some(FontStretch::EXTRA_CONDENSED)
+    );
+    assert_eq!(
+        stretch_stated_by_family_name("Encode Sans Expanded"),
+        Some(FontStretch::EXPANDED)
+    );
+    // No suffix, a weight suffix, and a width word inside the name state none.
+    assert_eq!(stretch_stated_by_family_name("Arial"), None);
+    assert_eq!(stretch_stated_by_family_name("Calibri Light"), None);
+    assert_eq!(stretch_stated_by_family_name("Narrow Gauge Sans"), None);
+}
+
+#[test]
+fn a_width_member_is_available_where_the_base_family_ships_that_width() {
+    use crate::render::font_context::test_faces::{
+        noto_serif_at_weight, noto_serif_at_width_with_ascender,
+    };
+    // The book indexes the rewritten face as `Noto Serif` at 75%; a request
+    // for `Noto Serif Narrow` is that face.
+    let context = in_memory_context(&[
+        noto_serif_at_weight(400),
+        noto_serif_at_width_with_ascender(3, 1069),
+    ]);
+    let available = with_font_search_context(Some(&context), || {
+        is_primary_font_available("Noto Serif Narrow")
+    });
+    assert!(
+        available,
+        "the condensed member is indexed under the base family"
+    );
+}
+
+#[test]
+fn a_width_member_is_unavailable_where_the_base_family_ships_only_normal_width() {
+    use crate::render::font_context::test_faces::noto_serif_at_weight;
+    // Only the regular member is indexed, so nothing answers to the narrow
+    // request and the fallback warning must still fire.
+    let context = in_memory_context(&[noto_serif_at_weight(400)]);
+    let available = with_font_search_context(Some(&context), || {
+        is_primary_font_available("Noto Serif Narrow")
+    });
+    assert!(!available, "no condensed face is indexed");
 }
 
 #[test]

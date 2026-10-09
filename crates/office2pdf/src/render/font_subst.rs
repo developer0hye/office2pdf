@@ -30,7 +30,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 #[cfg(target_arch = "wasm32")]
 use std::path::PathBuf;
 use tracing::debug;
-use typst::text::FontWeight;
+use typst::text::{FontStretch, FontWeight};
 
 use crate::ir::{
     Block, Document, FixedElementKind, HFInline, HeaderFooter, Page, Paragraph, Table,
@@ -269,6 +269,42 @@ pub(crate) fn weight_stated_by_family_name(font_family: &str) -> Option<FontWeig
         "bold" => FontWeight::BOLD,
         "extrabold" | "ultrabold" | "extb" => FontWeight::EXTRABOLD,
         "black" | "heavy" => FontWeight::BLACK,
+        _ => return None,
+    })
+}
+
+/// The width a family name states in its style suffix, as the member of the
+/// base family it denotes: `Arial Narrow` is `Arial` at 75%, `Aptos Narrow`
+/// is `Aptos` condensed, `Noto Sans SemiCondensed` is `Noto Sans` at 87.5%.
+///
+/// The book files a width member under its base family at the stretch its
+/// OS/2 `usWidthClass` declares, so the suffixed name is never a family key
+/// and the member is reachable only through the base family at that width.
+/// Selection takes the nearest stretch, so `Aptos-Narrow.ttf`, which declares
+/// semi-condensed, still answers a condensed request.
+///
+/// Only a pure width suffix counts: `Arial Narrow Bold` states both and is
+/// left alone, as before.
+pub(crate) fn stretch_stated_by_family_name(font_family: &str) -> Option<FontStretch> {
+    let requested: &str = font_family.trim();
+    let base_family: &str = typographic_family(requested);
+    if base_family.len() >= requested.len() {
+        return None;
+    }
+    let suffix: String = requested[base_family.len()..]
+        .chars()
+        .filter(|character| !matches!(character, ' ' | '-' | '_'))
+        .map(|character| character.to_ascii_lowercase())
+        .collect();
+    Some(match suffix.as_str() {
+        "ultracondensed" => FontStretch::ULTRA_CONDENSED,
+        "extracondensed" => FontStretch::EXTRA_CONDENSED,
+        "narrow" | "condensed" | "cond" | "cn" | "cd" => FontStretch::CONDENSED,
+        "semicondensed" | "semicond" => FontStretch::SEMI_CONDENSED,
+        "semiexpanded" => FontStretch::SEMI_EXPANDED,
+        "expanded" | "exp" => FontStretch::EXPANDED,
+        "extraexpanded" => FontStretch::EXTRA_EXPANDED,
+        "ultraexpanded" => FontStretch::ULTRA_EXPANDED,
         _ => return None,
     })
 }
@@ -573,6 +609,13 @@ fn weight_member_base_family(font_family: &str) -> Option<&str> {
     Some(typographic_family(font_family.trim()))
 }
 
+/// The base family a width-suffixed request has to reach for its member:
+/// `Some("Arial")` for `Arial Narrow`, `None` for a name stating no width.
+fn width_member_base_family(font_family: &str) -> Option<&str> {
+    stretch_stated_by_family_name(font_family)?;
+    Some(typographic_family(font_family.trim()))
+}
+
 /// What a candidate list is being built for.
 ///
 /// The two answers differ only in the generic class tail. Painting wants it:
@@ -610,9 +653,12 @@ fn fallback_candidates(
     // this list at that weight, so a metrics lookup reads the same face the
     // paint chain shapes with rather than the family's regular member (issues
     // #1286 and #1643). A variable-font suffix, which typst 0.15 trims too,
-    // names the very face requested, so both follow it as well.
-    let base_family: Option<&str> =
-        variable_font_base_family(requested).or_else(|| weight_member_base_family(requested));
+    // names the very face requested, so both follow it as well. A width
+    // member — `Arial Narrow`, filed as `Arial` at 75% — is reached the same
+    // way, at the stretch the run states beside the list.
+    let base_family: Option<&str> = variable_font_base_family(requested)
+        .or_else(|| weight_member_base_family(requested))
+        .or_else(|| width_member_base_family(requested));
     if let Some(base_family) = base_family {
         candidates.push(base_family.to_string());
     }
@@ -1101,6 +1147,12 @@ pub fn is_primary_font_available(font_family: &str) -> bool {
         }
         if let Some(base_family) = variable_font_base_family(font_family) {
             return ctx.has_family(base_family);
+        }
+        // A width member is there where its base family ships a face on that
+        // side of normal width: `Arial Narrow` is `Arial` at 75%.
+        if let Some(stretch) = stretch_stated_by_family_name(font_family) {
+            let base_family: &str = typographic_family(font_family.trim());
+            return ctx.has_face_toward_stretch(base_family, stretch);
         }
         false
     })
@@ -2175,6 +2227,16 @@ fn resolve_available_fallback(
         && family_covers_or_is_unindexed(context, font_family, script)
     {
         return None;
+    }
+    // A width member is painted from its base family at that stretch, so it
+    // falls back only where the base family ships no face at that width.
+    if let Some(stretch) = stretch_stated_by_family_name(font_family) {
+        let base_family: &str = typographic_family(font_family.trim());
+        if context.has_face_toward_stretch(base_family, stretch)
+            && family_covers_or_is_unindexed(context, base_family, script)
+        {
+            return None;
+        }
     }
 
     script
