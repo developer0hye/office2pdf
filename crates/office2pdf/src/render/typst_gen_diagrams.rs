@@ -562,10 +562,10 @@ impl WorksheetPlotClip {
     /// The clip for a plotting rectangle in the chart's own points, or `None`
     /// where the chart has no sheet origin to round on.
     ///
-    /// A horizontal bar plot passes `None`: its bars are placed in the plot
-    /// box's own frame rather than from the rectangle the axis rules draw, and
-    /// no native bar export has been measured — the same reason
-    /// [`worksheet_column_span`] leaves a bar's band continuous.
+    /// A horizontal bar plot passes `None`: #1633 establishes chart-local
+    /// clipping for value-axis overruns, but worksheet-point snapping of its
+    /// plot edges remains unmeasured. [`worksheet_column_span`] leaves a bar's
+    /// band continuous for the same reason.
     fn snapped(
         placement: Option<WorksheetMarkerPlacement>,
         plot_x: f64,
@@ -2558,6 +2558,20 @@ impl ValueScale {
             return 0.0;
         }
         ((value - self.min) / span).clamp(0.0, 1.0)
+    }
+
+    /// Like [`Self::fraction`], but not truncated to `0..1`: a value past the
+    /// stated maximum or minimum lands past the plot's edge instead of on it.
+    /// A bar segment's own painted rectangle uses this — Office draws such a
+    /// segment at its true length and lets the plot rectangle's clip hide the
+    /// overrun, so ours must paint the same length for the clip to hide the
+    /// same amount (issue #1633).
+    fn raw_fraction(&self, value: f64) -> f64 {
+        let span: f64 = self.max - self.min;
+        if !span.is_finite() || span <= 0.0 {
+            return 0.0;
+        }
+        (value - self.min) / span
     }
 
     /// Where the value-zero line lands: the baseline every bar grows from, and
@@ -5160,8 +5174,8 @@ fn band_bars(band: f64, series_count: usize, layout: BarBandLayout) -> BandBars 
 /// rather than the rounded point beyond it (#1543). The sheet point is taken
 /// on the fitted sheet origin the frame, chrome and markers share, so the
 /// column lands where native paints it. Column tops stay continuous: native
-/// tops are not whole points. Bar charts are not measured and keep the
-/// continuous band.
+/// tops are not whole points. Horizontal-bar band-edge snapping remains
+/// unmeasured, so those charts keep the continuous band.
 fn worksheet_column_span(
     start: f64,
     thickness: f64,
@@ -5274,6 +5288,65 @@ pub(super) fn bar_category_label_baseline_pt(
     Some(centre_sheet.floor() + k - sheet_frame_top_pt)
 }
 
+/// Ignore negligible floating-point noise when a segment lands on a plot edge,
+/// so an exact endpoint does not take the overflow-clipping path.
+const PLOT_EDGE_EPSILON_PT: f64 = 1e-6;
+
+/// Paint one bar segment's rectangle.
+///
+/// `(x, y, w, h)` is the segment's true, unclamped geometry — it may start,
+/// end, or both past the plot's edge when its value is outside the axis
+/// interval. A segment that stays within the plot rectangle paints exactly as
+/// before (a bare `#place`d rectangle); one that does not is wrapped in a
+/// `clip: true` box sized to the plot, so the rectangle itself keeps its true
+/// full-value length — matching what Office's own paint geometry does under
+/// its plot area's clip — while the visible result still ends on the plot
+/// edge (issue #1633).
+#[allow(clippy::too_many_arguments)]
+fn write_clipped_bar_rect(
+    out: &mut String,
+    worksheet_clip: Option<WorksheetPlotClip>,
+    plot_x: f64,
+    plot_y: f64,
+    plot_w: f64,
+    plot_h: f64,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+    color: &str,
+) {
+    let overruns_plot: bool = x < plot_x - PLOT_EDGE_EPSILON_PT
+        || y < plot_y - PLOT_EDGE_EPSILON_PT
+        || x + w > plot_x + plot_w + PLOT_EDGE_EPSILON_PT
+        || y + h > plot_y + plot_h + PLOT_EDGE_EPSILON_PT;
+    if overruns_plot {
+        let markup: String = format!(
+            "#place(top + left, dx: {}pt, dy: {}pt, box(width: {}pt, height: {}pt, clip: true)[#place(top + left, dx: {}pt, dy: {}pt, rect(width: {}pt, height: {}pt, fill: {}, stroke: none))])",
+            format_f64(plot_x),
+            format_f64(plot_y),
+            format_f64(plot_w),
+            format_f64(plot_h),
+            format_f64(x - plot_x),
+            format_f64(y - plot_y),
+            format_f64(w),
+            format_f64(h),
+            color
+        );
+        write_plotted(out, worksheet_clip, &markup);
+    } else {
+        let markup: String = format!(
+            "#place(top + left, dx: {}pt, dy: {}pt, rect(width: {}pt, height: {}pt, fill: {}, stroke: none))",
+            format_f64(x),
+            format_f64(y),
+            format_f64(w),
+            format_f64(h),
+            color
+        );
+        write_plotted(out, worksheet_clip, &markup);
+    }
+}
+
 /// Render a bar (horizontal) or column (vertical) chart as an axis-scaled
 /// plot with gridlines, tick labels, and a legend.
 fn generate_chart_axis(
@@ -5356,8 +5429,10 @@ fn generate_chart_axis(
     let plot: AxisPlot = axis_plot_layout(chart, chart_area, title_h);
     let (plot_x, plot_y): (f64, f64) = (plot.x, plot.y);
     let (plot_w, plot_h): (f64, f64) = (plot.width, plot.height);
-    // Excel clips the columns and the overlaid line to the plot rectangle's
-    // whole sheet points; a horizontal bar plot is unmeasured (#1745).
+    // Excel clips columns and the overlaid line to the plot rectangle's whole
+    // sheet points. Horizontal bars use a chart-local clip for actual value
+    // overruns (#1633); their worksheet-point edge snapping remains unmeasured
+    // (#1745).
     let plot_clip: Option<WorksheetPlotClip> = (!horizontal)
         .then(|| WorksheetPlotClip::snapped(worksheet_markers, plot_x, plot_y, plot_w, plot_h))
         .flatten();
@@ -5576,6 +5651,19 @@ fn generate_chart_axis(
             // The share of the axis the segment covers, which is its own length
             // whichever side of the zero line it falls on.
             let frac: f64 = far_frac - near_frac;
+            // The segment's own painted length and position, kept separate from
+            // `near_frac`/`far_frac` above (still used for data-label placement):
+            // a value past the axis interval must paint at its true length, not
+            // the length truncated to the interval, so the rectangle this plots
+            // matches what the host paints under its own plot-area clip
+            // (issue #1633).
+            let (near_frac_raw, far_frac_raw): (f64, f64) = {
+                let scale: ValueScale = series_value_scale(s, scale, secondary_scale);
+                let base_frac: f64 = scale.raw_fraction(base);
+                let end_frac: f64 = scale.raw_fraction(end);
+                (base_frac.min(end_frac), base_frac.max(end_frac))
+            };
+            let raw_frac: f64 = far_frac_raw - near_frac_raw;
             // The palette is assigned over every series the chart declares, so
             // the colour keeps the series' own index while the band position
             // counts only the columns.
@@ -5584,18 +5672,22 @@ fn generate_chart_axis(
             if horizontal {
                 // Bar charts stack categories bottom-up.
                 let row_top: f64 = plot.dy + plot_h - (cat_index as f64 + 1.0) * row;
-                let bar_w: f64 = frac * plot_w;
-                let _ = writeln!(
+                let bar_w: f64 = raw_frac * plot_w;
+                write_clipped_bar_rect(
                     out,
-                    "#place(top + left, dx: {}pt, dy: {}pt, rect(width: {}pt, height: {}pt, fill: {}, stroke: none))",
-                    format_f64(plot_x + near_frac * plot_w),
-                    format_f64(row_top + offset),
-                    format_f64(bar_w.max(0.0)),
-                    format_f64(bar_thickness),
-                    color
+                    plot_clip,
+                    plot_x,
+                    plot_y,
+                    plot_w,
+                    plot_h,
+                    plot_x + near_frac_raw * plot_w,
+                    row_top + offset,
+                    bar_w.max(0.0),
+                    bar_thickness,
+                    &color,
                 );
             } else {
-                let bar_h: f64 = frac * plot_h;
+                let bar_h: f64 = raw_frac * plot_h;
                 let (column_x, column_w): (f64, f64) = worksheet_column_span(
                     plot_x + group_start + offset,
                     bar_thickness,
@@ -5603,17 +5695,18 @@ fn generate_chart_axis(
                     plot_w,
                     worksheet_markers,
                 );
-                write_plotted(
+                write_clipped_bar_rect(
                     out,
                     plot_clip,
-                    &format!(
-                        "#place(top + left, dx: {}pt, dy: {}pt, rect(width: {}pt, height: {}pt, fill: {}, stroke: none))",
-                        format_f64(column_x),
-                        format_f64(plot_y + (1.0 - far_frac) * plot_h),
-                        format_f64(column_w),
-                        format_f64(bar_h.max(0.0)),
-                        color
-                    ),
+                    plot_x,
+                    plot_y,
+                    plot_w,
+                    plot_h,
+                    column_x,
+                    plot_y + (1.0 - far_frac_raw) * plot_h,
+                    column_w,
+                    bar_h.max(0.0),
+                    &color,
                 );
             }
             if let Some(label) = data_label_text(chart, s, cat_index, category_total) {

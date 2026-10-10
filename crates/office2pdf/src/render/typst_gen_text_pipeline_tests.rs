@@ -3621,6 +3621,119 @@ fn a_run_naming_a_light_member_states_its_weight_where_the_face_is_indexed() {
     );
 }
 
+// ── Width-suffixed family names state their stretch ──
+
+/// A run naming the narrow member of a family asks for the base family at
+/// that width. The font book indexes `Arial Narrow.ttf` as `Arial` at 75%,
+/// never as `Arial Narrow`, so a font list naming only the suffixed family
+/// found nothing and the run was painted in whatever the chain reached.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_run_naming_a_narrow_member_asks_for_its_base_family_at_that_width() {
+    use crate::render::font_context::resolve_font_search_context_from_fonts;
+    use crate::render::font_context::test_faces::{
+        noto_serif_at_weight, noto_serif_at_width_with_ascender,
+    };
+
+    let run = Run {
+        text: "Quarterly total".to_string(),
+        style: TextStyle {
+            font_family: Some("Noto Serif Narrow".to_string()),
+            font_size: Some(11.0),
+            ..TextStyle::default()
+        },
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let context = resolve_font_search_context_from_fonts(&[
+        noto_serif_at_weight(400),
+        noto_serif_at_width_with_ascender(3, 1069),
+    ]);
+    let source = generated_source(std::slice::from_ref(&run), &context);
+    assert!(
+        source.contains("stretch: 75%"),
+        "the narrow member must be asked for by width, got:\n{source}"
+    );
+    assert!(
+        source.contains("\"Noto Serif\""),
+        "the font list must reach the base family the member is filed under, got:\n{source}"
+    );
+}
+
+/// `Arial Narrow` paints and measures Arial's condensed member.
+///
+/// Before, the run fell through its font list to an unrelated face (on macOS
+/// a condensed extra-bold display face) and its metrics came from the
+/// substitute chain. Where the host ships `Arial Narrow.ttf`, the painted run
+/// must be Arial's, narrower than regular Arial by the narrow face's own
+/// advances — which is what the metrics lookup must report too.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn arial_narrow_paints_and_measures_arials_condensed_member() {
+    const SAMPLE: &str = "Narrow width member sample 0123456789";
+    let book = crate::render::pdf::discover_font_book(&[], true, false);
+    let has_condensed_arial: bool = book
+        .select_family("arial")
+        .filter_map(|index| book.info(index))
+        .any(|info| info.variant.stretch < typst::text::FontStretch::NORMAL);
+    if !has_condensed_arial {
+        return; // the host ships no Arial Narrow
+    }
+
+    // A bold marker after each sample is shaped as a run of its own, so its
+    // origin is where the sample's advance ends.
+    let run = |text: &str, family: &str, bold: bool| Run {
+        text: text.to_string(),
+        style: TextStyle {
+            font_family: Some(family.to_string()),
+            font_size: Some(12.0),
+            bold: bold.then_some(true),
+            ..TextStyle::default()
+        },
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let paragraph = |family: &str| {
+        Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![run(SAMPLE, family, false), run("END", "Arial", true)],
+        })
+    };
+    let doc = make_doc(vec![make_flow_page(vec![
+        paragraph("Arial Narrow"),
+        paragraph("Arial"),
+    ])]);
+    let source: String = generate_typst(&doc).unwrap().source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    let placed = |text: &str| -> Vec<&crate::render::pdf::PlacedTextRun> {
+        runs.iter().filter(|run| run.text.trim() == text).collect()
+    };
+    let (samples, markers) = (placed(SAMPLE), placed("END"));
+    assert_eq!(samples.len(), 2, "both samples are one run each: {runs:?}");
+    assert_eq!(markers.len(), 2, "both markers are one run each: {runs:?}");
+    assert_eq!(
+        samples[0].family, "Arial",
+        "Arial Narrow must paint Arial's member"
+    );
+
+    let painted_ratio: f64 =
+        (markers[0].left_pt - samples[0].left_pt) / (markers[1].left_pt - samples[1].left_pt);
+    let measured_ratio: f64 = crate::render::pdf::text_advance_em("Arial Narrow", false, SAMPLE)
+        .expect("Arial Narrow measures")
+        / crate::render::pdf::text_advance_em("Arial", false, SAMPLE).expect("Arial measures");
+    assert!(
+        painted_ratio < 0.9,
+        "the condensed member is narrower than Arial, painted at {painted_ratio} of its width"
+    );
+    assert!(
+        (measured_ratio - painted_ratio).abs() < 0.01,
+        "the metrics must read the painted member: measured {measured_ratio}, painted {painted_ratio}"
+    );
+}
+
 /// One centred cell of a spreadsheet in a column of `column_width_pt`, laid
 /// out in the symmetric 2.5pt box a centred Excel cell takes, carrying the
 /// workbook's `wrapText` flag.

@@ -82,6 +82,36 @@ impl FontSearchContext {
             .is_some_and(|weights| weights.contains(&weight.to_number()))
     }
 
+    /// Whether `family` ships a face on `stretch`'s side of normal width.
+    ///
+    /// A width member is filed under its base family at the stretch its OS/2
+    /// `usWidthClass` declares, and that class need not be the one its name
+    /// suggests — `Aptos-Narrow.ttf` declares semi-condensed — so any face
+    /// narrower (or wider) than normal answers a narrow (or wide) request,
+    /// as Typst's nearest-stretch selection will pick it.
+    pub(crate) fn has_face_toward_stretch(
+        &self,
+        family: &str,
+        stretch: typst::text::FontStretch,
+    ) -> bool {
+        use std::cmp::Ordering;
+
+        let wanted: Ordering = stretch.cmp(&typst::text::FontStretch::NORMAL);
+        if wanted == Ordering::Equal {
+            return false;
+        }
+        let key: String = normalize_family_name(family);
+        [self.font_book.as_ref(), &self.in_memory_book]
+            .into_iter()
+            .any(|book| {
+                book.select_family(&key)
+                    .filter_map(|index| book.info(index))
+                    .any(|info| {
+                        info.variant.stretch.cmp(&typst::text::FontStretch::NORMAL) == wanted
+                    })
+            })
+    }
+
     pub(crate) fn knows_script_coverage(&self, family: &str) -> bool {
         self.family_scripts
             .contains_key(&normalize_family_name(family))
@@ -611,6 +641,23 @@ pub(crate) mod test_faces {
     /// answers from OS/2 rather than `hhea` whenever that bit is set.
     pub(crate) fn noto_serif_at_weight_with_ascender(weight_class: u16, ascender: i16) -> Font {
         rewritten_noto_serif(weight_class, Some(ascender))
+    }
+
+    /// The tracked Noto Serif as a width member: OS/2 `usWidthClass` and the
+    /// ascender rewritten.
+    ///
+    /// Typst files a face under its trimmed family name at the stretch its
+    /// OS/2 table states, so this lands as `Noto Serif` at that width — the
+    /// shape of `Arial Narrow.ttf`, which the book registers as `Arial` at
+    /// 75% and never as `Arial Narrow`. The ascender tells the member apart
+    /// from the regular face, whose outlines it shares.
+    pub(crate) fn noto_serif_at_width_with_ascender(width_class: u16, ascender: i16) -> Font {
+        let mut bytes: Vec<u8> = rewritten_noto_serif_bytes(400, Some(ascender));
+        let os2_offset: usize = table_offset(&bytes, b"OS/2");
+        // `OS/2`: version (2 bytes), xAvgCharWidth (2), usWeightClass (2),
+        // usWidthClass (2).
+        bytes[os2_offset + 6..os2_offset + 8].copy_from_slice(&width_class.to_be_bytes());
+        Font::new(Bytes::new(bytes), 0).expect("the rewritten face parses")
     }
 
     /// [`noto_serif_at_weight_with_ascender`] with the `name` table family
