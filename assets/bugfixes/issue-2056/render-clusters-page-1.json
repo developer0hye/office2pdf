@@ -1,0 +1,71 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.2,
+        "x": 36.48,
+        "y": 122.88
+      },
+      "disposition": {
+        "issue": "#2065",
+        "kind": "issue",
+        "note": "Inspected all three native/output/diff crops and the complete body region. The Body marker baseline is 2.74788pt lower than Word; these are shifted glyphs, not antialiasing."
+      },
+      "id": "p1-6e467b0e627d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 4.8,
+        "x": 58.08,
+        "y": 119.52
+      },
+      "disposition": {
+        "issue": "#2065",
+        "kind": "issue",
+        "note": "Inspected all three native/output/diff crops and the complete body region. The Body marker baseline is 2.74788pt lower than Word; these are shifted glyphs, not antialiasing."
+      },
+      "id": "p1-a714dcf3e15b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 6.72,
+        "x": 36.48,
+        "y": 116.64
+      },
+      "disposition": {
+        "issue": "#2065",
+        "kind": "issue",
+        "note": "Inspected all three native/output/diff crops and the complete body region. The Body marker baseline is 2.74788pt lower than Word; these are shifted glyphs, not antialiasing."
+      },
+      "id": "p1-f9c32e09d8a0",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 3,
+    "duplicate": 0,
+    "total": 3,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

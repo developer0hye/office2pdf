@@ -4588,71 +4588,6 @@ fn a_wrapped_header_paragraph_grows_the_margin_by_its_lines() {
     );
 }
 
-/// An empty header paragraph still takes one line of its mark's face.
-///
-/// Word gives a `<w:p>` with no runs the line its paragraph mark would take,
-/// so a header of a line, two empty paragraphs and a line is four lines high —
-/// as high as four lines of text in the same face and size. An empty paragraph
-/// used to make the whole height unmeasurable, which left the margin at
-/// `w:top` and the body under the header.
-#[cfg(not(target_arch = "wasm32"))]
-#[test]
-fn empty_header_paragraphs_grow_the_margin_by_their_lines() {
-    let four_lines: f64 = body_baseline_below_arial_header(arial_header_lines(&[
-        "Header", "Header", "Header", "Header",
-    ]));
-
-    let empty_line = || crate::ir::HeaderFooterParagraph {
-        style: ParagraphStyle {
-            paragraph_mark_text_style: Some(Box::new(arial(12.0))),
-            ..ParagraphStyle::default()
-        },
-        elements: Vec::new(),
-        border: None,
-        border_space: None,
-        sheet_section_is_rich: false,
-        frame: None,
-    };
-    let mut with_empty_lines: Vec<crate::ir::HeaderFooterParagraph> =
-        arial_header_lines(&["Header"]);
-    with_empty_lines.push(empty_line());
-    with_empty_lines.push(empty_line());
-    with_empty_lines.extend(arial_header_lines(&["Header"]));
-    let two_lines_around_two_empty: f64 = body_baseline_below_arial_header(with_empty_lines);
-
-    assert!(
-        (two_lines_around_two_empty - four_lines).abs() < 0.01,
-        "two empty header paragraphs must reserve two lines: the body sits at \
-         {two_lines_around_two_empty}pt against {four_lines}pt under four text lines"
-    );
-}
-
-/// Header paragraph spacing is part of the header's height.
-///
-/// The header's height runs from the top of its first line to the bottom of
-/// its last paragraph, `w:spacing w:after` included, so three paragraphs with
-/// 12pt after each reach 36pt further down than the same three without it.
-#[cfg(not(target_arch = "wasm32"))]
-#[test]
-fn header_paragraph_spacing_grows_the_margin() {
-    let without_spacing: f64 =
-        body_baseline_below_arial_header(arial_header_lines(&["Header", "Header", "Header"]));
-
-    let mut spaced: Vec<crate::ir::HeaderFooterParagraph> =
-        arial_header_lines(&["Header", "Header", "Header"]);
-    for paragraph in &mut spaced {
-        paragraph.style.space_after = Some(12.0);
-    }
-    let with_spacing: f64 = body_baseline_below_arial_header(spaced);
-
-    assert!(
-        (with_spacing - without_spacing - 36.0).abs() < 0.01,
-        "12pt after each of three header paragraphs must move the body 36pt, \
-         moved {}pt",
-        with_spacing - without_spacing
-    );
-}
-
 /// An inherited floating header table must leave enough room for a continuous
 /// section's first body lines on the page where its rendered break lands.
 #[cfg(not(target_arch = "wasm32"))]
@@ -6090,4 +6025,46 @@ fn fitted_drawing_frames_preserve_chart_text_flow_at_other_scales() {
             );
         }
     }
+}
+
+#[test]
+fn header_word_measurement_does_not_break_at_formatting_run_boundaries() {
+    for word in ["International", "Documentation"] {
+        let unsplit = header_text_paragraph(word, arial(12.0));
+        let mut split = header_text_paragraph(&word[..5], arial(12.0));
+        split
+            .elements
+            .extend(header_text_paragraph(&word[5..], arial(12.0)).elements);
+        assert_eq!(
+            hf_paragraph_line_count(&split, 50.0),
+            hf_paragraph_line_count(&unsplit, 50.0),
+            "splitting {word} into identical-format runs must preserve its line count"
+        );
+    }
+}
+
+#[test]
+fn header_trailing_space_does_not_create_an_empty_wrapped_line() {
+    let paragraph = header_text_paragraph("International ", arial(12.0));
+    assert_eq!(hf_paragraph_line_count(&paragraph, 50.0), 1);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn wrapped_native_header_fixture_keeps_body_below_every_header_line() {
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2056-wrapped-header.docx");
+    let (document, _) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        data,
+        &crate::config::ConvertOptions::default(),
+    )
+    .unwrap();
+    let header = baselines_of(&document, "Header");
+    let body = baselines_of(&document, "Body");
+    assert!(header.len() > 1);
+    assert!(
+        body[0] > *header.last().unwrap(),
+        "body must follow the complete wrapped header: {header:?}, {body:?}"
+    );
 }

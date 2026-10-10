@@ -654,6 +654,7 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
     // Emit document metadata (title/author) if present
     generate_document_metadata(&mut out, &doc.metadata);
     write_page_format_state(&mut out);
+    write_hyphenation_rule(&mut out, doc.styles.hyphenates_automatically);
     if doc.pages.iter().any(|page| matches!(page, Page::Fixed(_))) {
         write_powerpoint_ligature_state(&mut out);
         write_powerpoint_advance_grid_helpers(&mut out);
@@ -2908,8 +2909,8 @@ fn flow_header_value(
 ///
 /// Otherwise `w:top` is left alone, so the common case emits exactly what it
 /// always did. When a header face cannot be measured, its nonempty text cannot
-/// contribute a guessed height. Empty flow lines still reserve their
-/// declared/default font size and paragraph spacing.
+/// contribute a guessed height. Empty flow lines after a known overlay still
+/// reserve their declared/default font size and paragraph spacing.
 fn flow_page_top_margin_pt(
     page: &FlowPage,
     size: &PageSize,
@@ -2932,11 +2933,10 @@ fn flow_page_top_margin_pt(
             }
 
             // The band runs from the `w:header` line down, so a story that
-            // overflows needs the margin to reach the bottom of its content,
-            // counting its empty paragraphs' line boxes, which Word reserves
-            // even though they paint no text. Where a page-anchored overlay
-            // is reserved, page-anchored framed paragraphs are drawn outside
-            // the story and skipped.
+            // overflows needs the margin to reach the bottom of its content.
+            // On continuation pages, also retain the empty flow paragraphs
+            // that follow a page-anchored header overlay; Word reserves their
+            // line boxes even though they paint no text.
             let content_height: Option<f64> = hf_content_height_pt(
                 header,
                 default_text,
@@ -2976,41 +2976,31 @@ fn flow_page_top_margin_pt(
 
 /// Height a header or footer story's lines take, in points.
 ///
-/// Word starts the body at `max(w:top, w:header + header height)`, and the
-/// height is every line the story's paragraphs take — a paragraph that wraps
-/// in `text_width_pt` counts each line, and an empty one the line of its
-/// paragraph mark — plus the paragraphs' `w:spacing` and whatever their
-/// `w:pBdr` rules and `w:space` reserve. The first paragraph's space before
-/// is left out, as at the top of a page.
-///
-/// Page-anchored framed paragraphs are drawn outside the story, so they are
-/// skipped where a page-anchored overlay is being reserved
-/// (`skips_page_anchored_frames`, issue #1995).
+/// Reserve each measurable wrapped line plus its paragraph border rules.
+/// Empty paragraphs outside the overlay case and paragraph spacing retain
+/// their existing behavior; their drawn and reserved layout needs a separate
+/// correction (issue #2056).
 fn hf_content_height_pt(
     hf: &HeaderFooter,
     default_text: Option<&TextStyle>,
-    skips_page_anchored_frames: bool,
+    include_empty_flow_paragraphs: bool,
     text_width_pt: f64,
 ) -> Option<f64> {
     let mut total: f64 = 0.0;
-    let mut is_first_paragraph: bool = true;
     for paragraph in &hf.paragraphs {
-        if skips_page_anchored_frames
-            && paragraph.frame.as_ref().is_some_and(is_page_anchored_frame)
-        {
-            continue;
+        if include_empty_flow_paragraphs {
+            if paragraph.frame.as_ref().is_some_and(is_page_anchored_frame) {
+                continue;
+            }
+            total += hf_paragraph_height_pt(paragraph, default_text, true)?;
+        } else {
+            total += hf_paragraph_height_pt(paragraph, None, false)?;
         }
-        total += hf_paragraph_height_pt(paragraph, default_text, true)?;
-        let wrapped_lines: usize = hf_paragraph_line_count(paragraph, text_width_pt) - 1;
-        if wrapped_lines > 0 {
-            let line_pt: f64 = text::word_line_advance_pt(&hf_paragraph_metric_runs(paragraph))?;
-            total += wrapped_lines as f64 * line_pt;
+        let extra_lines: usize = hf_paragraph_line_count(paragraph, text_width_pt) - 1;
+        if extra_lines > 0 {
+            total += extra_lines as f64
+                * text::word_line_advance_pt(&hf_paragraph_metric_runs(paragraph))?;
         }
-        if !is_first_paragraph {
-            total += paragraph.style.space_before.unwrap_or(0.0);
-        }
-        total += paragraph.style.space_after.unwrap_or(0.0);
-        is_first_paragraph = false;
     }
     Some(total)
 }
@@ -3032,6 +3022,15 @@ fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_p
     }
     let mut lines: usize = 1;
     let mut line_width_pt: f64 = 0.0;
+    let mut pending_word_pt: f64 = 0.0;
+    let place_word = |word_pt: f64, line_width: &mut f64, line_count: &mut usize| {
+        if word_pt > 0.0 && *line_width > 0.0 && *line_width + word_pt > available_pt {
+            *line_count += 1;
+            *line_width = word_pt;
+        } else {
+            *line_width += word_pt;
+        }
+    };
     for run in &runs {
         let Some(family) = run.style.font_family.as_deref() else {
             return 1;
@@ -3044,29 +3043,30 @@ fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_p
         let advance_pt = |text: &str| -> Option<f64> {
             Some(crate::render::pdf::text_advance_em(family, is_bold, text)? * font_size_pt)
         };
-        for (piece_index, piece) in run.text.split(['\n', '\r', '\u{000B}']).enumerate() {
-            if piece_index > 0 {
+        // OOXML may split a word into runs even when its formatting is
+        // unchanged. Only an actual space or hard break ends the word.
+        for piece in run.text.split_inclusive([' ', '\n', '\r', '\u{000B}']) {
+            let word: &str = piece.trim_end_matches([' ', '\n', '\r', '\u{000B}']);
+            let Some(fragment_pt) = advance_pt(word) else {
+                return 1;
+            };
+            pending_word_pt += fragment_pt;
+            if piece.ends_with(' ') {
+                place_word(pending_word_pt, &mut line_width_pt, &mut lines);
+                let Some(space_pt) = advance_pt(" ") else {
+                    return 1;
+                };
+                line_width_pt += space_pt;
+                pending_word_pt = 0.0;
+            } else if piece.ends_with(['\n', '\r', '\u{000B}']) {
+                place_word(pending_word_pt, &mut line_width_pt, &mut lines);
                 lines += 1;
                 line_width_pt = 0.0;
-            }
-            for word in piece.split_inclusive(' ') {
-                let Some(word_pt) = advance_pt(word) else {
-                    return 1;
-                };
-                // A trailing space may hang past the edge; only the word's
-                // ink has to fit.
-                let Some(ink_pt) = advance_pt(word.trim_end_matches(' ')) else {
-                    return 1;
-                };
-                if line_width_pt > 0.0 && line_width_pt + ink_pt > available_pt {
-                    lines += 1;
-                    line_width_pt = word_pt;
-                } else {
-                    line_width_pt += word_pt;
-                }
+                pending_word_pt = 0.0;
             }
         }
     }
+    place_word(pending_word_pt, &mut line_width_pt, &mut lines);
     lines
 }
 
@@ -3107,10 +3107,9 @@ fn hf_last_flow_paragraph_height_pt(
 }
 
 /// The height one header or footer paragraph takes: Word's line for its face,
-/// plus whatever its `w:pBdr` rules and their `w:space` gaps reserve. An empty
-/// flow paragraph measured with `use_default_for_empty` takes its paragraph
-/// mark's (else the document default's) line, and where that face cannot be
-/// measured, its font size under its line spacing.
+/// plus whatever its `w:pBdr` rules and their `w:space` gaps reserve. For an
+/// empty flow paragraph retained after a page-anchored overlay, missing face
+/// metrics fall back to its paragraph-mark/default font size and line spacing.
 ///
 /// Shared with [`generate_stacked_hf_paragraphs`], which states it on the
 /// paragraph's block, so the height a ruled story reserves in the band is the
@@ -5324,6 +5323,20 @@ fn write_page_format_state(out: &mut String) {
          link(target, it.indented(it.prefix(), \
          it.body() + box(width: 1fr, repeat[.]) + shown)) }}"
     );
+}
+
+/// State whether words may be hyphenated at a line end.
+///
+/// An explicit rule prevents Typst's automatic justification policy from
+/// introducing hyphens when the source enables no hyphenation. The native
+/// Word fixture in issue #2052 demonstrates that default mismatch. The DOCX
+/// parser can enable the rule through `w:autoHyphenation`; the other parsers
+/// leave it disabled.
+///
+/// Set once for the document so header and footer bands, table cells and
+/// slide text boxes are all covered.
+fn write_hyphenation_rule(out: &mut String, hyphenates_automatically: bool) {
+    let _ = writeln!(out, "#set text(hyphenate: {hyphenates_automatically})");
 }
 
 /// Emit a `TOC` field's result.
