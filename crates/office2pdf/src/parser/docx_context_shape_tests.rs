@@ -166,6 +166,35 @@ fn shape_outline_inherits_cap_and_join_from_its_theme_line_reference() {
 }
 
 #[test]
+fn cap_inheritance_does_not_introduce_an_outline_from_a_style_reference() {
+    let borderless: String = RECT_DRAWING.replace(
+        "<a:ln w=\"0\"><a:solidFill><a:srgbClr val=\"3465a4\"/></a:solidFill></a:ln>",
+        "",
+    );
+    let theme: &str = r#"<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:fmtScheme><a:lnStyleLst><a:ln w="38100" cap="rnd"><a:miter/></a:ln></a:lnStyleLst></a:fmtScheme></a:theme>"#;
+    for reference in [
+        r#"<a:lnRef idx="1"/>"#,
+        r#"<a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef>"#,
+        r#"<a:lnRef idx="99"/>"#,
+    ] {
+        let drawing: String = borderless.replace(
+            "</wps:spPr>",
+            &format!("</wps:spPr><wps:style>{reference}</wps:style>"),
+        );
+        let xml: String = body(&drawing);
+        for theme_xml in [None, Some(theme)] {
+            let context: DrawingShapeContext =
+                DrawingShapeContext::from_xml_with_theme(Some(&xml), theme_xml);
+            let shape: FloatingShape = context.consume_next().expect("filled shape is kept");
+            assert!(
+                shape.shape.stroke.is_none(),
+                "unexpected outline: {reference}"
+            );
+        }
+    }
+}
+
+#[test]
 fn text_box_frame_inherits_cap_and_join_from_its_theme_line_reference() {
     let drawing: String = TEXTBOX_DRAWING
         .replace(

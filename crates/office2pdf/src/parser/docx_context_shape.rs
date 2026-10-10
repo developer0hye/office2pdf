@@ -547,7 +547,6 @@ impl ShapeScanState {
                     && let Some(builder) = builder
                 {
                     builder.line_reference_index = Some(index);
-                    builder.has_line = true;
                 }
             }
             other => {
@@ -573,7 +572,6 @@ impl ShapeScanState {
                 && let Some(builder) = builder
             {
                 builder.line_reference_index = Some(index);
-                builder.has_line = true;
             }
             return;
         }
