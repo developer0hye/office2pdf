@@ -881,6 +881,99 @@ fn default_table_style_supplies_undeclared_cell_margins() {
     );
 }
 
+/// Word supplies the latent built-in cell margins when the default style is
+/// named `Normal Table`, even if its XML omits `w:tblCellMar` (#1884).
+#[test]
+fn named_normal_table_style_uses_builtin_cell_margins_when_omitted() {
+    let data = build_docx_with_table_style(
+        r#"<w:style w:type="table" w:default="1" w:styleId="ImportedDefault">
+            <w:name w:val="Normal Table"/>
+        </w:style>"#,
+        TABLE_WITHOUT_STYLE,
+    );
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_table(&doc).default_cell_padding,
+        Some(Insets {
+            top: 0.0,
+            right: 5.4,
+            bottom: 0.0,
+            left: 5.4,
+        })
+    );
+}
+
+/// Word's latent `Normal Table` margins replace an incomplete style margin
+/// container rather than allowing its stated side to replace the built-in.
+#[test]
+fn named_normal_table_style_uses_builtin_margins_for_partial_cell_margins() {
+    let data = build_docx_with_table_style(
+        r#"<w:style w:type="table" w:default="1" w:styleId="ImportedDefault">
+            <w:name w:val="Normal Table"/>
+            <w:tblPr><w:tblCellMar><w:top w:w="200" w:type="dxa"/></w:tblCellMar></w:tblPr>
+        </w:style>"#,
+        TABLE_WITHOUT_STYLE,
+    );
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_table(&doc).default_cell_padding,
+        Some(Insets {
+            top: 0.0,
+            right: 5.4,
+            bottom: 0.0,
+            left: 5.4,
+        })
+    );
+}
+
+/// A table style Word does not recognize by name contributes zero margins
+/// for sides its default style leaves unstated (#1884).
+#[test]
+fn unrecognized_default_table_style_uses_zero_for_omitted_cell_margins() {
+    let data = build_docx_with_table_style(
+        r#"<w:style w:type="table" w:default="1" w:styleId="ImportedDefault">
+            <w:name w:val="Grid Probe"/>
+        </w:style>"#,
+        TABLE_WITHOUT_STYLE,
+    );
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_table(&doc).default_cell_padding,
+        Some(Insets {
+            top: 0.0,
+            right: 0.0,
+            bottom: 0.0,
+            left: 0.0,
+        })
+    );
+}
+
+/// An unrecognized style overlays a stated side onto the zero-margin base.
+#[test]
+fn unrecognized_default_table_style_overlays_partial_cell_margins_on_zero() {
+    let data = build_docx_with_table_style(
+        r#"<w:style w:type="table" w:default="1" w:styleId="ImportedDefault">
+            <w:name w:val="Grid Probe"/>
+            <w:tblPr><w:tblCellMar><w:top w:w="200" w:type="dxa"/></w:tblCellMar></w:tblPr>
+        </w:style>"#,
+        TABLE_WITHOUT_STYLE,
+    );
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_table(&doc).default_cell_padding,
+        Some(Insets {
+            top: 10.0,
+            right: 0.0,
+            bottom: 0.0,
+            left: 0.0,
+        })
+    );
+}
+
 /// An explicitly selected table style overlays the margin sides it declares
 /// onto the default table style.
 #[test]
