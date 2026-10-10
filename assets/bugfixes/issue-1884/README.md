@@ -1,0 +1,9 @@
+# Issue 1884 visual evidence
+
+Four synthetic one-page probes are tracked as `tests/fixtures/docx/issue-1884-{normal-absent,normal-partial,custom-absent,custom-partial}.docx`. Each was exported locally with Microsoft Word 16.113.4, Best for printing, on macOS 26.6.2 (25G83), 2026-10-11. `provenance.json` records source/native/current PDF hashes and their order in the combined reports.
+
+Before uses main `71e103115ee19b1c72cd765ff04a27b5b8dede6f`; after uses this PR integrated with that main. Both binaries were built with `cargo build --locked --profile ci -p office2pdf-cli`. PDFs, binaries, logs and inspected full pages/diffs/crops are retained outside the worktree. Reproduce each output with `cargo run --locked --profile ci -p office2pdf-cli -- FIXTURE -o after.pdf` and export the same fixture with Word.
+
+The JPEGs vertically stack all four complete 1275 x 1650px pages in the recorded order without resizing. They use progressive quality 86, stripped metadata, and reset 150 DPI density. Combined PDFs preserve the same order with `pdfunite`. `compare_layout.py --json --audit --fine-shift 1` passes all four pages; normalized text matches separately for every probe. `compare_render.py --page N --dpi 150 --fine-shift 1 --strict-clusters` passes for N=1..4 with zero material clusters.
+
+Full pages, diffs and matched content crops show both cells and the following paragraph in the native positions. The custom partial style's explicit top inset remains visible; absent sides no longer introduce Typst's unrelated 5pt inset. No missing text, wrap, clipping, overlap, rotation, fill, rule, or emphasis discrepancy was observed. These probes contain no painted borders, hairlines, pictures, bold, italic, or underlined runs. Sub-material cell-text anchor offsets are at most 0.22pt horizontally and 0.167pt vertically, tracked in #1874; they are not claimed to be rasterization.

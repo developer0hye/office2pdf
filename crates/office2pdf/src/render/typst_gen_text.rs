@@ -226,21 +226,20 @@ pub(super) fn generate_paragraph(
     } else {
         0.0
     };
-    let paragraph_mark_metric_run: Option<Run> =
-        if is_empty_paragraph && style.line_spacing.is_some() {
-            style
-                .paragraph_mark_text_style
-                .as_deref()
-                .map(|mark_style| Run {
-                    text: String::new(),
-                    style: mark_style.clone(),
-                    href: None,
-                    footnote: None,
-                    inline_box: None,
-                })
-        } else {
-            None
-        };
+    let paragraph_mark_metric_run: Option<Run> = if is_empty_paragraph {
+        style
+            .paragraph_mark_text_style
+            .as_deref()
+            .map(|mark_style| Run {
+                text: String::new(),
+                style: mark_style.clone(),
+                href: None,
+                footnote: None,
+                inline_box: None,
+            })
+    } else {
+        None
+    };
     let line_metric_runs: &[Run] = paragraph_mark_metric_run
         .as_ref()
         .map(std::slice::from_ref)
@@ -254,7 +253,10 @@ pub(super) fn generate_paragraph(
     let empty_paragraph_line_height_pt: f64 = if is_empty_paragraph {
         match style.line_spacing {
             Some(LineSpacing::Exact(points)) if points > 0.0 => points,
-            Some(LineSpacing::Proportional(_)) => {
+            // An absent `w:line` is single spacing, so a paragraph that
+            // states none still takes its mark's line, as a proportional one
+            // does; a flat 12pt fell 1.8pt short for a 12pt Arial mark.
+            Some(LineSpacing::Proportional(_)) | None => {
                 word_line_box_em(line_metric_runs, style, line_grid_pitch)
                     .map(|(top, bottom)| (top + bottom) * paragraph_font_size_pt(line_metric_runs))
                     .unwrap_or(12.0)
@@ -5852,6 +5854,19 @@ fn write_text_params_inner(out: &mut String, style: &TextStyle, kerning_text: Ke
     }
     if let Some(weight) = effective_font_weight(style) {
         write_param(out, &mut first, &format!("weight: \"{weight}\""));
+    }
+    // A width member — `Arial Narrow` — is filed under its base family at
+    // that stretch, which the font list reaches; the stretch selects it.
+    if let Some(stretch) = style
+        .font_family
+        .as_deref()
+        .and_then(font_subst::stretch_stated_by_family_name)
+    {
+        write_param(
+            out,
+            &mut first,
+            &format!("stretch: {}%", format_f64(stretch.to_ratio().get() * 100.0)),
+        );
     }
     if matches!(style.italic, Some(true)) {
         write_param(out, &mut first, "style: \"italic\"");

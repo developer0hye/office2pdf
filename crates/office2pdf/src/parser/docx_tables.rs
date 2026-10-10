@@ -105,8 +105,8 @@ fn extract_table_alignment(prop_json: Option<&serde_json::Value>) -> Option<Alig
 /// the unquantised default between 9 and 11 twips, so 0.48pt is what reaches
 /// the page rather than a declared width. This is *not* the built-in Normal
 /// Table's 108 twips — that applies when the resolved style is named `Normal
-/// Table`; other resolved styles use their declared sides over a zero-margin
-/// base.
+/// Table`. Other resolved styles overlay their declared sides on the default
+/// table style's margins, or zero when no default style supplies a side.
 const WORD_STYLELESS_TABLE_CELL_MARGINS: Insets = Insets {
     top: 0.0,
     right: 0.48,

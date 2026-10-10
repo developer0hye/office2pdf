@@ -1795,6 +1795,95 @@ fn test_absent_default_tab_stop_is_none() {
     assert_eq!(doc.styles.default_tab_stop_pt, None);
 }
 
+const LANGUAGE_TEST_DOCUMENT_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Aftale</w:t></w:r></w:p></w:body></w:document>"#;
+
+/// A `word/styles.xml` with `doc_defaults_rpr` inside `w:rPrDefault` and
+/// `normal_rpr` inside the default paragraph style.
+fn language_test_styles_xml(doc_defaults_rpr: &str, normal_rpr: &str) -> String {
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr>{doc_defaults_rpr}</w:rPr></w:rPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:rPr>{normal_rpr}</w:rPr></w:style><w:style w:type="paragraph" w:styleId="Quote"><w:name w:val="Quote"/><w:rPr><w:lang w:val="fr-FR"/></w:rPr></w:style></w:styles>"#
+    )
+}
+
+/// Danish Word writes the editing language into the document defaults.
+#[test]
+fn test_document_language_comes_from_doc_defaults() {
+    let styles_xml = language_test_styles_xml(
+        r#"<w:sz w:val="22"/><w:lang w:val="da-DK" w:eastAsia="en-US" w:bidi="ar-SA"/>"#,
+        "",
+    );
+    let data = build_docx_with_styles_xml(LANGUAGE_TEST_DOCUMENT_XML, &styles_xml);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_eq!(
+        doc.styles.default_language,
+        Some(DocumentLanguage {
+            language: "da".to_string(),
+            region: Some("DK".to_string()),
+        })
+    );
+}
+
+/// Body text takes the default paragraph style over the document defaults,
+/// and a style no body text defaults to does not decide the language.
+#[test]
+fn test_default_paragraph_style_language_overrides_doc_defaults() {
+    let styles_xml =
+        language_test_styles_xml(r#"<w:lang w:val="en-US"/>"#, r#"<w:lang w:val="nb-NO"/>"#);
+    let data = build_docx_with_styles_xml(LANGUAGE_TEST_DOCUMENT_XML, &styles_xml);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_eq!(
+        doc.styles.default_language,
+        Some(DocumentLanguage {
+            language: "nb".to_string(),
+            region: Some("NO".to_string()),
+        })
+    );
+}
+
+/// A document that states no language leaves the renderer's default alone.
+#[test]
+fn test_document_without_language_has_none() {
+    let styles_xml = language_test_styles_xml(r#"<w:sz w:val="22"/>"#, "");
+    let data = build_docx_with_styles_xml(LANGUAGE_TEST_DOCUMENT_XML, &styles_xml);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_eq!(doc.styles.default_language, None);
+}
+
+#[test]
+fn test_document_language_ignores_historical_run_properties() {
+    for (current, historical) in [("de-DE", "en-US"), ("da-DK", "fr-FR")] {
+        let current_properties = format!(r#"<w:lang w:val="{current}"/>"#);
+        let historical_properties = format!(
+            r#"<w:rPrChange w:id="1" w:author="Synthetic reviewer" w:date="2026-01-01T00:00:00Z"><w:rPr><w:lang w:val="{historical}"/></w:rPr></w:rPrChange>"#
+        );
+        for normal_properties in [
+            format!("{current_properties}{historical_properties}"),
+            historical_properties.clone(),
+        ] {
+            let xml = language_test_styles_xml(&current_properties, &normal_properties);
+            assert_eq!(
+                styles::scan_default_language(&xml, "Normal"),
+                DocumentLanguage::from_office_tag(current),
+                "historical properties must not replace the current style or document default"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_document_language_ignores_paragraph_mark_language() {
+    let xml = language_test_styles_xml(r#"<w:lang w:val="da-DK"/>"#, "").replace(
+        "<w:name w:val=\"Normal\"/>",
+        r#"<w:name w:val="Normal"/><w:pPr><w:rPr><w:lang w:val="en-US"/></w:rPr></w:pPr>"#,
+    );
+    assert_eq!(
+        styles::scan_default_language(&xml, "Normal"),
+        DocumentLanguage::from_office_tag("da-DK")
+    );
+}
+
 /// Rewrites the `compatibilityMode` compatibility setting inside a DOCX's
 /// `word/settings.xml`, replacing the whole `w:compat` element with
 /// `replacement` (empty string removes it).
@@ -1877,4 +1966,84 @@ fn test_absent_compatibility_mode_reads_as_legacy() {
         doc.styles.word_compatibility_mode,
         Some(WordCompatibilityMode::Legacy)
     );
+}
+
+/// Word hyphenates only a document whose settings carry
+/// `w:autoHyphenation`; docx-rs writes none.
+#[test]
+fn test_auto_hyphenation_setting_is_read() {
+    let data = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("body")),
+    ]);
+    let data = rewrite_settings_default_tab_stop(
+        &data,
+        r#"<w:autoHyphenation/><w:defaultTabStop w:val="720"/>"#,
+    );
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert!(doc.styles.hyphenates_automatically);
+}
+
+#[test]
+fn test_absent_auto_hyphenation_reads_as_off() {
+    let data = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("body")),
+    ]);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert!(!doc.styles.hyphenates_automatically);
+}
+
+/// `w:val` is an ST_OnOff; Word writes the element with an explicit off value
+/// after the option has been switched on and off again.
+#[test]
+fn test_auto_hyphenation_switched_off_reads_as_off() {
+    for value in ["false", "0", "off"] {
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("body")),
+        ]);
+        let data = rewrite_settings_default_tab_stop(
+            &data,
+            &format!(r#"<w:autoHyphenation w:val="{value}"/><w:defaultTabStop w:val="720"/>"#),
+        );
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        assert!(
+            !doc.styles.hyphenates_automatically,
+            "w:val=\"{value}\" must read as off"
+        );
+    }
+}
+
+#[test]
+fn test_auto_hyphenation_uses_xml_values_and_settings_scope() {
+    let base = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Quarterly report")),
+    ]);
+    for (setting, expected) in [
+        (r#"<w:autoHyphenation w:val='false'/>"#, false),
+        (r#"<w:autoHyphenation w:val = "off"/>"#, false),
+        (r#"<w:autoHyphenation w:val="&#48;"/>"#, false),
+        (r#"<!-- <w:autoHyphenation/> -->"#, false),
+        (r#"<w:compat><w:autoHyphenation/></w:compat>"#, false),
+        (
+            r#"<other:autoHyphenation xmlns:other="urn:extension"/>"#,
+            false,
+        ),
+        (
+            r#"<x:autoHyphenation xmlns:x="http://schemas.openxmlformats.org/wordprocessingml/2006/main" x:val='on'/>"#,
+            true,
+        ),
+        (
+            r#"<x:autoHyphenation xmlns:x="http://schemas.openxmlformats.org/wordprocessingml/2006/main" x:val='0'/>"#,
+            false,
+        ),
+        (
+            r#"<w:autoHyphenation w:val='true'></w:autoHyphenation>"#,
+            true,
+        ),
+    ] {
+        let data = rewrite_settings_default_tab_stop(&base, setting);
+        assert_eq!(extract_auto_hyphenation(&data), expected, "{setting}");
+    }
 }

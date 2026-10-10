@@ -1,0 +1,983 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 99.072,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 19.2,
+        "x": 66.72,
+        "y": 93.6
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-b454da9d4da0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 89.856,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 21.6,
+        "x": 117.6,
+        "y": 81.6
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-a54b05678fa7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 65.664,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 12.96,
+        "x": 86.4,
+        "y": 93.6
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-8596f8b9f41f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 65.4336,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 14.4,
+        "x": 36.48,
+        "y": 108.0
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-cb36c36fd231",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 60.5952,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 17.28,
+        "x": 89.76,
+        "y": 150.72
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-45d22c3c085b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 60.1344,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 13.92,
+        "x": 184.32,
+        "y": 107.04
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-bf465e45a332",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 58.9824,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 10.56,
+        "x": 42.72,
+        "y": 148.8
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-3fdbc1942f59",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 11.04,
+        "x": 36.96,
+        "y": 93.6
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-ef1cdb4ceabf",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 12.48,
+        "x": 168.0,
+        "y": 136.8
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-b18599d8e838",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 50.4576,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.56,
+        "x": 87.36,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-b9980e64a46b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.3104,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.16,
+        "x": 78.24,
+        "y": 120.96
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-339c04652237",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 79.2,
+        "y": 136.8
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-cf03fa1028e0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 43.5456,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.64,
+        "x": 178.08,
+        "y": 53.76
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-af0a4c4e7169",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 43.3152,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.48,
+        "x": 148.32,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-0d125b2727e1",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 10.08,
+        "x": 119.04,
+        "y": 93.6
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-60a5521739ad",
+      "region": "top"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 129.6,
+        "y": 52.32
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-62690df6b60d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 119.52,
+        "y": 51.84
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-f5e15e83443b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.2,
+        "x": 175.68,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-de907ce0478a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 10.08,
+        "x": 108.48,
+        "y": 52.32
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-c2047e0bc015",
+      "region": "top"
+    },
+    {
+      "area_pt2": 37.3248,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 88.8,
+        "y": 134.88
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-a7a9e008a731",
+      "region": "top"
+    },
+    {
+      "area_pt2": 36.864,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 163.2,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-85d0b9afecc8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 192.48,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-de60b672c6dc",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 35.712,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.12,
+        "x": 152.64,
+        "y": 109.92
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-92e6eff57af8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 146.88,
+        "y": 107.04
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-9ff1235baa98",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 108.96,
+        "y": 107.52
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-955523499df8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.24,
+        "x": 81.12,
+        "y": 108.48
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-98f02f5ffabd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 132.48,
+        "y": 93.6
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-610f0a7a40ea",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 193.92,
+        "y": 65.76
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-676e5267edae",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 117.6,
+        "y": 134.88
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-11efcc294108",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 96.96,
+        "y": 65.76
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-933f1362137f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 108.0,
+        "y": 151.68
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-43958a2844c7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 185.76,
+        "y": 134.88
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-56f9d30c127a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.72,
+        "x": 198.72,
+        "y": 68.16
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-c3d9aedadd82",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 10.56,
+        "x": 66.24,
+        "y": 55.68
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-9f8d233285ac",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 171.84,
+        "y": 53.76
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-14e655e4724a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 27.8784,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 76.8,
+        "y": 51.84
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-248f7aee8d93",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 49.92,
+        "y": 109.44
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-bbb184834f54",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 76.32,
+        "y": 65.76
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-3915c115d871",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 104.64,
+        "y": 65.76
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-4f642b2ec88d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.32,
+        "x": 87.84,
+        "y": 107.52
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-3daa04cca15f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 120.0,
+        "y": 69.12
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-cd2f9b21e161",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 144.48,
+        "y": 68.16
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-91e89a9b6432",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 183.36,
+        "y": 93.6
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-07427b671bf7",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 186.72,
+        "y": 51.84
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-cee224b22644",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 123.84,
+        "y": 148.8
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-798cfc505209",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 154.08,
+        "y": 148.8
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-15248d64e6e5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 130.08,
+        "y": 151.2
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-38f9c37bca07",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 60.0,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-f48a4f4d6174",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 133.92,
+        "y": 67.68
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-bf045228ad82",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 137.76,
+        "y": 137.28
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-d3617af50681",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.8,
+        "x": 117.12,
+        "y": 151.2
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-48dce2911b21",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 37.44,
+        "y": 67.68
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-8a933ea224c4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 8.16,
+        "x": 67.68,
+        "y": 152.64
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-5ba718584ab3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 58.08,
+        "y": 96.0
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-354dd69cac81",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 163.68,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-c60beb28b709",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 59.04,
+        "y": 106.56
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-cf88b20f2186",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 3.84,
+        "x": 73.44,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-1a79a5bd609c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 137.28
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-177150518694",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 5.76,
+        "x": 185.76,
+        "y": 68.16
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-50101421db6f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 177.6,
+        "y": 95.52
+      },
+      "disposition": {
+        "issue": "#2064",
+        "kind": "issue",
+        "note": "Inspected each matched native/output/diff crop at 150 DPI. Different letters and word gaps occupy these regions after German hyphenation and line-break choices diverge from line 2."
+      },
+      "id": "p1-e8820db38ad0",
+      "region": "top-right"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 60,
+    "duplicate": 0,
+    "total": 60,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
