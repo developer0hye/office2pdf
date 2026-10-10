@@ -760,6 +760,70 @@ fn test_punctuation_never_hangs_regardless_of_alignment() {
     );
 }
 
+/// Every page format must override the backend's automatic hyphenation
+/// policy before generating any content, including headers and text boxes.
+#[test]
+fn test_hyphenation_is_off_for_every_format_by_default() {
+    let flow = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            alignment: Some(Alignment::Justify),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Internationalization considerations notwithstanding".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+    })])]);
+    let slide = make_doc(vec![make_fixed_page(
+        720.0,
+        540.0,
+        vec![make_text_box(
+            10.0,
+            10.0,
+            200.0,
+            100.0,
+            "Telecommunications infrastructure",
+        )],
+    )]);
+    let sheet = make_doc(vec![make_sheet_page(
+        "Sheet1",
+        595.0,
+        842.0,
+        Margins::default(),
+        make_simple_table(vec![vec!["Interoperability characteristics"]]),
+    )]);
+    for (format, doc) in [("DOCX", flow), ("PPTX", slide), ("XLSX", sheet)] {
+        let result = generate_typst(&doc).unwrap().source;
+        let preamble_end = result.find("#set page").unwrap_or(result.len());
+        assert!(
+            result[..preamble_end].contains("#set text(hyphenate: false)"),
+            "{format}: hyphenation must be off before the first page: {result}"
+        );
+    }
+}
+
+/// The parsed document setting must enable the renderer's hyphenation rule.
+#[test]
+fn test_document_auto_hyphenation_turns_hyphenation_on() {
+    let mut doc = make_doc(vec![make_flow_page(vec![make_paragraph(
+        "Internationalization considerations notwithstanding",
+    )])]);
+    doc.styles.hyphenates_automatically = true;
+    let result = generate_typst(&doc).unwrap().source;
+    let preamble_end = result.find("#set page").unwrap_or(result.len());
+    assert!(
+        result[..preamble_end].contains("#set text(hyphenate: true)"),
+        "auto hyphenation must reach the document text: {result}"
+    );
+    assert!(
+        !result.contains("hyphenate: false"),
+        "auto hyphenation must not also be switched off: {result}"
+    );
+}
+
 #[test]
 fn test_generate_line_spacing_proportional() {
     let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
@@ -3595,5 +3659,30 @@ fn test_zero_letter_spacing_keeps_kerning() {
     assert!(
         !result.contains("kerning: false"),
         "zero tracking must keep kerning, got: {result}"
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn native_empty_mark_fixture_preserves_mark_size_in_body_spacing() {
+    use crate::parser::Parser;
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2058-empty-paragraph-marks.docx");
+    let (document, _) = crate::parser::docx::DocxParser
+        .parse(data, &crate::ConvertOptions::default())
+        .unwrap();
+    let source = generate_typst(&document).unwrap().source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+    let baseline = |needle: &str| {
+        runs.iter()
+            .find(|run| run.text.contains(needle))
+            .unwrap()
+            .baseline_pt
+    };
+    let pitch = baseline("Before 20pt") - baseline("After 12pt");
+    assert!((baseline("After 12pt") - baseline("Before 12pt") - 2.0 * pitch).abs() < 0.01);
+    assert!(
+        (baseline("After 20pt") - baseline("Before 20pt") - pitch * (1.0 + 20.0 / 12.0)).abs()
+            < 0.01
     );
 }

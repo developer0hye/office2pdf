@@ -51,6 +51,9 @@ pub struct StyleSheet {
     /// a format that has no such setting — a presentation or a workbook —
     /// which leaves the modern justification in place for both.
     pub word_compatibility_mode: Option<WordCompatibilityMode>,
+    /// Whether conversion enables automatic hyphenation, read from DOCX
+    /// `w:autoHyphenation`. PPTX and XLSX leave this disabled.
+    pub hyphenates_automatically: bool,
 }
 
 /// A named style that can be referenced by paragraphs/runs.
