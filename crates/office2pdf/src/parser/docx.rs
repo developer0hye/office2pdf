@@ -10,11 +10,11 @@ use crate::error::{ConvertError, ConvertWarning};
 const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, Caption, CellBorder, CellVerticalAlign, Color,
-    ColumnLayout, Document, FloatingImage, FloatingImageVerticalAnchor, FloatingTable,
-    FloatingTextBox, ImageData, ImageFormat, ImageParagraphSpacing, InlineTextBox, Insets, LineCap,
-    LineJoin, LineSpacing, Page, PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run,
-    StyleSheet, TabAlignment, TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow,
-    TextDirection, TextStyle, VerticalTextAlign, WordCompatibilityMode,
+    ColumnLayout, Document, DocumentLanguage, FloatingImage, FloatingImageVerticalAnchor,
+    FloatingTable, FloatingTextBox, ImageData, ImageFormat, ImageParagraphSpacing, InlineTextBox,
+    Insets, LineCap, LineJoin, LineSpacing, Page, PageNumbering, PairKerning, Paragraph,
+    ParagraphStyle, Run, StyleSheet, TabAlignment, TabLeader, TabStop, Table, TableCell,
+    TableOfContents, TableRow, TextDirection, TextStyle, VerticalTextAlign, WordCompatibilityMode,
 };
 use crate::parser::Parser;
 
@@ -256,6 +256,9 @@ struct ZipPreParseAssets {
     /// Read from the raw `word/styles.xml` because docx-rs has no field for
     /// `w:kern` (issue #628).
     pair_kerning: PairKerningRules,
+    /// Read from the raw `word/styles.xml` because docx-rs has no field for
+    /// `w:lang`.
+    default_language: Option<DocumentLanguage>,
 }
 
 /// Build all pre-parse contexts from the DOCX ZIP in a single pass.
@@ -272,6 +275,15 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 .and_then(styles::scan_default_paragraph_style_id);
             let style_paragraph_backgrounds = scan_style_paragraph_shading(styles_xml.as_deref());
             let style_word_wraps = scan_style_word_wrap(styles_xml.as_deref());
+            // Word writes the default paragraph style as `Normal`; docx-rs
+            // writes it without the `w:default` flag.
+            let default_language: Option<DocumentLanguage> =
+                styles_xml.as_deref().and_then(|xml| {
+                    styles::scan_default_language(
+                        xml,
+                        default_paragraph_style_id.as_deref().unwrap_or("Normal"),
+                    )
+                });
             let theme_xml = read_zip_text(&mut archive, "word/theme/theme1.xml");
             let theme_fonts = theme_xml
                 .as_deref()
@@ -340,6 +352,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 style_paragraph_backgrounds,
                 style_word_wraps,
                 pair_kerning: PairKerningRules::from_styles_xml(styles_xml.as_deref()),
+                default_language,
             }
         }
         Err(_) => ZipPreParseAssets {
@@ -373,6 +386,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
             style_paragraph_backgrounds: HashMap::new(),
             style_word_wraps: HashMap::new(),
             pair_kerning: PairKerningRules::default(),
+            default_language: None,
         },
     }
 }
@@ -399,6 +413,7 @@ impl Parser for DocxParser {
             style_paragraph_backgrounds,
             style_word_wraps,
             pair_kerning,
+            default_language,
         } = build_zip_preparse_assets(data);
 
         let docx = docx_rs::read_docx(data).map_err(|e| {
@@ -621,6 +636,7 @@ impl Parser for DocxParser {
                         &pair_kerning,
                     )),
                     word_compatibility_mode: Some(word_compatibility_mode),
+                    default_language,
                     hyphenates_automatically,
                     ..StyleSheet::default()
                 },

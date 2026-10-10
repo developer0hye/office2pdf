@@ -5971,3 +5971,47 @@ fn fitted_drawing_frames_preserve_chart_text_flow_at_other_scales() {
         }
     }
 }
+
+/// The document's own language reaches Typst, which drives its line breaking
+/// and the language the PDF declares (`/Lang`). The direction is stated with it
+/// because Typst derives `dir: auto` from the language, and the language must
+/// not turn a left-to-right document's paragraphs around.
+#[test]
+fn test_document_language_is_set_for_the_whole_document() {
+    let mut doc = make_doc(vec![make_flow_page(vec![make_paragraph("Aftale")])]);
+    doc.styles.default_language = Some(crate::ir::DocumentLanguage {
+        language: "da".to_string(),
+        region: Some("DK".to_string()),
+    });
+    let result = generate_typst(&doc).unwrap().source;
+    let preamble_end = result.find("#set page").unwrap_or(result.len());
+    assert!(
+        result[..preamble_end].contains(r#"#set text(lang: "da", region: "DK", dir: ltr)"#),
+        "the document language must precede the first page: {result}"
+    );
+}
+
+#[test]
+fn test_document_language_without_region() {
+    let mut doc = make_doc(vec![make_flow_page(vec![make_paragraph("Vertrag")])]);
+    doc.styles.default_language = Some(crate::ir::DocumentLanguage {
+        language: "de".to_string(),
+        region: None,
+    });
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains(r#"#set text(lang: "de", dir: ltr)"#),
+        "a language without a region must still be set: {result}"
+    );
+}
+
+/// A workbook, or any document that states no language, keeps Typst's default.
+#[test]
+fn test_no_document_language_sets_none() {
+    let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Agreement")])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        !result.contains("lang:"),
+        "no language may be invented: {result}"
+    );
+}

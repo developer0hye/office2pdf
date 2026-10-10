@@ -531,3 +531,70 @@ mod background_ref_tests;
 
 #[path = "pptx_background_image_tests.rs"]
 mod background_image_tests;
+
+/// A one-slide deck whose `presentation.xml` carries `default_text_style`
+/// after its slide list, where PowerPoint writes `p:defaultTextStyle`.
+fn build_test_pptx_with_default_text_style(default_text_style: &str) -> Vec<u8> {
+    let slide = make_slide_xml(&[make_text_box(0, 0, 9144000, 6858000, "Nyheder")]);
+    let data = build_test_pptx(9144000, 6858000, &[slide]);
+    let mut archive = zip::ZipArchive::new(Cursor::new(data)).unwrap();
+    let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    for index in 0..archive.len() {
+        let mut entry = archive.by_index(index).unwrap();
+        let name: String = entry.name().to_string();
+        let mut content: Vec<u8> = Vec::new();
+        std::io::Read::read_to_end(&mut entry, &mut content).unwrap();
+        if name == "ppt/presentation.xml" {
+            content = String::from_utf8(content)
+                .unwrap()
+                .replace(
+                    "</p:sldIdLst>",
+                    &format!("</p:sldIdLst>{default_text_style}"),
+                )
+                .into_bytes();
+        }
+        out.start_file(name, FileOptions::default()).unwrap();
+        out.write_all(&content).unwrap();
+    }
+    out.finish().unwrap().into_inner()
+}
+
+/// PowerPoint records the editing language on the presentation's default
+/// paragraph properties.
+#[test]
+fn test_presentation_language_comes_from_default_text_style() {
+    let data = build_test_pptx_with_default_text_style(
+        r#"<p:defaultTextStyle><a:defPPr><a:defRPr lang="da-DK"/></a:defPPr><a:lvl1pPr><a:defRPr sz="1800"/></a:lvl1pPr></p:defaultTextStyle>"#,
+    );
+    let (doc, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_eq!(
+        doc.styles.default_language,
+        Some(crate::ir::DocumentLanguage {
+            language: "da".to_string(),
+            region: Some("DK".to_string()),
+        })
+    );
+}
+
+/// Without `a:defPPr`, the first list level's run defaults still name it.
+#[test]
+fn test_presentation_language_falls_back_to_level_one_defaults() {
+    let data = build_test_pptx_with_default_text_style(
+        r#"<p:defaultTextStyle><a:lvl1pPr><a:defRPr lang="sv-SE" sz="1800"/></a:lvl1pPr></p:defaultTextStyle>"#,
+    );
+    let (doc, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_eq!(
+        doc.styles.default_language,
+        Some(crate::ir::DocumentLanguage {
+            language: "sv".to_string(),
+            region: Some("SE".to_string()),
+        })
+    );
+}
+
+#[test]
+fn test_presentation_without_language_has_none() {
+    let data = build_test_pptx_with_default_text_style("");
+    let (doc, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_eq!(doc.styles.default_language, None);
+}
