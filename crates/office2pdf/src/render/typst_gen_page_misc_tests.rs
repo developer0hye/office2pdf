@@ -4533,6 +4533,61 @@ fn a_header_taller_than_its_band_pushes_the_body_down() {
     );
 }
 
+/// The first body baseline under a 12pt Arial header in a 36pt band.
+///
+/// `w:top` 72pt and `w:header` 36pt leave the header 36pt of band, and three
+/// single-spaced 12pt Arial lines (13.8pt each, 41.4pt) already overflow it, so
+/// every variant below grows the margin and the body's first baseline moves
+/// with the header's height point for point.
+#[cfg(not(target_arch = "wasm32"))]
+fn body_baseline_below_arial_header(paragraphs: Vec<crate::ir::HeaderFooterParagraph>) -> f64 {
+    let doc = doc_with_header(Some(36.0), 72.0, paragraphs);
+    *baselines_of(&doc, "Body")
+        .first()
+        .expect("the body's first line is placed")
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn arial_header_lines(texts: &[&str]) -> Vec<crate::ir::HeaderFooterParagraph> {
+    texts
+        .iter()
+        .map(|text| header_text_paragraph(text, arial(12.0)))
+        .collect()
+}
+
+/// A header paragraph that wraps grows the margin by every line it takes.
+///
+/// Word starts the body at `max(w:top, w:header + header height)`, and the
+/// header's height counts the lines a paragraph wraps to, not the paragraphs.
+/// So one paragraph that wraps to three lines reaches exactly as far down as
+/// three one-line paragraphs of the same face: same line pitch, same count.
+/// Counting the wrapped paragraph as one line left its 27.6pt fitting the
+/// 36pt band, and the third header line overprinted the body.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_wrapped_header_paragraph_grows_the_margin_by_its_lines() {
+    let three_paragraphs: f64 =
+        body_baseline_below_arial_header(arial_header_lines(&["Header", "Header", "Header"]));
+
+    // About ten "Header " words fit the 453.58pt column, so 25 take three
+    // lines; the count is asserted below rather than assumed.
+    let wrapping: String = "Header ".repeat(25);
+    let wrapped_doc = doc_with_header(Some(36.0), 72.0, arial_header_lines(&[wrapping.trim_end()]));
+    let wrapped_lines: usize = baselines_of(&wrapped_doc, "Header").len();
+    assert_eq!(
+        wrapped_lines, 3,
+        "the header paragraph must wrap to three lines"
+    );
+    let one_wrapped_paragraph: f64 =
+        body_baseline_below_arial_header(arial_header_lines(&[wrapping.trim_end()]));
+
+    assert!(
+        (one_wrapped_paragraph - three_paragraphs).abs() < 0.01,
+        "a paragraph wrapping to three lines must push the body as far as three \
+         one-line paragraphs: {one_wrapped_paragraph}pt against {three_paragraphs}pt"
+    );
+}
+
 /// An inherited floating header table must leave enough room for a continuous
 /// section's first body lines on the page where its rendered break lands.
 #[cfg(not(target_arch = "wasm32"))]
@@ -5970,6 +6025,48 @@ fn fitted_drawing_frames_preserve_chart_text_flow_at_other_scales() {
             );
         }
     }
+}
+
+#[test]
+fn header_word_measurement_does_not_break_at_formatting_run_boundaries() {
+    for word in ["International", "Documentation"] {
+        let unsplit = header_text_paragraph(word, arial(12.0));
+        let mut split = header_text_paragraph(&word[..5], arial(12.0));
+        split
+            .elements
+            .extend(header_text_paragraph(&word[5..], arial(12.0)).elements);
+        assert_eq!(
+            hf_paragraph_line_count(&split, 50.0),
+            hf_paragraph_line_count(&unsplit, 50.0),
+            "splitting {word} into identical-format runs must preserve its line count"
+        );
+    }
+}
+
+#[test]
+fn header_trailing_space_does_not_create_an_empty_wrapped_line() {
+    let paragraph = header_text_paragraph("International ", arial(12.0));
+    assert_eq!(hf_paragraph_line_count(&paragraph, 50.0), 1);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn wrapped_native_header_fixture_keeps_body_below_every_header_line() {
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2056-wrapped-header.docx");
+    let (document, _) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        data,
+        &crate::config::ConvertOptions::default(),
+    )
+    .unwrap();
+    let header = baselines_of(&document, "Header");
+    let body = baselines_of(&document, "Body");
+    assert!(header.len() > 1);
+    assert!(
+        body[0] > *header.last().unwrap(),
+        "body must follow the complete wrapped header: {header:?}, {body:?}"
+    );
 }
 
 /// The document's own language reaches Typst, which drives its line breaking

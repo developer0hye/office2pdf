@@ -2938,8 +2938,12 @@ fn flow_page_top_margin_pt(
             // On continuation pages, also retain the empty flow paragraphs
             // that follow a page-anchored header overlay; Word reserves their
             // line boxes even though they paint no text.
-            let content_height: Option<f64> =
-                hf_content_height_pt(header, default_text, overlay_bottom.is_some());
+            let content_height: Option<f64> = hf_content_height_pt(
+                header,
+                default_text,
+                overlay_bottom.is_some(),
+                size.width - page.margins.left - page.margins.right,
+            );
             if content_height.is_none() && overlay_bottom.is_none() {
                 return None;
             }
@@ -2973,14 +2977,15 @@ fn flow_page_top_margin_pt(
 
 /// Height a header or footer story's lines take, in points.
 ///
-/// One natural line per paragraph plus whatever its `w:pBdr` rules and their
-/// `w:space` reserve. Wrapping is not modelled: a header paragraph that wraps
-/// would measure short, which grows the margin less than it should rather than
-/// more, so the failure stays on the side of the current behaviour.
+/// Reserve each measurable wrapped line plus its paragraph border rules.
+/// Empty paragraphs outside the overlay case and paragraph spacing retain
+/// their existing behavior; their drawn and reserved layout needs a separate
+/// correction (issue #2056).
 fn hf_content_height_pt(
     hf: &HeaderFooter,
     default_text: Option<&TextStyle>,
     include_empty_flow_paragraphs: bool,
+    text_width_pt: f64,
 ) -> Option<f64> {
     let mut total: f64 = 0.0;
     for paragraph in &hf.paragraphs {
@@ -2992,8 +2997,78 @@ fn hf_content_height_pt(
         } else {
             total += hf_paragraph_height_pt(paragraph, None, false)?;
         }
+        let extra_lines: usize = hf_paragraph_line_count(paragraph, text_width_pt) - 1;
+        if extra_lines > 0 {
+            total += extra_lines as f64
+                * text::word_line_advance_pt(&hf_paragraph_metric_runs(paragraph))?;
+        }
     }
     Some(total)
+}
+
+/// How many lines a header or footer paragraph takes in `width_pt`.
+///
+/// Its words are laid greedily on the faces' own advances, as a line breaker
+/// fills them, and a hard break starts a line. Kerning is ignored, which the
+/// one-line-per-paragraph estimate this replaced ignored as well. A paragraph
+/// that cannot be measured — a run without a face, a tab, a face that does
+/// not resolve — counts one line, so the margin never grows on a guess.
+fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_pt: f64) -> usize {
+    let available_pt: f64 = width_pt
+        - paragraph.style.indent_left.unwrap_or(0.0)
+        - paragraph.style.indent_right.unwrap_or(0.0);
+    let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
+    if available_pt <= 0.0 || runs.iter().any(|run| run.text.contains('\t')) {
+        return 1;
+    }
+    let mut lines: usize = 1;
+    let mut line_width_pt: f64 = 0.0;
+    let mut pending_word_pt: f64 = 0.0;
+    let place_word = |word_pt: f64, line_width: &mut f64, line_count: &mut usize| {
+        if word_pt > 0.0 && *line_width > 0.0 && *line_width + word_pt > available_pt {
+            *line_count += 1;
+            *line_width = word_pt;
+        } else {
+            *line_width += word_pt;
+        }
+    };
+    for run in &runs {
+        let Some(family) = run.style.font_family.as_deref() else {
+            return 1;
+        };
+        let is_bold: bool = matches!(run.style.bold, Some(true));
+        let font_size_pt: f64 = run
+            .style
+            .font_size
+            .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT);
+        let advance_pt = |text: &str| -> Option<f64> {
+            Some(crate::render::pdf::text_advance_em(family, is_bold, text)? * font_size_pt)
+        };
+        // OOXML may split a word into runs even when its formatting is
+        // unchanged. Only an actual space or hard break ends the word.
+        for piece in run.text.split_inclusive([' ', '\n', '\r', '\u{000B}']) {
+            let word: &str = piece.trim_end_matches([' ', '\n', '\r', '\u{000B}']);
+            let Some(fragment_pt) = advance_pt(word) else {
+                return 1;
+            };
+            pending_word_pt += fragment_pt;
+            if piece.ends_with(' ') {
+                place_word(pending_word_pt, &mut line_width_pt, &mut lines);
+                let Some(space_pt) = advance_pt(" ") else {
+                    return 1;
+                };
+                line_width_pt += space_pt;
+                pending_word_pt = 0.0;
+            } else if piece.ends_with(['\n', '\r', '\u{000B}']) {
+                place_word(pending_word_pt, &mut line_width_pt, &mut lines);
+                lines += 1;
+                line_width_pt = 0.0;
+                pending_word_pt = 0.0;
+            }
+        }
+    }
+    place_word(pending_word_pt, &mut line_width_pt, &mut lines);
+    lines
 }
 
 /// The bottom of a page-anchored header shape that crosses the body's top edge.
