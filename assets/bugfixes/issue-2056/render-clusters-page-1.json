@@ -11,7 +11,7 @@
       "disposition": {
         "issue": "#2065",
         "kind": "issue",
-        "note": "Inspected all three native/output/diff crops and the complete body region. The Body marker baseline is 2.74788pt lower than Word; these are shifted glyphs, not antialiasing."
+        "note": "Reinspected current GT/output/diff crops after main integration: all three fragments belong to Body marker displaced 2.74788pt downward. Header anchors remain within 0.5pt."
       },
       "id": "p1-6e467b0e627d",
       "region": "top-left"
@@ -27,7 +27,7 @@
       "disposition": {
         "issue": "#2065",
         "kind": "issue",
-        "note": "Inspected all three native/output/diff crops and the complete body region. The Body marker baseline is 2.74788pt lower than Word; these are shifted glyphs, not antialiasing."
+        "note": "Reinspected current GT/output/diff crops after main integration: all three fragments belong to Body marker displaced 2.74788pt downward. Header anchors remain within 0.5pt."
       },
       "id": "p1-a714dcf3e15b",
       "region": "top-left"
@@ -43,7 +43,7 @@
       "disposition": {
         "issue": "#2065",
         "kind": "issue",
-        "note": "Inspected all three native/output/diff crops and the complete body region. The Body marker baseline is 2.74788pt lower than Word; these are shifted glyphs, not antialiasing."
+        "note": "Reinspected current GT/output/diff crops after main integration: all three fragments belong to Body marker displaced 2.74788pt downward. Header anchors remain within 0.5pt."
       },
       "id": "p1-f9c32e09d8a0",
       "region": "top-left"
