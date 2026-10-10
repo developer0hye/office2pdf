@@ -10681,6 +10681,341 @@ fn automatic_scaling_reaches_below_zero_for_negative_data() {
     );
 }
 
+// ----- A bar past the value-axis maximum draws under the plot clip (issue #1633) -----
+
+struct ClippedBarGeometry {
+    clip_x: f64,
+    clip_y: f64,
+    clip_width: f64,
+    clip_height: f64,
+    bar_x: f64,
+    bar_y: f64,
+    bar_width: f64,
+    bar_height: f64,
+}
+
+/// Read the plot clip and painted bar rectangle from the generated Typst
+/// placement. A worksheet's outer plot clip may wrap the explicit bar clip.
+fn clipped_bar_geometry(source: &str) -> ClippedBarGeometry {
+    let lines: Vec<&str> = source
+        .lines()
+        .filter(|line| line.contains("clip: true") && line.contains("rect(width: "))
+        .collect();
+    assert_eq!(
+        lines.len(),
+        1,
+        "expected exactly one clipped bar rectangle in:\n{source}"
+    );
+    let line: &str = lines[0];
+    let clip_start: usize = line.rfind("box(width: ").expect("plot clip box");
+    let rect_start: usize = line.rfind("rect(width: ").expect("bar rectangle");
+    let before_clip: &str = &line[..clip_start];
+    let clip_markup: &str = line[clip_start..]
+        .split("clip: true")
+        .next()
+        .expect("plot clip dimensions");
+    let before_bar: &str = &line[..rect_start];
+    let bar_markup: &str = &line[rect_start..];
+    let value_after = |text: &str, marker: &str| -> f64 {
+        text.rsplit_once(marker)
+            .and_then(|(_, rest)| rest.split("pt").next())
+            .and_then(|value| value.trim().parse().ok())
+            .unwrap_or_else(|| panic!("{marker} missing from:\n{text}"))
+    };
+    ClippedBarGeometry {
+        clip_x: value_after(before_clip, "dx: "),
+        clip_y: value_after(before_clip, "dy: "),
+        clip_width: value_after(clip_markup, "box(width: "),
+        clip_height: value_after(clip_markup, ", height: "),
+        bar_x: value_after(before_bar, "dx: "),
+        bar_y: value_after(before_bar, "dy: "),
+        bar_width: value_after(bar_markup, "rect(width: "),
+        bar_height: value_after(bar_markup, ", height: "),
+    }
+}
+
+/// A bar drawn past the value-axis maximum paints its true, full-value
+/// rectangle and lets a clip sized to the plot rectangle hide the overrun —
+/// matching Excel's own paint geometry — instead of pre-shortening the
+/// rectangle's width to the axis edge.
+///
+/// Mirrors the measured `january expenses:` chart of #1633
+/// (`tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx`): a `room & board` bar
+/// at 0.535 against a value axis fixed to `0..0.5`. Excel's own export draws
+/// this bar 1.070x the plot width (169.13pt against a 158.06pt plot-width
+/// share) before its plot area clips it back to the axis.
+#[test]
+fn a_bar_past_the_value_axis_maximum_paints_its_full_length_under_a_plot_clip() {
+    let mut chart = stacked_support_chart(ChartGrouping::Clustered);
+    chart.chart_type = ChartType::Bar;
+    chart.title = None;
+    chart.has_legend = false;
+    chart.categories = vec!["Room & Board".to_string()];
+    chart.series.truncate(1);
+    chart.series[0].name = Some("Value".to_string());
+    chart.series[0].values = vec![0.535];
+    chart.value_axis_min = Some(0.0);
+    chart.value_axis_max = Some(0.5);
+    chart.value_axis_major_unit = Some(0.1);
+    chart.major_gridline_line = crate::ir::ChartLine::Suppressed;
+
+    let source: String = chart_source(chart);
+    let (plot_x, _, plot_w) = horizontal_axis_line(&source);
+    let geometry: ClippedBarGeometry = clipped_bar_geometry(&source);
+
+    assert!(
+        (geometry.clip_x - plot_x).abs() < 0.01 && (geometry.clip_width - plot_w).abs() < 0.01,
+        "the clip must cover the plot's own horizontal bounds: plot x={plot_x}, width={plot_w}; clip x={}, width={}",
+        geometry.clip_x,
+        geometry.clip_width
+    );
+    let expected_full_w: f64 = 0.535 / 0.5 * plot_w;
+    assert!(
+        (geometry.bar_width - expected_full_w).abs() < 0.01,
+        "the painted rectangle must reach its full, unclamped value length \
+         (0.535/0.5 of the plot, {expected_full_w}pt), not the axis-truncated \
+         {plot_w}pt: got {}pt",
+        geometry.bar_width
+    );
+    assert!(
+        geometry.bar_x.abs() < 0.01 && geometry.bar_width > plot_w + 0.01,
+        "the bar must start at the value axis and overrun the plot clip: x={}pt, width={}pt, plot width={plot_w}pt",
+        geometry.bar_x,
+        geometry.bar_width
+    );
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let pages = crate::render::pdf::compiled_page_paint_sequences(&source, &[])
+            .expect("the over-axis chart compiles");
+        let overlong_bars: Vec<_> = pages[0]
+            .iter()
+            .filter(|paint| {
+                paint.kind == crate::render::pdf::PaintedKind::Shape
+                    && paint.rectangle_fill.is_some()
+                    && paint.bounds.2 - paint.bounds.0 > plot_w + 0.01
+            })
+            .collect();
+        assert_eq!(
+            overlong_bars.len(),
+            1,
+            "the compiled chart must contain one full-length over-axis bar"
+        );
+        let compiled_width: f64 = overlong_bars[0].bounds.2 - overlong_bars[0].bounds.0;
+        assert!(
+            (compiled_width - expected_full_w).abs() < 0.01,
+            "the compiled rectangle must retain its unclamped width {expected_full_w}pt, got {compiled_width}pt"
+        );
+    }
+}
+
+/// Exercise the reported XLSX chart part through the OOXML parser as well as
+/// the synthetic boundary cases above: its cached 0.53503787878787878 expense
+/// value is above the explicit 0.5 axis maximum, so its generated rectangle
+/// must retain the approximately 1.0701 plot-width ratio.
+#[test]
+fn the_reported_expense_chart_keeps_its_over_axis_bar_geometry() {
+    use std::io::Read;
+
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(data))
+        .expect("the reported budget workbook is a valid XLSX archive");
+    let mut chart_xml: String = String::new();
+    archive
+        .by_name("xl/charts/chart4.xml")
+        .expect("the workbook contains the reported expense chart part")
+        .read_to_string(&mut chart_xml)
+        .expect("the expense chart XML is valid UTF-8");
+    let colors = std::collections::HashMap::new();
+    let aliases = std::collections::HashMap::new();
+    let scheme = crate::parser::drawingml::SchemeColors {
+        colors: &colors,
+        aliases: &aliases,
+    };
+    let mut chart: Chart = crate::parser::chart::parse_chart_xml(&chart_xml, &scheme)
+        .expect("the reported expense chart parses");
+
+    assert_eq!(chart.chart_type, ChartType::Bar);
+    assert_eq!(chart.value_axis_min, Some(0.0));
+    assert_eq!(chart.value_axis_max, Some(0.5));
+    let category_index: usize = chart
+        .categories
+        .iter()
+        .position(|category| category.eq_ignore_ascii_case("room & board"))
+        .expect("the chart contains the room & board category");
+    let value: f64 = chart.series[0].values[category_index];
+    assert!(
+        (value - 0.535_037_878_787_878_8).abs() < 1e-12,
+        "cached expense value is {value}"
+    );
+
+    // The geometry helper measures one painted bar, so retain the reported
+    // category and cached value while removing the chart's other five bars.
+    let category: String = chart.categories[category_index].clone();
+    assert_eq!(chart.series.len(), 1);
+    chart.categories = vec![category];
+    chart.series[0].values = vec![value];
+
+    let source: String = chart_source(chart);
+    let geometry: ClippedBarGeometry = clipped_bar_geometry(&source);
+    let expected_width: f64 = value / 0.5 * geometry.clip_width;
+
+    assert!(
+        geometry.clip_width > 0.0 && geometry.bar_x.abs() < 0.01,
+        "the clipped bar must start at the zero-axis edge inside a positive-width plot: clip x={}, width={}, bar x={}",
+        geometry.clip_x,
+        geometry.clip_width,
+        geometry.bar_x
+    );
+    assert!(
+        (geometry.bar_width - expected_width).abs() < 0.01,
+        "the parsed room & board bar must retain its full {expected_width}pt width against the plot clip, got {}pt",
+        geometry.bar_width
+    );
+    assert!(
+        geometry.bar_width > geometry.clip_width + 0.01,
+        "the parsed room & board bar must overrun the plot clip: bar={}pt, clip={}pt",
+        geometry.bar_width,
+        geometry.clip_width
+    );
+}
+
+/// The same overrun rule applies to a column (vertical) chart's value axis,
+/// which is the code path's other branch: a value past the maximum grows the
+/// bar's true height up past the plot's top edge rather than stopping there.
+#[test]
+fn a_column_past_the_value_axis_maximum_paints_its_full_length_under_a_plot_clip() {
+    let mut chart = stacked_support_chart(ChartGrouping::Clustered);
+    chart.title = None;
+    chart.has_legend = false;
+    chart.categories = vec!["Q1".to_string()];
+    chart.series.truncate(1);
+    chart.series[0].name = Some("Value".to_string());
+    chart.series[0].values = vec![130.0];
+    chart.value_axis_min = Some(0.0);
+    chart.value_axis_max = Some(100.0);
+    chart.value_axis_major_unit = Some(20.0);
+    chart.major_gridline_line = crate::ir::ChartLine::Suppressed;
+
+    let source: String = chart_source(chart);
+    let (_, plot_y, plot_h) = vertical_axis_line(&source);
+    let geometry: ClippedBarGeometry = clipped_bar_geometry(&source);
+
+    assert!(
+        (geometry.clip_y - plot_y).abs() < 0.01 && (geometry.clip_height - plot_h).abs() < 0.01,
+        "the clip must cover the plot's own vertical bounds: plot y={plot_y}, height={plot_h}; clip y={}, height={}",
+        geometry.clip_y,
+        geometry.clip_height
+    );
+    let expected_full_h: f64 = 130.0 / 100.0 * plot_h;
+    assert!(
+        (geometry.bar_height - expected_full_h).abs() < 0.01,
+        "the painted rectangle must reach its full, unclamped value length \
+         (130/100 of the plot, {expected_full_h}pt), not the axis-truncated \
+         {plot_h}pt: got {}pt",
+        geometry.bar_height
+    );
+    assert!(
+        (geometry.bar_y + 0.3 * plot_h).abs() < 0.01 && geometry.bar_height > plot_h + 0.01,
+        "the column must start above and overrun the plot clip: y={}pt, height={}pt, plot y={plot_y}pt and height={plot_h}pt",
+        geometry.bar_y,
+        geometry.bar_height
+    );
+}
+
+#[test]
+fn a_stacked_bar_segment_past_the_axis_maximum_keeps_its_unclamped_length() {
+    let mut chart = stacked_support_chart(ChartGrouping::Stacked);
+    chart.chart_type = ChartType::Bar;
+    chart.title = None;
+    chart.has_legend = false;
+    chart.categories = vec!["A".to_string()];
+    chart.series.truncate(2);
+    chart.series[0].values = vec![0.3];
+    chart.series[1].values = vec![0.3];
+    chart.value_axis_min = Some(0.0);
+    chart.value_axis_max = Some(0.5);
+    chart.value_axis_major_unit = Some(0.1);
+    chart.major_gridline_line = crate::ir::ChartLine::Suppressed;
+
+    let source: String = chart_source(chart);
+    let (_, _, plot_width) = horizontal_axis_line(&source);
+    let geometry: ClippedBarGeometry = clipped_bar_geometry(&source);
+    let expected_segment_size: f64 = 0.3 / 0.5 * plot_width;
+
+    assert!(
+        (geometry.bar_x - expected_segment_size).abs() < 0.01
+            && (geometry.bar_width - expected_segment_size).abs() < 0.01,
+        "the second stacked segment must start at 60% and keep its full 60% width under the clip: x={}pt, width={}pt, plot={plot_width}pt\n{source}",
+        geometry.bar_x,
+        geometry.bar_width
+    );
+}
+
+#[test]
+fn a_bar_below_the_value_axis_minimum_keeps_its_unclamped_length() {
+    let mut chart = stacked_support_chart(ChartGrouping::Clustered);
+    chart.chart_type = ChartType::Bar;
+    chart.title = None;
+    chart.has_legend = false;
+    chart.categories = vec!["A".to_string()];
+    chart.series.truncate(1);
+    chart.series[0].values = vec![-5.0];
+    chart.value_axis_min = Some(0.0);
+    chart.value_axis_max = Some(100.0);
+    chart.value_axis_major_unit = Some(20.0);
+    chart.major_gridline_line = crate::ir::ChartLine::Suppressed;
+
+    let source: String = chart_source(chart);
+    let (_, _, plot_width) = horizontal_axis_line(&source);
+    let geometry: ClippedBarGeometry = clipped_bar_geometry(&source);
+    let expected_segment_size: f64 = 5.0 / 100.0 * plot_width;
+
+    assert!(
+        (geometry.bar_x + expected_segment_size).abs() < 0.01
+            && (geometry.bar_width - expected_segment_size).abs() < 0.01,
+        "a value below the axis minimum must keep its full negative segment under the clip: x={}pt, width={}pt, plot={plot_width}pt\n{source}",
+        geometry.bar_x,
+        geometry.bar_width
+    );
+}
+
+/// A value that stays within the stated axis interval must not gain a clip
+/// box at all — the fix for issue #1633 only wraps a segment that actually
+/// needs it, so an ordinary bar's generated source is unchanged.
+#[test]
+fn a_value_within_the_axis_interval_does_not_clip_its_bar() {
+    let mut chart = stacked_support_chart(ChartGrouping::Clustered);
+    chart.chart_type = ChartType::Bar;
+    chart.title = None;
+    chart.has_legend = false;
+    chart.categories = vec!["Room & Board".to_string()];
+    chart.series.truncate(1);
+    chart.series[0].name = Some("Value".to_string());
+    chart.series[0].values = vec![0.3];
+    chart.value_axis_min = Some(0.0);
+    chart.value_axis_max = Some(0.5);
+    chart.value_axis_major_unit = Some(0.1);
+    chart.major_gridline_line = crate::ir::ChartLine::Suppressed;
+
+    let source: String = chart_source(chart);
+    assert!(
+        !source.contains("clip: true"),
+        "an in-range bar must not be wrapped in a clip box:\n{source}"
+    );
+
+    let bars: Vec<(f64, f64, f64, f64)> = drawn_bars(&source);
+    assert_eq!(bars.len(), 1, "one bar expected, got {bars:?}");
+    let (_, _, width, _) = bars[0];
+    let (_, _, plot_w) = horizontal_axis_line(&source);
+    let expected_w: f64 = 0.3 / 0.5 * plot_w;
+    assert!(
+        (width - expected_w).abs() < 0.01,
+        "an in-range bar keeps its plain, unclipped width: expected {expected_w}, got {width}"
+    );
+}
+
 /// Positive-only data keeps the axis it always had: zero on the plot floor and
 /// the category axis drawn there (issue #1184 must not move an ordinary chart).
 #[test]

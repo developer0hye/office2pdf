@@ -38,7 +38,7 @@ impl DrawingTextBoxContext {
         theme_xml: Option<&str>,
     ) -> Self {
         let theme_line_styles: Vec<ThemeLineStyle> = theme_xml
-            .map(|xml| pptx::parse_theme_line_styles(xml))
+            .map(pptx::parse_theme_line_styles)
             .unwrap_or_default();
         Self {
             text_boxes: xml

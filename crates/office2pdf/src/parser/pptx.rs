@@ -24,8 +24,8 @@ use crate::parser::smartart;
 use crate::parser::units::emu_to_pt;
 
 use self::package::{
-    load_master_color_map, load_table_styles, load_theme, parse_default_text_size_pt,
-    parse_presentation_xml, parse_rels_xml, read_zip_entry,
+    load_master_color_map, load_table_styles, load_theme, parse_default_language,
+    parse_default_text_size_pt, parse_presentation_xml, parse_rels_xml, read_zip_entry,
 };
 #[cfg(test)]
 use self::package::{resolve_relative_path, scan_chart_refs};
@@ -454,6 +454,8 @@ impl Parser for PptxParser {
         // The size a text body falls back to when its own chain declares none
         // (issue #675). Read from the same XML rather than re-opening it.
         let default_text_size_pt: Option<f64> = parse_default_text_size_pt(&pres_xml);
+        let default_language: Option<crate::ir::DocumentLanguage> =
+            parse_default_language(&pres_xml);
 
         // Read and parse presentation.xml.rels for rId → slide path mapping
         let rels_xml = read_zip_entry(&mut archive, "ppt/_rels/presentation.xml.rels")?;
@@ -562,6 +564,7 @@ impl Parser for PptxParser {
                 pages,
                 styles: StyleSheet {
                     declared_font_classes,
+                    default_language,
                     ..StyleSheet::default()
                 },
             },

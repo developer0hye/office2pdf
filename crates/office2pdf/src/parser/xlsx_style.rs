@@ -149,8 +149,9 @@ fn normal_font_text_style(normal_font: Option<&super::xlsx_cells::NormalFont>) -
 }
 
 /// The face a cell or rich-run font that carries its own `<scheme>` paints
-/// in: the theme's Hang face, then its nonempty East Asian face, for the
-/// scheme slot. `None` for a font naming its face outright (`scheme` absent or
+/// in: the theme's UI-script face for the scheme slot — its Hang face, then
+/// its nonempty East Asian face, under a Korean UI; its Latin face under a
+/// Latin UI. `None` for a font naming its face outright (`scheme` absent or
 /// `none`) or a theme naming neither face for the slot, both of which stay on
 /// the declared name (issues #1380, #1711).
 ///

@@ -10,11 +10,11 @@ use crate::error::{ConvertError, ConvertWarning};
 const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, Caption, CellBorder, CellVerticalAlign, Color,
-    ColumnLayout, Document, FloatingImage, FloatingImageVerticalAnchor, FloatingTable,
-    FloatingTextBox, ImageData, ImageFormat, ImageParagraphSpacing, InlineTextBox, Insets, LineCap,
-    LineJoin, LineSpacing, Page, PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run,
-    StyleSheet, TabAlignment, TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow,
-    TextDirection, TextStyle, VerticalTextAlign, WordCompatibilityMode,
+    ColumnLayout, Document, DocumentLanguage, FloatingImage, FloatingImageVerticalAnchor,
+    FloatingTable, FloatingTextBox, ImageData, ImageFormat, ImageParagraphSpacing, InlineTextBox,
+    Insets, LineCap, LineJoin, LineSpacing, Page, PageNumbering, PairKerning, Paragraph,
+    ParagraphStyle, Run, StyleSheet, TabAlignment, TabLeader, TabStop, Table, TableCell,
+    TableOfContents, TableRow, TextDirection, TextStyle, VerticalTextAlign, WordCompatibilityMode,
 };
 use crate::parser::Parser;
 
@@ -256,6 +256,9 @@ struct ZipPreParseAssets {
     /// Read from the raw `word/styles.xml` because docx-rs has no field for
     /// `w:kern` (issue #628).
     pair_kerning: PairKerningRules,
+    /// Read from the raw `word/styles.xml` because docx-rs has no field for
+    /// `w:lang`.
+    default_language: Option<DocumentLanguage>,
 }
 
 /// Build all pre-parse contexts from the DOCX ZIP in a single pass.
@@ -272,6 +275,15 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 .and_then(styles::scan_default_paragraph_style_id);
             let style_paragraph_backgrounds = scan_style_paragraph_shading(styles_xml.as_deref());
             let style_word_wraps = scan_style_word_wrap(styles_xml.as_deref());
+            // Word writes the default paragraph style as `Normal`; docx-rs
+            // writes it without the `w:default` flag.
+            let default_language: Option<DocumentLanguage> =
+                styles_xml.as_deref().and_then(|xml| {
+                    styles::scan_default_language(
+                        xml,
+                        default_paragraph_style_id.as_deref().unwrap_or("Normal"),
+                    )
+                });
             let theme_xml = read_zip_text(&mut archive, "word/theme/theme1.xml");
             let theme_fonts = theme_xml
                 .as_deref()
@@ -343,6 +355,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 style_paragraph_backgrounds,
                 style_word_wraps,
                 pair_kerning: PairKerningRules::from_styles_xml(styles_xml.as_deref()),
+                default_language,
             }
         }
         Err(_) => ZipPreParseAssets {
@@ -376,6 +389,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
             style_paragraph_backgrounds: HashMap::new(),
             style_word_wraps: HashMap::new(),
             pair_kerning: PairKerningRules::default(),
+            default_language: None,
         },
     }
 }
@@ -388,6 +402,7 @@ impl Parser for DocxParser {
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let default_tab_stop_pt: Option<f64> = extract_default_tab_stop_pt(data);
         let word_compatibility_mode: WordCompatibilityMode = extract_compatibility_mode(data);
+        let hyphenates_automatically: bool = extract_auto_hyphenation(data);
         let ZipPreParseAssets {
             metadata,
             mut ctx,
@@ -401,6 +416,7 @@ impl Parser for DocxParser {
             style_paragraph_backgrounds,
             style_word_wraps,
             pair_kerning,
+            default_language,
         } = build_zip_preparse_assets(data);
 
         let docx = docx_rs::read_docx(data).map_err(|e| {
@@ -623,6 +639,8 @@ impl Parser for DocxParser {
                         &pair_kerning,
                     )),
                     word_compatibility_mode: Some(word_compatibility_mode),
+                    default_language,
+                    hyphenates_automatically,
                     ..StyleSheet::default()
                 },
             },
@@ -666,6 +684,80 @@ fn extract_compatibility_mode(data: &[u8]) -> WordCompatibilityMode {
         WordCompatibilityMode::Word2013OrLater
     } else {
         WordCompatibilityMode::Legacy
+    }
+}
+
+/// Whether `word/settings.xml` turns automatic hyphenation on. Read from the
+/// raw part because docx-rs does not parse `w:autoHyphenation`.
+///
+/// TODO(docx-rs parses no hyphenation controls): the paragraph-level
+/// `w:suppressAutoHyphens` and the document's `w:doNotHyphenateCaps`,
+/// `w:hyphenationZone` and `w:consecutiveHyphenLimit` are not honoured yet, so
+/// a document that turns hyphenation on is hyphenated wherever Typst can.
+fn extract_auto_hyphenation(data: &[u8]) -> bool {
+    let Ok(mut archive) = crate::parser::open_zip(data) else {
+        return false;
+    };
+    let Some(settings_xml) = read_zip_text(&mut archive, "word/settings.xml") else {
+        return false;
+    };
+    use quick_xml::events::Event;
+    use quick_xml::name::ResolveResult;
+
+    let is_word_namespace = |namespace: ResolveResult<'_>| {
+        matches!(namespace, ResolveResult::Bound(namespace) if matches!(
+            namespace.as_ref(),
+            b"http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                | b"http://purl.oclc.org/ooxml/wordprocessingml/main"
+        ))
+    };
+    let mut reader = quick_xml::reader::NsReader::from_str(&settings_xml);
+    let mut depth: usize = 0;
+    loop {
+        match reader.read_event() {
+            Ok(event @ (Event::Start(_) | Event::Empty(_))) => {
+                let has_children: bool = matches!(event, Event::Start(_));
+                let (Event::Start(element) | Event::Empty(element)) = event else {
+                    unreachable!("matched above");
+                };
+                let (namespace, name) = reader.resolver().resolve_element(element.name());
+                let is_word_element: bool = is_word_namespace(namespace);
+                if depth == 0 && (!is_word_element || name.as_ref() != b"settings") {
+                    return false;
+                }
+                // A setting is a direct child, never text in a comment or
+                // an identically named element in an extension subtree.
+                if depth == 1 && is_word_element && name.as_ref() == b"autoHyphenation" {
+                    let value = element.attributes().flatten().find_map(|attribute| {
+                        let (namespace, name) = reader.resolver().resolve_attribute(attribute.key);
+                        (is_word_namespace(namespace) && name.as_ref() == b"val")
+                            .then(|| {
+                                attribute
+                                    .normalized_value(OOXML_XML_VERSION)
+                                    .ok()
+                                    .map(|value| value.into_owned())
+                            })
+                            .flatten()
+                    });
+                    let enabled: bool = value
+                        .as_deref()
+                        .is_none_or(|value| matches!(value, "1" | "true" | "on"));
+                    tracing::debug!(enabled, "Read DOCX automatic hyphenation setting");
+                    return enabled;
+                }
+                if has_children {
+                    depth += 1;
+                }
+            }
+            Ok(Event::End(_)) => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    return false;
+                }
+            }
+            Ok(Event::Eof) | Err(_) => return false,
+            _ => {}
+        }
     }
 }
 

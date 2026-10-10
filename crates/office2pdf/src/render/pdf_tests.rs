@@ -578,6 +578,63 @@ fn a_weight_suffixed_family_measures_the_member_its_name_denotes() {
 }
 
 #[test]
+fn a_width_suffixed_family_measures_the_member_its_name_denotes() {
+    // `Arial Narrow.ttf` and Office's `Aptos-Narrow.ttf` name their families
+    // `Arial Narrow` and `Aptos Narrow`, and the book files them under `Arial`
+    // and `Aptos` at the stretch their OS/2 `usWidthClass` states (3 and 4).
+    // No family key matches the suffixed name, so the metrics of every run in
+    // the family's narrow member came from whatever face the substitute chain
+    // reached instead.
+    //
+    // The condensed member here carries a rewritten ascender so its line box
+    // differs from the regular member's, the shape issue #1643 used for a
+    // weight member.
+    use crate::render::font_context::test_faces::{
+        noto_serif_at_weight, noto_serif_at_width_with_ascender,
+    };
+
+    let regular: typst::text::Font = noto_serif_at_weight(400);
+    let condensed: typst::text::Font = noto_serif_at_width_with_ascender(3, 1500);
+    let expected_regular = declared_line_box_em(&regular);
+    let expected_condensed = declared_line_box_em(&condensed);
+    assert_ne!(
+        expected_regular.2, expected_condensed.2,
+        "the rewritten members must declare different line boxes for the test to discriminate"
+    );
+
+    let context = crate::render::font_context::resolve_font_search_context_from_fonts(&[
+        regular.clone(),
+        condensed.clone(),
+    ]);
+    let (narrow_line, base_line) =
+        crate::render::font_subst::with_font_search_context(Some(&context), || {
+            (
+                font_line_metrics_em("Noto Serif Narrow"),
+                font_line_metrics_em("Noto Serif"),
+            )
+        });
+
+    let narrow_line =
+        narrow_line.expect("a width-suffixed request resolves through its base family");
+    let base_line = base_line.expect("the base family resolves its own regular member");
+    let close = |actual: (f64, f64, f64), expected: (f64, f64, f64)| {
+        (actual.0 - expected.0).abs() < 1e-12
+            && (actual.1 - expected.1).abs() < 1e-12
+            && (actual.2 - expected.2).abs() < 1e-12
+    };
+    assert!(
+        close(narrow_line, expected_condensed),
+        "`Noto Serif Narrow` must measure the condensed member's own line box: \
+         {narrow_line:?} against {expected_condensed:?}"
+    );
+    assert!(
+        close(base_line, expected_regular),
+        "`Noto Serif` must still measure the regular member: \
+         {base_line:?} against {expected_regular:?}"
+    );
+}
+
+#[test]
 fn a_weight_suffixed_family_measures_the_face_carrying_its_name() {
     // Nearest-weight selection can only reach the member a name denotes while
     // the member agrees with its own name. Word's `GillSansUltraBold.ttf` is

@@ -1,0 +1,583 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 135.7056,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 21.6,
+        "x": 82.56,
+        "y": 120.96
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-1d6676179c0f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 103.9104,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 17.28,
+        "x": 99.36,
+        "y": 134.88
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-473fc01f0dbe",
+      "region": "top"
+    },
+    {
+      "area_pt2": 89.3952,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 20.16,
+        "x": 66.72,
+        "y": 134.88
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-52889993ec89",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 76.7232,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 15.84,
+        "x": 63.84,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-fed822d31984",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 64.9728,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 14.4,
+        "x": 53.28,
+        "y": 137.28
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-2c386eba4d1a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 55.9872,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 16.32,
+        "x": 165.6,
+        "y": 122.88
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-6cdb0604cd44",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 51.6096,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.56,
+        "x": 184.32,
+        "y": 123.36
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-d7dfe8af94a3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 47.6928,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 11.52,
+        "x": 139.2,
+        "y": 108.96
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-95121fca087f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.12,
+        "x": 195.36,
+        "y": 122.4
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-d1aa8c080122",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.7808,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 80.16,
+        "y": 190.08
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-13adab6951dd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 74.88,
+        "y": 107.04
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-55964c6552d5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 126.72,
+        "y": 190.08
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-4d5cd902e406",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.24,
+        "x": 153.6,
+        "y": 192.48
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-6828a083c270",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 163.68,
+        "y": 109.44
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-8db60fd915ec",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 138.24,
+        "y": 190.56
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-7aecfc186ca9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 10.08,
+        "x": 116.16,
+        "y": 192.0
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-23b355de3356",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 5.76,
+        "x": 105.6,
+        "y": 121.44
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-228b6014a846",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.16,
+        "x": 177.12,
+        "y": 109.92
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-352b19d2525a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 171.36,
+        "y": 108.96
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-341d4710791c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 85.44,
+        "y": 136.8
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-e17eee6e50e8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 160.32,
+        "y": 190.08
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-c770bafcec61",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 161.76,
+        "y": 120.96
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-bc1c41f082c7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 8.64,
+        "x": 146.88,
+        "y": 125.76
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-546524d5a058",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 92.64,
+        "y": 137.28
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-dea1390052b3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 170.4,
+        "y": 192.96
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-c96d07f2dcdb",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 155.04,
+        "y": 95.52
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-85ffc2753f12",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 153.6,
+        "y": 137.28
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-18c5a3d50404",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 106.56,
+        "y": 205.92
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-3a1595524f4e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 171.84,
+        "y": 95.52
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-a65b46049c8a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 185.76,
+        "y": 136.8
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-d472d5b63721",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 50.4,
+        "y": 205.92
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-f706a39a0a35",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 170.4,
+        "y": 178.08
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-f258f2eabb63",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 3.84,
+        "x": 139.68,
+        "y": 120.96
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-4ba87f46f074",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 148.32,
+        "y": 192.96
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-fd4c13664671",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 207.84,
+        "y": 190.08
+      },
+      "disposition": {
+        "issue": "#2063",
+        "kind": "issue",
+        "note": "Each matched GT/output/diff crop was inspected. All 35 current clusters contain different letters or missing/present text caused by the changed justified line breaks; none is approved as antialiasing."
+      },
+      "id": "p1-2202103cb7ce",
+      "region": "top-right"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 35,
+    "duplicate": 0,
+    "total": 35,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

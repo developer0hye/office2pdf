@@ -1581,8 +1581,13 @@ fn chain_variant(
         (None, Some(explicit)) => explicit,
         (None, None) => typst::text::FontVariant::default().weight,
     };
+    // A width member — `Arial Narrow`, filed as `Arial` at 75% — is resolved
+    // at the stretch its name states, as the run asks for it.
+    let stretch: typst::text::FontStretch =
+        super::font_subst::stretch_stated_by_family_name(family).unwrap_or_default();
     typst::text::FontVariant {
         weight,
+        stretch,
         ..typst::text::FontVariant::default()
     }
 }
@@ -1773,10 +1778,13 @@ fn best_face(family: &str) -> Option<typst::text::Font> {
     // `in_memory_font`, which this arm's chain walk already goes through.
     let weight: typst::text::FontWeight = super::font_subst::weight_stated_by_family_name(family)
         .unwrap_or_else(|| typst::text::FontVariant::default().weight);
+    let stretch: typst::text::FontStretch =
+        super::font_subst::stretch_stated_by_family_name(family).unwrap_or_default();
     super::font_subst::active_in_memory_font(
         family,
         typst::text::FontVariant {
             weight,
+            stretch,
             ..typst::text::FontVariant::default()
         },
     )
