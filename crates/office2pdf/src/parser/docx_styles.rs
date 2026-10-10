@@ -1,7 +1,7 @@
 use crate::parser::xml_util::OOXML_XML_VERSION;
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::{Color, PairKerning, ParagraphStyle, TabStop, TextStyle};
+use crate::ir::{Color, DocumentLanguage, PairKerning, ParagraphStyle, TabStop, TextStyle};
 
 use super::{
     ThemeFonts, extract_doc_default_paragraph_style, extract_doc_default_text_style_with_theme,
@@ -225,6 +225,105 @@ pub(super) fn scan_default_paragraph_style_id(styles_xml: &str) -> Option<String
             _ => {}
         }
     }
+}
+
+/// The language body text is written in: `w:lang/@w:val` on the default
+/// paragraph style's run properties, else on
+/// `w:docDefaults/w:rPrDefault/w:rPr`. Read from the raw part because docx-rs
+/// has no field for `w:lang`.
+///
+/// Only `w:val` is read. It is the language of Latin-script text; `w:eastAsia`
+/// and `w:bidi` name the languages of the other script classes, which Typst
+/// cannot set alongside it.
+pub(super) fn scan_default_language(
+    styles_xml: &str,
+    default_paragraph_style_id: &str,
+) -> Option<DocumentLanguage> {
+    use quick_xml::events::Event;
+
+    let mut reader = quick_xml::Reader::from_str(styles_xml);
+    reader.config_mut().trim_text(true);
+    let mut path: Vec<Vec<u8>> = Vec::new();
+    let mut in_default_paragraph_style = false;
+    let mut doc_defaults_tag: Option<String> = None;
+    let mut default_style_tag: Option<String> = None;
+    loop {
+        match reader.read_event() {
+            Ok(event @ (Event::Start(_) | Event::Empty(_))) => {
+                let has_children: bool = matches!(event, Event::Start(_));
+                let (Event::Start(element) | Event::Empty(element)) = event else {
+                    unreachable!("matched above");
+                };
+                match element.local_name().as_ref() {
+                    b"style" if path.iter().map(Vec::as_slice).eq([b"styles".as_slice()]) => {
+                        let mut style_type: Option<String> = None;
+                        let mut style_id: Option<String> = None;
+                        for attribute in element.attributes().flatten() {
+                            let value = attribute
+                                .decoded_and_normalized_value(OOXML_XML_VERSION, reader.decoder())
+                                .ok()
+                                .map(|value| value.into_owned());
+                            match attribute.key.local_name().as_ref() {
+                                b"type" => style_type = value,
+                                b"styleId" => style_id = value,
+                                _ => {}
+                            }
+                        }
+                        in_default_paragraph_style = has_children
+                            && style_type.as_deref() == Some("paragraph")
+                            && style_id.as_deref() == Some(default_paragraph_style_id);
+                    }
+                    b"lang" => {
+                        // Historical rPrChange properties and paragraph-mark
+                        // formatting do not describe the current body text.
+                        let is_document_default: bool = path.iter().map(Vec::as_slice).eq([
+                            b"styles".as_slice(),
+                            b"docDefaults",
+                            b"rPrDefault",
+                            b"rPr",
+                        ]);
+                        let is_style_default: bool = in_default_paragraph_style
+                            && path.iter().map(Vec::as_slice).eq([
+                                b"styles".as_slice(),
+                                b"style",
+                                b"rPr",
+                            ]);
+                        let tag: Option<String> =
+                            crate::parser::xml_util::get_attr_str(&element, b"val");
+                        if is_style_default {
+                            default_style_tag = tag;
+                        } else if is_document_default {
+                            doc_defaults_tag = tag;
+                        }
+                    }
+                    _ => {}
+                }
+                if has_children {
+                    path.push(element.local_name().as_ref().to_vec());
+                }
+            }
+            Ok(Event::End(_)) => {
+                if path
+                    .iter()
+                    .map(Vec::as_slice)
+                    .eq([b"styles".as_slice(), b"style"])
+                {
+                    in_default_paragraph_style = false;
+                }
+                path.pop();
+            }
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+    default_style_tag
+        .as_deref()
+        .and_then(DocumentLanguage::from_office_tag)
+        .or_else(|| {
+            doc_defaults_tag
+                .as_deref()
+                .and_then(DocumentLanguage::from_office_tag)
+        })
 }
 
 /// Whether the document explicitly defines its default paragraph style —
