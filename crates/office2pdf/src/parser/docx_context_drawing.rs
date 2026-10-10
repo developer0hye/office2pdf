@@ -1,6 +1,7 @@
 use std::cell::Cell;
 
 use crate::ir::{BorderSide, Color, FrameAlign, FrameAnchor, Insets};
+use crate::parser::pptx::{self, ThemeLineStyle};
 use crate::parser::xml_util::OOXML_XML_VERSION;
 use quick_xml::events::BytesStart;
 
@@ -29,8 +30,20 @@ pub(in super::super) struct DrawingTextBoxContext {
 
 impl DrawingTextBoxContext {
     pub(in super::super) fn from_xml(xml: Option<&str>) -> Self {
+        Self::from_xml_with_theme(xml, None)
+    }
+
+    pub(in super::super) fn from_xml_with_theme(
+        xml: Option<&str>,
+        theme_xml: Option<&str>,
+    ) -> Self {
+        let theme_line_styles: Vec<ThemeLineStyle> = theme_xml
+            .map(pptx::parse_theme_line_styles)
+            .unwrap_or_default();
         Self {
-            text_boxes: xml.map(scan_drawing_text_boxes).unwrap_or_default(),
+            text_boxes: xml
+                .map(|xml| scan_drawing_text_boxes(xml, &theme_line_styles))
+                .unwrap_or_default(),
             cursor: Cell::new(0),
         }
     }
@@ -48,7 +61,10 @@ impl DrawingTextBoxContext {
 /// The shared [`ShapeScanState`] reads `wp:extent`, `a:ln`, `a:solidFill` and
 /// `wps:bodyPr`; this scan also preserves `wp:positionH` and `wp:positionV`
 /// alignment/reference metadata.
-fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
+fn scan_drawing_text_boxes(
+    xml: &str,
+    theme_line_styles: &[ThemeLineStyle],
+) -> Vec<DrawingTextBoxInfo> {
     let mut reader = quick_xml::Reader::from_str(xml);
     let mut buffer: Vec<u8> = Vec::new();
     let mut result: Vec<DrawingTextBoxInfo> = Vec::new();
@@ -159,6 +175,7 @@ fn scan_drawing_text_boxes(xml: &str) -> Vec<DrawingTextBoxInfo> {
                             horizontal_align,
                             vertical_anchor,
                             vertical_position_align,
+                            theme_line_styles,
                         ));
                     }
                 }
@@ -212,9 +229,10 @@ fn text_box_info(
     horizontal_align: Option<FrameAlign>,
     vertical_anchor: FrameAnchor,
     vertical_position_align: Option<FrameAlign>,
+    theme_line_styles: &[ThemeLineStyle],
 ) -> DrawingTextBoxInfo {
     let (width_pt, height_pt) = builder.box_size_pt();
-    let (stroke, fill) = builder.text_box_frame();
+    let (stroke, fill) = builder.text_box_frame(theme_line_styles);
     DrawingTextBoxInfo {
         width_pt,
         height_pt,

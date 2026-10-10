@@ -104,7 +104,8 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
     let (header_relationships, footer_relationships) = scan_header_footer_relationships(&rels_xml);
     // A header part declares no theme of its own, so its anchored shapes'
     // `<a:schemeClr>` fills borrow the document's (issue #961).
-    let theme_colors: HashMap<String, Color> = read_zip_text(archive, "word/theme/theme1.xml")
+    let theme_xml: Option<String> = read_zip_text(archive, "word/theme/theme1.xml");
+    let theme_colors: HashMap<String, Color> = theme_xml
         .as_deref()
         .map(crate::parser::drawingml::parse_theme_color_scheme)
         .unwrap_or_default();
@@ -127,6 +128,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
             styles.paragraph_property_defaults_are_declared,
             styles.theme_fonts.clone(),
+            theme_xml.as_deref(),
         );
         let hyperlinks: HashMap<String, String> = HashMap::new();
         if let Some(converted) = convert_docx_header_with_context(
@@ -159,6 +161,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
             styles.paragraph_property_defaults_are_declared,
             styles.theme_fonts.clone(),
+            theme_xml.as_deref(),
         );
         let hyperlinks: HashMap<String, String> = HashMap::new();
         if let Some(converted) = convert_docx_footer_with_context(
@@ -641,6 +644,7 @@ fn convert_docx_header(
         styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
         styles.paragraph_property_defaults_are_declared,
         styles.theme_fonts.clone(),
+        None,
     );
     let hyperlinks: HashMap<String, String> = HashMap::new();
     convert_docx_header_with_context(
@@ -734,6 +738,7 @@ fn convert_docx_footer(
         styles.style_map.contains_key(DOC_DEFAULT_STYLE_ID),
         styles.paragraph_property_defaults_are_declared,
         styles.theme_fonts.clone(),
+        None,
     );
     let hyperlinks: HashMap<String, String> = HashMap::new();
     convert_docx_footer_with_context(

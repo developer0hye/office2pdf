@@ -1,5 +1,5 @@
 use super::*;
-use crate::ir::{ArrowHead, ShapeKind};
+use crate::ir::{ArrowHead, LineCap, LineJoin, ShapeKind};
 
 /// A document.xml body wrapper around `inner` run/drawing markup.
 fn body(inner: &str) -> String {
@@ -123,6 +123,97 @@ fn scans_line_with_tail_arrowhead() {
         (stroke.color.r, stroke.color.g, stroke.color.b),
         (0x34, 0x65, 0xa4)
     );
+}
+
+#[test]
+fn shape_outline_keeps_explicit_drawingml_cap_and_join() {
+    let drawing: String = RECT_DRAWING
+        .replace("<a:ln w=\"0\">", "<a:ln w=\"0\" cap=\"sq\"><a:bevel/>")
+        .replace(
+            "</wps:spPr>",
+            "</wps:spPr><wps:style><a:lnRef idx=\"1\"/></wps:style>",
+        );
+    let xml: String = body(&drawing);
+    let theme: &str = r#"<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:fmtScheme><a:lnStyleLst><a:ln cap="rnd"><a:miter/></a:ln></a:lnStyleLst></a:fmtScheme></a:theme>"#;
+    let context: DrawingShapeContext =
+        DrawingShapeContext::from_xml_with_theme(Some(&xml), Some(theme));
+    let shape: FloatingShape = context.consume_next().expect("styled shape is kept");
+    let stroke = shape
+        .shape
+        .stroke
+        .as_ref()
+        .expect("rectangle has an outline");
+
+    assert_eq!(stroke.cap, LineCap::Square);
+    assert_eq!(stroke.join, LineJoin::Bevel);
+}
+
+#[test]
+fn shape_outline_inherits_cap_and_join_from_its_theme_line_reference() {
+    let drawing: String = RECT_DRAWING.replace(
+        "</wps:spPr>",
+        "</wps:spPr><wps:style><a:lnRef idx=\"1\"><a:schemeClr val=\"accent1\"/></a:lnRef></wps:style>",
+    );
+    let xml: String = body(&drawing);
+    let theme: &str = r#"<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:fmtScheme><a:lnStyleLst><a:ln cap="rnd"><a:miter/></a:ln></a:lnStyleLst></a:fmtScheme></a:theme>"#;
+    let context: DrawingShapeContext =
+        DrawingShapeContext::from_xml_with_theme(Some(&xml), Some(theme));
+    let shape: FloatingShape = context.consume_next().expect("theme-styled shape is kept");
+    let stroke = shape.shape.stroke.as_ref().expect("shape has an outline");
+
+    assert_eq!(stroke.cap, LineCap::Round);
+    assert_eq!(stroke.join, LineJoin::Miter);
+}
+
+#[test]
+fn cap_inheritance_does_not_introduce_an_outline_from_a_style_reference() {
+    let borderless: String = RECT_DRAWING.replace(
+        "<a:ln w=\"0\"><a:solidFill><a:srgbClr val=\"3465a4\"/></a:solidFill></a:ln>",
+        "",
+    );
+    let theme: &str = r#"<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:fmtScheme><a:lnStyleLst><a:ln w="38100" cap="rnd"><a:miter/></a:ln></a:lnStyleLst></a:fmtScheme></a:theme>"#;
+    for reference in [
+        r#"<a:lnRef idx="1"/>"#,
+        r#"<a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef>"#,
+        r#"<a:lnRef idx="99"/>"#,
+    ] {
+        let drawing: String = borderless.replace(
+            "</wps:spPr>",
+            &format!("</wps:spPr><wps:style>{reference}</wps:style>"),
+        );
+        let xml: String = body(&drawing);
+        for theme_xml in [None, Some(theme)] {
+            let context: DrawingShapeContext =
+                DrawingShapeContext::from_xml_with_theme(Some(&xml), theme_xml);
+            let shape: FloatingShape = context.consume_next().expect("filled shape is kept");
+            assert!(
+                shape.shape.stroke.is_none(),
+                "unexpected outline: {reference}"
+            );
+        }
+    }
+}
+
+#[test]
+fn text_box_frame_inherits_cap_and_join_from_its_theme_line_reference() {
+    let drawing: String = TEXTBOX_DRAWING
+        .replace(
+            "<a:ln w=\"0\"><a:noFill/></a:ln>",
+            "<a:ln w=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill></a:ln>",
+        )
+        .replace(
+            "</wps:spPr>",
+            "</wps:spPr><wps:style><a:lnRef idx=\"1\"/></wps:style>",
+        );
+    let xml: String = body(&drawing);
+    let theme: &str = r#"<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:fmtScheme><a:lnStyleLst><a:ln cap="rnd"><a:miter/></a:ln></a:lnStyleLst></a:fmtScheme></a:theme>"#;
+    let context: super::super::drawing::DrawingTextBoxContext =
+        super::super::drawing::DrawingTextBoxContext::from_xml_with_theme(Some(&xml), Some(theme));
+    let text_box = context.consume_next();
+    let stroke = text_box.stroke.as_ref().expect("text box has an outline");
+
+    assert_eq!(stroke.cap, LineCap::Round);
+    assert_eq!(stroke.join, LineJoin::Miter);
 }
 
 #[test]

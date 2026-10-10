@@ -37,14 +37,14 @@ use self::slides::{PresentationResources, SlideParseContext, parse_single_slide,
 use self::tables::{parse_pptx_table, scale_pptx_table_columns_to_frame};
 use self::text::*;
 use self::theme::{
-    ColorMapData, ParsedColor, PptxMasterTextStyles, ThemeData, ThemeLineStyle, default_color_map,
-    drawingml_line_join, parse_background_color, parse_background_gradient,
-    parse_background_image_rid, parse_background_ref, parse_color_from_empty,
-    parse_color_from_start, parse_effect_list, parse_master_color_map, parse_master_text_styles,
-    parse_shape_gradient_fill, parse_shape_pattern_fill, parse_theme_xml, resolve_effect_ref,
-    resolve_effect_ref_top_bevel, resolve_effective_color_map, resolve_fill_ref,
-    resolve_scheme_color, resolve_theme_font,
+    ColorMapData, ParsedColor, PptxMasterTextStyles, ThemeData, default_color_map,
+    parse_background_color, parse_background_gradient, parse_background_image_rid,
+    parse_background_ref, parse_color_from_empty, parse_color_from_start, parse_effect_list,
+    parse_master_color_map, parse_master_text_styles, parse_shape_gradient_fill,
+    parse_shape_pattern_fill, parse_theme_xml, resolve_effect_ref, resolve_effect_ref_top_bevel,
+    resolve_effective_color_map, resolve_fill_ref, resolve_scheme_color, resolve_theme_font,
 };
+pub(super) use self::theme::{ThemeLineStyle, drawingml_line_join, parse_theme_line_styles};
 
 #[path = "pptx_custom_geometry.rs"]
 pub(crate) mod custom_geometry;

@@ -288,18 +288,18 @@ pub(super) fn parse_theme_xml(xml: &str) -> ThemeData {
 
 /// One `<a:ln>` of the theme `<a:lnStyleLst>`, as far as `<a:lnRef>` needs it.
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub(super) struct ThemeLineStyle {
+pub(crate) struct ThemeLineStyle {
     /// The `w` attribute in EMU; 0 when absent.
-    pub(super) width_emu: i64,
+    pub(crate) width_emu: i64,
     /// The stated corner join, or `None` when the entry names none of
     /// `a:round`, `a:bevel` and `a:miter` (issue #1090).
-    pub(super) join: Option<LineJoin>,
+    pub(crate) join: Option<LineJoin>,
     /// The stated end geometry, or `None` when the entry declares no `cap`.
     ///
     /// PowerPoint's stock themes write `cap="flat"` here, but some state `rnd`,
     /// and a shape taking such an entry through `<a:lnRef idx>` rounds its ends
     /// without naming a cap of its own (issue #1682).
-    pub(super) cap: Option<LineCap>,
+    pub(crate) cap: Option<LineCap>,
 }
 
 /// Extract each `<a:ln>` inside the theme `<a:lnStyleLst>`.
@@ -361,8 +361,13 @@ fn extract_line_styles(xml: &str) -> Vec<ThemeLineStyle> {
     styles
 }
 
+/// Parse the theme line matrix for DrawingML shapes outside PowerPoint slides.
+pub(crate) fn parse_theme_line_styles(xml: &str) -> Vec<ThemeLineStyle> {
+    extract_line_styles(xml)
+}
+
 /// Map an `a:ln` child element name to the corner join it selects.
-pub(super) fn drawingml_line_join(local_name: &[u8]) -> Option<LineJoin> {
+pub(crate) fn drawingml_line_join(local_name: &[u8]) -> Option<LineJoin> {
     match local_name {
         b"round" => Some(LineJoin::Round),
         b"bevel" => Some(LineJoin::Bevel),

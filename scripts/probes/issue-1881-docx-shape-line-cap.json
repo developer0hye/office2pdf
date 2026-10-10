@@ -1,0 +1,27 @@
+{
+  "name": "issue-1881-docx-shape-line-cap",
+  "base": "../../tests/fixtures/docx/issue-1881-line-cap.docx",
+  "part": "word/document.xml",
+  "factor": "a:ln/@cap on a 12pt open line",
+  "page": 1,
+  "variants": [
+    {
+      "value": "flat",
+      "find": "<a:ln w=\"152400\" cap=\"flat\">",
+      "replace": "<a:ln w=\"152400\" cap=\"flat\">",
+      "count": 1
+    },
+    {
+      "value": "rnd",
+      "find": "<a:ln w=\"152400\" cap=\"flat\">",
+      "replace": "<a:ln w=\"152400\" cap=\"rnd\">",
+      "count": 1
+    },
+    {
+      "value": "sq",
+      "find": "<a:ln w=\"152400\" cap=\"flat\">",
+      "replace": "<a:ln w=\"152400\" cap=\"sq\">",
+      "count": 1
+    }
+  ]
+}

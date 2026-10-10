@@ -39,7 +39,8 @@ pub(super) fn extract_charts_with_anchors(data: &[u8]) -> HashMap<String, Vec<Ra
     // not from the renderer's built-in palette (issue #670).
     // The same part settles chart text's face: a chart naming no `a:latin`
     // takes the theme's minor font rather than the engine's default (#668).
-    let (theme_colors, theme_fonts) = workbook_theme(&mut archive, &workbook_rels_xml);
+    let (theme_colors, theme_fonts, theme_line_styles) =
+        workbook_theme(&mut archive, &workbook_rels_xml);
     let theme_accents: Vec<crate::ir::Color> =
         crate::parser::drawingml::theme_accent_palette(&theme_colors);
     // A series that names its fill through `<a:schemeClr>` resolves it against
@@ -115,6 +116,7 @@ pub(super) fn extract_charts_with_anchors(data: &[u8]) -> HashMap<String, Vec<Ra
                         &chart_xml,
                         &drawing_scheme,
                         &theme_fonts,
+                        &theme_line_styles,
                     );
                     result
                         .entry(sheet_name.clone())
@@ -178,6 +180,7 @@ pub(super) fn extract_charts_with_anchors(data: &[u8]) -> HashMap<String, Vec<Ra
                     &chart_xml,
                     &drawing_scheme,
                     &theme_fonts,
+                    &theme_line_styles,
                 );
                 result
                     .entry(first_sheet.clone())
@@ -967,7 +970,8 @@ pub(super) fn extract_text_boxes_with_anchors(
     let sheet_rids = parse_workbook_sheet_rids(&workbook_xml);
     let workbook_rels_xml = read_zip_entry_string(&mut archive, "xl/_rels/workbook.xml.rels");
     let rid_to_target = parse_rels_targets(&workbook_rels_xml);
-    let (theme_colors, theme_fonts) = workbook_theme(&mut archive, &workbook_rels_xml);
+    let (theme_colors, theme_fonts, theme_line_styles) =
+        workbook_theme(&mut archive, &workbook_rels_xml);
 
     let mut result: HashMap<String, Vec<RawTextBoxAnchor>> = HashMap::new();
 
@@ -988,7 +992,12 @@ pub(super) fn extract_text_boxes_with_anchors(
             if drawing_xml.is_empty() {
                 continue;
             }
-            let boxes = parse_drawing_text_boxes(&drawing_xml, &theme_colors, &theme_fonts);
+            let boxes = parse_drawing_text_boxes_with_theme_lines(
+                &drawing_xml,
+                &theme_colors,
+                &theme_fonts,
+                &theme_line_styles,
+            );
             if !boxes.is_empty() {
                 result.entry(sheet_name.clone()).or_default().extend(boxes);
             }
@@ -1072,10 +1081,20 @@ pub(in crate::parser) fn apply_run_properties(
 /// Parse `<xdr:sp>` text boxes from a worksheet drawing, resolving scheme
 /// colors against the workbook theme palette and run typefaces against its
 /// font scheme.
+#[cfg(test)]
 pub(super) fn parse_drawing_text_boxes(
     xml: &str,
     theme_colors: &HashMap<String, crate::ir::Color>,
     theme_fonts: &ThemeFontScheme,
+) -> Vec<RawTextBoxAnchor> {
+    parse_drawing_text_boxes_with_theme_lines(xml, theme_colors, theme_fonts, &[])
+}
+
+fn parse_drawing_text_boxes_with_theme_lines(
+    xml: &str,
+    theme_colors: &HashMap<String, crate::ir::Color>,
+    theme_fonts: &ThemeFontScheme,
+    theme_line_styles: &[crate::parser::pptx::ThemeLineStyle],
 ) -> Vec<RawTextBoxAnchor> {
     use crate::ir::{
         Alignment, BorderLineStyle, BorderSide, LineJoin, Paragraph, ParagraphStyle, Run, TextStyle,
@@ -1118,6 +1137,9 @@ pub(super) fn parse_drawing_text_boxes(
     let mut fill: Option<crate::ir::Color> = None;
     let mut border_color: Option<crate::ir::Color> = None;
     let mut border_width: f64 = 0.75;
+    let mut border_cap: Option<LineCap> = None;
+    let mut border_join: Option<LineJoin> = None;
+    let mut line_reference_index: Option<usize> = None;
     let mut vertical_center = false;
     loop {
         match reader.read_event() {
@@ -1134,6 +1156,9 @@ pub(super) fn parse_drawing_text_boxes(
                         fill = None;
                         border_color = None;
                         border_width = 0.75;
+                        border_cap = None;
+                        border_join = None;
+                        line_reference_index = None;
                         vertical_center = false;
                     }
                     b"from" if in_anchor => corner_target = Some(true),
@@ -1150,6 +1175,7 @@ pub(super) fn parse_drawing_text_boxes(
                     b"solidFill" if in_sp && !in_tx_body && !in_line => in_sp_fill = true,
                     b"ln" if in_sp && !in_tx_body => {
                         in_line = true;
+                        border_cap = drawingml::line_cap(e).or(border_cap);
                         for attr in e.attributes().flatten() {
                             if attr.key.local_name().as_ref() == b"w"
                                 && let Ok(v) = attr.normalized_value(OOXML_XML_VERSION)
@@ -1158,6 +1184,15 @@ pub(super) fn parse_drawing_text_boxes(
                                 border_width = w / 12_700.0;
                             }
                         }
+                    }
+                    b"lnRef" if in_sp && !in_tx_body => {
+                        line_reference_index = xml_util::get_attr_str(e, b"idx")
+                            .and_then(|value| value.parse::<usize>().ok())
+                            .filter(|index| *index > 0);
+                    }
+                    b"round" | b"bevel" | b"miter" if in_line => {
+                        border_join = crate::parser::pptx::drawingml_line_join(local.as_ref())
+                            .or(border_join);
                     }
                     b"p" if in_tx_body => {
                         current_para = Some(Paragraph {
@@ -1221,6 +1256,23 @@ pub(super) fn parse_drawing_text_boxes(
                         }
                     }
                     b"rPr" if in_run => apply_run_properties(&mut current_style, e),
+                    b"ln" if in_sp && !in_tx_body => {
+                        border_cap = drawingml::line_cap(e).or(border_cap);
+                        if let Some(width) = xml_util::get_attr_str(e, b"w")
+                            && let Ok(emu) = width.parse::<f64>()
+                        {
+                            border_width = emu / 12_700.0;
+                        }
+                    }
+                    b"lnRef" if in_sp && !in_tx_body => {
+                        line_reference_index = xml_util::get_attr_str(e, b"idx")
+                            .and_then(|value| value.parse::<usize>().ok())
+                            .filter(|index| *index > 0);
+                    }
+                    b"round" | b"bevel" | b"miter" if in_line => {
+                        border_join = crate::parser::pptx::drawingml_line_join(local.as_ref())
+                            .or(border_join);
+                    }
                     b"pPr" if current_para.is_some() => {
                         for attr in e.attributes().flatten() {
                             if attr.key.local_name().as_ref() == b"algn"
@@ -1328,8 +1380,22 @@ pub(super) fn parse_drawing_text_boxes(
                                     width: border_width,
                                     color,
                                     style: BorderLineStyle::Solid,
-                                    join: LineJoin::Round,
-                                    cap: LineCap::Flat,
+                                    join: border_join
+                                        .or_else(|| {
+                                            line_reference_index
+                                                .and_then(|index| index.checked_sub(1))
+                                                .and_then(|index| theme_line_styles.get(index))
+                                                .and_then(|style| style.join)
+                                        })
+                                        .unwrap_or(LineJoin::Round),
+                                    cap: border_cap
+                                        .or_else(|| {
+                                            line_reference_index
+                                                .and_then(|index| index.checked_sub(1))
+                                                .and_then(|index| theme_line_styles.get(index))
+                                                .and_then(|style| style.cap)
+                                        })
+                                        .unwrap_or(LineCap::Flat),
                                 }),
                                 vertical_center,
                             });
@@ -1387,7 +1453,8 @@ pub(super) fn extract_line_shapes_with_anchors(data: &[u8]) -> HashMap<String, V
     let sheet_rids = parse_workbook_sheet_rids(&workbook_xml);
     let workbook_rels_xml = read_zip_entry_string(&mut archive, "xl/_rels/workbook.xml.rels");
     let rid_to_target = parse_rels_targets(&workbook_rels_xml);
-    let (theme_colors, _theme_fonts) = workbook_theme(&mut archive, &workbook_rels_xml);
+    let (theme_colors, _theme_fonts, theme_line_styles) =
+        workbook_theme(&mut archive, &workbook_rels_xml);
 
     let mut result: HashMap<String, Vec<RawLineAnchor>> = HashMap::new();
 
@@ -1408,7 +1475,11 @@ pub(super) fn extract_line_shapes_with_anchors(data: &[u8]) -> HashMap<String, V
             if drawing_xml.is_empty() {
                 continue;
             }
-            let lines = parse_drawing_line_shapes(&drawing_xml, &theme_colors);
+            let lines = parse_drawing_line_shapes_with_theme_lines(
+                &drawing_xml,
+                &theme_colors,
+                &theme_line_styles,
+            );
             if !lines.is_empty() {
                 result.entry(sheet_name.clone()).or_default().extend(lines);
             }
@@ -1432,9 +1503,18 @@ fn is_line_preset(preset: &str) -> bool {
 /// and a shape with no colour at all draw nothing. Excel prints the budget
 /// workbook's two `a:ln w="12700"` "Chart border" connectors as 0.78pt
 /// #D9D9D9 lines on its fitted page (issue #1566).
+#[cfg(test)]
 pub(super) fn parse_drawing_line_shapes(
     xml: &str,
     theme_colors: &HashMap<String, crate::ir::Color>,
+) -> Vec<RawLineAnchor> {
+    parse_drawing_line_shapes_with_theme_lines(xml, theme_colors, &[])
+}
+
+fn parse_drawing_line_shapes_with_theme_lines(
+    xml: &str,
+    theme_colors: &HashMap<String, crate::ir::Color>,
+    theme_line_styles: &[crate::parser::pptx::ThemeLineStyle],
 ) -> Vec<RawLineAnchor> {
     use crate::ir::{BorderLineStyle, BorderSide, LineJoin};
     use crate::parser::drawingml::{self, SchemeColors};
@@ -1467,6 +1547,9 @@ pub(super) fn parse_drawing_line_shapes(
         color: Option<crate::ir::Color>,
         /// The `xdr:style`/`a:lnRef` colour, used when `a:ln` names none.
         style_color: Option<crate::ir::Color>,
+        cap: Option<LineCap>,
+        join: Option<LineJoin>,
+        line_reference_index: Option<usize>,
         has_no_fill: bool,
     }
 
@@ -1480,6 +1563,9 @@ pub(super) fn parse_drawing_line_shapes(
                 width_pt: DEFAULT_LINE_WIDTH_PT,
                 color: None,
                 style_color: None,
+                cap: None,
+                join: None,
+                line_reference_index: None,
                 has_no_fill: false,
             }
         }
@@ -1541,13 +1627,23 @@ pub(super) fn parse_drawing_line_shapes(
                     }
                     b"ln" if in_shape_properties => {
                         in_line = true;
+                        pending.cap = drawingml::line_cap(e).or(pending.cap);
                         if let Some(width) = xml_util::get_attr_str(e, b"w")
                             && let Ok(emu) = width.parse::<f64>()
                         {
                             pending.width_pt = emu / 12_700.0;
                         }
                     }
-                    b"lnRef" if in_shape && !in_shape_properties => in_style_line_ref = true,
+                    b"lnRef" if in_shape && !in_shape_properties => {
+                        in_style_line_ref = true;
+                        pending.line_reference_index = xml_util::get_attr_str(e, b"idx")
+                            .and_then(|value| value.parse::<usize>().ok())
+                            .filter(|index| *index > 0);
+                    }
+                    b"round" | b"bevel" | b"miter" if in_line => {
+                        pending.join = crate::parser::pptx::drawingml_line_join(local.as_ref())
+                            .or(pending.join);
+                    }
                     b"srgbClr" | b"schemeClr" | b"sysClr" if in_line || in_style_line_ref => {
                         let parsed =
                             drawingml::parse_color_from_start(&mut reader, e, &scheme).color;
@@ -1585,6 +1681,16 @@ pub(super) fn parse_drawing_line_shapes(
                         {
                             pending.width_pt = emu / 12_700.0;
                         }
+                        pending.cap = drawingml::line_cap(e).or(pending.cap);
+                    }
+                    b"lnRef" if in_shape && !in_shape_properties => {
+                        pending.line_reference_index = xml_util::get_attr_str(e, b"idx")
+                            .and_then(|value| value.parse::<usize>().ok())
+                            .filter(|index| *index > 0);
+                    }
+                    b"round" | b"bevel" | b"miter" if in_line => {
+                        pending.join = crate::parser::pptx::drawingml_line_join(local.as_ref())
+                            .or(pending.join);
                     }
                     b"noFill" if in_line => pending.has_no_fill = true,
                     b"srgbClr" | b"schemeClr" | b"sysClr" if in_line || in_style_line_ref => {
@@ -1664,8 +1770,26 @@ pub(super) fn parse_drawing_line_shapes(
                                     width: pending.width_pt,
                                     color,
                                     style: BorderLineStyle::Solid,
-                                    join: LineJoin::Round,
-                                    cap: LineCap::Flat,
+                                    join: pending
+                                        .join
+                                        .or_else(|| {
+                                            pending
+                                                .line_reference_index
+                                                .and_then(|index| index.checked_sub(1))
+                                                .and_then(|index| theme_line_styles.get(index))
+                                                .and_then(|style| style.join)
+                                        })
+                                        .unwrap_or(LineJoin::Round),
+                                    cap: pending
+                                        .cap
+                                        .or_else(|| {
+                                            pending
+                                                .line_reference_index
+                                                .and_then(|index| index.checked_sub(1))
+                                                .and_then(|index| theme_line_styles.get(index))
+                                                .and_then(|style| style.cap)
+                                        })
+                                        .unwrap_or(LineCap::Flat),
                                 },
                                 flip_h: pending.flip_h,
                                 flip_v: pending.flip_v,
@@ -1700,15 +1824,22 @@ pub(super) fn parse_drawing_line_shapes(
 fn workbook_theme(
     archive: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>,
     workbook_rels_xml: &str,
-) -> (HashMap<String, crate::ir::Color>, ThemeFontScheme) {
+) -> (
+    HashMap<String, crate::ir::Color>,
+    ThemeFontScheme,
+    Vec<crate::parser::pptx::ThemeLineStyle>,
+) {
     let theme_path = parse_rels_by_type(workbook_rels_xml, "theme")
         .first()
         .map(|target| resolve_relative_xl_path("xl", target))
         .unwrap_or_else(|| "xl/theme/theme1.xml".to_string());
     let theme_xml = read_zip_entry_string(archive, &theme_path);
+    let line_styles: Vec<crate::parser::pptx::ThemeLineStyle> =
+        crate::parser::pptx::parse_theme_line_styles(&theme_xml);
     (
         crate::parser::drawingml::parse_theme_color_scheme(&theme_xml),
         crate::parser::drawingml::parse_theme_font_scheme(&theme_xml),
+        line_styles,
     )
 }
 

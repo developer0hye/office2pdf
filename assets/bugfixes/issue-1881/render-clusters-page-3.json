@@ -1,0 +1,55 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 1952.8704,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 156.48,
+        "x": 137.76,
+        "y": 137.76
+      },
+      "disposition": {
+        "issue": "#2066",
+        "kind": "issue",
+        "note": "Fresh full-page and matched line crops show the native and output line silhouettes separated vertically by 12.64893pt. Same x, width, 12pt stroke and flat/round/square endpoint shape. The displacement is present before the cap fix."
+      },
+      "id": "p3-0f17cde05120",
+      "region": "top"
+    },
+    {
+      "area_pt2": 1872.0,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 156.0,
+        "x": 138.24,
+        "y": 150.72
+      },
+      "disposition": {
+        "issue": "#2066",
+        "kind": "issue",
+        "note": "Fresh full-page and matched line crops show the native and output line silhouettes separated vertically by 12.64893pt. Same x, width, 12pt stroke and flat/round/square endpoint shape. The displacement is present before the cap fix."
+      },
+      "id": "p3-50ae30d372fb",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 3,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 2,
+    "duplicate": 0,
+    "total": 2,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

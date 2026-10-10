@@ -105,14 +105,15 @@ impl DocxConversionContext {
         default_paragraph_style_is_defined: bool,
         paragraph_property_defaults_are_declared: bool,
         theme_fonts: ThemeFonts,
+        theme_xml: Option<&str>,
     ) -> Self {
         let story_xml: Option<&str> = Some(story_xml);
         Self {
             theme_fonts,
             notes: NoteContext::empty(),
             wraps: build_wrap_context_from_xml(story_xml),
-            drawing_text_boxes: DrawingTextBoxContext::from_xml(story_xml),
-            drawing_shapes: DrawingShapeContext::from_xml(story_xml),
+            drawing_text_boxes: DrawingTextBoxContext::from_xml_with_theme(story_xml, theme_xml),
+            drawing_shapes: DrawingShapeContext::from_xml_with_theme(story_xml, theme_xml),
             table_headers: TableHeaderContext::from_xml(story_xml),
             table_styles: TableStyleContext::from_xml(story_xml, styles_xml),
             vml_text_boxes: VmlTextBoxContext::from_xml(story_xml),

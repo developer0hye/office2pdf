@@ -61,6 +61,10 @@ pub(in super::super) fn build_chart_context_from_xml(
         .as_deref()
         .map(crate::parser::drawingml::parse_theme_font_scheme)
         .unwrap_or_default();
+    let theme_line_styles: Vec<crate::parser::pptx::ThemeLineStyle> = theme_xml
+        .as_deref()
+        .map(crate::parser::pptx::parse_theme_line_styles)
+        .unwrap_or_default();
 
     for (body_index, relationship_id) in chart_references {
         if let Some(chart_path) = chart_relationships.get(&relationship_id)
@@ -80,6 +84,7 @@ pub(in super::super) fn build_chart_context_from_xml(
                 &chart_xml,
                 &scheme,
                 &theme_fonts,
+                &theme_line_styles,
             );
             charts.entry(body_index).or_default().push(chart);
         }
