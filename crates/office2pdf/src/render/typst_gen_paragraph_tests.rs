@@ -682,10 +682,8 @@ fn test_punctuation_never_hangs_regardless_of_alignment() {
     );
 }
 
-/// Typst hyphenates every justified paragraph by default. Word, Excel and
-/// PowerPoint hyphenate nothing unless the document turns it on, so a
-/// justified paragraph broke its lines at different points than Word did and
-/// page breaks could move with them.
+/// Every page format must override the backend's automatic hyphenation
+/// policy before generating any content, including headers and text boxes.
 #[test]
 fn test_hyphenation_is_off_for_every_format_by_default() {
     let flow = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
@@ -729,8 +727,7 @@ fn test_hyphenation_is_off_for_every_format_by_default() {
     }
 }
 
-/// A Word document that declares `w:autoHyphenation` asks for hyphenation in
-/// every paragraph, ragged or justified.
+/// The parsed document setting must enable the renderer's hyphenation rule.
 #[test]
 fn test_document_auto_hyphenation_turns_hyphenation_on() {
     let mut doc = make_doc(vec![make_flow_page(vec![make_paragraph(

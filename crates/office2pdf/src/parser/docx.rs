@@ -682,25 +682,64 @@ fn extract_auto_hyphenation(data: &[u8]) -> bool {
     let Some(settings_xml) = read_zip_text(&mut archive, "word/settings.xml") else {
         return false;
     };
-    const ELEMENT: &str = "<w:autoHyphenation";
-    settings_xml
-        .match_indices(ELEMENT)
-        .find_map(|(start, _)| {
-            let rest: &str = &settings_xml[start + ELEMENT.len()..];
-            // The tag name must end here, not continue into a longer name.
-            let is_whole_name: bool =
-                rest.starts_with(|ch: char| ch.is_ascii_whitespace() || ch == '/' || ch == '>');
-            is_whole_name.then(|| &rest[..rest.find('>').unwrap_or(rest.len())])
-        })
-        .is_some_and(|attributes: &str| {
-            // `w:val` is an ST_OnOff; an absent value means on.
-            let Some(value_start) = attributes.find(r#"w:val=""#) else {
-                return true;
-            };
-            let value: &str = &attributes[value_start + r#"w:val=""#.len()..];
-            let value: &str = &value[..value.find('"').unwrap_or(value.len())];
-            !matches!(value, "0" | "false" | "off")
-        })
+    use quick_xml::events::Event;
+    use quick_xml::name::ResolveResult;
+
+    let is_word_namespace = |namespace: ResolveResult<'_>| {
+        matches!(namespace, ResolveResult::Bound(namespace) if matches!(
+            namespace.as_ref(),
+            b"http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                | b"http://purl.oclc.org/ooxml/wordprocessingml/main"
+        ))
+    };
+    let mut reader = quick_xml::reader::NsReader::from_str(&settings_xml);
+    let mut depth: usize = 0;
+    loop {
+        match reader.read_event() {
+            Ok(event @ (Event::Start(_) | Event::Empty(_))) => {
+                let has_children: bool = matches!(event, Event::Start(_));
+                let (Event::Start(element) | Event::Empty(element)) = event else {
+                    unreachable!("matched above");
+                };
+                let (namespace, name) = reader.resolver().resolve_element(element.name());
+                let is_word_element: bool = is_word_namespace(namespace);
+                if depth == 0 && (!is_word_element || name.as_ref() != b"settings") {
+                    return false;
+                }
+                // A setting is a direct child, never text in a comment or
+                // an identically named element in an extension subtree.
+                if depth == 1 && is_word_element && name.as_ref() == b"autoHyphenation" {
+                    let value = element.attributes().flatten().find_map(|attribute| {
+                        let (namespace, name) = reader.resolver().resolve_attribute(attribute.key);
+                        (is_word_namespace(namespace) && name.as_ref() == b"val")
+                            .then(|| {
+                                attribute
+                                    .normalized_value(OOXML_XML_VERSION)
+                                    .ok()
+                                    .map(|value| value.into_owned())
+                            })
+                            .flatten()
+                    });
+                    let enabled: bool = value
+                        .as_deref()
+                        .is_none_or(|value| matches!(value, "1" | "true" | "on"));
+                    tracing::debug!(enabled, "Read DOCX automatic hyphenation setting");
+                    return enabled;
+                }
+                if has_children {
+                    depth += 1;
+                }
+            }
+            Ok(Event::End(_)) => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    return false;
+                }
+            }
+            Ok(Event::Eof) | Err(_) => return false,
+            _ => {}
+        }
+    }
 }
 
 fn declared_compatibility_mode(data: &[u8]) -> Option<u32> {

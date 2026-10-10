@@ -51,10 +51,8 @@ pub struct StyleSheet {
     /// a format that has no such setting — a presentation or a workbook —
     /// which leaves the modern justification in place for both.
     pub word_compatibility_mode: Option<WordCompatibilityMode>,
-    /// Whether the document turns automatic hyphenation on (Word's
-    /// `w:autoHyphenation` in `word/settings.xml`). Word, Excel and
-    /// PowerPoint hyphenate nothing otherwise, so `false` is also the answer
-    /// for a presentation or a workbook.
+    /// Whether conversion enables automatic hyphenation, read from DOCX
+    /// `w:autoHyphenation`. PPTX and XLSX leave this disabled.
     pub hyphenates_automatically: bool,
 }
 

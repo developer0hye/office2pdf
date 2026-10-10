@@ -344,13 +344,17 @@ fn hyphenated_line_ends(pdf: &[u8]) -> Vec<String> {
 /// `w:autoHyphenation`, so a justified paragraph has to wrap whole words.
 #[test]
 fn test_justified_docx_paragraph_is_not_hyphenated() {
-    let data = build_narrow_justified_docx("");
-    let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
-    let hyphenated: Vec<String> = hyphenated_line_ends(&result.pdf);
-    assert!(
-        hyphenated.is_empty(),
-        "no line may end in a hyphenation point: {hyphenated:?}"
-    );
+    let generated = build_narrow_justified_docx("");
+    let native_audit_fixture: &[u8] =
+        include_bytes!("../../../tests/fixtures/docx/issue-2052-default-hyphenation.docx");
+    for data in [generated.as_slice(), native_audit_fixture] {
+        let result = convert_bytes(data, Format::Docx, &ConvertOptions::default()).unwrap();
+        let hyphenated: Vec<String> = hyphenated_line_ends(&result.pdf);
+        assert!(
+            hyphenated.is_empty(),
+            "no line may end in a hyphenation point: {hyphenated:?}"
+        );
+    }
 }
 
 /// Triangulation: the same paragraph in a document that turns automatic

@@ -5252,12 +5252,11 @@ fn write_page_format_state(out: &mut String) {
 
 /// State whether words may be hyphenated at a line end.
 ///
-/// Typst's `hyphenate: auto` hyphenates every justified paragraph. Word,
-/// Excel and PowerPoint hyphenate nothing unless the document turns it on, so
-/// a justified paragraph wrapped at different points than Word's and the page
-/// breaks after it could move. Only a Word document can turn it on
-/// (`w:autoHyphenation`), and Word then hyphenates ragged paragraphs as well
-/// as justified ones, which is `true` rather than `auto`.
+/// An explicit rule prevents Typst's automatic justification policy from
+/// introducing hyphens when the source enables no hyphenation. The native
+/// Word fixture in issue #2052 demonstrates that default mismatch. The DOCX
+/// parser can enable the rule through `w:autoHyphenation`; the other parsers
+/// leave it disabled.
 ///
 /// Set once for the document so header and footer bands, table cells and
 /// slide text boxes are all covered.

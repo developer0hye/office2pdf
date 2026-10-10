@@ -1842,6 +1842,39 @@ fn test_auto_hyphenation_switched_off_reads_as_off() {
     }
 }
 
+#[test]
+fn test_auto_hyphenation_uses_xml_values_and_settings_scope() {
+    let base = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Quarterly report")),
+    ]);
+    for (setting, expected) in [
+        (r#"<w:autoHyphenation w:val='false'/>"#, false),
+        (r#"<w:autoHyphenation w:val = "off"/>"#, false),
+        (r#"<w:autoHyphenation w:val="&#48;"/>"#, false),
+        (r#"<!-- <w:autoHyphenation/> -->"#, false),
+        (r#"<w:compat><w:autoHyphenation/></w:compat>"#, false),
+        (
+            r#"<other:autoHyphenation xmlns:other="urn:extension"/>"#,
+            false,
+        ),
+        (
+            r#"<x:autoHyphenation xmlns:x="http://schemas.openxmlformats.org/wordprocessingml/2006/main" x:val='on'/>"#,
+            true,
+        ),
+        (
+            r#"<x:autoHyphenation xmlns:x="http://schemas.openxmlformats.org/wordprocessingml/2006/main" x:val='0'/>"#,
+            false,
+        ),
+        (
+            r#"<w:autoHyphenation w:val='true'></w:autoHyphenation>"#,
+            true,
+        ),
+    ] {
+        let data = rewrite_settings_default_tab_stop(&base, setting);
+        assert_eq!(extract_auto_hyphenation(&data), expected, "{setting}");
+    }
+}
+
 /// Rewrites the `compatibilityMode` compatibility setting inside a DOCX's
 /// `word/settings.xml`, replacing the whole `w:compat` element with
 /// `replacement` (empty string removes it).
