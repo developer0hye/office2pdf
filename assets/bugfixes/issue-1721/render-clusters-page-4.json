@@ -1,0 +1,135 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 59.904,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 7.68,
+        "x": 167.52,
+        "y": 77.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh payroll title/header crops show internal glyph pacing and centered header anchors up to 0.758pt left of native, without changed text, wrap or baseline. These small geometry differences remain in #1874."
+      },
+      "id": "p4-6ba46ac9091b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.9136,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 7.2,
+        "x": 153.6,
+        "y": 77.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh payroll title/header crops show internal glyph pacing and centered header anchors up to 0.758pt left of native, without changed text, wrap or baseline. These small geometry differences remain in #1874."
+      },
+      "id": "p4-740e442ac95a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 50.2272,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.64,
+        "x": 463.2,
+        "y": 116.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh payroll title/header crops show internal glyph pacing and centered header anchors up to 0.758pt left of native, without changed text, wrap or baseline. These small geometry differences remain in #1874."
+      },
+      "id": "p4-0a4c19a0f850",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 46.08,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 9.6,
+        "x": 180.96,
+        "y": 77.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh payroll title/header crops show internal glyph pacing and centered header anchors up to 0.758pt left of native, without changed text, wrap or baseline. These small geometry differences remain in #1874."
+      },
+      "id": "p4-e5fdc75d0a18",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 3.36,
+        "x": 419.04,
+        "y": 116.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh payroll title/header crops show internal glyph pacing and centered header anchors up to 0.758pt left of native, without changed text, wrap or baseline. These small geometry differences remain in #1874."
+      },
+      "id": "p4-bd0daf229b50",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 3.36,
+        "x": 491.04,
+        "y": 116.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh payroll title/header crops show internal glyph pacing and centered header anchors up to 0.758pt left of native, without changed text, wrap or baseline. These small geometry differences remain in #1874."
+      },
+      "id": "p4-de37357b795f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 3.36,
+        "x": 162.72,
+        "y": 78.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh payroll title/header crops show internal glyph pacing and centered header anchors up to 0.758pt left of native, without changed text, wrap or baseline. These small geometry differences remain in #1874."
+      },
+      "id": "p4-0032e5dd3434",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 4,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 7,
+    "duplicate": 0,
+    "total": 7,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
