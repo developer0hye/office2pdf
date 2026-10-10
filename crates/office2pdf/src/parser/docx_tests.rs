@@ -1795,6 +1795,86 @@ fn test_absent_default_tab_stop_is_none() {
     assert_eq!(doc.styles.default_tab_stop_pt, None);
 }
 
+/// Word hyphenates only a document whose settings carry
+/// `w:autoHyphenation`; docx-rs writes none.
+#[test]
+fn test_auto_hyphenation_setting_is_read() {
+    let data = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("body")),
+    ]);
+    let data = rewrite_settings_default_tab_stop(
+        &data,
+        r#"<w:autoHyphenation/><w:defaultTabStop w:val="720"/>"#,
+    );
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert!(doc.styles.hyphenates_automatically);
+}
+
+#[test]
+fn test_absent_auto_hyphenation_reads_as_off() {
+    let data = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("body")),
+    ]);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert!(!doc.styles.hyphenates_automatically);
+}
+
+/// `w:val` is an ST_OnOff; Word writes the element with an explicit off value
+/// after the option has been switched on and off again.
+#[test]
+fn test_auto_hyphenation_switched_off_reads_as_off() {
+    for value in ["false", "0", "off"] {
+        let data = build_docx_bytes(vec![
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("body")),
+        ]);
+        let data = rewrite_settings_default_tab_stop(
+            &data,
+            &format!(r#"<w:autoHyphenation w:val="{value}"/><w:defaultTabStop w:val="720"/>"#),
+        );
+        let parser = DocxParser;
+        let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        assert!(
+            !doc.styles.hyphenates_automatically,
+            "w:val=\"{value}\" must read as off"
+        );
+    }
+}
+
+#[test]
+fn test_auto_hyphenation_uses_xml_values_and_settings_scope() {
+    let base = build_docx_bytes(vec![
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Quarterly report")),
+    ]);
+    for (setting, expected) in [
+        (r#"<w:autoHyphenation w:val='false'/>"#, false),
+        (r#"<w:autoHyphenation w:val = "off"/>"#, false),
+        (r#"<w:autoHyphenation w:val="&#48;"/>"#, false),
+        (r#"<!-- <w:autoHyphenation/> -->"#, false),
+        (r#"<w:compat><w:autoHyphenation/></w:compat>"#, false),
+        (
+            r#"<other:autoHyphenation xmlns:other="urn:extension"/>"#,
+            false,
+        ),
+        (
+            r#"<x:autoHyphenation xmlns:x="http://schemas.openxmlformats.org/wordprocessingml/2006/main" x:val='on'/>"#,
+            true,
+        ),
+        (
+            r#"<x:autoHyphenation xmlns:x="http://schemas.openxmlformats.org/wordprocessingml/2006/main" x:val='0'/>"#,
+            false,
+        ),
+        (
+            r#"<w:autoHyphenation w:val='true'></w:autoHyphenation>"#,
+            true,
+        ),
+    ] {
+        let data = rewrite_settings_default_tab_stop(&base, setting);
+        assert_eq!(extract_auto_hyphenation(&data), expected, "{setting}");
+    }
+}
+
 /// Rewrites the `compatibilityMode` compatibility setting inside a DOCX's
 /// `word/settings.xml`, replacing the whole `w:compat` element with
 /// `replacement` (empty string removes it).
