@@ -2305,6 +2305,106 @@ fn cell_paragraph_carries_its_right_indent() {
     );
 }
 
+/// DrawingML's signed first-line indent offsets only the first line inside a
+/// PowerPoint table cell; wrapped lines keep the paragraph's `marL` inset
+/// (issue #2041).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn powerpoint_table_cell_applies_signed_first_line_indent() {
+    let paragraph = |text: &str, indent_first_line: Option<f64>| -> Block {
+        Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                indent_left: Some(60.75),
+                indent_first_line,
+                ..ParagraphStyle::default()
+            },
+            runs: vec![Run {
+                text: text.to_string(),
+                style: TextStyle {
+                    font_family: Some("Libertinus Serif".to_string()),
+                    font_size: Some(10.0),
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+                inline_box: None,
+            }],
+        })
+    };
+    let table = Table {
+        rows: vec![TableRow {
+            minimum_height: None,
+            cells: vec![TableCell {
+                content: vec![
+                    paragraph("European ex-UK structured credit portfolio", Some(-18.0)),
+                    paragraph("European ex-UK structured credit portfolio", None),
+                    paragraph("European ex-UK structured credit portfolio", Some(6.0)),
+                ],
+                ..TableCell::default()
+            }],
+            height: None,
+        }],
+        column_widths: vec![110.0],
+        default_cell_padding: Some(Insets::default()),
+        use_content_driven_row_heights: true,
+        ..Table::default()
+    };
+    let document: Document = make_doc(vec![make_fixed_page(
+        400.0,
+        540.0,
+        vec![FixedElement {
+            x: 120.6,
+            y: 254.82,
+            width: 110.0,
+            height: 100.0,
+            kind: FixedElementKind::Table(table),
+        }],
+    )]);
+    let source: String = generate_typst(&document).unwrap().source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap_or_else(|error| panic!("the cell paragraphs should compile: {error}\n{source}"));
+    let europeans: Vec<(f64, f64)> = runs
+        .iter()
+        .filter(|run| run.text == "European")
+        .map(|run| (run.left_pt, run.baseline_pt))
+        .collect();
+    let structured: Vec<(f64, f64)> = runs
+        .iter()
+        .filter(|run| run.text == "structured")
+        .map(|run| (run.left_pt, run.baseline_pt))
+        .collect();
+
+    assert!(
+        europeans.len() == 3 && structured.len() == 3,
+        "all three paragraphs should wrap into the measured words: European={europeans:?}, structured={structured:?}\n{source}"
+    );
+    assert!(
+        (europeans[0].0 - europeans[1].0 + 18.0).abs() < 0.1,
+        "a -18pt first-line indent moves the first line left while retaining the 60.75pt cell inset: negative={:.3}pt, control={:.3}pt\n{source}",
+        europeans[0].0,
+        europeans[1].0
+    );
+    assert!(
+        (europeans[2].0 - europeans[1].0 - 6.0).abs() < 0.1,
+        "a +6pt first-line indent moves the first line right: positive={:.3}pt, control={:.3}pt\n{source}",
+        europeans[2].0,
+        europeans[1].0
+    );
+    assert!(
+        (structured[0].0 - structured[1].0).abs() < 0.1
+            && (structured[2].0 - structured[1].0).abs() < 0.1,
+        "wrapped lines keep the 60.75pt paragraph inset: negative={:.3}pt, control={:.3}pt\n{source}",
+        structured[0].0,
+        structured[1].0
+    );
+    assert!(
+        (europeans[0].1 - structured[0].1).abs() > 0.1,
+        "the measured words should land on distinct visual lines: first={:.3}pt, wrapped={:.3}pt\n{source}",
+        europeans[0].1,
+        structured[0].1
+    );
+}
+
 /// A cell paragraph's `w:spacing w:line` scales its line box, exactly as it
 /// scales a body paragraph's. `word_cell_line_box` bailed on any declared line
 /// spacing, so the multiple never applied inside a cell and the paragraph fell

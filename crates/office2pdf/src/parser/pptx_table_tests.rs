@@ -49,6 +49,57 @@ fn test_slide_with_basic_table() {
 }
 
 #[test]
+fn issue_2041_table_fixture_keeps_signed_paragraph_indents() {
+    let fixture: &[u8] = include_bytes!("../../../../tests/fixtures/pptx/oxp_PB001-Input1.pptx");
+    let (document, _warnings) = PptxParser
+        .parse(fixture, &ConvertOptions::default())
+        .expect("the issue fixture should parse");
+    let page: &FixedPage = match document
+        .pages
+        .get(1)
+        .expect("the fixture has a second slide")
+    {
+        Page::Fixed(page) => page,
+        page => panic!("Expected a fixed slide, got {page:?}"),
+    };
+    let expected_labels: [&str; 4] = [
+        "European ex-UK",
+        "Mergers & Acquisitions",
+        "Global Macro Strategies",
+        "High Yield Bonds",
+    ];
+    let mut matching_paragraphs: Vec<(&str, &Paragraph)> = Vec::new();
+    for element in &page.elements {
+        let FixedElementKind::Table(table) = &element.kind else {
+            continue;
+        };
+        for row in &table.rows {
+            for cell in &row.cells {
+                for block in &cell.content {
+                    let Block::Paragraph(paragraph) = block else {
+                        continue;
+                    };
+                    let text: String = paragraph.runs.iter().map(|run| run.text.as_str()).collect();
+                    if let Some(label) = expected_labels.iter().find(|label| **label == text) {
+                        matching_paragraphs.push((label, paragraph));
+                    }
+                }
+            }
+        }
+    }
+
+    assert_eq!(
+        matching_paragraphs.len(),
+        expected_labels.len(),
+        "all four affected slide-table labels should be found"
+    );
+    for (label, paragraph) in matching_paragraphs {
+        assert_eq!(paragraph.style.indent_left, Some(60.75), "{label}");
+        assert_eq!(paragraph.style.indent_first_line, Some(-18.0), "{label}");
+    }
+}
+
+#[test]
 fn test_slide_table_does_not_scale_row_floors_to_graphic_frame_height() {
     let rows_xml = format!(
         "{}{}",

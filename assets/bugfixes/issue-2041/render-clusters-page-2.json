@@ -1,0 +1,33 @@
+{
+  "clusters": [],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [
+    {
+      "bbox_pt": {
+        "height": 405.0,
+        "width": 725.0,
+        "x": 28.0,
+        "y": 86.0
+      },
+      "class": "shape-edge-antialiasing",
+      "note": "Inspected matched top/middle/bottom/footer crops show the same 0.5pt rules, gray branches and 0.5/0.5pt dotted leaders. MuPDF traces confirm matching stroke widths and positions; native lines have negligible endpoint slope while output is horizontal. Edge coverage fragments remain below the material-cluster floor."
+    }
+  ],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 0,
+    "duplicate": 0,
+    "total": 0,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
