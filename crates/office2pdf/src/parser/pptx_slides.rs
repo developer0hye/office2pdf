@@ -883,12 +883,13 @@ fn finalize_shape(
     shape: &mut ShapeState,
     paragraphs: &mut Vec<PptxParagraphEntry>,
     text_box: PptxTextBoxSettings,
-    theme_line_styles: &[ThemeLineStyle],
-    images: &SlideImageMap,
-    background: &ResolvedBackground,
-    warning_context: &str,
+    context: &SlideParseContext<'_>,
     warnings: &mut Vec<ConvertWarning>,
 ) -> Vec<FixedElement> {
+    let theme_line_styles: &[ThemeLineStyle] = &context.theme.line_styles;
+    let images: &SlideImageMap = context.images;
+    let background: &ResolvedBackground = context.background;
+    let warning_context: &str = context.warning_context;
     let referenced_line_style: Option<&ThemeLineStyle> = shape
         .style_ln_idx
         .and_then(|idx| theme_line_styles.get(idx - 1));
@@ -3063,10 +3064,7 @@ impl<'a> SlideXmlParser<'a> {
                             &mut self.shape,
                             &mut self.paragraphs,
                             self.text_box,
-                            &self.ctx.theme.line_styles,
-                            self.ctx.images,
-                            self.ctx.background,
-                            self.ctx.warning_context,
+                            &self.ctx,
                             &mut self.warnings,
                         ));
                     }
