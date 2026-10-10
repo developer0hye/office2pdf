@@ -269,3 +269,21 @@ fn test_convert_options_with_streaming_chunk_size() {
     assert!(opts.streaming);
     assert_eq!(opts.streaming_chunk_size, Some(500));
 }
+
+#[test]
+fn test_xlsx_ui_script_parse() {
+    assert_eq!(XlsxUiScript::parse("latin").unwrap(), XlsxUiScript::Latin);
+    assert_eq!(XlsxUiScript::parse("Latin").unwrap(), XlsxUiScript::Latin);
+    assert_eq!(XlsxUiScript::parse("hangul").unwrap(), XlsxUiScript::Hangul);
+    assert_eq!(XlsxUiScript::parse("HANGUL").unwrap(), XlsxUiScript::Hangul);
+    let error: String = XlsxUiScript::parse("cyrillic").unwrap_err();
+    assert!(error.contains("hangul, latin"), "{error}");
+}
+
+#[test]
+fn test_convert_options_xlsx_ui_script_defaults_to_hangul() {
+    assert_eq!(
+        ConvertOptions::default().xlsx_ui_script,
+        XlsxUiScript::Hangul
+    );
+}

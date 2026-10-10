@@ -227,21 +227,20 @@ pub(super) fn generate_paragraph(
     } else {
         0.0
     };
-    let paragraph_mark_metric_run: Option<Run> =
-        if is_empty_paragraph && style.line_spacing.is_some() {
-            style
-                .paragraph_mark_text_style
-                .as_deref()
-                .map(|mark_style| Run {
-                    text: String::new(),
-                    style: mark_style.clone(),
-                    href: None,
-                    footnote: None,
-                    inline_box: None,
-                })
-        } else {
-            None
-        };
+    let paragraph_mark_metric_run: Option<Run> = if is_empty_paragraph {
+        style
+            .paragraph_mark_text_style
+            .as_deref()
+            .map(|mark_style| Run {
+                text: String::new(),
+                style: mark_style.clone(),
+                href: None,
+                footnote: None,
+                inline_box: None,
+            })
+    } else {
+        None
+    };
     let line_metric_runs: &[Run] = paragraph_mark_metric_run
         .as_ref()
         .map(std::slice::from_ref)
@@ -255,7 +254,10 @@ pub(super) fn generate_paragraph(
     let empty_paragraph_line_height_pt: f64 = if is_empty_paragraph {
         match style.line_spacing {
             Some(LineSpacing::Exact(points)) if points > 0.0 => points,
-            Some(LineSpacing::Proportional(_)) => {
+            // An absent `w:line` is single spacing, so a paragraph that
+            // states none still takes its mark's line, as a proportional one
+            // does; a flat 12pt fell 1.8pt short for a 12pt Arial mark.
+            Some(LineSpacing::Proportional(_)) | None => {
                 word_line_box_em(line_metric_runs, style, line_grid_pitch)
                     .map(|(top, bottom)| (top + bottom) * paragraph_font_size_pt(line_metric_runs))
                     .unwrap_or(12.0)
@@ -4033,6 +4035,14 @@ pub(super) fn generate_run_with_context(
     Ok(())
 }
 
+fn run_needs_generation_context(run: &Run) -> bool {
+    run.inline_box.is_some()
+        || run
+            .footnote
+            .as_deref()
+            .is_some_and(|content| content.iter().any(run_needs_generation_context))
+}
+
 fn generate_runs_with_metrics_in_context(
     out: &mut String,
     runs: &[Run],
@@ -4040,7 +4050,9 @@ fn generate_runs_with_metrics_in_context(
     run_line_metrics: Option<RunLineMetrics<'_>>,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
-    if runs.iter().any(|run| run.inline_box.is_some()) {
+    // A footnote can carry a box indirectly; its nested blocks still need the
+    // image registry and table context used by boxes in the anchor paragraph.
+    if runs.iter().any(run_needs_generation_context) {
         for (index, run) in runs.iter().enumerate() {
             if run.inline_box.is_some() || run.footnote.is_some() {
                 generate_run_with_context(out, run, ctx)?;
@@ -6041,6 +6053,19 @@ fn write_text_params_inner(out: &mut String, style: &TextStyle, kerning_text: Ke
     }
     if let Some(weight) = effective_font_weight(style) {
         write_param(out, &mut first, &format!("weight: \"{weight}\""));
+    }
+    // A width member — `Arial Narrow` — is filed under its base family at
+    // that stretch, which the font list reaches; the stretch selects it.
+    if let Some(stretch) = style
+        .font_family
+        .as_deref()
+        .and_then(font_subst::stretch_stated_by_family_name)
+    {
+        write_param(
+            out,
+            &mut first,
+            &format!("stretch: {}%", format_f64(stretch.to_ratio().get() * 100.0)),
+        );
     }
     if matches!(style.italic, Some(true)) {
         write_param(out, &mut first, "style: \"italic\"");

@@ -1,6 +1,6 @@
 use ts_rs::TS;
 
-use crate::config::{ConvertOptions, Format, PaperSize, PdfStandard, SlideRange};
+use crate::config::{ConvertOptions, Format, PaperSize, PdfStandard, SlideRange, XlsxUiScript};
 use crate::error::{ConvertMetrics, ConvertWarning};
 
 fn cfg_for_bindings() -> ts_rs::Config {
@@ -18,6 +18,7 @@ fn test_export_all_types_to_bindings() {
     PaperSize::export_all(&cfg).unwrap();
     PdfStandard::export_all(&cfg).unwrap();
     SlideRange::export_all(&cfg).unwrap();
+    XlsxUiScript::export_all(&cfg).unwrap();
     ConvertOptions::export_all(&cfg).unwrap();
     ConvertWarning::export_all(&cfg).unwrap();
     ConvertMetrics::export_all(&cfg).unwrap();
@@ -26,6 +27,7 @@ fn test_export_all_types_to_bindings() {
     assert!(bindings_dir.join("PaperSize.ts").exists());
     assert!(bindings_dir.join("PdfStandard.ts").exists());
     assert!(bindings_dir.join("SlideRange.ts").exists());
+    assert!(bindings_dir.join("XlsxUiScript.ts").exists());
     assert!(bindings_dir.join("ConvertOptions.ts").exists());
     assert!(bindings_dir.join("ConvertWarning.ts").exists());
     assert!(bindings_dir.join("ConvertMetrics.ts").exists());

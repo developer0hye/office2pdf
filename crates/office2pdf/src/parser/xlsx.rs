@@ -919,7 +919,7 @@ impl XlsxParser {
         let format_properties_less_sheets = sheet_format::sheets_without_format_properties(data);
         let print_options_by_sheet = print_options::sheets_print_options(data);
         let mut table_styles = tables::extract_table_styles(data);
-        let normal_font = extract_normal_font(data, Some(book.get_theme()));
+        let normal_font = extract_normal_font(data, Some(book.get_theme()), options.xlsx_ui_script);
         let indexed_colors = extract_indexed_colors(data);
 
         let chartsheet_setups = chartsheet::chartsheet_print_setups(data);
@@ -1299,7 +1299,7 @@ impl Parser for XlsxParser {
         let format_properties_less_sheets = sheet_format::sheets_without_format_properties(data);
         let print_options_by_sheet = print_options::sheets_print_options(data);
         let mut table_styles = tables::extract_table_styles(data);
-        let normal_font = extract_normal_font(data, Some(book.get_theme()));
+        let normal_font = extract_normal_font(data, Some(book.get_theme()), options.xlsx_ui_script);
         let indexed_colors = extract_indexed_colors(data);
 
         let chartsheet_setups = chartsheet::chartsheet_print_setups(data);

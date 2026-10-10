@@ -381,6 +381,54 @@ pub(super) fn parse_default_text_size_pt(xml: &str) -> Option<f64> {
     }
 }
 
+/// The language body text is written in, from `p:defaultTextStyle`.
+///
+/// PowerPoint records the editing language on `a:defPPr/a:defRPr/@lang`; the
+/// first list level's `a:lvl1pPr/a:defRPr/@lang` is read when that is absent.
+/// Nested like [`parse_default_text_size_pt`], and for the same reason.
+pub(super) fn parse_default_language(xml: &str) -> Option<crate::ir::DocumentLanguage> {
+    let mut reader = Reader::from_str(xml);
+    let mut in_default_text_style = false;
+    let mut in_default_paragraph = false;
+    let mut in_level_one = false;
+    let mut default_paragraph_tag: Option<String> = None;
+    let mut level_one_tag: Option<String> = None;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref element)) => match element.local_name().as_ref() {
+                b"defaultTextStyle" => in_default_text_style = true,
+                b"defPPr" if in_default_text_style => in_default_paragraph = true,
+                b"lvl1pPr" if in_default_text_style => in_level_one = true,
+                b"defRPr" if in_default_paragraph => {
+                    default_paragraph_tag = get_attr_str(element, b"lang");
+                }
+                b"defRPr" if in_level_one => level_one_tag = get_attr_str(element, b"lang"),
+                _ => {}
+            },
+            Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"defRPr" => {
+                if in_default_paragraph {
+                    default_paragraph_tag = get_attr_str(element, b"lang");
+                } else if in_level_one {
+                    level_one_tag = get_attr_str(element, b"lang");
+                }
+            }
+            Ok(Event::End(ref element)) => match element.local_name().as_ref() {
+                b"defPPr" => in_default_paragraph = false,
+                b"lvl1pPr" => in_level_one = false,
+                b"defaultTextStyle" => break,
+                _ => {}
+            },
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+    [default_paragraph_tag, level_one_tag]
+        .iter()
+        .flatten()
+        .find_map(|tag| crate::ir::DocumentLanguage::from_office_tag(tag))
+}
+
 fn parse_relationships_xml(xml: &str) -> HashMap<String, Relationship> {
     crate::parser::xml_util::parse_relationships(xml)
         .into_iter()

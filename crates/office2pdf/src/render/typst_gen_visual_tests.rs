@@ -2384,3 +2384,67 @@ fn test_inline_text_box_survives_a_tab_and_a_table_cell() {
         "the list item's inline box keeps its nested table inside its bounds, got:\n{listed_source}"
     );
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn footnote_inline_text_box_preserves_nested_table_text() {
+    for (anchor, label) in [("Source", "ReferenceCell"), ("Source:\t", "AppendixCell")] {
+        let table = Table {
+            rows: vec![TableRow {
+                cells: vec![TableCell {
+                    content: vec![make_paragraph(label)],
+                    ..TableCell::default()
+                }],
+                height: None,
+                minimum_height: None,
+            }],
+            column_widths: vec![120.0],
+            ..Table::default()
+        };
+        let note = Run {
+            text: String::new(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+            inline_box: Some(Box::new(InlineTextBox {
+                content: vec![Block::Table(table)],
+                width: 144.0,
+                height: 36.0,
+                padding: Insets::default(),
+                stroke: None,
+                fill: None,
+            })),
+        };
+        let document = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![
+                Run {
+                    text: anchor.to_string(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: None,
+                    inline_box: None,
+                },
+                Run {
+                    text: String::new(),
+                    style: TextStyle::default(),
+                    href: None,
+                    footnote: Some(vec![note]),
+                    inline_box: None,
+                },
+            ],
+        })])]);
+        let generated = generate_typst(&document).expect("footnote box generation succeeds");
+        let runs = crate::render::pdf::compiled_text_runs_with_images(
+            &generated.source,
+            &generated.images,
+            0,
+        )
+        .expect("footnote table compiles");
+        let text: String = runs.iter().map(|run| run.text.as_str()).collect();
+        assert!(
+            text.contains(label),
+            "footnote table text remains searchable: {text}"
+        );
+    }
+}

@@ -67,6 +67,17 @@ fn test_convert_options_ts_declaration() {
         decl.contains("include_hidden_slides"),
         "should expose hidden-slide inclusion: {decl}"
     );
+    assert!(
+        decl.contains("xlsx_ui_script: XlsxUiScript"),
+        "should expose the spreadsheet UI script: {decl}"
+    );
+}
+
+#[test]
+fn test_xlsx_ui_script_ts_declaration() {
+    let decl = XlsxUiScript::decl(&cfg());
+    assert!(decl.contains("Hangul"), "XlsxUiScript TS decl: {decl}");
+    assert!(decl.contains("Latin"), "XlsxUiScript TS decl: {decl}");
 }
 
 #[test]
