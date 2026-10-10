@@ -328,3 +328,15 @@ fn test_docx_language_reaches_pdf_catalog() {
             .collect::<Vec<_>>()
     );
 }
+
+#[test]
+fn test_current_style_language_reaches_pdf_catalog_after_tracked_change() {
+    let data: &[u8] =
+        include_bytes!("../../../tests/fixtures/docx/issue-2054-default-language.docx");
+    let result = convert_bytes(data, Format::Docx, &ConvertOptions::default()).unwrap();
+    let pdf: String = String::from_utf8_lossy(&result.pdf).into_owned();
+    assert!(
+        pdf.contains("/Lang (de-DE)") || pdf.contains("/Lang(de-DE)"),
+        "current German formatting must override historical English formatting"
+    );
+}

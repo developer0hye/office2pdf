@@ -1851,6 +1851,39 @@ fn test_document_without_language_has_none() {
     assert_eq!(doc.styles.default_language, None);
 }
 
+#[test]
+fn test_document_language_ignores_historical_run_properties() {
+    for (current, historical) in [("de-DE", "en-US"), ("da-DK", "fr-FR")] {
+        let current_properties = format!(r#"<w:lang w:val="{current}"/>"#);
+        let historical_properties = format!(
+            r#"<w:rPrChange w:id="1" w:author="Synthetic reviewer" w:date="2026-01-01T00:00:00Z"><w:rPr><w:lang w:val="{historical}"/></w:rPr></w:rPrChange>"#
+        );
+        for normal_properties in [
+            format!("{current_properties}{historical_properties}"),
+            historical_properties.clone(),
+        ] {
+            let xml = language_test_styles_xml(&current_properties, &normal_properties);
+            assert_eq!(
+                styles::scan_default_language(&xml, "Normal"),
+                DocumentLanguage::from_office_tag(current),
+                "historical properties must not replace the current style or document default"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_document_language_ignores_paragraph_mark_language() {
+    let xml = language_test_styles_xml(r#"<w:lang w:val="da-DK"/>"#, "").replace(
+        "<w:name w:val=\"Normal\"/>",
+        r#"<w:name w:val="Normal"/><w:pPr><w:rPr><w:lang w:val="en-US"/></w:rPr></w:pPr>"#,
+    );
+    assert_eq!(
+        styles::scan_default_language(&xml, "Normal"),
+        DocumentLanguage::from_office_tag("da-DK")
+    );
+}
+
 /// Rewrites the `compatibilityMode` compatibility setting inside a DOCX's
 /// `word/settings.xml`, replacing the whole `w:compat` element with
 /// `replacement` (empty string removes it).

@@ -247,6 +247,9 @@ Native Rust callers can use the same per-conversion path through
 | PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
 
+DOCX and PPTX default language tags set the PDF language and text-layout language.
+Per-run languages and DOCX East Asian/complex-script language tags are not yet used.
+
 XLSX workbooks with cells beyond Excel's 16,384-column or 1,048,576-row grid
 are rejected before layout expansion.
 

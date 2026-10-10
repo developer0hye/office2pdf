@@ -243,7 +243,7 @@ pub(super) fn scan_default_language(
 
     let mut reader = quick_xml::Reader::from_str(styles_xml);
     reader.config_mut().trim_text(true);
-    let mut in_run_property_defaults = false;
+    let mut path: Vec<Vec<u8>> = Vec::new();
     let mut in_default_paragraph_style = false;
     let mut doc_defaults_tag: Option<String> = None;
     let mut default_style_tag: Option<String> = None;
@@ -255,8 +255,7 @@ pub(super) fn scan_default_language(
                     unreachable!("matched above");
                 };
                 match element.local_name().as_ref() {
-                    b"rPrDefault" => in_run_property_defaults = has_children,
-                    b"style" => {
+                    b"style" if path.iter().map(Vec::as_slice).eq([b"styles".as_slice()]) => {
                         let mut style_type: Option<String> = None;
                         let mut style_id: Option<String> = None;
                         for attribute in element.attributes().flatten() {
@@ -274,23 +273,45 @@ pub(super) fn scan_default_language(
                             && style_type.as_deref() == Some("paragraph")
                             && style_id.as_deref() == Some(default_paragraph_style_id);
                     }
-                    b"lang" if in_run_property_defaults || in_default_paragraph_style => {
+                    b"lang" => {
+                        // Historical rPrChange properties and paragraph-mark
+                        // formatting do not describe the current body text.
+                        let is_document_default: bool = path.iter().map(Vec::as_slice).eq([
+                            b"styles".as_slice(),
+                            b"docDefaults",
+                            b"rPrDefault",
+                            b"rPr",
+                        ]);
+                        let is_style_default: bool = in_default_paragraph_style
+                            && path.iter().map(Vec::as_slice).eq([
+                                b"styles".as_slice(),
+                                b"style",
+                                b"rPr",
+                            ]);
                         let tag: Option<String> =
                             crate::parser::xml_util::get_attr_str(&element, b"val");
-                        if in_default_paragraph_style {
+                        if is_style_default {
                             default_style_tag = tag;
-                        } else {
+                        } else if is_document_default {
                             doc_defaults_tag = tag;
                         }
                     }
                     _ => {}
                 }
+                if has_children {
+                    path.push(element.local_name().as_ref().to_vec());
+                }
             }
-            Ok(Event::End(element)) => match element.local_name().as_ref() {
-                b"rPrDefault" => in_run_property_defaults = false,
-                b"style" => in_default_paragraph_style = false,
-                _ => {}
-            },
+            Ok(Event::End(_)) => {
+                if path
+                    .iter()
+                    .map(Vec::as_slice)
+                    .eq([b"styles".as_slice(), b"style"])
+                {
+                    in_default_paragraph_style = false;
+                }
+                path.pop();
+            }
             Ok(Event::Eof) | Err(_) => break,
             _ => {}
         }
