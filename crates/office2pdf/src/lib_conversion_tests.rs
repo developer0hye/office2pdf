@@ -340,3 +340,91 @@ fn test_current_style_language_reaches_pdf_catalog_after_tracked_change() {
         "current German formatting must override historical English formatting"
     );
 }
+
+/// A narrow Word column of long words set justified, with `settings` spliced
+/// into `word/settings.xml` ahead of its first child.
+fn build_narrow_justified_docx(settings: &str) -> Vec<u8> {
+    use std::io::{Cursor, Read, Write};
+
+    const TEXT: &str = "Internationalization considerations notwithstanding, the \
+        telecommunications infrastructure modernization programme demonstrates \
+        extraordinary interoperability characteristics, notwithstanding \
+        unquestionably counterproductive misunderstandings regarding \
+        responsibilities, accountability, and organizational transformation.";
+    // A 250pt page with 36pt margins leaves a 178pt column.
+    let docx = docx_rs::Docx::new()
+        .page_size(5000, 12000)
+        .page_margin(
+            docx_rs::PageMargin::new()
+                .top(720)
+                .bottom(720)
+                .left(720)
+                .right(720),
+        )
+        .add_paragraph(
+            docx_rs::Paragraph::new()
+                .align(docx_rs::AlignmentType::Both)
+                .add_run(docx_rs::Run::new().add_text(TEXT)),
+        );
+    let mut cursor = Cursor::new(Vec::new());
+    docx.build().pack(&mut cursor).unwrap();
+
+    let mut archive = zip::ZipArchive::new(Cursor::new(cursor.into_inner())).unwrap();
+    let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    for index in 0..archive.len() {
+        let mut entry = archive.by_index(index).unwrap();
+        let name: String = entry.name().to_string();
+        let mut content: Vec<u8> = Vec::new();
+        entry.read_to_end(&mut content).unwrap();
+        if name == "word/settings.xml" {
+            let xml: String = String::from_utf8(content).unwrap();
+            let first_child: usize = xml.find("<w:defaultTabStop").unwrap();
+            content =
+                format!("{}{settings}{}", &xml[..first_child], &xml[first_child..]).into_bytes();
+        }
+        out.start_file(name, zip::write::FileOptions::default())
+            .unwrap();
+        out.write_all(&content).unwrap();
+    }
+    out.finish().unwrap().into_inner()
+}
+
+/// The lines of a converted PDF's text layer that end in a hyphenation point.
+/// Typst marks one with a soft hyphen in the text layer.
+fn hyphenated_line_ends(pdf: &[u8]) -> Vec<String> {
+    let text: String = pdf_extract::extract_text_from_mem(pdf).unwrap();
+    text.lines()
+        .map(str::trim_end)
+        .filter(|line| line.ends_with('\u{ad}') || line.ends_with('-'))
+        .map(str::to_string)
+        .collect()
+}
+
+/// Word does not hyphenate a document unless it declares
+/// `w:autoHyphenation`, so a justified paragraph has to wrap whole words.
+#[test]
+fn test_justified_docx_paragraph_is_not_hyphenated() {
+    let generated = build_narrow_justified_docx("");
+    let native_audit_fixture: &[u8] =
+        include_bytes!("../../../tests/fixtures/docx/issue-2052-default-hyphenation.docx");
+    for data in [generated.as_slice(), native_audit_fixture] {
+        let result = convert_bytes(data, Format::Docx, &ConvertOptions::default()).unwrap();
+        let hyphenated: Vec<String> = hyphenated_line_ends(&result.pdf);
+        assert!(
+            hyphenated.is_empty(),
+            "no line may end in a hyphenation point: {hyphenated:?}"
+        );
+    }
+}
+
+/// Triangulation: the same paragraph in a document that turns automatic
+/// hyphenation on does break words, so the rule follows the setting.
+#[test]
+fn test_docx_auto_hyphenation_hyphenates_justified_paragraph() {
+    let data = build_narrow_justified_docx("<w:autoHyphenation/>");
+    let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+    assert!(
+        !hyphenated_line_ends(&result.pdf).is_empty(),
+        "a narrow justified column of long words must hyphenate when the document asks"
+    );
+}

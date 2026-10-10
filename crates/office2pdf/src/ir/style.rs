@@ -55,6 +55,9 @@ pub struct StyleSheet {
     /// `None` when the source states none — always for a workbook, which has
     /// no document language.
     pub default_language: Option<DocumentLanguage>,
+    /// Whether conversion enables automatic hyphenation, read from DOCX
+    /// `w:autoHyphenation`. PPTX and XLSX leave this disabled.
+    pub hyphenates_automatically: bool,
 }
 
 /// A document language in the form Typst's `text(lang:, region:)` takes:

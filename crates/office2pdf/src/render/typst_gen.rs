@@ -655,6 +655,7 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
     generate_document_metadata(&mut out, &doc.metadata);
     write_page_format_state(&mut out);
     write_document_language(&mut out, doc.styles.default_language.as_ref());
+    write_hyphenation_rule(&mut out, doc.styles.hyphenates_automatically);
     if doc.pages.iter().any(|page| matches!(page, Page::Fixed(_))) {
         write_powerpoint_ligature_state(&mut out);
         write_powerpoint_advance_grid_helpers(&mut out);
@@ -5273,6 +5274,20 @@ fn write_document_language(out: &mut String, language: Option<&crate::ir::Docume
         let _ = write!(out, ", region: \"{}\"", escape_typst_string(region));
     }
     let _ = writeln!(out, ", dir: ltr)");
+}
+
+/// State whether words may be hyphenated at a line end.
+///
+/// An explicit rule prevents Typst's automatic justification policy from
+/// introducing hyphens when the source enables no hyphenation. The native
+/// Word fixture in issue #2052 demonstrates that default mismatch. The DOCX
+/// parser can enable the rule through `w:autoHyphenation`; the other parsers
+/// leave it disabled.
+///
+/// Set once for the document so header and footer bands, table cells and
+/// slide text boxes are all covered.
+fn write_hyphenation_rule(out: &mut String, hyphenates_automatically: bool) {
+    let _ = writeln!(out, "#set text(hyphenate: {hyphenates_automatically})");
 }
 
 /// Emit a `TOC` field's result.
