@@ -118,6 +118,41 @@ impl PaperSize {
     }
 }
 
+/// The user-interface script of the Excel installation whose printing an XLSX
+/// conversion reproduces.
+///
+/// A font that defers to the theme (`<scheme val="minor"/>`, often the
+/// Normal font) is resolved through the theme face for the script of
+/// Excel's *user interface*, not of the cell text. The same workbook therefore
+/// paints, lays out rows and sizes columns in a different face depending on
+/// the language Excel runs in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "typescript", derive(ts_rs::TS))]
+pub enum XlsxUiScript {
+    /// A Korean user interface: the theme's `<a:font script="Hang">` face,
+    /// then its East Asian `<a:ea>` face. The default preserves the historical
+    /// calibration against native Korean-UI Excel exports.
+    #[default]
+    Hangul,
+    /// A Latin-script user interface (English, Danish, German, ...): the
+    /// theme's `<a:latin>` face, which then lays out like a face the font
+    /// names outright.
+    Latin,
+}
+
+impl XlsxUiScript {
+    /// Parse a UI script name (case-insensitive): "hangul" or "latin".
+    pub fn parse(s: &str) -> Result<Self, String> {
+        match s.to_ascii_lowercase().as_str() {
+            "hangul" => Ok(Self::Hangul),
+            "latin" => Ok(Self::Latin),
+            _ => Err(format!(
+                "unknown XLSX UI script: {s}; expected one of: hangul, latin"
+            )),
+        }
+    }
+}
+
 /// Options controlling the conversion process.
 #[derive(Debug, Clone, Default)]
 #[cfg_attr(feature = "typescript", derive(ts_rs::TS))]
@@ -127,6 +162,11 @@ pub struct ConvertOptions {
     /// workbook does not hide is included — Excel prints no `hidden` or
     /// `veryHidden` sheet.
     pub sheet_names: Option<Vec<String>>,
+    /// The UI script of the Excel whose printing XLSX conversion reproduces;
+    /// it decides which theme face a scheme font resolves to. Defaults to
+    /// [`XlsxUiScript::Hangul`]; use [`XlsxUiScript::Latin`] for workbooks
+    /// printed from an English, Danish, German or other Latin-script Excel.
+    pub xlsx_ui_script: XlsxUiScript,
     /// Filter PPTX slides by range (1-indexed). If `None`, all visible slides
     /// are included unless `include_hidden_slides` is enabled.
     pub slide_range: Option<SlideRange>,

@@ -5948,3 +5948,38 @@ fn issue_1721_bottom_aligned_cells_match_native_baselines() {
     }
     assert!(differences.is_empty(), "{}", differences.join("\n"));
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn tight_merged_expense_labels_keep_native_baselines() {
+    if crate::render::pdf::font_line_metrics_em("Arial").is_none() {
+        return;
+    }
+    let data = include_bytes!(
+        "../../../../tests/golden_mocks/business/sources/xlsx/09_expense_report_en.xlsx"
+    );
+    let (document, _) = crate::parser::Parser::parse(
+        &crate::parser::xlsx::XlsxParser,
+        data,
+        &ConvertOptions::default(),
+    )
+    .unwrap();
+    let generated = generate_typst(&document).unwrap();
+    let runs =
+        crate::render::pdf::compiled_text_runs_with_images(&generated.source, &generated.images, 0)
+            .unwrap();
+    // The source-hashed native Excel golden seats both horizontal merges on
+    // the same baseline as their unmerged amount cells, including the bold row.
+    for (label, native_baseline) in [
+        ("Total reimbursable", 227.0),
+        ("Total by category — Meals", 241.0),
+    ] {
+        let matching: Vec<_> = runs.iter().filter(|run| run.text.trim() == label).collect();
+        assert_eq!(matching.len(), 1, "expected one {label:?} run");
+        assert!(
+            (matching[0].baseline_pt - native_baseline).abs() < 0.01,
+            "{label}: native {native_baseline}pt, output {}pt",
+            matching[0].baseline_pt
+        );
+    }
+}

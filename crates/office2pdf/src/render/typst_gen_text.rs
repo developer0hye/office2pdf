@@ -226,21 +226,20 @@ pub(super) fn generate_paragraph(
     } else {
         0.0
     };
-    let paragraph_mark_metric_run: Option<Run> =
-        if is_empty_paragraph && style.line_spacing.is_some() {
-            style
-                .paragraph_mark_text_style
-                .as_deref()
-                .map(|mark_style| Run {
-                    text: String::new(),
-                    style: mark_style.clone(),
-                    href: None,
-                    footnote: None,
-                    inline_box: None,
-                })
-        } else {
-            None
-        };
+    let paragraph_mark_metric_run: Option<Run> = if is_empty_paragraph {
+        style
+            .paragraph_mark_text_style
+            .as_deref()
+            .map(|mark_style| Run {
+                text: String::new(),
+                style: mark_style.clone(),
+                href: None,
+                footnote: None,
+                inline_box: None,
+            })
+    } else {
+        None
+    };
     let line_metric_runs: &[Run] = paragraph_mark_metric_run
         .as_ref()
         .map(std::slice::from_ref)
@@ -254,7 +253,10 @@ pub(super) fn generate_paragraph(
     let empty_paragraph_line_height_pt: f64 = if is_empty_paragraph {
         match style.line_spacing {
             Some(LineSpacing::Exact(points)) if points > 0.0 => points,
-            Some(LineSpacing::Proportional(_)) => {
+            // An absent `w:line` is single spacing, so a paragraph that
+            // states none still takes its mark's line, as a proportional one
+            // does; a flat 12pt fell 1.8pt short for a 12pt Arial mark.
+            Some(LineSpacing::Proportional(_)) | None => {
                 word_line_box_em(line_metric_runs, style, line_grid_pitch)
                     .map(|(top, bottom)| (top + bottom) * paragraph_font_size_pt(line_metric_runs))
                     .unwrap_or(12.0)
@@ -1813,9 +1815,8 @@ pub(super) fn cell_grid_absorbs_space_after(
         && line_grid_pitch.is_some_and(|pitch| pitch > 0.0)
 }
 
-/// Shared line metrics for centered cells in a tight spreadsheet row.
-/// Native top and bottom baselines can differ even in that regime (#1721),
-/// so only centered cells consume these row-level metrics (#839).
+/// Shared metrics for tight-row centered cells and horizontal bottom merges
+/// (#839). Unmerged top/bottom cells retain their distinct seats (#1721).
 #[derive(Clone)]
 pub(super) struct SheetRowLine {
     /// The family whose metrics pace the row's shared line.
@@ -2356,10 +2357,10 @@ pub(super) struct CellLineBox {
 /// grid is in force, because Word snaps the line and that gap together (issues
 /// #500, #503).
 ///
-/// When `sheet_row_line` is `Some`, a centered cell in a tight spreadsheet
-/// row resolves its box at the row's shared family and size (#839). Top and
-/// bottom cells keep their own metrics and seats (#1721). Spreadsheet cells
-/// are excluded from Word's compressed-line redistribution.
+/// When `sheet_row_line` is `Some`, a tight-row centered cell or horizontal
+/// bottom merge uses the row's shared metrics (#839). Unmerged top/bottom cells
+/// keep their own seats (#1721). Spreadsheet cells are excluded from Word's
+/// compressed-line redistribution.
 ///
 /// When `sheet_seat` is `Some` — a spreadsheet cell in a fixed row track,
 /// gated by `generate_table_cell` — the box is redistributed around the
@@ -2444,11 +2445,10 @@ pub(super) fn word_cell_line_box(
     if style.line_box.is_some() {
         return None;
     }
-    // Only centered cells in a tight spreadsheet row use the shared row
-    // family's metrics; top- and bottom-aligned cells retain their own seats
-    // (#839, #1721). A centered fixed-track cell resolves the face that paints
-    // its text (#1239). Bottom-aligned cells keep their separately measured
-    // descender-seat model.
+    // Tight-row centered cells and horizontal bottom merges share row metrics
+    // (#839); unmerged top/bottom cells keep their own seats (#1721). Other
+    // centered fixed-track cells use the painted face (#1239), while bottom
+    // cells retain the separately measured descender-seat model.
     let painted_sheet_family: Option<String> = (sheet_seat.is_some() && !seats_text_on_descender)
         .then(|| sheet_cell_metric_family(runs))
         .flatten();
@@ -5838,6 +5838,19 @@ fn write_text_params_inner(out: &mut String, style: &TextStyle, kerning_text: Ke
     }
     if let Some(weight) = effective_font_weight(style) {
         write_param(out, &mut first, &format!("weight: \"{weight}\""));
+    }
+    // A width member — `Arial Narrow` — is filed under its base family at
+    // that stretch, which the font list reaches; the stretch selects it.
+    if let Some(stretch) = style
+        .font_family
+        .as_deref()
+        .and_then(font_subst::stretch_stated_by_family_name)
+    {
+        write_param(
+            out,
+            &mut first,
+            &format!("stretch: {}%", format_f64(stretch.to_ratio().get() * 100.0)),
+        );
     }
     if matches!(style.italic, Some(true)) {
         write_param(out, &mut first, "style: \"italic\"");

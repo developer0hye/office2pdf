@@ -121,6 +121,84 @@ fn empty_paragraph_line_spacing_does_not_add_leading_to_its_placeholder() {
     );
 }
 
+/// An empty paragraph that states no `w:spacing w:line` is single spaced.
+///
+/// ECMA-376 makes an absent `w:line` single spacing (240 twips, `auto`),
+/// and Word gives an empty paragraph the line its paragraph mark would take:
+/// the mark's face and size, under the paragraph's line spacing. So in a run
+/// of same-face paragraphs with no spacing between them, a blank paragraph
+/// advances the next line by exactly one more line pitch — `ALPHA`, blank,
+/// `BRAVO` puts `BRAVO` two pitches below `ALPHA`. A mark in a larger size
+/// takes that size's line instead: 20pt Arial is 20/12 of 12pt Arial's.
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn empty_paragraph_without_line_spacing_takes_its_mark_line() {
+    let arial = |size_pt: f64| TextStyle {
+        font_family: Some("Arial".to_string()),
+        font_size: Some(size_pt),
+        ..TextStyle::default()
+    };
+    let text_paragraph = |text: &str| {
+        Block::Paragraph(Paragraph {
+            style: ParagraphStyle::default(),
+            runs: vec![Run {
+                text: text.to_string(),
+                style: arial(12.0),
+                href: None,
+                footnote: None,
+                inline_box: None,
+            }],
+        })
+    };
+    let empty_paragraph = |mark_size_pt: f64| {
+        Block::Paragraph(Paragraph {
+            style: ParagraphStyle {
+                paragraph_mark_text_style: Some(Box::new(arial(mark_size_pt))),
+                ..ParagraphStyle::default()
+            },
+            runs: Vec::new(),
+        })
+    };
+    let bravo_below_alpha_pt = |content: Vec<Block>| -> f64 {
+        let doc = make_doc(vec![make_flow_page(content)]);
+        let source: String = generate_typst(&doc).unwrap().source;
+        let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+            .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+        let baseline = |needle: &str| -> f64 {
+            runs.iter()
+                .find(|run| run.text.contains(needle))
+                .unwrap_or_else(|| panic!("{needle} must be placed"))
+                .baseline_pt
+        };
+        baseline("BRAVO") - baseline("ALPHA")
+    };
+
+    let pitch_pt: f64 =
+        bravo_below_alpha_pt(vec![text_paragraph("ALPHA"), text_paragraph("BRAVO")]);
+    let with_blank_pt: f64 = bravo_below_alpha_pt(vec![
+        text_paragraph("ALPHA"),
+        empty_paragraph(12.0),
+        text_paragraph("BRAVO"),
+    ]);
+    assert!(
+        (with_blank_pt - 2.0 * pitch_pt).abs() < 0.01,
+        "a single-spaced blank 12pt Arial line must advance one {pitch_pt}pt pitch, \
+         but BRAVO sits {with_blank_pt}pt below ALPHA"
+    );
+
+    let with_large_blank_pt: f64 = bravo_below_alpha_pt(vec![
+        text_paragraph("ALPHA"),
+        empty_paragraph(20.0),
+        text_paragraph("BRAVO"),
+    ]);
+    let expected_pt: f64 = pitch_pt + pitch_pt * 20.0 / 12.0;
+    assert!(
+        (with_large_blank_pt - expected_pt).abs() < 0.01,
+        "a blank line whose mark is 20pt must take 20pt Arial's line, \
+         expected {expected_pt}pt, got {with_large_blank_pt}pt"
+    );
+}
+
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn issue_2018_empty_bodycopy_keeps_the_following_paragraph_at_the_word_baseline() {
@@ -679,6 +757,70 @@ fn test_punctuation_never_hangs_regardless_of_alignment() {
     assert!(
         result[..preamble_end].contains("overhang: false"),
         "it must precede the first page so header and footer bands inherit it: {result}"
+    );
+}
+
+/// Every page format must override the backend's automatic hyphenation
+/// policy before generating any content, including headers and text boxes.
+#[test]
+fn test_hyphenation_is_off_for_every_format_by_default() {
+    let flow = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            alignment: Some(Alignment::Justify),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Internationalization considerations notwithstanding".to_string(),
+            style: TextStyle::default(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+    })])]);
+    let slide = make_doc(vec![make_fixed_page(
+        720.0,
+        540.0,
+        vec![make_text_box(
+            10.0,
+            10.0,
+            200.0,
+            100.0,
+            "Telecommunications infrastructure",
+        )],
+    )]);
+    let sheet = make_doc(vec![make_sheet_page(
+        "Sheet1",
+        595.0,
+        842.0,
+        Margins::default(),
+        make_simple_table(vec![vec!["Interoperability characteristics"]]),
+    )]);
+    for (format, doc) in [("DOCX", flow), ("PPTX", slide), ("XLSX", sheet)] {
+        let result = generate_typst(&doc).unwrap().source;
+        let preamble_end = result.find("#set page").unwrap_or(result.len());
+        assert!(
+            result[..preamble_end].contains("#set text(hyphenate: false)"),
+            "{format}: hyphenation must be off before the first page: {result}"
+        );
+    }
+}
+
+/// The parsed document setting must enable the renderer's hyphenation rule.
+#[test]
+fn test_document_auto_hyphenation_turns_hyphenation_on() {
+    let mut doc = make_doc(vec![make_flow_page(vec![make_paragraph(
+        "Internationalization considerations notwithstanding",
+    )])]);
+    doc.styles.hyphenates_automatically = true;
+    let result = generate_typst(&doc).unwrap().source;
+    let preamble_end = result.find("#set page").unwrap_or(result.len());
+    assert!(
+        result[..preamble_end].contains("#set text(hyphenate: true)"),
+        "auto hyphenation must reach the document text: {result}"
+    );
+    assert!(
+        !result.contains("hyphenate: false"),
+        "auto hyphenation must not also be switched off: {result}"
     );
 }
 
@@ -3517,5 +3659,30 @@ fn test_zero_letter_spacing_keeps_kerning() {
     assert!(
         !result.contains("kerning: false"),
         "zero tracking must keep kerning, got: {result}"
+    );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn native_empty_mark_fixture_preserves_mark_size_in_body_spacing() {
+    use crate::parser::Parser;
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2058-empty-paragraph-marks.docx");
+    let (document, _) = crate::parser::docx::DocxParser
+        .parse(data, &crate::ConvertOptions::default())
+        .unwrap();
+    let source = generate_typst(&document).unwrap().source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+    let baseline = |needle: &str| {
+        runs.iter()
+            .find(|run| run.text.contains(needle))
+            .unwrap()
+            .baseline_pt
+    };
+    let pitch = baseline("Before 20pt") - baseline("After 12pt");
+    assert!((baseline("After 12pt") - baseline("Before 12pt") - 2.0 * pitch).abs() < 0.01);
+    assert!(
+        (baseline("After 20pt") - baseline("Before 20pt") - pitch * (1.0 + 20.0 / 12.0)).abs()
+            < 0.01
     );
 }

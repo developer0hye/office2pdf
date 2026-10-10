@@ -356,9 +356,8 @@ fn generate_table_rows(
                 && (has_east_asian_text || row_is_set_in_east_asian_face(row)),
         };
 
-        // A fixed spreadsheet row with room for one line shares row metrics
-        // among centered cells. Top- and bottom-aligned cells keep their own
-        // seats (#839, #1721).
+        // Tight rows share metrics among centered cells and horizontal bottom
+        // merges; unmerged top/bottom cells keep their own seats (#839, #1721).
         let row_shared_line: Option<SheetRowLine> = sheet_row_shared_line(
             row,
             row.height.filter(|_| fixed_row_heights),
@@ -537,10 +536,9 @@ fn block_is_set_in_east_asian_face(block: &Block) -> bool {
 /// room for per-cell vertical alignment (issue #839).
 const SHEET_ROW_TRACK_QUANTISATION_SLACK_PT: f64 = 0.5;
 
-/// Shared metrics for centered cells in a tight spreadsheet row (#839).
-/// Top and bottom cells retain their own alignment even when these metrics
-/// exist: a tight track does not prove that the three native seats coincide
-/// (#1721). Oversized text and roomy rows keep per-cell metrics as well.
+/// Shared metrics for tight-row centered cells and horizontal bottom merges
+/// (#839). Unmerged top/bottom cells keep their distinct native seats (#1721).
+/// Oversized text and roomy rows keep per-cell metrics as well.
 fn sheet_row_shared_line(
     row: &TableRow,
     row_track_pt: Option<f64>,
@@ -961,14 +959,15 @@ fn generate_table_cell(
     row_shared_line: Option<&SheetRowLine>,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
-    // A tight track can still give top, center and bottom distinct native
-    // baselines (#1721). Share centered-row metrics only with cells that
-    // request centering; never replace the declared or default alignment.
-    // Resolve the table default too; untouched spreadsheet cells inherit bottom.
-    let effective_vertical_align: Option<CellVerticalAlign> =
+    // Unmerged cells retain distinct native seats even in a tight track
+    // (#1721). Horizontal bottom-aligned merges keep the existing shared seat:
+    // the expense-report golden aligns their labels with the adjacent amounts,
+    // while the roomy-merge descent floor raises those labels by two points.
+    let declared_vertical_align: Option<CellVerticalAlign> =
         cell.vertical_align.or(ctx.table_default_vertical_align);
     let seats_on_row_line: bool = row_shared_line.is_some()
-        && effective_vertical_align == Some(CellVerticalAlign::Center)
+        && (declared_vertical_align == Some(CellVerticalAlign::Center)
+            || (declared_vertical_align == Some(CellVerticalAlign::Bottom) && cell.col_span > 1))
         && cell.row_span <= 1
         && cell
             .content
@@ -985,6 +984,11 @@ fn generate_table_cell(
             .content
             .iter()
             .any(|block| matches!(block, Block::Paragraph(_)));
+    let effective_vertical_align: Option<CellVerticalAlign> = if seats_on_row_line {
+        Some(CellVerticalAlign::Center)
+    } else {
+        declared_vertical_align
+    };
 
     let needs_cell_fn = clamped_colspan > 1
         || cell.row_span > 1
@@ -3027,8 +3031,8 @@ fn write_cell_params(
     default_cell_padding: Insets,
     paints_boundary_bands: bool,
     uses_powerpoint_table_layout: bool,
-    // Emit the resolved centered alignment when sharing a tight row's
-    // metrics, including when that alignment comes from the table default.
+    // Emit centering for cells sharing the tight-row seat, including horizontal
+    // bottom merges and cells inheriting centering from the table default.
     forced_vertical_align: Option<CellVerticalAlign>,
 ) {
     let mut first = true;
@@ -3505,8 +3509,8 @@ struct CellParagraphCtx<'a> {
     /// The cell's effective Word vertical anchor, including the table default.
     vertical_align: Option<CellVerticalAlign>,
     seats_text_on_descender: bool,
-    /// Shared family and size for centered cells in a tight sheet row.
-    /// Top and bottom cells keep their own metrics (#1721).
+    /// Shared metrics for tight-row centered cells and horizontal bottom merges.
+    /// Unmerged top/bottom cells keep their own metrics (#1721).
     sheet_row_line: Option<SheetRowLine>,
     /// The fixed sheet track the cell sits in, so its line seats where Excel
     /// prints it (issue #1063). `None` outside that regime.

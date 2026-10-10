@@ -523,3 +523,24 @@ fn test_cli_include_hidden_slides_flag_sets_option() {
     let options = build_convert_options(&cli, None, None, None);
     assert!(options.include_hidden_slides);
 }
+
+#[test]
+fn test_cli_xlsx_ui_script_defaults_to_hangul() {
+    let cli = Cli::try_parse_from(["office2pdf", "prices.xlsx"]).unwrap();
+    let options = build_convert_options(&cli, None, None, None);
+    assert_eq!(options.xlsx_ui_script, XlsxUiScript::Hangul);
+}
+
+#[test]
+fn test_cli_xlsx_ui_script_flag_sets_option() {
+    let cli =
+        Cli::try_parse_from(["office2pdf", "--xlsx-ui-script", "latin", "prices.xlsx"]).unwrap();
+    let options = build_convert_options(&cli, None, None, None);
+    assert_eq!(options.xlsx_ui_script, XlsxUiScript::Latin);
+}
+
+#[test]
+fn test_cli_xlsx_ui_script_rejects_an_unknown_script() {
+    let result = Cli::try_parse_from(["office2pdf", "--xlsx-ui-script", "greek", "prices.xlsx"]);
+    assert!(result.is_err());
+}

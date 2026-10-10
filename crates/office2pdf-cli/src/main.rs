@@ -4,7 +4,7 @@ use std::process;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use office2pdf::config::{ConvertOptions, PaperSize, PdfStandard, SlideRange};
+use office2pdf::config::{ConvertOptions, PaperSize, PdfStandard, SlideRange, XlsxUiScript};
 use office2pdf::pdf_ops;
 
 #[cfg(feature = "server")]
@@ -74,6 +74,11 @@ struct Cli {
     /// Naming a hidden sheet prints it; otherwise hidden sheets are skipped.
     #[arg(long, value_delimiter = ',')]
     sheets: Option<Vec<String>>,
+
+    /// UI script of the Excel whose printing XLSX output reproduces (hangul, latin);
+    /// decides the theme face of scheme fonts. Default: hangul
+    #[arg(long, value_parser = XlsxUiScript::parse)]
+    xlsx_ui_script: Option<XlsxUiScript>,
 
     /// PPTX slide range by original one-based source position (e.g. "1-5" or "3").
     /// Hidden slides stay omitted unless --include-hidden-slides is set.
@@ -313,6 +318,7 @@ fn build_convert_options(
 ) -> ConvertOptions {
     ConvertOptions {
         sheet_names: cli.sheets.clone(),
+        xlsx_ui_script: cli.xlsx_ui_script.unwrap_or_default(),
         slide_range,
         include_hidden_slides: cli.include_hidden_slides,
         pdf_standard,
