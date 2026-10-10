@@ -247,6 +247,9 @@ Native Rust callers can use the same per-conversion path through
 | PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
 
+DOCX and PPTX default language tags set the PDF language and text-layout language.
+Per-run languages and DOCX East Asian/complex-script language tags are not yet used.
+
 Automatic hyphenation is off unless enabled in the DOCX document settings.
 Paragraph-level suppression and advanced hyphenation controls are not yet supported.
 

@@ -455,3 +455,60 @@ fn text_style_silent_run_keeps_its_styles_kerning_threshold() {
 fn text_style_default_states_no_pair_kerning() {
     assert!(TextStyle::default().pair_kerning.is_none());
 }
+
+fn language(language: &str, region: Option<&str>) -> Option<DocumentLanguage> {
+    Some(DocumentLanguage {
+        language: language.to_string(),
+        region: region.map(str::to_string),
+    })
+}
+
+/// Office writes BCP 47 tags; Typst takes the ISO 639 language and the
+/// ISO 3166-1 alpha-2 region separately.
+#[test]
+fn test_document_language_splits_office_tag() {
+    assert_eq!(
+        DocumentLanguage::from_office_tag("da-DK"),
+        language("da", Some("DK"))
+    );
+    assert_eq!(
+        DocumentLanguage::from_office_tag("en-GB"),
+        language("en", Some("GB"))
+    );
+    assert_eq!(
+        DocumentLanguage::from_office_tag("de"),
+        language("de", None)
+    );
+}
+
+/// Case is normalised the way Typst expects, and a script subtag between
+/// language and region is skipped.
+#[test]
+fn test_document_language_normalises_case_and_skips_script() {
+    assert_eq!(
+        DocumentLanguage::from_office_tag("NB-no"),
+        language("nb", Some("NO"))
+    );
+    assert_eq!(
+        DocumentLanguage::from_office_tag("sr-Latn-RS"),
+        language("sr", Some("RS"))
+    );
+    assert_eq!(
+        DocumentLanguage::from_office_tag("zh-Hant"),
+        language("zh", None)
+    );
+}
+
+/// Word writes `x-none` for "no proofing language", and a numeric UN M.49
+/// region such as `es-419` has no alpha-2 form; neither may reach Typst,
+/// which rejects them.
+#[test]
+fn test_document_language_rejects_tags_typst_cannot_take() {
+    assert_eq!(DocumentLanguage::from_office_tag("x-none"), None);
+    assert_eq!(DocumentLanguage::from_office_tag(""), None);
+    assert_eq!(DocumentLanguage::from_office_tag("1234"), None);
+    assert_eq!(
+        DocumentLanguage::from_office_tag("es-419"),
+        language("es", None)
+    );
+}

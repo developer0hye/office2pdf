@@ -281,6 +281,66 @@ fn test_docx_toc_pipeline_produces_pdf() {
     );
 }
 
+/// The PDF declares the language the document was written in, not English
+/// whatever the source said.
+#[test]
+fn test_docx_language_reaches_pdf_catalog() {
+    use std::io::{Cursor, Read, Write};
+
+    let docx = docx_rs::Docx::new().add_paragraph(
+        docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Aftale om levering")),
+    );
+    let mut cursor = Cursor::new(Vec::new());
+    docx.build().pack(&mut cursor).unwrap();
+    // docx-rs cannot state a language, so write Danish Word's into the
+    // document defaults.
+    let mut archive = zip::ZipArchive::new(Cursor::new(cursor.into_inner())).unwrap();
+    let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    for index in 0..archive.len() {
+        let mut entry = archive.by_index(index).unwrap();
+        let name: String = entry.name().to_string();
+        let mut content: Vec<u8> = Vec::new();
+        entry.read_to_end(&mut content).unwrap();
+        if name == "word/styles.xml" {
+            let xml: String = String::from_utf8(content).unwrap();
+            let start: usize = xml.find("<w:rPrDefault>").unwrap() + "<w:rPrDefault>".len();
+            let end: usize = xml.find("</w:rPrDefault>").unwrap();
+            content = format!(
+                r#"{}<w:rPr><w:lang w:val="da-DK"/></w:rPr>{}"#,
+                &xml[..start],
+                &xml[end..]
+            )
+            .into_bytes();
+        }
+        out.start_file(name, zip::write::FileOptions::default())
+            .unwrap();
+        out.write_all(&content).unwrap();
+    }
+    let data: Vec<u8> = out.finish().unwrap().into_inner();
+
+    let result = convert_bytes(&data, Format::Docx, &ConvertOptions::default()).unwrap();
+    let pdf: String = String::from_utf8_lossy(&result.pdf).into_owned();
+    assert!(
+        pdf.contains("/Lang (da-DK)") || pdf.contains("/Lang(da-DK)"),
+        "the PDF must declare Danish: {:?}",
+        pdf.match_indices("/Lang")
+            .map(|(at, _)| &pdf[at..at + 16])
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn test_current_style_language_reaches_pdf_catalog_after_tracked_change() {
+    let data: &[u8] =
+        include_bytes!("../../../tests/fixtures/docx/issue-2054-default-language.docx");
+    let result = convert_bytes(data, Format::Docx, &ConvertOptions::default()).unwrap();
+    let pdf: String = String::from_utf8_lossy(&result.pdf).into_owned();
+    assert!(
+        pdf.contains("/Lang (de-DE)") || pdf.contains("/Lang(de-DE)"),
+        "current German formatting must override historical English formatting"
+    );
+}
+
 /// A narrow Word column of long words set justified, with `settings` spliced
 /// into `word/settings.xml` ahead of its first child.
 fn build_narrow_justified_docx(settings: &str) -> Vec<u8> {

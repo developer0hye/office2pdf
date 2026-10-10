@@ -9,7 +9,7 @@ SHA-256 from `shasum -a 256`:
 
 - Source: `338ad7d989d64c788bca67435c900e50518f53dfe6980436ccc910aef2464ad3`
 - Native GT PDF: `ce983a9339c45fd32fc0258aa56ae716d18529b19e5c28b8987d9a6457bdc4e9`
-- Current output PDF: `cd480cfcc5a4ecedae2b87155107c58154ac3afc3aa67dc278e2740cbc30289c`
+- Current output PDF: `0f9ed1c45cce4612b56fc8e3c0f1c9648d78408f5dfd5bb585050ac80c8fc4fd`
 
 The before converter was built from `6a296de889c0119cb59875a96b2292204436d957` with
 `cargo build --locked --profile ci -p office2pdf-cli`. Current output uses

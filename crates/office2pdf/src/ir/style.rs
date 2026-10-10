@@ -51,9 +51,51 @@ pub struct StyleSheet {
     /// a format that has no such setting — a presentation or a workbook —
     /// which leaves the modern justification in place for both.
     pub word_compatibility_mode: Option<WordCompatibilityMode>,
+    /// The language body text is written in, from the source's own defaults.
+    /// `None` when the source states none — always for a workbook, which has
+    /// no document language.
+    pub default_language: Option<DocumentLanguage>,
     /// Whether conversion enables automatic hyphenation, read from DOCX
     /// `w:autoHyphenation`. PPTX and XLSX leave this disabled.
     pub hyphenates_automatically: bool,
+}
+
+/// A document language in the form Typst's `text(lang:, region:)` takes:
+/// an ISO 639 language code and an optional ISO 3166-1 alpha-2 region.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocumentLanguage {
+    /// Lowercase ISO 639 code, e.g. `da`.
+    pub language: String,
+    /// Uppercase ISO 3166-1 alpha-2 code, e.g. `DK`.
+    pub region: Option<String>,
+}
+
+impl DocumentLanguage {
+    /// Read the BCP 47 tag Office writes (`w:lang/@w:val`, `a:rPr/@lang`),
+    /// such as `da-DK`.
+    ///
+    /// Returns `None` for a tag Typst would reject as a language: Word's
+    /// `x-none` ("no proofing language") and anything whose primary subtag is
+    /// not two or three letters. A script subtag (`sr-Latn-RS`) is skipped, and
+    /// a region Typst cannot take — a numeric UN M.49 area such as `es-419` —
+    /// is dropped while the language is kept.
+    pub fn from_office_tag(tag: &str) -> Option<Self> {
+        let mut subtags = tag.split(['-', '_']);
+        let primary: &str = subtags.next()?;
+        let is_language_code: bool =
+            (2..=3).contains(&primary.len()) && primary.chars().all(|ch| ch.is_ascii_alphabetic());
+        if !is_language_code {
+            return None;
+        }
+        let region: Option<String> = subtags
+            .find(|subtag| subtag.len() != 4)
+            .filter(|subtag| subtag.len() == 2 && subtag.chars().all(|ch| ch.is_ascii_alphabetic()))
+            .map(str::to_ascii_uppercase);
+        Some(Self {
+            language: primary.to_ascii_lowercase(),
+            region,
+        })
+    }
 }
 
 /// A named style that can be referenced by paragraphs/runs.
