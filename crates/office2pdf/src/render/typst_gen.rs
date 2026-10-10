@@ -4769,7 +4769,16 @@ fn is_hf_tab(element: &HFInline) -> bool {
 fn generate_hf_elements(out: &mut String, elements: &[HFInline], ctx: &mut GenCtx) {
     for element in elements {
         match element {
-            HFInline::Run(run) => generate_run(out, run),
+            HFInline::Run(run) => {
+                let mut run_markup: String = String::new();
+                match text::generate_run_with_context(&mut run_markup, run, ctx) {
+                    Ok(()) => out.push_str(&run_markup),
+                    Err(error) => tracing::error!(
+                        %error,
+                        "failed to generate a header or footer run"
+                    ),
+                }
+            }
             HFInline::Image(image) => generate_image(out, image, ctx),
             // Word applies the containing run's properties to the field
             // result, so the number matches the literals around it.
@@ -5441,14 +5450,7 @@ fn caption_label(identifier: &str) -> String {
 
 fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(), ConvertError> {
     match block {
-        Block::Paragraph(para) => generate_paragraph(
-            out,
-            para,
-            ctx.line_grid_pitch,
-            ctx.default_tab_width_pt,
-            ctx.breaks_hangul_at_eojeol,
-            ctx.available_measure_pt,
-        ),
+        Block::Paragraph(para) => generate_paragraph(out, para, ctx),
         Block::TableOfContents(contents) => {
             generate_table_of_contents(out, contents, ctx);
             Ok(())
@@ -5460,14 +5462,7 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
                 escape_typst(&caption.entry_text),
                 caption_label(&caption.identifier)
             );
-            generate_paragraph(
-                out,
-                &caption.paragraph,
-                ctx.line_grid_pitch,
-                ctx.default_tab_width_pt,
-                ctx.breaks_hangul_at_eojeol,
-                ctx.available_measure_pt,
-            )
+            generate_paragraph(out, &caption.paragraph, ctx)
         }
         Block::PageBreak => {
             out.push_str("#pagebreak()\n");
@@ -5603,6 +5598,7 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
                     available_measure_pt: ctx.available_measure_pt,
                     baseline_snap: None,
                 },
+                ctx,
             )
         }
         Block::MathEquation(math) => {
@@ -6385,6 +6381,7 @@ fn generate_fixed_text_box_block(
                     baseline_snap,
                     ..ListEojeolWrap::default()
                 },
+                ctx,
             )
         }
         _ => generate_block(out, block, ctx),

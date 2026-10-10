@@ -1232,16 +1232,14 @@ pub struct FloatingTextBox {
 ///
 /// Word lays this out as one item on the anchor paragraph's line: the line
 /// grows to hold the box, the box's bottom edge sits on the baseline, and the
-/// box's own paragraphs flow inside it. Emitting those paragraphs into the
-/// body instead gives the box's text a line of its own, draws no outline, and
-/// moves every line below the anchor (issue #1690), so the box travels with
-/// the run it was anchored to.
+/// box's own paragraphs, tables, and pictures flow inside it. Emitting those
+/// blocks into the body instead gives the box's content its own flow and loses
+/// the outline, so the box travels with the run it was anchored to (issues
+/// #1690, #1889).
 #[derive(Debug, Clone)]
 pub struct InlineTextBox {
-    /// The box's own paragraphs. Typed as paragraphs rather than blocks so the
-    /// renderer has no unreachable case to drop silently: the parser keeps a box
-    /// holding anything else on the flattened path instead.
-    pub content: Vec<Paragraph>,
+    /// The box's own flow, including paragraphs, tables, and pictures.
+    pub content: Vec<Block>,
     /// On-page width in points, from `wp:extent`.
     pub width: f64,
     /// On-page height in points, from `wp:extent`.

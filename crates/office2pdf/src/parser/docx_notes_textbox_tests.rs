@@ -168,7 +168,12 @@ fn test_docx_inline_drawing_text_box_rides_its_anchor_paragraph() {
     let box_text: Vec<String> = inline_box
         .content
         .iter()
-        .map(|paragraph| paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => {
+                Some(paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+            }
+            _ => None,
+        })
         .collect();
     assert_eq!(box_text, vec!["Inside box".to_string()]);
 }
@@ -483,7 +488,7 @@ fn test_docx_drawing_text_box_multiple_paragraphs_are_emitted_in_order() {
 
     // The body keeps only its own three paragraphs: the lead-in, the one that
     // anchors the box, and the tail. The box's two paragraphs stay inside the
-    // box (issue #1690).
+    // box (issues #1690 and #1889).
     let body_texts: Vec<String> = blocks
         .iter()
         .filter_map(|block| match block {
@@ -502,7 +507,12 @@ fn test_docx_drawing_text_box_multiple_paragraphs_are_emitted_in_order() {
     let box_texts: Vec<String> = inline_box
         .content
         .iter()
-        .map(|paragraph| paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => {
+                Some(paragraph.runs.iter().map(|run| run.text.as_str()).collect())
+            }
+            _ => None,
+        })
         .collect();
     assert_eq!(
         box_texts,
@@ -568,13 +578,34 @@ fn test_docx_drawing_text_box_table_is_emitted() {
         _ => panic!("Expected FlowPage"),
     };
 
-    let has_table = flow
+    let inline_text_box = flow.content.iter().find_map(|block| match block {
+        Block::Paragraph(paragraph) => paragraph
+            .runs
+            .iter()
+            .find_map(|run| run.inline_box.as_deref()),
+        _ => None,
+    });
+    assert!(
+        inline_text_box.is_some(),
+        "an inline text box holding a table stays attached to its anchor run"
+    );
+    assert!(
+        !flow
+            .content
+            .iter()
+            .any(|block| matches!(block, Block::Table(_))),
+        "a table inside an inline text box must not flatten into body flow"
+    );
+
+    let table = inline_text_box
+        .expect("the inline box must remain attached to its anchor run")
         .content
         .iter()
-        .any(|block| matches!(block, Block::Table(_)));
-    assert!(has_table, "Expected a table extracted from text box");
-
-    let table = first_table(&doc);
+        .find_map(|block| match block {
+            Block::Table(table) => Some(table),
+            _ => None,
+        })
+        .expect("the box keeps its table in its own flow");
     assert_eq!(table.rows.len(), 1);
     assert_eq!(table.rows[0].cells.len(), 2);
 
@@ -597,6 +628,86 @@ fn test_docx_drawing_text_box_table_is_emitted() {
         })
         .collect();
     assert_eq!(cell_text, vec!["A".to_string(), "B".to_string()]);
+}
+
+#[test]
+fn test_docx_inline_drawing_text_box_keeps_picture_in_its_flow() {
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
+            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="wps">
+    <w:body>
+        <w:p><w:r><w:drawing>
+            <wp:inline distT="0" distB="0" distL="0" distR="0">
+                <wp:extent cx="914400" cy="457200"/>
+                <wp:docPr id="1" name="Text Box 1"/>
+                <a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                    <wps:wsp>
+                        <wps:cNvSpPr txBox="1"/>
+                        <wps:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></wps:spPr>
+                        <wps:txbx><w:txbxContent>
+                            <w:p><w:r><w:drawing>
+                                <wp:inline distT="0" distB="0" distL="0" distR="0">
+                                    <wp:extent cx="457200" cy="457200"/>
+                                    <wp:docPr id="2" name="Picture 1"/>
+                                    <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                                        <pic:pic>
+                                            <pic:nvPicPr><pic:cNvPr id="2" name="image1.bmp"/><pic:cNvPicPr/></pic:nvPicPr>
+                                            <pic:blipFill><a:blip r:embed="rIdImage1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+                                            <pic:spPr>
+                                                <a:xfrm><a:off x="0" y="0"/><a:ext cx="457200" cy="457200"/></a:xfrm>
+                                                <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                                            </pic:spPr>
+                                        </pic:pic>
+                                    </a:graphicData></a:graphic>
+                                </wp:inline>
+                            </w:drawing></w:r></w:p>
+                        </w:txbxContent></wps:txbx>
+                        <wps:bodyPr/>
+                    </wps:wsp>
+                </a:graphicData></a:graphic>
+            </wp:inline>
+        </w:drawing></w:r></w:p>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+
+    let data = super::image_tests::build_docx_with_custom_image_document(document_xml);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let flow = match &doc.pages[0] {
+        Page::Flow(flow) => flow,
+        _ => panic!("Expected FlowPage"),
+    };
+    let inline_box = flow.content.iter().find_map(|block| match block {
+        Block::Paragraph(paragraph) => paragraph
+            .runs
+            .iter()
+            .find_map(|run| run.inline_box.as_deref()),
+        _ => None,
+    });
+    let image = inline_box
+        .expect("the picture's text box stays attached to its anchor run")
+        .content
+        .iter()
+        .find_map(|block| match block {
+            Block::Image(image) => Some(image),
+            _ => None,
+        })
+        .expect("the text box keeps the picture in its own flow");
+    assert!(!image.data.is_empty());
+    assert!(
+        !flow
+            .content
+            .iter()
+            .any(|block| matches!(block, Block::Image(_))),
+        "a picture inside an inline box must not flatten into body flow"
+    );
 }
 
 #[test]

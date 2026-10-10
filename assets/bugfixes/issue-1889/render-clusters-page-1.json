@@ -1,0 +1,39 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 268.32,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh full-page and matched content crops show Description has the same font and content, with sub-material table-text offsets up to 0.31325pt vertically and 0.26925pt horizontally. These geometric offsets are tracked rather than waived as rasterization."
+      },
+      "id": "p1-d207f2a0c7c2",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 1,
+    "duplicate": 0,
+    "total": 1,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

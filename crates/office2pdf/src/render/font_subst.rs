@@ -1975,15 +1975,12 @@ fn visit_paragraph_fonts(
         {
             return false;
         }
-        // An inline text box's paragraphs declare their own faces. They are not
-        // in the body flow, so nothing else reaches them and the box's text
-        // would fall back to the engine default (issue #1690).
-        run.inline_box.as_ref().is_none_or(|inline_box| {
-            inline_box
-                .content
-                .iter()
-                .all(|paragraph| visit_paragraph_fonts(paragraph, visitor))
-        })
+        // An inline text box's flow is not in the body, so walk its paragraphs
+        // and nested table cells here or their declared faces fall back to the
+        // engine default (issues #1690, #1889).
+        run.inline_box
+            .as_ref()
+            .is_none_or(|inline_box| visit_blocks_fonts(&inline_box.content, visitor))
     })
 }
 
