@@ -155,8 +155,8 @@ other custom font directory) explicitly with `--font-path` or
 
 XLSX theme fonts (`<scheme val="minor"/>`, as Excel writes the default font)
 resolve through the theme face for the script of Excel's user interface. The
-default reproduces an Excel with a Korean UI, where the converter's reference
-exports were made; pass `--xlsx-ui-script latin`
+default reproduces an Excel with a Korean UI, used for the converter's historical
+reference exports; pass `--xlsx-ui-script latin`
 (`ConvertOptions::xlsx_ui_script = XlsxUiScript::Latin`) to reproduce an
 English, Danish, German or other Latin-script Excel.
 
@@ -255,6 +255,12 @@ Native Rust callers can use the same per-conversion path through
 | DOCX | Supported | Text, tables (including floating tables), images, drawing shapes, lists, code highlighting, headers/footers, page setup |
 | PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
+
+DOCX and PPTX default language tags set the PDF language and text-layout language.
+Per-run languages and DOCX East Asian/complex-script language tags are not yet used.
+
+Automatic hyphenation is off unless enabled in the DOCX document settings.
+Paragraph-level suppression and advanced hyphenation controls are not yet supported.
 
 XLSX workbooks with cells beyond Excel's 16,384-column or 1,048,576-row grid
 are rejected before layout expansion.

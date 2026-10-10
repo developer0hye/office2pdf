@@ -4056,8 +4056,8 @@ fn rewrite_theme_minor_font_latin_face(data: &[u8], face: &str) -> Vec<u8> {
     )
 }
 
-/// The default UI script stays the Korean one every native ground truth in
-/// this repository was exported under: a scheme Normal font paints in the
+/// The default UI script stays the Korean one used for the historical XLSX
+/// ground truths: a scheme Normal font paints in the
 /// theme's `Hang` face and recomputes its dimension-less rows from that
 /// face's 17pt series at 11pt (issues #1047, #1380).
 #[test]
@@ -4311,4 +4311,38 @@ fn xlsx_accepts_a_shared_string_at_excels_cell_character_limit() {
     XlsxParser
         .parse_streaming(&data, &ConvertOptions::default(), 100)
         .expect("streaming accepts the limit itself");
+}
+
+#[test]
+fn native_english_excel_fixture_uses_latin_face_and_printed_row_pitches() {
+    let data = include_bytes!("../../../../tests/fixtures/xlsx/issue-2050-latin-ui-theme.xlsx");
+    let (family, heights) = first_cell_family_and_row_heights(data, XlsxUiScript::Latin);
+    assert_eq!(family.as_deref(), Some("Calibri"));
+    // Native Excel 16.113.4 in an English UI prints the declared 36pt rows
+    // at 33pt and the automatic Calibri 11pt rows at 14pt.
+    assert_eq!(
+        heights,
+        vec![
+            Some(33.0),
+            Some(33.0),
+            Some(33.0),
+            Some(14.0),
+            Some(14.0),
+            Some(14.0)
+        ]
+    );
+    let (default_family, default_heights) =
+        first_cell_family_and_row_heights(data, XlsxUiScript::Hangul);
+    assert_eq!(default_family.as_deref(), Some("맑은 고딕"));
+    assert_eq!(
+        default_heights,
+        vec![
+            Some(36.0),
+            Some(36.0),
+            Some(36.0),
+            Some(17.0),
+            Some(17.0),
+            Some(17.0)
+        ]
+    );
 }

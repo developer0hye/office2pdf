@@ -4,10 +4,10 @@
  * The user-interface script of the Excel installation whose printing an XLSX
  * conversion reproduces.
  *
- * A font that defers to the theme (`<scheme val="minor"/>`, as Excel writes
- * every Normal font) is resolved through the theme face for the script of
+ * A font that defers to the theme (`<scheme val="minor"/>`, often the
+ * Normal font) is resolved through the theme face for the script of
  * Excel's *user interface*, not of the cell text. The same workbook therefore
- * paints, lays out rows and prices columns in a different face depending on
+ * paints, lays out rows and sizes columns in a different face depending on
  * the language Excel runs in.
  */
 export type XlsxUiScript = "Hangul" | "Latin";

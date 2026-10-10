@@ -121,17 +121,17 @@ impl PaperSize {
 /// The user-interface script of the Excel installation whose printing an XLSX
 /// conversion reproduces.
 ///
-/// A font that defers to the theme (`<scheme val="minor"/>`, as Excel writes
-/// every Normal font) is resolved through the theme face for the script of
+/// A font that defers to the theme (`<scheme val="minor"/>`, often the
+/// Normal font) is resolved through the theme face for the script of
 /// Excel's *user interface*, not of the cell text. The same workbook therefore
-/// paints, lays out rows and prices columns in a different face depending on
+/// paints, lays out rows and sizes columns in a different face depending on
 /// the language Excel runs in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "typescript", derive(ts_rs::TS))]
 pub enum XlsxUiScript {
     /// A Korean user interface: the theme's `<a:font script="Hang">` face,
-    /// then its East Asian `<a:ea>` face. The default, because the native
-    /// Excel exports this converter is calibrated against were made there.
+    /// then its East Asian `<a:ea>` face. The default preserves the historical
+    /// calibration against native Korean-UI Excel exports.
     #[default]
     Hangul,
     /// A Latin-script user interface (English, Danish, German, ...): the

@@ -901,8 +901,8 @@ fn normal_font_color(
 /// `<scheme>` font through the theme's per-script face list by the *UI*
 /// script, not by the text's own script: the reference Mac runs a Korean UI,
 /// so even ASCII cells of a scheme font paint and lay out in the `Hang` face
-/// (issues #1047, #1094, #1380). Every native ground truth in this repository
-/// was exported there, which is why [`XlsxUiScript::Hangul`] is the default;
+/// (issues #1047, #1094, #1380). The historical XLSX ground truths
+/// were exported there, which is why [`XlsxUiScript::Hangul`] is the default;
 /// a Latin-script UI resolves to the theme's `<a:latin>` face instead.
 const HANGUL_SCRIPT_TAG: &str = "Hang";
 
