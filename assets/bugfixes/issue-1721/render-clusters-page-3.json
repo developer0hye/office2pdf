@@ -1,0 +1,567 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 52.992,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 76.32,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-eca71bb87780",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 52.992,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 113.28,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-c358233a944c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 51.84,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 8.64,
+        "x": 219.84,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-ab64a96e7e68",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.9232,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 156.48,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-f43364036bb4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 199.68,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-950ff5008830",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 57.6,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-a04998c8eca8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 287.52,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-91ff381f82a0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 373.44,
+        "y": 84.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-15daaadcc9fd",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 397.92,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-b5001d3aa923",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 389.28,
+        "y": 84.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-a7c70ef4deb9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 105.6,
+        "y": 85.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-42a9560bf899",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 8.64,
+        "x": 124.8,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-b948cb512c6b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 8.16,
+        "x": 156.48,
+        "y": 87.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-88c3e92fb86b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 8.64,
+        "x": 57.6,
+        "y": 87.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-e38334eb7616",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 8.64,
+        "x": 287.52,
+        "y": 87.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-a8fbc13553a3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.72,
+        "x": 373.44,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-459c6ed85a62",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 335.04,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-f0fa961875ef",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 297.6,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-61dbaeb2bb6c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.72,
+        "x": 389.28,
+        "y": 79.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-1d4fa1f1bc51",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.2,
+        "x": 255.84,
+        "y": 80.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-baf3aa65146d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 207.84,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-f498e1edf142",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 7.2,
+        "x": 143.52,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-d126ab7218d5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 97.44,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-1cb26d1dcbf6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 182.4,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-a0f1e482c022",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 7.2,
+        "x": 246.72,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-49a15c117728",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 229.44,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-771d3f989fe4",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.24,
+        "x": 361.44,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-625688a4b375",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 7.2,
+        "x": 173.76,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-d6cef27586df",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 7.2,
+        "x": 190.56,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-f0201b90f059",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 6.72,
+        "x": 246.72,
+        "y": 87.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-8ee2b119f096",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 1.44,
+        "width": 14.4,
+        "x": 268.8,
+        "y": 87.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-183638900ba5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 1.44,
+        "width": 14.4,
+        "x": 268.8,
+        "y": 85.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-6b9ec3b71828",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 6.72,
+        "x": 165.6,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-3585f2343156",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 7.2,
+        "x": 237.6,
+        "y": 82.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh expense-title crop shows the existing -2pt baseline offset (GT 92pt, output 90pt), identical before and after. Its glyph fragments remain tracked in #1874; tight merged total labels match native at 227pt and 241pt."
+      },
+      "id": "p3-72c2148f1b36",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 3,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 34,
+    "duplicate": 0,
+    "total": 34,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

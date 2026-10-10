@@ -163,9 +163,8 @@ struct GenCtx {
     /// `w:spacing w:before` on the very first body paragraph, but suppresses it
     /// for a separate paragraph after a break; continuation fragments retain it.
     at_document_start: bool,
-    /// The table row being generated's East Asian line answer. Decided once
-    /// per row so every cell in it shares a baseline, which reading each
-    /// cell's own text could not guarantee (issue #498).
+    /// The table row's East Asian line metrics, decided once per row so
+    /// differences in cell text cannot shift the answer (issue #498).
     row_east_asian: RowEastAsianMetrics,
     /// The enclosing table's default vertical alignment: a cell that declares
     /// none takes this, and its paragraph codegen must know the effective
@@ -195,10 +194,8 @@ struct GenCtx {
     /// line box needs the resolved table default as well as an explicit cell
     /// value to reproduce the anchor-specific baseline seat (issue #1479).
     cell_vertical_align: Option<CellVerticalAlign>,
-    /// The shared line the cell being generated seats on when its spreadsheet
-    /// row is too tight for per-cell vertical alignment to differ: one metric
-    /// family and size for the whole row, so every cell lands on one baseline
-    /// as Excel prints it (issue #839). `None` outside that regime.
+    /// Shared metrics for tight-row centered cells and horizontal bottom
+    /// merges (#839). Unmerged top/bottom cells keep their own seats (#1721).
     cell_sheet_row_line: Option<SheetRowLine>,
     /// The fixed sheet track the cell being generated sits in, so its line
     /// seats on the baseline Excel prints rather than on the centre of the
