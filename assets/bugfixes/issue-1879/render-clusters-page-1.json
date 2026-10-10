@@ -1,0 +1,53 @@
+{
+  "clusters": [],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [
+    {
+      "bbox_pt": {
+        "height": 7.0,
+        "width": 390.0,
+        "x": 62.0,
+        "y": 53.0
+      },
+      "class": "shape-edge-antialiasing",
+      "note": "Matched full-resolution top-rule crops show the same solid 3.5pt black rule and flat endpoints; only fractional edge coverage differs, with no material cluster."
+    },
+    {
+      "bbox_pt": {
+        "height": 4.0,
+        "width": 390.0,
+        "x": 62.0,
+        "y": 481.0
+      },
+      "class": "shape-edge-antialiasing",
+      "note": "The 1pt lower solid rule has matching position and extent; GT shades its outer raster row while output has a sharper edge. No dash or missing segment."
+    },
+    {
+      "bbox_pt": {
+        "height": 540.0,
+        "width": 448.0,
+        "x": 512.0,
+        "y": 0.0
+      },
+      "class": "photo-resampling",
+      "note": "Full-page and matched picture-detail/seam crops retain the same picture framing and colors; fine resampling texture and boundary coverage stay below the material-cluster floor."
+    }
+  ],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 0,
+    "duplicate": 0,
+    "total": 0,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
