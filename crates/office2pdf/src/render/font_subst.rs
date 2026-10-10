@@ -658,7 +658,10 @@ fn fallback_candidates(
     // way, at the stretch the run states beside the list.
     let base_family: Option<&str> = variable_font_base_family(requested)
         .or_else(|| weight_member_base_family(requested))
-        .or_else(|| width_member_base_family(requested));
+        .or_else(|| {
+            width_member_base_family(requested)
+                .filter(|_| requested_family_leads(requested, context))
+        });
     if let Some(base_family) = base_family {
         candidates.push(base_family.to_string());
     }
@@ -1108,10 +1111,15 @@ fn family_name_is_known_sans_serif_brand(normalized_family: &str) -> bool {
 /// host Office installation made the #1407 DOCX footer narrower on that host
 /// than on CI and in LibreOffice. An embedded face, a caller font path, or
 /// registered bytes remain explicit conversion inputs and still lead. With no
-/// active context, preserve the historical declaration-first behaviour.
+/// active context, preserve the historical declaration-first behaviour. Width
+/// members inherit the base family's source policy, so an incidental narrow
+/// face cannot bypass the same restriction.
 fn requested_family_leads(font_family: &str, context: Option<&FontSearchContext>) -> bool {
-    normalized_lookup_key(font_family) != "aptos"
-        || context.is_none_or(|context| context.is_user_family(font_family))
+    let policy_family: &str = width_member_base_family(font_family).unwrap_or(font_family);
+    normalized_lookup_key(policy_family) != "aptos"
+        || context.is_none_or(|context| {
+            context.is_user_family(policy_family) || context.is_user_family(font_family)
+        })
 }
 
 /// Check whether the given font family (or its alias) is available in the
@@ -2232,7 +2240,8 @@ fn resolve_available_fallback(
     // falls back only where the base family ships no face at that width.
     if let Some(stretch) = stretch_stated_by_family_name(font_family) {
         let base_family: &str = typographic_family(font_family.trim());
-        if context.has_face_toward_stretch(base_family, stretch)
+        if requested_family_leads(font_family, Some(context))
+            && context.has_face_toward_stretch(base_family, stretch)
             && family_covers_or_is_unindexed(context, base_family, script)
         {
             return None;

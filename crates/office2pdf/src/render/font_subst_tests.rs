@@ -2054,6 +2054,18 @@ fn a_width_member_is_unavailable_where_the_base_family_ships_only_normal_width()
         is_primary_font_available("Noto Serif Narrow")
     });
     assert!(!available, "no condensed face is indexed");
+    assert_eq!(
+        resolve_available_fallback("Noto Serif Narrow", TextScript::Latin, &context).as_deref(),
+        Some("Noto Serif"),
+        "a regular-only family must report the actual fallback"
+    );
+    with_font_search_context(Some(&context), || {
+        let sample: &str = "Quarterly report 0123456789";
+        let narrow = crate::render::pdf::text_advance_em("Noto Serif Narrow", false, sample);
+        let regular = crate::render::pdf::text_advance_em("Noto Serif", false, sample);
+        assert!(regular.is_some());
+        assert_eq!(narrow, regular, "no synthetic narrowing may be invented");
+    });
 }
 
 #[test]
@@ -2430,4 +2442,47 @@ fn a_refiled_face_stops_shadowing_the_family_and_becomes_reachable_by_its_name()
         Some(0),
         "the refiled face must be reachable under the name it declares"
     );
+}
+
+#[test]
+fn aptos_width_members_preserve_explicit_font_input_policy() {
+    for family in ["Aptos Narrow", "Aptos Condensed"] {
+        for explicit in [false, true] {
+            let user_families: &[&str] = if explicit { &["Aptos"] } else { &[] };
+            let context = FontSearchContext::for_test(
+                Vec::new(),
+                &["Aptos", family, "Liberation Sans"],
+                &["Aptos", family],
+                user_families,
+            );
+            for purpose in [ChainPurpose::Paint, ChainPurpose::Metrics] {
+                let candidates = fallback_candidates(family, Some(&context), purpose);
+                assert_eq!(
+                    candidates.iter().any(|candidate| candidate == "Aptos"),
+                    explicit,
+                    "{family} {purpose:?}: {candidates:?}"
+                );
+            }
+            let (paint, available) = with_font_search_context(Some(&context), || {
+                (
+                    font_with_fallbacks_for_text(family, "Quarterly report"),
+                    is_primary_font_available(family),
+                )
+            });
+            assert_eq!(available, explicit);
+            if explicit {
+                assert!(paint.starts_with(&format!("(\"{family}\"")));
+                assert_eq!(
+                    resolve_available_fallback(family, TextScript::Latin, &context),
+                    None
+                );
+            } else {
+                assert!(paint.starts_with("(\"Liberation Sans\""), "{paint}");
+                assert_eq!(
+                    resolve_available_fallback(family, TextScript::Latin, &context).as_deref(),
+                    Some("Liberation Sans")
+                );
+            }
+        }
+    }
 }

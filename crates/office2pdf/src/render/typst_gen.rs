@@ -654,6 +654,8 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
     // Emit document metadata (title/author) if present
     generate_document_metadata(&mut out, &doc.metadata);
     write_page_format_state(&mut out);
+    write_document_language(&mut out, doc.styles.default_language.as_ref());
+    write_hyphenation_rule(&mut out, doc.styles.hyphenates_automatically);
     if doc.pages.iter().any(|page| matches!(page, Page::Fixed(_))) {
         write_powerpoint_ligature_state(&mut out);
         write_powerpoint_advance_grid_helpers(&mut out);
@@ -5247,6 +5249,45 @@ fn write_page_format_state(out: &mut String) {
          link(target, it.indented(it.prefix(), \
          it.body() + box(width: 1fr, repeat[.]) + shown)) }}"
     );
+}
+
+/// State the language the document's text is written in.
+///
+/// Typst otherwise lays every document out as English and declares
+/// `/Lang(en)` in the PDF, whatever language the source names. The language
+/// also selects Typst's line-breaking and hyphenation rules.
+///
+/// `dir: ltr` keeps the base direction Typst used before the language was
+/// stated: its `dir: auto` follows the language, so an `ar` or `he` default
+/// would otherwise turn every left-to-right paragraph around. A right-to-left
+/// paragraph still states `dir: rtl` itself.
+fn write_document_language(out: &mut String, language: Option<&crate::ir::DocumentLanguage>) {
+    let Some(language) = language else {
+        return;
+    };
+    let _ = write!(
+        out,
+        "#set text(lang: \"{}\"",
+        escape_typst_string(&language.language)
+    );
+    if let Some(region) = &language.region {
+        let _ = write!(out, ", region: \"{}\"", escape_typst_string(region));
+    }
+    let _ = writeln!(out, ", dir: ltr)");
+}
+
+/// State whether words may be hyphenated at a line end.
+///
+/// An explicit rule prevents Typst's automatic justification policy from
+/// introducing hyphens when the source enables no hyphenation. The native
+/// Word fixture in issue #2052 demonstrates that default mismatch. The DOCX
+/// parser can enable the rule through `w:autoHyphenation`; the other parsers
+/// leave it disabled.
+///
+/// Set once for the document so header and footer bands, table cells and
+/// slide text boxes are all covered.
+fn write_hyphenation_rule(out: &mut String, hyphenates_automatically: bool) {
+    let _ = writeln!(out, "#set text(hyphenate: {hyphenates_automatically})");
 }
 
 /// Emit a `TOC` field's result.

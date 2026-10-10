@@ -143,6 +143,9 @@ office2pdf document.docx --pdf-a
 office2pdf report.docx --font-path /usr/share/fonts/custom
 ```
 
+Font names such as `Arial Narrow` select the family's width member when available.
+Aptos and its width members require an explicit font input.
+
 On macOS, `office2pdf` automatically searches fonts bundled in Microsoft Office
 applications before falling back to regular system fonts. Where a face under
 `/System/Library/Fonts` shares the PostScript name of the bundled face, line
@@ -246,6 +249,12 @@ Native Rust callers can use the same per-conversion path through
 | DOCX | Supported | Text, tables (including floating tables), images, drawing shapes, lists, code highlighting, headers/footers, page setup |
 | PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
+
+DOCX and PPTX default language tags set the PDF language and text-layout language.
+Per-run languages and DOCX East Asian/complex-script language tags are not yet used.
+
+Automatic hyphenation is off unless enabled in the DOCX document settings.
+Paragraph-level suppression and advanced hyphenation controls are not yet supported.
 
 XLSX workbooks with cells beyond Excel's 16,384-column or 1,048,576-row grid
 are rejected before layout expansion.
