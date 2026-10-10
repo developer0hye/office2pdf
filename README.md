@@ -143,6 +143,9 @@ office2pdf document.docx --pdf-a
 office2pdf report.docx --font-path /usr/share/fonts/custom
 ```
 
+Font names such as `Arial Narrow` select the family's width member when available.
+Aptos and its width members require an explicit font input.
+
 On macOS, `office2pdf` automatically searches fonts bundled in Microsoft Office
 applications before falling back to regular system fonts. Where a face under
 `/System/Library/Fonts` shares the PostScript name of the bundled face, line
