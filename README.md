@@ -139,6 +139,7 @@ office2pdf *.docx --outdir pdfs/
 office2pdf slides.pptx --paper a4 --landscape
 office2pdf slides.pptx --include-hidden-slides
 office2pdf spreadsheet.xlsx --sheets "Sheet1,Summary"
+office2pdf spreadsheet.xlsx --xlsx-ui-script latin
 office2pdf document.docx --pdf-a
 office2pdf report.docx --font-path /usr/share/fonts/custom
 ```
@@ -154,6 +155,13 @@ automatically read the mutable per-user `CloudFonts` or `PreviewFont` caches,
 whose contents depend on previously opened documents. Pass such a cache (or any
 other custom font directory) explicitly with `--font-path` or
 `ConvertOptions::font_paths` when that host-specific behavior is intentional.
+
+XLSX theme fonts (`<scheme val="minor"/>`, as Excel writes the default font)
+resolve through the theme face for the script of Excel's user interface. The
+default reproduces an Excel with a Korean UI, used for the converter's historical
+reference exports; pass `--xlsx-ui-script latin`
+(`ConvertOptions::xlsx_ui_script = XlsxUiScript::Latin`) to reproduce an
+English, Danish, German or other Latin-script Excel.
 
 ### WASM (Browser / Node.js)
 
@@ -238,6 +246,7 @@ Native Rust callers can use the same per-conversion path through
 | `--landscape` | Force landscape orientation |
 | `--pdf-a` | Produce PDF/A-2b compliant output |
 | `--sheets <NAMES>` | XLSX sheet filter (comma-separated); the only way to print a hidden sheet |
+| `--xlsx-ui-script <SCRIPT>` | UI script of the Excel to reproduce: `hangul` (default) or `latin`; picks the theme face for theme (scheme) fonts |
 | `--slides <RANGE>` | PPTX slide range by source ordinal (e.g. `1-5` or `3`); hidden slides are omitted unless opted in |
 | `--include-hidden-slides` | Include PPTX slides marked `show="0"` or `show="false"` (default: omitted) |
 | `--font-path <DIR>` | Additional font directory override (repeatable) |

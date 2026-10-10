@@ -2,6 +2,7 @@
 import type { PaperSize } from "./PaperSize";
 import type { PdfStandard } from "./PdfStandard";
 import type { SlideRange } from "./SlideRange";
+import type { XlsxUiScript } from "./XlsxUiScript";
 
 /**
  * Options controlling the conversion process.
@@ -14,6 +15,13 @@ export type ConvertOptions = {
  * `veryHidden` sheet.
  */
 sheet_names: Array<string> | null, 
+/**
+ * The UI script of the Excel whose printing XLSX conversion reproduces;
+ * it decides which theme face a scheme font resolves to. Defaults to
+ * [`XlsxUiScript::Hangul`]; use [`XlsxUiScript::Latin`] for workbooks
+ * printed from an English, Danish, German or other Latin-script Excel.
+ */
+xlsx_ui_script: XlsxUiScript,
 /**
  * Filter PPTX slides by range (1-indexed). If `None`, all visible slides
  * are included unless `include_hidden_slides` is enabled.
