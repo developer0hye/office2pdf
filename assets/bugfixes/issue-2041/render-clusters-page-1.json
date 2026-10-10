@@ -1,0 +1,43 @@
+{
+  "clusters": [],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [
+    {
+      "bbox_pt": {
+        "height": 264.0,
+        "width": 510.0,
+        "x": 34.0,
+        "y": 132.0
+      },
+      "class": "photo-resampling",
+      "note": "Fresh left/center/right photo crops preserve framing and contents. Highlighted fragments follow high-frequency photographic details and stay below the material-cluster floor."
+    },
+    {
+      "bbox_pt": {
+        "height": 69.0,
+        "width": 200.0,
+        "x": 38.0,
+        "y": 419.0
+      },
+      "class": "glyph-edge-rasterization",
+      "note": "Title, subtitle and date retain the same face, size, color and placement; inspected differences follow glyph edges."
+    }
+  ],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 0,
+    "duplicate": 0,
+    "total": 0,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
