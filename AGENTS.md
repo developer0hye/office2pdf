@@ -114,7 +114,7 @@ python3 scripts/compare_render.py GT.pdf OUTPUT.pdf --page N --dpi 150 \
 
 ## Unattended Issue Loop
 
-- `scripts/issue_loop.sh` starts fresh Claude attempts; instructions live in `scripts/issue_loop_prompt.md`. Use `--expect-user developer0hye`, `autofix-skip` for trackers, and `scripts/issue_loop_watch.py` for activity. See the runner for options and stop/retry behavior.
+- `scripts/issue_loop.sh` starts fresh Claude attempts (`--agent codex` for Codex); instructions live in `scripts/issue_loop_prompt.md`. Use `--expect-user developer0hye`, `autofix-skip` for trackers, and `scripts/issue_loop_watch.py` for activity. See the runner for options and stop/retry behavior.
 - In headless sessions, wait for CI in the foreground and complete the PR lifecycle before ending the turn. Runner progress does not prove completion.
 
 ## Release Procedure

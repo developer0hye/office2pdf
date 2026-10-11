@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "issue": {"type": "integer"},
+    "status": {"type": "string", "enum": ["resolved", "milestone", "blocked", "incomplete"]},
+    "pr_number": {"type": ["integer", "null"]},
+    "summary": {"type": "string"},
+    "remaining": {"type": "array", "items": {"type": "string"}}
+  },
+  "required": ["issue", "status", "pr_number", "summary", "remaining"]
+}

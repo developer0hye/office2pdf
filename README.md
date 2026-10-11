@@ -287,6 +287,39 @@ XML they do not model — and saving rewrites only edited entries. The
 `office2pdf` rendering pipeline stays a derived projection for PDF
 preview/export; it is not the editable source of truth.
 
+## Unattended issue development
+
+With authenticated `gh` and `codex` CLIs, run one fresh Codex session per issue attempt:
+
+```sh
+scripts/issue_loop.sh --agent codex --max-issues 1 --expect-user developer0hye
+scripts/issue_loop_watch.py --agent codex
+```
+
+For a continuous queue, omit `--max-issues 1`; add `--once` to exit when the queue
+is empty or `--label LABEL` to restrict it. Claude remains the default agent.
+Both agents follow the repository's testing, review, PR, merge, and cleanup rules.
+Trackers labeled `autofix-skip` and issues labeled `autofix-blocked` are excluded.
+
+Codex runs with approval disabled and full host/network access by default, matching
+Claude's existing unattended permissions. Use only trusted repositories and queues;
+`--codex-sandbox workspace-write` restricts access but can prevent GitHub, sibling
+worktree, or native Office operations. `--model NAME` overrides the CLI default;
+`--max-runtime SECONDS` bounds each Codex attempt (default 7200). Claude's
+`--max-turns` does not apply to Codex. If your configured model is unavailable
+for your login, select a supported model with `--model`; configuration failures
+stop the loop without labeling the issue as blocked. Developer0hye-owned
+repositories require the `developer0hye` GitHub account; the loop switches accounts when needed.
+
+Each Codex attempt saves `.jsonl` events, `.stderr.log` diagnostics, and a
+`.result.json` report under `target/issue-loop-logs` (override with `--log-dir`).
+GitHub state determines progress; a structured report alone cannot establish
+completion. Failed attempts are retried, then labeled for review; usage limits
+wait an hour before retrying, except when the attempt cap has been reached.
+Stop after the current attempt with `touch target/issue-loop-logs/STOP` (use the
+chosen log directory when overridden), or interrupt with Ctrl+C.
+See `scripts/issue_loop.sh --help` for additional options.
+
 ## Contributing files
 
 Before attaching files to help improve office2pdf, complete a security review

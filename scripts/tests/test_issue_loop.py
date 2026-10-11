@@ -139,6 +139,20 @@ class UsageLimitReasonTest(unittest.TestCase):
             )
         )
 
+    def test_codex_quota_failure_is_a_limit(self):
+        self.assertLimit(self.detect(json.dumps({"type": "turn.failed", "error": {
+            "message": "You've hit your usage limit. Try again later."}})))
+
+    def test_codex_error_event_is_a_limit(self):
+        self.assertLimit(self.detect(json.dumps({"type": "error", "message": "rate_limit_exceeded"})))
+
+    def test_codex_agent_and_command_text_cannot_claim_a_quota_failure(self):
+        for item in (
+            {"type": "agent_message", "text": "You've hit your usage limit."},
+            {"type": "command_execution", "aggregated_output": "rate_limit_exceeded"},
+        ):
+            self.assertNoLimit(self.detect(json.dumps({"type": "item.completed", "item": item})))
+
     def test_an_empty_log_is_not_a_limit(self):
         self.assertNoLimit(self.detect(""))
 

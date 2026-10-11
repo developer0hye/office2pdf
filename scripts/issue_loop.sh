@@ -2,7 +2,7 @@
 #
 # issue_loop.sh — work through open GitHub issues unattended, one fresh agent per issue.
 #
-# Each iteration starts a NEW `claude -p` process, so the agent's context window never
+# Each iteration starts a NEW `claude -p` or `codex exec` process, so the agent's context window never
 # accumulates across issues; the durable state is GitHub itself (the open-issue list is
 # the queue, a closed issue or a merged PR is the completion mark) plus whatever the
 # agent writes into the repository. A single long-lived session cannot do this: its
@@ -17,7 +17,17 @@
 # Stop it gracefully with `touch target/issue-loop-logs/STOP` (finishes the current
 # issue first) or Ctrl+C. Per-run reports land in target/issue-loop-logs/.
 #
-# Requirements: `claude` (logged in), `gh` (authenticated with push access), jq via gh.
+#   scripts/issue_loop.sh --agent codex --max-issues 1  # one Codex attempt
+#   --agent claude|codex (default claude), --model NAME, --label LABEL
+#   --max-turns N (Claude only, default 200)
+#   --max-runtime SECONDS (Codex only, default 7200)
+#   --codex-sandbox read-only|workspace-write|danger-full-access (default danger-full-access)
+#   --log-dir DIR, --expect-user LOGIN, --cargo-target-dir DIR, --min-free-gb N
+#   --prompt-file FILE, --blocked-label LABEL, --skip-label LABEL
+#
+# Requirements: selected agent CLI (logged in), Python 3, git, gh with push access.
+# Codex's default grants full host/network access without approval, like Claude's
+# --dangerously-skip-permissions. Run only against a trusted repository and queue.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,7 +38,10 @@ SKIP_LABEL="autofix-skip"         # set by a human on umbrella/tracker issues; e
 QUEUE_LABEL=""                    # optional: restrict the queue to one label
 PROMPT_FILE="$SCRIPT_DIR/issue_loop_prompt.md"
 LOG_DIR="$REPO_ROOT/target/issue-loop-logs"
-MODEL=""                          # empty = whatever `claude` defaults to
+AGENT="claude"
+CODEX_SANDBOX="danger-full-access"
+MAX_RUNTIME=7200
+MODEL=""                          # empty = the selected CLI default
 MAX_TURNS=200
 MAX_ATTEMPTS_PER_ISSUE=2          # attempts that produce no merged PR
 MAX_CONSECUTIVE_FAILURES=3        # across issues; trips the circuit breaker
@@ -45,6 +58,13 @@ usage() { awk 'NR > 1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "${BASH_SOURC
 
 while (( $# )); do
   case "$1" in
+    --agent|--model|--label|--blocked-label|--skip-label|--prompt-file|--max-turns|--log-dir|--expect-user|--cargo-target-dir|--min-free-gb|--usage-limit-reason|--max-issues|--max-runtime|--codex-sandbox)
+      (( $# >= 2 )) && [[ -n "$2" && "$2" != --* ]] || { echo "missing value for $1" >&2; exit 2; } ;;
+  esac
+  case "$1" in
+    --agent) shift; AGENT="$1" ;;
+    --max-runtime) shift; MAX_RUNTIME="$1" ;;
+    --codex-sandbox) shift; CODEX_SANDBOX="$1" ;;
     --once) ONCE=1 ;;
     --max-issues) shift; MAX_ISSUES="${1:-0}" ;;
     --label) shift; QUEUE_LABEL="${1:-}" ;;
@@ -64,6 +84,15 @@ while (( $# )); do
   shift
 done
 
+[[ "$AGENT" == claude || "$AGENT" == codex ]] || { echo "invalid --agent: $AGENT" >&2; exit 2; }
+[[ "$CODEX_SANDBOX" == read-only || "$CODEX_SANDBOX" == workspace-write || "$CODEX_SANDBOX" == danger-full-access ]] || { echo "invalid --codex-sandbox" >&2; exit 2; }
+for value in "$MAX_RUNTIME" "$MAX_TURNS"; do
+  [[ "$value" =~ ^[1-9][0-9]*$ ]] || { echo "runtime and turn limits must be positive integers" >&2; exit 2; }
+done
+for value in "$MAX_ISSUES" "$MIN_FREE_GB"; do
+  [[ "$value" =~ ^(0|[1-9][0-9]*)$ ]] || { echo "issue and disk limits must be nonnegative integers" >&2; exit 2; }
+done
+
 # Prints a short reason when a run really hit a usage limit, and nothing when it
 # did not. Only the CLI's own result/error text and its non-JSON output can carry
 # that message. Reading the raw log instead matches the telemetry around it: a
@@ -76,7 +105,8 @@ import re
 import sys
 
 MESSAGE = re.compile(
-    r"usage limit reached|reached your .{0,60}?limit|cc_cli_limit_message",
+    r"usage limit reached|reached your .{0,60}?limit|cc_cli_limit_message|"
+    r"you[’\']ve hit your usage limit|insufficient_quota|rate_limit_exceeded",
     re.IGNORECASE,
 )
 
@@ -116,6 +146,10 @@ for event in events:
             print("rate_limit_event status=%s" % status)
             raise SystemExit(0)
         continue
+    if event.get("type") == "turn.failed":
+        error = event.get("error")
+        if isinstance(error, dict) and isinstance(error.get("message"), str):
+            report(error["message"], "turn.failed")
     for key in ("result", "error", "message"):
         value = event.get(key)
         if isinstance(value, str):
@@ -133,19 +167,29 @@ STOP_FILE="$LOG_DIR/STOP"
 mkdir -p "$LOG_DIR"
 cd "$REPO_ROOT" || exit 1
 
-for tool in claude gh git; do
+for tool in "$AGENT" gh git python3; do
   command -v "$tool" >/dev/null || { echo "missing required tool: $tool" >&2; exit 1; }
 done
 
-gh_login="$(gh api user --jq .login 2>/dev/null || true)"
-[[ -z "$gh_login" ]] && { echo "gh is not authenticated" >&2; exit 1; }
-if [[ -n "$EXPECT_USER" && "$gh_login" != "$EXPECT_USER" ]]; then
-  echo "gh is authenticated as '$gh_login', expected '$EXPECT_USER' — aborting." >&2
-  exit 1
+repo_owner="$(gh repo view --json owner --jq .owner.login)" || exit 1
+if [[ "$repo_owner" == developer0hye ]]; then
+  [[ -z "$EXPECT_USER" || "$EXPECT_USER" == developer0hye ]] || { echo "developer0hye repositories require developer0hye" >&2; exit 1; }
+  EXPECT_USER=developer0hye
 fi
-
-gh label create "$BLOCKED_LABEL" --force --color B60205 \
-  --description "issue-loop: unattended attempts failed, needs human review" >/dev/null 2>&1 || true
+verify_identity() {
+  gh auth status >/dev/null 2>&1 || { echo "gh is not authenticated" >&2; return 1; }
+  gh_login="$(gh api user --jq .login)" || return 1
+  if [[ -n "$EXPECT_USER" && "$gh_login" != "$EXPECT_USER" ]]; then
+    gh auth switch --user "$EXPECT_USER" >/dev/null 2>&1 || return 1
+    gh auth status >/dev/null 2>&1 || return 1
+    gh_login="$(gh api user --jq .login)" || return 1
+  fi
+  [[ -n "$gh_login" && ( -z "$EXPECT_USER" || "$gh_login" == "$EXPECT_USER" ) ]] || { echo "unexpected gh identity: $gh_login" >&2; return 1; }
+}
+github_write() { verify_identity && gh "$@"; }
+verify_identity || exit 1
+github_write label create "$BLOCKED_LABEL" --force --color B60205 \
+  --description "issue-loop: unattended attempts failed, needs human review" >/dev/null || exit 1
 
 # Available space in GiB, portably: -P forces one line per filesystem, -k fixes the block size.
 free_gb() { df -Pk "$REPO_ROOT" | awk 'NR==2 {print int($4/1048576)}'; }
@@ -162,7 +206,7 @@ pick_issue() {
 # progress signal, because a large issue is often advanced one milestone per run.
 merged_refs() {
   gh pr list --state merged --limit 30 --json body \
-    --jq "[.[] | select(.body // \"\" | test(\"#$1\\\\b\"))] | length" 2>/dev/null || echo 0
+    --jq "[.[] | select(.body // \"\" | test(\"#$1\\\\b\"))] | length" 2>/dev/null
 }
 
 open_ref_pr() {
@@ -184,6 +228,8 @@ You are running unattended in this repository. Your task is GitHub issue #${n} a
 7. You are in a ONE-SHOT HEADLESS session. The process ends the moment you end your turn, and anything you left running in the background dies with it — it is NOT resumed. Never background the CI wait. Call 'gh pr checks <pr> --watch --interval 30' as a blocking foreground command with a ten-minute timeout and repeat it until the checks finish. End your turn only after the merge is done.
 8. Close issue #${n} with a resolution comment only if it is genuinely resolved. If it cannot be advanced unattended — it needs a human decision, hardware you do not have, or it is an umbrella that closes with its children — merge nothing, comment your findings, and add the '${BLOCKED_LABEL}' label.
 
+For developer0hye-owned repositories, verify 'gh auth status' and 'gh api user --jq .login' before every GitHub mutation; switch to developer0hye if needed. Before commits, set repository-local user.name to Yonghye Kwon and user.email to developer.0hye@gmail.com; verify both and commit with sign-off.
+
 Hard rules: never commit or push to the default branch directly, and never force-push.
 EOF
   if [[ -n "$PROMPT_FILE" && -f "$PROMPT_FILE" ]]; then
@@ -192,7 +238,7 @@ EOF
   fi
 }
 
-echo "issue-loop: repo=$REPO_ROOT user=$gh_login"
+echo "issue-loop: repo=$REPO_ROOT user=$gh_login agent=$AGENT"
 echo "issue-loop: stop with 'touch $STOP_FILE'"
 
 last_issue=""
@@ -222,7 +268,7 @@ while true; do
     fi
   fi
 
-  issue="$(pick_issue)"
+  issue="$(pick_issue)" || { echo "cannot read issue queue — aborting." >&2; exit 1; }
   if [[ -z "$issue" || "$issue" == "null" ]]; then
     (( ONCE )) && { echo "queue empty — done."; break; }
     echo "queue empty — sleeping $((EMPTY_QUEUE_POLL_SECONDS / 60))m."
@@ -235,32 +281,56 @@ while true; do
     last_issue_attempts=0
   fi
 
-  merged_before="$(merged_refs "$issue")"
-  log="$LOG_DIR/issue-${issue}-$(date +%Y%m%d-%H%M%S).json"
+  merged_before="$(merged_refs "$issue")" || { echo "cannot read merged PRs" >&2; exit 1; }
+  prefix="$LOG_DIR/issue-${issue}-$(date +%Y%m%d-%H%M%S)-${AGENT}-$$-${processed}"
+  if [[ "$AGENT" == codex ]]; then
+    log="$prefix.jsonl"
+  else
+    log="$prefix.json"
+  fi
   echo "[$(date +%H:%M:%S)] issue #$issue attempt $((last_issue_attempts + 1)) -> $log"
-
-  claude_args=(-p "$(build_prompt "$issue")" --dangerously-skip-permissions
-               --max-turns "$MAX_TURNS" --output-format json)
-  [[ -n "$MODEL" ]] && claude_args+=(--model "$MODEL")
-  claude "${claude_args[@]}" > "$log" 2>&1
-  rc=$?
+  verify_identity || exit 1
+  if [[ "$AGENT" == codex ]]; then
+    codex_args=(--log "$log" --issue "$issue" --sandbox "$CODEX_SANDBOX" --max-runtime "$MAX_RUNTIME")
+    [[ -n "$MODEL" ]] && codex_args+=(--model "$MODEL")
+    build_prompt "$issue" | python3 "$SCRIPT_DIR/issue_loop_codex.py" "${codex_args[@]}"
+    rc=$?
+  else
+    claude_args=(-p "$(build_prompt "$issue")" --dangerously-skip-permissions
+                 --max-turns "$MAX_TURNS" --output-format json)
+    [[ -n "$MODEL" ]] && claude_args+=(--model "$MODEL")
+    claude "${claude_args[@]}" > "$log" 2>&1
+    rc=$?
+  fi
+  if [[ "$AGENT" == codex ]] && (( rc == 78 || rc == 127 )); then
+    echo "Codex setup failed (exit $rc); see $prefix.stderr.log and $log — aborting." >&2
+    exit "$rc"
+  fi
+  (( rc == 130 )) && { echo "agent interrupted — exiting."; exit 130; }
   processed=$((processed + 1))
 
   # A false positive costs the whole run: the check below returns to the top of
   # the loop without ever reading the issue's state, so a finished agent's work
   # goes uncounted and the loop sleeps an hour before repeating it.
   limit_reason="$(usage_limit_reason "$log" || true)"
+  if [[ -z "$limit_reason" && "$AGENT" == codex ]]; then
+    limit_reason="$(usage_limit_reason "$prefix.stderr.log" || true)"
+  fi
   if [[ -n "$limit_reason" ]]; then
+    if (( MAX_ISSUES > 0 && processed >= MAX_ISSUES )); then
+      echo "usage limit reached ($limit_reason); --max-issues $MAX_ISSUES reached — exiting."
+      break
+    fi
     processed=$((processed - 1))
     echo "usage limit reached ($limit_reason) — sleeping $((USAGE_LIMIT_SLEEP / 60))m, then retrying this issue."
     sleep "$USAGE_LIMIT_SLEEP"
     continue
   fi
 
-  state="$(gh issue view "$issue" --json state --jq .state 2>/dev/null)"
+  state="$(gh issue view "$issue" --json state --jq .state 2>/dev/null)" || { echo "cannot read issue state" >&2; exit 1; }
   blocked="$(gh issue view "$issue" --json labels \
-    --jq "[.labels[].name] | index(\"$BLOCKED_LABEL\") != null" 2>/dev/null)"
-  merged_after="$(merged_refs "$issue")"
+    --jq "[.labels[].name] | index(\"$BLOCKED_LABEL\") != null" 2>/dev/null)" || { echo "cannot read issue labels" >&2; exit 1; }
+  merged_after="$(merged_refs "$issue")" || { echo "cannot read merged PRs" >&2; exit 1; }
 
   if [[ "$state" == "CLOSED" ]]; then
     echo "issue #$issue closed — success."
@@ -275,7 +345,7 @@ while true; do
     consecutive_failures=0
   else
     last_issue_attempts=$((last_issue_attempts + 1))
-    pr_open="$(open_ref_pr "$issue")"
+    pr_open="$(open_ref_pr "$issue")" || { echo "cannot read open PRs" >&2; exit 1; }
     if [[ -n "$pr_open" ]]; then
       # A finished-but-unmerged pull request is progress, not thrashing.
       consecutive_failures=0
@@ -285,9 +355,9 @@ while true; do
       echo "issue #$issue: no progress (exit $rc) — failure $last_issue_attempts/$MAX_ATTEMPTS_PER_ISSUE."
     fi
     if (( last_issue_attempts >= MAX_ATTEMPTS_PER_ISSUE )); then
-      gh issue edit "$issue" --add-label "$BLOCKED_LABEL" >/dev/null
-      gh issue comment "$issue" --body \
-        "issue-loop: $MAX_ATTEMPTS_PER_ISSUE unattended attempts produced no merged pull request; labeled \`$BLOCKED_LABEL\` for manual review. The run reports are on the machine that ran the loop." >/dev/null
+      github_write issue edit "$issue" --add-label "$BLOCKED_LABEL" >/dev/null || exit 1
+      github_write issue comment "$issue" --body \
+        "issue-loop: $MAX_ATTEMPTS_PER_ISSUE unattended attempts produced no merged pull request; labeled \`$BLOCKED_LABEL\` for manual review. The run reports are on the machine that ran the loop." >/dev/null || exit 1
     fi
     if (( consecutive_failures >= MAX_CONSECUTIVE_FAILURES )); then
       echo "$MAX_CONSECUTIVE_FAILURES consecutive failures — circuit breaker open, exiting." >&2
