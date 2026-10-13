@@ -18,19 +18,16 @@ python3 scripts/audit_docxide_corpus.py --corpus-root /path/to/pinned/docxide-pd
   --converter /path/to/current/office2pdf --output /path/to/local/audit
 ```
 
-The runner includes upstream skipped cases and records missing references,
-conversion failures/timeouts, source/reference/output hashes, reference metadata,
-page counts, and normalized text findings. It never executes fixture generators.
-Token identities are hashed; source-document text stays outside the report.
-The baseline is `tests/compatibility/docxide-pdf/baseline.json`.
-Baseline against main `39bcb289`: 390 comparisons, two missing references,
-one image-decoding failure, 64 page-count differences, and 27 empty text layers.
+The runner includes skipped cases, records failures/timeouts, hashes, reference
+metadata, page counts and text findings; it never executes fixture generators.
+Token identities are hashed; source text stays outside reports.
+Baseline (`tests/compatibility/docxide-pdf/baseline.json`, main `39bcb289`): 390
+comparisons, two missing references, one image failure, 64 page-count differences, 27 empty text layers.
 Custom-XML text is retained. Alternate-prefix body/header/footer runs use
 URI-based parsing backported from [docx-rs#934](https://github.com/bokuweb/docx-rs/pull/934).
 
 This is triage, not a visual pass: missing searchable text can still be painted
 as an image/path, and extraction order or font availability can change scores.
-Fixes need fresh native GT, all comparison axes, image inspection and issue dispositions.
 HTML expansion follows its CSS mapping, using Rust [html5ever](https://github.com/servo/html5ever) and
 [mailparse](https://github.com/staktrace/mailparse); docx-rs and contextual scans read the expanded XML.
 Section line numbering maps starts, intervals and restarts to Typst margin labels.
@@ -47,3 +44,6 @@ font/size/tab/wrap differences and inline marker ascent versus body descent/lead
 Damaged-PNG handling follows `src/pdf/images.rs`: preserve the drawing when
 decoding fails. A direct `png` dependency reuses locked 0.18.1 to recover samples;
 native Word probes check CRC and truncated-media behavior.
+EMF translation follows `src/pdf/emf.rs` record semantics: retain Unicode text,
+fonts, explicit UTF-16 advances, drawing state, lines, rectangles and clipping.
+Glyph-index text and world transforms remain unsupported.

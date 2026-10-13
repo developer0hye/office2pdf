@@ -1,7 +1,6 @@
 # krilla
 
 - **URL:** https://github.com/LaurenzV/krilla
-- **Stars:** ~350
 - **Language:** Rust
 - **License:** MIT / Apache 2.0
 
@@ -21,6 +20,11 @@ High-level PDF creation library built on `pdf-writer`. Now the PDF backend for T
 - PDF/A compliance requirements
 - PDF/UA tagging (structure tags: H1-H6, P, Table, Figure)
 - Font subsetting behavior
+- SVG text: [#455](https://github.com/LaurenzV/krilla/pull/455) batches solid-fill
+  glyphs; [#456](https://github.com/LaurenzV/krilla/pull/456) preserves visible
+  logical text through bounded ActualText spans without changing paint.
+  Both crates share a published-version backport to preserve type identity.
+  Extraction tests use [pdf-extract#165](https://github.com/jrmuizel/pdf-extract/pull/165).
 
 ## When to consult
 

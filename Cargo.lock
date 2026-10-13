@@ -2017,8 +2017,7 @@ dependencies = [
 [[package]]
 name = "krilla"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27da593198b20eeba65caeb73c2bbeec3e53ab08fa549898312ce81c4fce5e33"
+source = "git+https://github.com/developer0hye/krilla?rev=7883a0173abdf630b5662fdef388a16d40159c59#7883a0173abdf630b5662fdef388a16d40159c59"
 dependencies = [
  "base64",
  "bumpalo",
@@ -2048,8 +2047,7 @@ dependencies = [
 [[package]]
 name = "krilla-svg"
 version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1237d7c37b16ca9fbc2e72dde13a10d321f9a44aceee35c062bc0a43bfc7ce16"
+source = "git+https://github.com/developer0hye/krilla?rev=7883a0173abdf630b5662fdef388a16d40159c59#7883a0173abdf630b5662fdef388a16d40159c59"
 dependencies = [
  "flate2",
  "fontdb",
@@ -2620,8 +2618,7 @@ checksum = "35fb2e5f958ec131621fdd531e9fc186ed768cbe395337403ae56c17a74c68ec"
 [[package]]
 name = "pdf-extract"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e28ba1758a3d3f361459645780e09570b573fc3c82637449e9963174c813a98"
+source = "git+https://github.com/developer0hye/pdf-extract?rev=bec5322398212f4bcd08e7b45664e575028c4141#bec5322398212f4bcd08e7b45664e575028c4141"
 dependencies = [
  "adobe-cmap-parser",
  "cff-parser",
