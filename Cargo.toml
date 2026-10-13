@@ -22,6 +22,13 @@ docx-rs = { git = "https://github.com/developer0hye/docx-rs.git", branch = "fix/
 # Both crates need the same source to keep image's ZByteReaderTrait identity.
 zune-jpeg = { git = "https://github.com/developer0hye/zune-image", rev = "f256e946a0017d1577e7da553281108e4038452b" }
 zune-core = { git = "https://github.com/developer0hye/zune-image", rev = "f256e946a0017d1577e7da553281108e4038452b" }
+# Backport krilla#455/#456 onto the published sources: SVG text retains its
+# logical content and painted positions. Both crates share one type identity.
+# Remove these pins when a compatible release includes the fix.
+krilla = { git = "https://github.com/developer0hye/krilla", rev = "66770fee570005f63b5c62cb4e18219721d46257" }
+krilla-svg = { git = "https://github.com/developer0hye/krilla", rev = "66770fee570005f63b5c62cb4e18219721d46257" }
+# Extraction regressions consume replacement metadata (pdf-extract#165).
+pdf-extract = { git = "https://github.com/developer0hye/pdf-extract", rev = "bec5322398212f4bcd08e7b45664e575028c4141" }
 
 # CI test profile. The suite is bound by executing unoptimized dependencies
 # (Typst layout, font parsing, inflate), not by compiling them: optimizing only

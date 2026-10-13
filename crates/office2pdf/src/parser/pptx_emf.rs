@@ -32,10 +32,11 @@ const ALTERNATE_FILL_MODE: u32 = 1;
 const NULL_BRUSH_STOCK_OBJECT: u32 = 0x8000_0005;
 const NULL_PEN_STOCK_OBJECT: u32 = 0x8000_0008;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 enum EmfObject {
     Brush(BrushStyle),
     Pen(PenStyle),
+    Font(EmfFont),
 }
 
 #[derive(Clone, Copy)]
@@ -127,6 +128,10 @@ impl BoundingBox {
     }
 }
 
+#[path = "pptx_emf_text.rs"]
+mod text;
+use text::{EmfFont, EmfTextState};
+
 struct SvgPathElement {
     data: String,
     fill: Option<RgbColor>,
@@ -145,7 +150,29 @@ struct EmfSvgConverter {
     current_path_points: Vec<Point>,
     current_point: Option<Point>,
     bounds: BoundingBox,
-    elements: Vec<SvgPathElement>,
+    elements: Vec<String>,
+    text_state: EmfTextState,
+    saved_states: Vec<EmfSavedState>,
+    frame: Option<[f64; 4]>,
+    window_origin: (i32, i32),
+    window_extent: (i32, i32),
+    viewport_origin: (i32, i32),
+    viewport_extent: (i32, i32),
+    clips: Vec<Vec<[i32; 4]>>,
+}
+
+#[derive(Clone)]
+struct EmfSavedState {
+    brush: Option<BrushStyle>,
+    pen: Option<PenStyle>,
+    fill_rule: FillRule,
+    point: Option<Point>,
+    text: EmfTextState,
+    window_origin: (i32, i32),
+    window_extent: (i32, i32),
+    viewport_origin: (i32, i32),
+    viewport_extent: (i32, i32),
+    clips: Vec<Vec<[i32; 4]>>,
 }
 
 impl EmfSvgConverter {
@@ -153,6 +180,13 @@ impl EmfSvgConverter {
         let mut converter = Self {
             fill_rule: FillRule::NonZero,
             bounds: BoundingBox::new(),
+            current_brush: Some(BrushStyle::Solid(RgbColor::from_colorref(0xffffff))),
+            current_pen: Some(PenStyle::Solid {
+                color: RgbColor::from_colorref(0),
+                width: 1,
+            }),
+            window_extent: (1, 1),
+            viewport_extent: (1, 1),
             ..Self::default()
         };
         converter.run(data)?;
@@ -177,6 +211,9 @@ impl EmfSvgConverter {
                     return None;
                 }
                 saw_header = true;
+                // A real header maps 0.01mm picture-frame coordinates into device pixels.
+                // Legacy synthetic fixtures without a complete header retain geometry bounds.
+                self.frame = text::header_frame(body);
                 continue;
             }
 
@@ -191,10 +228,104 @@ impl EmfSvgConverter {
 
     fn handle_record(&mut self, record_type: u32, body: &[u8]) -> Option<()> {
         match record_type {
-            EMR_SETWINDOWEXTEX | EMR_SETWINDOWORGEX | EMR_SETVIEWPORTEXTEX
-            | EMR_SETVIEWPORTORGEX => {
-                // The converter derives its SVG viewBox from actual drawn geometry instead
-                // of these logical extents because many Office EMFs use a wider drawing space.
+            EMR_SETWINDOWEXTEX => self.window_extent = read_point_pair(body)?,
+            EMR_SETWINDOWORGEX => self.window_origin = read_point_pair(body)?,
+            EMR_SETVIEWPORTEXTEX => self.viewport_extent = read_point_pair(body)?,
+            EMR_SETVIEWPORTORGEX => self.viewport_origin = read_point_pair(body)?,
+            18 => self.text_state.is_opaque = read_u32(body, 0)? == 2,
+            22 => self.text_state.align = read_u32(body, 0)?,
+            24 => self.text_state.color = RgbColor::from_colorref(read_u32(body, 0)?),
+            25 => self.text_state.background = RgbColor::from_colorref(read_u32(body, 0)?),
+            30 => self.clips.push(vec![read_rect(body, 0)?]),
+            33 => self.save_state(),
+            34 => self.restore_state(read_i32(body, 0)?)?,
+            38 => {
+                let handle = read_u32(body, 0)?;
+                let pen = if read_u32(body, 4)? & 0xf == PS_NULL {
+                    PenStyle::Null
+                } else {
+                    PenStyle::Solid {
+                        color: RgbColor::from_colorref(read_u32(body, 16)?),
+                        width: read_i32(body, 8)?.saturating_abs().max(1),
+                    }
+                };
+                self.objects.insert(handle, EmfObject::Pen(pen));
+            }
+            43 => self.emit_rect(read_rect(body, 0)?),
+            54 => {
+                let end = Point {
+                    x: read_i32(body, 0)?,
+                    y: read_i32(body, 4)?,
+                };
+                if let Some(start) = self.current_point {
+                    if let Some(path) = self.current_path.as_mut() {
+                        let _ = write!(path, " L {} {}", end.x, end.y);
+                        self.current_path_points.push(end);
+                    } else {
+                        self.emit_poly_path(&[start, end], false);
+                    }
+                }
+                self.current_point = Some(end);
+            }
+            75 => self.select_clip_region(body)?,
+            76 if read_u32(body, 88) == Some(0) => {
+                let x = read_i32(body, 16)?;
+                let y = read_i32(body, 20)?;
+                let right = x.checked_add(read_i32(body, 24)?)?;
+                let bottom = y.checked_add(read_i32(body, 28)?)?;
+                let rop = read_u32(body, 32)?;
+                let color = match rop {
+                    0x00f00021 => self.current_fill(),                     // PATCOPY
+                    0x00ff0062 => Some(RgbColor::from_colorref(0xffffff)), // WHITENESS
+                    0x00000042 => Some(RgbColor::from_colorref(0)),        // BLACKNESS
+                    _ => None,
+                };
+                if let Some(color) = color {
+                    self.push_element(SvgPathElement {
+                        data: format!("M {x} {y} H {right} V {bottom} H {x} Z"),
+                        fill: Some(color),
+                        stroke: None,
+                        stroke_width: None,
+                        fill_rule: self.fill_rule,
+                    });
+                    self.bounds.include_points(&[
+                        Point { x, y },
+                        Point {
+                            x: right,
+                            y: bottom,
+                        },
+                    ]);
+                }
+            }
+            82 => {
+                let (handle, font) = text::read_font(body)?;
+                self.objects.insert(handle, EmfObject::Font(font));
+            }
+            84 => {
+                let Some(font) = self.text_state.font.as_ref() else {
+                    return Some(());
+                };
+                let Some(element) = text::write_text(body, &self.text_state, self.current_point)?
+                else {
+                    return Some(());
+                };
+                // The header frame controls placement; fallback bounds keep old minimal streams usable.
+                let point = Point {
+                    x: read_i32(body, 28)?,
+                    y: read_i32(body, 32)?,
+                };
+                let height = font.height.saturating_abs().max(1);
+                self.bounds.include_points(&[
+                    point,
+                    Point {
+                        x: point.x.saturating_add(height),
+                        y: point.y.saturating_add(height),
+                    },
+                ]);
+                self.elements.push(self.wrap_element(element.svg));
+                if self.text_state.align & 1 != 0 {
+                    self.current_point = Some(element.next_point);
+                }
             }
             EMR_SETPOLYFILLMODE => {
                 let mode: u32 = read_u32(body, 0)?;
@@ -235,6 +366,7 @@ impl EmfSvgConverter {
                 match self.resolve_object(handle) {
                     Some(EmfObject::Brush(brush)) => self.current_brush = Some(brush),
                     Some(EmfObject::Pen(pen)) => self.current_pen = Some(pen),
+                    Some(EmfObject::Font(font)) => self.text_state.font = Some(font),
                     None => {}
                 }
             }
@@ -280,11 +412,25 @@ impl EmfSvgConverter {
     }
 
     fn resolve_object(&self, handle: u32) -> Option<EmfObject> {
-        if let Some(object) = self.objects.get(&handle).copied() {
+        if let Some(object) = self.objects.get(&handle).cloned() {
             return Some(object);
         }
 
         match handle {
+            0x8000_0000 => Some(EmfObject::Brush(BrushStyle::Solid(
+                RgbColor::from_colorref(0xffffff),
+            ))),
+            0x8000_0004 => Some(EmfObject::Brush(BrushStyle::Solid(
+                RgbColor::from_colorref(0),
+            ))),
+            0x8000_0006 => Some(EmfObject::Pen(PenStyle::Solid {
+                color: RgbColor::from_colorref(0xffffff),
+                width: 1,
+            })),
+            0x8000_0007 => Some(EmfObject::Pen(PenStyle::Solid {
+                color: RgbColor::from_colorref(0),
+                width: 1,
+            })),
             NULL_BRUSH_STOCK_OBJECT => Some(EmfObject::Brush(BrushStyle::Null)),
             NULL_PEN_STOCK_OBJECT => Some(EmfObject::Pen(PenStyle::Null)),
             _ => None,
@@ -385,7 +531,7 @@ impl EmfSvgConverter {
         }
 
         self.bounds.include_points(points);
-        self.elements.push(SvgPathElement {
+        self.push_element(SvgPathElement {
             data,
             fill,
             stroke,
@@ -426,7 +572,7 @@ impl EmfSvgConverter {
         }
 
         self.bounds.include_points(&self.current_path_points);
-        self.elements.push(SvgPathElement {
+        self.push_element(SvgPathElement {
             data: path,
             fill,
             stroke,
@@ -458,41 +604,170 @@ impl EmfSvgConverter {
         }
     }
 
-    fn finish(self) -> Option<Vec<u8>> {
-        if self.bounds.is_empty || self.elements.is_empty() {
-            return None;
-        }
+    fn save_state(&mut self) {
+        self.saved_states.push(EmfSavedState {
+            brush: self.current_brush,
+            pen: self.current_pen,
+            fill_rule: self.fill_rule,
+            point: self.current_point,
+            text: self.text_state.clone(),
+            window_origin: self.window_origin,
+            window_extent: self.window_extent,
+            viewport_origin: self.viewport_origin,
+            viewport_extent: self.viewport_extent,
+            clips: self.clips.clone(),
+        });
+    }
 
-        let width: i32 = (self.bounds.max_x - self.bounds.min_x).max(1);
-        let height: i32 = (self.bounds.max_y - self.bounds.min_y).max(1);
-        let mut svg = String::new();
-        let _ = writeln!(
-            svg,
-            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"{} {} {} {}\">",
-            self.bounds.min_x, self.bounds.min_y, width, height
-        );
-        for element in self.elements {
-            svg.push_str("  <path d=\"");
-            svg.push_str(&element.data);
-            svg.push('"');
-            match element.fill {
-                Some(fill) => {
-                    let _ = write!(svg, " fill=\"{}\"", fill.as_svg_hex());
-                    if matches!(element.fill_rule, FillRule::EvenOdd) {
-                        svg.push_str(" fill-rule=\"evenodd\"");
-                    }
-                }
-                None => svg.push_str(" fill=\"none\""),
+    fn restore_state(&mut self, level: i32) -> Option<()> {
+        let index = if level < 0 {
+            self.saved_states
+                .len()
+                .checked_sub(level.unsigned_abs() as usize)?
+        } else {
+            (level as usize).checked_sub(1)?
+        };
+        let state = self.saved_states.get(index)?.clone();
+        self.saved_states.truncate(index);
+        self.current_brush = state.brush;
+        self.current_pen = state.pen;
+        self.fill_rule = state.fill_rule;
+        self.current_point = state.point;
+        self.text_state = state.text;
+        self.window_origin = state.window_origin;
+        self.window_extent = state.window_extent;
+        self.viewport_origin = state.viewport_origin;
+        self.viewport_extent = state.viewport_extent;
+        self.clips = state.clips;
+        Some(())
+    }
+
+    fn select_clip_region(&mut self, body: &[u8]) -> Option<()> {
+        let size = read_u32(body, 0)? as usize;
+        let mode = read_u32(body, 4)?;
+        if size == 0 {
+            if mode == 5 {
+                self.clips.clear();
             }
-            if let Some(stroke) = element.stroke {
-                let _ = write!(svg, " stroke=\"{}\"", stroke.as_svg_hex());
+            return Some(());
+        }
+        let region = body.get(8..8usize.checked_add(size)?)?;
+        let count = read_u32(region, 8)? as usize;
+        let offset = read_u32(region, 0)? as usize;
+        let _ = region.get(offset..offset.checked_add(count.checked_mul(16)?)?)?;
+        let rects = (0..count)
+            .map(|i| read_rect(region, offset + i * 16))
+            .collect::<Option<Vec<_>>>()?;
+        match mode {
+            5 => {
+                self.clips.clear();
+                self.clips.push(rects);
+            }
+            1 => self.clips.push(rects),
+            _ => {
+                tracing::warn!(mode, "Unsupported EMF clipping region combination");
+            }
+        }
+        Some(())
+    }
+
+    fn emit_rect(&mut self, rect: [i32; 4]) {
+        let [left, top, right, bottom] = rect;
+        self.emit_poly_path(
+            &[
+                Point { x: left, y: top },
+                Point { x: right, y: top },
+                Point {
+                    x: right,
+                    y: bottom,
+                },
+                Point { x: left, y: bottom },
+            ],
+            true,
+        );
+    }
+
+    fn wrap_element(&self, element: String) -> String {
+        let sx = f64::from(self.viewport_extent.0) / f64::from(self.window_extent.0);
+        let sy = f64::from(self.viewport_extent.1) / f64::from(self.window_extent.1);
+        if !sx.is_finite() || !sy.is_finite() {
+            return String::new();
+        }
+        let dx = f64::from(self.viewport_origin.0) - f64::from(self.window_origin.0) * sx;
+        let dy = f64::from(self.viewport_origin.1) - f64::from(self.window_origin.1) * sy;
+        let mut svg = format!("<g transform=\"matrix({sx} 0 0 {sy} {dx} {dy})\">");
+        // Nested SVGs intersect the saved clipping regions; rectangles within one region form a union.
+        for (index, rects) in self.clips.iter().enumerate() {
+            let _ = write!(
+                svg,
+                "<defs><clipPath id=\"clip-{}-{index}\">",
+                self.elements.len()
+            );
+            for &[l, t, r, b] in rects {
+                let width = i64::from(r) - i64::from(l);
+                let height = i64::from(b) - i64::from(t);
                 let _ = write!(
                     svg,
-                    " stroke-width=\"{}\"",
-                    element.stroke_width.unwrap_or(1)
+                    "<rect x=\"{l}\" y=\"{t}\" width=\"{}\" height=\"{}\"/>",
+                    width.max(0),
+                    height.max(0)
                 );
             }
-            svg.push_str("/>\n");
+            let _ = write!(
+                svg,
+                "</clipPath></defs><g clip-path=\"url(#clip-{}-{index})\">",
+                self.elements.len()
+            );
+        }
+        svg.push_str(&element);
+        for _ in &self.clips {
+            svg.push_str("</g>");
+        }
+        svg.push_str("</g>");
+        svg
+    }
+
+    fn push_element(&mut self, element: SvgPathElement) {
+        let mut svg = format!("<path d=\"{}\"", element.data);
+        match element.fill {
+            Some(fill) => {
+                let _ = write!(svg, " fill=\"{}\"", fill.as_svg_hex());
+                if matches!(element.fill_rule, FillRule::EvenOdd) {
+                    svg.push_str(" fill-rule=\"evenodd\"");
+                }
+            }
+            None => svg.push_str(" fill=\"none\""),
+        }
+        if let Some(stroke) = element.stroke {
+            let _ = write!(
+                svg,
+                " stroke=\"{}\" stroke-width=\"{}\"",
+                stroke.as_svg_hex(),
+                element.stroke_width.unwrap_or(1)
+            );
+        }
+        svg.push_str("/>");
+        self.elements.push(self.wrap_element(svg));
+    }
+
+    fn finish(self) -> Option<Vec<u8>> {
+        if self.elements.is_empty() || (self.frame.is_none() && self.bounds.is_empty) {
+            return None;
+        }
+        let [left, top, right, bottom] = self.frame.unwrap_or([
+            f64::from(self.bounds.min_x),
+            f64::from(self.bounds.min_y),
+            f64::from(self.bounds.max_x),
+            f64::from(self.bounds.max_y),
+        ]);
+        let width = (right - left).max(1.0);
+        let height = (bottom - top).max(1.0);
+        let mut svg = format!(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"{left} {top} {width} {height}\">\n"
+        );
+        for element in self.elements {
+            svg.push_str(&element);
+            svg.push('\n');
         }
         svg.push_str("</svg>\n");
         Some(svg.into_bytes())
@@ -536,3 +811,19 @@ fn read_i16(data: &[u8], offset: usize) -> Option<i16> {
 pub(super) fn convert_emf_to_svg(data: &[u8]) -> Option<Vec<u8>> {
     EmfSvgConverter::convert(data)
 }
+
+fn read_point_pair(data: &[u8]) -> Option<(i32, i32)> {
+    Some((read_i32(data, 0)?, read_i32(data, 4)?))
+}
+fn read_rect(data: &[u8], offset: usize) -> Option<[i32; 4]> {
+    Some([
+        read_i32(data, offset)?,
+        read_i32(data, offset + 4)?,
+        read_i32(data, offset + 8)?,
+        read_i32(data, offset + 12)?,
+    ])
+}
+
+#[cfg(test)]
+#[path = "pptx_emf_tests.rs"]
+mod tests;

@@ -68,3 +68,9 @@ tail. Parser and conversion tests require the picture's extent and surrounding
 text to survive damaged media; runtime-generated variants cover bad checksums,
 RGB/alpha/grayscale samples and header/footer pictures. Native Word exports
 remain outside git. Neither package contains third-party content.
+
+`emf_vector_table.docx` is an authored three-column, four-row vector table with
+Arial regular/bold/italic labels, Unicode text records, explicit advances, and
+grid lines. It contains no fonts or third-party content and uses the repository
+license. The default conversion test checks searchable cell text; native Word
+PDFs and visual audit artifacts remain outside git.

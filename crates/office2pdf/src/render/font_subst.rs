@@ -1370,9 +1370,15 @@ fn symbol_fallbacks(text: &str) -> &'static [&'static str] {
 /// [`font_for_mixed_script_text`] for the case where one face has to cover
 /// several at once.
 pub fn font_with_fallbacks_for_text(font_family: &str, text: &str) -> String {
+    join_font_list(paint_family_candidates_for_text(font_family, text))
+}
+
+/// The paint chain as family names, for renderers that consume CSS rather than Typst.
+/// Metrics candidates deliberately omit the generic class tail and cannot substitute here.
+pub(crate) fn paint_family_candidates_for_text(font_family: &str, text: &str) -> Vec<String> {
     ACTIVE_FONT_CONTEXT.with(|active_context| {
         let context = active_context.borrow();
-        join_font_list(latin_family_chain(font_family, text, context.as_ref()))
+        latin_family_chain(font_family, text, context.as_ref())
     })
 }
 

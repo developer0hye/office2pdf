@@ -371,6 +371,28 @@ fn test_docx_picture_with_unconvertible_emf_is_skipped_not_fatal() {
 }
 
 #[test]
+fn emf_table_retains_painted_and_searchable_cell_text() {
+    let source = include_bytes!("../../../../tests/fixtures/docx/docxide/emf_vector_table.docx");
+    let result = crate::convert_bytes(source, crate::Format::Docx, &ConvertOptions::default())
+        .expect("a valid vector table must convert");
+    let text = pdf_extract::extract_text_from_mem(&result.pdf).unwrap();
+    for label in [
+        "Vector table",
+        "Sample",
+        "Count",
+        "Result",
+        "Alpha",
+        "Beta",
+        "Gamma",
+        "0.125",
+        "0.250",
+        "0.500",
+    ] {
+        assert!(text.contains(label), "missing table text {label}: {text:?}");
+    }
+}
+
+#[test]
 fn docx_floating_picture_rotation_reaches_ir_and_typst() {
     let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"

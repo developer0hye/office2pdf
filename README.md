@@ -17,6 +17,7 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 - **PDF/A-2b** — archival-compliant output via `--pdf-a`
 - **Embedded font extraction** — fonts embedded in PPTX/DOCX are automatically extracted, deobfuscated, and used during conversion
 - **macOS Office font auto-discovery** — PowerPoint/Word/Excel bundled fonts are searched automatically; mutable per-user Office cloud caches require an explicit font path
+- **EMF pictures** — basic Unicode text, fonts, lines, rectangles, and clipping in DOCX/PPTX; record support is partial
 - **WASM** — runs in browsers and Node.js via WebAssembly, with optional caller-provided or feature-gated Simplified Chinese fonts
 - **Zero external dependencies** — runs as a standalone executable
 
