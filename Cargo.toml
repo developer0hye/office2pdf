@@ -25,8 +25,8 @@ zune-core = { git = "https://github.com/developer0hye/zune-image", rev = "f256e9
 # Backport krilla#455/#456 onto the published sources: SVG text retains its
 # logical content and painted positions. Both crates share one type identity.
 # Remove these pins when a compatible release includes the fix.
-krilla = { git = "https://github.com/developer0hye/krilla", rev = "66770fee570005f63b5c62cb4e18219721d46257" }
-krilla-svg = { git = "https://github.com/developer0hye/krilla", rev = "66770fee570005f63b5c62cb4e18219721d46257" }
+krilla = { git = "https://github.com/developer0hye/krilla", rev = "7883a0173abdf630b5662fdef388a16d40159c59" }
+krilla-svg = { git = "https://github.com/developer0hye/krilla", rev = "7883a0173abdf630b5662fdef388a16d40159c59" }
 # Extraction regressions consume replacement metadata (pdf-extract#165).
 pdf-extract = { git = "https://github.com/developer0hye/pdf-extract", rev = "bec5322398212f4bcd08e7b45664e575028c4141" }
 
