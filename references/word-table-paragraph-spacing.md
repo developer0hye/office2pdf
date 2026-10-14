@@ -7,7 +7,7 @@
 
 The pinned docxide-pdf case15 declares TableGrid line240/auto and document-default line276/auto. Its Normal style and cell paragraphs do not state a higher-precedence line value. Baseline `8acc920a` drops the table property; its native comparison shows taller automatic rows. The parser now retains table line spacing with inheritance and formatting provenance. A fresh native comparison reduces mean baseline displacement from 11.6638pt to 1.0564pt and restores normalized extraction order; residual placement remains tracked separately, with worst baseline displacement 3.2984pt.
 
-A source scan of referenced table styles and their parent chains finds line declarations in 34 corpus documents: all 46 declarations use automatic spacing (42 base, two first-row, two last-row). Conditional declarations may be inactive; this is potential coverage, not a fidelity result. Unreferenced style declarations do not establish affected scope.
+A source scan of referenced body-table styles and their parent chains finds line declarations in 34 corpus documents: all 46 declarations use automatic spacing (42 base, two first-row, two last-row). Extending the scan to other Word XML parts and default table styles finds 37 documents with 50 automatic-spacing declarations. Conditional declarations and other stories may be inactive; these counts identify potential coverage, not fidelity. Unreferenced style declarations do not establish affected scope.
 
 Keep formatting provenance separate from resolved values: a paragraph style inheriting a document default must allow the table property to override it, while a paragraph style stating its own line spacing must keep it. Never infer provenance from a resolved numeric value.
 
