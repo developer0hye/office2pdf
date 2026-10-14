@@ -91,3 +91,7 @@ Apache-2.0 license. Two unstyled references use nonsequential IDs; one shares
 its run with surrounding text. The default parser and compiled-frame regression
 requires both note bodies and the surrounding text to survive. Native Word
 exports remain external.
+
+`multicolumn_footnotes.docx` is independently authored under Apache-2.0.
+It reproduces note wrapping that ignores the section column width (#2140);
+the one-column control and native Word exports remain external.
