@@ -13,4 +13,15 @@ Reproduce with the pinned public input/reference and a CLI built from the baseli
 
 Model vision inspected the full native/main/current pages, their diffs and all five full-width table triplets at original 150 DPI. Automatic rows are taller than Word and progressively move later tables down (worst baseline 23.2934pt, pitch 2.4219pt); both fixed 36pt rows keep their heights. Black body text, blue bold titles, merged-cell divisions and red/black/blue border regions are present and readable. No italic, underline, CJK or dashed borders occur. This is defect evidence, not a passed fidelity audit.
 
-Related: #2147 (TableGrid line240/auto is omitted by the table-style parser); #2148 (independent 5.4pt table-origin error); #1874 (small initial-title placement/advance differences). The character multiset and 51 matched instances agree, but normalized extraction order moves the vertically aligned second-row first-cell label earlier; that observation remains open under #2149. No after-fix image or cluster approval is claimed.
+Related: #2147 (TableGrid line240/auto is omitted by the table-style parser); #2148 (independent 5.4pt table-origin error); #1874 (small initial-title placement/advance differences). The character multiset and 51 matched instances agree, but normalized extraction order moves the vertically aligned second-row first-cell label earlier; that observation remains open under #2149. The historical comparison above remains the before-only defect evidence from PR #2150.
+
+## Table-style spacing correction
+
+`gt.jpg`, `before.jpg` and `after.jpg` retain the original full-page 150 DPI panels. The after PDF uses the same source/reference hashes above. Table-style line spacing now inherits through table styles and active conditional regions, below explicit named/direct paragraph formatting.
+
+Fresh native comparison: all 51 text instances map, normalized extracted content matches all 493 characters, and no missing/reflowed/wrapped text, painted-text visibility mismatch or fill occlusion is reported. Mean absolute baseline displacement falls from 11.6638pt to 1.0564pt; worst displacement falls from 23.2934pt to 3.2984pt. The exact 36pt rows retain their heights. Full pages, diff, all 66 current cluster crops and five full-width GT/before/after table triplets were inspected at original 150 DPI. The strict report passes with all 66 current IDs linked to open #2147/#2148; this classifies remaining findings rather than proving visual parity.
+
+- After PDF SHA256: `69690b9738cd9f0657d027190aa1f07d6bf175cba67424d0469adf4caefe7b85`
+- After converter SHA256: `f03c573d4356e44dec578919321ff4cf265629690e690a311f549b26e92b641f`
+
+This is not a completed fidelity audit: the material table-origin offset remains under #2148 and residual vertical placement remains under #2147 pending root isolation. Small font advances, rule quantization and initial-title metrics remain under #1874. The #2149 extraction-order observation now matches locally; publication and merge verification are still required before closing it. No geometry finding is waived as antialiasing.

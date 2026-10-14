@@ -63,4 +63,5 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 |----------|------|
 | [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/) | Official spec (free download) |
 | [officeopenxml.com](http://officeopenxml.com/) | Readable OOXML reference |
+| [Word table paragraph spacing](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.paragraphstyleid) | [Style hierarchy and conditional precedence](word-table-paragraph-spacing.md) |
 | [PowerPoint BulletFormat docs](https://learn.microsoft.com/en-us/office/vba/api/powerpoint.bulletformat) | PowerPoint bullet semantics reference ([detail](powerpoint-bulletformat.md)) |

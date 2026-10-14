@@ -9,6 +9,13 @@ revision and license. Its twelve Cambria body lines use continuous line numberin
 native Word displays labels 2–13. A default conversion regression reads it.
 No fonts or reference PDFs are copied from the upstream corpus.
 
+`table_style_line_spacing.docx` is the unmodified synthetic case15 from that
+same pinned Apache-2.0 revision. It contains five merged/aligned table examples
+and synthetic contact data. A default parser regression checks TableGrid's
+single spacing while retaining the document's 1.15-line body defaults. The
+package metadata, relationships, empty bibliography and blank thumbnail were
+reviewed; it contains no embedded fonts or document pictures.
+
 `line_numbering_page_restart.docx` changes only case70’s section line-number
 restart to `newPage`; native Word still displays 2–13 for `start=1`.
 

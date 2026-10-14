@@ -490,6 +490,40 @@ mod wasm_tests {
     }
 
     #[wasm_bindgen_test]
+    fn wasm_docx_table_style_line_spacing_reaches_pdf() {
+        use crate::parser::Parser;
+
+        let data =
+            include_bytes!("../../../tests/fixtures/docx/docxide/table_style_line_spacing.docx");
+        let (document, _) = crate::parser::docx::DocxParser
+            .parse(data, &ConvertOptions::default())
+            .expect("styled tables parse in WASM");
+        let crate::ir::Page::Flow(page) = &document.pages[0] else {
+            panic!("expected flow page")
+        };
+        let table = page
+            .content
+            .iter()
+            .find_map(|block| match block {
+                crate::ir::Block::Table(table) => Some(table),
+                _ => None,
+            })
+            .expect("fixture contains a table");
+        let paragraph = table.rows[0].cells[0]
+            .content
+            .iter()
+            .find_map(|block| match block {
+                crate::ir::Block::Paragraph(paragraph) => Some(paragraph),
+                _ => None,
+            })
+            .expect("first cell contains text");
+        assert!(matches!(paragraph.style.line_spacing,
+            Some(crate::ir::LineSpacing::Proportional(value)) if (value - 1.0).abs() < 1e-9));
+        let pdf = convert_docx_to_pdf(data).expect("styled tables convert through the WASM API");
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[wasm_bindgen_test]
     fn wasm_convert_docx_uses_document_embedded_cjk_font() {
         let docx = include_bytes!("../../../tests/fixtures/docx/wasm_embedded_cjk.docx");
         let pdf = convert_docx_to_pdf(docx)

@@ -516,6 +516,7 @@ fn test_merge_paragraph_style_preserves_inherited_tabs_not_overridden() {
             ..ParagraphStyle::default()
         },
         paragraph_space_after_is_explicit: false,
+        paragraph_line_spacing_is_explicit: false,
         paragraph_tab_overrides: None,
         heading_level: None,
         heading_has_document_run_formatting: false,
@@ -579,6 +580,7 @@ fn test_merge_paragraph_style_clears_only_targeted_inherited_tab_stop() {
             ..ParagraphStyle::default()
         },
         paragraph_space_after_is_explicit: false,
+        paragraph_line_spacing_is_explicit: false,
         paragraph_tab_overrides: None,
         heading_level: None,
         heading_has_document_run_formatting: false,
@@ -622,6 +624,7 @@ fn test_merge_paragraph_style_allows_clearing_inherited_tab_stops() {
             ..ParagraphStyle::default()
         },
         paragraph_space_after_is_explicit: false,
+        paragraph_line_spacing_is_explicit: false,
         paragraph_tab_overrides: None,
         heading_level: None,
         heading_has_document_run_formatting: false,
@@ -970,6 +973,7 @@ fn test_explicit_word_wrap_overrides_the_style_chain() {
             ..ParagraphStyle::default()
         },
         paragraph_space_after_is_explicit: false,
+        paragraph_line_spacing_is_explicit: false,
         paragraph_tab_overrides: None,
         heading_level: None,
         heading_has_document_run_formatting: false,

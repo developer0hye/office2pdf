@@ -1,9 +1,15 @@
 use std::cell::Cell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
 
 use super::super::tables::{BorderSideSpec, TableBorderSpec};
 use super::super::{Block, Color, TextStyle, parse_hex_color};
-use crate::ir::{Alignment, BorderLineStyle, BorderSide, CellBorder, Insets, LineCap, LineJoin};
+use crate::ir::{
+    Alignment, BorderLineStyle, BorderSide, CellBorder, Insets, LineCap, LineJoin, LineSpacing,
+};
 use crate::parser::units::twips_to_pt;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -113,6 +119,8 @@ impl TableRegionStyle {
 #[derive(Debug, Clone, Default)]
 struct TableStyleDefinition {
     name: Option<String>,
+    based_on: Option<String>,
+    line_spacing: HashMap<TableStyleRegion, LineSpacing>,
     base: TableRegionStyle,
     first_row: TableRegionStyle,
     last_row: TableRegionStyle,
@@ -182,6 +190,12 @@ pub(in super::super) struct ResolvedTableStyle {
     default_cell_padding: Option<Insets>,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub(in super::super) struct TableParagraphSpacing {
+    pub(in super::super) space_after: Option<f64>,
+    pub(in super::super) line_spacing: Option<LineSpacing>,
+}
+
 impl TableStyleContext {
     pub(in super::super) fn from_xml(document_xml: Option<&str>, styles_xml: Option<&str>) -> Self {
         let scanned = styles_xml.map(scan_table_styles).unwrap_or_default();
@@ -196,6 +210,7 @@ impl TableStyleContext {
     }
 
     pub(in super::super) fn consume_next(&self) -> Option<ResolvedTableStyle> {
+        let started = Instant::now();
         let index = self.cursor.get();
         self.cursor.set(index + 1);
         let application = self.applications.get(index)?;
@@ -203,7 +218,15 @@ impl TableStyleContext {
             .style_id
             .as_deref()
             .or(self.default_style_id.as_deref())?;
-        let definition = self.styles.get(style_id)?.clone();
+        let mut definition = self.styles.get(style_id)?.clone();
+        definition.line_spacing = inherited_table_line_spacing(&self.styles, style_id);
+        if !definition.line_spacing.is_empty() {
+            tracing::debug!(
+                region_count = definition.line_spacing.len(),
+                elapsed_us = started.elapsed().as_micros(),
+                "Resolved table-style paragraph line spacing"
+            );
+        }
         let default_style_margins = self
             .default_style_id
             .as_deref()
@@ -221,6 +244,38 @@ impl TableStyleContext {
             default_cell_padding: Some(default_cell_padding),
         })
     }
+}
+
+fn inherited_table_line_spacing(
+    styles: &HashMap<String, TableStyleDefinition>,
+    style_id: &str,
+) -> HashMap<TableStyleRegion, LineSpacing> {
+    let mut chain = Vec::new();
+    let mut seen = HashSet::new();
+    let mut next = Some(style_id);
+    while let Some(id) = next {
+        if !seen.insert(id) {
+            // Match paragraph-style cycle recovery: retain only the selected
+            // style's own properties instead of inheriting an arbitrary prefix.
+            return styles
+                .get(style_id)
+                .map(|style| style.line_spacing.clone())
+                .unwrap_or_default();
+        }
+        let Some(style) = styles.get(id) else { break };
+        chain.push(style);
+        next = style.based_on.as_deref();
+    }
+    let mut resolved = HashMap::new();
+    for style in chain.into_iter().rev() {
+        resolved.extend(
+            style
+                .line_spacing
+                .iter()
+                .map(|(&region, &spacing)| (region, spacing)),
+        );
+    }
+    resolved
 }
 
 fn resolve_table_style_cell_margins(
@@ -247,22 +302,65 @@ impl ResolvedTableStyle {
         self.default_cell_padding
     }
 
-    pub(in super::super) fn paragraph_space_after(
+    pub(in super::super) fn paragraph_spacing(
         &self,
         row_index: usize,
         row_count: usize,
         column_index: usize,
         column_span: usize,
         column_count: usize,
-    ) -> Option<f64> {
-        self.resolved_cell_region(
-            row_index,
-            row_count,
-            column_index,
-            column_span,
-            column_count,
-        )
-        .space_after
+    ) -> TableParagraphSpacing {
+        let space_after = self
+            .resolved_cell_region(
+                row_index,
+                row_count,
+                column_index,
+                column_span,
+                column_count,
+            )
+            .space_after;
+        let first_row = self.look.first_row && row_index == 0;
+        let last_row = self.look.last_row && row_index + 1 == row_count;
+        let first_column = self.look.first_column && column_index == 0;
+        let last_column = self.look.last_column && column_index + column_span == column_count;
+        let horizontal_band = row_index.saturating_sub(usize::from(self.look.first_row));
+        let vertical_band = column_index.saturating_sub(usize::from(self.look.first_column));
+        // Office applies column-edge overrides before row-edge overrides and
+        // corners last; see references/word-table-paragraph-spacing.md.
+        let regions = [
+            Some(TableStyleRegion::Base),
+            self.look
+                .horizontal_banding
+                .then_some(if horizontal_band.is_multiple_of(2) {
+                    TableStyleRegion::Band1Horizontal
+                } else {
+                    TableStyleRegion::Band2Horizontal
+                }),
+            self.look
+                .vertical_banding
+                .then_some(if vertical_band.is_multiple_of(2) {
+                    TableStyleRegion::Band1Vertical
+                } else {
+                    TableStyleRegion::Band2Vertical
+                }),
+            first_column.then_some(TableStyleRegion::FirstColumn),
+            last_column.then_some(TableStyleRegion::LastColumn),
+            first_row.then_some(TableStyleRegion::FirstRow),
+            last_row.then_some(TableStyleRegion::LastRow),
+            (first_row && first_column).then_some(TableStyleRegion::TopLeft),
+            (first_row && last_column).then_some(TableStyleRegion::TopRight),
+            (last_row && first_column).then_some(TableStyleRegion::BottomLeft),
+            (last_row && last_column).then_some(TableStyleRegion::BottomRight),
+        ];
+        let line_spacing = regions
+            .into_iter()
+            .flatten()
+            .rev()
+            .find_map(|region| self.definition.line_spacing.get(&region).copied());
+        TableParagraphSpacing {
+            space_after,
+            line_spacing,
+        }
     }
 
     pub(in super::super) fn cell_style(
@@ -447,7 +545,7 @@ fn apply_text_style(block: &mut Block, region: &ResolvedTableCellStyle) {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TableStyleRegion {
     Base,
     FirstRow,
@@ -458,6 +556,10 @@ enum TableStyleRegion {
     Band2Horizontal,
     Band1Vertical,
     Band2Vertical,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
     Unsupported,
 }
 
@@ -475,7 +577,11 @@ fn region_mut(
         TableStyleRegion::Band2Horizontal => Some(&mut definition.band2_horizontal),
         TableStyleRegion::Band1Vertical => Some(&mut definition.band1_vertical),
         TableStyleRegion::Band2Vertical => Some(&mut definition.band2_vertical),
-        TableStyleRegion::Unsupported => None,
+        TableStyleRegion::TopLeft
+        | TableStyleRegion::TopRight
+        | TableStyleRegion::BottomLeft
+        | TableStyleRegion::BottomRight
+        | TableStyleRegion::Unsupported => None,
     }
 }
 
@@ -642,6 +748,21 @@ fn apply_style_element(
         in_borders,
         in_cell_margins,
     } = scope;
+    if element.local_name().as_ref() == b"basedOn" && region == TableStyleRegion::Base {
+        definition.based_on = attribute_value(element, b"val");
+    }
+    if in_paragraph_properties
+        && element.local_name().as_ref() == b"spacing"
+        && region != TableStyleRegion::Unsupported
+        && let Some(line) =
+            attribute_value(element, b"line").and_then(|value| value.parse::<f64>().ok())
+    {
+        let rule = attribute_value(element, b"lineRule");
+        definition.line_spacing.insert(
+            region,
+            super::super::text::decode_line_spacing(line, rule.as_deref()),
+        );
+    }
     let Some(target) = region_mut(definition, region) else {
         return;
     };
@@ -718,6 +839,10 @@ fn parse_region(value: &str) -> TableStyleRegion {
         "band2Horz" => TableStyleRegion::Band2Horizontal,
         "band1Vert" => TableStyleRegion::Band1Vertical,
         "band2Vert" => TableStyleRegion::Band2Vertical,
+        "nwCell" => TableStyleRegion::TopLeft,
+        "neCell" => TableStyleRegion::TopRight,
+        "swCell" => TableStyleRegion::BottomLeft,
+        "seCell" => TableStyleRegion::BottomRight,
         _ => TableStyleRegion::Unsupported,
     }
 }

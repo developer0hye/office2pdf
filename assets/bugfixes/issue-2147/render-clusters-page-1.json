@@ -1,0 +1,1079 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 835.8912,
+      "bbox_pt": {
+        "height": 2.88,
+        "width": 432.48,
+        "x": 84.48,
+        "y": 546.24
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-430386db510a",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 834.5088,
+      "bbox_pt": {
+        "height": 2.88,
+        "width": 432.0,
+        "x": 90.24,
+        "y": 544.32
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-f41940f2587f",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 690.5088,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 433.44,
+        "x": 84.0,
+        "y": 502.56
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-f8908fec5902",
+      "region": "center"
+    },
+    {
+      "area_pt2": 661.4784,
+      "bbox_pt": {
+        "height": 16.32,
+        "width": 433.44,
+        "x": 90.24,
+        "y": 500.16
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-607c35262c5b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 238.464,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 142.56,
+        "x": 373.44,
+        "y": 504.0
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-1e7732e07315",
+      "region": "right"
+    },
+    {
+      "area_pt2": 230.1696,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 142.56,
+        "x": 229.44,
+        "y": 504.0
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-5bca72d3779a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 223.2576,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 137.76,
+        "x": 90.24,
+        "y": 504.0
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-73913cd08cd0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 223.2576,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 142.56,
+        "x": 91.68,
+        "y": 502.56
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-1cf31cc75eff",
+      "region": "left"
+    },
+    {
+      "area_pt2": 223.2576,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 142.56,
+        "x": 235.68,
+        "y": 502.56
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-b6ea97af0fa5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 216.3456,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 137.76,
+        "x": 379.68,
+        "y": 502.56
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-0279bd012a63",
+      "region": "right"
+    },
+    {
+      "area_pt2": 51.1488,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 11.52,
+        "x": 414.24,
+        "y": 432.48
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-3bc4f1a0c210",
+      "region": "right"
+    },
+    {
+      "area_pt2": 45.8496,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.56,
+        "x": 237.6,
+        "y": 231.36
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-3b42caad13d9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 43.5456,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 10.56,
+        "x": 237.6,
+        "y": 203.52
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-2aee5a36f3f2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.7072,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.6,
+        "x": 247.68,
+        "y": 508.32
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-6dbe78687ea4",
+      "region": "center"
+    },
+    {
+      "area_pt2": 38.7072,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.6,
+        "x": 103.68,
+        "y": 508.32
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-d0cce8b18980",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.0,
+        "x": 385.44,
+        "y": 312.96
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-9246ed34879a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 168.96,
+        "y": 388.32
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-9c9c19a00bd8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 11.04,
+        "x": 127.68,
+        "y": 270.24
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-2624b3e66bce",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 10.08,
+        "x": 158.4,
+        "y": 388.32
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-a166a8a6eaeb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 441.6,
+        "y": 311.52
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-eaeb7e421d32",
+      "region": "right"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 275.52,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-3f45c1f66140",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 457.44,
+        "y": 131.52
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-2594bac10faf",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 97.44,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-1f22b1827782",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 216.48,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-eca227c329f0",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 3.84,
+        "width": 9.6,
+        "x": 207.36,
+        "y": 388.32
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-d3e21dd1c65f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 95.52,
+        "y": 288.96
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-e8601efdfcd7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 101.28,
+        "y": 445.92
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-63a4e2fcea24",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 196.32,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-4e11b27f7acd",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.64,
+        "x": 251.52,
+        "y": 300.96
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-8a429df8e532",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 144.96,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-d78cf9ff4415",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.68,
+        "x": 238.08,
+        "y": 521.76
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-7919f58d24f4",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 119.52,
+        "y": 288.48
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-a4563fa1364f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 285.12,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-c29bfa25a0e9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 10.08,
+        "x": 327.84,
+        "y": 133.44
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-0934cc9274f1",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.68,
+        "x": 382.08,
+        "y": 521.76
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-38bf47c4c951",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 414.24,
+        "y": 117.6
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-55c169a0549e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 3.36,
+        "width": 9.12,
+        "x": 104.64,
+        "y": 388.32
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-17b420cf527f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 94.08,
+        "y": 103.68
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-2391a6283088",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 94.08,
+        "y": 203.52
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-18f73ba7e905",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 99.36,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-07057ca1e3de",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.32,
+        "x": 302.4,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-34ef6ac3e7fb",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 420.48,
+        "y": 404.64
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-3fff030ce5c3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 95.52,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-9cb39e6d515c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 312.0,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-b7ce91597953",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.64,
+        "x": 106.56,
+        "y": 484.8
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-b2828222f9a7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 172.32,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-91023883a19a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 146.88,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-78dcc0b639a4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 396.0,
+        "y": 508.32
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-7660ccbd3942",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 6.24,
+        "x": 130.56,
+        "y": 485.28
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-98a9dd1f84a9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 188.16,
+        "y": 173.28
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-13c62d90b6e3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 6.72,
+        "x": 209.28,
+        "y": 120.96
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-0cccfd2f2e0a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.72,
+        "x": 239.04,
+        "y": 218.88
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-367f010c3a9c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 164.16,
+        "y": 173.76
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-27100a8d5ee3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 6.24,
+        "x": 130.56,
+        "y": 492.0
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-3fcb8346e37e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 103.2,
+        "y": 521.76
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-5ba4a51065c7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 96.96,
+        "y": 505.44
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-1355b9851ad0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 3.36,
+        "width": 8.64,
+        "x": 185.28,
+        "y": 272.64
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-b0e165ead2e8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 6.24,
+        "x": 137.28,
+        "y": 492.48
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-b65b5ab43a3f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 90.24,
+        "y": 433.92
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-e7023bd5264a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.32,
+        "width": 6.24,
+        "x": 147.84,
+        "y": 492.48
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-fe3cac63fadc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 378.24,
+        "y": 312.0
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-24c0d21c0def",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 306.24,
+        "y": 117.6
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-db89a84ea0b5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 90.24,
+        "y": 131.52
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-5bd112cd0df2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 4.8,
+        "x": 121.92,
+        "y": 275.52
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-a716cd00edd1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 414.24,
+        "y": 406.08
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Fresh current full-page/diff, five full-width GT/before/after table panels and all66 labelled cluster crops inspected. Table glyphs/rules retain the material~5.4pt legacy table-origin offset. Colored-border bands and later text also have residual vertical placement tracked under2147. Neither geometry axis is waived as renderer noise."
+      },
+      "id": "p1-ca77de1d00ed",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 180.48,
+        "y": 484.8
+      },
+      "disposition": {
+        "issue": "#2147",
+        "kind": "issue",
+        "note": "Fresh current66-ID crop review at original150DPI: these blue section-title glyphs have residual vertical displacement after the automatic-line-spacing correction. Native mean/worst baseline error is now1.0564/3.2984pt across51instances; residual vertical placement remains open, not accepted as antialiasing."
+      },
+      "id": "p1-d6e4479f85f3",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 66,
+    "duplicate": 0,
+    "total": 66,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
