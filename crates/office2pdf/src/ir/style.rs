@@ -289,9 +289,11 @@ pub struct LineBox {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BaselineShiftEm(pub f64);
 
-/// Vertical alignment for superscript/subscript text.
+/// Baseline, superscript, or subscript alignment within a text line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VerticalTextAlign {
+    /// Explicitly clear inherited superscript/subscript formatting.
+    Baseline,
     Superscript,
     Subscript,
 }

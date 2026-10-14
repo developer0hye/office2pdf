@@ -1402,24 +1402,45 @@ fn seq_field_text(
 /// cascade as the body: the note's `w:pStyle` — `FootnoteText` and friends —
 /// supplies the size, colour, and family the runs leave unstated, and falls
 /// back to the document defaults when the note names no style (issue #580).
-fn resolve_note_runs(content: &NoteContent, style_map: &StyleMap) -> Vec<Run> {
+fn resolve_note_runs(content: &NoteContent, style_map: &StyleMap) -> Box<crate::ir::Footnote> {
     let note_style = content
         .style_id
         .as_deref()
         .and_then(|style_id| style_map.get(style_id))
         .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID));
 
-    content
+    let resolve_style = |note_run: &contexts::NoteRun| -> TextStyle {
+        let mut style: TextStyle = merge_text_style(&TextStyle::default(), note_style);
+        if let Some(character_style) = note_run
+            .character_style_id
+            .as_deref()
+            .and_then(|id| style_map.get(id))
+        {
+            style.merge_from(&character_style.text);
+        }
+        style.merge_from(&note_run.explicit);
+        style
+    };
+    let runs: Vec<Run> = content
         .runs
         .iter()
         .map(|note_run| Run {
             text: note_run.text.clone(),
-            style: merge_text_style(&note_run.explicit, note_style),
+            style: resolve_style(note_run),
             href: None,
             footnote: None,
             inline_box: None,
         })
-        .collect()
+        .collect();
+    Box::new(crate::ir::Footnote {
+        runs,
+        uses_reference_run_style: true,
+        entry_marker: content
+            .entry_marker
+            .as_ref()
+            .map(|marker| crate::ir::FootnoteEntryMarker::Styled(Box::new(resolve_style(marker))))
+            .unwrap_or(crate::ir::FootnoteEntryMarker::Absent),
+    })
 }
 
 /// A paragraph child once tracked changes have been resolved away.
@@ -1667,7 +1688,13 @@ fn convert_paragraph_blocks(
                     if let Some(content) = ctx.notes.consume_next() {
                         runs.push(Run {
                             text: String::new(),
-                            style: TextStyle::default(),
+                            style: resolve_run_style(
+                                &run.run_property,
+                                is_small_caps,
+                                resolved_style,
+                                style_map,
+                                &ctx.theme_fonts,
+                            ),
                             href: None,
                             footnote: Some(resolve_note_runs(&content, style_map)),
                             inline_box: None,

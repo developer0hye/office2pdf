@@ -4138,10 +4138,10 @@ pub(super) fn generate_run_with_context(
     if let Some(inline_box) = run.inline_box.as_deref() {
         return write_inline_text_box(out, inline_box, 0.0, ctx);
     }
-    if let Some(content) = run.footnote.as_deref() {
-        out.push_str("#footnote[");
+    if let Some(content) = run.footnote.as_ref() {
+        write_footnote_start(out, run);
         generate_runs_with_context(out, content, EojeolWrap::Syllable, ctx)?;
-        out.push(']');
+        write_footnote_end(out, run);
         return Ok(());
     }
 
@@ -5499,6 +5499,101 @@ fn generate_run_seated(out: &mut String, run: &Run, opens_line: bool, seat_botto
     generate_run_seated_with_metrics(out, run, opens_line, seat_bottom_pt, None);
 }
 
+/// Keep the native footnote entry and backlinks. Typst 0.15.1 hides the
+/// direct-link element's fields; its function name distinguishes the entry
+/// label from superscripts in the note text. Styled markers use synthesized
+/// superscripts, which also prevents this rule from matching its own output.
+/// Compiled-marker tests guard this adapter when the layout dependency changes.
+pub(super) fn write_footnote_marker_rule(out: &mut String) {
+    out.push_str(r#"#show footnote.entry: entry => {
+  let body = entry.note.body
+  let children = if body.has("children") { body.children } else { (body,) }
+  let index = children.position(child => child.func() == metadata and type(child.value) == dictionary and child.value.keys().contains("o2p_footnote_marker"))
+  if index == none { entry } else {
+    let format-marker = children.at(index).value.o2p_footnote_marker
+    show super: marker => {
+      if repr(marker.body.func()) == "direct-link" and marker.typographic { format-marker(marker.body) } else { marker }
+    }
+    entry
+  }
+}
+"#);
+}
+
+fn write_styled_note_marker(out: &mut String, style: &TextStyle) {
+    out.push_str("#text(");
+    write_text_params(out, style);
+    out.push_str(")[");
+    let marker = Run {
+        text: String::new(),
+        style: style.clone(),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let wrappers: Vec<String> = collect_formatting_wrappers(&marker)
+        .into_iter()
+        .map(|wrapper| {
+            if wrapper == "#super[" {
+                "#super(typographic: false)[".to_string()
+            } else {
+                wrapper
+            }
+        })
+        .collect();
+    for wrapper in &wrappers {
+        out.push_str(wrapper);
+    }
+    out.push_str("#body");
+    for _ in &wrappers {
+        out.push(']');
+    }
+    out.push(']');
+}
+
+fn write_footnote_start(out: &mut String, run: &Run) {
+    let note = run.footnote.as_ref().expect("footnote emission");
+    if note.uses_reference_run_style {
+        out.push_str("#[#set text(");
+        write_text_params(out, &run.style);
+        out.push_str(")\n");
+        if run.style.vertical_align == Some(VerticalTextAlign::Superscript) {
+            out.push_str("#set super(typographic: false)\n");
+        } else {
+            out.push_str("#set super(typographic: false, baseline: 0pt, size: 1em)\n");
+        }
+        if run.style.vertical_align == Some(VerticalTextAlign::Subscript) {
+            out.push_str("#sub[");
+        }
+    }
+    out.push_str("#footnote[");
+    match &note.entry_marker {
+        crate::ir::FootnoteEntryMarker::Automatic => {}
+        crate::ir::FootnoteEntryMarker::Absent => {
+            out.push_str("#metadata((o2p_footnote_marker: body => []))");
+        }
+        crate::ir::FootnoteEntryMarker::Styled(style) => {
+            out.push_str("#metadata((o2p_footnote_marker: body => [");
+            write_styled_note_marker(out, style);
+            out.push_str("]))");
+        }
+    }
+}
+
+fn write_footnote_end(out: &mut String, run: &Run) {
+    out.push(']');
+    if run
+        .footnote
+        .as_ref()
+        .is_some_and(|note| note.uses_reference_run_style)
+    {
+        if run.style.vertical_align == Some(VerticalTextAlign::Subscript) {
+            out.push(']');
+        }
+        out.push(']');
+    }
+}
+
 fn generate_run_seated_with_metrics(
     out: &mut String,
     run: &Run,
@@ -5517,11 +5612,11 @@ fn generate_run_seated_with_metrics(
         // The note's runs carry the style its `w:pStyle` and `w:rPr` resolved
         // to, so they emit through the ordinary run path rather than as a bare
         // string that would take the engine's own footnote styling (#580).
-        out.push_str("#footnote[");
+        write_footnote_start(out, run);
         // The note's own line box is the engine's, not the referring
         // paragraph's, so a frame here has no edges to restore.
         generate_runs(out, content, EojeolWrap::Syllable);
-        out.push(']');
+        write_footnote_end(out, run);
         return;
     }
 

@@ -95,3 +95,8 @@ exports remain external.
 `multicolumn_footnotes.docx` is independently authored under Apache-2.0.
 It reproduces note wrapping that ignores the section column width (#2140);
 the one-column control and native Word exports remain external.
+
+`footnote_marker_scripts.docx` is independently authored under Apache-2.0.
+Three faces and sizes exercise source superscript styles on body/entry references.
+Default parser and compiled-frame tests check face/size retention and numbering.
+Native probes also isolate generic superscript placement differences (#2141).

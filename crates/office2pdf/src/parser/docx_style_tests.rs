@@ -1364,7 +1364,7 @@ fn test_footnote_text_resolves_its_paragraph_style_and_run_properties() {
             _ => None,
         })
         .flat_map(|paragraph| paragraph.runs.iter())
-        .filter_map(|run| run.footnote.as_ref())
+        .filter_map(|run| run.footnote.as_deref())
         .flatten()
         .collect();
 
@@ -1427,7 +1427,7 @@ fn test_footnote_run_properties_override_the_notes_style() {
     let Page::Flow(flow) = &doc.pages[0] else {
         panic!("expected flow page");
     };
-    let note: &Vec<Run> = flow
+    let note: &[Run] = flow
         .content
         .iter()
         .filter_map(|block| match block {
@@ -1435,7 +1435,7 @@ fn test_footnote_run_properties_override_the_notes_style() {
             _ => None,
         })
         .flat_map(|paragraph| paragraph.runs.iter())
-        .find_map(|run| run.footnote.as_ref())
+        .find_map(|run| run.footnote.as_deref())
         .expect("a footnote");
 
     assert_eq!(note.len(), 2, "both runs survive: {note:?}");
