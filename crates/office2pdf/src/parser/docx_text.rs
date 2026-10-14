@@ -232,13 +232,17 @@ fn line_spacing_from_json(
     let line_spacing = json.get("line").and_then(|line_val| {
         let line = line_val.as_f64()?;
         let rule = json.get("lineRule").and_then(|v| v.as_str());
-        match rule {
-            Some("exact") | Some("atLeast") => Some(LineSpacing::Exact(twips_to_pt(line))),
-            _ => Some(LineSpacing::Proportional(line / 240.0)),
-        }
+        Some(decode_line_spacing(line, rule))
     });
 
     (line_spacing, space_before, space_after)
+}
+
+pub(super) fn decode_line_spacing(line: f64, rule: Option<&str>) -> LineSpacing {
+    match rule {
+        Some("exact") | Some("atLeast") => LineSpacing::Exact(twips_to_pt(line)),
+        _ => LineSpacing::Proportional(line / 240.0),
+    }
 }
 
 pub(super) fn extract_tab_stops(tabs: &[docx_rs::Tab]) -> Option<Vec<TabStop>> {

@@ -25,8 +25,8 @@ use self::contexts::{
     DrawingShapeContext, DrawingTextBoxContext, DrawingTextBoxInfo, FieldContext, MathContext,
     NoteContent, NoteContext, ParagraphContextualSpacing, ParagraphMarkContext,
     ParagraphShadingContext, PictureCropContext, SmallCapsContext, TableHeaderContext,
-    TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo, WordWrapContext, WpgDrawingInfo,
-    WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
+    TableParagraphSpacing, TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo, WordWrapContext,
+    WpgDrawingInfo, WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
     build_note_context_from_xml, build_wrap_context_from_xml,
     extract_column_layout_from_section_property, is_note_reference_run, read_zip_text,
     scan_column_layouts, scan_line_numbering, scan_page_borders, scan_page_numbering,
@@ -1532,9 +1532,9 @@ struct ParagraphFlow<'a> {
     /// decides the `w:spacing w:after` an unstated gap falls back to
     /// (issue #1085).
     paragraph_property_defaults_are_declared: bool,
-    /// The active table-style paragraph after spacing for this cell, before
+    /// The active table-style paragraph line and after spacing for this cell, before
     /// document defaults are applied.
-    table_style_space_after: Option<f64>,
+    table_style_spacing: Option<TableParagraphSpacing>,
 }
 
 /// Convert a docx-rs Paragraph to IR blocks, handling page breaks and inline images.
@@ -1548,7 +1548,7 @@ fn convert_paragraph_blocks(
     hyperlinks: &HyperlinkMap,
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
-    table_style_space_after: Option<f64>,
+    table_style_spacing: Option<TableParagraphSpacing>,
 ) {
     let paragraph_block_start: usize = out.len();
     // Every paragraph cursor advances here, exactly once per XML <w:p>, and
@@ -1568,7 +1568,7 @@ fn convert_paragraph_blocks(
             _ => ctx.default_paragraph_style_is_defined,
         },
         paragraph_property_defaults_are_declared: ctx.paragraph_property_defaults_are_declared,
-        table_style_space_after,
+        table_style_spacing,
     };
     // A paragraph mark a tracked deletion or move removed is not in the final
     // document, so this paragraph has no break of its own: it merges into the
@@ -2137,9 +2137,19 @@ fn build_paragraph_block(
     );
     if explicit_para_style.space_after.is_none()
         && !resolved_style.is_some_and(|resolved| resolved.paragraph_space_after_is_explicit)
-        && let Some(table_space_after) = flow.table_style_space_after
+        && let Some(table_space_after) = flow
+            .table_style_spacing
+            .and_then(|spacing| spacing.space_after)
     {
         style.space_after = Some(table_space_after);
+    }
+    if explicit_para_style.line_spacing.is_none()
+        && !resolved_style.is_some_and(|resolved| resolved.paragraph_line_spacing_is_explicit)
+        && let Some(table_line_spacing) = flow
+            .table_style_spacing
+            .and_then(|spacing| spacing.line_spacing)
+    {
+        style.line_spacing = Some(table_line_spacing);
     }
     if flow.is_rtl {
         style.direction = Some(TextDirection::Rtl);

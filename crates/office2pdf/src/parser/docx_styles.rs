@@ -170,6 +170,8 @@ pub(super) struct ResolvedStyle {
     /// `w:spacing/@w:after` itself. Table-style spacing can override document
     /// defaults, but a named paragraph style keeps its own value.
     pub(super) paragraph_space_after_is_explicit: bool,
+    /// Line spacing stated by a paragraph style chain, excluding document defaults.
+    pub(super) paragraph_line_spacing_is_explicit: bool,
     pub(super) paragraph_tab_overrides: Option<Vec<TabStopOverride>>,
     /// Heading level from outline_lvl (0 = Heading 1, 1 = Heading 2, ..., 5 = Heading 6).
     pub(super) heading_level: Option<usize>,
@@ -439,6 +441,7 @@ pub(super) fn build_style_map(
             text: default_text.clone(),
             paragraph: default_paragraph.clone(),
             paragraph_space_after_is_explicit: false,
+            paragraph_line_spacing_is_explicit: false,
             paragraph_tab_overrides: None,
             heading_level: None,
             heading_has_document_run_formatting: false,
@@ -475,6 +478,7 @@ pub(super) fn build_style_map(
                 ParagraphStyle::default()
             },
             paragraph_space_after_is_explicit: false,
+            paragraph_line_spacing_is_explicit: false,
             paragraph_tab_overrides: None,
             heading_level: None,
             heading_has_document_run_formatting: false,
@@ -504,6 +508,7 @@ pub(super) fn build_style_map(
             text: default_style.text.clone(),
             paragraph: default_style.paragraph.clone(),
             paragraph_space_after_is_explicit: default_style.paragraph_space_after_is_explicit,
+            paragraph_line_spacing_is_explicit: default_style.paragraph_line_spacing_is_explicit,
             paragraph_tab_overrides: default_style.paragraph_tab_overrides.clone(),
             heading_level: None,
             heading_has_document_run_formatting: false,
@@ -583,6 +588,7 @@ fn merge_style_definition(
 
     let mut own_paragraph = extract_paragraph_style(&style.paragraph_property);
     resolved.paragraph_space_after_is_explicit |= own_paragraph.space_after.is_some();
+    resolved.paragraph_line_spacing_is_explicit |= own_paragraph.line_spacing.is_some();
     own_paragraph.background = paragraph_backgrounds.get(&style.style_id).copied();
     // From raw styles.xml because published docx-rs does not parse the field
     // (issue #1041).

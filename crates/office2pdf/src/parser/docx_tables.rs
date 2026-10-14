@@ -1,4 +1,6 @@
-use super::contexts::{DocxConversionContext, ResolvedTableStyle, apply_table_text_style};
+use super::contexts::{
+    DocxConversionContext, ResolvedTableStyle, TableParagraphSpacing, apply_table_text_style,
+};
 use super::{
     Alignment, Block, BorderLineStyle, BorderSide, CellBorder, CellVerticalAlign, Color,
     HyperlinkMap, ImageMap, Insets, LineCap, LineJoin, MAX_TABLE_DEPTH, StyleMap, Table, TableCell,
@@ -406,8 +408,8 @@ fn extract_raw_rows(
                 .map(String::from);
             let preferred_width = extract_table_cell_width(prop_json.as_ref());
 
-            let table_space_after: Option<f64> = table_style.and_then(|style| {
-                style.paragraph_space_after(
+            let table_spacing = table_style.map(|style| {
+                style.paragraph_spacing(
                     row_index,
                     table.rows.len(),
                     col_index,
@@ -415,7 +417,7 @@ fn extract_raw_rows(
                     column_count,
                 )
             });
-            let content = extract_cell_content(cell, cell_content_context, table_space_after);
+            let content = extract_cell_content(cell, cell_content_context, table_spacing);
             if let Some(picture_height) = in_cell_floating_picture_height(cell) {
                 in_cell_picture_floor = Some(
                     in_cell_picture_floor.map_or(picture_height, |floor| floor.max(picture_height)),
@@ -1146,7 +1148,7 @@ fn count_vmerge_span(raw_rows: &[RawRow], start_row: usize, col_index: usize) ->
 fn extract_cell_content(
     cell: &docx_rs::TableCell,
     cell_content_context: CellContentExtractionContext<'_>,
-    table_style_space_after: Option<f64>,
+    table_style_spacing: Option<TableParagraphSpacing>,
 ) -> Vec<Block> {
     let CellContentExtractionContext {
         images,
@@ -1166,7 +1168,7 @@ fn extract_cell_content(
                     hyperlinks,
                     style_map,
                     ctx,
-                    table_style_space_after,
+                    table_style_spacing,
                 );
             }
             docx_rs::TableCellContent::Table(nested_table) if depth < MAX_TABLE_DEPTH => {
@@ -1188,7 +1190,7 @@ fn extract_cell_content(
                     &mut blocks,
                     sdt,
                     cell_content_context,
-                    table_style_space_after,
+                    table_style_spacing,
                 );
             }
             _ => {}
@@ -1206,7 +1208,7 @@ fn extend_with_cell_sdt_content(
     blocks: &mut Vec<Block>,
     sdt: &docx_rs::StructuredDataTag,
     cell_content_context: CellContentExtractionContext<'_>,
-    table_style_space_after: Option<f64>,
+    table_style_spacing: Option<TableParagraphSpacing>,
 ) {
     let CellContentExtractionContext {
         images,
@@ -1225,7 +1227,7 @@ fn extend_with_cell_sdt_content(
                     hyperlinks,
                     style_map,
                     ctx,
-                    table_style_space_after,
+                    table_style_spacing,
                 );
             }
             docx_rs::StructuredDataTagChild::Table(nested_table) if depth < MAX_TABLE_DEPTH => {
@@ -1243,7 +1245,7 @@ fn extend_with_cell_sdt_content(
                     blocks,
                     nested,
                     cell_content_context,
-                    table_style_space_after,
+                    table_style_spacing,
                 );
             }
             _ => {}

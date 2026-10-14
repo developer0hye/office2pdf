@@ -1947,6 +1947,325 @@ fn first_paragraph_of(cell: &TableCell) -> &Paragraph {
         .expect("cell holds a paragraph")
 }
 
+fn assert_table_line_spacing(paragraph: &Paragraph, expected: LineSpacing) {
+    match (paragraph.style.line_spacing, expected) {
+        (Some(LineSpacing::Proportional(actual)), LineSpacing::Proportional(expected))
+        | (Some(LineSpacing::Exact(actual)), LineSpacing::Exact(expected)) => {
+            assert!((actual - expected).abs() < 1e-9, "{actual} != {expected}");
+        }
+        (actual, expected) => panic!("line spacing {actual:?}, expected {expected:?}"),
+    }
+}
+
+const TABLE_SPACING_DEFAULTS: &str = r#"
+    <w:docDefaults><w:pPrDefault><w:pPr>
+        <w:spacing w:line="276" w:lineRule="auto"/>
+    </w:pPr></w:pPrDefault></w:docDefaults>
+    <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+        <w:name w:val="Normal"/>
+    </w:style>
+"#;
+
+#[test]
+fn table_style_line_spacing_overrides_document_defaults() {
+    for (line, rule, expected) in [
+        (240, "auto", LineSpacing::Proportional(1.0)),
+        (480, "auto", LineSpacing::Proportional(2.0)),
+        (360, "exact", LineSpacing::Exact(18.0)),
+    ] {
+        let styles = format!(
+            r#"{TABLE_SPACING_DEFAULTS}
+            <w:style w:type="table" w:styleId="Invoice"><w:pPr>
+                <w:spacing w:line="{line}" w:lineRule="{rule}"/>
+            </w:pPr></w:style>"#
+        );
+        let data = build_docx_with_table_style(&styles, TABLE_WITH_STYLE);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        for row in &first_table(&document).rows {
+            assert_table_line_spacing(first_paragraph_of(&row.cells[0]), expected);
+        }
+    }
+}
+
+#[test]
+fn table_style_line_spacing_preserves_named_and_direct_paragraph_overrides() {
+    let styles = format!(
+        r#"{TABLE_SPACING_DEFAULTS}
+        <w:style w:type="table" w:styleId="Invoice"><w:pPr>
+            <w:spacing w:line="240" w:lineRule="auto"/>
+        </w:pPr></w:style>
+        <w:style w:type="paragraph" w:styleId="SpacedParent"><w:pPr>
+            <w:spacing w:line="360" w:lineRule="auto"/>
+        </w:pPr></w:style>
+        <w:style w:type="paragraph" w:styleId="SpacedChild">
+            <w:basedOn w:val="SpacedParent"/>
+        </w:style>"#
+    );
+    for (properties, expected) in [
+        ("", LineSpacing::Proportional(1.0)),
+        (
+            r#"<w:pStyle w:val="SpacedChild"/>"#,
+            LineSpacing::Proportional(1.5),
+        ),
+        (
+            r#"<w:pStyle w:val="SpacedChild"/><w:spacing w:line="420" w:lineRule="exact"/>"#,
+            LineSpacing::Exact(21.0),
+        ),
+        (
+            r#"<w:spacing w:after="0"/>"#,
+            LineSpacing::Proportional(1.0),
+        ),
+    ] {
+        let table = TABLE_WITH_STYLE.replace("<w:p>", &format!("<w:p><w:pPr>{properties}</w:pPr>"));
+        let data = build_docx_with_table_style(&styles, &table);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        assert_table_line_spacing(
+            first_paragraph_of(&first_table(&document).rows[0].cells[0]),
+            expected,
+        );
+    }
+}
+
+#[test]
+fn table_style_line_spacing_resolves_active_conditional_regions() {
+    let styles = format!(
+        r#"{TABLE_SPACING_DEFAULTS}
+        <w:style w:type="table" w:styleId="Invoice">
+            <w:pPr><w:spacing w:line="240" w:lineRule="auto"/></w:pPr>
+            <w:tblStylePr w:type="firstRow"><w:pPr>
+                <w:spacing w:line="360" w:lineRule="auto"/>
+            </w:pPr></w:tblStylePr>
+        </w:style>"#
+    );
+    for (enabled, first) in [(true, 1.5), (false, 1.0)] {
+        let table = if enabled {
+            TABLE_WITH_STYLE.to_string()
+        } else {
+            TABLE_WITH_STYLE.replace("w:firstRow=\"1\"", "w:firstRow=\"0\"")
+        };
+        let data = build_docx_with_table_style(&styles, &table);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let table = first_table(&document);
+        assert_table_line_spacing(
+            first_paragraph_of(&table.rows[0].cells[0]),
+            LineSpacing::Proportional(first),
+        );
+        assert_table_line_spacing(
+            first_paragraph_of(&table.rows[1].cells[0]),
+            LineSpacing::Proportional(1.0),
+        );
+    }
+}
+
+#[test]
+fn table_style_line_spacing_inherits_table_style_base() {
+    let styles = format!(
+        r#"{TABLE_SPACING_DEFAULTS}
+        <w:style w:type="table" w:styleId="TableParent">
+            <w:pPr><w:spacing w:line="240" w:lineRule="auto"/></w:pPr>
+        </w:style>
+        <w:style w:type="table" w:styleId="Invoice">
+            <w:basedOn w:val="TableParent"/>
+            <w:pPr><w:spacing w:after="0"/></w:pPr>
+        </w:style>"#
+    );
+    let data = build_docx_with_table_style(&styles, TABLE_WITH_STYLE);
+    let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_table_line_spacing(
+        first_paragraph_of(&first_table(&document).rows[0].cells[0]),
+        LineSpacing::Proportional(1.0),
+    );
+}
+
+#[test]
+fn table_style_line_spacing_orders_columns_rows_and_corners() {
+    let table = TABLE_WITH_STYLE
+        .replace("w:firstColumn=\"0\"", "w:firstColumn=\"1\"")
+        .replace("w:lastRow=\"0\"", "w:lastRow=\"1\"");
+    for (corners, expected) in [
+        ("", [1.5, 1.75]),
+        (
+            r#"<w:tblStylePr w:type="nwCell"><w:pPr><w:spacing w:line="600"/></w:pPr></w:tblStylePr>
+             <w:tblStylePr w:type="swCell"><w:pPr><w:spacing w:line="720"/></w:pPr></w:tblStylePr>"#,
+            [2.5, 3.0],
+        ),
+    ] {
+        let styles = format!(
+            r#"{TABLE_SPACING_DEFAULTS}
+            <w:style w:type="table" w:styleId="Invoice">
+                <w:pPr><w:spacing w:line="240"/></w:pPr>
+                <w:tblStylePr w:type="firstCol"><w:pPr><w:spacing w:line="480"/></w:pPr></w:tblStylePr>
+                <w:tblStylePr w:type="firstRow"><w:pPr><w:spacing w:line="360"/></w:pPr></w:tblStylePr>
+                <w:tblStylePr w:type="lastRow"><w:pPr><w:spacing w:line="420"/></w:pPr></w:tblStylePr>
+                {corners}
+            </w:style>"#
+        );
+        let data = build_docx_with_table_style(&styles, &table);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        for (row, expected) in first_table(&document).rows.iter().zip(expected) {
+            assert_table_line_spacing(
+                first_paragraph_of(&row.cells[0]),
+                LineSpacing::Proportional(expected),
+            );
+        }
+    }
+}
+
+#[test]
+fn table_style_line_spacing_recovers_missing_incompatible_and_cyclic_parents() {
+    for (parent, own_line, expected) in [
+        ("", "", 1.15),
+        (
+            r#"<w:style w:type="paragraph" w:styleId="Parent"><w:pPr><w:spacing w:line="720"/></w:pPr></w:style>"#,
+            "",
+            1.15,
+        ),
+        (
+            r#"<w:style w:type="table" w:styleId="Parent"><w:basedOn w:val="Invoice"/><w:pPr><w:spacing w:line="720"/></w:pPr></w:style>"#,
+            r#"<w:spacing w:line="480"/>"#,
+            2.0,
+        ),
+    ] {
+        let styles = format!(
+            r#"{TABLE_SPACING_DEFAULTS}{parent}
+            <w:style w:type="table" w:styleId="Invoice"><w:basedOn w:val="Parent"/>
+                <w:pPr>{own_line}</w:pPr>
+            </w:style>"#
+        );
+        let data = build_docx_with_table_style(&styles, TABLE_WITH_STYLE);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        assert_table_line_spacing(
+            first_paragraph_of(&first_table(&document).rows[0].cells[0]),
+            LineSpacing::Proportional(expected),
+        );
+    }
+}
+
+#[test]
+fn table_style_line_spacing_stays_scoped_to_nested_tables() {
+    let styles = format!(
+        r#"{TABLE_SPACING_DEFAULTS}
+        <w:style w:type="table" w:styleId="Invoice"><w:pPr><w:spacing w:line="240"/></w:pPr></w:style>
+        <w:style w:type="table" w:styleId="Nested"><w:pPr><w:spacing w:line="720"/></w:pPr></w:style>"#
+    );
+    let nested = TABLE_WITHOUT_STYLE.replace(
+        "<w:tblPr/>",
+        r#"<w:tblPr><w:tblStyle w:val="Nested"/></w:tblPr>"#,
+    );
+    let table = TABLE_WITH_STYLE.replacen("<w:tc>", &format!("<w:tc>{nested}"), 1);
+    let data = build_docx_with_table_style(&styles, &table);
+    let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let outer = first_table(&document);
+    for row in &outer.rows {
+        assert_table_line_spacing(
+            first_paragraph_of(&row.cells[0]),
+            LineSpacing::Proportional(1.0),
+        );
+    }
+    let Block::Table(inner) = &outer.rows[0].cells[0].content[0] else {
+        panic!("expected nested table")
+    };
+    assert_table_line_spacing(
+        first_paragraph_of(&inner.rows[0].cells[0]),
+        LineSpacing::Proportional(3.0),
+    );
+}
+
+#[test]
+fn table_style_line_spacing_reaches_structured_cell_content() {
+    let styles = format!(
+        r#"{TABLE_SPACING_DEFAULTS}
+        <w:style w:type="table" w:styleId="Invoice"><w:pPr><w:spacing w:line="480"/></w:pPr></w:style>"#
+    );
+    let table = TABLE_WITH_STYLE.replace(
+        "<w:p><w:r><w:t>Stilling</w:t></w:r></w:p>",
+        "<w:sdt><w:sdtPr/><w:sdtContent><w:p><w:r><w:t>Wrapped</w:t></w:r></w:p></w:sdtContent></w:sdt>",
+    );
+    let data = build_docx_with_table_style(&styles, &table);
+    let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_table_line_spacing(
+        first_paragraph_of(&first_table(&document).rows[0].cells[0]),
+        LineSpacing::Proportional(2.0),
+    );
+}
+
+#[test]
+fn table_style_line_spacing_uses_the_default_table_style_and_band_offsets() {
+    let default_styles = format!(
+        r#"{TABLE_SPACING_DEFAULTS}
+        <w:style w:type="table" w:default="1" w:styleId="TableDefault"><w:pPr><w:spacing w:line="360"/></w:pPr></w:style>"#
+    );
+    let data = build_docx_with_table_style(&default_styles, TABLE_WITHOUT_STYLE);
+    let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    assert_table_line_spacing(
+        first_paragraph_of(&first_table(&document).rows[0].cells[0]),
+        LineSpacing::Proportional(1.5),
+    );
+
+    let banded_styles = format!(
+        r#"{TABLE_SPACING_DEFAULTS}
+        <w:style w:type="table" w:styleId="Invoice">
+            <w:pPr><w:spacing w:line="240"/></w:pPr>
+            <w:tblStylePr w:type="firstRow"><w:pPr><w:spacing w:line="312"/></w:pPr></w:tblStylePr>
+            <w:tblStylePr w:type="band1Horz"><w:pPr><w:spacing w:line="288"/></w:pPr></w:tblStylePr>
+            <w:tblStylePr w:type="band2Horz"><w:pPr><w:spacing w:line="432"/></w:pPr></w:tblStylePr>
+        </w:style>"#
+    );
+    for (header, expected) in [(true, [1.3, 1.2]), (false, [1.2, 1.8])] {
+        let table = if header {
+            TABLE_WITH_STYLE.to_string()
+        } else {
+            TABLE_WITH_STYLE.replace("w:firstRow=\"1\"", "w:firstRow=\"0\"")
+        };
+        let data = build_docx_with_table_style(&banded_styles, &table);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        for (row, expected) in first_table(&document).rows.iter().zip(expected) {
+            assert_table_line_spacing(
+                first_paragraph_of(&row.cells[0]),
+                LineSpacing::Proportional(expected),
+            );
+        }
+    }
+}
+
+#[test]
+fn table_style_line_spacing_applies_to_the_public_merged_table_fixture() {
+    let data =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/table_style_line_spacing.docx");
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let mut table_paragraphs = 0;
+    for page in &document.pages {
+        let Page::Flow(flow) = page else { continue };
+        for block in &flow.content {
+            match block {
+                Block::Table(table) => {
+                    for row in &table.rows {
+                        for cell in &row.cells {
+                            for block in &cell.content {
+                                if let Block::Paragraph(paragraph) = block {
+                                    assert_table_line_spacing(
+                                        paragraph,
+                                        LineSpacing::Proportional(1.0),
+                                    );
+                                    table_paragraphs += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+                Block::Paragraph(paragraph) => {
+                    assert_table_line_spacing(paragraph, LineSpacing::Proportional(1.15))
+                }
+                _ => {}
+            }
+        }
+    }
+    assert!(
+        table_paragraphs > 0,
+        "the fixture must exercise cell paragraphs"
+    );
+}
+
 const TABLE_WITH_STYLE: &str = r#"<w:tbl>
     <w:tblPr><w:tblStyle w:val="Invoice"/><w:tblLook w:firstRow="1" w:lastRow="0" w:firstColumn="0" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>
     <w:tblGrid><w:gridCol w:w="4000"/></w:tblGrid>
