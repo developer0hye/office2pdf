@@ -30,5 +30,6 @@ Markup-based typesetting system. Compiles `.typ` source to PDF/PNG/SVG/HTML. Emb
 ## Automatic Word cell borders
 
 - Typst 0.15.1 [grid line layout](https://github.com/typst/typst/blob/v0.15.1/crates/typst-layout/src/grid/layouter.rs) retains zero-width vertical line geometry over resolved rows, merges and page fragments. Replace private lines after layout to avoid guessed paragraph-height border extents.
+- Private identifiers use linear RGB: [color equality](https://github.com/typst/typst/blob/v0.15.1/crates/typst-library/src/visualize/color.rs) quantizes RGB/luma to 8 bits, which merges neighbouring row segments despite different resolved border colors. Linear RGB compares the binary-exact components.
 - [PDF table tagging](https://github.com/typst/typst/blob/v0.15.1/crates/typst-pdf/src/tags/context/table.rs) reads `CellGrid` fills for background attributes. The line approach preserves those fills and needs no resolved-model copies or dependency fork.
 - A rejected transparent-fill prototype needed a copy-on-write API absent from registry Typst ([upstream request](https://github.com/typst/typst/issues/8955)). Workspace-only patches would not make that API available to published library consumers.

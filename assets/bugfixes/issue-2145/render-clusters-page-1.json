@@ -11,7 +11,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Fresh 300-DPI crop review: unchanged sub-material glyph displacement/outline differences; text dx0.46pt, baseline<=0.23645pt. Geometry is not waived as antialiasing."
+        "note": "Fresh linear-RGB candidate review of the 300-DPI GT/current/diff crop shows A and adjacent vertical glyph stems with the existing sub-material placement and outline differences. Measured text dx is 0.46pt and baseline difference is at most 0.23645pt. Plain Arial 12pt remains black, present and unclipped; no changed face or emphasis. Difference is noticeable only with aligned comparison. Geometry is real and is not waived as antialiasing."
       },
       "id": "p1-607f9578e92c",
       "region": "top-left"
@@ -27,7 +27,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Fresh 300-DPI crop review: unchanged sub-material glyph displacement/outline differences; text dx0.46pt, baseline<=0.23645pt. Geometry is not waived as antialiasing."
+        "note": "Fresh linear-RGB candidate review of the 300-DPI GT/current/diff crop shows A and adjacent vertical glyph stems with the existing sub-material placement and outline differences. Measured text dx is 0.46pt and baseline difference is at most 0.23645pt. Plain Arial 12pt remains black, present and unclipped; no changed face or emphasis. Difference is noticeable only with aligned comparison. Geometry is real and is not waived as antialiasing."
       },
       "id": "p1-27edb32185d4",
       "region": "top-left"
@@ -43,7 +43,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Fresh 300-DPI crop review: unchanged sub-material glyph displacement/outline differences; text dx0.46pt, baseline<=0.23645pt. Geometry is not waived as antialiasing."
+        "note": "Fresh linear-RGB candidate review of the 300-DPI GT/current/diff crop shows the n/e glyph outlines with the existing sub-material placement and outline differences. Measured text dx is 0.46pt and baseline difference is at most 0.23645pt. Plain Arial 12pt remains black, present and unclipped; no changed face or emphasis. Difference is noticeable only with aligned comparison. Geometry is real and is not waived as antialiasing."
       },
       "id": "p1-d8cd736b2d42",
       "region": "top-left"
@@ -59,7 +59,7 @@
       "disposition": {
         "issue": "#1874",
         "kind": "issue",
-        "note": "Fresh 300-DPI crop review: unchanged sub-material glyph displacement/outline differences; text dx0.46pt, baseline<=0.23645pt. Geometry is not waived as antialiasing."
+        "note": "Fresh linear-RGB candidate review of the 300-DPI GT/current/diff crop shows the n/e glyph outlines with the existing sub-material placement and outline differences. Measured text dx is 0.46pt and baseline difference is at most 0.23645pt. Plain Arial 12pt remains black, present and unclipped; no changed face or emphasis. Difference is noticeable only with aligned comparison. Geometry is real and is not waived as antialiasing."
       },
       "id": "p1-4425fe115978",
       "region": "top-left"

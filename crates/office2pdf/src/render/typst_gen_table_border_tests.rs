@@ -2,6 +2,95 @@ use super::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn word_auto_adjacent_rows_keep_their_own_vertical_border_colors() {
+    use crate::render::pdf::compiled_paint_sequence;
+    use typst::visualize::Color as PaintColor;
+    for repeats_header in [false, true] {
+        let colors = [
+            Color { r: 255, g: 0, b: 0 },
+            Color::black(),
+            Color { r: 0, g: 0, b: 255 },
+        ];
+        let widths = [1.5, 0.5, 0.75];
+        let rows = colors
+            .into_iter()
+            .zip(widths)
+            .map(|(color, width)| {
+                let mut side = solid_side(width);
+                side.color = color;
+                let border = CellBorder {
+                    top: Some(side.clone()),
+                    bottom: Some(side.clone()),
+                    left: Some(side.clone()),
+                    right: Some(side),
+                };
+                TableRow {
+                    height: None,
+                    minimum_height: None,
+                    cells: vec![
+                        bordered_text_cell("Left", border.clone()),
+                        bordered_text_cell("Right", border),
+                    ],
+                }
+            })
+            .collect();
+        let table = Table {
+            header_row_count: usize::from(repeats_header),
+            rows,
+            column_widths: vec![100.0, 100.0],
+            border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+            ..Table::default()
+        };
+        let output =
+            generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])])).unwrap();
+        let paints = compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+        let horizontals: Vec<_> = paints
+            .iter()
+            .filter(|p| {
+                p.rectangle_fill.is_some()
+                    && p.bounds.2 - p.bounds.0 > 90.0
+                    && p.bounds.3 - p.bounds.1 < 3.0
+            })
+            .collect();
+        let x0 = horizontals
+            .iter()
+            .map(|p| p.bounds.0)
+            .fold(f64::INFINITY, f64::min);
+        let mut boundaries: Vec<_> = horizontals.iter().map(|p| p.bounds.1).collect();
+        boundaries.sort_by(f64::total_cmp);
+        boundaries.dedup_by(|a, b| (*a - *b).abs() < 0.001);
+        assert_eq!(
+            boundaries.len(),
+            4,
+            "three rows need four horizontal boundaries"
+        );
+        for (row, color) in colors.iter().enumerate() {
+            let y = (boundaries[row] + boundaries[row + 1]) / 2.0;
+            for column in 0..=2 {
+                let x = x0 + f64::from(column) * 100.0 + 0.1;
+                let visible = paints
+                    .iter()
+                    .rev()
+                    .find(|p| {
+                        p.rectangle_fill.is_some()
+                            && p.bounds.0 <= x
+                            && x <= p.bounds.2
+                            && p.bounds.1 <= y
+                            && y <= p.bounds.3
+                    })
+                    .expect("each automatic row must paint its completed vertical edge");
+                assert_eq!(
+                    visible.rectangle_fill,
+                    Some(PaintColor::from_u8(color.r, color.g, color.b, 255)),
+                    "row {row}, edge {column}, repeats_header={repeats_header} must retain its resolved color"
+                );
+            }
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn native_zero_width_vertical_line_retains_the_completed_row_bounds() {
     use crate::render::pdf::compiled_paint_sequence;
     let source = r##"
@@ -11,7 +100,7 @@ fn native_zero_width_vertical_line_retains_the_completed_row_bounds() {
 #table(columns: (100pt, 100pt), stroke: none,
   inset: (top: 0pt, bottom: 0pt), fill: rgb("ff0000"),
   table.vline(x: 1, start: 0, end: 1,
-    stroke: (paint: luma(0.00001%, 0%), thickness: 0pt)),
+    stroke: (paint: color.linear-rgb(0.00001%, 0%, 0%, 0%), thickness: 0pt)),
   [Short], [First
 
 Second
@@ -454,11 +543,11 @@ fn word_auto_row_borders_continue_on_every_page_fragment() {
                 paints.iter().all(|paint| {
                     let is_private = |color: &typst::visualize::Color| {
                         matches!(color, typst::visualize::Color::Process(
-                        typst::visualize::ProcessColor::Luma(value)) if value.alpha == 0.0)
+                        typst::visualize::ProcessColor::LinearRgb(value)) if value.alpha == 0.0)
                     };
                     paint.rectangle_fill.as_ref().is_none_or(|color| {
                         !matches!(color, typst::visualize::Color::Process(
-                        typst::visualize::ProcessColor::Luma(value)) if value.alpha == 0.0)
+                        typst::visualize::ProcessColor::LinearRgb(value)) if value.alpha == 0.0)
                     }) && paint
                         .stroke
                         .as_ref()

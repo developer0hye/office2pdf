@@ -2669,10 +2669,10 @@ fn word_completed_border_value(side: Option<&BorderSide>) -> String {
 }
 
 fn word_border_marker(id: u32) -> String {
-    // IR backgrounds emit RGB colors. A distinct color space prevents any
-    // source stroke from being mistaken for a private zero-width line marker.
-    // Each 24-bit identifier has an exact binary representation in f32.
-    format!("luma({id} / 16777216 * 100%, 0%)")
+    // IR colors use RGB. Linear RGB keeps each binary-exact identifier
+    // distinct, unlike Typst's 8-bit equality for RGB/luma, which would merge
+    // adjacent rows and apply the first row's border paint to later rows.
+    format!("color.linear-rgb({id} / 16777216 * 100%, 0%, 0%, 0%)")
 }
 
 fn write_word_horizontal_border(out: &mut String, side: &BorderSide, inset: Insets, is_top: bool) {
