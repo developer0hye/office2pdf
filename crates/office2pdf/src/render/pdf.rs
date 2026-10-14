@@ -570,6 +570,7 @@ fn apply_completed_frame_passes(document: &mut PagedDocument) {
     let mut pages: Vec<Page> = document.pages().to_vec();
     super::powerpoint_line_paint::adjust_paragraph_marks(&mut pages);
     super::excel_fill_paint::adjust_cell_fills(&mut pages);
+    super::word_table_border_paint::paint_auto_cell_edges(&mut pages);
     super::excel_glyph_pacing::pace_sheet_glyphs_on_whole_points(&mut pages);
     super::word_justified_gap_phases::spread_justified_gaps_as_word_does(&mut pages);
     let info: typst::model::DocumentInfo = typst::model::Document::info(document).clone();
@@ -1067,6 +1068,8 @@ pub(crate) struct PaintedStroke {
     pub cap: typst::visualize::LineCap,
     pub join: typst::visualize::LineJoin,
     pub miter_limit: f64,
+    /// Resolved dash lengths, so paint regressions can compare actual rhythms.
+    pub dash_pattern_pt: Option<Vec<f64>>,
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
@@ -1216,6 +1219,9 @@ pub(crate) fn compiled_page_paint_sequences_with_fonts(
                             cap: stroke.cap,
                             join: stroke.join,
                             miter_limit: stroke.miter_limit.get(),
+                            dash_pattern_pt: stroke.dash.as_ref().map(|dash| {
+                                dash.array.iter().map(|length| length.to_pt()).collect()
+                            }),
                         }),
                     });
                 }

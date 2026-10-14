@@ -1,5 +1,52 @@
 use super::*;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn authored_auto_row_border_fixture_paints_continuous_table_edges() {
+    let data = include_bytes!("../../../../tests/fixtures/docx/docxide/auto_row_borders.docx");
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let table = first_table(&document);
+    assert!(table.rows.iter().all(|row| row.height.is_none()));
+    assert_eq!(table.rows[0].cells[1].content.len(), 8);
+    assert_eq!(table.rows[1].cells[1].content.len(), 4);
+    let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let paints =
+        crate::render::pdf::compiled_page_paint_sequences(&output.source, &output.images).unwrap();
+    assert_eq!(paints.len(), 1);
+    let paints = &paints[0];
+    let horizontal: Vec<_> = paints
+        .iter()
+        .filter(|p| {
+            p.rectangle_fill.is_some()
+                && p.bounds.2 - p.bounds.0 > 150.0
+                && p.bounds.3 - p.bounds.1 < 1.0
+        })
+        .collect();
+    let top = horizontal
+        .iter()
+        .map(|p| p.bounds.1)
+        .fold(f64::INFINITY, f64::min);
+    let bottom = horizontal
+        .iter()
+        .map(|p| p.bounds.1)
+        .fold(f64::NEG_INFINITY, f64::max);
+    assert!(bottom - top > 150.0);
+    for x in [72.24, 252.24, 432.24] {
+        for fraction in [0.01, 0.2, 0.4, 0.6, 0.8, 0.99] {
+            let y = top + (bottom - top) * fraction;
+            assert!(
+                paints.iter().any(|p| p.rectangle_fill.is_some()
+                    && p.bounds.2 - p.bounds.0 < 1.0
+                    && p.bounds.0 <= x
+                    && x <= p.bounds.2
+                    && p.bounds.1 <= y
+                    && y <= p.bounds.3),
+                "the authored DOCX must retain its vertical border at ({x},{y})"
+            );
+        }
+    }
+}
+
 #[test]
 fn test_table_simple_2x2() {
     let table = docx_rs::Table::new(vec![
