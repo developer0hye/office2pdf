@@ -50,7 +50,7 @@ pub(super) use drawing::{DrawingTextBoxContext, DrawingTextBoxInfo};
 pub(super) use fields::{FieldContext, seq_identifier, toc_caption_identifier, toc_heading_depth};
 pub(super) use math::{MathContext, build_math_context_from_xml};
 pub(super) use notes::{
-    NoteContent, NoteContext, build_note_context_from_xml, is_note_reference_run, read_zip_text,
+    NoteContent, NoteContext, build_note_context_from_xml, is_endnote_reference_run, read_zip_text,
 };
 pub(super) use page_borders::scan_page_borders;
 pub(super) use page_numbers::scan_page_numbering;

@@ -36,19 +36,19 @@ pub(in super::super) struct NoteContent {
     pub(in super::super) runs: Vec<NoteRun>,
 }
 
-/// Context for resolving footnote/endnote references during parsing.
-/// The `cursor` is advanced each time a note reference run is encountered.
+/// Footnotes resolve by their actual reference ID. Endnotes still use a style
+/// fallback and cursor because docx-rs does not retain their reference node.
 pub(in super::super) struct NoteContext {
     footnote_content: HashMap<usize, NoteContent>,
     endnote_content: HashMap<usize, NoteContent>,
-    note_refs: Vec<(NoteKind, usize)>,
+    note_refs: Vec<usize>,
     cursor: Cell<usize>,
-    note_style_ids: HashSet<String>,
+    endnote_style_ids: HashSet<String>,
 }
 
 impl NoteContext {
     pub(in super::super) fn empty() -> Self {
-        let note_style_ids: HashSet<String> = ["FootnoteReference", "EndnoteReference"]
+        let endnote_style_ids: HashSet<String> = ["EndnoteReference"]
             .iter()
             .map(|style_id| (*style_id).to_string())
             .collect();
@@ -57,8 +57,12 @@ impl NoteContext {
             endnote_content: HashMap::new(),
             note_refs: Vec::new(),
             cursor: Cell::new(0),
-            note_style_ids,
+            endnote_style_ids,
         }
+    }
+
+    pub(in super::super) fn footnote(&self, id: usize) -> Option<NoteContent> {
+        self.footnote_content.get(&id).cloned()
     }
 
     pub(in super::super) fn consume_next(&self) -> Option<NoteContent> {
@@ -66,12 +70,9 @@ impl NoteContext {
         if index >= self.note_refs.len() {
             return None;
         }
-        let (kind, id) = self.note_refs[index];
+        let id: usize = self.note_refs[index];
         self.cursor.set(index + 1);
-        match kind {
-            NoteKind::Footnote => self.footnote_content.get(&id).cloned(),
-            NoteKind::Endnote => self.endnote_content.get(&id).cloned(),
-        }
+        self.endnote_content.get(&id).cloned()
     }
 
     pub(in super::super) fn populate_style_ids(&mut self, styles: &docx_rs::Styles) {
@@ -80,8 +81,8 @@ impl NoteContext {
                 && let Some(name_str) = name_value.as_str()
             {
                 let lower = name_str.to_lowercase();
-                if lower == "footnote reference" || lower == "endnote reference" {
-                    self.note_style_ids.insert(style.style_id.clone());
+                if lower == "endnote reference" {
+                    self.endnote_style_ids.insert(style.style_id.clone());
                 }
             }
         }
@@ -101,7 +102,14 @@ pub(in super::super) fn build_note_context_from_xml(
     if let Some(xml) = read_zip_text(archive, "word/endnotes.xml") {
         note_context.endnote_content = parse_notes_xml(&xml, theme_fonts);
     }
-    note_context.note_refs = doc_xml.map(scan_note_refs).unwrap_or_default();
+    // Footnote IDs are retained by the reader. The fallback cursor serves
+    // only endnotes, whose reference node is not represented by docx-rs yet.
+    note_context.note_refs = doc_xml
+        .map(scan_note_refs)
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|(kind, id)| matches!(kind, NoteKind::Endnote).then_some(id))
+        .collect();
 
     note_context
 }
@@ -167,8 +175,11 @@ fn parse_notes_xml(xml: &str, theme_fonts: &ThemeFonts) -> HashMap<usize, NoteCo
                         }
                         current = NoteContent::default();
                         run = NoteRun::default();
-                        current_id = attribute_value(element, b"id")
-                            .and_then(|value| value.parse::<usize>().ok());
+                        current_id = match attribute_value(element, b"type").as_deref() {
+                            None | Some("normal") => attribute_value(element, b"id")
+                                .and_then(|value| value.parse::<usize>().ok()),
+                            _ => None,
+                        };
                     }
                     b"pStyle" => {
                         if current.style_id.is_none() {
@@ -239,11 +250,8 @@ fn parse_notes_xml(xml: &str, theme_fonts: &ThemeFonts) -> HashMap<usize, NoteCo
     map
 }
 
-/// Record a note, dropping one whose runs carry no text at all.
-///
-/// The leading run of a Word note holds only the reference mark
-/// (`w:footnoteRef`), so a note that separates cleanly and a note that is
-/// genuinely empty both arrive here with nothing but that run.
+/// Empty normal notes still have a reference and affect later numbering.
+/// Separator records are excluded when their type is read.
 fn finish_note(map: &mut HashMap<usize, NoteContent>, id: usize, mut content: NoteContent) {
     if let Some(last) = content.runs.last_mut() {
         last.text = last.text.trim_end().to_string();
@@ -252,9 +260,7 @@ fn finish_note(map: &mut HashMap<usize, NoteContent>, id: usize, mut content: No
         first.text = first.text.trim_start().to_string();
     }
     content.runs.retain(|run| !run.text.is_empty());
-    if !content.runs.is_empty() {
-        map.insert(id, content);
-    }
+    map.insert(id, content);
 }
 
 fn scan_note_refs(xml: &str) -> Vec<(NoteKind, usize)> {
@@ -290,9 +296,13 @@ fn scan_note_refs(xml: &str) -> Vec<(NoteKind, usize)> {
     refs
 }
 
-pub(in super::super) fn is_note_reference_run(run: &docx_rs::Run, notes: &NoteContext) -> bool {
+pub(in super::super) fn is_endnote_reference_run(run: &docx_rs::Run, notes: &NoteContext) -> bool {
     if let Some(ref style) = run.run_property.style
-        && notes.note_style_ids.contains(&style.val)
+        && notes.endnote_style_ids.contains(&style.val)
+        && !run
+            .children
+            .iter()
+            .any(|child| matches!(child, docx_rs::RunChild::FootnoteReference(_)))
     {
         return extract_run_text(run).is_empty();
     }
