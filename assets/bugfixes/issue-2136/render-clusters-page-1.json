@@ -1,0 +1,359 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 97.2288,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 20.16,
+        "x": 198.72,
+        "y": 698.88
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-5923a2ec2f09",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 64.2816,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 19.68,
+        "x": 175.2,
+        "y": 700.8
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-fd2070014b3b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 51.6096,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 11.52,
+        "x": 140.64,
+        "y": 700.8
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-ddc5ea5dc714",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 50.4576,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.56,
+        "x": 237.6,
+        "y": 74.4
+      },
+      "disposition": {
+        "issue": "#2137",
+        "kind": "issue",
+        "note": "Inspected matched crops show altered body-marker baseline/size and displaced following text."
+      },
+      "id": "p1-ff5eb01da7c6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 43.0848,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.48,
+        "x": 104.16,
+        "y": 700.8
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-06720438dfa6",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 11.52,
+        "x": 151.2,
+        "y": 712.8
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-0a3e17d82168",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 8.64,
+        "x": 152.64,
+        "y": 700.8
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-20374009f206",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 199.68,
+        "y": 88.32
+      },
+      "disposition": {
+        "issue": "#2137",
+        "kind": "issue",
+        "note": "Inspected matched crops show altered body-marker baseline/size and displaced following text."
+      },
+      "id": "p1-b4c80d6e2f4d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 86.4,
+        "y": 710.4
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-58d6dd24b7e0",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 10.08,
+        "x": 213.12,
+        "y": 712.8
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-51f1e44d986e",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 6.72,
+        "x": 165.12,
+        "y": 90.72
+      },
+      "disposition": {
+        "issue": "#2137",
+        "kind": "issue",
+        "note": "Inspected matched crops show altered body-marker baseline/size and displaced following text."
+      },
+      "id": "p1-d6b709783e22",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 224.16,
+        "y": 710.4
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-aed2ce469ab5",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.12,
+        "x": 169.44,
+        "y": 76.32
+      },
+      "disposition": {
+        "issue": "#2137",
+        "kind": "issue",
+        "note": "Inspected matched crops show altered body-marker baseline/size and displaced following text."
+      },
+      "id": "p1-96b7d3be5899",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.76,
+        "x": 172.32,
+        "y": 90.72
+      },
+      "disposition": {
+        "issue": "#2137",
+        "kind": "issue",
+        "note": "Inspected matched crops show altered body-marker baseline/size and displaced following text."
+      },
+      "id": "p1-d1cf294796ae",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 113.28,
+        "y": 714.72
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-ce4ac789c9a8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 184.32,
+        "y": 712.8
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-5cf349615270",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 175.2,
+        "y": 712.32
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-d9bf4621cc2a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.68,
+        "x": 122.88,
+        "y": 702.24
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-dbfd49e252cc",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 164.64,
+        "y": 699.84
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-b38c26ec1c83",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 3.84,
+        "x": 85.44,
+        "y": 700.8
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-b76b9949eef1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 3.84,
+        "x": 81.12,
+        "y": 698.88
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Inspected note-line crops show different note text/label inset and baseline/pitch; entry-marker styling is separately tracked in #2137."
+      },
+      "id": "p1-f3e94b5eb7e9",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 21,
+    "duplicate": 0,
+    "total": 21,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
