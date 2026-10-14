@@ -14,6 +14,7 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 | [openpyxl](https://github.com/ericgazoni/openpyxl) | Python | XLSX reader/writer and indexed color palette | [openpyxl.md](openpyxl.md) |
 | [excelize](https://github.com/qax-os/excelize) | Go | XLSX (most complete impl) | [excelize.md](excelize.md) |
 | [Open-XML-SDK](https://github.com/dotnet/Open-XML-SDK) | C# | Microsoft's official OOXML SDK | [open-xml-sdk.md](open-xml-sdk.md) |
+| DOCX custom footnote marks | OOXML | Native Word flag and text-topology probes | [docx-custom-footnote-marks.md](docx-custom-footnote-marks.md) |
 | [docxjs](https://github.com/VolodymyrBaydalka/docxjs) | TS | DOCX → HTML renderer | [docxjs.md](docxjs.md) |
 | [PptxGenJS](https://github.com/gitbrent/PptxGenJS) | TS | PPTX table text layout heuristics | [pptxgenjs.md](pptxgenjs.md) |
 

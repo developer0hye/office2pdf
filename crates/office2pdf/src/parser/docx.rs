@@ -1080,9 +1080,13 @@ struct RunChildrenMedia {
 /// The ordered text, note references, and structural breaks of a run.
 enum RunLayoutPart {
     Content(Box<docx_rs::Run>),
+    CustomFootnoteMark(Box<docx_rs::Run>),
     PageBreak,
     ColumnBreak,
-    FootnoteReference(usize),
+    FootnoteReference {
+        id: usize,
+        custom_mark_follows: bool,
+    },
 }
 
 /// Retain a note's position among text children, without inferring it from a
@@ -1091,11 +1095,26 @@ enum RunLayoutPart {
 fn split_run_at_structural_content(
     run: &docx_rs::Run,
     split_layout_breaks: bool,
+    mut custom_mark_pending: bool,
 ) -> Vec<RunLayoutPart> {
     let mut parts: Vec<RunLayoutPart> = Vec::new();
     let mut content_children: Vec<docx_rs::RunChild> = Vec::new();
 
     for child in &run.children {
+        if custom_mark_pending
+            && matches!(child, docx_rs::RunChild::Text(text) if !text.text.is_empty())
+        {
+            if !content_children.is_empty() {
+                let mut segment = run.clone();
+                segment.children = std::mem::take(&mut content_children);
+                parts.push(RunLayoutPart::Content(Box::new(segment)));
+            }
+            let mut marker = run.clone();
+            marker.children = vec![child.clone()];
+            parts.push(RunLayoutPart::CustomFootnoteMark(Box::new(marker)));
+            custom_mark_pending = false;
+            continue;
+        }
         let layout_break: Option<RunLayoutPart> = match child {
             docx_rs::RunChild::Break(br) if split_layout_breaks && is_page_break(br) => {
                 Some(RunLayoutPart::PageBreak)
@@ -1104,7 +1123,11 @@ fn split_run_at_structural_content(
                 Some(RunLayoutPart::ColumnBreak)
             }
             docx_rs::RunChild::FootnoteReference(reference) => {
-                Some(RunLayoutPart::FootnoteReference(reference.id))
+                custom_mark_pending = reference.custom_mark_follows == Some(true);
+                Some(RunLayoutPart::FootnoteReference {
+                    id: reference.id,
+                    custom_mark_follows: custom_mark_pending,
+                })
             }
             _ => None,
         };
@@ -1128,6 +1151,29 @@ fn split_run_at_structural_content(
     }
 
     parts
+}
+
+fn custom_note_marker_is_pending(runs: &[Run]) -> bool {
+    runs.last()
+        .and_then(|run| run.footnote.as_deref())
+        .is_some_and(|note| note.custom_mark_follows && note.custom_marker.is_none())
+}
+
+fn retain_custom_note_marker(runs: &mut Vec<Run>, mut marker: Run) {
+    if custom_note_marker_is_pending(runs) {
+        // The engine's note reference supplies the internal link; an enclosing
+        // external hyperlink must not replace that destination.
+        marker.href = None;
+        runs.last_mut()
+            .unwrap()
+            .footnote
+            .as_mut()
+            .unwrap()
+            .custom_marker = Some(Box::new(marker));
+    } else {
+        // An unresolved reference must not consume its surrounding source text.
+        runs.push(marker);
+    }
 }
 
 /// A blank paragraph fragment still paints these paragraph-level decorations
@@ -1402,7 +1448,11 @@ fn seq_field_text(
 /// cascade as the body: the note's `w:pStyle` — `FootnoteText` and friends —
 /// supplies the size, colour, and family the runs leave unstated, and falls
 /// back to the document defaults when the note names no style (issue #580).
-fn resolve_note_runs(content: &NoteContent, style_map: &StyleMap) -> Box<crate::ir::Footnote> {
+fn resolve_note_runs(
+    content: &NoteContent,
+    style_map: &StyleMap,
+    custom_mark_follows: bool,
+) -> Box<crate::ir::Footnote> {
     let note_style = content
         .style_id
         .as_deref()
@@ -1434,6 +1484,8 @@ fn resolve_note_runs(content: &NoteContent, style_map: &StyleMap) -> Box<crate::
         .collect();
     Box::new(crate::ir::Footnote {
         runs,
+        custom_mark_follows,
+        custom_marker: None,
         uses_reference_run_style: true,
         entry_marker: content
             .entry_marker
@@ -1519,9 +1571,14 @@ fn process_hyperlink_runs(
     for hchild in &hyperlink.children {
         if let docx_rs::ParagraphChild::Run(run) = hchild {
             let hl_small_caps: bool = ctx.small_caps.next_is_small_caps();
-            for part in split_run_at_structural_content(run, false) {
+            for part in
+                split_run_at_structural_content(run, false, custom_note_marker_is_pending(runs))
+            {
                 match part {
-                    RunLayoutPart::FootnoteReference(id) => {
+                    RunLayoutPart::FootnoteReference {
+                        id,
+                        custom_mark_follows,
+                    } => {
                         if let Some(content) = ctx.notes.footnote(id) {
                             runs.push(Run {
                                 text: String::new(),
@@ -1533,11 +1590,28 @@ fn process_hyperlink_runs(
                                     &ctx.theme_fonts,
                                 ),
                                 href: href.clone(),
-                                footnote: Some(resolve_note_runs(&content, style_map)),
+                                footnote: Some(resolve_note_runs(
+                                    &content,
+                                    style_map,
+                                    custom_mark_follows,
+                                )),
                                 inline_box: None,
                             });
                         } else {
                             tracing::warn!(note_id = id, "Footnote reference has no matching note");
+                        }
+                    }
+                    RunLayoutPart::CustomFootnoteMark(segment) => {
+                        if let Some(marker) = build_text_run(
+                            extract_run_text(&segment),
+                            &segment.run_property,
+                            hl_small_caps,
+                            resolved_style,
+                            style_map,
+                            &ctx.theme_fonts,
+                            href.clone(),
+                        ) {
+                            retain_custom_note_marker(runs, marker);
                         }
                     }
                     RunLayoutPart::Content(segment) => {
@@ -1696,14 +1770,16 @@ fn convert_paragraph_blocks(
                                 &ctx.theme_fonts,
                             ),
                             href: None,
-                            footnote: Some(resolve_note_runs(&content, style_map)),
+                            footnote: Some(resolve_note_runs(&content, style_map, false)),
                             inline_box: None,
                         });
                     }
                     continue;
                 }
 
-                for part in split_run_at_structural_content(run, true) {
+                for part in
+                    split_run_at_structural_content(run, true, custom_note_marker_is_pending(&runs))
+                {
                     match part {
                         break_part @ (RunLayoutPart::PageBreak | RunLayoutPart::ColumnBreak) => {
                             // Flush queued inline media even when no text run
@@ -1775,13 +1851,18 @@ fn convert_paragraph_blocks(
                             out.push(match break_part {
                                 RunLayoutPart::PageBreak => Block::PageBreak,
                                 RunLayoutPart::ColumnBreak => Block::ColumnBreak,
-                                RunLayoutPart::Content(_) | RunLayoutPart::FootnoteReference(_) => {
+                                RunLayoutPart::Content(_)
+                                | RunLayoutPart::CustomFootnoteMark(_)
+                                | RunLayoutPart::FootnoteReference { .. } => {
                                     unreachable!()
                                 }
                             });
                             emitted_layout_break = true;
                         }
-                        RunLayoutPart::FootnoteReference(id) => {
+                        RunLayoutPart::FootnoteReference {
+                            id,
+                            custom_mark_follows,
+                        } => {
                             if let Some(content) = ctx.notes.footnote(id) {
                                 runs.push(Run {
                                     text: String::new(),
@@ -1793,7 +1874,11 @@ fn convert_paragraph_blocks(
                                         &ctx.theme_fonts,
                                     ),
                                     href: None,
-                                    footnote: Some(resolve_note_runs(&content, style_map)),
+                                    footnote: Some(resolve_note_runs(
+                                        &content,
+                                        style_map,
+                                        custom_mark_follows,
+                                    )),
                                     inline_box: None,
                                 });
                             } else {
@@ -1801,6 +1886,19 @@ fn convert_paragraph_blocks(
                                     note_id = id,
                                     "Footnote reference has no matching note"
                                 );
+                            }
+                        }
+                        RunLayoutPart::CustomFootnoteMark(segment) => {
+                            if let Some(marker) = build_text_run(
+                                extract_run_text(&segment),
+                                &segment.run_property,
+                                is_small_caps,
+                                resolved_style,
+                                style_map,
+                                &ctx.theme_fonts,
+                                None,
+                            ) {
+                                retain_custom_note_marker(&mut runs, marker);
                             }
                         }
                         RunLayoutPart::Content(run_segment) => {

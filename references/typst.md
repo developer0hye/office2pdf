@@ -22,6 +22,11 @@ Markup-based typesetting system. Compiles `.typ` source to PDF/PNG/SVG/HTML. Emb
 - `crates/typst-library/src/math/` — Math equation support
 - `crates/typst/src/compile.rs` — Compilation pipeline
 
+- [Footnote numbering](https://typst.app/docs/reference/model/footnote/) accepts
+  content-returning functions and retains links for custom marker text.
+  Typst 0.15.1 steps its counter for each declared note; office2pdf restores that
+  step after a custom DOCX reference using a [counter update](https://typst.app/docs/reference/introspection/counter/).
+
 ## When to consult
 
 - Improving Typst codegen quality or discovering new Typst features
