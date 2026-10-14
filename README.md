@@ -349,9 +349,11 @@ page-count, and searchable-text triage. Geometry, pixels, fonts, and direct visu
 inspection remain required before calling a document correct.
 
 DOCX footnote markers retain source fonts, sizes and vertical alignment, including
-explicit baseline overrides. For direct IR construction, `Run::footnote` holds
+explicit baseline overrides. Custom text markers remain linked to their notes
+and do not advance automatic numbering. For direct IR construction, `Run::footnote` holds
 `Option<Box<Footnote>>`; use `Some(runs.into())` for automatic markers, or set
-`FootnoteEntryMarker` and the reference-style flag explicitly.
+`FootnoteEntryMarker` and the reference-style flag explicitly. Custom references
+set `Footnote::custom_mark_follows` and supply a styled `custom_marker` run.
 
 Picture outlines in PPTX and cached DOCX drawings retain ellipse, rounded-rectangle
 and custom-path geometry, line opacity, and picture flips/rotation.

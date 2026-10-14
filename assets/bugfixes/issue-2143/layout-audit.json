@@ -1,0 +1,207 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 8,
+    "out": 8,
+    "matched": 8,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 4,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 10.218713875000018,
+    "worst_dy": 30.650750000000016,
+    "worst_dy_signed": 30.650750000000016,
+    "worst_line": "**Entrycontrol7."
+   },
+   "dx0": {
+    "mean_abs": 4.791874999999997,
+    "worst": 9.817499999999995
+   },
+   "width": {
+    "mean_abs_pct": 0.16683903238068876,
+    "worst_pct": 0.5923232813314488
+   },
+   "instances": {
+    "compared": 8,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 4,
+    "large_shifts": [
+     {
+      "label": "**Entrycontrol7.",
+      "gt_x": 72.0,
+      "gt_y": 651.36002,
+      "out_x": 81.8175,
+      "out_y": 682.01077,
+      "dx": 9.817499999999995,
+      "dy": 30.650750000000016,
+      "width_pct": -0.08071029742150768
+     },
+     {
+      "label": "1Entrycontrol29.",
+      "gt_x": 72.0,
+      "gt_y": 670.8000199999999,
+      "out_x": 81.35,
+      "out_y": 694.6738,
+      "dx": 9.349999999999994,
+      "dy": 23.873780000000124,
+      "width_pct": 0.5923232813314488
+     },
+     {
+      "label": "\u2020Entrycontrol42.",
+      "gt_x": 72.0,
+      "gt_y": 690.48002,
+      "out_x": 81.8175,
+      "out_y": 707.3369,
+      "dx": 9.817499999999995,
+      "dy": 16.856880000000046,
+      "width_pct": -0.035414270095879066
+     },
+     {
+      "label": "2Entrycontrol100.",
+      "gt_x": 72.0,
+      "gt_y": 709.92002,
+      "out_x": 81.35,
+      "out_y": 720.0,
+      "dx": 9.349999999999994,
+      "dy": 10.079979999999978,
+      "width_pct": 0.5530122530566393
+     }
+    ],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 4,
+    "fine_shifts": [
+     {
+      "label": "**Entrycontrol7.",
+      "gt_x": 72.0,
+      "gt_y": 651.36002,
+      "out_x": 81.8175,
+      "out_y": 682.01077,
+      "dx": 9.817499999999995,
+      "dy": 30.650750000000016,
+      "width_pct": -0.08071029742150768
+     },
+     {
+      "label": "1Entrycontrol29.",
+      "gt_x": 72.0,
+      "gt_y": 670.8000199999999,
+      "out_x": 81.35,
+      "out_y": 694.6738,
+      "dx": 9.349999999999994,
+      "dy": 23.873780000000124,
+      "width_pct": 0.5923232813314488
+     },
+     {
+      "label": "\u2020Entrycontrol42.",
+      "gt_x": 72.0,
+      "gt_y": 690.48002,
+      "out_x": 81.8175,
+      "out_y": 707.3369,
+      "dx": 9.817499999999995,
+      "dy": 16.856880000000046,
+      "width_pct": -0.035414270095879066
+     },
+     {
+      "label": "2Entrycontrol100.",
+      "gt_x": 72.0,
+      "gt_y": 709.92002,
+      "out_x": 81.35,
+      "out_y": 720.0,
+      "dx": 9.349999999999994,
+      "dy": 10.079979999999978,
+      "width_pct": 0.5530122530566393
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 7,
+    "worst_delta": 30.55842000000007
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 1,
+    "out_count": 1,
+    "canonical_gt_count": 1,
+    "canonical_out_count": 1,
+    "matched": 0,
+    "unmatched_gt": 1,
+    "unmatched_out": 1,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}

@@ -1422,6 +1422,11 @@ pub struct Run {
 #[derive(Debug, Clone, Default)]
 pub struct Footnote {
     pub runs: Vec<Run>,
+    /// A custom DOCX reference does not advance the automatic note counter.
+    pub custom_mark_follows: bool,
+    /// The source text child following the reference, including its own style.
+    /// None also covers a custom reference with no following text child.
+    pub custom_marker: Option<Box<Run>>,
     /// DOCX references use their actual run style; automatic IR markers keep
     /// the renderer's superscript default.
     pub uses_reference_run_style: bool,
@@ -1441,6 +1446,8 @@ impl From<Vec<Run>> for Footnote {
     fn from(runs: Vec<Run>) -> Self {
         Self {
             runs,
+            custom_mark_follows: false,
+            custom_marker: None,
             uses_reference_run_style: false,
             entry_marker: FootnoteEntryMarker::Automatic,
         }

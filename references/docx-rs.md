@@ -4,10 +4,15 @@
 - Our immutable fork pin retains the existing parser repairs.
 - Reader footnote references use the existing `RunChild::FootnoteReference`
   model, retaining IDs and their positions among text children.
+- The optional `customMarkFollows` flag survives model/JSON/XML round trips.
+  A true flag suppresses automatic reference numbering without consuming text:
+  [Microsoft semantics](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.footnoteendnotereferencetype.custommarkfollows).
 - Upstream repair: https://github.com/bokuweb/docx-rs/pull/938.
 - office2pdf resolves retained IDs against raw `word/footnotes.xml` runs;
   a character style is not evidence of a reference.
 - Reference runs can contain surrounding text or occur in tables/hyperlinks.
+- Custom text markers use the following text child and its own run style;
+  native one-factor Word probes verify same-run, next-run and merged-text forms.
 - Empty normal notes retain their references and later numbering; separator
   records are excluded by type.
 - Endnote references still use the existing style/cursor fallback because the

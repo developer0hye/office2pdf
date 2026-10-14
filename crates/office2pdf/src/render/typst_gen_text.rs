@@ -5553,7 +5553,11 @@ fn write_styled_note_marker(out: &mut String, style: &TextStyle) {
 
 fn write_footnote_start(out: &mut String, run: &Run) {
     let note = run.footnote.as_ref().expect("footnote emission");
-    if note.uses_reference_run_style {
+    if note.custom_mark_follows {
+        // Strip only the engine's automatic superscript. The source marker
+        // inside its direct link retains its own scripts and text formatting.
+        out.push_str("#[#show super: marker => { if repr(marker.body.func()) == \"direct-link\" { marker.body } else { marker } }\n");
+    } else if note.uses_reference_run_style {
         out.push_str("#[#set text(");
         write_text_params(out, &run.style);
         out.push_str(")\n");
@@ -5566,7 +5570,15 @@ fn write_footnote_start(out: &mut String, run: &Run) {
             out.push_str("#sub[");
         }
     }
-    out.push_str("#footnote[");
+    if note.custom_mark_follows {
+        out.push_str("#footnote(numbering: n => [");
+        if let Some(marker) = note.custom_marker.as_deref() {
+            generate_run(out, marker);
+        }
+        out.push_str("])[");
+    } else {
+        out.push_str("#footnote[");
+    }
     match &note.entry_marker {
         crate::ir::FootnoteEntryMarker::Automatic => {}
         crate::ir::FootnoteEntryMarker::Absent => {
@@ -5583,6 +5595,14 @@ fn write_footnote_start(out: &mut String, run: &Run) {
 fn write_footnote_end(out: &mut String, run: &Run) {
     out.push(']');
     if run
+        .footnote
+        .as_ref()
+        .is_some_and(|note| note.custom_mark_follows)
+    {
+        // A custom note is still a normal linked footnote element, so undo
+        // its counter step before later automatic references are laid out.
+        out.push_str("#counter(footnote).update(n => n - 1)]");
+    } else if run
         .footnote
         .as_ref()
         .is_some_and(|note| note.uses_reference_run_style)

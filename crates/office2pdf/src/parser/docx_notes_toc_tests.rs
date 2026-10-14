@@ -1,6 +1,108 @@
 use super::*;
 use std::io::Cursor;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn custom_footnote_marks_do_not_advance_automatic_numbering() {
+    let data = include_bytes!("../../../../tests/fixtures/docx/docxide/custom_footnote_marks.docx");
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+    for number in ["1", "2"] {
+        assert_eq!(
+            runs.iter().filter(|run| run.text == number).count(),
+            2,
+            "only automatic notes have numeric body and entry labels: {runs:?}"
+        );
+    }
+    assert!(
+        !runs
+            .iter()
+            .any(|run| matches!(run.text.as_str(), "3" | "4")),
+        "custom references do not increment the automatic sequence"
+    );
+    for symbol in ["**", "†"] {
+        assert_eq!(
+            runs.iter().filter(|run| run.text == symbol).count(),
+            2,
+            "each source symbol survives in the body and note entry"
+        );
+    }
+    assert_eq!(
+        runs.iter()
+            .filter(|run| run.text.contains("trailing text."))
+            .count(),
+        4
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn custom_note_marks_keep_text_across_run_and_text_node_boundaries() {
+    let data = include_bytes!("../../../../tests/fixtures/docx/docxide/custom_footnote_marks.docx");
+    let mut archive = zip::ZipArchive::new(Cursor::new(data.as_slice())).unwrap();
+    let xml = read_zip_text(&mut archive, "word/document.xml").unwrap();
+    let styles = read_zip_text(&mut archive, "word/styles.xml").unwrap();
+    let notes = read_zip_text(&mut archive, "word/footnotes.xml").unwrap();
+    for replacement in [
+        r#"<w:t xml:space="preserve">** trailing text.</w:t>"#,
+        r#"</w:r><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="24"/><w:vertAlign w:val="baseline"/></w:rPr><w:t>**</w:t><w:t xml:space="preserve"> trailing text.</w:t>"#,
+    ] {
+        let xml = xml.replacen(
+            r#"<w:t>**</w:t><w:t xml:space="preserve"> trailing text.</w:t>"#,
+            replacement,
+            1,
+        );
+        let data = build_docx_with_notes_xml(&xml, &styles, &notes);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+        let body: String = runs
+            .iter()
+            .filter(|run| run.baseline_pt < 200.0)
+            .map(|run| run.text.as_str())
+            .collect();
+        assert_eq!(
+            body,
+            "Reference control** trailing text.Reference control1 trailing text.Reference control† trailing text.Reference control2 trailing text."
+        );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_custom_note_marker_keeps_its_next_runs_font_and_script() {
+    let styles =
+        r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+    let notes = r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:id="7"><w:p><w:r><w:t>** Entry control.</w:t></w:r></w:p></w:footnote></w:footnotes>"#;
+    for alignment in ["baseline", "superscript", "subscript"] {
+        let marker_style = format!(
+            r#"<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="28"/><w:i/><w:vertAlign w:val="{alignment}"/></w:rPr>"#
+        );
+        let xml = format!(
+            r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="24"/></w:rPr><w:t>Body control</w:t><w:footnoteReference w:id="7" w:customMarkFollows="on"/></w:r><w:r>{marker_style}<w:t>**</w:t></w:r><w:r><w:t> after.</w:t></w:r><w:r>{marker_style}<w:t>Q</w:t></w:r></w:p></w:body></w:document>"#
+        );
+        let data = build_docx_with_notes_xml(&xml, styles, notes);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+        let marker = runs
+            .iter()
+            .find(|run| run.text == "**" && run.baseline_pt < 200.0)
+            .unwrap();
+        let control = runs.iter().find(|run| run.text == "Q").unwrap();
+        assert_eq!(marker.family, control.family);
+        assert!(
+            (marker.font_size_pt - control.font_size_pt).abs() < 0.05,
+            "{alignment}: {runs:?}"
+        );
+        assert!(
+            (marker.baseline_pt - control.baseline_pt).abs() < 0.05,
+            "{alignment}: {runs:?}"
+        );
+    }
+}
+
 #[test]
 fn footnote_references_keep_ids_and_position_without_a_reference_style() {
     let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
