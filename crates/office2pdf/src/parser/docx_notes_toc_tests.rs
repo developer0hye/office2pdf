@@ -1,6 +1,113 @@
 use super::*;
 use std::io::Cursor;
 
+#[test]
+fn footnote_references_keep_ids_and_position_without_a_reference_style() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+      <w:p><w:r><w:t>First</w:t><w:footnoteReference w:id="7"/><w:t> after.</w:t></w:r></w:p>
+      <w:p><w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr></w:r><w:r><w:t>Second</w:t></w:r><w:r><w:rPr><w:rStyle w:val="EndnoteReference"/></w:rPr><w:footnoteReference w:id="29"/></w:r></w:p>
+      <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Cell</w:t><w:footnoteReference w:id="11"/><w:t> tail.</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+      <w:p><w:hyperlink w:anchor="target"><w:r><w:t>Linked</w:t><w:footnoteReference w:id="42"/><w:t> text.</w:t></w:r></w:hyperlink></w:p>
+    </w:body></w:document>"#;
+    let styles =
+        r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+    let notes = r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+      <w:footnote w:id="29"><w:p><w:r><w:t>Second note.</w:t></w:r></w:p></w:footnote>
+      <w:footnote w:id="7"><w:p><w:r><w:t>First note.</w:t></w:r></w:p></w:footnote>
+      <w:footnote w:id="42"><w:p><w:r><w:t>Linked note.</w:t></w:r></w:p></w:footnote>
+      <w:footnote w:id="11"><w:p><w:r><w:t>Cell note.</w:t></w:r></w:p></w:footnote>
+    </w:footnotes>"#;
+    let data = build_docx_with_notes_xml(xml, styles, notes);
+    let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(flow) = &document.pages[0] else {
+        panic!("expected flow")
+    };
+    let tokens = |paragraph: &Paragraph| -> Vec<String> {
+        paragraph
+            .runs
+            .iter()
+            .map(|run| {
+                note_text(run).map_or_else(|| run.text.clone(), |text| format!("NOTE:{text}"))
+            })
+            .collect()
+    };
+    let Block::Paragraph(first) = &flow.content[0] else {
+        panic!("first paragraph")
+    };
+    assert_eq!(tokens(first), ["First", "NOTE:First note.", " after."]);
+    let Block::Paragraph(second) = &flow.content[1] else {
+        panic!("second paragraph")
+    };
+    assert_eq!(tokens(second), ["Second", "NOTE:Second note."]);
+    let Block::Table(table) = &flow.content[2] else {
+        panic!("table")
+    };
+    let Block::Paragraph(cell) = &table.rows[0].cells[0].content[0] else {
+        panic!("cell paragraph")
+    };
+    assert_eq!(tokens(cell), ["Cell", "NOTE:Cell note.", " tail."]);
+    let Block::Paragraph(linked) = &flow.content[3] else {
+        panic!("linked paragraph")
+    };
+    assert_eq!(tokens(linked), ["Linked", "NOTE:Linked note.", " text."]);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn authored_unstyled_footnotes_remain_searchable_in_compiled_output() {
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/unstyled_footnotes.docx");
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let text_runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+    for expected in [
+        "Invoice note remains searchable.",
+        "Shipment note remains searchable.",
+        "Closing paragraph remains searchable.",
+    ] {
+        assert!(
+            text_runs.iter().any(|run| run.text.contains(expected)),
+            "missing searchable text: {expected}"
+        );
+    }
+}
+
+#[test]
+fn empty_normal_footnotes_keep_their_references_and_later_numbering() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Empty note</w:t><w:footnoteReference w:id="7"/><w:t> then populated note</w:t><w:footnoteReference w:id="29"/></w:r></w:p></w:body></w:document>"#;
+    let styles =
+        r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+    let notes = r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:t>Not a normal note.</w:t></w:r></w:p></w:footnote><w:footnote w:id="7"><w:p><w:r><w:footnoteRef/></w:r></w:p></w:footnote><w:footnote w:id="29"><w:p><w:r><w:t>Populated note.</w:t></w:r></w:p></w:footnote></w:footnotes>"#;
+    let data = build_docx_with_notes_xml(xml, styles, notes);
+    let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(flow) = &document.pages[0] else {
+        panic!("expected flow")
+    };
+    let Block::Paragraph(paragraph) = &flow.content[0] else {
+        panic!("paragraph")
+    };
+    let notes: Vec<&Run> = paragraph
+        .runs
+        .iter()
+        .filter(|run| run.footnote.is_some())
+        .collect();
+    assert_eq!(notes.len(), 2, "empty normal notes still have a reference");
+    assert_eq!(note_text(notes[0]).as_deref(), Some(""));
+    assert_eq!(note_text(notes[1]).as_deref(), Some("Populated note."));
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let text_runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+        for number in ["1", "2"] {
+            assert_eq!(
+                text_runs.iter().filter(|run| run.text == number).count(),
+                2,
+                "both the body reference and entry retain number {number}"
+            );
+        }
+    }
+}
+
 // ── Footnotes and endnotes ──────────────────────────────────────────
 
 /// The note's text, joined across its runs.

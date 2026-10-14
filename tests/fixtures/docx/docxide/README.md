@@ -85,3 +85,9 @@ pictures vary frame proportions, rotation and an explicit source crop. A default
 compiled-frame regression checks declared dimensions. Native Word packages and
 PDFs remain external; source-crop and placement defects are tracked separately.
 
+
+`unstyled_footnotes.docx` is independently authored under this repository's
+Apache-2.0 license. Two unstyled references use nonsequential IDs; one shares
+its run with surrounding text. The default parser and compiled-frame regression
+requires both note bodies and the surrounding text to survive. Native Word
+exports remain external.
