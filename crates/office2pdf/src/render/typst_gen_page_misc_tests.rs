@@ -641,7 +641,7 @@ fn test_footnote_generates_typst_footnote() {
                 text: String::new(),
                 style: TextStyle::default(),
                 href: None,
-                footnote: Some(vec![note_run("This is a footnote.")]),
+                footnote: Some(vec![note_run("This is a footnote.")].into()),
                 inline_box: None,
             },
         ],
@@ -659,7 +659,7 @@ fn test_footnote_with_special_chars() {
             text: String::new(),
             style: TextStyle::default(),
             href: None,
-            footnote: Some(vec![note_run("Note with #special *chars*")]),
+            footnote: Some(vec![note_run("Note with #special *chars*")].into()),
             inline_box: None,
         }],
     })])]);

@@ -46,3 +46,4 @@ font/size/tab/wrap differences and inline marker ascent versus body descent/lead
 Damaged-PNG recovery follows `src/pdf/images.rs`; locked `png` 0.18.1 recovers samples, calibrated by Word CRC/truncation probes.
 Picture crops follow `src/docx/images.rs`; raw XML retains per-picture offsets independently of [docx-rs#936](https://github.com/bokuweb/docx-rs/pull/936).
 SmartArt follows package relationships into cached DrawingML and separate text transforms; native outlines stay, compatible others use Annex D, and unsupported outlines/path paints warn and fall back.
+Footnote markers retain source run styles; Typst's native entry/backlink realization is customized via a scoped superscript show rule, guarded by compiled marker tests.

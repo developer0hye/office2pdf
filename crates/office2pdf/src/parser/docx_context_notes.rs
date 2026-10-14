@@ -7,7 +7,7 @@ use super::super::extract_run_text;
 #[cfg(test)]
 use super::super::text::parse_theme_fonts;
 use super::super::text::{ThemeFonts, resolve_latin_theme_font_family};
-use crate::ir::TextStyle;
+use crate::ir::{TextStyle, VerticalTextAlign};
 use crate::parser::units::half_points_to_pt;
 use crate::parser::xml_util::parse_hex_color;
 
@@ -27,6 +27,7 @@ enum NoteKind {
 pub(in super::super) struct NoteRun {
     pub(in super::super) text: String,
     pub(in super::super) explicit: TextStyle,
+    pub(in super::super) character_style_id: Option<String>,
 }
 
 /// A note's content: the paragraph style it names, and its runs.
@@ -34,6 +35,7 @@ pub(in super::super) struct NoteRun {
 pub(in super::super) struct NoteContent {
     pub(in super::super) style_id: Option<String>,
     pub(in super::super) runs: Vec<NoteRun>,
+    pub(in super::super) entry_marker: Option<NoteRun>,
 }
 
 /// Footnotes resolve by their actual reference ID. Endnotes still use a style
@@ -111,6 +113,17 @@ pub(in super::super) fn build_note_context_from_xml(
         .filter_map(|(kind, id)| matches!(kind, NoteKind::Endnote).then_some(id))
         .collect();
 
+    tracing::debug!(
+        footnote_records = note_context.footnote_content.len(),
+        endnote_records = note_context.endnote_content.len(),
+        entry_references = note_context
+            .footnote_content
+            .values()
+            .chain(note_context.endnote_content.values())
+            .filter(|note| note.entry_marker.is_some())
+            .count(),
+        "Read note stories and entry reference formatting"
+    );
     note_context
 }
 
@@ -142,6 +155,7 @@ fn parse_notes_xml(xml: &str, theme_fonts: &ThemeFonts) -> HashMap<usize, NoteCo
     let mut run: NoteRun = NoteRun::default();
     let mut in_text = false;
     let mut in_run_property = false;
+    let mut has_entry_marker = false;
 
     let attribute_value =
         |element: &quick_xml::events::BytesStart, name: &[u8]| -> Option<String> {
@@ -175,6 +189,7 @@ fn parse_notes_xml(xml: &str, theme_fonts: &ThemeFonts) -> HashMap<usize, NoteCo
                         }
                         current = NoteContent::default();
                         run = NoteRun::default();
+                        has_entry_marker = false;
                         current_id = match attribute_value(element, b"type").as_deref() {
                             None | Some("normal") => attribute_value(element, b"id")
                                 .and_then(|value| value.parse::<usize>().ok()),
@@ -187,6 +202,19 @@ fn parse_notes_xml(xml: &str, theme_fonts: &ThemeFonts) -> HashMap<usize, NoteCo
                         }
                     }
                     b"rPr" => in_run_property = true,
+                    b"rStyle" if in_run_property => {
+                        run.character_style_id = attribute_value(element, b"val");
+                    }
+                    b"vertAlign" if in_run_property => {
+                        run.explicit.vertical_align =
+                            match attribute_value(element, b"val").as_deref() {
+                                Some("baseline") => Some(VerticalTextAlign::Baseline),
+                                Some("superscript") => Some(VerticalTextAlign::Superscript),
+                                Some("subscript") => Some(VerticalTextAlign::Subscript),
+                                _ => None,
+                            };
+                    }
+                    b"footnoteRef" | b"endnoteRef" => has_entry_marker = true,
                     b"b" if in_run_property => run.explicit.bold = Some(toggle_on(element)),
                     b"i" if in_run_property => run.explicit.italic = Some(toggle_on(element)),
                     b"sz" if in_run_property => {
@@ -223,6 +251,10 @@ fn parse_notes_xml(xml: &str, theme_fonts: &ThemeFonts) -> HashMap<usize, NoteCo
                 b"rPr" => in_run_property = false,
                 b"r" => {
                     let finished = std::mem::take(&mut run);
+                    if has_entry_marker && current.entry_marker.is_none() {
+                        current.entry_marker = Some(finished.clone());
+                    }
+                    has_entry_marker = false;
                     if !finished.text.is_empty() {
                         current.runs.push(finished);
                     }
@@ -253,12 +285,8 @@ fn parse_notes_xml(xml: &str, theme_fonts: &ThemeFonts) -> HashMap<usize, NoteCo
 /// Empty normal notes still have a reference and affect later numbering.
 /// Separator records are excluded when their type is read.
 fn finish_note(map: &mut HashMap<usize, NoteContent>, id: usize, mut content: NoteContent) {
-    if let Some(last) = content.runs.last_mut() {
-        last.text = last.text.trim_end().to_string();
-    }
-    if let Some(first) = content.runs.first_mut() {
-        first.text = first.text.trim_start().to_string();
-    }
+    // Whitespace inside w:t is document content, including the separator
+    // after a reference. XML indentation never enters these runs.
     content.runs.retain(|run| !run.text.is_empty());
     map.insert(id, content);
 }

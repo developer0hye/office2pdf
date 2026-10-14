@@ -2452,7 +2452,7 @@ fn footnote_inline_text_box_preserves_nested_table_text() {
                     text: String::new(),
                     style: TextStyle::default(),
                     href: None,
-                    footnote: Some(vec![note]),
+                    footnote: Some(vec![note].into()),
                     inline_box: None,
                 },
             ],

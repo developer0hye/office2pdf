@@ -299,6 +299,7 @@ pub(super) fn extract_run_style(rp: &docx_rs::RunProperty) -> TextStyle {
 pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
     let vertical_align: Option<VerticalTextAlign> =
         rp.get("vertAlign").and_then(|va| match va.as_str()? {
+            "baseline" => Some(VerticalTextAlign::Baseline),
             "superscript" => Some(VerticalTextAlign::Superscript),
             "subscript" => Some(VerticalTextAlign::Subscript),
             _ => None,

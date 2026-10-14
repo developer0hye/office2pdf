@@ -77,7 +77,7 @@ fn empty_normal_footnotes_keep_their_references_and_later_numbering() {
     let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Empty note</w:t><w:footnoteReference w:id="7"/><w:t> then populated note</w:t><w:footnoteReference w:id="29"/></w:r></w:p></w:body></w:document>"#;
     let styles =
         r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
-    let notes = r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:t>Not a normal note.</w:t></w:r></w:p></w:footnote><w:footnote w:id="7"><w:p><w:r><w:footnoteRef/></w:r></w:p></w:footnote><w:footnote w:id="29"><w:p><w:r><w:t>Populated note.</w:t></w:r></w:p></w:footnote></w:footnotes>"#;
+    let notes = r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:t>Not a normal note.</w:t></w:r></w:p></w:footnote><w:footnote w:id="7"><w:p><w:r><w:footnoteRef/></w:r></w:p></w:footnote><w:footnote w:id="29"><w:p><w:r><w:footnoteRef/><w:t>Populated note.</w:t></w:r></w:p></w:footnote></w:footnotes>"#;
     let data = build_docx_with_notes_xml(xml, styles, notes);
     let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
     let Page::Flow(flow) = &document.pages[0] else {
@@ -104,6 +104,324 @@ fn empty_normal_footnotes_keep_their_references_and_later_numbering() {
                 2,
                 "both the body reference and entry retain number {number}"
             );
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn normal_footnote_markers_keep_reference_and_entry_run_formatting() {
+    for (body_size, entry_size, family) in [
+        (9, 14, "Arial"),
+        (12, 10, "Times New Roman"),
+        (18, 8, "Courier New"),
+    ] {
+        let xml = format!(
+            r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:rPr><w:rFonts w:ascii="{family}" w:hAnsi="{family}"/><w:sz w:val="{}"/></w:rPr><w:t>Body control</w:t><w:footnoteReference w:id="7"/></w:r></w:p></w:body></w:document>"#,
+            body_size * 2
+        );
+        let styles =
+            r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+        let notes = format!(
+            r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:id="7"><w:p><w:r><w:rPr><w:rFonts w:ascii="{family}" w:hAnsi="{family}"/><w:sz w:val="{}"/></w:rPr><w:footnoteRef/><w:t>Entry control</w:t></w:r></w:p></w:footnote></w:footnotes>"#,
+            entry_size * 2
+        );
+        let data = build_docx_with_notes_xml(&xml, styles, &notes);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+        let body = runs
+            .iter()
+            .find(|run| run.text.contains("Body control"))
+            .unwrap();
+        let entry = runs
+            .iter()
+            .find(|run| run.text.contains("Entry control"))
+            .unwrap();
+        let markers: Vec<_> = runs.iter().filter(|run| run.text == "1").collect();
+        assert_eq!(
+            markers.len(),
+            2,
+            "both linked reference and entry markers survive"
+        );
+        let body_marker = markers
+            .iter()
+            .min_by(|a, b| a.baseline_pt.total_cmp(&b.baseline_pt))
+            .unwrap();
+        let entry_marker = markers
+            .iter()
+            .max_by(|a, b| a.baseline_pt.total_cmp(&b.baseline_pt))
+            .unwrap();
+        assert!(
+            (body_marker.font_size_pt - f64::from(body_size)).abs() < 0.05,
+            "body marker has source size: {body_marker:?}"
+        );
+        assert_eq!(body_marker.family, body.family);
+        assert!(
+            (body_marker.baseline_pt - body.baseline_pt).abs() < 0.05,
+            "normal body marker stays on the baseline"
+        );
+        assert!(
+            (entry_marker.font_size_pt - f64::from(entry_size)).abs() < 0.05,
+            "entry marker has its own source size: {entry_marker:?}"
+        );
+        assert_eq!(entry_marker.family, entry.family);
+        assert!(
+            (entry_marker.baseline_pt - entry.baseline_pt).abs() < 0.05,
+            "normal entry marker stays on the baseline"
+        );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn footnote_marker_character_styles_allow_explicit_baseline_overrides() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:rPr><w:rStyle w:val="BodyReference"/><w:vertAlign w:val="baseline"/></w:rPr><w:t>Body control</w:t><w:footnoteReference w:id="7"/></w:r></w:p></w:body></w:document>"#;
+    let styles = r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="character" w:styleId="BodyReference"><w:name w:val="Body Reference"/><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="24"/><w:vertAlign w:val="superscript"/></w:rPr></w:style><w:style w:type="character" w:styleId="EntryReference"><w:name w:val="Entry Reference"/><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="20"/><w:vertAlign w:val="superscript"/></w:rPr></w:style></w:styles>"#;
+    let notes = r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:id="7"><w:p><w:r><w:rPr><w:rStyle w:val="EntryReference"/><w:vertAlign w:val="baseline"/></w:rPr><w:footnoteRef/></w:r><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="20"/></w:rPr><w:t>Entry control</w:t></w:r></w:p></w:footnote></w:footnotes>"#;
+    let data = build_docx_with_notes_xml(xml, styles, notes);
+    let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+    let body = runs
+        .iter()
+        .find(|run| run.text.contains("Body control"))
+        .unwrap();
+    let entry = runs
+        .iter()
+        .find(|run| run.text.contains("Entry control"))
+        .unwrap();
+    let markers: Vec<_> = runs.iter().filter(|run| run.text == "1").collect();
+    assert_eq!(markers.len(), 2);
+    for (marker, control, size) in [(markers[0], body, 12.0), (markers[1], entry, 10.0)] {
+        assert!(
+            (marker.font_size_pt - size).abs() < 0.05,
+            "explicit baseline retains the full marker size: {marker:?}"
+        );
+        assert!(
+            (marker.baseline_pt - control.baseline_pt).abs() < 0.05,
+            "explicit baseline clears the character style's superscript"
+        );
+        assert_eq!(marker.family, control.family);
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn absent_entry_reference_does_not_invent_a_searchable_note_label() {
+    let data = include_bytes!("../../../../tests/fixtures/docx/docxide/unstyled_footnotes.docx");
+    let mut archive = zip::ZipArchive::new(Cursor::new(data.as_slice())).unwrap();
+    let document_xml = read_zip_text(&mut archive, "word/document.xml").unwrap();
+    let styles_xml = read_zip_text(&mut archive, "word/styles.xml").unwrap();
+    let notes_xml = read_zip_text(&mut archive, "word/footnotes.xml")
+        .unwrap()
+        .replacen("<w:footnoteRef/>", "", 1);
+    let data = build_docx_with_notes_xml(&document_xml, &styles_xml, &notes_xml);
+    let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+    assert_eq!(runs.iter().filter(|run| run.text == "1").count(), 2);
+    assert_eq!(
+        runs.iter().filter(|run| run.text == "2").count(),
+        1,
+        "the body reference survives, but the absent entry reference is not invented"
+    );
+    assert!(
+        runs.iter()
+            .any(|run| run.text.contains("Shipment note remains searchable."))
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn superscript_footnote_markers_do_not_reenter_the_entry_show_rule() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="24"/></w:rPr><w:t>Body control</w:t></w:r><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="24"/><w:vertAlign w:val="superscript"/></w:rPr><w:footnoteReference w:id="7"/></w:r></w:p></w:body></w:document>"#;
+    let styles =
+        r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+    let notes = r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:id="7"><w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="20"/><w:vertAlign w:val="superscript"/></w:rPr><w:footnoteRef/></w:r><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="20"/></w:rPr><w:t>Entry control</w:t></w:r><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="20"/><w:vertAlign w:val="superscript"/></w:rPr><w:t>raised</w:t></w:r></w:p></w:footnote></w:footnotes>"#;
+    let data = build_docx_with_notes_xml(xml, styles, notes);
+    let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+    let body = runs
+        .iter()
+        .find(|run| run.text.contains("Body control"))
+        .unwrap();
+    let entry = runs
+        .iter()
+        .find(|run| run.text.contains("Entry control"))
+        .unwrap();
+    let markers: Vec<_> = runs.iter().filter(|run| run.text == "1").collect();
+    assert_eq!(markers.len(), 2);
+    for (marker, control) in [(markers[0], body), (markers[1], entry)] {
+        assert!(marker.font_size_pt < control.font_size_pt * 0.8);
+        assert!(marker.baseline_pt < control.baseline_pt - 1.0);
+        assert_eq!(marker.family, control.family);
+    }
+    let Page::Flow(flow) = &document.pages[0] else {
+        panic!("flow page")
+    };
+    let Block::Paragraph(paragraph) = &flow.content[0] else {
+        panic!("paragraph")
+    };
+    let note = paragraph
+        .runs
+        .iter()
+        .find_map(|run| run.footnote.as_deref())
+        .unwrap();
+    assert_eq!(
+        note.runs
+            .iter()
+            .find(|run| run.text == "raised")
+            .unwrap()
+            .style
+            .vertical_align,
+        Some(VerticalTextAlign::Superscript)
+    );
+}
+
+#[test]
+fn authored_note_text_keeps_the_space_after_its_entry_reference() {
+    let data = include_bytes!("../../../../tests/fixtures/docx/docxide/unstyled_footnotes.docx");
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(flow) = &document.pages[0] else {
+        panic!("flow")
+    };
+    let notes: Vec<_> = flow
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => Some(paragraph),
+            _ => None,
+        })
+        .flat_map(|paragraph| &paragraph.runs)
+        .filter_map(|run| run.footnote.as_deref())
+        .collect();
+    assert_eq!(notes.len(), 2);
+    assert_eq!(notes[0].runs[0].text, " Invoice note remains searchable.");
+    assert_eq!(notes[1].runs[0].text, " Shipment note remains searchable.");
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn compiled_note_entry_retains_source_space_after_marker() {
+    for spaces in [" ", "  "] {
+        let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Body</w:t><w:footnoteReference w:id="7"/></w:r></w:p></w:body></w:document>"#;
+        let styles =
+            r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+        let notes = format!(
+            r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:id="7"><w:p><w:r><w:footnoteRef/></w:r><w:r><w:t xml:space="preserve">{spaces}Entry control</w:t></w:r></w:p></w:footnote></w:footnotes>"#
+        );
+        let data = build_docx_with_notes_xml(xml, styles, &notes);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+        let entry: String = runs
+            .iter()
+            .filter(|run| run.baseline_pt > 500.0)
+            .map(|run| run.text.as_str())
+            .collect();
+        assert!(
+            entry.contains(&format!("1{spaces}Entry control")),
+            "source spacing is searchable: {entry:?}"
+        );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn authored_script_markers_retain_each_reference_face_and_size() {
+    let data =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/footnote_marker_scripts.docx");
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(flow) = &document.pages[0] else {
+        panic!("flow page")
+    };
+    let references: Vec<_> = flow
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => Some(paragraph),
+            _ => None,
+        })
+        .flat_map(|paragraph| &paragraph.runs)
+        .filter(|run| run.footnote.is_some())
+        .collect();
+    for (run, (family, size)) in references.iter().zip([
+        ("Arial", 8.0),
+        ("Times New Roman", 14.0),
+        ("Courier New", 18.0),
+    ]) {
+        assert_eq!(run.style.font_family.as_deref(), Some(family));
+        assert_eq!(run.style.font_size, Some(size));
+        assert_eq!(
+            run.style.vertical_align,
+            Some(VerticalTextAlign::Superscript)
+        );
+    }
+    assert_eq!(references.len(), 3);
+    let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+    let controls: Vec<_> = runs
+        .iter()
+        .filter(|run| run.text.contains("Body control"))
+        .collect();
+    assert_eq!(controls.len(), 3);
+    for (index, control) in controls.iter().enumerate() {
+        let number = (index + 1).to_string();
+        let markers: Vec<_> = runs.iter().filter(|run| run.text == number).collect();
+        assert_eq!(markers.len(), 2, "body and linked entry markers survive");
+        for marker in markers {
+            assert_eq!(marker.family, control.family);
+            assert!(marker.font_size_pt < control.font_size_pt * 0.8);
+            assert!(marker.font_size_pt > control.font_size_pt * 0.5);
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn reference_and_entry_vertical_alignment_are_independent() {
+    for (body_superscript, entry_superscript) in [(false, true), (true, false)] {
+        let body_align = if body_superscript {
+            r#"<w:vertAlign w:val="superscript"/>"#
+        } else {
+            ""
+        };
+        let entry_align = if entry_superscript {
+            r#"<w:vertAlign w:val="superscript"/>"#
+        } else {
+            ""
+        };
+        let xml = format!(
+            r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="24"/></w:rPr><w:t>Body control</w:t></w:r><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="24"/>{body_align}</w:rPr><w:footnoteReference w:id="7"/></w:r></w:p></w:body></w:document>"#
+        );
+        let styles =
+            r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+        let notes = format!(
+            r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:footnote w:id="7"><w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="20"/>{entry_align}</w:rPr><w:footnoteRef/></w:r><w:r><w:rPr><w:rFonts w:ascii="Arial"/><w:sz w:val="20"/></w:rPr><w:t>Entry control</w:t></w:r></w:p></w:footnote></w:footnotes>"#
+        );
+        let data = build_docx_with_notes_xml(&xml, styles, &notes);
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+        let markers: Vec<_> = runs.iter().filter(|run| run.text == "1").collect();
+        assert_eq!(markers.len(), 2);
+        for (marker, control_text, superscript) in [
+            (markers[0], "Body control", body_superscript),
+            (markers[1], "Entry control", entry_superscript),
+        ] {
+            let control = runs
+                .iter()
+                .find(|run| run.text.contains(control_text))
+                .unwrap();
+            if superscript {
+                assert!(marker.font_size_pt < control.font_size_pt * 0.8);
+                assert!(marker.baseline_pt < control.baseline_pt - 1.0);
+            } else {
+                assert!((marker.font_size_pt - control.font_size_pt).abs() < 0.05);
+                assert!((marker.baseline_pt - control.baseline_pt).abs() < 0.05);
+            }
         }
     }
 }

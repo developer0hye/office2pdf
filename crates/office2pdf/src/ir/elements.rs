@@ -1410,11 +1410,64 @@ pub struct Run {
     /// Optional hyperlink URL. When present, the run is rendered as a clickable link.
     pub href: Option<String>,
     /// Optional footnote/endnote content. When present, a footnote marker is emitted and
-    /// the content is rendered at the bottom of the page.
-    pub footnote: Option<Vec<Run>>,
+    /// the content is rendered at the bottom of the page. Boxed so note metadata
+    /// adds no inline storage to the much more common ordinary text run.
+    pub footnote: Option<Box<Footnote>>,
     /// A DrawingML text box anchored inline at this run (`wp:inline`). Boxed
     /// because every run carries the field while almost none carries a box.
     pub inline_box: Option<Box<InlineTextBox>>,
+}
+
+/// Note text and the formatting of its entry's own reference run.
+#[derive(Debug, Clone, Default)]
+pub struct Footnote {
+    pub runs: Vec<Run>,
+    /// DOCX references use their actual run style; automatic IR markers keep
+    /// the renderer's superscript default.
+    pub uses_reference_run_style: bool,
+    pub entry_marker: FootnoteEntryMarker,
+}
+
+/// Automatic IR numbering or the actual entry reference supplied by DOCX.
+#[derive(Debug, Clone, Default)]
+pub enum FootnoteEntryMarker {
+    #[default]
+    Automatic,
+    Absent,
+    Styled(Box<TextStyle>),
+}
+
+impl From<Vec<Run>> for Footnote {
+    fn from(runs: Vec<Run>) -> Self {
+        Self {
+            runs,
+            uses_reference_run_style: false,
+            entry_marker: FootnoteEntryMarker::Automatic,
+        }
+    }
+}
+
+impl From<Vec<Run>> for Box<Footnote> {
+    fn from(runs: Vec<Run>) -> Self {
+        Box::new(Footnote::from(runs))
+    }
+}
+
+impl std::ops::Deref for Footnote {
+    type Target = [Run];
+
+    fn deref(&self) -> &Self::Target {
+        &self.runs
+    }
+}
+
+impl<'a> IntoIterator for &'a Footnote {
+    type Item = &'a Run;
+    type IntoIter = std::slice::Iter<'a, Run>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.runs.iter()
+    }
 }
 
 /// A table.

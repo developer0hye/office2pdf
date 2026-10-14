@@ -348,6 +348,11 @@ CLI build, run `scripts/audit_docxide_corpus.py --help` for repeatable conversio
 page-count, and searchable-text triage. Geometry, pixels, fonts, and direct visual
 inspection remain required before calling a document correct.
 
+DOCX footnote markers retain source fonts, sizes and vertical alignment, including
+explicit baseline overrides. For direct IR construction, `Run::footnote` holds
+`Option<Box<Footnote>>`; use `Some(runs.into())` for automatic markers, or set
+`FootnoteEntryMarker` and the reference-style flag explicitly.
+
 Picture outlines in PPTX and cached DOCX drawings retain ellipse, rounded-rectangle
 and custom-path geometry, line opacity, and picture flips/rotation.
 
