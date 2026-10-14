@@ -162,6 +162,9 @@ struct GenCtx {
     /// its own sheet's first printed page (issue #1168).
     next_sheet_drawing_layer_id: usize,
     next_excel_fill_id: usize,
+    /// Temporary zero-width line identifiers consumed by the Word border paint pass.
+    next_word_border_marker: u32,
+    next_word_border_table_id: usize,
     table_depth: usize,
     /// Active section's Word document-grid line pitch, in points.
     line_grid_pitch: Option<f64>,
@@ -302,6 +305,8 @@ impl GenCtx {
             prefer_sibling_metrics_for_empty_cell_paragraphs: false,
             next_sheet_drawing_layer_id: 0,
             next_excel_fill_id: 0,
+            next_word_border_marker: 0,
+            next_word_border_table_id: 0,
             table_depth: 0,
             table_uses_powerpoint_line_box: false,
             line_grid_pitch: None,

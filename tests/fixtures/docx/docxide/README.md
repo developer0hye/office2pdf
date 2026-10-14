@@ -85,3 +85,8 @@ pictures vary frame proportions, rotation and an explicit source crop. A default
 compiled-frame regression checks declared dimensions. Native Word packages and
 PDFs remain external; source-crop and placement defects are tracked separately.
 
+`auto_row_borders.docx` is a minimal OOXML fixture authored for office2pdf under
+Apache-2.0. Two automatic-height rows contain uneven paragraph counts and all
+outer/internal borders, covering continuous vertical paint from parser to layout.
+It is not copied from the external corpus.
+
