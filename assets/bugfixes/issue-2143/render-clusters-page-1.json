@@ -1,0 +1,135 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 38.7072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 8.16,
+        "x": 90.72,
+        "y": 683.52
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Fresh full-page and matched-crop review: displaced note text at x=90.72pt, y=683.52pt; note entries are inset and have different paragraph/area placement. No exporter disposition."
+      },
+      "id": "p1-483d2336f2ec",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 4.8,
+        "x": 132.48,
+        "y": 683.04
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Fresh full-page and matched-crop review: displaced note text at x=132.48pt, y=683.04pt; note entries are inset and have different paragraph/area placement. No exporter disposition."
+      },
+      "id": "p1-fbd596872996",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 139.2,
+        "y": 683.04
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Fresh full-page and matched-crop review: displaced note text at x=139.2pt, y=683.04pt; note entries are inset and have different paragraph/area placement. No exporter disposition."
+      },
+      "id": "p1-9806368b88a2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 115.2,
+        "y": 702.72
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Fresh full-page and matched-crop review: displaced note text at x=115.2pt, y=702.72pt; note entries are inset and have different paragraph/area placement. No exporter disposition."
+      },
+      "id": "p1-cb938e4fc196",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 80.64,
+        "y": 663.36
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Fresh full-page and matched-crop review: displaced note text at x=80.64pt, y=663.36pt; note entries are inset and have different paragraph/area placement. No exporter disposition."
+      },
+      "id": "p1-89051f3298d7",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 4.32,
+        "x": 132.96,
+        "y": 700.32
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Fresh full-page and matched-crop review: displaced note text at x=132.96pt, y=700.32pt; note entries are inset and have different paragraph/area placement. No exporter disposition."
+      },
+      "id": "p1-86ef77c03b1d",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 80.64,
+        "y": 683.04
+      },
+      "disposition": {
+        "issue": "#2138",
+        "kind": "issue",
+        "note": "Fresh full-page and matched-crop review: displaced note text at x=80.64pt, y=683.04pt; note entries are inset and have different paragraph/area placement. No exporter disposition."
+      },
+      "id": "p1-e71b0972c9f2",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 7,
+    "duplicate": 0,
+    "total": 7,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
