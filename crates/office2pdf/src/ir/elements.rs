@@ -1648,6 +1648,8 @@ pub struct TableCell {
     pub col_span: u32,
     pub row_span: u32,
     pub border: Option<CellBorder>,
+    /// Diagonal rules use the resolved cell rectangle and do not reserve text inset.
+    pub diagonal_borders: Option<Box<DiagonalCellBorders>>,
     pub background: Option<Color>,
     /// Opacity declared by the cell background color, from transparent `0.0`
     /// through opaque `1.0`. `None` keeps the legacy opaque paint.
@@ -1718,6 +1720,7 @@ impl Default for TableCell {
             col_span: 1,
             row_span: 1,
             border: None,
+            diagonal_borders: None,
             background: None,
             background_alpha: None,
             data_bar: None,
@@ -1734,6 +1737,13 @@ impl Default for TableCell {
             wraps_text: false,
         }
     }
+}
+
+/// Rules across the interior of a table cell, independent of its outer edges.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct DiagonalCellBorders {
+    pub top_left_to_bottom_right: Option<BorderSide>,
+    pub top_right_to_bottom_left: Option<BorderSide>,
 }
 
 /// Cell border specification.

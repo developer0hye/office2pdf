@@ -259,6 +259,11 @@ Native Rust callers can use the same per-conversion path through
 | PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
 
+DOCX diagonal cell borders retain per-direction table-style inheritance and explicit
+suppression in `TableCell.diagonal_borders`. They paint across resolved cell bounds
+without adding text insets. Native behavior for cells split across pages remains
+unverified.
+
 DOCX picture crops apply per picture, including body, header and footer images.
 Crops extending beyond the original image are not yet rendered.
 Published library builds can omit DOCX picture rotation.

@@ -1,3 +1,4 @@
+mod cell_diagonal_paint;
 mod excel_fill_paint;
 mod excel_glyph_pacing;
 pub mod font_context;

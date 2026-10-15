@@ -2436,3 +2436,239 @@ fn a_paragraph_with_runs_carries_no_mark_formatting() {
         );
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn test_docx_cell_diagonals_paint_resolved_corners_without_moving_text() {
+    use crate::render::pdf::{compiled_paint_sequence, compiled_text_runs};
+    use crate::render::typst_gen::generate_typst;
+    use typst::visualize::{Color as PaintColor, Geometry};
+
+    let make_table = |diagonals: bool| {
+        let cells = [
+            (docx_rs::TableCellBorderPosition::Tl2br, "FF0000", 4),
+            (docx_rs::TableCellBorderPosition::Tr2bl, "008000", 12),
+        ]
+        .into_iter()
+        .map(|(direction, color, size)| {
+            let cell = docx_rs::TableCell::new()
+                .shading(docx_rs::Shading::new().fill("E6F0FA"))
+                .add_paragraph(docx_rs::Paragraph::new().add_run(
+                    docx_rs::Run::new().add_text("Text wraps across several lines in this cell."),
+                ));
+            if diagonals {
+                cell.set_border(
+                    docx_rs::TableCellBorder::new(direction)
+                        .size(size)
+                        .color(color),
+                )
+            } else {
+                cell
+            }
+        })
+        .collect();
+        docx_rs::Table::new(vec![docx_rs::TableRow::new(cells)]).set_grid(vec![1800, 2800])
+    };
+    let parse = |diagonals| {
+        let data = build_docx_with_table(make_table(diagonals));
+        let (doc, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        generate_typst(&doc).unwrap()
+    };
+    let with = parse(true);
+    let without = parse(false);
+    let paints = compiled_paint_sequence(&with.source, &with.images, 0).unwrap();
+    let lines: Vec<_> = paints
+        .iter()
+        .filter(|paint| {
+            matches!(&paint.geometry, Some(Geometry::Line(end))
+            if end.x.to_pt().abs() > 1.0 && end.y.to_pt().abs() > 1.0)
+        })
+        .collect();
+    assert_eq!(
+        lines.len(),
+        2,
+        "both DOCX cell diagonals must survive parsing and paint"
+    );
+    for (index, (color, width, descends)) in [
+        (PaintColor::from_u8(255, 0, 0, 255), 0.5, true),
+        (PaintColor::from_u8(0, 128, 0, 255), 1.5, false),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let line = lines
+            .iter()
+            .find(|line| line.stroke.as_ref().unwrap().color.as_ref() == Some(&color))
+            .unwrap();
+        assert_eq!(line.stroke.as_ref().unwrap().thickness_pt, width);
+        let Some(Geometry::Line(end)) = &line.geometry else {
+            unreachable!()
+        };
+        assert_eq!(end.y.to_pt() > 0.0, descends);
+        let fill = paints
+            .iter()
+            .filter(|p| p.rectangle_fill == Some(PaintColor::from_u8(230, 240, 250, 255)))
+            .nth(index)
+            .unwrap();
+        assert_eq!(
+            line.bounds, fill.bounds,
+            "diagonal must reach the resolved cell's corners"
+        );
+    }
+    let with_text = compiled_text_runs(&with.source, 0).unwrap();
+    let without_text = compiled_text_runs(&without.source, 0).unwrap();
+    let positions = |runs: Vec<crate::render::pdf::PlacedTextRun>| {
+        runs.into_iter()
+            .map(|r| (r.text, r.left_pt, r.baseline_pt))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        positions(with_text),
+        positions(without_text),
+        "diagonals must not change text layout"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn test_docx_crossed_diagonals_use_the_full_merged_cell_without_a_fill() {
+    use crate::render::pdf::compiled_paint_sequence;
+    use crate::render::typst_gen::generate_typst;
+    use typst::visualize::Geometry;
+
+    let merged = docx_rs::TableCell::new()
+        .grid_span(2)
+        .vertical_merge(docx_rs::VMergeType::Restart)
+        .add_paragraph(docx_rs::Paragraph::new())
+        .set_border(
+            docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Tl2br)
+                .size(4)
+                .color("auto"),
+        )
+        .set_border(
+            docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Tr2bl)
+                .size(8)
+                .color("0000FF"),
+        );
+    let continuation = docx_rs::TableCell::new()
+        .grid_span(2)
+        .vertical_merge(docx_rs::VMergeType::Continue);
+    let table = docx_rs::Table::new(vec![
+        docx_rs::TableRow::new(vec![merged, docx_rs::TableCell::new()])
+            .row_height(480.0)
+            .height_rule(docx_rs::HeightRule::Exact),
+        docx_rs::TableRow::new(vec![continuation, docx_rs::TableCell::new()])
+            .row_height(720.0)
+            .height_rule(docx_rs::HeightRule::Exact),
+    ])
+    .set_grid(vec![1600, 2400, 1800]);
+    let (doc, _) = DocxParser
+        .parse(&build_docx_with_table(table), &ConvertOptions::default())
+        .unwrap();
+    let generated = generate_typst(&doc).unwrap();
+    let paints = compiled_paint_sequence(&generated.source, &generated.images, 0).unwrap();
+    let diagonals: Vec<_> = paints
+        .iter()
+        .filter(|paint| {
+            matches!(&paint.geometry, Some(Geometry::Line(end))
+            if end.x.to_pt().abs() > 1.0 && end.y.to_pt().abs() > 1.0)
+        })
+        .collect();
+    assert_eq!(diagonals.len(), 2);
+    for paint in diagonals {
+        assert_eq!(paint.bounds.2 - paint.bounds.0, 200.0);
+        assert_eq!(paint.bounds.3 - paint.bounds.1, 60.0);
+    }
+}
+
+#[test]
+fn test_docx_explicitly_suppressed_diagonals_remain_absent() {
+    let cells = [docx_rs::BorderType::Nil, docx_rs::BorderType::None]
+        .into_iter()
+        .map(|kind| {
+            docx_rs::TableCell::new()
+                .add_paragraph(docx_rs::Paragraph::new())
+                .set_border(
+                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Tl2br)
+                        .border_type(kind),
+                )
+                .set_border(
+                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Tr2bl)
+                        .border_type(kind),
+                )
+        })
+        .collect();
+    let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(cells)]).set_grid(vec![2000, 2000]);
+    let (doc, _) = DocxParser
+        .parse(&build_docx_with_table(table), &ConvertOptions::default())
+        .unwrap();
+    assert!(
+        first_table(&doc).rows[0]
+            .cells
+            .iter()
+            .all(|cell| cell.diagonal_borders.is_none())
+    );
+    let generated = crate::render::typst_gen::generate_typst(&doc).unwrap();
+    assert!(
+        !generated
+            .source
+            .contains("office2pdf-cell-diagonal-borders")
+    );
+}
+
+#[test]
+fn test_docx_diagonal_styles_inherit_per_direction_and_honor_explicit_suppression() {
+    let styles = r#"<w:style w:type="table" w:styleId="Diagonals">
+      <w:tcPr><w:tcBorders>
+        <w:tl2br w:val="single" w:sz="6" w:color="000000"/>
+        <w:tr2bl w:val="single" w:sz="4" w:color="008000"/>
+      </w:tcBorders></w:tcPr>
+      <w:tblStylePr w:type="firstRow"><w:tcPr><w:tcBorders>
+        <w:tl2br w:val="nil"/>
+        <w:tr2bl w:val="single" w:sz="8" w:color="0000FF"/>
+      </w:tcBorders></w:tcPr></w:tblStylePr>
+    </w:style>"#;
+    let table = r#"<w:tbl><w:tblPr><w:tblStyle w:val="Diagonals"/>
+      <w:tblLook w:firstRow="1" w:lastRow="0" w:firstColumn="0" w:lastColumn="0" w:noHBand="1" w:noVBand="1"/>
+      </w:tblPr><w:tblGrid><w:gridCol w:w="2000"/><w:gridCol w:w="2000"/></w:tblGrid>
+      <w:tr><w:tc><w:p/></w:tc><w:tc><w:tcPr><w:tcBorders>
+        <w:tl2br w:val="single" w:sz="16" w:color="FF0000"/>
+        <w:tr2bl w:val="none"/>
+      </w:tcBorders></w:tcPr><w:p/></w:tc></w:tr>
+      <w:tr><w:tc><w:p/></w:tc><w:tc><w:tcPr><w:tcBorders>
+        <w:tl2br w:val="nil"/><w:tr2bl w:val="none"/>
+      </w:tcBorders></w:tcPr><w:p/></w:tc></w:tr>
+    </w:tbl>"#;
+    let (doc, _) = DocxParser
+        .parse(
+            &build_docx_with_table_style(styles, table),
+            &ConvertOptions::default(),
+        )
+        .unwrap();
+    let t = first_table(&doc);
+    let first = t.rows[0].cells[0]
+        .diagonal_borders
+        .as_ref()
+        .expect("conditional style diagonal");
+    assert!(first.top_left_to_bottom_right.is_none());
+    assert_eq!(
+        first.top_right_to_bottom_left.as_ref().unwrap().color,
+        Color::new(0, 0, 255)
+    );
+    let direct = t.rows[0].cells[1].diagonal_borders.as_ref().unwrap();
+    assert_eq!(direct.top_left_to_bottom_right.as_ref().unwrap().width, 2.0);
+    assert!(direct.top_right_to_bottom_left.is_none());
+    let inherited = t.rows[1].cells[0]
+        .diagonal_borders
+        .as_ref()
+        .expect("base style diagonals");
+    assert_eq!(
+        inherited.top_left_to_bottom_right.as_ref().unwrap().width,
+        0.75
+    );
+    assert_eq!(
+        inherited.top_right_to_bottom_left.as_ref().unwrap().color,
+        Color::new(0, 128, 0)
+    );
+    assert!(t.rows[1].cells[1].diagonal_borders.is_none());
+}

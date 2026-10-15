@@ -1,9 +1,12 @@
 use std::cell::Cell;
 use std::collections::HashMap;
 
-use super::super::tables::{BorderSideSpec, TableBorderSpec};
+use super::super::tables::{BorderSideSpec, TableBorderSpec, diagonal_borders_from_sides};
 use super::super::{Block, Color, TextStyle, parse_hex_color};
-use crate::ir::{Alignment, BorderLineStyle, BorderSide, CellBorder, Insets, LineCap, LineJoin};
+use crate::ir::{
+    Alignment, BorderLineStyle, BorderSide, CellBorder, DiagonalCellBorders, Insets, LineCap,
+    LineJoin,
+};
 use crate::parser::units::twips_to_pt;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -61,6 +64,8 @@ struct RegionBorders {
     right: Option<BorderSide>,
     inside_h: Option<BorderSide>,
     inside_v: Option<BorderSide>,
+    down: BorderSideSpec,
+    up: BorderSideSpec,
 }
 
 impl RegionBorders {
@@ -72,6 +77,16 @@ impl RegionBorders {
             right: other.right.or(self.right),
             inside_h: other.inside_h.or(self.inside_h),
             inside_v: other.inside_v.or(self.inside_v),
+            down: if other.down.is_stated() {
+                other.down
+            } else {
+                self.down
+            },
+            up: if other.up.is_stated() {
+                other.up
+            } else {
+                self.up
+            },
         }
     }
 }
@@ -174,6 +189,7 @@ pub(in super::super) struct ResolvedTableCellStyle {
     pub(in super::super) alignment: Option<Alignment>,
     pub(in super::super) padding: Option<Insets>,
     pub(in super::super) border: Option<CellBorder>,
+    pub(in super::super) diagonal_borders: Option<Box<DiagonalCellBorders>>,
 }
 
 pub(in super::super) struct ResolvedTableStyle {
@@ -371,6 +387,10 @@ impl ResolvedTableStyle {
                 .then(|| region.cell_margins.complete())
                 .flatten(),
             border,
+            diagonal_borders: diagonal_borders_from_sides(
+                region.borders.down.drawn(),
+                region.borders.up.drawn(),
+            ),
         }
     }
 
@@ -645,6 +665,18 @@ fn apply_style_element(
     let Some(target) = region_mut(definition, region) else {
         return;
     };
+    if in_borders && in_cell_properties {
+        let diagonal = match element.local_name().as_ref() {
+            b"tl2br" => Some(&mut target.borders.down),
+            b"tr2bl" => Some(&mut target.borders.up),
+            _ => None,
+        };
+        if let Some(slot) = diagonal {
+            *slot = parse_border_side(element)
+                .map_or(BorderSideSpec::Suppressed, BorderSideSpec::Stated);
+            return;
+        }
+    }
     if in_borders {
         let side_slot: Option<&mut Option<BorderSide>> = match element.local_name().as_ref() {
             b"top" => Some(&mut target.borders.top),
