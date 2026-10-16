@@ -1,7 +1,9 @@
 use std::cell::Cell;
 use std::collections::HashMap;
 
-use super::super::tables::{BorderSideSpec, TableBorderSpec, diagonal_borders_from_sides};
+use super::super::tables::{
+    BorderSideSpec, TableBorderSpec, diagonal_borders_from_sides, word_diagonal_border_style,
+};
 use super::super::{Block, Color, TextStyle, parse_hex_color};
 use crate::ir::{
     Alignment, BorderLineStyle, BorderSide, CellBorder, DiagonalCellBorders, Insets, LineCap,
@@ -506,14 +508,6 @@ fn parse_border_side(element: &quick_xml::events::BytesStart<'_>) -> Option<Bord
     if val == "nil" || val == "none" || val.is_empty() {
         return None;
     }
-    let width: f64 = attribute_value(element, b"sz")
-        .and_then(|value| value.parse::<f64>().ok())
-        .map(|eighths| eighths / 8.0)
-        .unwrap_or(0.5);
-    let color: Color = attribute_value(element, b"color")
-        .filter(|value| value != "auto")
-        .and_then(|value| parse_hex_color(&value))
-        .unwrap_or(Color::new(0, 0, 0));
     let style = match val.as_str() {
         "dashed" | "dashSmallGap" => BorderLineStyle::Dashed,
         "dotted" => BorderLineStyle::Dotted,
@@ -522,13 +516,37 @@ fn parse_border_side(element: &quick_xml::events::BytesStart<'_>) -> Option<Bord
         "double" | "doubleWave" => BorderLineStyle::Double,
         _ => BorderLineStyle::Solid,
     };
-    Some(BorderSide {
+    Some(border_side_with_style(element, style))
+}
+
+fn parse_diagonal_border_side(element: &quick_xml::events::BytesStart<'_>) -> Option<BorderSide> {
+    let value = attribute_value(element, b"val").unwrap_or_default();
+    let style = word_diagonal_border_style(&value)?;
+    let mut border = border_side_with_style(element, style);
+    // Inherited diagonals use the same minimum hairline as direct borders.
+    border.width = border.width.max(0.25);
+    Some(border)
+}
+
+fn border_side_with_style(
+    element: &quick_xml::events::BytesStart<'_>,
+    style: BorderLineStyle,
+) -> BorderSide {
+    let width = attribute_value(element, b"sz")
+        .and_then(|value| value.parse::<f64>().ok())
+        .map(|eighths| eighths / 8.0)
+        .unwrap_or(0.5);
+    let color = attribute_value(element, b"color")
+        .filter(|value| value != "auto")
+        .and_then(|value| parse_hex_color(&value))
+        .unwrap_or(Color::black());
+    BorderSide {
         width,
         color,
         style,
         join: LineJoin::Round,
         cap: LineCap::Flat,
-    })
+    }
 }
 
 #[derive(Default)]
@@ -672,7 +690,7 @@ fn apply_style_element(
             _ => None,
         };
         if let Some(slot) = diagonal {
-            *slot = parse_border_side(element)
+            *slot = parse_diagonal_border_side(element)
                 .map_or(BorderSideSpec::Suppressed, BorderSideSpec::Stated);
             return;
         }

@@ -430,8 +430,8 @@ fn extract_raw_rows(
             let border = cell_border_properties.and_then(extract_cell_borders);
             let diagonal_borders = cell_border_properties.and_then(|borders| {
                 diagonal_borders_from_sides(
-                    extract_border_side(borders, "tl2br"),
-                    extract_border_side(borders, "tr2bl"),
+                    extract_diagonal_border_side(borders, "tl2br"),
+                    extract_diagonal_border_side(borders, "tr2bl"),
                 )
             });
             let diagonal_sides_stated = ["tl2br", "tr2bl"].map(|name| {
@@ -1407,11 +1407,37 @@ fn extract_border_side(borders_json: &serde_json::Value, key: &str) -> Option<Bo
         .and_then(|border| border.top)
 }
 
+fn extract_diagonal_border_side(borders_json: &serde_json::Value, key: &str) -> Option<BorderSide> {
+    let side = borders_json.get(key)?;
+    let style = word_diagonal_border_style(side.get("borderType")?.as_str()?)?;
+    let mut normalized = side.clone();
+    normalized["borderType"] = serde_json::json!("single");
+    let mut border = extract_cell_borders(&serde_json::json!({ "top": normalized }))?.top?;
+    border.style = style;
+    // Word retains a hairline even for an explicitly zero-size diagonal.
+    border.width = border.width.max(0.25);
+    Some(border)
+}
+
+/// Word's diagonal styles differ from ordinary edges: `nil` suppresses, but
+/// `none` and unsupported compound styles paint a single line (MS-OE376 2.1.174).
+pub(super) fn word_diagonal_border_style(value: &str) -> Option<BorderLineStyle> {
+    Some(match value {
+        "nil" | "" => return None,
+        "dashed" | "dashSmallGap" => BorderLineStyle::Dashed,
+        "dotted" => BorderLineStyle::Dotted,
+        "dotDash" => BorderLineStyle::DashDot,
+        "dotDotDash" => BorderLineStyle::DashDotDot,
+        "double" => BorderLineStyle::Double,
+        _ => BorderLineStyle::Solid,
+    })
+}
+
 /// One side of a `w:tblBorders`/`w:tcBorders`, keeping "stated as none" apart
 /// from "not stated at all".
 ///
-/// ECMA-376 gives `w:val="none"` (and its legacy spelling `nil`) the meaning
-/// "no border", which outranks whatever the table style would have drawn;
+/// Ordinary edges with `w:val="none"` (or `nil`) mean "no border", which
+/// outranks whatever the table style would have drawn;
 /// only an *absent* side inherits. Collapsing the two onto `None` made the
 /// invoice of #841 draw six grey rules its `w:tblBorders` asks not to have
 /// (issue #931).
@@ -1420,7 +1446,7 @@ pub(super) enum BorderSideSpec {
     /// The element states nothing; the style decides.
     #[default]
     Unstated,
-    /// `w:val="none"` or `"nil"` — draw nothing, and stop the style lookup.
+    /// Draw nothing and stop style lookup: `none`/`nil` for edges, `nil` for diagonals.
     Suppressed,
     /// A border to draw.
     Stated(BorderSide),

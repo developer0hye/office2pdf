@@ -2582,38 +2582,163 @@ fn test_docx_crossed_diagonals_use_the_full_merged_cell_without_a_fill() {
 }
 
 #[test]
-fn test_docx_explicitly_suppressed_diagonals_remain_absent() {
-    let cells = [docx_rs::BorderType::Nil, docx_rs::BorderType::None]
-        .into_iter()
-        .map(|kind| {
-            docx_rs::TableCell::new()
-                .add_paragraph(docx_rs::Paragraph::new())
-                .set_border(
-                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Tl2br)
-                        .border_type(kind),
+fn test_docx_diagonal_styles_follow_word_instead_of_cardinal_border_rules() {
+    // Native Word draws `none` diagonals, suppresses `nil`, and draws the
+    // unsupported compound styles as single lines (MS-OE376 2.1.174).
+    let cases = [
+        ("none", Some(BorderLineStyle::Solid)),
+        ("nil", None),
+        ("thinThickSmallGap", Some(BorderLineStyle::Solid)),
+        ("doubleWave", Some(BorderLineStyle::Solid)),
+        ("dashDotStroked", Some(BorderLineStyle::Solid)),
+        ("double", Some(BorderLineStyle::Double)),
+        ("dotted", Some(BorderLineStyle::Dotted)),
+        ("dashed", Some(BorderLineStyle::Dashed)),
+        ("dotDash", Some(BorderLineStyle::DashDot)),
+        ("dotDotDash", Some(BorderLineStyle::DashDotDot)),
+    ];
+    for (value, expected) in cases {
+        let borders = format!(
+            r#"<w:tcBorders><w:top w:val="none" w:sz="8"/>
+              <w:tl2br w:val="{value}" w:sz="8" w:color="D00000"/>
+              <w:tr2bl w:val="{value}" w:sz="12" w:color="008000"/></w:tcBorders>"#
+        );
+        let styles = format!(
+            r#"<w:style w:type="table" w:styleId="Diagonal"><w:tcPr>{borders}</w:tcPr></w:style>"#
+        );
+        for inherited in [false, true] {
+            let table = format!(
+                r#"<w:tbl><w:tblPr>{}</w:tblPr><w:tblGrid><w:gridCol w:w="3200"/></w:tblGrid>
+                  <w:tr><w:tc><w:tcPr>{}</w:tcPr><w:p/></w:tc></w:tr></w:tbl>"#,
+                if inherited {
+                    r#"<w:tblStyle w:val="Diagonal"/>"#
+                } else {
+                    ""
+                },
+                if inherited { "" } else { &borders },
+            );
+            let (doc, _) = DocxParser
+                .parse(
+                    &build_docx_with_table_style(&styles, &table),
+                    &ConvertOptions::default(),
                 )
-                .set_border(
-                    docx_rs::TableCellBorder::new(docx_rs::TableCellBorderPosition::Tr2bl)
-                        .border_type(kind),
-                )
-        })
-        .collect();
-    let table = docx_rs::Table::new(vec![docx_rs::TableRow::new(cells)]).set_grid(vec![2000, 2000]);
-    let (doc, _) = DocxParser
-        .parse(&build_docx_with_table(table), &ConvertOptions::default())
-        .unwrap();
-    assert!(
-        first_table(&doc).rows[0]
-            .cells
-            .iter()
-            .all(|cell| cell.diagonal_borders.is_none())
-    );
-    let generated = crate::render::typst_gen::generate_typst(&doc).unwrap();
-    assert!(
-        !generated
-            .source
-            .contains("office2pdf-cell-diagonal-borders")
-    );
+                .unwrap();
+            let cell = &first_table(&doc).rows[0].cells[0];
+            assert!(
+                cell.border
+                    .as_ref()
+                    .is_none_or(|border| border.top.is_none())
+            );
+            assert_eq!(
+                cell.diagonal_borders
+                    .as_ref()
+                    .and_then(|d| d.top_left_to_bottom_right.as_ref())
+                    .map(|b| b.style),
+                expected,
+                "{value}, inherited={inherited}: diagonal semantics differ from cardinal borders"
+            );
+            assert_eq!(
+                cell.diagonal_borders
+                    .as_ref()
+                    .and_then(|d| d.top_right_to_bottom_left.as_ref())
+                    .map(|b| b.style),
+                expected,
+                "{value}, inherited={inherited}: both diagonal directions use Word's rule"
+            );
+            if let Some(diagonals) = &cell.diagonal_borders {
+                let down = diagonals.top_left_to_bottom_right.as_ref().unwrap();
+                let up = diagonals.top_right_to_bottom_left.as_ref().unwrap();
+                assert_eq!((down.width, down.color), (1.0, Color::new(208, 0, 0)));
+                assert_eq!((up.width, up.color), (1.5, Color::new(0, 128, 0)));
+            }
+            let generated = crate::render::typst_gen::generate_typst(&doc).unwrap();
+            if expected.is_none() {
+                assert!(
+                    !generated
+                        .source
+                        .contains("office2pdf-cell-diagonal-borders")
+                );
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            if matches!(value, "none" | "doubleWave") {
+                use crate::render::pdf::compiled_paint_sequence;
+                use typst::visualize::Geometry;
+                let paints =
+                    compiled_paint_sequence(&generated.source, &generated.images, 0).unwrap();
+                assert_eq!(
+                    paints.iter().filter(|paint| matches!(&paint.geometry,
+                        Some(Geometry::Line(end)) if end.x.to_pt().abs() > 1.0 && end.y.to_pt().abs() > 1.0)).count(),
+                    2,
+                    "{value}, inherited={inherited}: both rules paint as single lines"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn test_docx_zero_size_diagonals_remain_visible_directly_and_through_styles() {
+    // Word paints a minimum hairline for a stated zero-size diagonal, including
+    // `none`. Its print-export quantization must not turn into a maximum clamp.
+    for (size, expected_width) in [(0, 0.25), (1, 0.25), (2, 0.25), (4, 0.5), (104, 13.0)] {
+        for value in ["none", "single"] {
+            let borders = format!(
+                r#"<w:tcBorders><w:tl2br w:val="{value}" w:sz="{size}" w:color="D00000"/>
+                  <w:tr2bl w:val="{value}" w:sz="{size}" w:color="008000"/></w:tcBorders>"#
+            );
+            let styles = format!(
+                r#"<w:style w:type="table" w:styleId="Diagonal"><w:tcPr>{borders}</w:tcPr></w:style>"#
+            );
+            for inherited in [false, true] {
+                let table = format!(
+                    r#"<w:tbl><w:tblPr>{}</w:tblPr><w:tblGrid><w:gridCol w:w="3200"/></w:tblGrid>
+                      <w:tr><w:tc><w:tcPr>{}</w:tcPr><w:p/></w:tc></w:tr></w:tbl>"#,
+                    if inherited {
+                        r#"<w:tblStyle w:val="Diagonal"/>"#
+                    } else {
+                        ""
+                    },
+                    if inherited { "" } else { &borders },
+                );
+                let (doc, _) = DocxParser
+                    .parse(
+                        &build_docx_with_table_style(&styles, &table),
+                        &ConvertOptions::default(),
+                    )
+                    .unwrap();
+                let diagonals = first_table(&doc).rows[0].cells[0]
+                    .diagonal_borders
+                    .as_ref()
+                    .unwrap();
+                for side in [
+                    &diagonals.top_left_to_bottom_right,
+                    &diagonals.top_right_to_bottom_left,
+                ] {
+                    assert_eq!(
+                        side.as_ref().unwrap().width,
+                        expected_width,
+                        "size={size}, value={value}, inherited={inherited}"
+                    );
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                if size == 0 {
+                    use crate::render::pdf::compiled_paint_sequence;
+                    use typst::visualize::Geometry;
+                    let generated = crate::render::typst_gen::generate_typst(&doc).unwrap();
+                    let paints =
+                        compiled_paint_sequence(&generated.source, &generated.images, 0).unwrap();
+                    let lines: Vec<_> = paints.iter().filter(|paint| matches!(&paint.geometry,
+                        Some(Geometry::Line(end)) if end.x.to_pt().abs() > 1.0 && end.y.to_pt().abs() > 1.0)).collect();
+                    assert_eq!(lines.len(), 2, "zero size must still paint both directions");
+                    assert!(
+                        lines
+                            .iter()
+                            .all(|line| line.stroke.as_ref().unwrap().thickness_pt == 0.25)
+                    );
+                }
+            }
+        }
+    }
 }
 
 #[test]
@@ -2633,10 +2758,10 @@ fn test_docx_diagonal_styles_inherit_per_direction_and_honor_explicit_suppressio
       </w:tblPr><w:tblGrid><w:gridCol w:w="2000"/><w:gridCol w:w="2000"/></w:tblGrid>
       <w:tr><w:tc><w:p/></w:tc><w:tc><w:tcPr><w:tcBorders>
         <w:tl2br w:val="single" w:sz="16" w:color="FF0000"/>
-        <w:tr2bl w:val="none"/>
+        <w:tr2bl w:val="nil"/>
       </w:tcBorders></w:tcPr><w:p/></w:tc></w:tr>
       <w:tr><w:tc><w:p/></w:tc><w:tc><w:tcPr><w:tcBorders>
-        <w:tl2br w:val="nil"/><w:tr2bl w:val="none"/>
+        <w:tl2br w:val="nil"/><w:tr2bl w:val="nil"/>
       </w:tcBorders></w:tcPr><w:p/></w:tc></w:tr>
     </w:tbl>"#;
     let (doc, _) = DocxParser
