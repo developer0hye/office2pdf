@@ -91,8 +91,16 @@ fn test_generate_flow_page_with_page_number_footer() {
     assert!(output.source.contains("Page "));
     // Word pins the footer's bottom `w:footer` points above the page edge.
     assert!(output.source.contains("footer-descent: 0pt"));
-    assert!(output.source.contains("block(width: 100%, height: 36.6pt)"));
-    assert!(output.source.contains("place(bottom"));
+    assert!(
+        output
+            .source
+            .contains("calc.max(72pt, 35.4pt + o2p_footer_0_height)")
+    );
+    assert!(
+        output
+            .source
+            .contains("dy: o2p_footer_bottom - 35.4pt - o2p_footer_0_height")
+    );
 }
 
 #[test]
@@ -2687,16 +2695,16 @@ fn test_flow_page_footer_is_pinned_to_the_word_edge_distance() {
     assert!(
         output
             .source
-            .contains("block(width: 100%, height: 26.95pt)"),
-        "the band must span bottom margin minus footer distance, got: {}",
-        output.source
+            .contains("calc.max(62.35pt, 35.4pt + o2p_footer_0_height)")
     );
     assert!(
         output.source.contains("bottom-edge: \"descender\""),
         "Word measures to the descender line"
     );
     assert!(
-        output.source.contains("place(bottom"),
+        output
+            .source
+            .contains("dy: o2p_footer_bottom - 35.4pt - o2p_footer_0_height"),
         "the footer grows upward from the pinned bottom"
     );
     assert!(
@@ -2751,10 +2759,10 @@ fn test_flow_page_footer_without_edge_distance_keeps_default_placement() {
     assert!(!output.source.contains("footer-descent"));
 }
 
-/// A footer distance at or beyond the bottom margin leaves no band to draw, so
-/// the default placement is used instead of a zero or negative height block.
+/// A footer beyond the declared body margin grows the effective margin, while
+/// its distance from the physical page edge stays fixed (OOXML pgMar@bottom).
 #[test]
-fn test_flow_page_footer_distance_beyond_margin_falls_back() {
+fn test_flow_page_footer_distance_beyond_margin_reserves_its_extent() {
     use crate::ir::{HFInline, HeaderFooter, HeaderFooterParagraph};
 
     let doc = make_doc(vec![Page::Flow(FlowPage {
@@ -2798,7 +2806,17 @@ fn test_flow_page_footer_distance_beyond_margin_falls_back() {
     })]);
 
     let output = generate_typst(&doc).unwrap();
-    assert!(!output.source.contains("footer-descent"));
+    assert!(output.source.contains("footer-descent: 0pt"));
+    assert!(
+        output
+            .source
+            .contains("calc.max(30pt, 48pt + o2p_footer_0_height)")
+    );
+    assert!(
+        output
+            .source
+            .contains("dy: o2p_footer_bottom - 48pt - o2p_footer_0_height")
+    );
     assert!(output.source.contains("Deep footer"));
 }
 

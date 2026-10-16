@@ -1605,12 +1605,19 @@ fn issue_189_footer_preserves_inline_image_and_rtl_text() {
     assert_eq!(typst.images.len(), 1, "footer image asset");
     assert!(typst.source.contains("#image(\"img-0.png\""));
     assert!(typst.source.contains("#text(dir: rtl)["));
-    // w:bottom="1800" (90pt) with w:footer="708" (35.4pt) pins the footer's
-    // bottom 54.6pt above the bottom margin line; the image paragraph grows the
-    // footer upward from there.
+    // w:footer="708" pins the footer 35.4pt above the page edge. Its measured
+    // image/text extent may grow the declared 90pt body margin.
     assert!(typst.source.contains("footer-descent: 0pt"));
-    assert!(typst.source.contains("block(width: 100%, height: 54.6pt)"));
-    assert!(typst.source.contains("place(bottom"));
+    assert!(
+        typst
+            .source
+            .contains("calc.max(90pt, 35.4pt + o2p_footer_0_height)")
+    );
+    assert!(
+        typst
+            .source
+            .contains("dy: o2p_footer_bottom - 35.4pt - o2p_footer_0_height")
+    );
     assert!(typst.source.contains("Généré par m3llm.cafe"));
     assert!(typst.source.contains("صنع بواسطة m3llm.cafe"));
 

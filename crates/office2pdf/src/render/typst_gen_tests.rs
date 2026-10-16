@@ -332,6 +332,10 @@ mod list_tests;
 #[path = "typst_gen_page_misc_tests.rs"]
 mod page_misc_tests;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "typst_gen_footer_extent_tests.rs"]
+mod footer_extent_tests;
+
 #[path = "typst_gen_visual_tests.rs"]
 mod visual_tests;
 

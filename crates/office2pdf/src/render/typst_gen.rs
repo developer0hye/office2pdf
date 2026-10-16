@@ -43,6 +43,8 @@ use super::font_context::FontSearchContext;
 mod diagrams;
 #[path = "typst_gen_fmt.rs"]
 mod fmt;
+#[path = "typst_gen_footer_extents.rs"]
+mod footer_extents;
 #[path = "typst_gen_lists.rs"]
 mod lists;
 #[path = "typst_gen_shadow_outline.rs"]
@@ -681,6 +683,14 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
     let mut ctx = GenCtx::new();
     ctx.document_default_tab_stop_pt = doc.styles.default_tab_stop_pt;
     ctx.document_default_text = doc.styles.default_text.clone();
+    let measured_footers = doc.pages.iter().any(|page| match page {
+        Page::Flow(page) | Page::FlowContinuous(page) => footer_extents::needs_measurement(page),
+        _ => false,
+    });
+    if measured_footers {
+        // One scope keeps page setup in force across continuous sections.
+        out.push_str("#context [\n");
+    }
     let alignment_plan = section_alignment::alignment_plan(&doc.pages);
     for (index, page) in doc.pages.iter().enumerate() {
         let begins_continuously: bool = matches!(page, Page::FlowContinuous(_));
@@ -710,6 +720,9 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
             }
         }
         ctx.at_document_start = false;
+    }
+    if measured_footers {
+        out.push_str("\n]\n");
     }
     Ok(TypstOutput {
         source: out,
@@ -3288,7 +3301,9 @@ fn write_flow_page_setup(
         && page.first_footer.is_none()
         && page.page_borders.is_none()
     {
-        write_page_setup(out, size, &page.margins);
+        let mut margins = page.margins;
+        margins.bottom = margins.bottom.abs();
+        write_page_setup(out, size, &margins);
         for (index, layer) in ["background", "foreground"].iter().enumerate() {
             if ctx.flow_border_layers[index] {
                 let _ = writeln!(out, "#set page({layer}: none)");
@@ -3306,13 +3321,18 @@ fn write_flow_page_setup(
         ctx.document_default_text.as_ref(),
         reserve_page_anchored_header_shapes,
     );
+    let measured_footers = footer_extents::write_measurements(out, page, size, ctx);
+    let bottom_margin = measured_footers.as_ref().map_or_else(
+        || format!("{}pt", format_f64(page.margins.bottom.abs())),
+        |_| "o2p_footer_bottom".into(),
+    );
     let _ = write!(
         out,
-        "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
+        "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}, left: {}pt, right: {}pt)",
         format_f64(size.width),
         format_f64(size.height),
         format_f64(top_margin_pt),
-        format_f64(page.margins.bottom),
+        bottom_margin,
         format_f64(page.margins.left),
         format_f64(page.margins.right),
     );
@@ -3368,15 +3388,41 @@ fn write_flow_page_setup(
         .filter(|footer| hf_has_flow_content(footer));
     if first_footer.is_some() || default_footer.is_some() {
         let default_value = default_footer
-            .map(|footer| flow_footer_value(footer, page, ctx))
+            .map(|footer| {
+                measured_footers
+                    .as_ref()
+                    .and_then(|measured| measured.value(false))
+                    .unwrap_or_else(|| {
+                        let value = flow_footer_value(footer, page, ctx);
+                        match &measured_footers {
+                            Some(measured) => {
+                                measured.preserve_unmeasured(value, page.margins.bottom)
+                            }
+                            None => value,
+                        }
+                    })
+            })
             .unwrap_or_default();
         let first_value = first_footer
-            .map(|footer| flow_footer_value(footer, page, ctx))
+            .map(|footer| {
+                measured_footers
+                    .as_ref()
+                    .and_then(|measured| measured.value(true))
+                    .unwrap_or_else(|| {
+                        let value = flow_footer_value(footer, page, ctx);
+                        match &measured_footers {
+                            Some(measured) => {
+                                measured.preserve_unmeasured(value, page.margins.bottom)
+                            }
+                            None => value,
+                        }
+                    })
+            })
             .unwrap_or_default();
         if default_value.wants_zero_descent || first_value.wants_zero_descent {
             out.push_str(", footer-descent: 0pt");
         }
-        match first_footer {
+        match page.first_footer.as_ref() {
             Some(_) => {
                 let _ = write!(
                     out,
@@ -3457,6 +3503,9 @@ fn write_flow_page_setup(
     }
 
     out.push_str(")\n");
+    if !reserve_page_anchored_header_shapes && let Some(footers) = measured_footers {
+        footers.write_first_page_adjustment(out);
+    }
     Ok(())
 }
 
