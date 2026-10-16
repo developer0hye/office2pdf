@@ -4429,3 +4429,62 @@ fn test_consecutive_page_breaks_inside_columns_match_the_plain_page() {
         "only the two non-empty slices carry a column wrapper: {source}"
     );
 }
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn unequal_column_grid_places_children_in_tracks() {
+    use crate::render::pdf::compiled_text_runs_with_images;
+
+    for (widths, gutter) in [
+        (vec![160.0, 220.0], 20.0),
+        (vec![220.0, 160.0], 16.0),
+        (vec![120.0, 140.0, 100.0], 20.0),
+    ] {
+        let labels = ["Alpha[1]", "Beta[2]", "Gamma[3]"];
+        let mut content = Vec::new();
+        for label in labels.iter().take(widths.len()) {
+            if !content.is_empty() {
+                content.push(Block::ColumnBreak);
+            }
+            content.push(make_paragraph(label));
+        }
+        let mut page = make_flow_page(content);
+        let Page::Flow(flow) = &mut page else {
+            unreachable!()
+        };
+        flow.size = PageSize {
+            width: 80.0 + widths.iter().sum::<f64>() + gutter * (widths.len() - 1) as f64,
+            height: 500.0,
+        };
+        flow.margins = Margins {
+            top: 40.0,
+            bottom: 40.0,
+            left: 40.0,
+            right: 40.0,
+        };
+        flow.columns = Some(ColumnLayout {
+            num_columns: widths.len() as u32,
+            spacing: gutter,
+            column_widths: Some(widths.clone()),
+            has_separator: false,
+        });
+        let output = generate_typst(&make_doc(vec![page])).unwrap();
+        let runs = compiled_text_runs_with_images(&output.source, &output.images, 0).unwrap();
+        assert_eq!(
+            runs.iter().map(|run| run.text.as_str()).collect::<String>(),
+            labels[..widths.len()].concat(),
+            "layout delimiters must not be painted, and authored brackets must survive: {runs:?}"
+        );
+        let mut origin = 40.0;
+        let first_baseline = runs[0].baseline_pt;
+        for (label, width) in labels.iter().zip(&widths) {
+            let run = runs.iter().find(|run| run.text == *label).unwrap();
+            assert!((run.left_pt - origin).abs() < 0.01, "{widths:?}: {runs:?}");
+            assert!(
+                (run.baseline_pt - first_baseline).abs() < 0.01,
+                "{widths:?}: {runs:?}"
+            );
+            origin += width + gutter;
+        }
+    }
+}

@@ -1254,7 +1254,7 @@ fn generate_column_section_page(
             let _ = write!(out, "{}pt", format_f64(*w));
         }
         let _ = write!(out, "), gutter: {}pt", format_f64(cols.spacing));
-        out.push_str(")\n");
+        out.push_str(",\n");
         // Split content by ColumnBreak into grid cells
         let segments = split_at_column_breaks(content);
         let layout_space_location: Option<(usize, usize)> = layout_break_space_before
@@ -1340,9 +1340,9 @@ fn generate_column_section_page(
                 suppress_joined_paragraph_border_edges(&mut block, joins_previous, joins_next);
                 generate_block(out, &block, ctx)?;
             }
-            out.push(']');
+            out.push_str("],\n");
         }
-        out.push('\n');
+        out.push_str(")\n");
     } else {
         if page_boundaries.balance_at_section_end
             && !content

@@ -68,5 +68,6 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 | Resource | Type |
 |----------|------|
 | [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/) | Official spec (free download) |
+| [Typst grid children](https://typst.app/docs/reference/layout/grid/) | [Unequal Word section column emission](word-section-columns.md) |
 | [officeopenxml.com](http://officeopenxml.com/) | Readable OOXML reference |
 | [PowerPoint BulletFormat docs](https://learn.microsoft.com/en-us/office/vba/api/powerpoint.bulletformat) | PowerPoint bullet semantics reference ([detail](powerpoint-bulletformat.md)) |
