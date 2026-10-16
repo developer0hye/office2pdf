@@ -132,7 +132,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             theme_xml.as_deref(),
         );
         let hyperlinks: HashMap<String, String> = HashMap::new();
-        if let Some(converted) = convert_docx_header_with_context(
+        let converted = convert_docx_header_with_context(
             &header,
             &images,
             &simple_fields,
@@ -140,9 +140,8 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             styles,
             &mut conversion_context,
             &hyperlinks,
-        ) {
-            assets.headers.insert(relationship_id, converted);
-        }
+        );
+        assets.headers.insert(relationship_id, converted);
     }
 
     for (relationship_id, path) in footer_relationships {
@@ -165,7 +164,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             theme_xml.as_deref(),
         );
         let hyperlinks: HashMap<String, String> = HashMap::new();
-        if let Some(converted) = convert_docx_footer_with_context(
+        let converted = convert_docx_footer_with_context(
             &footer,
             &images,
             FooterParagraphMetadata {
@@ -176,9 +175,8 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
             styles,
             &mut conversion_context,
             &hyperlinks,
-        ) {
-            assets.footers.insert(relationship_id, converted);
-        }
+        );
+        assets.footers.insert(relationship_id, converted);
     }
 
     assets
@@ -654,7 +652,7 @@ fn convert_docx_header(
     simple_fields: &[Vec<SimpleFieldMarker>],
     anchors: &[HfAnchorBox],
     styles: HeaderFooterStyleContext<'_>,
-) -> Option<HeaderFooter> {
+) -> HeaderFooter {
     let mut conversion_context = DocxConversionContext::for_header_footer_story(
         "",
         None,
@@ -683,7 +681,7 @@ fn convert_docx_header_with_context(
     styles: HeaderFooterStyleContext<'_>,
     conversion_context: &mut DocxConversionContext,
     hyperlinks: &HashMap<String, String>,
-) -> Option<HeaderFooter> {
+) -> HeaderFooter {
     let shapes = hf_anchored_shapes(anchors);
     let mut shapes: Vec<HeaderFooterShape> = shapes;
     let mut anchors = anchors.iter();
@@ -733,17 +731,14 @@ fn convert_docx_header_with_context(
         index += 1;
     }
     remap_hf_shape_paragraph_indices(&mut shapes, &source_to_rendered_paragraphs);
-    // A story that draws only a decorative banner has no paragraph worth
-    // keeping but is still not empty (issue #961).
-    if paragraphs.is_empty() && shapes.is_empty() {
-        return None;
-    }
-    Some(HeaderFooter {
+    // An explicitly empty part overrides the selected story. Dropping it
+    // would turn an empty definition into an omitted/inherited reference.
+    HeaderFooter {
         paragraphs,
         distance_from_edge: None,
         sheet_print_scale: None,
         shapes,
-    })
+    }
 }
 
 fn convert_docx_footer(
@@ -753,7 +748,7 @@ fn convert_docx_footer(
     simple_fields: &[Vec<SimpleFieldMarker>],
     anchors: &[HfAnchorBox],
     styles: HeaderFooterStyleContext<'_>,
-) -> Option<HeaderFooter> {
+) -> HeaderFooter {
     let mut conversion_context = DocxConversionContext::for_header_footer_story(
         "",
         None,
@@ -790,7 +785,7 @@ fn convert_docx_footer_with_context(
     styles: HeaderFooterStyleContext<'_>,
     conversion_context: &mut DocxConversionContext,
     hyperlinks: &HashMap<String, String>,
-) -> Option<HeaderFooter> {
+) -> HeaderFooter {
     let shapes = hf_anchored_shapes(anchors);
     let mut shapes: Vec<HeaderFooterShape> = shapes;
     let mut anchors = anchors.iter();
@@ -848,17 +843,14 @@ fn convert_docx_footer_with_context(
         index += 1;
     }
     remap_hf_shape_paragraph_indices(&mut shapes, &source_to_rendered_paragraphs);
-    // A story that draws only a decorative banner has no paragraph worth
-    // keeping but is still not empty (issue #961).
-    if paragraphs.is_empty() && shapes.is_empty() {
-        return None;
-    }
-    Some(HeaderFooter {
+    // An explicitly empty part overrides the selected story. Dropping it
+    // would turn an empty definition into an omitted/inherited reference.
+    HeaderFooter {
         paragraphs,
         distance_from_edge: None,
         sheet_print_scale: None,
         shapes,
-    })
+    }
 }
 
 fn convert_hf_table(
@@ -1109,7 +1101,7 @@ pub(super) fn extract_docx_first_header(
             section_prop
                 .first_header
                 .as_ref()
-                .and_then(|(_relationship_id, header)| {
+                .map(|(_relationship_id, header)| {
                     convert_docx_header(header, &ImageMap::new(), &[], &[], styles)
                 })
         })
@@ -1132,7 +1124,7 @@ pub(super) fn extract_docx_first_footer(
             section_prop
                 .first_footer
                 .as_ref()
-                .and_then(|(_relationship_id, footer)| {
+                .map(|(_relationship_id, footer)| {
                     convert_docx_footer(footer, &ImageMap::new(), &[], &[], &[], styles)
                 })
         })
@@ -1153,7 +1145,7 @@ fn extract_docx_header(
             section_prop
                 .header
                 .as_ref()
-                .and_then(|(_relationship_id, header)| {
+                .map(|(_relationship_id, header)| {
                     convert_docx_header(header, &ImageMap::new(), &[], &[], styles)
                 })
         })
@@ -1168,7 +1160,7 @@ fn extract_docx_header(
             section_prop
                 .first_header
                 .as_ref()
-                .and_then(|(_relationship_id, header)| {
+                .map(|(_relationship_id, header)| {
                     convert_docx_header(header, &ImageMap::new(), &[], &[], styles)
                 })
         })
@@ -1182,7 +1174,7 @@ fn extract_docx_header(
             section_prop
                 .even_header
                 .as_ref()
-                .and_then(|(_relationship_id, header)| {
+                .map(|(_relationship_id, header)| {
                     convert_docx_header(header, &ImageMap::new(), &[], &[], styles)
                 })
         })
@@ -1203,7 +1195,7 @@ fn extract_docx_footer(
             section_prop
                 .footer
                 .as_ref()
-                .and_then(|(_relationship_id, footer)| {
+                .map(|(_relationship_id, footer)| {
                     convert_docx_footer(footer, &ImageMap::new(), &[], &[], &[], styles)
                 })
         })
@@ -1218,7 +1210,7 @@ fn extract_docx_footer(
             section_prop
                 .first_footer
                 .as_ref()
-                .and_then(|(_relationship_id, footer)| {
+                .map(|(_relationship_id, footer)| {
                     convert_docx_footer(footer, &ImageMap::new(), &[], &[], &[], styles)
                 })
         })
@@ -1232,7 +1224,7 @@ fn extract_docx_footer(
             section_prop
                 .even_footer
                 .as_ref()
-                .and_then(|(_relationship_id, footer)| {
+                .map(|(_relationship_id, footer)| {
                     convert_docx_footer(footer, &ImageMap::new(), &[], &[], &[], styles)
                 })
         })
@@ -2625,8 +2617,7 @@ mod structured_tag_tests {
             paragraph_property_defaults_are_declared: false,
         };
 
-        let converted = convert_docx_header(&header, &ImageMap::new(), &[], &[], styles)
-            .expect("header SDT paragraph should be retained");
+        let converted = convert_docx_header(&header, &ImageMap::new(), &[], &[], styles);
 
         assert!(contains_page_number(&converted));
     }
@@ -2647,8 +2638,7 @@ mod structured_tag_tests {
             paragraph_property_defaults_are_declared: false,
         };
 
-        let converted = convert_docx_footer(&footer, &ImageMap::new(), &[], &[], &[], styles)
-            .expect("footer SDT paragraph should be retained");
+        let converted = convert_docx_footer(&footer, &ImageMap::new(), &[], &[], &[], styles);
 
         assert!(contains_page_number(&converted));
     }

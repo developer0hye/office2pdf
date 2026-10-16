@@ -3,6 +3,10 @@ use crate::ir::*;
 use std::collections::BTreeMap;
 use std::io::Cursor;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "docx_empty_story_tests.rs"]
+mod empty_story_tests;
+
 /// Helper: build a minimal DOCX as bytes using docx-rs builder.
 fn build_docx_bytes(paragraphs: Vec<docx_rs::Paragraph>) -> Vec<u8> {
     let mut docx = docx_rs::Docx::new();

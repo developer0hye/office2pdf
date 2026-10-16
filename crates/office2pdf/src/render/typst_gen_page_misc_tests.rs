@@ -231,7 +231,12 @@ fn a_page_anchored_footer_frame_paints_below_body_content() {
             .contains("#place(top + left, dx: 71.8pt, dy: 198.5pt)")
     );
     assert!(!output.source.contains("foreground: ["));
-    assert!(!output.source.contains("footer:"));
+    let runs =
+        crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 0)
+            .unwrap();
+    let text = runs.iter().map(|run| run.text.as_str()).collect::<String>();
+    assert_eq!(text.matches("Framed footer").count(), 1);
+    assert_eq!(text.matches("Body").count(), 1);
 }
 
 /// A page number inside a page-anchored frame has to compile.
@@ -362,8 +367,13 @@ fn test_generate_flow_page_with_header_and_footer() {
 fn test_generate_flow_page_without_header_footer() {
     let doc = make_doc(vec![make_flow_page(vec![make_paragraph("Body")])]);
     let output = generate_typst(&doc).unwrap();
-    assert!(!output.source.contains("header:"));
-    assert!(!output.source.contains("footer:"));
+    let runs =
+        crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 0)
+            .unwrap();
+    assert_eq!(
+        runs.iter().map(|run| run.text.as_str()).collect::<String>(),
+        "Body"
+    );
 }
 
 #[test]

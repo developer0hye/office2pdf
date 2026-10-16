@@ -263,6 +263,10 @@ DOCX picture crops apply per picture, including body, header and footer images.
 Crops extending beyond the original image are not yet rendered.
 Published library builds can omit DOCX picture rotation.
 
+Explicitly empty DOCX header/footer parts clear the selected story instead of
+inheriting text. An explicitly empty first-page part suppresses the default
+story on that page. Inheritance of omitted first-page references is not yet supported.
+
 Damaged DOCX PNG pictures recover available pixels with warnings and keep their
 drawing extent; undecodable headers use a black placeholder. Partial previews
 may differ from Word's damaged-image rendering.

@@ -3289,6 +3289,7 @@ fn write_flow_page_setup(
         && page.page_borders.is_none()
     {
         write_page_setup(out, size, &page.margins);
+        out.push_str("#set page(header: none, footer: none)\n");
         for (index, layer) in ["background", "foreground"].iter().enumerate() {
             if ctx.flow_border_layers[index] {
                 let _ = writeln!(out, "#set page({layer}: none)");
@@ -3341,7 +3342,7 @@ fn write_flow_page_setup(
         if default_value.wants_zero_ascent || first_value.wants_zero_ascent {
             out.push_str(", header-ascent: 0pt");
         }
-        match first_header {
+        match page.first_header.as_ref() {
             Some(_) => {
                 let _ = write!(
                     out,
@@ -3355,6 +3356,10 @@ fn write_flow_page_setup(
                 let _ = write!(out, ", header: {}", default_value.markup);
             }
         }
+    } else {
+        // Inheritance is resolved in the IR. An empty slot clears Typst's
+        // preceding section setup rather than inheriting its painted story.
+        out.push_str(", header: none");
     }
 
     // The footer takes the same first-page choice the header does (issue #846).
@@ -3376,7 +3381,7 @@ fn write_flow_page_setup(
         if default_value.wants_zero_descent || first_value.wants_zero_descent {
             out.push_str(", footer-descent: 0pt");
         }
-        match first_footer {
+        match page.first_footer.as_ref() {
             Some(_) => {
                 let _ = write!(
                     out,
@@ -3390,6 +3395,8 @@ fn write_flow_page_setup(
                 let _ = write!(out, ", footer: {}", default_value.markup);
             }
         }
+    } else {
+        out.push_str(", footer: none");
     }
 
     // `<wp:anchor behindDoc="1">` puts the shape under the page's own content,
