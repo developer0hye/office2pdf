@@ -265,6 +265,10 @@ fn make_fixed_image(x: f64, y: f64, w: f64, h: f64, format: ImageFormat) -> Fixe
 #[path = "typst_gen_fixed_page_tests.rs"]
 mod fixed_page_tests;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "typst_gen_tab_overhang_tests.rs"]
+mod tab_overhang_tests;
+
 #[path = "typst_gen_fixed_page_textbox_tests.rs"]
 mod fixed_page_textbox_tests;
 

@@ -219,8 +219,8 @@ pub struct ParagraphStyle {
 /// A custom tab stop definition.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TabStop {
-    /// Position in points from the paragraph's rendered text origin. Parsers
-    /// normalize format-specific coordinate origins before storing the stop.
+    /// Position in points in the paragraph's source coordinate space.
+    /// Word flow measures from the leading text margin.
     pub position: f64,
     /// Alignment of text at this tab stop.
     pub alignment: TabAlignment,

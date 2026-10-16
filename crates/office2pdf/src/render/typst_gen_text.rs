@@ -4002,6 +4002,17 @@ fn generate_word_runs_with_tabs_in_context(
 ) -> Result<(), ConvertError> {
     let metrics: Option<WordRunLineMetrics<'_>> =
         WordRunLineMetrics::for_mixed_declared_families(runs, style, line_grid_pitch);
+    if generate_overhanging_word_tab(
+        out,
+        runs,
+        style,
+        default_tab_width_pt,
+        eojeol_wrap,
+        metrics.map(RunLineMetrics::Word),
+        ctx,
+    )? {
+        return Ok(());
+    }
     generate_runs_with_tabs_and_metrics_in_context(
         out,
         runs,
@@ -4012,6 +4023,144 @@ fn generate_word_runs_with_tabs_in_context(
         style.line_spacing,
         ctx,
     )
+}
+
+#[allow(clippy::too_many_arguments)]
+// Word lets a final aligned field occupy the right indent. Its prefix must
+// still wrap at the paragraph edge, so measure the field and use the actual
+// last-line cursor rather than the unwrapped prefix width.
+fn generate_overhanging_word_tab(
+    out: &mut String,
+    runs: &[Run],
+    style: &ParagraphStyle,
+    default_tab_width_pt: f64,
+    eojeol_wrap: EojeolWrap,
+    metrics: Option<RunLineMetrics<'_>>,
+    ctx: &mut super::GenCtx,
+) -> Result<bool, ConvertError> {
+    let right = style.indent_right.unwrap_or(0.0);
+    let Some(measure) = ctx.available_measure_pt else {
+        return Ok(false);
+    };
+    let Some(stops) = style.tab_stops.as_deref() else {
+        return Ok(false);
+    };
+    let Some(stop) = stops.last() else {
+        return Ok(false);
+    };
+    if right <= 0.0
+        || !paragraph_contains_tabs(runs)
+        || !matches!(style.alignment, None | Some(Alignment::Left))
+        || style.direction == Some(TextDirection::Rtl)
+        || stop.alignment == TabAlignment::Left
+        || stop.position <= measure - right
+        || stop.position > measure
+    {
+        return Ok(false);
+    }
+    let segments = split_runs_on_tabs(runs);
+    let last = segments.len() - 1;
+    if segments[last]
+        .iter()
+        .any(|run| run.text.contains('\n') || run.inline_box.is_some() || run.footnote.is_some())
+    {
+        return Ok(false);
+    }
+    let leading =
+        style.indent_left.unwrap_or(0.0).max(0.0) + style.indent_first_line.unwrap_or(0.0);
+    // Word stores stops from the column margin, while the inline prefix
+    // starts after the first-line inset (including a hanging indent).
+    let normalized: Vec<_> = stops
+        .iter()
+        .map(|stop| TabStop {
+            position: stop.position - leading,
+            ..*stop
+        })
+        .collect();
+    // Re-emitting runs for the fallback would repeat generation side effects
+    // such as registering inline objects or footnotes.
+    let sources: Vec<String> = segments
+        .iter()
+        .map(|segment| {
+            let mut source = String::new();
+            generate_runs_with_metrics_in_context(
+                &mut source,
+                segment,
+                eojeol_wrap,
+                metrics,
+                style.line_spacing,
+                ctx,
+            )?;
+            Ok(source)
+        })
+        .collect::<Result<_, ConvertError>>()?;
+    let mut prefix = String::new();
+    write_measured_tab_segments(
+        &mut prefix,
+        &segments[..last],
+        Some(&normalized),
+        default_tab_width_pt,
+        |out, index| out.push_str(&sources[index]),
+    );
+    let suffix = &sources[last];
+    let mut fallback = String::new();
+    write_measured_tab_segments(
+        &mut fallback,
+        &segments,
+        Some(stops),
+        default_tab_width_pt,
+        |out, index| out.push_str(&sources[index]),
+    );
+    let alignment_offset =
+        tab_alignment_offset_expr(stop, "tab_segment_width_1", Some("tab_decimal_width_1"));
+    out.push_str("#context {\n  let tab_origin = here().position().x\n");
+    let _ = writeln!(
+        out,
+        "  let tab_segment_1 = [{suffix}]\n  let tab_segment_width_1 = measure(tab_segment_1).width"
+    );
+    let mut decimal = String::new();
+    if let Some(anchor) = extract_decimal_anchor_runs(&segments[last]) {
+        generate_runs(&mut decimal, &anchor, eojeol_wrap);
+    } else {
+        decimal.clone_from(suffix);
+    }
+    let _ = writeln!(
+        out,
+        "  let tab_decimal_width_1 = measure([{decimal}]).width"
+    );
+    let _ = writeln!(
+        out,
+        "  if tab_segment_width_1 <= {}pt and {}pt - ({alignment_offset}) + tab_segment_width_1 <= {}pt {{",
+        format_f64(right),
+        format_f64(stop.position),
+        format_f64(measure)
+    );
+    // The reserved indent fits the entire field, even when the body fills its
+    // last line. A zero-width host therefore cannot hide a body/field overlap.
+    let _ = writeln!(out, "    [{prefix}#box(width: 0pt)[#context {{");
+    let _ = writeln!(
+        out,
+        "      let tab_prefix_width_1 = here().position().x - tab_origin + {}pt",
+        format_f64(leading)
+    );
+    let _ = writeln!(
+        out,
+        "      let tab_default_remainder_1 = calc.rem-euclid(tab_prefix_width_1.abs.pt(), {})",
+        format_f64(default_tab_width_pt)
+    );
+    let _ = writeln!(
+        out,
+        "      let tab_advance_1 = {}",
+        build_tab_advance_expr(1, &segments[last], Some(stops), default_tab_width_pt)
+    );
+    let _ = writeln!(
+        out,
+        "      let tab_fill_1 = {}",
+        build_tab_fill_expr(1, Some(stops))
+    );
+    out.push_str("      box(width: tab_advance_1 + tab_segment_width_1)[#tab_fill_1#tab_segment_1]\n    }]]\n");
+    let _ = writeln!(out, "  }} else {{ [{fallback}] }}\n}}");
+    Ok(true)
 }
 
 fn word_inline_drawing_spacing_pt(run: &Run, line_spacing: Option<LineSpacing>) -> f64 {

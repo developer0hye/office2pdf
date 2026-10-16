@@ -263,6 +263,10 @@ DOCX picture crops apply per picture, including body, header and footer images.
 Crops extending beyond the original image are not yet rendered.
 Published library builds can omit DOCX picture rotation.
 
+Left-aligned DOCX body paragraphs can place a short final aligned tab field in
+the right indent while preserving body wrapping and hanging-indent origins.
+Wider fields and tabs beyond the column edge retain the existing layout behavior.
+
 Damaged DOCX PNG pictures recover available pixels with warnings and keep their
 drawing extent; undecodable headers use a black placeholder. Partial previews
 may differ from Word's damaged-image rendering.
