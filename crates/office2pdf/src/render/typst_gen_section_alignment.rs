@@ -80,11 +80,14 @@ pub(super) fn alignment_plan(pages: &[Page]) -> Vec<Vec<PageVerticalAlignment>> 
         let mut segments = 1 + flow
             .content
             .iter()
-            .filter(|block| matches!(block, Block::PageBreak))
+            .filter(|block| matches!(block, Block::PageBreak | Block::PageBreakBefore))
             .count();
         // These emitters suppress a trailing empty segment rather than a page.
         if (flow.columns.is_some() || matches!(page, Page::FlowContinuous(_)))
-            && matches!(flow.content.last(), Some(Block::PageBreak))
+            && matches!(
+                flow.content.last(),
+                Some(Block::PageBreak | Block::PageBreakBefore)
+            )
         {
             segments -= 1;
         }

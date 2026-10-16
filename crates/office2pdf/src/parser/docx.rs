@@ -23,15 +23,15 @@ use self::contexts::scan_table_headers;
 use self::contexts::{
     BidiContext, ChartContext, ContextualSpacingContext, DocxConversionContext,
     DrawingShapeContext, DrawingTextBoxContext, DrawingTextBoxInfo, FieldContext, MathContext,
-    NoteContent, NoteContext, ParagraphContextualSpacing, ParagraphMarkContext,
-    ParagraphShadingContext, PictureCropContext, SmallCapsContext, TableHeaderContext,
-    TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo, WordWrapContext, WpgDrawingInfo,
-    WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
+    NoteContent, NoteContext, ParagraphContextualSpacing, ParagraphFlagsContext,
+    ParagraphMarkContext, ParagraphShadingContext, PictureCropContext, RawParagraphFlags,
+    SmallCapsContext, TableHeaderContext, TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo,
+    WpgDrawingInfo, WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
     build_note_context_from_xml, build_wrap_context_from_xml,
     extract_column_layout_from_section_property, is_note_reference_run, read_zip_text,
     scan_column_layouts, scan_line_numbering, scan_page_borders, scan_page_numbering,
-    scan_section_alignment, scan_style_paragraph_shading, scan_style_word_wrap, seq_identifier,
-    toc_caption_identifier, toc_heading_depth,
+    scan_section_alignment, scan_style_paragraph_flags, scan_style_paragraph_shading,
+    seq_identifier, toc_caption_identifier, toc_heading_depth,
 };
 use self::lists::{
     NumberingMap, TaggedElement, build_numbering_map, extract_num_info, group_into_lists,
@@ -255,7 +255,7 @@ struct ZipPreParseAssets {
     theme_fonts: ThemeFonts,
     default_paragraph_style_id: Option<String>,
     style_paragraph_backgrounds: HashMap<String, Color>,
-    style_word_wraps: HashMap<String, bool>,
+    style_paragraph_flags: HashMap<String, RawParagraphFlags>,
     /// Read from the raw `word/styles.xml` because docx-rs has no field for
     /// `w:kern` (issue #628).
     pair_kerning: PairKerningRules,
@@ -277,7 +277,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 .as_deref()
                 .and_then(styles::scan_default_paragraph_style_id);
             let style_paragraph_backgrounds = scan_style_paragraph_shading(styles_xml.as_deref());
-            let style_word_wraps = scan_style_word_wrap(styles_xml.as_deref());
+            let style_paragraph_flags = scan_style_paragraph_flags(styles_xml.as_deref());
             // Word writes the default paragraph style as `Normal`; docx-rs
             // writes it without the `w:default` flag.
             let default_language: Option<DocumentLanguage> =
@@ -347,7 +347,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 bidi,
                 small_caps,
                 paragraph_shading: ParagraphShadingContext::from_xml(doc_xml.as_deref()),
-                word_wraps: WordWrapContext::from_xml(doc_xml.as_deref()),
+                paragraph_flags: ParagraphFlagsContext::from_xml(doc_xml.as_deref()),
                 contextual_spacing: ContextualSpacingContext::from_xml(
                     doc_xml.as_deref(),
                     styles_xml.as_deref(),
@@ -377,7 +377,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 theme_fonts,
                 default_paragraph_style_id,
                 style_paragraph_backgrounds,
-                style_word_wraps,
+                style_paragraph_flags,
                 pair_kerning: PairKerningRules::from_styles_xml(styles_xml.as_deref()),
                 default_language,
             }
@@ -398,7 +398,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 bidi: BidiContext::from_xml(None),
                 small_caps: SmallCapsContext::from_xml(None),
                 paragraph_shading: ParagraphShadingContext::from_xml(None),
-                word_wraps: WordWrapContext::from_xml(None),
+                paragraph_flags: ParagraphFlagsContext::from_xml(None),
                 contextual_spacing: ContextualSpacingContext::from_xml(None, None),
                 paragraph_marks: ParagraphMarkContext::from_xml(None),
                 fields: FieldContext::default(),
@@ -416,7 +416,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
             theme_fonts: ThemeFonts::default(),
             default_paragraph_style_id: None,
             style_paragraph_backgrounds: HashMap::new(),
-            style_word_wraps: HashMap::new(),
+            style_paragraph_flags: HashMap::new(),
             pair_kerning: PairKerningRules::default(),
             default_language: None,
         },
@@ -448,7 +448,7 @@ impl Parser for DocxParser {
             theme_fonts,
             default_paragraph_style_id,
             style_paragraph_backgrounds,
-            style_word_wraps,
+            style_paragraph_flags,
             pair_kerning,
             default_language,
         } = build_zip_preparse_assets(data);
@@ -494,7 +494,7 @@ impl Parser for DocxParser {
             &theme_fonts,
             default_paragraph_style_id.as_deref(),
             &style_paragraph_backgrounds,
-            &style_word_wraps,
+            &style_paragraph_flags,
             &pair_kerning,
         );
         let numberings = build_numbering_map(&docx.numberings, &style_map, &theme_fonts);
@@ -1538,7 +1538,7 @@ struct ParagraphFlow<'a> {
 }
 
 /// Convert a docx-rs Paragraph to IR blocks, handling page breaks and inline images.
-/// If the paragraph has `page_break_before`, a `Block::PageBreak` is emitted first.
+/// If the paragraph has `page_break_before`, a `Block::PageBreakBefore` is emitted first.
 /// Consecutive inline images within a paragraph are kept in one wrapping flow container.
 /// Style formatting from the document's style definitions is merged with explicit formatting.
 fn convert_paragraph_blocks(
@@ -1555,11 +1555,15 @@ fn convert_paragraph_blocks(
     // each checks this paragraph's `w:pStyle` against the one its scan
     // recorded at the same index (issue #1689).
     let style_id: Option<&str> = get_paragraph_style_id(&para.property);
+    let raw_flags = ctx.paragraph_flags.next_flags(style_id);
+    let resolved_style = style_id
+        .and_then(|id| style_map.get(id))
+        .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID));
     let flow = ParagraphFlow {
         theme_fonts: &ctx.theme_fonts,
         is_rtl: ctx.bidi.next_is_bidi(style_id),
         background: ctx.paragraph_shading.next_background(style_id),
-        word_wrap: ctx.word_wraps.next_word_wrap(style_id),
+        word_wrap: raw_flags.word_wrap,
         contextual_spacing: ctx.contextual_spacing.next_paragraph(style_id),
         // A `w:pStyle` naming a style the document never defines falls back
         // to the default style, the same as carrying no `w:pStyle` at all.
@@ -1575,9 +1579,14 @@ fn convert_paragraph_blocks(
     // paragraph after it (issue #1710).
     let mark_is_removed: bool = ctx.paragraph_marks.next_mark_is_removed(style_id);
 
-    // Emit page break before the paragraph if requested
-    if para.property.page_break_before == Some(true) {
-        out.push(Block::PageBreak);
+    // An explicit false clears the inherited setting; absence inherits it.
+    // Raw XML preserves false with published docx-rs (upstream #939/#940).
+    if raw_flags
+        .page_break_before
+        .or_else(|| resolved_style.and_then(|style| style.page_break_before))
+        == Some(true)
+    {
+        out.push(Block::PageBreakBefore);
     }
 
     // A dirty `TOC` field is stored as its instruction and nothing else, so
@@ -1598,11 +1607,6 @@ fn convert_paragraph_blocks(
         out.push(Block::TableOfContents(contents));
         return;
     }
-
-    // Look up the paragraph's referenced style
-    let resolved_style = get_paragraph_style_id(&para.property)
-        .and_then(|id| style_map.get(id))
-        .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID));
 
     // Collect text runs and detect inline images. A paragraph whose
     // predecessor's mark was removed opens with that paragraph's surviving
@@ -1961,13 +1965,18 @@ fn normalize_split_paragraph_styles(blocks: &mut [Block], start: usize) {
     };
     let last_content: usize = *content_fragments.last().expect("first content exists");
     let blocks_before_first_content: &[Block] = &blocks[start..first_content];
-    let starts_after_layout_break: bool = blocks_before_first_content
-        .iter()
-        .any(|block| matches!(block, Block::PageBreak | Block::ColumnBreak))
-        && blocks_before_first_content.iter().all(|block| {
-            is_empty_paragraph_block(block)
-                || matches!(block, Block::PageBreak | Block::ColumnBreak)
-        });
+    let starts_after_layout_break: bool = blocks_before_first_content.iter().any(|block| {
+        matches!(
+            block,
+            Block::PageBreak | Block::PageBreakBefore | Block::ColumnBreak
+        )
+    }) && blocks_before_first_content.iter().all(|block| {
+        is_empty_paragraph_block(block)
+            || matches!(
+                block,
+                Block::PageBreak | Block::PageBreakBefore | Block::ColumnBreak
+            )
+    });
 
     for index in fragments {
         let (style, has_content): (&mut ParagraphStyle, bool) = match &mut blocks[index] {

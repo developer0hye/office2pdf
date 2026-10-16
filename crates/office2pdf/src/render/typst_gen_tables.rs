@@ -975,7 +975,10 @@ fn generate_table_cell(
             .filter(|block| {
                 !matches!(
                     block,
-                    Block::TableOfContents(_) | Block::PageBreak | Block::ColumnBreak
+                    Block::TableOfContents(_)
+                        | Block::PageBreak
+                        | Block::PageBreakBefore
+                        | Block::ColumnBreak
                 )
             })
             .count()
@@ -3293,7 +3296,10 @@ fn generate_cell_content(
         .filter(|block| {
             !matches!(
                 block,
-                Block::TableOfContents(_) | Block::PageBreak | Block::ColumnBreak
+                Block::TableOfContents(_)
+                    | Block::PageBreak
+                    | Block::PageBreakBefore
+                    | Block::ColumnBreak
             )
         })
         .count();
@@ -3398,7 +3404,7 @@ fn generate_cell_content(
             }
             Block::MathEquation(math) => generate_math_equation(out, math),
             Block::Chart(chart) => generate_chart(out, chart),
-            Block::PageBreak | Block::ColumnBreak => {}
+            Block::PageBreak | Block::PageBreakBefore | Block::ColumnBreak => {}
         }
     }
     if !pending_floating_images.is_empty() {
@@ -3570,6 +3576,7 @@ fn cell_block_has_flow_extent(block: &Block) -> bool {
         block,
         Block::TableOfContents(_)
             | Block::PageBreak
+            | Block::PageBreakBefore
             | Block::ColumnBreak
             | Block::FloatingImage(_)
             | Block::FloatingTable(_)

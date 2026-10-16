@@ -182,6 +182,9 @@ pub enum Block {
     /// `TOC \a` list can collect it (issue #576).
     Caption(Caption),
     PageBreak,
+    /// Start the next paragraph on a fresh page, reusing an already empty page.
+    /// Distinct from a hard source break, which may create an intentional blank page.
+    PageBreakBefore,
     ColumnBreak,
 }
 

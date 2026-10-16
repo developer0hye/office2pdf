@@ -781,7 +781,7 @@ fn east_asia_theme_does_not_replace_the_inherited_latin_style_font() {
         minor_latin: Some("Calibri".to_string()),
         major_latin: Some("Cambria".to_string()),
     };
-    let empty_context: std::collections::HashMap<String, bool> = std::collections::HashMap::new();
+    let empty_context = std::collections::HashMap::new();
     let style_map: StyleMap = build_style_map(
         &styles,
         &theme_fonts,

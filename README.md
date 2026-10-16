@@ -312,6 +312,10 @@ Per-run languages and DOCX East Asian/complex-script language tags are not yet u
 Automatic hyphenation is off unless enabled in the DOCX document settings.
 Paragraph-level suppression and advanced hyphenation controls are not yet supported.
 
+DOCX paragraph `pageBreakBefore` inherits through styles and accepts explicit false overrides.
+The IR keeps this fresh-page requirement as `Block::PageBreakBefore`, distinct from
+`Block::PageBreak` for hard breaks that can create intentional blank pages.
+
 XLSX workbooks with cells beyond Excel's 16,384-column or 1,048,576-row grid
 are rejected before layout expansion.
 

@@ -641,7 +641,7 @@ fn test_paragraph_page_break_before() {
     let blocks = all_blocks(&doc);
     assert_eq!(blocks.len(), 3, "Expected 3 blocks, got {}", blocks.len());
     assert!(matches!(&blocks[0], Block::Paragraph(_)));
-    assert!(matches!(&blocks[1], Block::PageBreak));
+    assert!(matches!(&blocks[1], Block::PageBreakBefore));
     assert!(matches!(&blocks[2], Block::Paragraph(_)));
 }
 

@@ -165,6 +165,8 @@ fn read_val_attribute(
 /// Contains text and paragraph formatting along with an optional heading level.
 pub(super) struct ResolvedStyle {
     pub(super) text: TextStyle,
+    /// Tri-state pagination setting, resolved through document and named styles.
+    pub(super) page_break_before: Option<bool>,
     pub(super) paragraph: ParagraphStyle,
     /// Whether this paragraph style chain, excluding `w:docDefaults`, states
     /// `w:spacing/@w:after` itself. Table-style spacing can override document
@@ -426,7 +428,7 @@ pub(super) fn build_style_map(
     theme_fonts: &ThemeFonts,
     default_paragraph_style_id: Option<&str>,
     paragraph_backgrounds: &HashMap<String, Color>,
-    style_word_wraps: &HashMap<String, bool>,
+    style_paragraph_flags: &HashMap<String, super::contexts::RawParagraphFlags>,
     pair_kerning: &PairKerningRules,
 ) -> StyleMap {
     let mut map = StyleMap::new();
@@ -438,6 +440,9 @@ pub(super) fn build_style_map(
         ResolvedStyle {
             text: default_text.clone(),
             paragraph: default_paragraph.clone(),
+            page_break_before: style_paragraph_flags
+                .get(DOC_DEFAULT_STYLE_ID)
+                .and_then(|flags| flags.page_break_before),
             paragraph_space_after_is_explicit: false,
             paragraph_tab_overrides: None,
             heading_level: None,
@@ -474,6 +479,10 @@ pub(super) fn build_style_map(
             } else {
                 ParagraphStyle::default()
             },
+            page_break_before: is_paragraph
+                .then(|| style_paragraph_flags.get(DOC_DEFAULT_STYLE_ID))
+                .flatten()
+                .and_then(|flags| flags.page_break_before),
             paragraph_space_after_is_explicit: false,
             paragraph_tab_overrides: None,
             heading_level: None,
@@ -486,7 +495,7 @@ pub(super) fn build_style_map(
                 definition,
                 theme_fonts,
                 paragraph_backgrounds,
-                style_word_wraps,
+                style_paragraph_flags,
                 pair_kerning,
             );
         }
@@ -503,6 +512,7 @@ pub(super) fn build_style_map(
         let merged = ResolvedStyle {
             text: default_style.text.clone(),
             paragraph: default_style.paragraph.clone(),
+            page_break_before: default_style.page_break_before,
             paragraph_space_after_is_explicit: default_style.paragraph_space_after_is_explicit,
             paragraph_tab_overrides: default_style.paragraph_tab_overrides.clone(),
             heading_level: None,
@@ -556,7 +566,7 @@ fn merge_style_definition(
     style: &docx_rs::Style,
     theme_fonts: &ThemeFonts,
     paragraph_backgrounds: &HashMap<String, Color>,
-    style_word_wraps: &HashMap<String, bool>,
+    style_paragraph_flags: &HashMap<String, super::contexts::RawParagraphFlags>,
     pair_kerning: &PairKerningRules,
 ) {
     let mut own_text = extract_run_style(&style.run_property);
@@ -586,7 +596,11 @@ fn merge_style_definition(
     own_paragraph.background = paragraph_backgrounds.get(&style.style_id).copied();
     // From raw styles.xml because published docx-rs does not parse the field
     // (issue #1041).
-    own_paragraph.word_wrap = style_word_wraps.get(&style.style_id).copied();
+    let flags = style_paragraph_flags.get(&style.style_id);
+    own_paragraph.word_wrap = flags.and_then(|flags| flags.word_wrap);
+    if let Some(value) = flags.and_then(|flags| flags.page_break_before) {
+        resolved.page_break_before = Some(value);
+    }
     let own_tab_overrides = extract_tab_stop_overrides(&style.paragraph_property.tabs);
     resolved.paragraph =
         merge_paragraph_style(&own_paragraph, own_tab_overrides.as_deref(), Some(resolved));

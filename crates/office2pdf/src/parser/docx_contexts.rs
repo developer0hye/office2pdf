@@ -22,6 +22,8 @@ mod page_borders;
 mod page_numbers;
 #[path = "docx_context_paragraph_cursor.rs"]
 mod paragraph_cursor;
+#[path = "docx_context_paragraph_flags.rs"]
+mod paragraph_flags;
 #[path = "docx_context_paragraph_mark.rs"]
 mod paragraph_mark;
 #[path = "docx_context_paragraph_shading.rs"]
@@ -36,8 +38,6 @@ mod table_header;
 mod table_style;
 #[path = "docx_context_vml.rs"]
 mod vml;
-#[path = "docx_context_word_wrap.rs"]
-mod word_wrap;
 #[path = "docx_context_wrap.rs"]
 mod wrap;
 
@@ -55,6 +55,9 @@ pub(super) use notes::{
 pub(super) use page_borders::scan_page_borders;
 pub(super) use page_numbers::scan_page_numbering;
 pub(super) use paragraph_cursor::is_skipped_subtree;
+pub(super) use paragraph_flags::{
+    ParagraphFlagsContext, RawParagraphFlags, scan_style_paragraph_flags,
+};
 pub(super) use paragraph_mark::ParagraphMarkContext;
 pub(super) use paragraph_shading::{ParagraphShadingContext, scan_style_paragraph_shading};
 pub(super) use picture::PictureCropContext;
@@ -64,7 +67,6 @@ pub(super) use table_header::TableHeaderContext;
 pub(super) use table_header::scan_table_headers;
 pub(super) use table_style::{ResolvedTableStyle, TableStyleContext, apply_table_text_style};
 pub(super) use vml::{VmlTextBoxContext, VmlTextBoxInfo};
-pub(super) use word_wrap::{WordWrapContext, scan_style_word_wrap};
 pub(super) use wrap::{WrapContext, build_wrap_context_from_xml};
 
 use super::text::ThemeFonts;
@@ -87,7 +89,7 @@ pub(super) struct DocxConversionContext {
     pub(super) bidi: BidiContext,
     pub(super) small_caps: SmallCapsContext,
     pub(super) paragraph_shading: ParagraphShadingContext,
-    pub(super) word_wraps: WordWrapContext,
+    pub(super) paragraph_flags: ParagraphFlagsContext,
     /// Each paragraph's `w:contextualSpacing`, which drops `w:spacing` gaps
     /// between paragraphs of the same style (issue #1684).
     pub(super) contextual_spacing: ContextualSpacingContext,
@@ -131,7 +133,7 @@ impl DocxConversionContext {
             bidi: BidiContext::from_xml(story_xml),
             small_caps: SmallCapsContext::from_xml(story_xml),
             paragraph_shading: ParagraphShadingContext::from_xml(story_xml),
-            word_wraps: WordWrapContext::from_xml(story_xml),
+            paragraph_flags: ParagraphFlagsContext::from_xml(story_xml),
             contextual_spacing: ContextualSpacingContext::from_xml(story_xml, styles_xml),
             paragraph_marks: ParagraphMarkContext::from_xml(story_xml),
             fields: FieldContext::default(),

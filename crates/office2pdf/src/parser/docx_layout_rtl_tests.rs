@@ -499,6 +499,7 @@ fn test_merge_paragraph_style_preserves_inherited_tabs_not_overridden() {
     let explicit = extract_paragraph_style(&explicit_prop);
     let explicit_tab_overrides = extract_tab_stop_overrides(&explicit_prop.tabs);
     let style = ResolvedStyle {
+        page_break_before: None,
         text: TextStyle::default(),
         paragraph: ParagraphStyle {
             tab_stops: Some(vec![
@@ -562,6 +563,7 @@ fn test_merge_paragraph_style_clears_only_targeted_inherited_tab_stop() {
     let explicit = extract_paragraph_style(&explicit_prop);
     let explicit_tab_overrides = extract_tab_stop_overrides(&explicit_prop.tabs);
     let style = ResolvedStyle {
+        page_break_before: None,
         text: TextStyle::default(),
         paragraph: ParagraphStyle {
             tab_stops: Some(vec![
@@ -616,6 +618,7 @@ fn test_merge_paragraph_style_allows_clearing_inherited_tab_stops() {
         ..ParagraphStyle::default()
     };
     let style = ResolvedStyle {
+        page_break_before: None,
         text: TextStyle::default(),
         paragraph: ParagraphStyle {
             tab_stops: Some(vec![inherited]),
@@ -907,15 +910,15 @@ fn test_word_wrap_reaches_the_paragraph_style() {
 <w:p><w:pPr><w:wordWrap/></w:pPr></w:p>
 <w:p/>
 </w:body></w:document>"#;
-    let context = super::super::contexts::WordWrapContext::from_xml(Some(xml));
-    assert_eq!(context.next_word_wrap(None), Some(false));
-    assert_eq!(context.next_word_wrap(None), Some(true));
+    let context = super::super::contexts::ParagraphFlagsContext::from_xml(Some(xml));
+    assert_eq!(context.next_flags(None).word_wrap, Some(false));
+    assert_eq!(context.next_flags(None).word_wrap, Some(true));
     assert_eq!(
-        context.next_word_wrap(None),
+        context.next_flags(None).word_wrap,
         Some(true),
         "an absent w:val means on, the element's own default"
     );
-    assert_eq!(context.next_word_wrap(None), None);
+    assert_eq!(context.next_flags(None).word_wrap, None);
 }
 
 /// A table cell's paragraph consumes its own slot, so nesting cannot shift
@@ -928,10 +931,10 @@ fn test_word_wrap_scan_covers_nested_table_paragraphs() {
 <w:tbl><w:tr><w:tc><w:p><w:pPr><w:wordWrap w:val="0"/></w:pPr></w:p></w:tc></w:tr></w:tbl>
 <w:p/>
 </w:body></w:document>"#;
-    let context = super::super::contexts::WordWrapContext::from_xml(Some(xml));
-    assert_eq!(context.next_word_wrap(None), None);
-    assert_eq!(context.next_word_wrap(None), Some(false));
-    assert_eq!(context.next_word_wrap(None), None);
+    let context = super::super::contexts::ParagraphFlagsContext::from_xml(Some(xml));
+    assert_eq!(context.next_flags(None).word_wrap, None);
+    assert_eq!(context.next_flags(None).word_wrap, Some(false));
+    assert_eq!(context.next_flags(None).word_wrap, None);
 }
 
 /// A paragraph style's `w:wordWrap` comes from the raw styles.xml the same
@@ -944,8 +947,11 @@ fn test_style_word_wrap_is_scanned_by_style_id() {
 <w:style w:type="paragraph" w:styleId="Plain"><w:pPr/></w:style>
 <w:style w:type="character" w:styleId="CharNoWrap"><w:pPr><w:wordWrap w:val="0"/></w:pPr></w:style>
 </w:styles>"#;
-    let map = super::super::contexts::scan_style_word_wrap(Some(xml));
-    assert_eq!(map.get("NoWrap"), Some(&false));
+    let map = super::super::contexts::scan_style_paragraph_flags(Some(xml));
+    assert_eq!(
+        map.get("NoWrap").and_then(|flags| flags.word_wrap),
+        Some(false)
+    );
     assert_eq!(map.get("Plain"), None);
     assert_eq!(
         map.get("CharNoWrap"),
@@ -964,6 +970,7 @@ fn test_explicit_word_wrap_overrides_the_style_chain() {
         ..ParagraphStyle::default()
     };
     let style = ResolvedStyle {
+        page_break_before: None,
         text: TextStyle::default(),
         paragraph: ParagraphStyle {
             word_wrap: Some(true),

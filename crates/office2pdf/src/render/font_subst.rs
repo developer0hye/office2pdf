@@ -1933,6 +1933,7 @@ fn visit_block_fonts(block: &Block, visitor: &mut impl FnMut(&str, &str) -> bool
         | Block::FloatingShape(_)
         | Block::MathEquation(_)
         | Block::PageBreak
+        | Block::PageBreakBefore
         | Block::ColumnBreak => true,
     }
 }

@@ -4661,3 +4661,6 @@ fn docx_large_inline_markers_preserve_body_continuation_advance() {
         );
     }
 }
+
+#[path = "docx_page_break_before_tests.rs"]
+mod page_break_before_tests;

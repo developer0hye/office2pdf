@@ -30,6 +30,7 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 
 | Project | Lang | Focus | Detail |
 |---------|------|-------|--------|
+| [Word paragraph page breaks](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.pagebreakbefore) | OOXML | Style inheritance and tri-state pagination | [word-paragraph-page-breaks.md](word-paragraph-page-breaks.md) |
 | [typst](https://github.com/typst/typst) | Rust | Typesetting engine (our backend) | [typst.md](typst.md) |
 | [krilla](https://github.com/LaurenzV/krilla) | Rust | PDF generation (PDF/A + PDF/UA) | [krilla.md](krilla.md) |
 | [hayro](https://github.com/LaurenzV/hayro) | Rust | PDF renderer (visual comparison testing) | [hayro.md](hayro.md) |

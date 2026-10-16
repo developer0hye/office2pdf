@@ -142,6 +142,7 @@ fn collect_runs_from_block<'a>(block: &'a Block, out: &mut Vec<&'a Run>) {
         | Block::MathEquation(_)
         | Block::Chart(_)
         | Block::PageBreak
+        | Block::PageBreakBefore
         | Block::ColumnBreak => {}
     }
 }
@@ -208,6 +209,7 @@ fn block_text(block: &Block) -> String {
         | Block::MathEquation(_)
         | Block::Chart(_)
         | Block::PageBreak
+        | Block::PageBreakBefore
         | Block::ColumnBreak => String::new(),
     }
 }

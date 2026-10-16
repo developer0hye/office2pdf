@@ -854,7 +854,7 @@ fn generate_flow_page(
     } else if begins_continuously
         && section_content
             .iter()
-            .any(|block| matches!(block, Block::PageBreak))
+            .any(|block| matches!(block, Block::PageBreak | Block::PageBreakBefore))
     {
         generate_continuous_flow_blocks(out, page, &size, &section_content, ctx)?;
     } else {
@@ -997,7 +997,7 @@ fn generate_continuous_flow_blocks(
     for (index, (segment_start, segment)) in segments.iter().enumerate() {
         let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
         if index > 0 && !is_trailing_empty_segment {
-            out.push_str("#pagebreak()\n");
+            write_source_page_break(out, &content[segment_start - 1]);
             write_continuation_flow_setup(out, page, size, ctx)?;
             advance_flow_body_alignment(out, ctx);
         }
@@ -1059,7 +1059,7 @@ fn generate_flow_page_columns(
     for (index, (segment_start, segment)) in segments.iter().enumerate() {
         let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
         if index > 0 && !is_trailing_empty_segment {
-            out.push_str("#pagebreak()\n");
+            write_source_page_break(out, &content[segment_start - 1]);
             if options.begins_continuously {
                 write_continuation_flow_setup(out, page, size, ctx)?;
             }
@@ -1150,7 +1150,7 @@ fn starts_with_page_break_before_content(content: &[Block]) -> bool {
     content
         .iter()
         .find(|block| !is_empty_paragraph_block(block))
-        .is_some_and(|block| matches!(block, Block::PageBreak))
+        .is_some_and(|block| matches!(block, Block::PageBreak | Block::PageBreakBefore))
 }
 
 /// Word subtracts collapsed after-spacing before an initial hard page break
@@ -1198,7 +1198,10 @@ fn block_starts_after_layout_break(block: &Block) -> bool {
 }
 
 fn is_layout_break(block: &Block) -> bool {
-    matches!(block, Block::PageBreak | Block::ColumnBreak)
+    matches!(
+        block,
+        Block::PageBreak | Block::PageBreakBefore | Block::ColumnBreak
+    )
 }
 
 fn paragraph_borders_join_across_layout_boundary(
@@ -1438,15 +1441,15 @@ fn column_separator_markup(cols: &ColumnLayout, column_width: f64) -> String {
     markup
 }
 
-/// Split content blocks at `PageBreak` boundaries into contiguous slices.
+/// Split content blocks at hard and paragraph page-break boundaries.
 ///
 /// One slice per page the section spans. A leading, trailing or repeated break
-/// yields an empty slice, which the caller emits as the bare break.
+/// yields an empty slice; callers preserve each source break's strength.
 fn split_at_page_breaks(content: &[Block]) -> Vec<(usize, &[Block])> {
     let mut segments: Vec<(usize, &[Block])> = Vec::new();
     let mut start: usize = 0;
     for (index, block) in content.iter().enumerate() {
-        if matches!(block, Block::PageBreak) {
+        if matches!(block, Block::PageBreak | Block::PageBreakBefore) {
             segments.push((start, &content[start..index]));
             start = index + 1;
         }
@@ -5000,10 +5003,14 @@ fn generate_blocks_with_layout_space_before(
         let follows_column_break: bool =
             index > 0 && matches!(blocks[index - 1], Block::ColumnBreak);
         let follows_source_paragraph_page_break: bool = index > 0
-            && matches!(blocks[index - 1], Block::PageBreak)
+            && matches!(blocks[index - 1], Block::PageBreak | Block::PageBreakBefore)
             && block_starts_after_layout_break(&blocks[index]);
-        let follows_initial_page_break: bool =
-            ctx.at_document_start && index == 1 && matches!(blocks.first(), Some(Block::PageBreak));
+        let follows_initial_page_break: bool = ctx.at_document_start
+            && index == 1
+            && matches!(
+                blocks.first(),
+                Some(Block::PageBreak | Block::PageBreakBefore)
+            );
         let empty_paragraph_page_break_shading_space_pt: Option<f64> =
             if is_empty_paragraph_block(&block)
                 && !block_starts_after_layout_break(&block)
@@ -5568,6 +5575,15 @@ fn caption_label(identifier: &str) -> String {
     label
 }
 
+/// Paragraph page requirements reuse an empty page; hard run breaks do not.
+fn write_source_page_break(out: &mut String, block: &Block) {
+    if matches!(block, Block::PageBreakBefore) {
+        out.push_str("#pagebreak(weak: true)\n");
+    } else {
+        out.push_str("#pagebreak()\n");
+    }
+}
+
 fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(), ConvertError> {
     let is_root_flow_block = ctx.in_flow_body && ctx.block_depth == 0;
     let at_page_root: bool = ctx.preserve_page_after_spacing && is_root_flow_block;
@@ -5581,7 +5597,7 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
     ctx.block_depth += 1;
     let result = generate_block_inner(out, block, ctx);
     ctx.block_depth -= 1;
-    if is_root_flow_block && matches!(block, Block::PageBreak) {
+    if is_root_flow_block && matches!(block, Block::PageBreak | Block::PageBreakBefore) {
         advance_flow_body_alignment(out, ctx);
     }
     if at_page_root {
@@ -5616,8 +5632,8 @@ fn generate_block_inner(
             );
             generate_paragraph(out, &caption.paragraph, ctx)
         }
-        Block::PageBreak => {
-            out.push_str("#pagebreak()\n");
+        Block::PageBreak | Block::PageBreakBefore => {
+            write_source_page_break(out, block);
             Ok(())
         }
         Block::FloatingTable(floating_table) => {
