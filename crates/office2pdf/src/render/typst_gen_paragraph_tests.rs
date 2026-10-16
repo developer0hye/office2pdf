@@ -44,6 +44,119 @@ fn test_generate_first_line_indent_for_flow_paragraph() {
 
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
+fn indented_headings_keep_painted_text_and_first_line_geometry() {
+    for level in [1, 3, 5] {
+        for first_indent in [-18.0, 0.0, 18.0] {
+            let paragraph = |text: &str, heading_level| {
+                let mut block = make_paragraph(text);
+                let Block::Paragraph(para) = &mut block else {
+                    unreachable!();
+                };
+                para.style.heading_level = heading_level;
+                para.style.indent_left = Some(36.0);
+                para.style.indent_first_line = Some(first_indent);
+                for run in &mut para.runs {
+                    run.style.font_family = Some("Arial".into());
+                    run.style.font_size = Some(12.0);
+                }
+                block
+            };
+            let doc = make_doc(vec![make_flow_page(vec![
+                paragraph("Body start\nBody continuation", None),
+                paragraph("Heading start\nHeading continuation", Some(level)),
+                make_paragraph("Following paragraph"),
+            ])]);
+            let source = generate_typst(&doc).unwrap().source;
+            let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+            let find = |text: &str| {
+                runs.iter().find(|run| run.text.contains(text)).unwrap_or_else(|| {
+                    panic!("missing painted {text:?}, level={level}, indent={first_indent}: {runs:?}")
+                })
+            };
+            let heading = find("Heading start");
+            let heading_continuation = find("Heading continuation");
+            let body = find("Body start");
+            let body_continuation = find("Body continuation");
+            assert!((heading.left_pt - body.left_pt).abs() < 0.05);
+            assert!((heading_continuation.left_pt - body_continuation.left_pt).abs() < 0.05);
+            assert!((heading.left_pt - heading_continuation.left_pt - first_indent).abs() < 0.05);
+            assert!(heading.baseline_pt > body_continuation.baseline_pt);
+            assert!(find("Following paragraph").baseline_pt > heading_continuation.baseline_pt);
+        }
+    }
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn indented_heading_fixture_keeps_painted_heading_between_body_paragraphs() {
+    use crate::parser::Parser;
+    let data = include_bytes!("../../../../tests/fixtures/docx/indented_heading.docx");
+    let (document, _) = crate::parser::docx::DocxParser
+        .parse(data, &crate::ConvertOptions::default())
+        .unwrap();
+    let source = generate_typst(&document).unwrap().source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+    let find = |text: &str| {
+        runs.iter()
+            .find(|run| run.text.contains(text))
+            .unwrap_or_else(|| panic!("missing painted {text:?}: {runs:?}"))
+    };
+    let before = find("BEFORE SENTINEL");
+    let heading = find("MISSING SENTINEL HEADING");
+    let after = find("AFTER SENTINEL");
+    assert!(before.baseline_pt < heading.baseline_pt);
+    assert!(heading.baseline_pt < after.baseline_pt);
+    assert!((heading.left_pt - before.left_pt - 18.0).abs() < 0.05);
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn indented_headings_keep_tabbed_runs_and_following_paragraph_alignment() {
+    for (level, first_indent, alignment) in [
+        (2, 18.0, Alignment::Left),
+        (5, -36.0, Alignment::Left),
+        (3, -18.0, Alignment::Center),
+    ] {
+        let paragraph = |text: &str, heading_level| {
+            let mut block = make_paragraph(text);
+            let Block::Paragraph(para) = &mut block else {
+                unreachable!();
+            };
+            para.style.heading_level = heading_level;
+            para.style.indent_left = Some(36.0);
+            para.style.indent_first_line = Some(first_indent);
+            para.style.alignment = Some(alignment);
+            para.style.tab_stops = Some(vec![stop(36.0, TabAlignment::Left)]);
+            para.runs[0].style.font_family = Some("Arial".into());
+            para.runs[0].style.font_size = Some(12.0);
+            block
+        };
+        let doc = make_doc(vec![make_flow_page(vec![
+            paragraph("7.\tBody segment", None),
+            paragraph("8.\tHeading segment", Some(level)),
+            make_paragraph("Following paragraph"),
+        ])]);
+        let source = generate_typst(&doc).unwrap().source;
+        let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+        for marker in ["7.", "Body segment", "8.", "Heading segment"] {
+            assert!(
+                runs.iter().any(|run| run.text.contains(marker)),
+                "tabbed heading must paint every segment, level={level}, indent={first_indent}: {runs:?}"
+            );
+        }
+        let following = runs
+            .iter()
+            .find(|run| run.text.contains("Following paragraph"))
+            .unwrap();
+        assert!(
+            (following.left_pt - 72.0).abs() < 0.05,
+            "heading indent/alignment must not leak into following text: {runs:?}"
+        );
+    }
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn test_first_line_indent_does_not_change_baseline_after_page_break() {
     let compiled_baseline = |first_line_indent: Option<f64>| -> f64 {
         let mut after_page_break = make_paragraph("After page break");

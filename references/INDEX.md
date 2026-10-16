@@ -31,6 +31,7 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 | Project | Lang | Focus | Detail |
 |---------|------|-------|--------|
 | [typst](https://github.com/typst/typst) | Rust | Typesetting engine (our backend) | [typst.md](typst.md) |
+| [Typst paragraph and heading model](https://typst.app/docs/reference/model/par/) | Rust | Valid heading/paragraph nesting and first-line indents | [word-heading-paragraphs.md](word-heading-paragraphs.md) |
 | [krilla](https://github.com/LaurenzV/krilla) | Rust | PDF generation (PDF/A + PDF/UA) | [krilla.md](krilla.md) |
 | [hayro](https://github.com/LaurenzV/hayro) | Rust | PDF renderer (visual comparison testing) | [hayro.md](hayro.md) |
 | [veraPDF](https://github.com/veraPDF/veraPDF-library) | Java | PDF/A and PDF/UA validation | [verapdf.md](verapdf.md) |

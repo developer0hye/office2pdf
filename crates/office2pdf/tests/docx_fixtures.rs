@@ -2041,3 +2041,21 @@ fn conflicting_unicode_docx_part_names_are_rejected() {
         "the public conversion API must reject the ambiguous package"
     );
 }
+
+#[test]
+fn indented_heading_fixture_preserves_searchable_text() {
+    let result = office2pdf::convert(fixture_path("indented_heading.docx"))
+        .expect("indented headings should convert");
+    let text = common::extract_pdf_text(&result.pdf);
+    for marker in [
+        "BEFORE SENTINEL",
+        "MISSING SENTINEL HEADING",
+        "AFTER SENTINEL",
+    ] {
+        assert_eq!(
+            text.matches(marker).count(),
+            1,
+            "missing or repeated {marker:?}: {text}"
+        );
+    }
+}

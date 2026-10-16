@@ -432,6 +432,13 @@ pub(super) fn generate_paragraph(
         let _ = write!(out, "#align({align_str})[");
     }
 
+    // A heading is a block: Typst discards it inside an explicit paragraph.
+    // Keep the heading outside its text paragraph so first-line indentation
+    // still applies without silently dropping the heading (issue #2174).
+    if let Some(level) = style.heading_level {
+        let _ = write!(out, "#heading(level: {level})[");
+    }
+
     if let Some(indent) = first_line_indent {
         let _ = write!(
             out,
@@ -462,8 +469,7 @@ pub(super) fn generate_paragraph(
     match style.heading_level {
         // The runs keep the plain emitter: the per-run line boxes of issue
         // #638 were measured on mixed-face body paragraphs only.
-        Some(level) => {
-            let _ = write!(out, "#heading(level: {level})[");
+        Some(_) => {
             write_paragraph_before_spacing_overlay(out, style, true, false);
             generate_runs_with_tabs_and_metrics_in_context(
                 out,
@@ -476,7 +482,6 @@ pub(super) fn generate_paragraph(
                 ctx,
             )?;
             write_terminal_word_paragraph_mark(out, runs, style, line_grid_pitch);
-            out.push(']');
         }
         None => {
             write_paragraph_before_spacing_overlay(out, style, true, false);
@@ -495,6 +500,10 @@ pub(super) fn generate_paragraph(
     }
 
     if first_line_indent.is_some() {
+        out.push(']');
+    }
+
+    if style.heading_level.is_some() {
         out.push(']');
     }
 
