@@ -3015,7 +3015,7 @@ fn test_generate_heading_with_style_border_rule() {
     assert!(
         // Framed because a heading is a paragraph like any other, and Word
         // breaks its Korean at eojeol too (issue #626).
-        result.contains("#heading(level: 1)[#box[개요]]"),
+        result.contains("#heading(level: 1)[#text(weight: \"regular\")[#box[개요]]]"),
         "the heading itself must survive the wrapper: {result}"
     );
     assert!(
@@ -3190,7 +3190,9 @@ fn test_generate_undecorated_heading_keeps_its_bare_form() {
 
     // One syllable needs no frame; the two-syllable eojeol each get one so a
     // wrapped heading breaks where Word breaks it (issue #626).
-    assert!(result.contains("#heading(level: 2)[한 #box[문장] #box[요약]]"));
+    assert!(
+        result.contains("#heading(level: 2)[#text(weight: \"regular\")[한 #box[문장] #box[요약]]]")
+    );
     assert!(
         !result.contains("#block(width: 100%"),
         "an undecorated heading needs no block wrapper: {result}"
@@ -3762,4 +3764,92 @@ fn native_empty_mark_fixture_preserves_mark_size_in_body_spacing() {
         (baseline("After 20pt") - baseline("Before 20pt") - pitch * (1.0 + 20.0 / 12.0)).abs()
             < 0.01
     );
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn heading_weight_keeps_regular_bold_and_mixed_compiled_faces() {
+    for level in [1, 3, 6] {
+        let paragraph = Paragraph {
+            style: ParagraphStyle {
+                heading_level: Some(level),
+                ..ParagraphStyle::default()
+            },
+            runs: [
+                ("Regular", None),
+                (" Bold", Some(true)),
+                (" Plain", Some(false)),
+            ]
+            .into_iter()
+            .map(|(text, bold)| Run {
+                text: text.into(),
+                style: TextStyle {
+                    font_family: Some("Noto Serif".into()),
+                    font_size: Some(12.0),
+                    bold,
+                    ..TextStyle::default()
+                },
+                href: None,
+                footnote: None,
+                inline_box: None,
+            })
+            .collect(),
+        };
+        let document = make_doc(vec![make_flow_page(vec![Block::Paragraph(paragraph)])]);
+        let source = generate_typst(&document).unwrap().source;
+        let runs = crate::render::pdf::compiled_text_runs_with_fonts(
+            &source,
+            0,
+            crate::bundled_fonts::noto_serif_fonts(),
+        )
+        .unwrap();
+        for (text, weight) in [("Regular", 400), ("Bold", 700), ("Plain", 400)] {
+            let run = runs
+                .iter()
+                .find(|run| run.text.contains(text))
+                .unwrap_or_else(|| panic!("missing {text}: {runs:?}"));
+            assert_eq!(run.font_weight, weight, "level={level}, {text}");
+        }
+    }
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn heading_weight_preserves_a_family_named_light_member() {
+    use crate::render::font_context::{resolve_font_search_context_from_fonts, test_faces};
+    let fonts = [
+        test_faces::noto_serif_at_weight(300),
+        test_faces::noto_serif_at_weight(400),
+        test_faces::noto_serif_at_weight(700),
+    ];
+    let context = resolve_font_search_context_from_fonts(&fonts);
+    let doc = make_doc(vec![make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            heading_level: Some(2),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![Run {
+            text: "Light heading".into(),
+            style: TextStyle {
+                font_family: Some("Noto Serif Light".into()),
+                font_size: Some(12.0),
+                ..TextStyle::default()
+            },
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+    })])]);
+    let source = crate::render::typst_gen::generate_typst_with_options_and_font_context(
+        &doc,
+        &crate::ConvertOptions::default(),
+        Some(&context),
+    )
+    .unwrap()
+    .source;
+    let runs = crate::render::pdf::compiled_text_runs_with_fonts(&source, 0, &fonts).unwrap();
+    assert!(runs.iter().any(|run| run.text.contains("Light heading")));
+    for run in runs.iter().filter(|run| run.text.contains("Light heading")) {
+        assert_eq!(run.font_weight, 300);
+    }
 }

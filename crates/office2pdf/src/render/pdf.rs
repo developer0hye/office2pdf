@@ -653,6 +653,8 @@ pub(crate) struct PlacedTextRun {
     /// The family the run was actually shaped with, which is not always the one
     /// the source asked for.
     pub family: String,
+    /// Weight of the face selected by the layout engine.
+    pub font_weight: u16,
     pub text: String,
     /// Per-glyph horizontal offsets from the run origin, in run-local points.
     pub glyph_x_offsets_pt: Vec<f64>,
@@ -743,6 +745,7 @@ fn compiled_text_runs_with_line_seating(
                     left_pt: at.tx.to_pt(),
                     font_size_pt: text.size.to_pt(),
                     family: text.font.info().family.clone(),
+                    font_weight: text.font.info().variant.weight.to_number(),
                     text: text.text.to_string(),
                     glyph_x_offsets_pt: text
                         .glyphs

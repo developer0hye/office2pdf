@@ -173,8 +173,8 @@ pub(super) struct ResolvedStyle {
     pub(super) paragraph_tab_overrides: Option<Vec<TabStopOverride>>,
     /// Heading level from outline_lvl (0 = Heading 1, 1 = Heading 2, ..., 5 = Heading 6).
     pub(super) heading_level: Option<usize>,
-    /// Whether a heading definition in this style's hierarchy supplies its
-    /// own run formatting. Word does not layer a synthesized heading weight on
+    /// Whether this style's hierarchy supplies document-defined run formatting,
+    /// including non-heading parents. Word does not layer a heading weight on
     /// top of such a document-defined treatment merely because `w:b` is
     /// absent (issue #1457).
     pub(super) heading_has_document_run_formatting: bool,
@@ -603,13 +603,10 @@ fn merge_style_definition(
     {
         resolved.heading_level = Some(level);
     }
-    // Once a definition establishes the heading level, formatting on that
-    // definition or any derived style is part of the document's heading
-    // treatment. Formatting inherited from Normal before the heading begins
-    // does not silence the bare-heading fallback (issue #1457).
-    if resolved.heading_level.is_some() {
-        resolved.heading_has_document_run_formatting |= has_document_run_formatting;
-    }
+    // Word also inherits a heading's text treatment from non-heading parents
+    // such as Normal. Outline metadata must not add bold to that resolved
+    // treatment merely because the heading definition omits w:b (#2176).
+    resolved.heading_has_document_run_formatting |= has_document_run_formatting;
 }
 
 /// The document-wide run defaults, with the kerning threshold the raw

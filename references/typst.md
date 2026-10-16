@@ -27,3 +27,11 @@ Markup-based typesetting system. Compiles `.typ` source to PDF/PNG/SVG/HTML. Emb
 - Improving Typst codegen quality or discovering new Typst features
 - Debugging layout issues in generated PDFs
 - Optimizing compilation performance
+
+## DOCX heading weight (#2176)
+
+- Typst 0.15.1's [`HeadingElem::show_set`](https://github.com/typst/typst/blob/v0.15.1/crates/typst-library/src/model/heading.rs) supplies bold by default.
+- A regular text scope inside the semantic heading lets resolved Word runs select
+  their own explicit or family-derived weight while keeping outline metadata.
+- Word's native reproduction also inherits regular typography from Normal;
+  that parent treatment must suppress synthesized parser bold.

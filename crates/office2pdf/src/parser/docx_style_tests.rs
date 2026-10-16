@@ -2194,3 +2194,37 @@ fn a_centred_title_style_with_an_outline_level_prints_centred() {
          centred paragraph does ({centred_line}pt)"
     );
 }
+
+#[test]
+fn heading_weight_inherits_document_defined_parent_typography() {
+    // Native Word's three-line reproduction for #2176 inherits regular Arial
+    // from Normal; outline metadata must not synthesize a bold face.
+    for base_properties in [
+        r#"<w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="24"/>"#,
+        r#"<w:rFonts w:ascii="Georgia" w:hAnsi="Georgia"/><w:sz w:val="28"/>"#,
+    ] {
+        for heading_properties in ["", r#"<w:b w:val="0"/>"#, "<w:b/>"] {
+            let styles = format!(
+                r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+              <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+                <w:rPr>{base_properties}</w:rPr>
+              </w:style>
+              <w:style w:type="paragraph" w:styleId="Heading1">
+                <w:basedOn w:val="Normal"/>
+                <w:pPr><w:outlineLvl w:val="0"/></w:pPr>
+                <w:rPr>{heading_properties}</w:rPr>
+              </w:style>
+            </w:styles>"#
+            );
+            let data = super::page_feature_tests::build_docx_with_raw_styles(
+                &styles,
+                r#"<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Inherited heading</w:t></w:r></w:p>"#,
+            );
+            let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+            assert_eq!(
+                first_run(&document).style.bold == Some(true),
+                heading_properties == "<w:b/>"
+            );
+        }
+    }
+}

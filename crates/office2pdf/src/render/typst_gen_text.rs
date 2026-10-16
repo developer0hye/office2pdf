@@ -463,7 +463,10 @@ pub(super) fn generate_paragraph(
         // The runs keep the plain emitter: the per-run line boxes of issue
         // #638 were measured on mixed-face body paragraphs only.
         Some(level) => {
-            let _ = write!(out, "#heading(level: {level})[");
+            // Typst makes semantic headings bold by default. Word's resolved
+            // runs own their resolved weight, including inherited regular runs;
+            // an inner text scope keeps that default from leaking in (#2176).
+            let _ = write!(out, "#heading(level: {level})[#text(weight: \"regular\")[");
             write_paragraph_before_spacing_overlay(out, style, true, false);
             generate_runs_with_tabs_and_metrics_in_context(
                 out,
@@ -476,7 +479,7 @@ pub(super) fn generate_paragraph(
                 ctx,
             )?;
             write_terminal_word_paragraph_mark(out, runs, style, line_grid_pitch);
-            out.push(']');
+            out.push_str("]]");
         }
         None => {
             write_paragraph_before_spacing_overlay(out, style, true, false);

@@ -21,6 +21,7 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 - **Zero external dependencies** — runs as a standalone executable
 
 DOCX packages with conflicting ASCII ZIP part names are rejected.
+DOCX headings preserve inherited Word font weights and mixed regular/bold runs.
 
 ## Installation
 

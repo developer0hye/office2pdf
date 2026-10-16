@@ -888,7 +888,7 @@ fn test_generate_heading_level_1() {
     })])]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(
-        result.contains("#heading(level: 1)[Main Title]"),
+        result.contains("#heading(level: 1)[#text(weight: \"regular\")[Main Title]]"),
         "H1 paragraph should emit #heading(level: 1): {result}"
     );
 }
@@ -910,7 +910,7 @@ fn test_generate_heading_level_2() {
     })])]);
     let result = generate_typst(&doc).unwrap().source;
     assert!(
-        result.contains("#heading(level: 2)[Sub Section]"),
+        result.contains("#heading(level: 2)[#text(weight: \"regular\")[Sub Section]]"),
         "H2 paragraph should emit #heading(level: 2): {result}"
     );
 }
@@ -933,7 +933,7 @@ fn test_generate_heading_levels_3_to_6() {
             }],
         })])]);
         let result = generate_typst(&doc).unwrap().source;
-        let expected = format!("#heading(level: {level})[{text}]");
+        let expected = format!("#heading(level: {level})[#text(weight: \"regular\")[{text}]]");
         assert!(
             result.contains(&expected),
             "H{level} should emit {expected}: {result}"
