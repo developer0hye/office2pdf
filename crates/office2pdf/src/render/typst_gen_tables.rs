@@ -990,9 +990,11 @@ fn generate_table_cell(
         declared_vertical_align
     };
 
+    let diagonal_fill = diagonal_cell_fill(cell, ctx)?;
     let needs_cell_fn = clamped_colspan > 1
         || cell.row_span > 1
         || cell.border.is_some()
+        || diagonal_fill.is_some()
         || cell.background.is_some()
         || cell.vertical_align.is_some()
         || cell.padding.is_some()
@@ -1045,14 +1047,19 @@ fn generate_table_cell(
     if needs_cell_fn {
         out.push_str(indent);
         out.push_str("table.cell(");
+        let inset = if ctx.table_uses_powerpoint_line_box {
+            cell.padding.unwrap_or(default_cell_padding)
+        } else {
+            cell_inset_with_border(cell, default_cell_padding)
+        };
         write_cell_params(
             out,
             cell,
             clamped_colspan,
-            default_cell_padding,
+            inset,
             paints_boundary_bands,
-            ctx.table_uses_powerpoint_line_box,
             seats_on_row_line.then_some(CellVerticalAlign::Center),
+            diagonal_fill.as_deref(),
         );
         out.push_str(")[");
     } else {
@@ -3024,16 +3031,60 @@ fn write_boundary_band_line(
     );
 }
 
+// A private transparent fill gives the completed-frame pass Typst's actual cell
+// bounds, including automatic row height and merged tracks. Relative overlays
+// inside the cell instead resolve against its content/page region.
+fn diagonal_cell_fill(cell: &TableCell, ctx: &mut GenCtx) -> Result<Option<String>, ConvertError> {
+    let Some(diagonals) = &cell.diagonal_borders else {
+        return Ok(None);
+    };
+    let stroke = |side: Option<&BorderSide>| -> String {
+        match side.filter(|side| {
+            side.width.is_finite() && side.width > 0.0 && side.style != BorderLineStyle::None
+        }) {
+            Some(side) => format!(
+                "({}, {})",
+                side.style == BorderLineStyle::Double,
+                format_border_side(side)
+            ),
+            None => "none".into(),
+        }
+    };
+    let down = stroke(diagonals.top_left_to_bottom_right.as_ref());
+    let up = stroke(diagonals.top_right_to_bottom_left.as_ref());
+    if down == "none" && up == "none" {
+        return Ok(None);
+    }
+    let id = ctx.diagonal_cell_specs.len() + 1;
+    if id > 0x00ff_ffff {
+        return Err(ConvertError::Render("too many diagonal table cells".into()));
+    }
+    // Linear RGB retains the binary-exact identifier; source IR colors are RGB.
+    let marker = format!("color.linear-rgb({id} / 16777216 * 100%, 0%, 0%, 0%)");
+    let fill = cell.background.map_or_else(
+        || "none".into(),
+        |color| {
+            rgb_with_alpha(
+                &color,
+                (cell.background_alpha.unwrap_or(1.0).clamp(0.0, 1.0) * 255.0).round() as u8,
+            )
+        },
+    );
+    ctx.diagonal_cell_specs
+        .push(format!("({marker}, {fill}, {down}, {up}),"));
+    Ok(Some(marker))
+}
+
 fn write_cell_params(
     out: &mut String,
     cell: &TableCell,
     clamped_colspan: u32,
-    default_cell_padding: Insets,
+    inset: Insets,
     paints_boundary_bands: bool,
-    uses_powerpoint_table_layout: bool,
     // Emit centering for cells sharing the tight-row seat, including horizontal
     // bottom merges and cells inheriting centering from the table default.
     forced_vertical_align: Option<CellVerticalAlign>,
+    diagonal_fill: Option<&str>,
 ) {
     let mut first = true;
 
@@ -3043,7 +3094,9 @@ fn write_cell_params(
     if cell.row_span > 1 {
         write_param(out, &mut first, &format!("rowspan: {}", cell.row_span));
     }
-    if let Some(ref bg) = cell.background {
+    if let Some(marker) = diagonal_fill {
+        write_param(out, &mut first, &format!("fill: {marker}"));
+    } else if let Some(ref bg) = cell.background {
         let fill: String = cell.background_alpha.map_or_else(
             || format_color(bg),
             |alpha| {
@@ -3055,11 +3108,6 @@ fn write_cell_params(
         );
         write_param(out, &mut first, &fill);
     }
-    let inset: Insets = if uses_powerpoint_table_layout {
-        cell.padding.unwrap_or(default_cell_padding)
-    } else {
-        cell_inset_with_border(cell, default_cell_padding)
-    };
     if cell.padding.is_some() || cell.border.is_some() {
         write_param(
             out,

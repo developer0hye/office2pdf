@@ -27,3 +27,8 @@ Markup-based typesetting system. Compiles `.typ` source to PDF/PNG/SVG/HTML. Emb
 - Improving Typst codegen quality or discovering new Typst features
 - Debugging layout issues in generated PDFs
 - Optimizing compilation performance
+
+- Diagonal cell paint reads Typst 0.15.1's completed fill rectangles instead of
+  measuring cell content: `typst-layout/src/grid/layouter.rs` resolves automatic
+  rows and merged tracks before painting fills. A private fill marker is restored
+  to the source background before diagonal strokes and cell text are painted.

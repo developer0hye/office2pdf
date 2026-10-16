@@ -1,9 +1,14 @@
 use std::cell::Cell;
 use std::collections::HashMap;
 
-use super::super::tables::{BorderSideSpec, TableBorderSpec};
+use super::super::tables::{
+    BorderSideSpec, TableBorderSpec, diagonal_borders_from_sides, word_diagonal_border_style,
+};
 use super::super::{Block, Color, TextStyle, parse_hex_color};
-use crate::ir::{Alignment, BorderLineStyle, BorderSide, CellBorder, Insets, LineCap, LineJoin};
+use crate::ir::{
+    Alignment, BorderLineStyle, BorderSide, CellBorder, DiagonalCellBorders, Insets, LineCap,
+    LineJoin,
+};
 use crate::parser::units::twips_to_pt;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -61,6 +66,8 @@ struct RegionBorders {
     right: Option<BorderSide>,
     inside_h: Option<BorderSide>,
     inside_v: Option<BorderSide>,
+    down: BorderSideSpec,
+    up: BorderSideSpec,
 }
 
 impl RegionBorders {
@@ -72,6 +79,16 @@ impl RegionBorders {
             right: other.right.or(self.right),
             inside_h: other.inside_h.or(self.inside_h),
             inside_v: other.inside_v.or(self.inside_v),
+            down: if other.down.is_stated() {
+                other.down
+            } else {
+                self.down
+            },
+            up: if other.up.is_stated() {
+                other.up
+            } else {
+                self.up
+            },
         }
     }
 }
@@ -174,6 +191,7 @@ pub(in super::super) struct ResolvedTableCellStyle {
     pub(in super::super) alignment: Option<Alignment>,
     pub(in super::super) padding: Option<Insets>,
     pub(in super::super) border: Option<CellBorder>,
+    pub(in super::super) diagonal_borders: Option<Box<DiagonalCellBorders>>,
 }
 
 pub(in super::super) struct ResolvedTableStyle {
@@ -371,6 +389,10 @@ impl ResolvedTableStyle {
                 .then(|| region.cell_margins.complete())
                 .flatten(),
             border,
+            diagonal_borders: diagonal_borders_from_sides(
+                region.borders.down.drawn(),
+                region.borders.up.drawn(),
+            ),
         }
     }
 
@@ -486,14 +508,6 @@ fn parse_border_side(element: &quick_xml::events::BytesStart<'_>) -> Option<Bord
     if val == "nil" || val == "none" || val.is_empty() {
         return None;
     }
-    let width: f64 = attribute_value(element, b"sz")
-        .and_then(|value| value.parse::<f64>().ok())
-        .map(|eighths| eighths / 8.0)
-        .unwrap_or(0.5);
-    let color: Color = attribute_value(element, b"color")
-        .filter(|value| value != "auto")
-        .and_then(|value| parse_hex_color(&value))
-        .unwrap_or(Color::new(0, 0, 0));
     let style = match val.as_str() {
         "dashed" | "dashSmallGap" => BorderLineStyle::Dashed,
         "dotted" => BorderLineStyle::Dotted,
@@ -502,13 +516,37 @@ fn parse_border_side(element: &quick_xml::events::BytesStart<'_>) -> Option<Bord
         "double" | "doubleWave" => BorderLineStyle::Double,
         _ => BorderLineStyle::Solid,
     };
-    Some(BorderSide {
+    Some(border_side_with_style(element, style))
+}
+
+fn parse_diagonal_border_side(element: &quick_xml::events::BytesStart<'_>) -> Option<BorderSide> {
+    let value = attribute_value(element, b"val").unwrap_or_default();
+    let style = word_diagonal_border_style(&value)?;
+    let mut border = border_side_with_style(element, style);
+    // Inherited diagonals use the same minimum hairline as direct borders.
+    border.width = border.width.max(0.25);
+    Some(border)
+}
+
+fn border_side_with_style(
+    element: &quick_xml::events::BytesStart<'_>,
+    style: BorderLineStyle,
+) -> BorderSide {
+    let width = attribute_value(element, b"sz")
+        .and_then(|value| value.parse::<f64>().ok())
+        .map(|eighths| eighths / 8.0)
+        .unwrap_or(0.5);
+    let color = attribute_value(element, b"color")
+        .filter(|value| value != "auto")
+        .and_then(|value| parse_hex_color(&value))
+        .unwrap_or(Color::black());
+    BorderSide {
         width,
         color,
         style,
         join: LineJoin::Round,
         cap: LineCap::Flat,
-    })
+    }
 }
 
 #[derive(Default)]
@@ -645,6 +683,18 @@ fn apply_style_element(
     let Some(target) = region_mut(definition, region) else {
         return;
     };
+    if in_borders && in_cell_properties {
+        let diagonal = match element.local_name().as_ref() {
+            b"tl2br" => Some(&mut target.borders.down),
+            b"tr2bl" => Some(&mut target.borders.up),
+            _ => None,
+        };
+        if let Some(slot) = diagonal {
+            *slot = parse_diagonal_border_side(element)
+                .map_or(BorderSideSpec::Suppressed, BorderSideSpec::Stated);
+            return;
+        }
+    }
     if in_borders {
         let side_slot: Option<&mut Option<BorderSide>> = match element.local_name().as_ref() {
             b"top" => Some(&mut target.borders.top),
