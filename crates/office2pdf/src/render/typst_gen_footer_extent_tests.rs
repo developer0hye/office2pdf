@@ -310,3 +310,35 @@ fn footer_extent_empty_first_variant_reserves_and_paints_no_default_footer() {
     assert_eq!(body(&first), body(&runs(&probe(36.0, None), 0)));
     assert!(body(&runs(&doc, 1)).len() < body(&first).len());
 }
+
+#[test]
+fn footer_extent_tall_first_story_keeps_every_line_at_the_selected_page_edge() {
+    let tall = footer(10, 36.0, 12.0);
+    let control = runs(&probe(36.0, Some(tall.clone())), 0);
+    let mut doc = probe(36.0, Some(footer(1, 12.0, 10.0)));
+    let Page::Flow(page) = &mut doc.pages[0] else {
+        unreachable!()
+    };
+    page.first_footer = Some(tall);
+    let actual = runs(&doc, 0);
+    let story = |runs: &[PlacedTextRun]| {
+        runs.iter()
+            .filter(|run| run.text.starts_with("Footer "))
+            .map(|run| (run.text.clone(), run.baseline_pt))
+            .collect::<Vec<_>>()
+    };
+    let actual = story(&actual);
+    let expected = story(&control);
+    assert_eq!(
+        actual.len(),
+        expected.len(),
+        "tall first story retains every line"
+    );
+    for ((actual_text, actual_y), (expected_text, expected_y)) in actual.iter().zip(&expected) {
+        assert_eq!(actual_text, expected_text);
+        assert!(
+            (actual_y - expected_y).abs() < 0.01,
+            "selected footer line {actual_text} must retain its physical anchor: {actual_y} vs {expected_y}"
+        );
+    }
+}
