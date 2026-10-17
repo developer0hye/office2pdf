@@ -3050,7 +3050,8 @@ fn sheet_with_one_named_cell_font(
 
 /// The Normal font of `issue_1181_fit_to_height.xlsx`: Trebuchet MS 10
 /// deferring to a minor scheme with neither a usable Hang nor `ea` face, so
-/// it resolves to Trebuchet MS itself — a face with no measured series.
+/// it resolves to Trebuchet MS itself — a face whose series measures only
+/// its 10pt default row (issue #1723).
 fn bare_theme_trebuchet_normal_font() -> NormalFont {
     NormalFont {
         family: "Trebuchet MS".to_string(),
@@ -3134,9 +3135,10 @@ fn a_scheme_cell_font_resolves_its_series_through_the_theme() {
     );
 }
 
-/// A cell that names a face with no measured series, taller than the Normal
-/// font, still falls back to the row's cached `ht` — Excel's own last
-/// measurement of that very text — rather than to the Normal font's series.
+/// A cell taller than the Normal font, naming a face whose series does not
+/// measure its size (Trebuchet MS has only its 10pt point), still falls back
+/// to the row's cached `ht` — Excel's own last measurement of that very
+/// text — rather than to the Normal font's series.
 #[test]
 fn an_auto_row_of_an_unmeasured_named_face_keeps_its_cached_height() {
     let mut book = sheet_with_one_named_cell_font(1, "Trebuchet MS", 18.0, true);
@@ -3169,6 +3171,82 @@ fn the_instruction_sheets_arial_title_row_prints_its_faces_track() {
 
     let table = &get_sheet_page(&doc, 0).table;
     assert_eq!(table.rows[0].height, Some(23.0));
+}
+
+/// A scheme Normal font over a theme with neither a usable Hang nor `ea` face
+/// stays on its declared family, so the sheet default row takes that face's
+/// series — not the UI face's, which only a theme naming one resolves to
+/// (issue #1723). Each face below answers differently from the UI series at
+/// the same size, and the declared `defaultRowHeight` of 30 matches neither.
+#[test]
+fn a_scheme_normal_font_over_a_bare_theme_takes_its_declared_faces_default_row() {
+    for (family, size_pt, declared_face_row_pt, ui_face_row_pt) in [
+        ("Arial", 10.0, 13.0, 15.0),
+        ("Courier New", 9.0, 13.0, 14.0),
+        ("Segoe UI", 11.0, 16.0, 17.0),
+        ("Trebuchet MS", 10.0, 13.0, 15.0),
+    ] {
+        let mut book = umya_spreadsheet::new_file();
+        book.get_sheet_mut(&0)
+            .unwrap()
+            .get_sheet_format_properties_mut()
+            .set_default_row_height(30.0);
+        let sheet: &umya_spreadsheet::Worksheet = book.get_sheet(&0).unwrap();
+        let bare_theme = NormalFont {
+            family: family.to_string(),
+            size_pt,
+            color: None,
+            theme_scheme: Some(ThemeFontSlot::Minor),
+            theme_ui_script_faces: ThemeUiScriptFaces::default(),
+        };
+        let office_theme = NormalFont {
+            theme_ui_script_faces: office_theme_ui_script_faces(),
+            ..bare_theme.clone()
+        };
+        for (normal_font, expected, theme) in [
+            (bare_theme, declared_face_row_pt, "a bare theme"),
+            (office_theme, ui_face_row_pt, "an Office theme"),
+        ] {
+            assert_eq!(
+                xlsx_cells::printed_grid_row_height_pt(sheet, 1, Some(&normal_font), None, true),
+                expected,
+                "the default row of scheme {family} {size_pt}pt over {theme}"
+            );
+        }
+    }
+}
+
+/// The reported probe end to end: the instruction sheet's title row, its
+/// cached `ht="23.25"` without `customHeight`, holding one Arial Bold cell no
+/// taller than the Trebuchet MS 10 Normal font. Native Excel-for-Mac exports
+/// at 8, 9 and 10pt all print the sheet default's 13pt track (issue #1723).
+#[test]
+fn the_instruction_sheets_title_row_of_a_small_cell_prints_the_default_track() {
+    let data = include_bytes!("../../../../tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx");
+    for size_pt in [8, 9, 10] {
+        let variant: Vec<u8> = rewrite_zip_parts(
+            data,
+            |name| name == "xl/styles.xml",
+            |xml| {
+                let title_font = r#"<b/><sz val="18"/><color theme="0"/><name val="Arial"/>"#;
+                assert_eq!(xml.matches(title_font).count(), 1, "one title font");
+                xml.replace(
+                    title_font,
+                    &format!(r#"<b/><sz val="{size_pt}"/><color theme="0"/><name val="Arial"/>"#),
+                )
+            },
+        );
+        let (doc, _warnings) = XlsxParser
+            .parse(&variant, &ConvertOptions::default())
+            .unwrap();
+
+        let table = &get_sheet_page(&doc, 0).table;
+        assert_eq!(
+            table.rows[0].height,
+            Some(13.0),
+            "Arial Bold {size_pt} title row"
+        );
+    }
 }
 
 /// A recorded `ht` is the row's current worksheet height whatever its cells
