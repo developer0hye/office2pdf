@@ -53,8 +53,9 @@ pub struct HeaderFooterParagraph {
     pub border_space: Option<Insets>,
     pub frame: Option<HeaderFooterFrame>,
     /// Whether Excel draws this worksheet header/footer section through its
-    /// rich-text path, which seats the text one point lower and one point
-    /// further left than a section drawn as one uniform run (issue #1552).
+    /// rich-text path, which seats the text one point lower — and a left
+    /// section one point further left — than a section drawn as one uniform
+    /// run (issues #1552, #1728).
     ///
     /// Set for a section that changes face, size or colour partway through
     /// its text, or that breaks a line; shared by every paragraph (line) of

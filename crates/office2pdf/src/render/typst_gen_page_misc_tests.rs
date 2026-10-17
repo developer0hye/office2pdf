@@ -1790,6 +1790,206 @@ fn a_fitted_sheet_footer_seat_is_a_whole_sheet_point_scaled_to_paper() {
     }
 }
 
+/// Where the first run containing `needle` starts, in compiled page points.
+#[cfg(not(target_arch = "wasm32"))]
+fn compiled_left_of(source: &str, needle: &str) -> f64 {
+    let runs = crate::render::pdf::compiled_text_runs(source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    runs.iter()
+        .find(|run| run.text.contains(needle))
+        .unwrap_or_else(|| panic!("no run containing {needle:?}: {runs:?}\n{source}"))
+        .left_pt
+}
+
+/// One sheet header/footer section paragraph: `(alignment, is_rich, runs)`.
+#[cfg(not(target_arch = "wasm32"))]
+type HfSection = (Alignment, bool, Vec<Run>);
+
+/// A Letter sheet page with a 50pt left margin whose header or footer carries
+/// `sections`, at the given fit scale.
+#[cfg(not(target_arch = "wasm32"))]
+fn sheet_page_with_hf_sections(
+    is_header: bool,
+    sheet_print_scale: Option<f64>,
+    sections: Vec<HfSection>,
+) -> Page {
+    let mut page = sheet_page_with_footer_sections(
+        PageSize {
+            width: 612.0,
+            height: 792.0,
+        },
+        54.0,
+        Some(21.6),
+        sheet_print_scale,
+        sections,
+    );
+    if is_header {
+        let Page::Sheet(sheet) = &mut page else {
+            unreachable!()
+        };
+        sheet.header = sheet.footer.take();
+    }
+    page
+}
+
+/// Excel starts a left section drawn as one uniform run one point right of
+/// the floored left margin, and a rich-text section on the margin itself:
+/// native exports put `&L&"Calibri,Regular"&K000000top left` and
+/// `bottom left` at x 55 over a 54pt margin, and the budget workbook's
+/// Sensitivity label at 51 as one run but 50 behind a `#` marker run or a
+/// `_x000D_`, over a 50.4pt margin (issue #1728). The rule holds in a
+/// header and a footer, alone, beside other single-line sections, and
+/// beside a multi-line section.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_plain_left_sheet_section_starts_one_point_right_of_the_margin() {
+    const MARGIN_LEFT_PT: f64 = 50.0;
+    let neighbours: [(&str, Vec<HfSection>); 3] = [
+        ("alone", vec![]),
+        (
+            "beside single-line sections",
+            vec![
+                (
+                    Alignment::Center,
+                    false,
+                    vec![hf_run("Middle", Some("Arial"), 11.0)],
+                ),
+                (
+                    Alignment::Right,
+                    false,
+                    vec![hf_run("Corner", Some("Arial"), 11.0)],
+                ),
+            ],
+        ),
+        (
+            "beside a multi-line section",
+            vec![
+                (
+                    Alignment::Center,
+                    true,
+                    vec![hf_run("First line", Some("Arial"), 11.0)],
+                ),
+                (
+                    Alignment::Center,
+                    true,
+                    vec![hf_run("Second line", Some("Arial"), 11.0)],
+                ),
+            ],
+        ),
+    ];
+    for is_header in [false, true] {
+        for (layout, others) in &neighbours {
+            for (is_rich, expected_left_pt) in
+                [(false, MARGIN_LEFT_PT + 1.0), (true, MARGIN_LEFT_PT)]
+            {
+                let mut sections = vec![(
+                    Alignment::Left,
+                    is_rich,
+                    vec![hf_run("Sensitivity: Internal", Some("Arial"), 8.0)],
+                )];
+                sections.extend(others.iter().cloned());
+                let source = generate_typst(&make_doc(vec![sheet_page_with_hf_sections(
+                    is_header, None, sections,
+                )]))
+                .expect("document should generate")
+                .source;
+                let left_pt: f64 = compiled_left_of(&source, "Sensitivity");
+                assert!(
+                    (left_pt - expected_left_pt).abs() < 0.01,
+                    "header={is_header}, {layout}, rich={is_rich}: the left section starts \
+                     at {expected_left_pt}pt, got {left_pt:.3}pt\n{source}"
+                );
+            }
+        }
+    }
+}
+
+/// The one point is the left section's alone: centred and right-aligned
+/// sections keep their anchors whichever path draws them (issue #1728).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn centred_and_right_sheet_sections_do_not_take_the_plain_left_point() {
+    for is_header in [false, true] {
+        let starts = |is_rich: bool| -> (f64, f64) {
+            let sections = vec![
+                (
+                    Alignment::Left,
+                    is_rich,
+                    vec![hf_run("West", Some("Arial"), 11.0)],
+                ),
+                (
+                    Alignment::Center,
+                    is_rich,
+                    vec![hf_run("Middle", Some("Arial"), 11.0)],
+                ),
+                (
+                    Alignment::Right,
+                    is_rich,
+                    vec![hf_run("Corner", Some("Arial"), 11.0)],
+                ),
+            ];
+            let source = generate_typst(&make_doc(vec![sheet_page_with_hf_sections(
+                is_header, None, sections,
+            )]))
+            .expect("document should generate")
+            .source;
+            (
+                compiled_left_of(&source, "Middle"),
+                compiled_left_of(&source, "Corner"),
+            )
+        };
+        let (plain_centre_pt, plain_right_pt) = starts(false);
+        let (rich_centre_pt, rich_right_pt) = starts(true);
+        assert!(
+            (plain_centre_pt - rich_centre_pt).abs() < 0.01,
+            "header={is_header}: the centre section moved, {plain_centre_pt:.3} vs {rich_centre_pt:.3}"
+        );
+        assert!(
+            (plain_right_pt - rich_right_pt).abs() < 0.01,
+            "header={is_header}: the right section moved, {plain_right_pt:.3} vs {rich_right_pt:.3}"
+        );
+    }
+}
+
+/// A fitted sheet lays its header/footer out in sheet points, so the plain
+/// left section's point is one sheet point scaled onto the paper: 0.78pt at
+/// 0.78 (issue #1728). Inferred from the model; the native exports measured
+/// it unscaled only.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_fitted_plain_left_sheet_section_starts_one_sheet_point_right() {
+    const SCALE: f64 = 0.78;
+    for is_header in [false, true] {
+        let start = |is_rich: bool| -> f64 {
+            let sections = vec![(
+                Alignment::Left,
+                is_rich,
+                vec![hf_run("Sensitivity: Internal", Some("Arial"), 8.0 * SCALE)],
+            )];
+            let source = generate_typst(&make_doc(vec![sheet_page_with_hf_sections(
+                is_header,
+                Some(SCALE),
+                sections,
+            )]))
+            .expect("document should generate")
+            .source;
+            compiled_left_of(&source, "Sensitivity")
+        };
+        let rich_left_pt: f64 = start(true);
+        let plain_left_pt: f64 = start(false);
+        assert!(
+            (rich_left_pt - (50.0 / SCALE).floor() * SCALE).abs() < 0.01,
+            "header={is_header}: the rich section starts on the scaled box edge, got {rich_left_pt:.3}"
+        );
+        assert!(
+            (plain_left_pt - rich_left_pt - SCALE).abs() < 0.01,
+            "header={is_header}: the plain section starts one sheet point ({SCALE}pt) right, \
+             got {:.3}pt",
+            plain_left_pt - rich_left_pt
+        );
+    }
+}
+
 #[test]
 fn test_table_page_no_header_footer() {
     let page = Page::Sheet(SheetPage {

@@ -4239,8 +4239,52 @@ const SHEET_FOOTER_BAND_INSET_PT: f64 = 2.0;
 /// further left than, the same text as one uniform run: Aptos 8pt at 24pt
 /// against 25pt, across 10, 16, 20, 24 and 40pt and Arial and Calibri alike,
 /// and per section, a rich left label beside a plain right one landing one
-/// point apart on the same page. The horizontal point is not modelled here.
+/// point apart on the same page. The horizontal point is
+/// [`SHEET_PLAIN_LEFT_SECTION_INSET_PT`].
 const SHEET_RICH_SECTION_DROP_PT: f64 = 1.0;
+
+/// How far right of the floored left margin Excel's plain path starts a left
+/// header/footer section, in sheet points; the rich-text path starts on the
+/// margin itself (issue #1728).
+///
+/// Native Excel-for-Mac exports put `&L&"Calibri,Regular"&K000000top left`
+/// and `bottom left` of `tests/fixtures/xlsx/headerFooterTest.xlsx` at x 55
+/// over its 54pt margin, and the budget workbook's Aptos 8pt Sensitivity
+/// label at 51 over a 50.4pt margin — with a colour code ahead of the text as
+/// well — but at 50 behind the 1pt `#` marker run or a `_x000D_`. Centred and
+/// right sections are not shifted: the centre reads 271.000 natively against
+/// our 270.923, and the right section's start is the glyph advances of #1659.
+/// Every measurement was unscaled; scaling the point with a fitted sheet, as
+/// the box and seat around it are, is inferred from the model rather than
+/// observed.
+const SHEET_PLAIN_LEFT_SECTION_INSET_PT: f64 = 1.0;
+
+/// Write one paragraph of a worksheet header/footer section, starting a
+/// plain left section [`SHEET_PLAIN_LEFT_SECTION_INSET_PT`] sheet points
+/// right of the margin. `#move` leaves the section's layout alone, so a long
+/// section wraps against the same width it always had.
+fn generate_sheet_hf_section(
+    out: &mut String,
+    paragraph: &crate::ir::HeaderFooterParagraph,
+    ctx: &mut GenCtx,
+    scale: f64,
+) {
+    let starts_inset: bool =
+        paragraph.style.alignment == Some(Alignment::Left) && !paragraph.sheet_section_is_rich;
+    if starts_inset {
+        let _ = write!(
+            out,
+            "#move(dx: {}pt)[",
+            format_f64(round_to_hundredths(
+                SHEET_PLAIN_LEFT_SECTION_INSET_PT * scale
+            ))
+        );
+    }
+    generate_hf_styled_paragraph(out, paragraph, ctx);
+    if starts_inset {
+        out.push(']');
+    }
+}
 
 /// Where a seated sheet footer's block sits and where each of its sections'
 /// baselines land (issues #1142, #1552).
@@ -4478,7 +4522,7 @@ fn generate_multiline_sheet_text(
                         format_f64(advances[index] - lift_pt)
                     );
                 }
-                generate_hf_styled_paragraph(out, &hf.paragraphs[index], ctx);
+                generate_sheet_hf_section(out, &hf.paragraphs[index], ctx, scale);
                 out.push_str("]; ");
             }
             if seat.is_none() {
@@ -4556,6 +4600,10 @@ fn generate_hf_content(
     }
     let section_bottom_edge =
         |index: usize| -> Option<String> { seat.and_then(|seat| seat.section_bottom_edge(index)) };
+    let scale: f64 = hf
+        .sheet_print_scale
+        .filter(|scale| *scale > 0.0)
+        .unwrap_or(1.0);
     // Excel's left/center/right header sections share one line; stacking
     // them as separate lines pushed sections onto extra rows.
     let alignments: Vec<Option<Alignment>> =
@@ -4592,7 +4640,7 @@ fn generate_hf_content(
                 if let Some(bottom_edge) = section_bottom_edge(index) {
                     let _ = write!(out, "#set text(bottom-edge: {bottom_edge}); ");
                 }
-                generate_hf_styled_paragraph(out, para, ctx);
+                generate_sheet_hf_section(out, para, ctx, scale);
             }
             out.push_str("]], ");
         }
@@ -4606,7 +4654,7 @@ fn generate_hf_content(
         if let Some(bottom_edge) = section_bottom_edge(i) {
             let _ = write!(out, "#set text(bottom-edge: {bottom_edge}); ");
         }
-        generate_hf_styled_paragraph(out, para, ctx);
+        generate_sheet_hf_section(out, para, ctx, scale);
     }
 }
 

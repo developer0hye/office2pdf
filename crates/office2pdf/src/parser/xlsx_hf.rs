@@ -386,8 +386,8 @@ pub(super) fn parse_hf_format_string(
 }
 
 /// Whether Excel draws a section through its rich-text path, which seats the
-/// text one point lower and one point further left than a section drawn as
-/// one uniform run (issue #1552).
+/// text one point lower — and a left section one point further left — than a
+/// section drawn as one uniform run (issues #1552, #1728).
 ///
 /// Native Excel-for-Mac exports of one-factor variants of
 /// `tests/fixtures/xlsx/issue_1181_fit_to_height.xlsx` put every form that
