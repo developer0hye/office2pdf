@@ -2052,6 +2052,110 @@ fn test_a_chart_continued_after_repeated_title_columns_starts_its_window_there()
     );
 }
 
+/// A 500x800pt sheet page carrying `sales_bar_chart` 400pt wide at
+/// `x_offset_pt`, printed at `print_scale`, optionally clipped to `window`.
+fn sheet_page_with_wide_chart(
+    x_offset_pt: f64,
+    print_scale: f64,
+    window: Option<crate::ir::SheetClipWindow>,
+) -> Page {
+    Page::Sheet(SheetPage {
+        name: "Sheet1".to_string(),
+        size: PageSize {
+            width: 500.0,
+            height: 800.0,
+        },
+        margins: Margins::default(),
+        table: make_simple_table(vec![vec!["Row 1"], vec!["Row 2"]]),
+        header: None,
+        footer: None,
+        charts: vec![crate::ir::SheetChart {
+            anchor_row: 1,
+            placement: Some(crate::ir::SheetChartPlacement {
+                x_offset_pt,
+                y_offset_pt: 60.0,
+                width: 400.0,
+                height: 240.0,
+                print_scale,
+                clip_window: window,
+            }),
+            chart: sales_bar_chart(),
+        }],
+        images: Vec::new(),
+        text_boxes: Vec::new(),
+        shapes: Vec::new(),
+    })
+}
+
+/// The chart's text runs, as `(text, page-space ink extent)`, in layout order.
+/// The grid's own `Row` cells are left out.
+fn chart_text_runs(page: Page) -> Vec<(String, (f64, f64))> {
+    let output = generate_typst(&make_doc(vec![page])).unwrap();
+    crate::render::pdf::compiled_text_runs(&output.source, 0)
+        .unwrap()
+        .into_iter()
+        .filter(|run| !run.text.starts_with("Row"))
+        .filter_map(|run| Some((run.text, run.ink_x_extent_pt?)))
+        .collect()
+}
+
+/// Native Excel writes a tile only the chart glyphs that tile shows; the
+/// clip hid the rest but left them selectable and searchable on the tile
+/// they do not belong to (issue #1736). Whatever the chart's position, the
+/// clipped tile keeps exactly the runs whose ink reaches into its window.
+#[test]
+fn test_a_chart_clipped_to_a_page_column_keeps_only_text_inked_inside_the_window() {
+    let margin: f64 = crate::defaults::DEFAULT_MARGIN_PT;
+    let window = crate::ir::SheetClipWindow {
+        left_pt: 0.0,
+        width_pt: 300.0,
+    };
+    let (window_left, window_right): (f64, f64) = (margin, margin + 300.0);
+    // The second tile of a continued chart, its left part cut away; and the
+    // first tile of a crossing chart, its right part cut away; each at full
+    // size and fitted.
+    for (x_offset_pt, print_scale) in [(-150.0, 1.0), (150.0, 1.0), (-150.0, 0.82), (150.0, 0.82)] {
+        // The unclipped chart at the same offset is the full set of runs the
+        // window chooses from: the window's edges are the page's, so the
+        // clip moves nothing it keeps.
+        let unclipped = chart_text_runs(sheet_page_with_wide_chart(x_offset_pt, print_scale, None));
+        let expected: Vec<&(String, (f64, f64))> = unclipped
+            .iter()
+            .filter(|(_, (left, right))| *right > window_left && *left < window_right)
+            .collect();
+        assert!(
+            expected.len() < unclipped.len() && !expected.is_empty(),
+            "the window at offset {x_offset_pt}, scale {print_scale} cuts the chart's text: {unclipped:?}"
+        );
+        let clipped = chart_text_runs(sheet_page_with_wide_chart(
+            x_offset_pt,
+            print_scale,
+            Some(window),
+        ));
+        let clipped_texts: Vec<&str> = clipped.iter().map(|(text, _)| text.as_str()).collect();
+        let expected_texts: Vec<&str> = expected.iter().map(|(text, _)| text.as_str()).collect();
+        assert_eq!(
+            clipped_texts, expected_texts,
+            "offset {x_offset_pt}, scale {print_scale}: only the runs inked inside the window are kept"
+        );
+    }
+}
+
+/// The clip is the chart window's own: any other clipped box keeps the text
+/// it hides, which no native rule covered by #1736 removes.
+#[test]
+fn test_an_unrelated_clipped_box_keeps_its_hidden_text() {
+    let runs = crate::render::pdf::compiled_text_runs(
+        "#box(width: 50pt, height: 20pt, clip: true)[#place(top + left, dx: 120pt)[Hidden]]",
+        0,
+    )
+    .unwrap();
+    assert!(
+        runs.iter().any(|run| run.text == "Hidden"),
+        "an unmarked clip leaves its text in the layer: {runs:?}"
+    );
+}
+
 /// Excel scales a printed sheet whole, drawings included, so a fit-to-page
 /// scale shrinks a chart's text, tick marks and legend along with its frame.
 /// Shrinking the frame alone left the reported workbook's tick labels and

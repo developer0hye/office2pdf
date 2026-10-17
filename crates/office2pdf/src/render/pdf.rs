@@ -559,7 +559,8 @@ pub(crate) fn compile_page_count_with_fonts(
     Ok(document.pages().len() as u32)
 }
 
-/// The passes that move Typst's completed line paint into place.
+/// The passes that move Typst's completed line paint into place, and take
+/// out of the text layer the chart runs a print-tile window hides.
 ///
 /// Typst supplies the shaping, wrapping and line boxes; each pass reads its
 /// own codegen marker and leaves every other frame alone, so their order only
@@ -572,6 +573,7 @@ fn apply_completed_frame_passes(document: &mut PagedDocument) {
     super::excel_fill_paint::adjust_cell_fills(&mut pages);
     super::excel_glyph_pacing::pace_sheet_glyphs_on_whole_points(&mut pages);
     super::word_justified_gap_phases::spread_justified_gaps_as_word_does(&mut pages);
+    super::excel_chart_window_text::drop_text_outside_chart_windows(&mut pages);
     let info: typst::model::DocumentInfo = typst::model::Document::info(document).clone();
     *document = PagedDocument::new(pages.into_iter().collect(), info);
 }
@@ -656,6 +658,9 @@ pub(crate) struct PlacedTextRun {
     pub text: String,
     /// Per-glyph horizontal offsets from the run origin, in run-local points.
     pub glyph_x_offsets_pt: Vec<f64>,
+    /// Page-space left and right edges of the run's glyph ink, or `None` for
+    /// a run with no inked glyph, such as a space.
+    pub ink_x_extent_pt: Option<(f64, f64)>,
 }
 
 /// Every text run the compiled document places on `page_index`, in layout order.
@@ -727,7 +732,7 @@ fn compiled_text_runs_with_line_seating(
     fonts: &[Font],
     images: &[ImageAsset],
 ) -> Result<Vec<PlacedTextRun>, ConvertError> {
-    use typst::layout::{Frame, FrameItem, Transform};
+    use typst::layout::{Frame, FrameItem, Point, Transform};
 
     fn collect(frame: &Frame, transform: Transform, out: &mut Vec<PlacedTextRun>) {
         for (position, item) in frame.items() {
@@ -749,6 +754,23 @@ fn compiled_text_runs_with_line_seating(
                         .iter()
                         .map(|glyph| glyph.x_offset.at(text.size).to_pt())
                         .collect(),
+                    ink_x_extent_pt: {
+                        let ink = text.bbox();
+                        (ink.min.x.to_pt().is_finite() && ink.max.x.to_pt().is_finite()).then(
+                            || {
+                                let xs = [
+                                    ink.min.transform(at).x.to_pt(),
+                                    Point::new(ink.max.x, ink.min.y).transform(at).x.to_pt(),
+                                    Point::new(ink.min.x, ink.max.y).transform(at).x.to_pt(),
+                                    ink.max.transform(at).x.to_pt(),
+                                ];
+                                (
+                                    xs.iter().copied().fold(f64::INFINITY, f64::min),
+                                    xs.iter().copied().fold(f64::NEG_INFINITY, f64::max),
+                                )
+                            },
+                        )
+                    },
                 }),
                 _ => {}
             }
