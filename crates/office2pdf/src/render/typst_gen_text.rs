@@ -6613,10 +6613,12 @@ pub(super) struct SheetCellBox {
 /// Typst centres the tracked line — the rounded gap advances plus the last
 /// glyph's natural one, see [`sheet_advance_grid_tracking_pt`] — inside the
 /// inset measure, so the seat is the difference between the two origins,
-/// evaluated at the declared size and scaled like the grid (issue #1238). A
-/// line the measure cannot hold wraps in Typst and keeps its symmetric
-/// centring, as does a hard-broken block, a small-caps run, or a face the
-/// measurement cannot read. So does a cell whose inset pair is not the
+/// evaluated at the declared size and scaled like the grid (issue #1238).
+/// Excel's `W` includes a trailing space that the line Typst centres may not
+/// (issue #1761). A line the measure cannot hold wraps in Typst and keeps its
+/// symmetric centring, as does a hard-broken block, a small-caps run, a final
+/// run of only whitespace, or a face the measurement cannot read. So does a
+/// cell whose inset pair is not the
 /// symmetric split the XLSX parser gives a centred cell: an icon-set cell
 /// reserves the icon's advance on its left (issue #652), and where Excel
 /// seats a centred value beside an icon is unmeasured.
@@ -6643,9 +6645,21 @@ pub(super) fn centered_sheet_line_start_shift_pt(
         return None;
     }
 
+    // Excel counts a line's trailing space in `W` although it paints nothing.
+    // Typst drops a paragraph's final markup space before shaping, so a line
+    // ending in the one literal space `escape_typst` emits lays out without
+    // it (issue #1761); a longer space run is emitted as a code string and laid
+    // out in full. A final run of nothing but that space could also collapse
+    // into a space ending the run before it, which is not measured.
+    let final_run: &Run = shaped_runs.last()?;
+    if final_run.text.chars().all(char::is_whitespace) {
+        return None;
+    }
+    let final_run_index: usize = shaped_runs.len() - 1;
+
     let mut whole_point_width_sheet_pt: f64 = 0.0;
     let mut laid_out_width_sheet_pt: f64 = 0.0;
-    for run in shaped_runs {
+    for (run_index, run) in shaped_runs.into_iter().enumerate() {
         if matches!(run.style.small_caps, Some(true)) {
             return None;
         }
@@ -6665,7 +6679,27 @@ pub(super) fn centered_sheet_line_start_shift_pt(
         };
         let gaps_sheet_pt: f64 = gap_advances_em.iter().map(rounded_sheet_pt).sum();
         whole_point_width_sheet_pt += gaps_sheet_pt + rounded_sheet_pt(last_advance_em);
-        laid_out_width_sheet_pt += gaps_sheet_pt + last_advance_em * sheet_size_pt;
+
+        // The run's tracking spreads its rounding over every gap, the dropped
+        // space's included, but Typst shapes the run without that space and
+        // so sets no tracking after the glyph before it either.
+        let dropped_spaces: usize =
+            usize::from(run_index == final_run_index && escape_typst(shaped).ends_with(' '));
+        let laid_out_advances_em: &[f64] = &advances_em[..advances_em.len() - dropped_spaces];
+        let tracking_sheet_pt: f64 = if gap_advances_em.is_empty() {
+            0.0
+        } else {
+            let natural_gaps_sheet_pt: f64 = gap_advances_em
+                .iter()
+                .map(|advance_em| advance_em * sheet_size_pt)
+                .sum();
+            (gaps_sheet_pt - natural_gaps_sheet_pt) / gap_advances_em.len() as f64
+        };
+        laid_out_width_sheet_pt += laid_out_advances_em
+            .iter()
+            .map(|advance_em| advance_em * sheet_size_pt)
+            .sum::<f64>()
+            + tracking_sheet_pt * laid_out_advances_em.len().saturating_sub(1) as f64;
     }
 
     let column_sheet_pt: f64 = cell_box.width_pt / scale;

@@ -3869,6 +3869,73 @@ fn test_centred_sheet_line_seat_is_integer_division_on_the_column_width() {
     }
 }
 
+/// Where the compiled page starts a centred sheet line holding `text`.
+#[cfg(not(target_arch = "wasm32"))]
+fn compiled_centred_sheet_line_left_pt(text: &str, wraps_text: bool, print_scale: f64) -> f64 {
+    let mut page = centred_sheet_page(
+        text,
+        TextStyle {
+            font_size: Some(10.0 * print_scale),
+            ..libertinus_total()
+        },
+        80.0 * print_scale,
+        2.5 * print_scale,
+        wraps_text,
+    );
+    let Page::Sheet(sheet) = &mut page else {
+        unreachable!("centred_sheet_page returns a sheet")
+    };
+    sheet.table.print_scale = (print_scale != 1.0).then_some(print_scale);
+    let source: String = generate_typst(&make_doc(vec![page])).unwrap().source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    let placed: Vec<&crate::render::pdf::PlacedTextRun> = runs
+        .iter()
+        .filter(|run| run.text.trim_end() == "Total")
+        .collect();
+    assert_eq!(
+        placed.len(),
+        1,
+        "{text:?} paints one run: {runs:?}\n{source}"
+    );
+    placed[0].left_pt
+}
+
+/// Excel counts a centred cell's trailing spaces in the width `W` it seats
+/// the line from, although they paint nothing: the native budget export puts
+/// its centred `"% INC "` and `"JAN "` headers exactly where `W` with the
+/// space predicts, and one or two sheet points from where it predicts without
+/// (issue #1761). Typst drops a paragraph's final markup space but lays out a
+/// longer space run, which is emitted as a code string, so the seat has to be
+/// placed from the line Typst actually centres in both cases.
+///
+/// Libertinus Serif 10pt's space advances 2.5pt, a whole-point 3: in the 80pt
+/// column, `"Total "` has W = 25 and starts at `floor(57 / 2) = 28` unwrapped,
+/// two points left of `"Total"` at 30; wrapped, `floor(56 / 2) = 28` against
+/// 29. A second space makes W = 28 and the unwrapped start 27. At half scale
+/// the same rule is evaluated at the declared size and prints at half the
+/// distance (issue #1238).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn test_centred_sheet_line_seat_counts_trailing_spaces_typst_does_not_lay_out() {
+    for (text, wraps_text, print_scale, expected_offset_pt) in [
+        ("Total ", false, 1.0, -2.0),
+        ("Total  ", false, 1.0, -3.0),
+        ("Total ", true, 1.0, -1.0),
+        ("Total ", false, 0.5, -1.0),
+    ] {
+        let without_space_pt: f64 =
+            compiled_centred_sheet_line_left_pt("Total", wraps_text, print_scale);
+        let with_space_pt: f64 = compiled_centred_sheet_line_left_pt(text, wraps_text, print_scale);
+        let offset_pt: f64 = with_space_pt - without_space_pt;
+        assert!(
+            (offset_pt - expected_offset_pt).abs() < 0.005,
+            "{text:?} wraps_text={wraps_text} scale={print_scale}: Excel seats it \
+             {expected_offset_pt}pt from \"Total\", the compiled line sits {offset_pt}pt"
+        );
+    }
+}
+
 /// A fitted sheet evaluates the seat at the declared size on the declared
 /// column and scales the result (issue #1238): at half scale the 0.82pt
 /// unwrapped correction prints as 0.41pt.
