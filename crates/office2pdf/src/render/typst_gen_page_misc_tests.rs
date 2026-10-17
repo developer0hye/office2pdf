@@ -1102,6 +1102,20 @@ fn sheet_page_with_header_sections(
     page
 }
 
+/// Whether the host resolves `family` to a face with its own `hhea`
+/// descender (in 2048ths of an em), as the metric clones Liberation Serif and
+/// Carlito do for Times New Roman and Calibri.
+#[cfg(not(target_arch = "wasm32"))]
+fn resolves_own_descender(family: &str) -> bool {
+    let units: f64 = match family {
+        "Times New Roman" => 443.0,
+        "Calibri" => 550.0,
+        _ => return false,
+    };
+    crate::render::pdf::font_line_metrics_em(family)
+        .is_some_and(|(_, descent_em, _)| (descent_em - units / 2048.0).abs() < 1e-6)
+}
+
 /// Excel puts the top of a sheet header's first line box 39pt below the paper
 /// edge for every `@header` up to 0.5in, and seats each line's baseline its
 /// native advance minus its whole-point descent below that (#1731). Native
@@ -1109,6 +1123,12 @@ fn sheet_page_with_header_sections(
 /// header 0.3in, three Arial 11 lines at 51/65/79pt and its size and face
 /// series), and `headerFooterTest.xlsx` (top 1in, header 0.5in, single-line
 /// Calibri 12 sections at 52pt).
+///
+/// The descent is the resolved face's, so a native figure only holds where the
+/// host resolves that face's own metrics. Arial resolves everywhere (Liberation
+/// Sans on Linux); Times New Roman and Calibri are checked only where the host
+/// resolves their own `hhea` descender. No host here resolves Aptos's, so its
+/// native 50pt is not pinned.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_sheet_header_seats_its_first_line_where_excel_prints_it() {
@@ -1119,9 +1139,11 @@ fn a_sheet_header_seats_its_first_line_where_excel_prints_it() {
         ("Arial", 14.0, 53.0),
         ("Arial", 24.0, 63.0),
         ("Calibri", 11.0, 50.0),
-        ("Aptos", 11.0, 50.0),
         ("Times New Roman", 11.0, 51.0),
     ] {
+        if family != "Arial" && !resolves_own_descender(family) {
+            continue;
+        }
         for header_margin_pt in [0.0, 21.6, 36.0] {
             let page = sheet_page_with_header_sections(
                 82.8,
@@ -1148,6 +1170,8 @@ fn a_sheet_header_seats_its_first_line_where_excel_prints_it() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_single_line_sheet_header_section_sits_one_point_lower() {
+    // Calibri 12's 52pt needs Calibri's own descent.
+    let calibri_metrics: bool = resolves_own_descender("Calibri");
     let page = sheet_page_with_header_sections(
         72.0,
         Some(36.0),
@@ -1162,7 +1186,10 @@ fn a_single_line_sheet_header_section_sits_one_point_lower() {
         .collect(),
     );
     let source = generate_typst(&make_doc(vec![page])).unwrap().source;
-    for label in ["top left", "top center", "top right"] {
+    for label in ["top left", "top center", "top right"]
+        .into_iter()
+        .filter(|_| calibri_metrics)
+    {
         let baseline = compiled_baseline_of(&source, label);
         assert!(
             (baseline - 52.0).abs() < 0.01,
