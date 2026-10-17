@@ -962,6 +962,55 @@ fn a_sheet_footer_without_page_margins_takes_excels_default() {
     );
 }
 
+/// A sheet header carries `<pageMargins>/@header` as stated, in paper
+/// points, through both parse paths, and Excel's 0.3in default when the
+/// sheet states no margins; the renderer decides where that seats it
+/// (issue #1731).
+#[test]
+fn a_sheet_header_carries_its_own_margin() {
+    let parser = XlsxParser;
+    let header_data = |header_in: f64| -> Vec<u8> {
+        let mut book = umya_spreadsheet::new_file();
+        {
+            let sheet = book.get_sheet_mut(&0).unwrap();
+            sheet.get_cell_mut("A1").set_value("Data");
+            sheet
+                .get_header_footer_mut()
+                .get_odd_header_mut()
+                .set_value("&CQuarterly summary");
+            sheet.get_page_margins_mut().set_header(header_in);
+        }
+        let mut buf = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut buf).unwrap();
+        buf.into_inner()
+    };
+    for (data, expected_pt) in [
+        (header_data(0.3), 21.6),
+        (header_data(0.5), 36.0),
+        (header_data(0.8), 57.6),
+        (
+            remove_page_margins(&build_xlsx_with_header("&CQuarterly summary")),
+            21.6,
+        ),
+    ] {
+        let (document, _) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+        let (chunks, _) = parser
+            .parse_streaming(&data, &ConvertOptions::default(), 100)
+            .unwrap();
+        for (path, document) in [("batch", &document), ("streaming", &chunks[0])] {
+            let header = get_sheet_page(document, 0)
+                .header
+                .as_ref()
+                .expect("the sheet states a header");
+            assert_eq!(
+                header.distance_from_edge.map(|pt| (pt * 1e6).round() / 1e6),
+                Some(expected_pt),
+                "{path} parse"
+            );
+        }
+    }
+}
+
 /// Whether each section of a parsed footer takes Excel's rich-text drop, in
 /// paragraph order.
 fn hf_section_richness(hf: &HeaderFooter) -> Vec<bool> {

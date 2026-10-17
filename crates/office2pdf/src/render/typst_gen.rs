@@ -4128,13 +4128,21 @@ fn write_table_page_setup(
     );
 
     if let Some(header) = &page.header {
-        if hf_needs_context(header) {
-            out.push_str(", header: context [");
+        if let Some(seated) = seated_sheet_header(header, size, &page.margins, ctx) {
+            out.push_str(", header-ascent: 0pt, header: ");
+            out.push_str(&seated);
         } else {
-            out.push_str(", header: [");
+            // A page set rule persists into later sheets, so restate Typst's
+            // default ascent rather than inherit an earlier sheet's seat.
+            out.push_str(", header-ascent: 30%");
+            if hf_needs_context(header) {
+                out.push_str(", header: context [");
+            } else {
+                out.push_str(", header: [");
+            }
+            generate_sheet_hf_content(out, header, size, &page.margins, ctx, true, None);
+            out.push(']');
         }
-        generate_sheet_hf_content(out, header, size, &page.margins, ctx, true, None);
-        out.push(']');
     }
 
     if let Some(footer) = &page.footer {
@@ -4195,6 +4203,23 @@ fn generate_sheet_hf_content(
     is_header: bool,
     seat: Option<&SheetFooterSeat>,
 ) {
+    let scaled_box: bool = open_scaled_sheet_hf_box(out, hf, size, margins);
+    if !is_header || !generate_multiline_sheet_text(out, hf, ctx, None, false) {
+        generate_hf_content(out, hf, ctx, seat);
+    }
+    if scaled_box {
+        out.push_str("]]");
+    }
+}
+
+/// Open the scaled horizontal box [`generate_sheet_hf_content`] describes,
+/// returning whether one was opened and so needs closing with `]]`.
+fn open_scaled_sheet_hf_box(
+    out: &mut String,
+    hf: &HeaderFooter,
+    size: &PageSize,
+    margins: &Margins,
+) -> bool {
     let scaled_box: Option<(f64, f64)> = hf
         .sheet_print_scale
         .filter(|scale| *scale > 0.0 && *scale < 1.0)
@@ -4207,7 +4232,6 @@ fn generate_sheet_hf_content(
                 hundredth(right_pt - left_pt),
             )
         });
-
     if let Some((dx_pt, width_pt)) = scaled_box {
         let _ = write!(
             out,
@@ -4216,12 +4240,76 @@ fn generate_sheet_hf_content(
             format_f64(width_pt),
         );
     }
-    if !is_header || !generate_multiline_sheet_text(out, hf, ctx, None) {
-        generate_hf_content(out, hf, ctx, seat);
+    scaled_box.is_some()
+}
+
+/// Where Excel puts the top of a sheet header's first line box, in points
+/// below the paper's top edge, for any `<pageMargins>/@header` up to
+/// [`SHEET_HEADER_SEAT_MAX_MARGIN_PT`] (issue #1731).
+///
+/// Native Excel-for-Mac exports of `tests/fixtures/xlsx/headerFooterTest.xlsx`
+/// (top 1in, header 0.5in) and of the one-factor probes under
+/// `tests/visual_audits/issue-1810/probes/` (top 1.15in, header 0.3in) all
+/// put a multiline section's first baseline at this seat plus the line's
+/// native advance less its whole-point descent: Arial 8, 11, 12, 14 and 24pt
+/// at 48, 51, 51, 53 and 63pt, Calibri and Aptos 11 at 50 and Times New Roman
+/// 11 at 51. A single-line section prints one point lower, as the Calibri 12
+/// sections do at 39 + 15 - 3 + 1 = 52pt. TODO(#1731): Malgun Gothic 11
+/// prints at 52pt, one point above that line box (17 - 3 below the seat):
+/// an East Asian face's taller advance is not all below its baseline. The #1931
+/// sweep printed `@header` 0, 0.3 and 0.5in at one position, and the two
+/// workbooks' top margins differ, so neither margin moves it. Under a print
+/// scale it is held as a paper position: #1810's 60, 80 and 120% probe puts
+/// the box 39.6, 39.2 and 38.4pt down. The fitted sheet-space
+/// `floor(41 / scale) - 2` reproduces those three exactly but has no reading
+/// behind it, so the fixed seat is kept, 0.6pt off at worst.
+const SHEET_HEADER_LINE_TOP_PT: f64 = 39.0;
+
+/// The largest header margin [`SHEET_HEADER_LINE_TOP_PT`] is measured for.
+///
+/// TODO(#1731): Excel moves the header for margins above 0.5in, by an amount
+/// no native export has measured yet; those keep the unseated layout.
+const SHEET_HEADER_SEAT_MAX_MARGIN_PT: f64 = 36.0;
+
+/// Render a sheet header seated where Excel prints it (issue #1731), or
+/// `None` where the seat is unmeasured or the story is not text lines.
+///
+/// `header-ascent: 0pt` pins Typst's header bottom on the top margin line, so
+/// a band spanning from the seat down to that line puts its top on the seat,
+/// as [`flow_header_value`] does for Word; the lines then hang from it and
+/// may run past the margin, as Excel's do. A header margin above the
+/// measured range, or a seat at or below the top margin, has no band.
+fn seated_sheet_header(
+    header: &HeaderFooter,
+    size: &PageSize,
+    margins: &Margins,
+    ctx: &mut GenCtx,
+) -> Option<String> {
+    let header_margin_pt: f64 = header.distance_from_edge?;
+    if header_margin_pt > SHEET_HEADER_SEAT_MAX_MARGIN_PT {
+        return None;
     }
-    if scaled_box.is_some() {
-        out.push_str("]]");
+    let band_pt: f64 = round_to_hundredths(margins.top - SHEET_HEADER_LINE_TOP_PT);
+    if band_pt <= 0.0 {
+        return None;
     }
+    let mut lines = String::new();
+    let scaled_box: bool = open_scaled_sheet_hf_box(&mut lines, header, size, margins);
+    if !generate_multiline_sheet_text(&mut lines, header, ctx, None, true) {
+        return None;
+    }
+    if scaled_box {
+        lines.push_str("]]");
+    }
+    let context: &str = if hf_needs_context(header) {
+        "context "
+    } else {
+        ""
+    };
+    Some(format!(
+        "{context}block(width: 100%, height: {}pt)[#place(top, block(width: 100%)[{lines}])]",
+        format_f64(band_pt)
+    ))
 }
 
 /// What Excel leaves between `<pageMargins>/@footer` and the bottom of the
@@ -4377,11 +4465,16 @@ fn hf_needs_stack_offset(hf: &HeaderFooter) -> bool {
 /// Text-only sheet stories use native line boxes. Footers grow upward from
 /// their last-line seats; headers grow downward from their first-line anchors.
 /// Each line retains its own descent, including the footer rich-section adjustment.
+///
+/// A story whose sections are each one line is left to the caller unless
+/// `single_lines` is set; it returns `false`, having written nothing, for any
+/// story it does not lay out.
 fn generate_multiline_sheet_text(
     out: &mut String,
     hf: &HeaderFooter,
     ctx: &mut GenCtx,
     seat: Option<&SheetFooterSeat>,
+    single_lines: bool,
 ) -> bool {
     // A picture can determine the line height; preserve the existing flow layout
     // rather than stacking an image-bearing line with text-only font metrics.
@@ -4413,7 +4506,7 @@ fn generate_multiline_sheet_text(
                 .collect()
         })
         .collect();
-    if !groups.iter().any(|group| group.len() > 1) {
+    if !single_lines && !groups.iter().any(|group| group.len() > 1) {
         return false;
     }
     let scale: f64 = hf
@@ -4558,7 +4651,7 @@ fn generate_hf_content(
     seat: Option<&SheetFooterSeat>,
 ) {
     if let Some(seat) = seat
-        && generate_multiline_sheet_text(out, hf, ctx, Some(seat))
+        && generate_multiline_sheet_text(out, hf, ctx, Some(seat), false)
     {
         return;
     }

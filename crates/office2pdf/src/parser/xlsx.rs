@@ -176,6 +176,43 @@ fn sheet_footer_margin_pt(
     }
 }
 
+/// The header margin Excel prints a sheet at when it states none: 0.3".
+const DEFAULT_PRINT_HEADER_MARGIN_PT: f64 = 21.6;
+
+/// The header margin a sheet prints with, in paper points:
+/// `<pageMargins>/@header` as stated, or Excel's default when the sheet states
+/// none. Where that seats the header is the renderer's (issue #1731).
+fn sheet_header_margin_pt(
+    sheet: &umya_spreadsheet::Worksheet,
+    declared: Option<&margin_state::DeclaredPrintMargins>,
+) -> f64 {
+    let header_in: f64 = *sheet.get_page_margins().get_header();
+    match declared.map(|margins| margins.header) {
+        Some(false) => DEFAULT_PRINT_HEADER_MARGIN_PT,
+        Some(true) => header_in * 72.0,
+        None if header_in > 0.0 => header_in * 72.0,
+        None => DEFAULT_PRINT_HEADER_MARGIN_PT,
+    }
+}
+
+/// Parse a sheet's odd header with the margin it is printed from.
+fn sheet_print_header(
+    sheet: &umya_spreadsheet::Worksheet,
+    sheet_name: &str,
+    declared_margins: Option<&margin_state::DeclaredPrintMargins>,
+    normal_font: Option<&xlsx_cells::NormalFont>,
+    warnings: &mut Vec<ConvertWarning>,
+) -> Option<crate::ir::HeaderFooter> {
+    let mut header = parse_hf_format_string(
+        sheet.get_header_footer().get_odd_header().get_value(),
+        sheet_name,
+        normal_font,
+        warnings,
+    )?;
+    header.distance_from_edge = Some(sheet_header_margin_pt(sheet, declared_margins));
+    Some(header)
+}
+
 /// Parse a sheet's odd footer and seat it on the page's bottom edge.
 fn sheet_print_footer(
     sheet: &umya_spreadsheet::Worksheet,
@@ -1062,10 +1099,10 @@ impl XlsxParser {
                 .unwrap_or_default();
 
             // Extract sheet header/footer
-            let hf = sheet.get_header_footer();
-            let sheet_header = parse_hf_format_string(
-                hf.get_odd_header().get_value(),
+            let sheet_header = sheet_print_header(
+                sheet,
                 &sheet_name,
+                declared_print_margins.get(&sheet_name),
                 normal_font.as_ref(),
                 &mut warnings,
             );
@@ -1472,10 +1509,10 @@ impl Parser for XlsxParser {
             let row_breaks = collect_row_breaks(sheet);
 
             // Extract sheet header/footer
-            let hf = sheet.get_header_footer();
-            let sheet_header = parse_hf_format_string(
-                hf.get_odd_header().get_value(),
+            let sheet_header = sheet_print_header(
+                sheet,
                 &sheet_name,
+                declared_print_margins.get(&sheet_name),
                 normal_font.as_ref(),
                 &mut warnings,
             );

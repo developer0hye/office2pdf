@@ -1072,6 +1072,258 @@ fn multiline_sheet_header_sections_keep_independent_first_lines() {
     }
 }
 
+/// A Letter sheet page whose header has one paragraph per `(alignment, runs)`
+/// section, under the given top and header margins and fit scale.
+#[cfg(not(target_arch = "wasm32"))]
+fn sheet_page_with_header_sections(
+    top_margin_pt: f64,
+    header_margin_pt: Option<f64>,
+    sheet_print_scale: Option<f64>,
+    sections: Vec<(Alignment, Vec<Run>)>,
+) -> Page {
+    let mut page = sheet_page_with_footer_sections(
+        PageSize {
+            width: 612.0,
+            height: 792.0,
+        },
+        72.0,
+        header_margin_pt,
+        sheet_print_scale,
+        sections
+            .into_iter()
+            .map(|(alignment, runs)| (alignment, false, runs))
+            .collect(),
+    );
+    let Page::Sheet(sheet) = &mut page else {
+        unreachable!()
+    };
+    sheet.margins.top = top_margin_pt;
+    sheet.header = sheet.footer.take();
+    page
+}
+
+/// Whether the host resolves `family` to a face with its own `hhea`
+/// descender (in 2048ths of an em), as the metric clones Liberation Serif and
+/// Carlito do for Times New Roman and Calibri.
+#[cfg(not(target_arch = "wasm32"))]
+fn resolves_own_descender(family: &str) -> bool {
+    let units: f64 = match family {
+        "Times New Roman" => 443.0,
+        "Calibri" => 550.0,
+        _ => return false,
+    };
+    crate::render::pdf::font_line_metrics_em(family)
+        .is_some_and(|(_, descent_em, _)| (descent_em - units / 2048.0).abs() < 1e-6)
+}
+
+/// Excel puts the top of a sheet header's first line box 39pt below the paper
+/// edge for every `@header` up to 0.5in, and seats each line's baseline its
+/// native advance minus its whole-point descent below that (#1731). Native
+/// Excel-for-Mac exports: `tests/visual_audits/issue-1810/probes/` (top 1.15in,
+/// header 0.3in, three Arial 11 lines at 51/65/79pt and its size and face
+/// series), and `headerFooterTest.xlsx` (top 1in, header 0.5in, single-line
+/// Calibri 12 sections at 52pt).
+///
+/// The descent is the resolved face's, so a native figure only holds where the
+/// host resolves that face's own metrics. Arial resolves everywhere (Liberation
+/// Sans on Linux); Times New Roman and Calibri are checked only where the host
+/// resolves their own `hhea` descender. No host here resolves Aptos's, so its
+/// native 50pt is not pinned.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_sheet_header_seats_its_first_line_where_excel_prints_it() {
+    for (family, size, native_first) in [
+        ("Arial", 8.0, 48.0),
+        ("Arial", 11.0, 51.0),
+        ("Arial", 12.0, 51.0),
+        ("Arial", 14.0, 53.0),
+        ("Arial", 24.0, 63.0),
+        ("Calibri", 11.0, 50.0),
+        ("Times New Roman", 11.0, 51.0),
+    ] {
+        if family != "Arial" && !resolves_own_descender(family) {
+            continue;
+        }
+        for header_margin_pt in [0.0, 21.6, 36.0] {
+            let page = sheet_page_with_header_sections(
+                82.8,
+                Some(header_margin_pt),
+                None,
+                ["First header", "Second header", "Third header"]
+                    .into_iter()
+                    .map(|label| (Alignment::Center, vec![hf_run(label, Some(family), size)]))
+                    .collect(),
+            );
+            let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+            let first = compiled_baseline_of(&source, "First");
+            assert!(
+                (first - native_first).abs() < 0.01,
+                "{family} {size}pt under a {header_margin_pt}pt header margin: \
+                 native first baseline {native_first}pt, got {first}"
+            );
+        }
+    }
+}
+
+/// A single-line section sits one point below a multiline one with the same
+/// metrics, whether or not another section breaks its lines (#1731, #1810).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_single_line_sheet_header_section_sits_one_point_lower() {
+    // Calibri 12's 52pt needs Calibri's own descent.
+    let calibri_metrics: bool = resolves_own_descender("Calibri");
+    let page = sheet_page_with_header_sections(
+        72.0,
+        Some(36.0),
+        None,
+        [
+            (Alignment::Left, "top left"),
+            (Alignment::Center, "top center"),
+            (Alignment::Right, "top right"),
+        ]
+        .into_iter()
+        .map(|(alignment, label)| (alignment, vec![hf_run(label, Some("Calibri"), 12.0)]))
+        .collect(),
+    );
+    let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+    for label in ["top left", "top center", "top right"]
+        .into_iter()
+        .filter(|_| calibri_metrics)
+    {
+        let baseline = compiled_baseline_of(&source, label);
+        assert!(
+            (baseline - 52.0).abs() < 0.01,
+            "{label}: native 52pt, got {baseline}"
+        );
+    }
+
+    let page = sheet_page_with_header_sections(
+        82.8,
+        Some(21.6),
+        None,
+        [
+            (Alignment::Left, "Left first"),
+            (Alignment::Center, "Center first"),
+            (Alignment::Center, "Center middle"),
+            (Alignment::Center, "Center last"),
+            (Alignment::Right, "Right first"),
+            (Alignment::Right, "Right last"),
+        ]
+        .into_iter()
+        .map(|(alignment, label)| (alignment, vec![hf_run(label, Some("Arial"), 11.0)]))
+        .collect(),
+    );
+    let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+    for (label, native) in [
+        ("Left first", 52.0),
+        ("Center first", 51.0),
+        ("Right first", 51.0),
+        ("Center middle", 65.0),
+        ("Right last", 65.0),
+        ("Center last", 79.0),
+    ] {
+        let baseline = compiled_baseline_of(&source, label);
+        assert!(
+            (baseline - native).abs() < 0.01,
+            "{label}: native {native}pt, got {baseline}"
+        );
+    }
+}
+
+/// The 39pt seat is a paper position: a print scale moves the lines below it
+/// but not the seat itself. The native series at 60/80/120% (#1810's
+/// print-scale probe) puts the first line box 39.6/39.2/38.4pt down, so the
+/// fixed seat leaves up to 0.6pt there (#1731).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_fitted_sheet_header_keeps_its_seat_on_the_paper() {
+    for (scale, native_first, native_second) in
+        [(0.6, 46.8, 55.2), (0.8, 48.8, 60.0), (1.2, 52.8, 69.6)]
+    {
+        let page = sheet_page_with_header_sections(
+            82.8,
+            Some(21.6),
+            Some(scale),
+            ["Header line one", "Header line two"]
+                .into_iter()
+                .map(|label| {
+                    (
+                        Alignment::Center,
+                        vec![hf_run(label, Some("Arial"), 11.0 * scale)],
+                    )
+                })
+                .collect(),
+        );
+        let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+        let first = compiled_baseline_of(&source, "line one");
+        let second = compiled_baseline_of(&source, "line two");
+        assert!(
+            (first - (39.0 + 12.0 * scale)).abs() < 0.01,
+            "at {scale}: first baseline {first}"
+        );
+        assert!(
+            (first - native_first).abs() <= 0.61,
+            "at {scale}: native {native_first}pt, got {first}"
+        );
+        assert!(
+            (second - native_second).abs() <= 0.61,
+            "at {scale}: native {native_second}pt, got {second}"
+        );
+    }
+}
+
+/// Excel moves a header printed under a margin above 0.5in, by an amount not
+/// yet measured, and a seat below the top margin has no band to hang in;
+/// both keep the unseated layout (#1731).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_unmeasured_sheet_header_margin_keeps_the_unseated_header() {
+    for (top_margin_pt, header_margin_pt) in [(82.8, 57.6), (36.0, 21.6), (82.8, -1.0)] {
+        let header_margin_pt = (header_margin_pt >= 0.0).then_some(header_margin_pt);
+        let page = sheet_page_with_header_sections(
+            top_margin_pt,
+            header_margin_pt,
+            None,
+            vec![(
+                Alignment::Center,
+                vec![hf_run("Only header", Some("Arial"), 11.0)],
+            )],
+        );
+        let alone = generate_typst(&make_doc(vec![page.clone()]))
+            .unwrap()
+            .source;
+        assert!(
+            !alone.contains("header-ascent: 0pt"),
+            "top {top_margin_pt}pt, header {header_margin_pt:?}: {alone}"
+        );
+        // A seated sheet ahead of it must not lend it its zero ascent.
+        let seated = sheet_page_with_header_sections(
+            82.8,
+            Some(21.6),
+            None,
+            vec![(
+                Alignment::Center,
+                vec![hf_run("Seated header", Some("Arial"), 11.0)],
+            )],
+        );
+        let after_seated = generate_typst(&make_doc(vec![seated, page]))
+            .unwrap()
+            .source;
+        let runs = crate::render::pdf::compiled_text_runs(&after_seated, 1).unwrap();
+        let baseline = runs
+            .iter()
+            .find(|run| run.text.contains("Only header"))
+            .expect("the second sheet prints its header")
+            .baseline_pt;
+        let expected = compiled_baseline_of(&alone, "Only header");
+        assert!(
+            (baseline - expected).abs() < 0.01,
+            "top {top_margin_pt}pt, header {header_margin_pt:?}: {baseline} after a \
+             seated sheet, {expected} alone"
+        );
+    }
+}
+
 /// Native Excel footer probes match its wrapped-cell line advances (#1729).
 /// Specs and measurements: tests/visual_audits/issue-1729/probes/.
 #[cfg(not(target_arch = "wasm32"))]
