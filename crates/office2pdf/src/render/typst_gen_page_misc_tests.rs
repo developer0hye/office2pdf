@@ -6039,11 +6039,12 @@ fn fitted_drawing_frames_carry_chart_text_with_the_frame() {
     let physical = text_bounds(false);
     let fitted = text_bounds(true);
     assert_text_runs_follow_the_frame("gift chart at 0.82", 0.82, &physical, &fitted, shift);
-    // The category labels and the legend sit under the plot's bottom rule
-    // (329.80pt on the page) and are not snapped, so they carry the frame's
-    // exact shift; only the value labels above it may re-round.
+    // The category labels sit under the plot's bottom rule (329.80pt on the
+    // page) and are not snapped, so they carry the frame's exact shift. The
+    // value labels above it and the legend labels below them (from 353pt)
+    // sit on whole sheet points and may re-round (#1748).
     for (index, (before, after)) in physical.iter().zip(&fitted).enumerate() {
-        if before.1 < 330.0 {
+        if before.1 < 330.0 || before.1 > 350.0 {
             continue;
         }
         assert!(
