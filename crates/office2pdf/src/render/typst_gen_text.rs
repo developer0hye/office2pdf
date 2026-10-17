@@ -6615,21 +6615,18 @@ pub(super) struct SheetCellBox {
 /// inset measure, so the seat is the difference between the two origins,
 /// evaluated at the declared size and scaled like the grid (issue #1238). A
 /// line the measure cannot hold wraps in Typst and keeps its symmetric
-/// centring, as does a hard-broken block, a small-caps run, or a face the
-/// measurement cannot read. So does a cell whose inset pair is not the
-/// symmetric split the XLSX parser gives a centred cell: an icon-set cell
-/// reserves the icon's advance on its left (issue #652), and where Excel
-/// seats a centred value beside an icon is unmeasured.
+/// centring, as does a small-caps run or a face the measurement cannot read.
+/// So does a cell whose inset pair is not the symmetric split the XLSX parser
+/// gives a centred cell: an icon-set cell reserves the icon's advance on its
+/// left (issue #652), and where Excel seats a centred value beside an icon is
+/// unmeasured. A hard-broken block is not one line, and is seated line by
+/// line by [`centered_sheet_hard_broken_lines`] instead.
 pub(super) fn centered_sheet_line_start_shift_pt(
     style: &ParagraphStyle,
     runs: &[Run],
     cell_box: &SheetCellBox,
 ) -> Option<f64> {
-    let scale: f64 = sheet_advance_grid_scale()?;
-    if !matches!(style.alignment, Some(Alignment::Center))
-        || matches!(style.direction, Some(TextDirection::Rtl))
-        || (cell_box.inset_left_pt - cell_box.inset_right_pt).abs() > 1e-6
-    {
+    if !centered_sheet_seat_applies(style, cell_box) {
         return None;
     }
     let shaped_runs: Vec<&Run> = runs.iter().filter(|run| !run.text.is_empty()).collect();
@@ -6642,7 +6639,93 @@ pub(super) fn centered_sheet_line_start_shift_pt(
     {
         return None;
     }
+    let shift_pt: f64 = centered_sheet_line_seat_pt(&shaped_runs, cell_box)?;
+    (shift_pt.abs() > 1e-9).then_some(shift_pt)
+}
 
+/// The lines of a wrapped, centred sheet cell broken by its own line feeds,
+/// each with the move that seats it on Excel's whole-point origin, or `None`
+/// when this paragraph is not one the per-line seat applies to.
+///
+/// Excel seats every line of such a cell by the wrapped-cell rule of
+/// [`centered_sheet_line_start_shift_pt`] on that line's own `W`: the
+/// header lines `Amount`/`budgeted`, `Amount`/`spent` and `In store/`/`Online`
+/// of the issue's unscaled workbook all start at `floor((column - W + 1) / 2)`
+/// from their gridline on the native export, where Typst's exact centring
+/// left `budgeted` 0.51pt short (issue #1738). Each line is returned as its
+/// own runs, so its glyphs also take the whole-point reservation a run
+/// spanning the line feed cannot be priced for.
+///
+/// Only lines the cell's own breaks decide are seated. A line too wide for
+/// the measure wraps again in Typst, and where Excel seats the pieces of a
+/// line it breaks itself is unmeasured — the #1600 probe recorded one
+/// mid-word break whose second line sat at the unwrapped seat — so such a
+/// paragraph keeps Typst's centring whole. So does a paragraph in an
+/// unwrapped cell, whose line feeds are unmeasured, or with an empty line,
+/// which has no origin to seat.
+pub(super) fn centered_sheet_hard_broken_lines(
+    style: &ParagraphStyle,
+    runs: &[Run],
+    cell_box: &SheetCellBox,
+) -> Option<Vec<(Vec<Run>, f64)>> {
+    if !cell_box.wraps_text || !centered_sheet_seat_applies(style, cell_box) {
+        return None;
+    }
+    if !runs.iter().any(|run| run.text.contains('\n'))
+        || runs.iter().any(|run| {
+            run.inline_box.is_some()
+                || run.footnote.is_some()
+                || run
+                    .text
+                    .chars()
+                    .any(|ch| matches!(ch, '\t' | PPTX_SOFT_LINE_BREAK_CHAR))
+        })
+    {
+        return None;
+    }
+
+    let mut lines: Vec<Vec<Run>> = vec![Vec::new()];
+    for run in runs {
+        for (index, piece) in run.text.split('\n').enumerate() {
+            if index > 0 {
+                lines.push(Vec::new());
+            }
+            if !piece.is_empty() {
+                let line: &mut Vec<Run> = lines.last_mut().expect("lines starts non-empty");
+                line.push(Run {
+                    text: piece.to_string(),
+                    ..run.clone()
+                });
+            }
+        }
+    }
+    lines
+        .into_iter()
+        .map(|line| {
+            let shaped_runs: Vec<&Run> = line.iter().collect();
+            if shaped_runs.is_empty() {
+                return None;
+            }
+            let shift_pt: f64 = centered_sheet_line_seat_pt(&shaped_runs, cell_box)?;
+            Some((line, shift_pt))
+        })
+        .collect()
+}
+
+/// Whether a paragraph sits where the measured centred seat applies: centred,
+/// left to right, in a sheet grid, inside the symmetric inset pair.
+fn centered_sheet_seat_applies(style: &ParagraphStyle, cell_box: &SheetCellBox) -> bool {
+    sheet_advance_grid_scale().is_some()
+        && matches!(style.alignment, Some(Alignment::Center))
+        && !matches!(style.direction, Some(TextDirection::Rtl))
+        && (cell_box.inset_left_pt - cell_box.inset_right_pt).abs() <= 1e-6
+}
+
+/// The move from Typst's centring of one line of `shaped_runs` to Excel's
+/// whole-point seat, in printed points, or `None` when the measure cannot
+/// hold the line or a run cannot be measured.
+fn centered_sheet_line_seat_pt(shaped_runs: &[&Run], cell_box: &SheetCellBox) -> Option<f64> {
+    let scale: f64 = sheet_advance_grid_scale()?;
     let mut whole_point_width_sheet_pt: f64 = 0.0;
     let mut laid_out_width_sheet_pt: f64 = 0.0;
     for run in shaped_runs {
@@ -6680,8 +6763,7 @@ pub(super) fn centered_sheet_line_start_shift_pt(
         ((column_sheet_pt - whole_point_width_sheet_pt + seat_term) / 2.0).floor();
     let typst_start_sheet_pt: f64 =
         inset_left_sheet_pt + (measure_sheet_pt - laid_out_width_sheet_pt) / 2.0;
-    let shift_pt: f64 = (excel_start_sheet_pt - typst_start_sheet_pt) * scale;
-    (shift_pt.abs() > 1e-9).then_some(shift_pt)
+    Some((excel_start_sheet_pt - typst_start_sheet_pt) * scale)
 }
 
 fn sheet_advance_grid_glyph_advances_em(style: &TextStyle, text: &str) -> Option<Vec<f64>> {
