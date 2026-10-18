@@ -1,0 +1,61 @@
+{
+  "name": "issue-2056-header-spacing",
+  "base": "../../tests/fixtures/docx/issue-2056-header-spacing.docx",
+  "part": "word/header1.xml",
+  "factor": "one header paragraph's w:spacing w:before/w:after, or every header paragraph's w:line multiple, under a header that already overflows its 36pt band",
+  "page": 1,
+  "variants": [
+    {
+      "value": "first-before-120",
+      "find": "w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<",
+      "replace": "w:before=\"120\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<"
+    },
+    {
+      "value": "first-after-240",
+      "find": "w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<",
+      "replace": "w:before=\"0\" w:after=\"240\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<"
+    },
+    {
+      "value": "second-before-240",
+      "find": "w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<",
+      "replace": "w:before=\"240\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<"
+    },
+    {
+      "value": "last-after-240",
+      "find": "w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Three<",
+      "replace": "w:before=\"0\" w:after=\"240\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Three<"
+    },
+    {
+      "value": "last-after-480",
+      "find": "w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Three<",
+      "replace": "w:before=\"0\" w:after=\"480\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Three<"
+    },
+    {
+      "value": "first-after-240-second-before-120",
+      "find": "w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One</w:t></w:r></w:p><w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<",
+      "replace": "w:before=\"0\" w:after=\"240\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One</w:t></w:r></w:p><w:p><w:pPr><w:spacing w:before=\"120\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<"
+    },
+    {
+      "value": "first-after-240-second-before-240",
+      "find": "w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One</w:t></w:r></w:p><w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<",
+      "replace": "w:before=\"0\" w:after=\"240\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One</w:t></w:r></w:p><w:p><w:pPr><w:spacing w:before=\"240\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<"
+    },
+    {
+      "value": "first-after-240-second-before-360",
+      "find": "w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One</w:t></w:r></w:p><w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<",
+      "replace": "w:before=\"0\" w:after=\"240\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One</w:t></w:r></w:p><w:p><w:pPr><w:spacing w:before=\"360\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<"
+    },
+    {
+      "value": "line-360-auto",
+      "find": "w:line=\"240\" w:lineRule=\"auto\"",
+      "replace": "w:line=\"360\" w:lineRule=\"auto\"",
+      "count": 3
+    },
+    {
+      "value": "line-120-auto",
+      "find": "w:line=\"240\" w:lineRule=\"auto\"",
+      "replace": "w:line=\"120\" w:lineRule=\"auto\"",
+      "count": 3
+    }
+  ]
+}

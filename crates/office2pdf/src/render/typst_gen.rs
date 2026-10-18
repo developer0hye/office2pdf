@@ -3054,7 +3054,8 @@ fn flow_page_top_margin_pt(
                 .map(|height| distance_pt + height)
             };
             // Where the drawn story's natural lines end, and where Word's own
-            // lines end once each states its exact height.
+            // story ends once each line takes its stated height and each
+            // paragraph its spacing.
             let drawn_reach: Option<f64> = content_reach(HfLineHeights::Natural);
             let word_reach: Option<f64> = content_reach(HfLineHeights::Declared);
             if drawn_reach.is_none() && word_reach.is_none() && overlay_bottom.is_none() {
@@ -3089,12 +3090,14 @@ fn flow_page_top_margin_pt(
         .fold(page.margins.top, f64::max)
 }
 
-/// Which line box [`hf_content_height_pt`] gives a header paragraph.
+/// Which layout [`hf_content_height_pt`] measures a header story in.
 #[derive(Clone, Copy)]
 enum HfLineHeights {
-    /// The face's natural line, which is what the drawn story lays out.
+    /// The face's natural lines and no paragraph spacing, which is what the
+    /// drawn story lays out (issue #2062).
     Natural,
-    /// The paragraph's exact `w:spacing w:line` where it states one.
+    /// Word's own: each paragraph's `w:spacing w:line` where it states one, and
+    /// its `w:before`/`w:after` gaps (see [`hf_content_height_pt`]).
     Declared,
 }
 
@@ -3102,10 +3105,13 @@ enum HfLineHeights {
 ///
 /// Reserve each measurable wrapped line plus its paragraph border rules. An
 /// empty paragraph is a line of its paragraph mark in Word's measurement and
-/// nothing in the drawn story's, which leaves it out (issue #2062). Paragraph
-/// spacing and proportional line spacing retain their existing behavior, as
-/// does an empty paragraph with a rule; their drawn and reserved layout needs a
-/// separate correction (issue #2056).
+/// nothing in the drawn story's, which leaves it out (issue #2062). Word's
+/// measurement also keeps paragraph spacing. A native probe showed the first
+/// paragraph keeping its `w:before` and each adjacent `w:after`/`w:before`
+/// pair collapsing; the pair takes the larger gap, as the body flow does,
+/// which that probe did not measure. The last paragraph's `w:after` is kept by
+/// analogy to the footer's (issue #1195), unverified for a header (issue
+/// #2056). An empty paragraph with a rule retains its existing behavior.
 fn hf_content_height_pt(
     hf: &HeaderFooter,
     default_text: Option<&TextStyle>,
@@ -3114,11 +3120,19 @@ fn hf_content_height_pt(
     line_heights: HfLineHeights,
 ) -> Option<f64> {
     let mut total: f64 = 0.0;
+    // The `w:after` below the paragraph last measured, which the next one's
+    // `w:before` collapses against.
+    let mut pending_after_pt: Option<f64> = None;
     for paragraph in &hf.paragraphs {
         if include_empty_flow_paragraphs
             && paragraph.frame.as_ref().is_some_and(is_page_anchored_frame)
         {
             continue;
+        }
+        if let HfLineHeights::Declared = line_heights {
+            let before_pt: f64 = paragraph.style.space_before.unwrap_or(0.0).max(0.0);
+            total += pending_after_pt.map_or(before_pt, |after_pt| after_pt.max(before_pt));
+            pending_after_pt = Some(paragraph.style.space_after.unwrap_or(0.0).max(0.0));
         }
         if !include_empty_flow_paragraphs && hf_paragraph_is_empty_flow_line(paragraph) {
             total += match line_heights {
@@ -3128,11 +3142,11 @@ fn hf_content_height_pt(
             continue;
         }
         let line_count: usize = hf_paragraph_line_count(paragraph, text_width_pt);
-        let exact_line_pt: Option<f64> = match line_heights {
+        let declared_line_pt: Option<f64> = match line_heights {
             HfLineHeights::Natural => None,
-            HfLineHeights::Declared => hf_paragraph_exact_line_pt(paragraph),
+            HfLineHeights::Declared => hf_paragraph_declared_line_pt(paragraph),
         };
-        if let Some(line_pt) = exact_line_pt {
+        if let Some(line_pt) = declared_line_pt {
             total += line_count as f64 * line_pt + hf_paragraph_border_extent_pt(paragraph);
             continue;
         }
@@ -3147,23 +3161,28 @@ fn hf_content_height_pt(
                 * text::word_line_advance_pt(&hf_paragraph_metric_runs(paragraph))?;
         }
     }
-    Some(total)
+    Some(total + pending_after_pt.unwrap_or(0.0))
 }
 
-/// The exact line height a header or footer paragraph with text states.
+/// The line height a header or footer paragraph with text states for each of
+/// its lines.
 ///
-/// Word lays every line of such a paragraph out at exactly that height,
-/// whatever its face, so the height needs no face metrics. An empty flow
-/// paragraph is measured by [`hf_empty_paragraph_line_pt`] instead, which
-/// honours an exact line as well. One holding only a picture or a positioned
-/// tab still takes the natural-line path, which cannot measure it (issue
-/// #2164).
-fn hf_paragraph_exact_line_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Option<f64> {
+/// Word lays every line of an exact paragraph out at exactly that height,
+/// whatever its face, so that height needs no face metrics. A proportional
+/// (`w:lineRule="auto"`) one scales the face's natural line, as a body line
+/// does. An empty flow paragraph is measured by [`hf_empty_paragraph_line_pt`]
+/// instead, which honours both rules as well. One holding only a picture or a
+/// positioned tab still takes the natural-line path, which cannot measure it
+/// (issue #2164).
+fn hf_paragraph_declared_line_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Option<f64> {
+    let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
+    if runs.is_empty() {
+        return None;
+    }
     match paragraph.style.line_spacing {
-        Some(crate::ir::LineSpacing::Exact(line_pt))
-            if line_pt > 0.0 && !hf_paragraph_metric_runs(paragraph).is_empty() =>
-        {
-            Some(line_pt)
+        Some(crate::ir::LineSpacing::Exact(line_pt)) if line_pt > 0.0 => Some(line_pt),
+        Some(crate::ir::LineSpacing::Proportional(factor)) if factor > 0.0 => {
+            Some(text::word_line_advance_pt(&runs)? * factor)
         }
         _ => None,
     }
@@ -3183,13 +3202,25 @@ fn hf_paragraph_is_empty_flow_line(paragraph: &crate::ir::HeaderFooterParagraph)
 /// It is the line of the paragraph mark's face: two scraped docxide-pdf
 /// specifications whose headers end in an empty paragraph, with an 11pt and a
 /// 12pt Times New Roman mark, have Word start the body 1.25pt apart. An exact
-/// `w:spacing w:line` sets it whatever the face, as it does a line of text.
+/// `w:spacing w:line` sets it whatever the face, and a proportional one scales
+/// it, as they do a line of text.
 fn hf_empty_paragraph_line_pt(
     paragraph: &crate::ir::HeaderFooterParagraph,
     default_text: Option<&TextStyle>,
 ) -> Option<f64> {
     match paragraph.style.line_spacing {
         Some(crate::ir::LineSpacing::Exact(line_pt)) if line_pt > 0.0 => Some(line_pt),
+        Some(crate::ir::LineSpacing::Proportional(factor)) if factor > 0.0 => {
+            match text::word_line_advance_pt(&[hf_empty_paragraph_mark_run(
+                paragraph,
+                default_text,
+            )]) {
+                Some(line_pt) => Some(line_pt * factor),
+                // Without the face's metrics, the mark's size stands in for its
+                // line, and that fallback already scales it.
+                None => hf_paragraph_height_pt(paragraph, default_text, true),
+            }
+        }
         _ => hf_paragraph_height_pt(paragraph, default_text, true),
     }
 }
@@ -3311,20 +3342,7 @@ fn hf_paragraph_height_pt(
     let mut runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
     let is_empty_flow_paragraph: bool = runs.is_empty() && use_default_for_empty;
     if is_empty_flow_paragraph {
-        let style: TextStyle = paragraph
-            .style
-            .paragraph_mark_text_style
-            .as_deref()
-            .or(default_text)
-            .cloned()
-            .unwrap_or_default();
-        runs.push(Run {
-            text: "M".to_string(),
-            style,
-            href: None,
-            footnote: None,
-            inline_box: None,
-        });
+        runs.push(hf_empty_paragraph_mark_run(paragraph, default_text));
     }
     let line_pt: f64 = text::word_line_advance_pt(&runs).or_else(|| {
         if !is_empty_flow_paragraph {
@@ -3346,6 +3364,27 @@ fn hf_paragraph_height_pt(
         })
     })?;
     Some(line_pt + hf_paragraph_border_extent_pt(paragraph))
+}
+
+/// A run standing in for an empty paragraph's mark: its resolved style, or the
+/// document default where the parser recorded none.
+fn hf_empty_paragraph_mark_run(
+    paragraph: &crate::ir::HeaderFooterParagraph,
+    default_text: Option<&TextStyle>,
+) -> Run {
+    Run {
+        text: "M".to_string(),
+        style: paragraph
+            .style
+            .paragraph_mark_text_style
+            .as_deref()
+            .or(default_text)
+            .cloned()
+            .unwrap_or_default(),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    }
 }
 
 /// What a header or footer paragraph's top and bottom `w:pBdr` rules and
