@@ -6,6 +6,7 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 
 | Project | Lang | Focus | Detail |
 |---------|------|-------|--------|
+| [docx-rs](https://github.com/bokuweb/docx-rs) | Rust | DOCX run reader and writer model | [docx-rs.md](docx-rs.md) |
 | [docx4j](https://github.com/plutext/docx4j) | Java | DOCX/PPTX/XLSX parsing + PDF export | [docx4j.md](docx4j.md) |
 | [python-docx](https://github.com/python-openxml/python-docx) | Python | DOCX object model | [python-docx.md](python-docx.md) |
 | [python-pptx](https://github.com/scanny/python-pptx) | Python | PPTX slide master/layout inheritance | [python-pptx.md](python-pptx.md) |

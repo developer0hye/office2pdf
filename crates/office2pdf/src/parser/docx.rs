@@ -28,7 +28,7 @@ use self::contexts::{
     TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo, WordWrapContext, WpgDrawingInfo,
     WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
     build_note_context_from_xml, build_wrap_context_from_xml,
-    extract_column_layout_from_section_property, is_note_reference_run, read_zip_text,
+    extract_column_layout_from_section_property, is_endnote_reference_run, read_zip_text,
     scan_column_layouts, scan_line_numbering, scan_page_borders, scan_page_numbering,
     scan_section_alignment, scan_style_paragraph_shading, scan_style_word_wrap, seq_identifier,
     toc_caption_identifier, toc_heading_depth,
@@ -1077,23 +1077,35 @@ struct RunChildrenMedia {
     inline_text_boxes: Vec<InlineTextBox>,
 }
 
-/// The ordered pieces of a run around structural layout breaks.
+/// The ordered text, note references, and structural breaks of a run.
 enum RunLayoutPart {
     Content(Box<docx_rs::Run>),
     PageBreak,
     ColumnBreak,
+    FootnoteReference(usize),
 }
 
-/// Split only at page and column breaks so all content on either side keeps the
-/// run's properties and is emitted on the page or column where Word places it.
-fn split_run_at_layout_breaks(run: &docx_rs::Run) -> Vec<RunLayoutPart> {
+/// Retain a note's position among text children, without inferring it from a
+/// style name. Body runs also split at layout breaks; hyperlink runs preserve
+/// their existing text-break behavior.
+fn split_run_at_structural_content(
+    run: &docx_rs::Run,
+    split_layout_breaks: bool,
+) -> Vec<RunLayoutPart> {
     let mut parts: Vec<RunLayoutPart> = Vec::new();
     let mut content_children: Vec<docx_rs::RunChild> = Vec::new();
 
     for child in &run.children {
         let layout_break: Option<RunLayoutPart> = match child {
-            docx_rs::RunChild::Break(br) if is_page_break(br) => Some(RunLayoutPart::PageBreak),
-            docx_rs::RunChild::Break(br) if is_column_break(br) => Some(RunLayoutPart::ColumnBreak),
+            docx_rs::RunChild::Break(br) if split_layout_breaks && is_page_break(br) => {
+                Some(RunLayoutPart::PageBreak)
+            }
+            docx_rs::RunChild::Break(br) if split_layout_breaks && is_column_break(br) => {
+                Some(RunLayoutPart::ColumnBreak)
+            }
+            docx_rs::RunChild::FootnoteReference(reference) => {
+                Some(RunLayoutPart::FootnoteReference(reference.id))
+            }
             _ => None,
         };
 
@@ -1486,17 +1498,42 @@ fn process_hyperlink_runs(
     for hchild in &hyperlink.children {
         if let docx_rs::ParagraphChild::Run(run) = hchild {
             let hl_small_caps: bool = ctx.small_caps.next_is_small_caps();
-            let text: String = extract_run_text(run);
-            if let Some(ir_run) = build_text_run(
-                text,
-                &run.run_property,
-                hl_small_caps,
-                resolved_style,
-                style_map,
-                &ctx.theme_fonts,
-                href.clone(),
-            ) {
-                runs.push(ir_run);
+            for part in split_run_at_structural_content(run, false) {
+                match part {
+                    RunLayoutPart::FootnoteReference(id) => {
+                        if let Some(content) = ctx.notes.footnote(id) {
+                            runs.push(Run {
+                                text: String::new(),
+                                style: resolve_run_style(
+                                    &run.run_property,
+                                    hl_small_caps,
+                                    resolved_style,
+                                    style_map,
+                                    &ctx.theme_fonts,
+                                ),
+                                href: href.clone(),
+                                footnote: Some(resolve_note_runs(&content, style_map)),
+                                inline_box: None,
+                            });
+                        } else {
+                            tracing::warn!(note_id = id, "Footnote reference has no matching note");
+                        }
+                    }
+                    RunLayoutPart::Content(segment) => {
+                        if let Some(ir_run) = build_text_run(
+                            extract_run_text(&segment),
+                            &segment.run_property,
+                            hl_small_caps,
+                            resolved_style,
+                            style_map,
+                            &ctx.theme_fonts,
+                            href.clone(),
+                        ) {
+                            runs.push(ir_run);
+                        }
+                    }
+                    RunLayoutPart::PageBreak | RunLayoutPart::ColumnBreak => unreachable!(),
+                }
             }
         }
     }
@@ -1625,8 +1662,8 @@ fn convert_paragraph_blocks(
                 // Advance smallCaps cursor for every <w:r> in body
                 let is_small_caps: bool = ctx.small_caps.next_is_small_caps();
 
-                // Check for footnote/endnote reference runs
-                if is_note_reference_run(run, &ctx.notes) {
+                // Endnotes still require the reader's style-based fallback.
+                if is_endnote_reference_run(run, &ctx.notes) {
                     if let Some(content) = ctx.notes.consume_next() {
                         runs.push(Run {
                             text: String::new(),
@@ -1639,7 +1676,7 @@ fn convert_paragraph_blocks(
                     continue;
                 }
 
-                for part in split_run_at_layout_breaks(run) {
+                for part in split_run_at_structural_content(run, true) {
                     match part {
                         break_part @ (RunLayoutPart::PageBreak | RunLayoutPart::ColumnBreak) => {
                             // Flush queued inline media even when no text run
@@ -1711,9 +1748,33 @@ fn convert_paragraph_blocks(
                             out.push(match break_part {
                                 RunLayoutPart::PageBreak => Block::PageBreak,
                                 RunLayoutPart::ColumnBreak => Block::ColumnBreak,
-                                RunLayoutPart::Content(_) => unreachable!(),
+                                RunLayoutPart::Content(_) | RunLayoutPart::FootnoteReference(_) => {
+                                    unreachable!()
+                                }
                             });
                             emitted_layout_break = true;
+                        }
+                        RunLayoutPart::FootnoteReference(id) => {
+                            if let Some(content) = ctx.notes.footnote(id) {
+                                runs.push(Run {
+                                    text: String::new(),
+                                    style: resolve_run_style(
+                                        &run.run_property,
+                                        is_small_caps,
+                                        resolved_style,
+                                        style_map,
+                                        &ctx.theme_fonts,
+                                    ),
+                                    href: None,
+                                    footnote: Some(resolve_note_runs(&content, style_map)),
+                                    inline_box: None,
+                                });
+                            } else {
+                                tracing::warn!(
+                                    note_id = id,
+                                    "Footnote reference has no matching note"
+                                );
+                            }
                         }
                         RunLayoutPart::Content(run_segment) => {
                             let media = extract_run_children_media(
