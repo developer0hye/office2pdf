@@ -5122,6 +5122,145 @@ fn an_empty_header_paragraph_reserves_its_exact_line() {
     }
 }
 
+/// Arial 12pt header lines stating `w:spacing` `w:before` and `w:after`.
+#[cfg(not(target_arch = "wasm32"))]
+fn spaced_arial_header_lines(gaps: &[(f64, f64)]) -> Vec<crate::ir::HeaderFooterParagraph> {
+    gaps.iter()
+        .map(|(before_pt, after_pt)| {
+            let mut paragraph = header_text_paragraph("Header", arial(12.0));
+            paragraph.style.space_before = Some(*before_pt);
+            paragraph.style.space_after = Some(*after_pt);
+            paragraph
+        })
+        .collect()
+}
+
+/// A header's paragraph spacing grows the margin as Word's story lays it out.
+///
+/// A native Word probe on the #2057 fixture (`assets/bugfixes/issue-2056/README.md`
+/// at `83c2060d`) showed the first header paragraph keeping its `w:before` and
+/// an adjacent `w:after`/`w:before` pair collapsing. Taking the larger of the
+/// pair, as the body flow does, is the working rule; the probe did not measure
+/// it. The last paragraph's `w:after` stays below its line by analogy to the
+/// footer's (issue #1195), which no native header export verifies yet. Every
+/// gap here exceeds the drawn story's band shift, so the margin is Word's
+/// reach exactly.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn header_paragraph_spacing_grows_the_margin_as_word_lays_it_out() {
+    let Some(line_pt) = natural_header_line_pt(arial(12.0)) else {
+        return; // the face is unavailable on this runner
+    };
+    for (gaps, spacing_pt) in [
+        // Each paragraph's after, the last one's included.
+        (vec![(0.0, 12.0), (0.0, 12.0), (0.0, 12.0)], 36.0),
+        // The first paragraph's before.
+        (vec![(6.0, 0.0), (0.0, 0.0), (0.0, 0.0)], 6.0),
+        // Adjacent gaps collapse to the larger, whichever side states it.
+        (vec![(0.0, 12.0), (6.0, 0.0), (18.0, 0.0)], 30.0),
+        (vec![(10.0, 8.0), (20.0, 4.0), (0.0, 7.0)], 41.0),
+    ] {
+        let margin_pt: f64 = header_top_margin_pt(36.0, 72.0, spaced_arial_header_lines(&gaps));
+        let expected_pt: f64 = 36.0 + 3.0 * line_pt + spacing_pt;
+        assert!(
+            (margin_pt - expected_pt).abs() < 0.001,
+            "three {line_pt}pt lines spaced {gaps:?} 36pt below the page top must \
+             start the body at {expected_pt}pt, got {margin_pt}pt"
+        );
+    }
+}
+
+/// Spacing that still fits the band leaves the declared margin alone.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn header_paragraph_spacing_inside_its_band_leaves_the_margin() {
+    let margin_pt: f64 = header_top_margin_pt(36.0, 72.0, spaced_arial_header_lines(&[(6.0, 8.0)]));
+    assert!(
+        (margin_pt - 72.0).abs() < 0.001,
+        "a 12pt line with 14pt of spacing in a 36pt band must keep the 72pt \
+         margin, got {margin_pt}pt"
+    );
+}
+
+/// A proportional header line grows the margin by its multiple of the face's
+/// natural line, as `w:lineRule="auto"` scales a body line.
+///
+/// Every line a paragraph wraps to takes the multiple, and so does an empty
+/// paragraph's mark line.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_proportional_header_line_grows_the_margin_by_its_multiple() {
+    let Some(line_pt) = natural_header_line_pt(arial(12.0)) else {
+        return; // the face is unavailable on this runner
+    };
+    let proportional = |mut paragraph: crate::ir::HeaderFooterParagraph, factor: f64| {
+        paragraph.style.line_spacing = Some(crate::ir::LineSpacing::Proportional(factor));
+        paragraph
+    };
+    // About ten "Header " words fit the 453.58pt column, so 25 take three
+    // lines, as `a_wrapped_header_paragraph_grows_the_margin_by_its_lines`
+    // asserts.
+    let wrapping: String = "Header ".repeat(25);
+    for factor in [1.2, 1.5, 2.0] {
+        let three_lines: Vec<crate::ir::HeaderFooterParagraph> =
+            arial_header_lines(&["One", "Two", "Three"])
+                .into_iter()
+                .map(|paragraph| proportional(paragraph, factor))
+                .collect();
+        let one_wrapped: Vec<crate::ir::HeaderFooterParagraph> =
+            arial_header_lines(&[wrapping.trim_end()])
+                .into_iter()
+                .map(|paragraph| proportional(paragraph, factor))
+                .collect();
+        let expected_pt: f64 = 36.0 + 3.0 * line_pt * factor;
+        for paragraphs in [three_lines, one_wrapped] {
+            let margin_pt: f64 = header_top_margin_pt(36.0, 72.0, paragraphs);
+            assert!(
+                (margin_pt - expected_pt).abs() < 0.001,
+                "three {line_pt}pt lines at {factor}x 36pt below the page top must \
+                 start the body at {expected_pt}pt, got {margin_pt}pt"
+            );
+        }
+    }
+
+    let Some(mark_line_pt) = natural_header_line_pt(arial(11.0)) else {
+        return;
+    };
+    for factor in [1.5, 2.0] {
+        let margin_pt: f64 = header_top_margin_pt(
+            36.0,
+            36.0,
+            vec![proportional(empty_header_paragraph(arial(11.0)), factor); 2],
+        );
+        let expected_pt: f64 = 36.0 + 2.0 * mark_line_pt * factor;
+        assert!(
+            (margin_pt - expected_pt).abs() < 0.001,
+            "two empty 11pt Arial lines at {factor}x on the 36pt margin must start \
+             the body at {expected_pt}pt, got {margin_pt}pt"
+        );
+    }
+}
+
+/// The body follows the header's spacing in the compiled layout, point for
+/// point once Word's reach sets the margin: 6pt more after each of three
+/// paragraphs lowers the body by 18pt.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn header_paragraph_spacing_lowers_the_compiled_body() {
+    if natural_header_line_pt(arial(12.0)).is_none() {
+        return;
+    }
+    let body_below = |after_pt: f64| {
+        body_baseline_below_arial_header(spaced_arial_header_lines(&[(0.0, after_pt); 3]))
+    };
+    let (twelve_pt, eighteen_pt) = (body_below(12.0), body_below(18.0));
+    assert!(
+        (eighteen_pt - twelve_pt - 18.0).abs() < 0.01,
+        "6pt more after each of three header paragraphs must lower the body by \
+         18pt: {twelve_pt}pt then {eighteen_pt}pt"
+    );
+}
+
 /// Once a trailing empty paragraph grows the band, the header's first baseline
 /// takes Word's full ascent seat instead of a clamped one.
 ///
