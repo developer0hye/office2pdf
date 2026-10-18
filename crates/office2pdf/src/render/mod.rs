@@ -7,3 +7,4 @@ pub mod pdf;
 mod powerpoint_line_paint;
 pub mod typst_gen;
 mod word_justified_gap_phases;
+mod word_table_border_paint;

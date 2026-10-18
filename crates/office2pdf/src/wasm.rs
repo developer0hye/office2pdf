@@ -477,6 +477,16 @@ mod wasm_tests {
     }
 
     #[wasm_bindgen_test]
+    fn wasm_docx_auto_row_border_paint_reaches_pdf_conversion() {
+        let data = include_bytes!("../../../tests/fixtures/docx/docxide/auto_row_borders.docx");
+        // Exercise the completed-line paint pass and its clock in a real JS
+        // runtime; native geometry tests verify continuity and paint order.
+        let pdf = convert_docx_to_pdf(data)
+            .expect("automatic-height Word borders convert through the WASM API");
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
+    #[wasm_bindgen_test]
     fn wasm_convert_docx_to_pdf_produces_valid_pdf() {
         let docx = make_minimal_docx();
         let result = convert_docx_to_pdf(&docx);

@@ -56,6 +56,17 @@ fn generate_table_inner(
     table: &Table,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
+    let first_word_marker = ctx.next_word_border_marker;
+    let mut word_edge_specs = String::new();
+    let word_border_label =
+        (table.border_paint_model == TableBorderPaintModel::WordPositiveAxisBands).then(|| {
+            let id = ctx.next_word_border_table_id;
+            ctx.next_word_border_table_id += 1;
+            format!(
+                "{}{id}",
+                crate::render::word_table_border_paint::TABLE_LABEL_PREFIX
+            )
+        });
     let fill_label =
         (table.border_paint_model == TableBorderPaintModel::ExcelBoundaryBands).then(|| {
             let id = ctx.next_excel_fill_id;
@@ -189,6 +200,7 @@ fn generate_table_inner(
         generate_table_rows(
             out,
             &table.rows[..heading_strip_row_count],
+            0,
             painted_borders
                 .as_deref()
                 .map(|p| &p[..heading_strip_row_count]),
@@ -199,6 +211,7 @@ fn generate_table_inner(
             "    ",
             default_cell_padding,
             fixed_row_heights,
+            &mut word_edge_specs,
             ctx,
         )?;
         out.push_str("  ),\n");
@@ -213,6 +226,7 @@ fn generate_table_inner(
         generate_table_rows(
             out,
             &table.rows[lead_start..lead_start + lead_row_count],
+            lead_start,
             painted_borders
                 .as_deref()
                 .map(|p| &p[lead_start..lead_start + lead_row_count]),
@@ -223,6 +237,7 @@ fn generate_table_inner(
             "    ",
             default_cell_padding,
             fixed_row_heights,
+            &mut word_edge_specs,
             ctx,
         )?;
         out.push_str("  ),\n");
@@ -242,6 +257,7 @@ fn generate_table_inner(
         generate_table_rows(
             out,
             &table.rows[title_start..title_start + header_row_count],
+            title_start,
             painted_borders
                 .as_deref()
                 .map(|p| &p[title_start..title_start + header_row_count]),
@@ -252,6 +268,7 @@ fn generate_table_inner(
             "    ",
             default_cell_padding,
             fixed_row_heights,
+            &mut word_edge_specs,
             ctx,
         )?;
         out.push_str("  ),\n");
@@ -260,6 +277,7 @@ fn generate_table_inner(
     generate_table_rows(
         out,
         &table.rows[title_start + header_row_count..],
+        title_start + header_row_count,
         painted_borders
             .as_deref()
             .map(|p| &p[title_start + header_row_count..]),
@@ -270,6 +288,7 @@ fn generate_table_inner(
         "  ",
         default_cell_padding,
         fixed_row_heights,
+        &mut word_edge_specs,
         ctx,
     )?;
 
@@ -277,7 +296,19 @@ fn generate_table_inner(
     if let Some(label) = fill_label {
         let _ = write!(out, "<{label}>");
     }
+    if ctx.next_word_border_marker > first_word_marker
+        && let Some(label) = word_border_label
+    {
+        let _ = write!(out, "<{label}>");
+    }
     out.push('\n');
+    if !word_edge_specs.is_empty() {
+        let _ = writeln!(
+            out,
+            "#metadata((\"{}\", ({word_edge_specs})))",
+            crate::render::word_table_border_paint::MARKER
+        );
+    }
     Ok(())
 }
 
@@ -305,6 +336,7 @@ pub(crate) fn header_row_count_covering_rowspans(
 fn generate_table_rows(
     out: &mut String,
     rows: &[TableRow],
+    row_offset: usize,
     painted_borders: Option<&[Vec<Option<CellBorder>>]>,
     boundary_band_model: Option<TableBorderPaintModel>,
     // The table's declared column widths, in points, so each cell can bound
@@ -316,6 +348,7 @@ fn generate_table_rows(
     indent: &str,
     default_cell_padding: Insets,
     fixed_row_heights: bool,
+    word_edge_specs: &mut String,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     // A nested table decides its own rows; restore the enclosing row's answer
@@ -399,6 +432,7 @@ fn generate_table_rows(
                         row_index,
                         cell,
                         fixed_row_heights,
+                        boundary_band_model.expect("painted borders require a paint model"),
                         default_cell_padding,
                         ctx,
                         &mut row_frame_estimate_cache,
@@ -430,6 +464,39 @@ fn generate_table_rows(
                     inset_right_pt: inset.right,
                     wraps_text: cell.wraps_text,
                 });
+            }
+            if let Some(band) = &boundary_band
+                && band.paint_model == TableBorderPaintModel::WordPositiveAxisBands
+                && matches!(band.vertical_extent, VerticalBandExtent::CompletedCell)
+                && let Some(border) = band.painted_border
+            {
+                let start = row_offset + row_index;
+                let end = start + (cell.row_span as usize).min(rows.len() - row_index);
+                for (x, side) in [
+                    (col_pos, border.left.as_ref()),
+                    (col_pos + clamped_colspan as usize, border.right.as_ref()),
+                ] {
+                    if let Some(side) = side {
+                        let id = ctx
+                            .next_word_border_marker
+                            .checked_add(1)
+                            .filter(|id| *id <= 0x00ff_ffff)
+                            .ok_or_else(|| {
+                                ConvertError::Render("too many automatic Word border edges".into())
+                            })?;
+                        ctx.next_word_border_marker = id;
+                        let marker = word_border_marker(id);
+                        let _ = writeln!(
+                            out,
+                            "{indent}table.vline(x: {x}, start: {start}, end: {end}, stroke: (paint: {marker}, thickness: 0pt)),"
+                        );
+                        let _ = write!(
+                            word_edge_specs,
+                            "({marker}, {}),",
+                            word_completed_border_value(Some(side))
+                        );
+                    }
+                }
             }
             generate_table_cell(
                 out,
@@ -1083,6 +1150,10 @@ fn generate_table_cell(
                     );
                 }
                 TableBorderPaintModel::WordPositiveAxisBands => {
+                    // Auto tracks obtain their final height only after layout.
+                    // Native zero-width lines retain the final edge geometry
+                    // through merges and continuation pages. The paint pass
+                    // replaces those lines without changing backgrounds or tags.
                     write_word_positive_axis_border_overlays(
                         out,
                         border,
@@ -2397,6 +2468,9 @@ enum VerticalBandExtent {
     /// Every spanned row's height is fixed: one top-anchored band of the
     /// summed frame height covers boundary to boundary exactly.
     FrameHeight(f64),
+    /// Word auto tracks use native zero-width lines for final edge geometry,
+    /// including merged cells and page continuations.
+    CompletedCell,
     /// The span includes auto-sized rows, whose final height only the
     /// renderer knows. Two twin bands anchored at the cell's top and bottom
     /// edges are painted instead, each sized from the row's tallest
@@ -2423,6 +2497,7 @@ fn vertical_band_extent(
     row_index: usize,
     cell: &TableCell,
     fixed_row_heights: bool,
+    paint_model: TableBorderPaintModel,
     default_cell_padding: Insets,
     ctx: &GenCtx,
     row_frame_estimate_cache: &mut Option<Option<f64>>,
@@ -2431,6 +2506,9 @@ fn vertical_band_extent(
         fixed_spanned_row_height(rows, row_index, cell.row_span, fixed_row_heights)
     {
         return VerticalBandExtent::FrameHeight(frame_height_pt);
+    }
+    if paint_model == TableBorderPaintModel::WordPositiveAxisBands {
+        return VerticalBandExtent::CompletedCell;
     }
     // Estimate from the anchor row only; a multi-row span over auto rows
     // keeps whatever the twins cover (known limitation).
@@ -2558,18 +2636,43 @@ fn write_word_positive_axis_border_overlays(
     inset: Insets,
     vertical_extent: &VerticalBandExtent,
 ) {
+    let completed_verticals = matches!(vertical_extent, VerticalBandExtent::CompletedCell);
     if let Some(side) = &border.top {
         write_word_horizontal_border(out, side, inset, true);
     }
     if let Some(side) = &border.bottom {
         write_word_horizontal_border(out, side, inset, false);
     }
-    if let Some(side) = &border.left {
+    if let Some(side) = &border.left
+        && !completed_verticals
+    {
         write_word_vertical_border(out, side, inset, vertical_extent, true);
     }
-    if let Some(side) = &border.right {
+    if let Some(side) = &border.right
+        && !completed_verticals
+    {
         write_word_vertical_border(out, side, inset, vertical_extent, false);
     }
+}
+
+fn word_completed_border_value(side: Option<&BorderSide>) -> String {
+    let Some(side) = side else {
+        return "none".into();
+    };
+    let side = word_pdf_border_side(side);
+    let mode = match side.style {
+        BorderLineStyle::Double => "double",
+        BorderLineStyle::Solid | BorderLineStyle::None => "solid",
+        _ => "patterned",
+    };
+    format!("(\"{mode}\", {})", stroke_value(&side, true))
+}
+
+fn word_border_marker(id: u32) -> String {
+    // IR colors use RGB. Linear RGB keeps each binary-exact identifier
+    // distinct, unlike Typst's 8-bit equality for RGB/luma, which would merge
+    // adjacent rows and apply the first row's border paint to later rows.
+    format!("color.linear-rgb({id} / 16777216 * 100%, 0%, 0%, 0%)")
 }
 
 fn write_word_horizontal_border(out: &mut String, side: &BorderSide, inset: Insets, is_top: bool) {
@@ -2688,6 +2791,7 @@ fn write_word_vertical_band_rect(
     let dx: String = format!("{}pt", format_geometry(dx));
     let width: String = format!("{}pt", format_geometry(width));
     match *vertical_extent {
+        VerticalBandExtent::CompletedCell => unreachable!("Word auto borders use completed lines"),
         VerticalBandExtent::FrameHeight(frame_height_pt) => {
             write_band_rect(
                 out,
@@ -2753,6 +2857,7 @@ fn write_word_patterned_vertical_band(
     side: &BorderSide,
 ) {
     match *vertical_extent {
+        VerticalBandExtent::CompletedCell => unreachable!("Word auto borders use completed lines"),
         VerticalBandExtent::FrameHeight(frame_height_pt) => write_boundary_band_line(
             out,
             align,
@@ -2941,6 +3046,9 @@ fn vertical_band_run(
 ) -> (String, bool) {
     let run_end_extension_pt: f64 = BAND_RUN_END_EXTENSION_PT * paint_scale;
     match *vertical_extent {
+        VerticalBandExtent::CompletedCell => {
+            unreachable!("Excel borders do not use Word line markers")
+        }
         VerticalBandExtent::FrameHeight(frame_height_pt) => (
             format!(
                 "{}pt",

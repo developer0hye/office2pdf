@@ -1,5 +1,700 @@
 use super::*;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn word_auto_adjacent_rows_keep_their_own_vertical_border_colors() {
+    use crate::render::pdf::compiled_paint_sequence;
+    use typst::visualize::Color as PaintColor;
+    for repeats_header in [false, true] {
+        let colors = [
+            Color { r: 255, g: 0, b: 0 },
+            Color::black(),
+            Color { r: 0, g: 0, b: 255 },
+        ];
+        let widths = [1.5, 0.5, 0.75];
+        let rows = colors
+            .into_iter()
+            .zip(widths)
+            .map(|(color, width)| {
+                let mut side = solid_side(width);
+                side.color = color;
+                let border = CellBorder {
+                    top: Some(side.clone()),
+                    bottom: Some(side.clone()),
+                    left: Some(side.clone()),
+                    right: Some(side),
+                };
+                TableRow {
+                    height: None,
+                    minimum_height: None,
+                    cells: vec![
+                        bordered_text_cell("Left", border.clone()),
+                        bordered_text_cell("Right", border),
+                    ],
+                }
+            })
+            .collect();
+        let table = Table {
+            header_row_count: usize::from(repeats_header),
+            rows,
+            column_widths: vec![100.0, 100.0],
+            border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+            ..Table::default()
+        };
+        let output =
+            generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])])).unwrap();
+        let paints = compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+        let horizontals: Vec<_> = paints
+            .iter()
+            .filter(|p| {
+                p.rectangle_fill.is_some()
+                    && p.bounds.2 - p.bounds.0 > 90.0
+                    && p.bounds.3 - p.bounds.1 < 3.0
+            })
+            .collect();
+        let x0 = horizontals
+            .iter()
+            .map(|p| p.bounds.0)
+            .fold(f64::INFINITY, f64::min);
+        let mut boundaries: Vec<_> = horizontals.iter().map(|p| p.bounds.1).collect();
+        boundaries.sort_by(f64::total_cmp);
+        boundaries.dedup_by(|a, b| (*a - *b).abs() < 0.001);
+        assert_eq!(
+            boundaries.len(),
+            4,
+            "three rows need four horizontal boundaries"
+        );
+        for (row, color) in colors.iter().enumerate() {
+            let y = (boundaries[row] + boundaries[row + 1]) / 2.0;
+            for column in 0..=2 {
+                let x = x0 + f64::from(column) * 100.0 + 0.1;
+                let visible = paints
+                    .iter()
+                    .rev()
+                    .find(|p| {
+                        p.rectangle_fill.is_some()
+                            && p.bounds.0 <= x
+                            && x <= p.bounds.2
+                            && p.bounds.1 <= y
+                            && y <= p.bounds.3
+                    })
+                    .expect("each automatic row must paint its completed vertical edge");
+                assert_eq!(
+                    visible.rectangle_fill,
+                    Some(PaintColor::from_u8(color.r, color.g, color.b, 255)),
+                    "row {row}, edge {column}, repeats_header={repeats_header} must retain its resolved color"
+                );
+            }
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn native_zero_width_vertical_line_retains_the_completed_row_bounds() {
+    use crate::render::pdf::compiled_paint_sequence;
+    let source = r##"
+#set page(width: 400pt, height: 400pt, margin: 24pt)
+#set text(font: "Arial", size: 12pt)
+#set par(leading: 0pt, spacing: 0pt)
+#table(columns: (100pt, 100pt), stroke: none,
+  inset: (top: 0pt, bottom: 0pt), fill: rgb("ff0000"),
+  table.vline(x: 1, start: 0, end: 1,
+    stroke: (paint: color.linear-rgb(0.00001%, 0%, 0%, 0%), thickness: 0pt)),
+  [Short], [First
+
+Second
+
+Third
+
+Fourth])
+"##;
+    let paints = compiled_paint_sequence(source, &[], 0).unwrap();
+    let fill = paints
+        .iter()
+        .find(|paint| {
+            paint.rectangle_fill == Some(typst::visualize::Color::from_u8(255, 0, 0, 255))
+        })
+        .unwrap();
+    let line = paints
+        .iter()
+        .find(|paint| {
+            paint
+                .stroke
+                .as_ref()
+                .is_some_and(|stroke| stroke.thickness_pt == 0.0)
+        })
+        .expect("native zero-width lines must retain geometry before export");
+    assert!((line.bounds.0 - 124.0).abs() < 0.001);
+    assert!((line.bounds.1 - fill.bounds.1).abs() < 0.001);
+    assert!((line.bounds.3 - fill.bounds.3).abs() < 0.001);
+}
+
+#[cfg(all(not(target_arch = "wasm32"), feature = "pdf-ops"))]
+#[test]
+fn word_auto_cell_backgrounds_remain_correct_in_tagged_pdf_attributes() {
+    use lopdf::Object;
+    let border = CellBorder {
+        top: None,
+        bottom: None,
+        left: Some(solid_side(0.5)),
+        right: None,
+    };
+    let cells = [Color { r: 255, g: 0, b: 0 }, Color { r: 0, g: 0, b: 255 }]
+        .into_iter()
+        .map(|color| {
+            let mut cell = bordered_text_cell("Tagged", border.clone());
+            cell.background = Some(color);
+            cell
+        })
+        .collect();
+    let table = Table {
+        rows: vec![TableRow {
+            height: None,
+            minimum_height: None,
+            cells,
+        }],
+        column_widths: vec![100.0, 100.0],
+        border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+        ..Table::default()
+    };
+    let output =
+        generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])])).unwrap();
+    let pdf =
+        crate::render::pdf::compile_to_pdf(&output.source, &output.images, None, &[], true, false)
+            .unwrap();
+    let pdf = lopdf::Document::load_mem(&pdf).unwrap();
+    fn backgrounds(object: &Object, colors: &mut Vec<Vec<f64>>) {
+        match object {
+            Object::Dictionary(dictionary) => {
+                if let Ok(Object::Array(values)) = dictionary.get(b"BackgroundColor") {
+                    let rgb: Vec<_> = values
+                        .iter()
+                        .filter_map(|value| match value {
+                            Object::Integer(value) => Some(*value as f64),
+                            Object::Real(value) => Some(f64::from(*value)),
+                            _ => None,
+                        })
+                        .collect();
+                    colors.push(rgb);
+                }
+                for (_, value) in dictionary.iter() {
+                    backgrounds(value, colors);
+                }
+            }
+            Object::Array(values) => {
+                for value in values {
+                    backgrounds(value, colors);
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut colors = Vec::new();
+    for object in pdf.objects.values() {
+        backgrounds(object, &mut colors);
+    }
+    assert!(
+        colors.contains(&vec![1.0, 0.0, 0.0]) && colors.contains(&vec![0.0, 0.0, 1.0]),
+        "tagged cells must retain their declared red/blue backgrounds: {colors:?}"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn word_auto_nested_tables_keep_independent_edges_with_auto_columns() {
+    use crate::render::pdf::compiled_paint_sequence;
+    use typst::visualize::Color as PaintColor;
+    let box_border = |color, width| {
+        let mut side = solid_side(width);
+        side.color = color;
+        CellBorder {
+            top: Some(side.clone()),
+            bottom: Some(side.clone()),
+            left: Some(side.clone()),
+            right: Some(side),
+        }
+    };
+    let blue = Color { r: 0, g: 0, b: 255 };
+    let red = Color { r: 255, g: 0, b: 0 };
+    let mut tall = bordered_text_cell("Nested first", box_border(blue, 0.5));
+    for _ in 0..6 {
+        tall.content.extend(plain_text_cell("Nested next").content);
+    }
+    let nested = Table {
+        rows: vec![TableRow {
+            height: None,
+            minimum_height: None,
+            cells: vec![
+                bordered_text_cell("Nested short", box_border(blue, 0.5)),
+                tall,
+            ],
+        }],
+        column_widths: vec![90.0, 90.0],
+        border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+        ..Table::default()
+    };
+    let mut outer = bordered_text_cell("Outer", box_border(red, 1.0));
+    outer.content = vec![Block::Table(nested)];
+    let table = Table {
+        rows: vec![TableRow {
+            height: None,
+            minimum_height: None,
+            cells: vec![outer],
+        }],
+        column_widths: vec![],
+        border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+        ..Table::default()
+    };
+    let output =
+        generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])])).unwrap();
+    let paints = compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+    for (color, expected_edges) in [
+        (PaintColor::from_u8(255, 0, 0, 255), 2),
+        (PaintColor::from_u8(0, 0, 255, 255), 3),
+    ] {
+        let horizontal: Vec<_> = paints
+            .iter()
+            .filter(|p| {
+                p.rectangle_fill == Some(color.clone())
+                    && p.bounds.2 - p.bounds.0 > 80.0
+                    && p.bounds.3 - p.bounds.1 < 1.0
+            })
+            .collect();
+        let top = horizontal
+            .iter()
+            .map(|p| p.bounds.1)
+            .fold(f64::INFINITY, f64::min);
+        let bottom = horizontal
+            .iter()
+            .map(|p| p.bounds.1)
+            .fold(f64::NEG_INFINITY, f64::max);
+        assert!(bottom > top);
+        let vertical: Vec<_> = paints
+            .iter()
+            .filter(|p| {
+                p.rectangle_fill == Some(color.clone())
+                    && p.bounds.2 - p.bounds.0 < 1.0
+                    && p.bounds.3 - p.bounds.1 > 1.0
+            })
+            .collect();
+        assert_eq!(vertical.len(), expected_edges);
+        assert!(
+            vertical
+                .iter()
+                .all(|p| (p.bounds.1 - top).abs() < 0.001 && (p.bounds.3 - bottom).abs() < 0.001),
+            "each table's edge must use its own completed height: {:?}",
+            vertical.iter().map(|p| p.bounds).collect::<Vec<_>>()
+        );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn word_auto_winning_border_paints_above_the_neighbours_background() {
+    use crate::render::pdf::compiled_paint_sequence;
+    use typst::visualize::Color as PaintColor;
+    let mut red = solid_side(2.0);
+    red.color = Color { r: 255, g: 0, b: 0 };
+    let left = bordered_text_cell(
+        "Left",
+        CellBorder {
+            top: None,
+            bottom: None,
+            left: None,
+            right: Some(red),
+        },
+    );
+    let mut right = bordered_text_cell(
+        "Right",
+        CellBorder {
+            top: None,
+            bottom: None,
+            left: Some(solid_side(0.5)),
+            right: None,
+        },
+    );
+    right.background = Some(Color { r: 0, g: 0, b: 255 });
+    let table = Table {
+        rows: vec![TableRow {
+            height: None,
+            minimum_height: None,
+            cells: vec![left, right],
+        }],
+        column_widths: vec![100.0, 100.0],
+        border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+        ..Table::default()
+    };
+    let output =
+        generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])])).unwrap();
+    let paints = compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+    let point = (172.96, 80.0);
+    let visible = paints
+        .iter()
+        .rev()
+        .find(|p| {
+            p.rectangle_fill.is_some()
+                && p.bounds.0 <= point.0
+                && point.0 <= p.bounds.2
+                && p.bounds.1 <= point.1
+                && point.1 <= p.bounds.3
+        })
+        .unwrap();
+    assert_eq!(
+        visible.rectangle_fill,
+        Some(PaintColor::from_u8(255, 0, 0, 255)),
+        "the stronger red edge must remain visible inside the blue neighbour"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn word_auto_patterned_and_double_borders_cover_the_completed_track() {
+    use crate::render::pdf::compiled_paint_sequence;
+    use typst::visualize::Color as PaintColor;
+    let mut double = solid_side(1.0);
+    double.style = BorderLineStyle::Double;
+    double.color = Color { r: 0, g: 128, b: 0 };
+    let mut dashed = solid_side(0.5);
+    dashed.style = BorderLineStyle::Dashed;
+    dashed.color = Color { r: 255, g: 0, b: 0 };
+    let border = CellBorder {
+        top: Some(solid_side(0.5)),
+        bottom: Some(solid_side(0.5)),
+        left: Some(double),
+        right: Some(dashed),
+    };
+    let mut tall = bordered_text_cell("First", border.clone());
+    for _ in 0..8 {
+        tall.content
+            .extend(plain_text_cell("More paragraphs").content);
+    }
+    let table = |cell, height| Table {
+        rows: vec![TableRow {
+            height,
+            minimum_height: None,
+            cells: vec![cell],
+        }],
+        column_widths: vec![120.0],
+        border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+        ..Table::default()
+    };
+    let output = generate_typst(&make_doc(vec![make_flow_page(vec![
+        Block::Table(table(tall, None)),
+        Block::Table(table(bordered_text_cell("Fixed", border), Some(40.0))),
+    ])]))
+    .unwrap();
+    let paints = compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+    let double: Vec<_> = paints
+        .iter()
+        .filter(|p| p.rectangle_fill == Some(PaintColor::from_u8(0, 128, 0, 255)))
+        .collect();
+    let first_bottom = double
+        .iter()
+        .map(|p| p.bounds.3)
+        .fold(f64::INFINITY, f64::min);
+    let auto: Vec<_> = double
+        .iter()
+        .filter(|p| p.bounds.1 < first_bottom)
+        .collect();
+    assert_eq!(auto.len(), 2);
+    assert!((auto[0].bounds.2 - auto[0].bounds.0 - 0.96).abs() < 0.001);
+    let mut xs: Vec<_> = auto.iter().map(|p| p.bounds.0).collect();
+    xs.sort_by(f64::total_cmp);
+    assert!((xs[0] - 72.0).abs() < 0.001 && (xs[1] - 73.92).abs() < 0.001);
+    assert!(
+        auto.iter()
+            .all(|p| (p.bounds.3 - first_bottom).abs() < 0.001)
+    );
+    let dashed: Vec<_> = paints
+        .iter()
+        .filter(|p| {
+            p.stroke
+                .as_ref()
+                .is_some_and(|s| s.color == Some(PaintColor::from_u8(255, 0, 0, 255)))
+        })
+        .collect();
+    assert_eq!(dashed.len(), 2);
+    let auto_line = dashed.iter().find(|p| p.bounds.1 < first_bottom).unwrap();
+    let fixed_line = dashed.iter().find(|p| p.bounds.1 >= first_bottom).unwrap();
+    assert!((auto_line.bounds.0 - 192.24).abs() < 0.001);
+    assert!((auto_line.bounds.3 - first_bottom).abs() < 0.001);
+    assert_eq!(
+        auto_line.stroke.as_ref().unwrap().dash_pattern_pt,
+        fixed_line.stroke.as_ref().unwrap().dash_pattern_pt
+    );
+    assert!(auto_line.stroke.as_ref().unwrap().dash_pattern_pt.is_some());
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn word_auto_border_identifiers_do_not_claim_source_transparent_fills() {
+    use crate::render::pdf::compiled_paint_sequence;
+    use typst::visualize::Color as PaintColor;
+    let mut clear = plain_text_cell("Clear");
+    clear.background = Some(Color { r: 0, g: 0, b: 1 });
+    clear.background_alpha = Some(0.0);
+    let bordered = bordered_text_cell(
+        "Bordered",
+        CellBorder {
+            top: None,
+            bottom: None,
+            left: Some(solid_side(0.5)),
+            right: None,
+        },
+    );
+    let table = Table {
+        rows: vec![TableRow {
+            height: None,
+            minimum_height: None,
+            cells: vec![clear, bordered],
+        }],
+        column_widths: vec![100.0, 100.0],
+        border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+        ..Table::default()
+    };
+    let output =
+        generate_typst(&make_doc(vec![make_flow_page(vec![Block::Table(table)])])).unwrap();
+    let paints = compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+    let borders: Vec<_> = paints
+        .iter()
+        .filter(|p| {
+            p.rectangle_fill == Some(PaintColor::from_u8(0, 0, 0, 255))
+                && p.bounds.2 - p.bounds.0 < 1.0
+                && p.bounds.3 - p.bounds.1 > 5.0
+        })
+        .collect();
+    assert!(
+        !borders
+            .iter()
+            .any(|p| p.bounds.0 <= 72.24 && p.bounds.2 >= 72.24),
+        "transparent source fills must never acquire a border: {borders:?}"
+    );
+    assert!(
+        borders
+            .iter()
+            .any(|p| p.bounds.0 <= 172.24 && p.bounds.2 >= 172.24),
+        "the declared shared border must remain painted: {borders:?}"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn word_auto_row_borders_continue_on_every_page_fragment() {
+    use crate::render::pdf::compiled_page_paint_sequences;
+    for repeats_header in [false, true] {
+        let border = CellBorder {
+            top: Some(solid_side(0.5)),
+            bottom: Some(solid_side(0.5)),
+            left: Some(solid_side(0.5)),
+            right: Some(solid_side(0.5)),
+        };
+        // A short merged cell spans many automatic rows. Its border must also
+        // survive continuation pages on which its content has already ended.
+        let mut merged = bordered_text_cell("Merged cell", border.clone());
+        merged.row_span = 48;
+        let mut rows: Vec<TableRow> = (0..48)
+            .map(|row| {
+                let mut cells = vec![bordered_text_cell("Row content", border.clone())];
+                if row == 0 {
+                    cells.insert(0, merged.clone());
+                }
+                TableRow {
+                    height: None,
+                    minimum_height: None,
+                    cells,
+                }
+            })
+            .collect();
+        if repeats_header {
+            rows.insert(
+                0,
+                TableRow {
+                    height: None,
+                    minimum_height: None,
+                    cells: vec![
+                        bordered_text_cell("Header left", border.clone()),
+                        bordered_text_cell("Header right", border.clone()),
+                    ],
+                },
+            );
+        }
+        let table = Table {
+            header_row_count: usize::from(repeats_header),
+            rows,
+            column_widths: vec![100.0, 100.0],
+            border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+            ..Table::default()
+        };
+        let mut page = make_flow_page(vec![Block::Table(table)]);
+        if let Page::Flow(flow) = &mut page {
+            flow.size.height = 240.0;
+            flow.margins.top = 24.0;
+            flow.margins.bottom = 24.0;
+        }
+        let output = generate_typst(&make_doc(vec![page])).unwrap();
+        let pages = compiled_page_paint_sequences(&output.source, &output.images).unwrap();
+        assert!(
+            pages.len() >= 3,
+            "the merged cell must cross multiple page boundaries"
+        );
+        for (page, paints) in pages.iter().enumerate() {
+            assert!(
+                paints.iter().all(|paint| {
+                    let is_private = |color: &typst::visualize::Color| {
+                        matches!(color, typst::visualize::Color::Process(
+                        typst::visualize::ProcessColor::LinearRgb(value)) if value.alpha == 0.0)
+                    };
+                    paint.rectangle_fill.as_ref().is_none_or(|color| {
+                        !matches!(color, typst::visualize::Color::Process(
+                        typst::visualize::ProcessColor::LinearRgb(value)) if value.alpha == 0.0)
+                    }) && paint
+                        .stroke
+                        .as_ref()
+                        .and_then(|stroke| stroke.color.as_ref())
+                        .is_none_or(|color| !is_private(color))
+                }),
+                "page {} must not retain geometry markers: {:?}",
+                page + 1,
+                paints
+                    .iter()
+                    .filter_map(|paint| paint.rectangle_fill.as_ref())
+                    .collect::<Vec<_>>()
+            );
+            let horizontal: Vec<_> = paints
+                .iter()
+                .filter(|p| {
+                    p.rectangle_fill.is_some()
+                        && p.bounds.2 - p.bounds.0 > 90.0
+                        && p.bounds.3 - p.bounds.1 < 1.0
+                })
+                .collect();
+            let top = horizontal
+                .iter()
+                .map(|p| p.bounds.1)
+                .fold(f64::INFINITY, f64::min);
+            let bottom = horizontal
+                .iter()
+                .map(|p| p.bounds.1)
+                .fold(f64::NEG_INFINITY, f64::max);
+            assert!(
+                top.is_finite() && bottom > top,
+                "page {} must contain complete rows",
+                page + 1
+            );
+            for column in 0..=2 {
+                let x = 72.0 + f64::from(column) * 100.0 + 0.24;
+                let mut intervals: Vec<_> = paints
+                    .iter()
+                    .filter(|p| {
+                        p.rectangle_fill.is_some()
+                            && (p.bounds.2 - p.bounds.0 - 0.48).abs() < 0.001
+                            && p.bounds.0 <= x
+                            && x <= p.bounds.2
+                    })
+                    .map(|p| (p.bounds.1, p.bounds.3))
+                    .collect();
+                intervals.sort_by(|a, b| a.0.total_cmp(&b.0));
+                let mut covered = top;
+                for (start, end) in intervals.iter().copied() {
+                    assert!(
+                        start <= covered + 0.001,
+                        "page {} edge {column} has a gap after {covered}pt; intervals: {intervals:?}",
+                        page + 1
+                    );
+                    assert!(
+                        start >= 24.0 - 0.001 && end <= 216.0 + 0.001,
+                        "page {} border must stay inside its page fragment",
+                        page + 1
+                    );
+                    covered = covered.max(end);
+                }
+                assert!(
+                    covered >= bottom - 0.001,
+                    "page {} edge {column} ends at {covered}, before {bottom}; verticals: {:?}",
+                    page + 1,
+                    paints
+                        .iter()
+                        .filter(|p| p.rectangle_fill.is_some() && p.bounds.2 - p.bounds.0 < 1.0)
+                        .map(|p| p.bounds)
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn tall_word_auto_rows_keep_every_vertical_border_continuous() {
+    use crate::render::pdf::compiled_paint_sequence;
+    for paragraph_count in [4, 9] {
+        let border = CellBorder {
+            top: Some(solid_side(0.5)),
+            bottom: Some(solid_side(0.5)),
+            left: Some(solid_side(0.5)),
+            right: Some(solid_side(0.5)),
+        };
+        let short = bordered_text_cell("Short cell", border.clone());
+        let mut tall = bordered_text_cell("First line", border);
+        for _ in 1..paragraph_count {
+            tall.content
+                .extend(plain_text_cell("Another paragraph").content);
+        }
+        let table = Table {
+            rows: vec![TableRow {
+                height: None,
+                minimum_height: None,
+                cells: vec![short, tall],
+            }],
+            column_widths: vec![100.0, 100.0],
+            border_paint_model: TableBorderPaintModel::WordPositiveAxisBands,
+            ..Table::default()
+        };
+        let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
+        let output = generate_typst(&doc).unwrap();
+        let paints = compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+        let horizontal: Vec<_> = paints
+            .iter()
+            .filter(|p| {
+                p.rectangle_fill.is_some()
+                    && p.bounds.2 - p.bounds.0 > 90.0
+                    && p.bounds.3 - p.bounds.1 < 1.0
+            })
+            .collect();
+        let top = horizontal
+            .iter()
+            .map(|p| p.bounds.1)
+            .fold(f64::INFINITY, f64::min);
+        let bottom = horizontal
+            .iter()
+            .map(|p| p.bounds.1)
+            .fold(f64::NEG_INFINITY, f64::max);
+        let left = horizontal
+            .iter()
+            .map(|p| p.bounds.0)
+            .fold(f64::INFINITY, f64::min);
+        assert!(
+            bottom - top > 40.0,
+            "the authored row must be taller than two single lines"
+        );
+        for column in 0..=2 {
+            let x = left + 100.0 * f64::from(column) + 0.24;
+            for fraction in [0.2, 0.5, 0.8] {
+                let y = top + (bottom - top) * fraction;
+                assert!(
+                    paints.iter().any(|p| p.rectangle_fill.is_some()
+                        && p.bounds.0 <= x
+                        && x <= p.bounds.2
+                        && p.bounds.1 <= y
+                        && y <= p.bounds.3),
+                    "{paragraph_count} paragraphs: border {column} has a gap at y={y}: {paints:?}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn test_table_all_borders() {
     let cell = TableCell {
@@ -1097,8 +1792,9 @@ fn test_word_shared_boundary_starts_inside_the_following_cell() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn test_word_auto_row_bottom_twin_anchors_at_the_cell_boundary() {
+fn test_word_auto_row_band_reaches_the_minimum_height_boundary() {
     let cell = bordered_text_cell(
         "Auto",
         CellBorder {
@@ -1110,7 +1806,7 @@ fn test_word_auto_row_bottom_twin_anchors_at_the_cell_boundary() {
     );
     let table = Table {
         rows: vec![TableRow {
-            minimum_height: None,
+            minimum_height: Some(42.0),
             cells: vec![cell],
             height: None,
         }],
@@ -1119,14 +1815,31 @@ fn test_word_auto_row_bottom_twin_anchors_at_the_cell_boundary() {
         ..Table::default()
     };
     let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-    let result = generate_typst(&doc).unwrap().source;
-
-    assert!(
-        result.contains("#place(bottom + left, dx: -5pt, dy: 5pt, rect(width: 0.48pt, height:"),
-        "the lower twin's bottom edge must sit on the cell boundary: {result}"
-    );
+    let output = generate_typst(&doc).unwrap();
+    let paints =
+        crate::render::pdf::compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+    let vertical: Vec<_> = paints
+        .iter()
+        .filter(|p| {
+            p.rectangle_fill.is_some()
+                && p.bounds.2 - p.bounds.0 < 1.0
+                && p.bounds.3 - p.bounds.1 > 10.0
+        })
+        .collect();
+    assert!(!vertical.is_empty());
+    for border in &vertical {
+        assert!((border.bounds.0 - 72.0).abs() < 0.001);
+        assert!(border.bounds.1 >= 72.0 - 0.001 && border.bounds.3 <= 114.0 + 0.001);
+    }
+    for y in [72.01, 82.5, 93.0, 103.5, 113.99] {
+        assert!(
+            vertical.iter().any(|p| p.bounds.1 <= y && p.bounds.3 >= y),
+            "the border must cover its complete 42pt auto-row floor at y={y}: {vertical:?}"
+        );
+    }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn test_word_auto_row_vertical_bands_use_blank_paragraph_mark_metrics() {
     let mark_style: TextStyle = TextStyle {
@@ -1186,21 +1899,35 @@ fn test_word_auto_row_vertical_bands_use_blank_paragraph_mark_metrics() {
         ..Table::default()
     };
     let doc = make_doc(vec![make_flow_page(vec![Block::Table(table)])]);
-    let result: String = generate_typst(&doc).unwrap().source;
-
-    // The default 5pt vertical padding plus half of each 0.5pt horizontal
-    // border is included in the row frame estimate.
-    let vertical_inset_pt: f64 = 10.5;
-    let expected_band_height: String = tables::format_geometry(
-        (line_box.top_em + line_box.bottom_em) * line_box.font_size_pt + vertical_inset_pt,
-    );
-    let expected_vertical_bands: String =
-        format!("rect(width: 0.48pt, height: {expected_band_height}pt");
-    assert_eq!(
-        result.matches(&expected_vertical_bands).count(),
-        4,
-        "both vertical borders must use the 24pt paragraph-mark frame for their top and bottom twins: {result}"
-    );
+    let output = generate_typst(&doc).unwrap();
+    let paints =
+        crate::render::pdf::compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+    let expected_height = (line_box.top_em + line_box.bottom_em) * line_box.font_size_pt + 10.5;
+    for x in [72.24, 172.24] {
+        let borders: Vec<_> = paints
+            .iter()
+            .filter(|p| {
+                p.rectangle_fill.is_some()
+                    && p.bounds.2 - p.bounds.0 < 1.0
+                    && p.bounds.0 <= x
+                    && x <= p.bounds.2
+            })
+            .collect();
+        assert!(!borders.is_empty());
+        for border in &borders {
+            assert!(
+                border.bounds.1 >= 72.0 - 0.001
+                    && border.bounds.3 <= 72.0 + expected_height + 0.001
+            );
+        }
+        for fraction in [0.01, 0.25, 0.5, 0.75, 0.99] {
+            let y = 72.0 + expected_height * fraction;
+            assert!(
+                borders.iter().any(|p| p.bounds.1 <= y && p.bounds.3 >= y),
+                "the complete 24pt blank paragraph-mark frame must have a border at y={y}: {borders:?}"
+            );
+        }
+    }
 }
 
 #[test]
