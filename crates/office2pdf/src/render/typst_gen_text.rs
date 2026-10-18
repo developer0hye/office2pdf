@@ -6511,6 +6511,12 @@ fn sheet_advance_grid_tracking_pt(style: &TextStyle, text: &str) -> Option<f64> 
 /// closing parenthesis) adds their full rounded advance on top: Typst draws
 /// none of that width naturally, unlike the visible run's own final glyph
 /// above, which only needs its rounding delta (issue #1631).
+///
+/// A line ending in a space is placed with that space counted in its width,
+/// although it paints nothing: the native budget export ends its right-aligned
+/// `"FEB "` header a rounded space advance short of the edge (issue #1774).
+/// Typst drops that space, so the reserve then holds the whole rounded run
+/// less the part Typst lays out.
 pub(super) fn sheet_trailing_advance_space_pt(style: &ParagraphStyle, runs: &[Run]) -> Option<f64> {
     let scale: f64 = sheet_advance_grid_scale()?;
     if !matches!(style.alignment, Some(Alignment::Right)) {
@@ -6543,21 +6549,35 @@ pub(super) fn sheet_trailing_advance_space_pt(style: &ParagraphStyle, runs: &[Ru
     let size_pt: f64 = run.style.font_size.filter(|size| *size > 0.0)?;
     let sheet_size_pt: f64 = size_pt / scale;
     let advances_em: Vec<f64> = sheet_advance_grid_glyph_advances_em(&run.style, shaped)?;
-    let natural_pt: f64 = advances_em.last()? * size_pt;
-    let rounded_pt: f64 =
-        round_half_up_to_grid(advances_em.last()? * sheet_size_pt, SHEET_ADVANCE_GRID_PT) * scale;
-    let mut space_pt: f64 = rounded_pt - natural_pt;
+    let rounded_pt = |advance_em: &f64| -> f64 {
+        round_half_up_to_grid(advance_em * sheet_size_pt, SHEET_ADVANCE_GRID_PT) * scale
+    };
+    let mut space_pt: f64 =
+        if !shaped.chars().all(char::is_whitespace) && escape_typst(shaped).ends_with(' ') {
+            // Typst drops a paragraph's final markup space before shaping. The
+            // run's tracking spreads its rounding over every gap, the dropped
+            // space's included, but no tracking follows the glyph before that
+            // space either (issue #1774). A longer space run is emitted as a
+            // code string and laid out in full, and a run of nothing but that
+            // space could collapse into a space ending the run before it,
+            // which is unmeasured; both keep the final-advance delta below.
+            let (_, kept_advances_em) = advances_em.split_last()?;
+            let kept_gaps: usize = kept_advances_em.len().checked_sub(1)?;
+            let natural_kept_pt: f64 = kept_advances_em.iter().sum::<f64>() * size_pt;
+            let tracking_pt: f64 = (kept_advances_em.iter().map(rounded_pt).sum::<f64>()
+                - natural_kept_pt)
+                / kept_advances_em.len() as f64;
+            let laid_out_pt: f64 = natural_kept_pt + tracking_pt * kept_gaps as f64;
+            advances_em.iter().map(rounded_pt).sum::<f64>() - laid_out_pt
+        } else {
+            rounded_pt(advances_em.last()?) - advances_em.last()? * size_pt
+        };
 
     if let Some(reserved_glyphs) = style.sheet_number_format_reserved_glyphs.as_deref()
         && let Some(reserved_advances_em) =
             sheet_advance_grid_glyph_advances_em(&run.style, reserved_glyphs)
     {
-        space_pt += reserved_advances_em
-            .iter()
-            .map(|advance| {
-                round_half_up_to_grid(advance * sheet_size_pt, SHEET_ADVANCE_GRID_PT) * scale
-            })
-            .sum::<f64>();
+        space_pt += reserved_advances_em.iter().map(rounded_pt).sum::<f64>();
     }
 
     (space_pt != 0.0).then_some(space_pt)

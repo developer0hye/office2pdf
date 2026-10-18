@@ -6102,8 +6102,10 @@ fn fitted_budget_title_rests_its_rounded_descent_on_the_native_row_boundary() {
 /// in `assets/bugfixes/issue-1729/layout-audit.json`; the Trebuchet MS
 /// numbers' matched widths agree within 0.07%, so their right edges are
 /// native too. The report measured all four classes 0.915pt left of Excel
-/// (#1773). `YEAR` is Cambria Bold, whose substitutes round to different
-/// whole-point widths, so it is checked only when Cambria itself shapes it.
+/// (#1773). The `mmm` month headers hold text with a trailing space, which
+/// Excel counts in the width it places them by (#1774). `YEAR` and the month
+/// headers are Cambria Bold, whose substitutes round to different whole-point
+/// widths, so they are checked only when Cambria itself shapes them.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn fitted_budget_right_aligned_cells_start_at_native_edges_in_every_format_section() {
@@ -6128,6 +6130,8 @@ fn fitted_budget_right_aligned_cells_start_at_native_edges_in_every_format_secti
         ("(771)", "Trebuchet MS", 446.94, 455.52),
         ("-", "Trebuchet MS", 301.08, 515.58),
         ("YEAR", "Cambria", 659.88, 499.98),
+        ("FEB", "Cambria", 323.70, 499.98),
+        ("OCT", "Cambria", 573.30, 499.98),
     ] {
         let matches: Vec<_> = runs
             .iter()
