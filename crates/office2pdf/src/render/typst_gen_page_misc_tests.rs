@@ -4901,7 +4901,7 @@ fn header_top_margin_pt(
     let Page::Flow(page) = &doc.pages[0] else {
         panic!("the helper creates a flow page");
     };
-    flow_page_top_margin_pt(page, &page.size, None, false)
+    flow_page_top_margin_pt(page, page.header.as_ref(), &page.size, None, false)
 }
 
 /// An exact header line taller than its band starts the body below that line.
@@ -5665,21 +5665,21 @@ fn a_page_anchored_header_shape_reserves_space_without_measurable_text_metrics()
             behind_text: true,
         });
 
-    let top_margin_pt: f64 = flow_page_top_margin_pt(page, &page.size, None, true);
+    let top_margin_pt: f64 =
+        flow_page_top_margin_pt(page, page.header.as_ref(), &page.size, None, true);
     assert!(
         (top_margin_pt - 103.16).abs() < 0.001,
         "a measured page-anchored overlay and the fallback empty line box must be reserved when header text metrics are unavailable, got {top_margin_pt}pt"
     );
 }
 
-/// A taller first-page story grows the shared margin too (issues #736, #846).
+/// A taller first-page story lowers page one's body too (issues #736, #846).
 ///
-/// One margin serves the whole section, so measuring only the default story
-/// would leave a taller `w:titlePg` header overprinting page one — the same
-/// defect, one page in.
+/// Measuring only the default story would leave a taller `w:titlePg` header
+/// overprinting page one — the same defect, one page in.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn a_taller_first_page_header_also_grows_the_margin() {
+fn a_taller_first_page_header_also_lowers_page_ones_body() {
     use crate::ir::HeaderFooter;
 
     if crate::render::pdf::font_hhea_ascender_em("Malgun Gothic").is_none() {
@@ -5722,8 +5722,111 @@ fn a_taller_first_page_header_also_grows_the_margin() {
     assert!(
         last_first_page_baseline < first_body_baseline,
         "the first-page header reaches {last_first_page_baseline}pt against the \
-         body's {first_body_baseline}pt — the shared margin ignored it"
+         body's {first_body_baseline}pt — page one's body was not lowered under \
+         its own story"
     );
+}
+
+/// A `w:titlePg` section starts each page's body under the header story that
+/// page shows (issue #2216).
+///
+/// docxide-pdf's `first-header-minimum-row` puts a 160pt exact-line
+/// first-page header 6pt below the page top over a 36pt margin, and Word starts
+/// page two's body on that margin rather than under the 166pt line. Each page
+/// here must lay out like a section whose only story is the one it shows: page
+/// one under the first-page story, whether it is taller or shorter than the
+/// default, and page two under the default story, or on the declared margin
+/// where there is none.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn each_page_of_a_title_page_section_starts_its_body_under_its_own_header() {
+    use crate::ir::HeaderFooter;
+
+    // A positive height is one exact line; a negative one is that many natural
+    // 12pt lines, whose seat shift is clamped against the band's room.
+    let story = |text: &str, height: f64| HeaderFooter {
+        shapes: Vec::new(),
+        distance_from_edge: Some(6.0),
+        sheet_print_scale: None,
+        paragraphs: match height > 0.0 {
+            true => vec![exact_header_paragraph(text, arial(12.0), height)],
+            false => (0..(-height) as usize)
+                .map(|_| header_text_paragraph(text, arial(12.0)))
+                .collect(),
+        },
+    };
+    let section = |first_header: Option<HeaderFooter>, header: Option<HeaderFooter>| {
+        make_doc(vec![Page::Flow(FlowPage {
+            first_header,
+            first_footer: None,
+            size: PageSize::default(),
+            margins: Margins {
+                top: 36.0,
+                bottom: 36.0,
+                left: 72.0,
+                right: 72.0,
+            },
+            content: (0..120)
+                .map(|index| make_paragraph(&format!("Line {index}")))
+                .collect(),
+            header,
+            footer: None,
+            columns: None,
+            line_grid_pitch: None,
+            line_grid_snaps_lines: false,
+            page_numbering: None,
+            page_borders: None,
+            line_numbering: None,
+            vertical_alignment: None,
+        })])
+    };
+    let page_runs = |doc: &Document, page_index: usize| {
+        let source: String = generate_typst(doc)
+            .expect("document should generate")
+            .source;
+        crate::render::pdf::compiled_text_runs(&source, page_index)
+            .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"))
+    };
+    let top_baseline = |doc: &Document, page_index: usize, prefix: &str| -> f64 {
+        page_runs(doc, page_index)
+            .iter()
+            .filter(|run| run.text.starts_with(prefix))
+            .map(|run| run.baseline_pt)
+            .fold(f64::INFINITY, f64::min)
+    };
+
+    // A first-page story taller than the default, one with no default story,
+    // one shorter than the default (it fits its 30pt band), five natural lines
+    // over the default, and a first-page story the same as the default.
+    for (first_height, default_height) in [
+        (100.0, Some(40.0)),
+        (100.0, None),
+        (20.0, Some(80.0)),
+        (-5.0, Some(40.0)),
+        (100.0, Some(100.0)),
+    ] {
+        let titled = section(
+            Some(story("First", first_height)),
+            default_height.map(|height| story("Default", height)),
+        );
+        let first_only = section(None, Some(story("First", first_height)));
+        let default_only = section(None, default_height.map(|height| story("Default", height)));
+
+        for (label, prefix, page_index, expected_doc) in [
+            ("page one's header", "First", 0, &first_only),
+            ("page one's body", "Line", 0, &first_only),
+            ("page two's body", "Line", 1, &default_only),
+        ] {
+            let got: f64 = top_baseline(&titled, page_index, prefix);
+            let expected: f64 = top_baseline(expected_doc, page_index, prefix);
+            assert!(
+                expected.is_finite() && (got - expected).abs() < 0.01,
+                "with first-page story {first_height} over default story \
+                 {default_height:?}, {label} must sit at {expected}pt as under that \
+                 story alone, got {got}pt"
+            );
+        }
+    }
 }
 
 /// A header line advances by Word's pitch, not Typst's default leading.
