@@ -1921,6 +1921,7 @@ fn visit_block_fonts(block: &Block, visitor: &mut impl FnMut(&str, &str) -> bool
         Block::Table(table) => visit_table_fonts(table, visitor),
         Block::FloatingTable(table) => visit_table_fonts(&table.table, visitor),
         Block::FloatingTextBox(text_box) => visit_blocks_fonts(&text_box.content, visitor),
+        Block::TextFrame(frame) => visit_blocks_fonts(&frame.content, visitor),
         Block::List(list) => list.items.iter().all(|item| {
             item.content
                 .iter()

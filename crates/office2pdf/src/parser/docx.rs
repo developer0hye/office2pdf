@@ -14,8 +14,8 @@ use crate::ir::{
     FloatingTable, FloatingTextBox, ImageData, ImageFormat, ImageParagraphIndent,
     ImageParagraphSpacing, InlineTextBox, Insets, Ligatures, LineCap, LineJoin, LineSpacing, Page,
     PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment,
-    TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow, TextDirection, TextStyle,
-    VerticalTextAlign, WordCompatibilityMode,
+    TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow, TextDirection, TextFrame,
+    TextStyle, VerticalTextAlign, WordCompatibilityMode,
 };
 use crate::parser::Parser;
 
@@ -45,7 +45,7 @@ use self::media::{
 use self::sections::extract_page_size;
 use self::sections::{
     HeaderFooterAssets, HeaderFooterStyleContext, LinkedFirstStories, SectionHeaderFooterInputs,
-    SectionOverrides, build_flow_page_from_section, build_header_footer_assets,
+    SectionOverrides, body_text_frame, build_flow_page_from_section, build_header_footer_assets,
 };
 #[cfg(test)]
 use self::styles::parse_ligatures_value;
@@ -597,6 +597,21 @@ impl Parser for DocxParser {
                             "Empty framed paragraph leaves no body line"
                         );
                         tagged.clear();
+                    } else if let Some(frame) =
+                        lifted_text_frame(para, &tagged, &docx.document.children, idx)
+                    {
+                        tracing::debug!(
+                            format = "DOCX",
+                            body_index = idx,
+                            x_pt = frame.x,
+                            y_pt = frame.y,
+                            width_pt = frame.width,
+                            height_pt = frame.height,
+                            "Framed paragraph lifted out of the body flow"
+                        );
+                        tagged = vec![TaggedElement::Plain(vec![Block::TextFrame(Box::new(
+                            frame,
+                        ))])];
                     }
                     // Inject math equations for this body child
                     let eqs = math.take(idx);
@@ -2268,6 +2283,45 @@ fn is_empty_lifted_frame(
                     && paragraph.style.border.is_none()
             )
         )
+}
+
+/// A body paragraph alone in a `w:framePr` frame hung below its own place in
+/// the flow, as [`body_text_frame`] describes, carrying the paragraph's
+/// converted blocks. Adjacent paragraphs, or a table, that share an identical
+/// frame stay in the flow, as does a list paragraph or one holding a page or
+/// column break, which a placed frame cannot hold.
+///
+/// TODO(frames shared by several paragraphs): Word draws a group of
+/// paragraphs with an identical `w:framePr` in one frame.
+fn lifted_text_frame(
+    para: &docx_rs::Paragraph,
+    converted: &[TaggedElement],
+    body: &[docx_rs::DocumentChild],
+    index: usize,
+) -> Option<TextFrame> {
+    let frame_property: &docx_rs::FrameProperty = para.property.frame_property.as_ref()?;
+    let mut frame: TextFrame = body_text_frame(frame_property)?;
+    let shares_frame = |neighbour: Option<&docx_rs::DocumentChild>| {
+        neighbour.and_then(leading_frame_property) == Some(frame_property)
+    };
+    if shares_frame(index.checked_sub(1).and_then(|previous| body.get(previous)))
+        || shares_frame(body.get(index + 1))
+    {
+        return None;
+    }
+    for element in converted {
+        let TaggedElement::Plain(blocks) = element else {
+            return None;
+        };
+        if blocks
+            .iter()
+            .any(|block| matches!(block, Block::PageBreak | Block::ColumnBreak))
+        {
+            return None;
+        }
+        frame.content.extend(blocks.iter().cloned());
+    }
+    (!frame.content.is_empty()).then_some(frame)
 }
 
 /// The `w:framePr` a body child would sit in: a paragraph's own, or a table's

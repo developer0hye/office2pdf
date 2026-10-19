@@ -380,8 +380,9 @@ pub(super) fn generate_paragraph(
     // own spacing has already been laid and its content starts at the first
     // line's top. A paragraph that writes no block of its own is left as it
     // is.
-    // TODO(bare paragraph beside a floating table): such a paragraph, which
-    // states no spacing, line or decoration, still runs under the table.
+    // TODO(bare paragraph beside a float): such a paragraph, which states no
+    // spacing, line or decoration, still runs under a floating table or text
+    // frame.
     let float_wrap: Option<(String, f64)> =
         (wraps_beside_floats && (has_para_style || has_outer_spacing_block)).then(|| {
             let first_line_pt: f64 = if is_empty_paragraph {

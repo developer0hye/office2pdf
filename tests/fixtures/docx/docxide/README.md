@@ -143,6 +143,15 @@ with only a 180×90pt inline picture and 72pt side margins. Native Word puts the
 picture where the paragraph's first line of text would start, inside its
 indents; a compiled-layout regression checks the eight left edges.
 
+`offset_text_frame.docx` is the unmodified synthetic
+`cases/paragraph-offset-frame-immediate/input.docx` from
+[docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/paragraph-offset-frame-immediate),
+Apache-2.0. A one-cell table ("Recipient") is followed by a paragraph in a
+text-anchored `w:framePr` frame with a stated height, hung 16.8pt (`w:y`) below
+its place in the flow, and then by "Dear recipient". Native Word sets "Dear
+recipient" on the line after the table and the framed line 16.75pt below it; a
+compiled-layout regression checks both baselines.
+
 `floating_table_wrap.docx` is the unmodified synthetic
 `cases/leading-table-clear-leading-no-clear/input.docx` from
 [docxide-pdf at adb8c2b8](https://github.com/sverrejb/docxide-pdf/tree/adb8c2b82baad8deb2973d1d059bfb7513b8e1fe/tests/fixtures/cases/leading-table-clear-leading-no-clear),

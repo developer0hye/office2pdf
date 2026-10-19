@@ -159,6 +159,9 @@ pub enum Block {
     Table(Table),
     /// A Word table positioned by `w:tblpPr`, outside the document's text flow.
     FloatingTable(Box<FloatingTable>),
+    /// Body paragraphs Word lifts out of the text flow into a `w:framePr`
+    /// frame.
+    TextFrame(Box<TextFrame>),
     Image(ImageData),
     /// Consecutive inline images from one flow paragraph.
     InlineImages(Vec<ImageData>),
@@ -1293,6 +1296,39 @@ pub struct FloatingShape {
     /// Vertical offset in points from the anchor reference.
     pub offset_y: f64,
     pub wrap_mode: WrapMode,
+}
+
+/// A body paragraph in a `w:framePr` frame that hangs `w:y` below the
+/// paragraph's own place in the flow (`w:vAnchor="text"`) with a stated
+/// height. Word draws it in its frame, out of the text flow, and lays the text
+/// after it beside the frame (issue #2231).
+#[derive(Debug, Clone)]
+pub struct TextFrame {
+    pub content: Vec<Block>,
+    /// `w:x` in points. Before section resolution it is measured from
+    /// `horizontal_anchor`, or replaced by `horizontal_align`; afterwards it is
+    /// measured from the left edge of the page text area, and the anchor is
+    /// Text.
+    pub x: f64,
+    pub horizontal_anchor: FrameAnchor,
+    /// `w:xAlign` in place of `w:x`.
+    pub horizontal_align: Option<FrameAlign>,
+    /// `w:y`: how far below the top of the paragraph's place in the flow the
+    /// frame starts, in points.
+    pub y: f64,
+    /// `w:w` in points.
+    pub width: f64,
+    /// `w:h` in points: the frame's height when `exact_height`, otherwise the
+    /// least height its content stretches.
+    pub height: f64,
+    /// `w:hRule="exact"`.
+    pub exact_height: bool,
+    /// `w:hSpace`: how far body text beside the frame keeps from its left and
+    /// right edges, in points.
+    pub horizontal_space: f64,
+    /// `w:vSpace`: how far body text keeps from its top and bottom edges, in
+    /// points.
+    pub vertical_space: f64,
 }
 
 /// A DOCX body table whose `w:tblpPr` frame has been resolved against its

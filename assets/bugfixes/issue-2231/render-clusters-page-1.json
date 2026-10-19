@@ -1,0 +1,279 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 139.7376,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 25.92,
+        "x": 140.88,
+        "y": 92.64
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-0269eeea1320",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 136.5696,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 27.6,
+        "x": 180.0,
+        "y": 92.64
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-1d02ab209e0b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 81.9648,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 14.64,
+        "x": 221.28,
+        "y": 95.28
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-8d4effefaa9f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 80.1216,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 14.64,
+        "x": 207.36,
+        "y": 92.64
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-4dd85f6b7425",
+      "region": "top"
+    },
+    {
+      "area_pt2": 56.16,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 12.24,
+        "x": 167.28,
+        "y": 94.56
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-86ba312e7a8b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.0416,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 10.56,
+        "x": 267.12,
+        "y": 95.76
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-dc4ae44afcb5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.784,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.96,
+        "x": 110.4,
+        "y": 96.0
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-e29ef7f179cb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.208,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 10.08,
+        "x": 72.24,
+        "y": 92.88
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-91b5c225622b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.7104,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 82.08,
+        "y": 92.64
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-c616c48f1eb6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.4432,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 8.64,
+        "x": 101.52,
+        "y": 78.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inside 'Dear recipient': the same glyphs at the same position (dy 0.09pt), outlines differing only because Word paints Times New Roman and this host its metric-compatible Liberation Serif."
+      },
+      "id": "p1-0e2fe98d3654",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.2544,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.96,
+        "x": 96.24,
+        "y": 96.0
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-541c831c6411",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 243.84,
+        "y": 95.76
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-738121fe7f6b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 299.04,
+        "y": 95.76
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-8aafa3a15d60",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 6.0,
+        "x": 255.6,
+        "y": 95.76
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-1d64d0521b5e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 6.96,
+        "width": 6.0,
+        "x": 292.08,
+        "y": 95.76
+      },
+      "disposition": {
+        "issue": "#2233",
+        "kind": "issue",
+        "note": "The framed line 'About providing information' on Word's baseline (dy 0.14pt) but 71.03pt right: its w:ind w:left=-1418 is clamped to zero, so it starts at the frame's left edge plus the 78pt first-line indent instead of 70.9pt left of that."
+      },
+      "id": "p1-4f8d478c7077",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 136.56,
+        "y": 78.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inside 'Dear recipient': the same glyphs at the same position (dy 0.09pt), outlines differing only because Word paints Times New Roman and this host its metric-compatible Liberation Serif."
+      },
+      "id": "p1-99b893eb6d01",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 16,
+    "duplicate": 0,
+    "total": 16,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

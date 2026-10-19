@@ -1,0 +1,579 @@
+//! A body paragraph in a `w:framePr` frame hung `w:y` below its anchor
+//! paragraph: Word lifts it out of the flow, draws it in its frame, and lays
+//! the text after it beside the frame (issue #2231).
+
+use super::*;
+
+const MARGIN_PT: f64 = 72.0;
+/// A4's 11906 twips less two 1440-twip margins.
+const TEXT_WIDTH_PT: f64 = 451.3;
+/// The frame width every frame here states: 3000 twips.
+const FRAME_WIDTH_PT: f64 = 150.0;
+/// The `w:hSpace` the wrapping tests state: 180 twips.
+const FRAME_SPACE_PT: f64 = 9.0;
+
+fn run(content: &str) -> String {
+    format!(
+        r#"<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="24"/></w:rPr>{content}</w:r>"#
+    )
+}
+
+fn paragraph(paragraph_properties: &str, text: &str) -> String {
+    format!(
+        r#"<w:p><w:pPr>{paragraph_properties}<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>{}</w:p>"#,
+        run(&format!("<w:t>{text}</w:t>"))
+    )
+}
+
+/// A 3000-twip-wide wrapping frame `height_twips` tall, hung `y_twips` below
+/// its anchor paragraph; `extra` states the rest of its attributes.
+fn offset_frame(height_twips: u32, y_twips: i32, extra: &str) -> String {
+    format!(
+        r#"<w:framePr w:w="3000" w:h="{height_twips}" w:wrap="around" w:vAnchor="text" w:y="{y_twips}" {extra}/>"#
+    )
+}
+
+/// An A4 section's page size and 72pt margins.
+const PAGE_SETUP: &str = r#"<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440"/>"#;
+
+/// An A4 package with 72pt margins, no settings part and no styles part.
+fn frame_docx(body: &str) -> Vec<u8> {
+    section_docx(body, PAGE_SETUP)
+}
+
+/// [`frame_docx`] with `section_properties` in the body's closing
+/// `w:sectPr`.
+fn section_docx(body: &str, section_properties: &str) -> Vec<u8> {
+    let document = format!(
+        r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{body}<w:sectPr>{section_properties}</w:sectPr></w:body></w:document>"#
+    );
+    let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default();
+    let parts: [(&str, &str); 3] = [
+        (
+            "[Content_Types].xml",
+            r#"<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"#,
+        ),
+        (
+            "_rels/.rels",
+            r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>"#,
+        ),
+        ("word/document.xml", &document),
+    ];
+    for (name, content) in parts {
+        zip.start_file(name, options).unwrap();
+        std::io::Write::write_all(&mut zip, content.as_bytes()).unwrap();
+    }
+    zip.finish().unwrap().into_inner()
+}
+
+/// The painted non-blank runs, one per line, with each run's advance width.
+#[cfg(not(target_arch = "wasm32"))]
+fn placed(data: &[u8]) -> Vec<(crate::render::pdf::PlacedTextRun, f64)> {
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let text = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+    let glyphs = crate::render::pdf::compiled_glyph_runs(&source.source, 0, true).unwrap();
+    text.into_iter()
+        .filter(|run| !run.text.trim().is_empty())
+        .map(|run| {
+            let width = glyphs
+                .iter()
+                .find(|glyph| glyph.text == run.text)
+                .unwrap_or_else(|| panic!("no glyph run {:?}", run.text))
+                .width_pt();
+            (run, width)
+        })
+        .collect()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn find<'a>(
+    runs: &'a [(crate::render::pdf::PlacedTextRun, f64)],
+    text: &str,
+) -> &'a (crate::render::pdf::PlacedTextRun, f64) {
+    runs.iter()
+        .find(|(run, _)| run.text.trim_end() == text)
+        .unwrap_or_else(|| panic!("no run {text:?} in {runs:?}"))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn assert_close(actual: f64, expected: f64, context: &str) {
+    assert!(
+        (actual - expected).abs() < 0.05,
+        "{context}: {actual} != {expected}"
+    );
+}
+
+/// The body blocks of the package's only section.
+fn body_blocks(data: &[u8]) -> Vec<Block> {
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(page) = &document.pages[0] else {
+        panic!("expected a flow page");
+    };
+    page.content.clone()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn offset_frame_is_drawn_below_its_anchor_and_leaves_no_line() {
+    let control = placed(&frame_docx(
+        &[
+            paragraph("", "Anchor line"),
+            paragraph("", "Following text"),
+        ]
+        .concat(),
+    ));
+    let (control_following, _) = find(&control, "Following text");
+    for (h_anchor, x_twips, origin_pt) in [
+        ("page", 2000_i32, 0.0),
+        ("margin", 600, MARGIN_PT),
+        ("text", 1200, MARGIN_PT),
+    ] {
+        for y_twips in [800_i32, 1400] {
+            let frame = offset_frame(
+                600,
+                y_twips,
+                &format!(r#"w:hRule="exact" w:hAnchor="{h_anchor}" w:x="{x_twips}""#),
+            );
+            let data = frame_docx(
+                &[
+                    paragraph("", "Anchor line"),
+                    paragraph(&frame, "Framed text"),
+                    paragraph("", "Following text"),
+                ]
+                .concat(),
+            );
+            let runs = placed(&data);
+            let context = format!("hAnchor={h_anchor} x={x_twips} y={y_twips}");
+            // The frame takes no line: the next paragraph starts where the
+            // framed one would have, and its line ends above the frame.
+            let (following, _) = find(&runs, "Following text");
+            assert_close(
+                following.baseline_pt,
+                control_following.baseline_pt,
+                &context,
+            );
+            assert_close(following.left_pt, MARGIN_PT, &context);
+            // The frame hangs w:y below that same point, w:x from its anchor.
+            let (framed, _) = find(&runs, "Framed text");
+            assert_close(
+                framed.left_pt,
+                origin_pt + f64::from(x_twips) / 20.0,
+                &context,
+            );
+            assert_close(
+                framed.baseline_pt,
+                following.baseline_pt + f64::from(y_twips) / 20.0,
+                &context,
+            );
+        }
+    }
+}
+
+/// A frame's content starts at its top, though the section around it is
+/// centred vertically on the page.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn offset_frame_content_starts_at_its_top_in_a_vertically_centred_section() {
+    let y_twips: i32 = 800;
+    let centred: String = format!(r#"{PAGE_SETUP}<w:vAlign w:val="center"/>"#);
+    for height_twips in [1000_u32, 2400] {
+        let frame = offset_frame(
+            height_twips,
+            y_twips,
+            r#"w:hRule="exact" w:hAnchor="margin" w:x="0""#,
+        );
+        let data = section_docx(
+            &[
+                paragraph("", "Anchor line"),
+                paragraph(&frame, "Framed text"),
+                paragraph("", "Following text"),
+            ]
+            .concat(),
+            &centred,
+        );
+        let runs = placed(&data);
+        let context = format!("h={height_twips}");
+        let (anchor, _) = find(&runs, "Anchor line");
+        assert!(
+            anchor.baseline_pt > 300.0,
+            "{context}: the section must be centred: {runs:?}"
+        );
+        let (following, _) = find(&runs, "Following text");
+        let (framed, _) = find(&runs, "Framed text");
+        assert_close(
+            framed.baseline_pt,
+            following.baseline_pt + f64::from(y_twips) / 20.0,
+            &context,
+        );
+    }
+}
+
+/// The frame hangs from the end of the gap after the paragraph before it;
+/// the gap before the paragraph after it, which Word lays only between the
+/// two flowing paragraphs, does not move it.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_offset_frame_hangs_below_the_gap_after_the_paragraph_before_it() {
+    let y_twips: i32 = 1000;
+    let spaced = |before: u32, after: u32, text: &str| {
+        format!(
+            r#"<w:p><w:pPr><w:spacing w:before="{before}" w:after="{after}" w:line="240" w:lineRule="auto"/></w:pPr>{}</w:p>"#,
+            run(&format!("<w:t>{text}</w:t>"))
+        )
+    };
+    // The following paragraph can also open a continuous section of its
+    // own, as in the issue's case, where the framed paragraph ends the first.
+    let section_end: String = format!("<w:sectPr>{PAGE_SETUP}</w:sectPr>");
+    let continuous: String = format!(r#"<w:type w:val="continuous"/>{PAGE_SETUP}"#);
+    for ends_section in [false, true] {
+        for (after_twips, before_twips) in [(0_u32, 240_u32), (120, 240), (240, 120)] {
+            let frame = offset_frame(
+                600,
+                y_twips,
+                r#"w:hRule="exact" w:hAnchor="margin" w:x="0""#,
+            );
+            let frame_properties: String = if ends_section {
+                format!("{frame}{section_end}")
+            } else {
+                frame
+            };
+            let data = section_docx(
+                &[
+                    spaced(0, after_twips, "Anchor line"),
+                    format!(
+                        r#"<w:p><w:pPr>{frame_properties}</w:pPr>{}</w:p>"#,
+                        run("<w:t>Framed text</w:t>")
+                    ),
+                    spaced(before_twips, 0, "Following text"),
+                ]
+                .concat(),
+                if ends_section {
+                    &continuous
+                } else {
+                    PAGE_SETUP
+                },
+            );
+            let runs = placed(&data);
+            let context =
+                format!("after={after_twips} before={before_twips} ends section={ends_section}");
+            let (following, _) = find(&runs, "Following text");
+            let (framed, _) = find(&runs, "Framed text");
+            let (after, before): (f64, f64) = (
+                f64::from(after_twips) / 20.0,
+                f64::from(before_twips) / 20.0,
+            );
+            // The following line starts the larger of the two gaps below the
+            // anchor line; the frame, the first gap and w:y below it.
+            assert_close(
+                framed.baseline_pt,
+                following.baseline_pt - after.max(before) + after + f64::from(y_twips) / 20.0,
+                &context,
+            );
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn text_meeting_an_offset_frame_lies_beside_it() {
+    let lines: Vec<String> = (1..=8)
+        .map(|line| paragraph("", &format!("Line {line}")))
+        .collect();
+    let right_lines: Vec<String> = (1..=8)
+        .map(|line| paragraph(r#"<w:jc w:val="right"/>"#, &format!("Line {line}")))
+        .collect();
+    // A frame at the column's left edge leaves its room on the right, one at
+    // the right edge its room on the left.
+    let frame_right_x: f64 = TEXT_WIDTH_PT - FRAME_WIDTH_PT;
+    for (x_twips, body) in [(0.0, &lines), (frame_right_x, &right_lines)] {
+        for height_twips in [700_u32, 1100] {
+            let frame = offset_frame(
+                height_twips,
+                20,
+                &format!(
+                    r#"w:hRule="exact" w:hSpace="180" w:hAnchor="margin" w:x="{}""#,
+                    x_twips * 20.0
+                ),
+            );
+            let data = frame_docx(
+                &[
+                    paragraph("", "Anchor line"),
+                    paragraph(&frame, "Framed text"),
+                    body.concat(),
+                ]
+                .concat(),
+            );
+            let runs = placed(&data);
+            let context = format!("frame x={x_twips} h={height_twips}");
+            let (first, _) = find(&runs, "Line 1");
+            // The frame hangs 1pt below the first line's top.
+            let band_bottom: f64 =
+                first.baseline_pt - first.font_size_pt + 1.0 + f64::from(height_twips) / 20.0;
+            let (mut beside, mut below) = (0, 0);
+            for (run, width) in runs.iter().filter(|(run, _)| run.text.starts_with("Line")) {
+                let (left, right): (f64, f64) = (run.left_pt, run.left_pt + width);
+                if run.baseline_pt < band_bottom {
+                    if x_twips == 0.0 {
+                        assert_close(left, MARGIN_PT + FRAME_WIDTH_PT + FRAME_SPACE_PT, &context);
+                    } else {
+                        assert_close(right, MARGIN_PT + frame_right_x - FRAME_SPACE_PT, &context);
+                    }
+                    beside += 1;
+                } else if run.baseline_pt - run.font_size_pt > band_bottom {
+                    if x_twips == 0.0 {
+                        assert_close(left, MARGIN_PT, &context);
+                    } else {
+                        assert_close(right, MARGIN_PT + TEXT_WIDTH_PT, &context);
+                    }
+                    below += 1;
+                }
+            }
+            assert!(
+                beside > 0 && below > 0,
+                "{context}: {beside} lines beside, {below} below in {runs:?}"
+            );
+        }
+    }
+}
+
+/// An exact frame keeps text off the height it states; an at-least one off
+/// its content when that is taller.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_offset_frame_excludes_its_stated_or_its_content_height() {
+    let framed_text: &str =
+        "Framed words that need several lines in a narrow frame, which is what this paragraph does";
+    let lines: Vec<String> = (1..=8)
+        .map(|line| paragraph("", &format!("Line {line}")))
+        .collect();
+    for rule in ["exact", "atLeast"] {
+        let frame = offset_frame(
+            200,
+            20,
+            &format!(r#"w:hRule="{rule}" w:hAnchor="margin" w:x="0""#),
+        );
+        let data = frame_docx(
+            &[
+                paragraph("", "Anchor line"),
+                paragraph(&frame, framed_text),
+                lines.concat(),
+            ]
+            .concat(),
+        );
+        let runs = placed(&data);
+        let (first, _) = find(&runs, "Line 1");
+        let frame_top: f64 = first.baseline_pt - first.font_size_pt + 1.0;
+        let content_bottom: f64 = runs
+            .iter()
+            .filter(|(run, _)| framed_text.contains(run.text.trim()))
+            .map(|(run, _)| run.baseline_pt)
+            .fold(f64::MIN, f64::max);
+        assert!(
+            content_bottom > frame_top + 30.0,
+            "{rule}: the framed text must take several lines: {runs:?}"
+        );
+        // Line tops, like the frame top, are taken an em above the baseline.
+        // An exact frame ends 10pt (200 twips) down; an at-least one below
+        // its last line, whose box reaches some way past that baseline.
+        let (beside_before, below_after): (f64, f64) = match rule {
+            "exact" => (frame_top + 9.5, frame_top + 10.5),
+            _ => (content_bottom, content_bottom + 0.5 * first.font_size_pt),
+        };
+        let (mut beside, mut below) = (0, 0);
+        for (run, _) in runs.iter().filter(|(run, _)| run.text.starts_with("Line")) {
+            let line_top: f64 = run.baseline_pt - run.font_size_pt;
+            if line_top < beside_before {
+                assert_close(run.left_pt, MARGIN_PT + FRAME_WIDTH_PT, rule);
+                beside += 1;
+            } else if line_top > below_after {
+                assert_close(run.left_pt, MARGIN_PT, rule);
+                below += 1;
+            }
+        }
+        assert!(
+            beside > 0 && below > 0,
+            "{rule}: {beside} lines beside, {below} below in {runs:?}"
+        );
+    }
+}
+
+/// A paragraph whose first line ends above the frame but which reaches it
+/// starts below the frame rather than run over it; one that ends above the
+/// frame stays where it is.
+///
+/// TODO(per-line wrap beside a float, #2355): Word keeps the first lines
+/// above the frame and narrows the ones beside it.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_paragraph_reaching_an_offset_frame_from_above_starts_below_it() {
+    // Ten lines, which reach both frames; the short paragraph is one line.
+    let long_text: String = "Long paragraph words ".repeat(40);
+    for y_twips in [1000_i32, 1400] {
+        for (text, reaches_frame) in [("Short paragraph", false), (long_text.trim_end(), true)] {
+            let first_words: String = text.split(' ').take(2).collect::<Vec<_>>().join(" ");
+            let first_line = |runs: &[(crate::render::pdf::PlacedTextRun, f64)]| {
+                runs.iter()
+                    .find(|(run, _)| run.text.starts_with(&first_words))
+                    .map(|(run, _)| run.clone())
+                    .unwrap_or_else(|| panic!("no line starting {first_words:?} in {runs:?}"))
+            };
+            let control = placed(&frame_docx(
+                &[paragraph("", "Anchor line"), paragraph("", text)].concat(),
+            ));
+            let frame = offset_frame(
+                600,
+                y_twips,
+                r#"w:hRule="exact" w:hAnchor="margin" w:x="0""#,
+            );
+            let data = frame_docx(
+                &[
+                    paragraph("", "Anchor line"),
+                    paragraph(&frame, "Framed text"),
+                    paragraph("", text),
+                ]
+                .concat(),
+            );
+            let runs = placed(&data);
+            let context = format!("y={y_twips} reaches frame={reaches_frame}");
+            let line = first_line(&runs);
+            let expected: f64 = first_line(&control).baseline_pt
+                + if reaches_frame {
+                    f64::from(y_twips) / 20.0 + 30.0
+                } else {
+                    0.0
+                };
+            assert_close(line.baseline_pt, expected, &context);
+            assert_close(line.left_pt, MARGIN_PT, &context);
+        }
+    }
+}
+
+/// A frame that ends its section still keeps the text of a continuous
+/// section after it off its extent, while that section is laid out in the
+/// same text area.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_offset_frame_excludes_text_in_the_continuous_section_after_it() {
+    let lines: Vec<String> = (1..=8)
+        .map(|line| paragraph("", &format!("Line {line}")))
+        .collect();
+    let frame = offset_frame(700, 20, r#"w:hRule="exact" w:hAnchor="margin" w:x="0""#);
+    let continuous: &str = r#"<w:type w:val="continuous"/>"#;
+    // The second section keeps the first's margins, or moves its left one in
+    // to 144pt (2880 twips), which leaves the frame's band in another area.
+    for (second_left_twips, wraps) in [(1440_u32, true), (2880, false)] {
+        let body: String = [
+            paragraph("", "Anchor line"),
+            format!(
+                r#"<w:p><w:pPr>{frame}<w:sectPr>{PAGE_SETUP}</w:sectPr></w:pPr>{}</w:p>"#,
+                run("<w:t>Framed text</w:t>")
+            ),
+            lines.concat(),
+        ]
+        .concat();
+        let second_section: String = format!(
+            r#"{continuous}<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:bottom="1440" w:left="{second_left_twips}" w:right="1440"/>"#
+        );
+        let runs = placed(&section_docx(&body, &second_section));
+        let context = format!("second section left={second_left_twips}");
+        let margin: f64 = f64::from(second_left_twips) / 20.0;
+        let (first, _) = find(&runs, "Line 1");
+        if wraps {
+            assert_close(first.left_pt, MARGIN_PT + FRAME_WIDTH_PT, &context);
+        } else {
+            assert_close(first.left_pt, margin, &context);
+        }
+        let (last, _) = find(&runs, "Line 8");
+        assert_close(last.left_pt, margin, &context);
+    }
+}
+
+#[test]
+fn only_a_wrapping_text_anchored_frame_with_height_and_offset_is_lifted() {
+    let lifted: String = offset_frame(600, 400, r#"w:hRule="exact" w:hAnchor="margin" w:x="0""#);
+    let kept: [(&str, String); 8] = [
+        (
+            "no height",
+            r#"<w:framePr w:w="3000" w:wrap="around" w:vAnchor="text" w:hAnchor="margin" w:x="0" w:y="400"/>"#.to_string(),
+        ),
+        (
+            "no width",
+            r#"<w:framePr w:h="600" w:hRule="exact" w:wrap="around" w:vAnchor="text" w:hAnchor="margin" w:x="0" w:y="400"/>"#.to_string(),
+        ),
+        ("no offset", offset_frame(600, 0, r#"w:hRule="exact""#)),
+        (
+            "aligned vertically",
+            offset_frame(600, 400, r#"w:hRule="exact" w:yAlign="top""#),
+        ),
+        (
+            "not beside",
+            r#"<w:framePr w:w="3000" w:h="600" w:hRule="exact" w:wrap="notBeside" w:vAnchor="text" w:y="400"/>"#.to_string(),
+        ),
+        (
+            "no wrap",
+            r#"<w:framePr w:w="3000" w:h="600" w:hRule="exact" w:wrap="none" w:vAnchor="text" w:y="400"/>"#.to_string(),
+        ),
+        (
+            "margin anchored",
+            r#"<w:framePr w:w="3000" w:h="600" w:hRule="exact" w:wrap="around" w:vAnchor="margin" w:y="400"/>"#.to_string(),
+        ),
+        (
+            "page anchored",
+            r#"<w:framePr w:w="3000" w:h="600" w:hRule="exact" w:wrap="around" w:vAnchor="page" w:y="400"/>"#.to_string(),
+        ),
+    ];
+    let is_frame = |block: &Block| matches!(block, Block::TextFrame(_));
+    let blocks = body_blocks(&frame_docx(&paragraph(&lifted, "Framed text")));
+    let [Block::TextFrame(frame)] = blocks.as_slice() else {
+        panic!("expected one text frame: {blocks:?}");
+    };
+    assert!(
+        matches!(frame.content.as_slice(), [Block::Paragraph(paragraph)] if paragraph.runs[0].text == "Framed text"),
+        "{frame:?}"
+    );
+    for (case, frame) in kept {
+        let blocks = body_blocks(&frame_docx(&paragraph(&frame, "Framed text")));
+        assert!(!blocks.iter().any(is_frame), "{case}: {blocks:?}");
+    }
+    // Adjacent paragraphs with an identical frame share it; this path lifts
+    // a frame of one paragraph only.
+    let shared = body_blocks(&frame_docx(
+        &[
+            paragraph(&lifted, "Framed one"),
+            paragraph(&lifted, "Framed two"),
+        ]
+        .concat(),
+    ));
+    assert!(!shared.iter().any(is_frame), "shared frame: {shared:?}");
+}
+
+/// docxide-pdf's `paragraph-offset-frame-immediate`, the issue's case: Word
+/// sets "Dear recipient" on the line after the table, as if the framed
+/// paragraph between them were absent, and hangs the frame 16.8pt (`w:y`)
+/// below that line's top.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn issue_case_frame_hangs_below_the_table_and_leaves_no_line() {
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/offset_text_frame.docx");
+    let runs = placed(data);
+    let (recipient, _) = find(&runs, "Recipient");
+    let (dear, _) = find(&runs, "Dear recipient");
+    let (about, _) = find(&runs, "About providing information");
+    // Word: Recipient 69.78, Dear recipient 85.78; the one-line table row is
+    // the only thing between them.
+    assert!(
+        (dear.baseline_pt - recipient.baseline_pt - 16.0).abs() < 0.3,
+        "Dear recipient {} after Recipient {}",
+        dear.baseline_pt,
+        recipient.baseline_pt
+    );
+    // Word: About providing information 102.53, 16.75 below Dear recipient.
+    assert_close(
+        about.baseline_pt,
+        dear.baseline_pt + 16.8,
+        "framed paragraph",
+    );
+}

@@ -8,7 +8,7 @@ use crate::ir::{
     HeaderFooter, HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterShape,
     HeaderFooterShapeContent, Margins, PageNumbering, PageSize, PositionedTab,
     PositionedTabAlignment, PositionedTabRelativeTo, Run, TabLeader, Table, TextDirection,
-    TextStyle,
+    TextFrame, TextStyle,
 };
 
 use super::contexts::{DocxConversionContext, PictureCropContext, WrapContext};
@@ -444,6 +444,7 @@ pub(super) fn build_flow_page_from_section(
     let doc_default_style: Option<&ResolvedStyle> = styles.style_map.get(DOC_DEFAULT_STYLE_ID);
     let mut content = group_into_lists(elements, numberings);
     resolve_body_floating_table_positions(&mut content, &size, &margins);
+    resolve_body_text_frame_positions(&mut content, &size, &margins);
 
     for block in &content {
         if let Block::Chart(chart) = block {
@@ -984,6 +985,75 @@ pub(super) fn floating_table_frame(
         right_from_text: position_twips("rightFromText").unwrap_or(0.0).max(0.0),
         anchored_to_text: position_string("verticalAnchor") == Some("text"),
     })
+}
+
+/// The frame of a body paragraph whose `w:framePr` hangs it `w:y` below its
+/// own place in the flow (`w:vAnchor="text"`), with a stated width and height
+/// and text allowed beside it. Word lifts such a paragraph out of the flow;
+/// docxide-pdf's Word-probed `paragraph_offset_frame` draws the same line, and
+/// keeps the other text-anchored frames in the flow (issue #2231). The caller
+/// fills in the content.
+///
+/// FIXME(unprobed height rule): `w:hRule` other than `exact` is taken as a
+/// least height, as `atLeast` states; no Word reference probes a frame that
+/// omits the rule.
+pub(super) fn body_text_frame(frame: &docx_rs::FrameProperty) -> Option<TextFrame> {
+    let y: i32 = frame.y.filter(|&y| y != 0)?;
+    let width: u32 = frame.w.filter(|&width| width > 0)?;
+    let height: u32 = frame.h.filter(|&height| height > 0)?;
+    let hangs_below_text: bool = frame.v_anchor.as_deref() == Some("text")
+        && frame.y_align.is_none()
+        && !matches!(frame.wrap.as_deref(), Some("none" | "notBeside"));
+    hangs_below_text.then(|| TextFrame {
+        content: Vec::new(),
+        x: frame.x.map(twips_to_pt).unwrap_or(0.0),
+        horizontal_anchor: frame_anchor(frame.h_anchor.as_deref()),
+        // `w:xAlign` replaces `w:x`. `inside` and `outside` mirror on facing
+        // pages, which a frame's section does not tell apart here.
+        horizontal_align: frame.x_align.as_deref().and_then(|align| match align {
+            "inside" => Some(FrameAlign::Start),
+            "outside" => Some(FrameAlign::End),
+            align => frame_align(align),
+        }),
+        y: twips_to_pt(y),
+        width: twips_to_pt(width as i32),
+        height: twips_to_pt(height as i32),
+        exact_height: frame.h_rule.as_deref() == Some("exact"),
+        horizontal_space: frame.h_space.map(twips_to_pt).unwrap_or(0.0).max(0.0),
+        vertical_space: frame.v_space.map(twips_to_pt).unwrap_or(0.0).max(0.0),
+    })
+}
+
+/// Measure each body text frame's `x` from the text area's left edge, where
+/// the renderer's `#place` starts. Its `y` stays an offset from the frame's
+/// place in the flow, which only layout knows.
+///
+/// TODO(text frames in multi-column sections): a frame's `#place` starts at
+/// its column's left edge, which is the text area's only in the first column.
+fn resolve_body_text_frame_positions(
+    blocks: &mut [Block],
+    page_size: &PageSize,
+    margins: &Margins,
+) {
+    for block in blocks {
+        let Block::TextFrame(frame) = block else {
+            continue;
+        };
+        let (origin, available): (f64, f64) = match frame.horizontal_anchor {
+            FrameAnchor::Page => (0.0, page_size.width),
+            FrameAnchor::Margin | FrameAnchor::Text => (
+                margins.left,
+                (page_size.width - margins.left - margins.right).max(0.0),
+            ),
+        };
+        let offset: f64 = match frame.horizontal_align {
+            Some(align) => hf_aligned_offset(Some(align), available, Some(frame.width)),
+            None => frame.x,
+        };
+        frame.x = origin + offset - margins.left;
+        frame.horizontal_anchor = FrameAnchor::Text;
+        frame.horizontal_align = None;
+    }
 }
 
 fn resolve_body_floating_table_positions(
