@@ -1259,7 +1259,8 @@ pub struct FloatingTextBox {
 /// box's own paragraphs, tables, and pictures flow inside it. Emitting those
 /// blocks into the body instead gives the box's content its own flow and loses
 /// the outline, so the box travels with the run it was anchored to (issues
-/// #1690, #1889).
+/// #1690, #1889). An inline cached diagram, and an inline picture that shares
+/// its paragraph with text, ride the line in the same box (issue #2227).
 #[derive(Debug, Clone)]
 pub struct InlineTextBox {
     /// The box's own flow, including paragraphs, tables, and pictures.
@@ -1447,8 +1448,9 @@ pub struct Run {
     /// Optional footnote/endnote content. When present, a footnote marker is emitted and
     /// the content is rendered at the bottom of the page.
     pub footnote: Option<Vec<Run>>,
-    /// A DrawingML text box anchored inline at this run (`wp:inline`). Boxed
-    /// because every run carries the field while almost none carries a box.
+    /// A DrawingML text box, diagram or picture anchored inline at this run
+    /// (`wp:inline`). Boxed because every run carries the field while almost
+    /// none carries a box.
     pub inline_box: Option<Box<InlineTextBox>>,
 }
 

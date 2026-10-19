@@ -5828,7 +5828,8 @@ fn generate_run_at_with_metrics(
     generate_run_seated_with_metrics(out, run, opens_line, None, run_line_metrics);
 }
 
-/// Write an inline DrawingML text box as one item on its paragraph's line.
+/// Write an inline DrawingML text box, diagram or picture as one item on its
+/// paragraph's line.
 ///
 /// A Typst `box` takes part in the line that holds it, so the line grows to the
 /// box's height and the text after it keeps the same baseline — which is how

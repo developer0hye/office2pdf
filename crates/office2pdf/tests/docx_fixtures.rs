@@ -386,26 +386,36 @@ fn has_image_block(blocks: &[&Block]) -> bool {
     blocks.iter().any(|b| matches!(b, Block::Image(_)))
 }
 
-fn image_block_count(blocks: &[&Block]) -> usize {
-    blocks
-        .iter()
-        .map(|block| match block {
-            Block::Image(_) | Block::FloatingImage(_) => 1,
-            Block::InlineImages(images) => images.len(),
-            _ => 0,
-        })
-        .sum()
+/// The pictures one block holds: a picture block's own, or those riding a
+/// paragraph's line as inline boxes, as pictures sharing their paragraph with
+/// text do (issue #2227).
+fn block_picture_count(block: &Block) -> usize {
+    match block {
+        Block::Image(_) | Block::FloatingImage(_) => 1,
+        Block::InlineImages(images) => images.len(),
+        Block::Paragraph(paragraph) => paragraph
+            .runs
+            .iter()
+            .filter(|run| {
+                run.inline_box.as_deref().is_some_and(|inline_box| {
+                    matches!(inline_box.content.as_slice(), [Block::Image(_)])
+                })
+            })
+            .count(),
+        _ => 0,
+    }
 }
 
+fn image_block_count(blocks: &[&Block]) -> usize {
+    blocks.iter().map(|block| block_picture_count(block)).sum()
+}
+
+/// How many blocks hold pictures: picture blocks, and paragraphs whose line
+/// carries them.
 fn image_flow_container_count(blocks: &[&Block]) -> usize {
     blocks
         .iter()
-        .filter(|block| {
-            matches!(
-                block,
-                Block::Image(_) | Block::InlineImages(_) | Block::FloatingImage(_)
-            )
-        })
+        .filter(|block| block_picture_count(block) > 0)
         .count()
 }
 

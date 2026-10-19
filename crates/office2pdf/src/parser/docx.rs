@@ -1129,6 +1129,10 @@ struct RunChildrenMedia {
     /// paragraph's own line, so they ride the run rather than becoming flow
     /// blocks beneath it (issue #1690).
     inline_text_boxes: Vec<InlineTextBox>,
+    /// The `wp:inline` pictures this run holds when they share their
+    /// paragraph with text, each boxed at its extent: like the text boxes,
+    /// they ride the line (issue #2227).
+    inline_pictures: Vec<InlineTextBox>,
 }
 
 /// The ordered pieces of a run around structural layout breaks.
@@ -1136,6 +1140,91 @@ enum RunLayoutPart {
     Content(Box<docx_rs::Run>),
     PageBreak,
     ColumnBreak,
+}
+
+/// Give each `wp:inline` picture of a content part a part of its own, so a
+/// picture riding its paragraph's line keeps its place among the run's text
+/// (issue #2227). Other parts pass through unchanged.
+fn split_content_at_inline_pictures(part: RunLayoutPart) -> Vec<RunLayoutPart> {
+    let RunLayoutPart::Content(run) = part else {
+        return vec![part];
+    };
+    let is_inline_picture = |child: &docx_rs::RunChild| {
+        matches!(
+            child,
+            docx_rs::RunChild::Drawing(drawing)
+                if matches!(
+                    &drawing.data,
+                    Some(docx_rs::DrawingData::Pic(pic))
+                        if pic.position_type == docx_rs::DrawingPositionType::Inline
+                )
+        )
+    };
+    if run.children.len() < 2 || !run.children.iter().any(is_inline_picture) {
+        return vec![RunLayoutPart::Content(run)];
+    }
+
+    let mut parts: Vec<RunLayoutPart> = Vec::new();
+    let mut pending: Vec<docx_rs::RunChild> = Vec::new();
+    let flush = |children: Vec<docx_rs::RunChild>, parts: &mut Vec<RunLayoutPart>| {
+        if !children.is_empty() {
+            let mut content_run: docx_rs::Run = (*run).clone();
+            content_run.children = children;
+            parts.push(RunLayoutPart::Content(Box::new(content_run)));
+        }
+    };
+    for child in &run.children {
+        if is_inline_picture(child) {
+            flush(std::mem::take(&mut pending), &mut parts);
+            flush(vec![child.clone()], &mut parts);
+        } else {
+            pending.push(child.clone());
+        }
+    }
+    flush(pending, &mut parts);
+    parts
+}
+
+/// For each stretch of the paragraph between page and column breaks, whether
+/// it holds text an inline picture would share a line with: any character,
+/// including a space, or a tab or line break.
+fn line_text_by_layout_fragment(para: &docx_rs::Paragraph) -> Vec<bool> {
+    let mut fragments: Vec<bool> = vec![false];
+    let mark_text = |run: &docx_rs::Run, fragments: &mut Vec<bool>, splits: bool| {
+        for child in &run.children {
+            let is_line_text: bool = match child {
+                docx_rs::RunChild::Text(text) => !text.text.is_empty(),
+                docx_rs::RunChild::Tab(_) => true,
+                docx_rs::RunChild::Break(br) if is_page_break(br) || is_column_break(br) => {
+                    if splits {
+                        fragments.push(false);
+                    }
+                    false
+                }
+                docx_rs::RunChild::Break(_) => true,
+                _ => false,
+            };
+            if is_line_text {
+                *fragments.last_mut().expect("one fragment at least") = true;
+            }
+        }
+    };
+    for item in flatten_tracked_changes(&para.children) {
+        match item {
+            // Only a paragraph's own runs split at layout breaks; a
+            // hyperlink's runs stay in the fragment they start in.
+            ParagraphItem::Run(run) => mark_text(run, &mut fragments, true),
+            ParagraphItem::Hyperlink(hyperlink) => {
+                for child in &hyperlink.children {
+                    if let docx_rs::ParagraphChild::Run(run) = child {
+                        mark_text(run, &mut fragments, false);
+                    }
+                }
+            }
+            ParagraphItem::PageNum | ParagraphItem::NumPages => {}
+        }
+    }
+    fragments
 }
 
 /// Split only at page and column breaks so all content on either side keeps the
@@ -1186,8 +1275,9 @@ fn paragraph_has_visible_background(
 }
 
 /// Scan a run segment's children for drawings and VML shapes.
-/// Extracted images are pushed to `inline_images`; text boxes are returned in
-/// `RunChildrenMedia`.
+/// Extracted images are pushed to `inline_images`, except that a sized
+/// `wp:inline` picture is returned in `RunChildrenMedia` when
+/// `pictures_ride_runs`; text boxes are returned there too.
 fn extract_run_children_media(
     run: &docx_rs::Run,
     images: &ImageMap,
@@ -1195,9 +1285,11 @@ fn extract_run_children_media(
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
     inline_images: &mut Vec<Block>,
+    pictures_ride_runs: bool,
 ) -> RunChildrenMedia {
     let mut text_box_blocks: Vec<Block> = Vec::new();
     let mut inline_text_boxes: Vec<InlineTextBox> = Vec::new();
+    let mut inline_pictures: Vec<InlineTextBox> = Vec::new();
 
     for run_child in &run.children {
         if let docx_rs::RunChild::Drawing(drawing) = run_child {
@@ -1233,10 +1325,23 @@ fn extract_run_children_media(
                     ctx,
                 ));
             } else {
-                if let Some(img_block) =
-                    extract_drawing_image(drawing, images, &ctx.wraps, canvas_image_offset, crop)
+                match extract_drawing_image(drawing, images, &ctx.wraps, canvas_image_offset, crop)
                 {
-                    inline_images.push(img_block);
+                    Some(Block::Image(image)) if pictures_ride_runs => {
+                        match (image.width, image.height) {
+                            (Some(width), Some(height)) => inline_pictures.push(InlineTextBox {
+                                content: vec![Block::Image(image)],
+                                width,
+                                height,
+                                padding: Insets::default(),
+                                stroke: None,
+                                fill: None,
+                            }),
+                            _ => inline_images.push(Block::Image(image)),
+                        }
+                    }
+                    Some(img_block) => inline_images.push(img_block),
+                    None => {}
                 }
                 match extract_drawing_text_box_blocks(drawing, images, hyperlinks, style_map, ctx) {
                     DrawingTextBoxPlacement::Absent => {}
@@ -1272,6 +1377,7 @@ fn extract_run_children_media(
     RunChildrenMedia {
         text_box_blocks,
         inline_text_boxes,
+        inline_pictures,
     }
 }
 
@@ -1596,7 +1702,9 @@ struct ParagraphFlow<'a> {
 
 /// Convert a docx-rs Paragraph to IR blocks, handling page breaks and inline images.
 /// If the paragraph has `page_break_before`, a `Block::PageBreak` is emitted first.
-/// Consecutive inline images within a paragraph are kept in one wrapping flow container.
+/// Consecutive inline images with no text beside them are kept in one wrapping flow
+/// container; an inline picture that shares its line with text rides the paragraph's
+/// runs as `Run::inline_box` instead (issue #2227).
 /// Style formatting from the document's style definitions is merged with explicit formatting.
 fn convert_paragraph_blocks(
     para: &docx_rs::Paragraph,
@@ -1666,6 +1774,15 @@ fn convert_paragraph_blocks(
     // predecessor's mark was removed opens with that paragraph's surviving
     // runs, because the two are one paragraph in the final view (issue #1710).
     let mut runs: Vec<Run> = ctx.paragraph_marks.take_merged_runs();
+    // Word sets an inline picture on its paragraph's line like a glyph. When
+    // the picture shares a stretch of the paragraph with text, it joins the
+    // runs so it stays in order with that text on a shared line (issue
+    // #2227). Pictures with no text beside them keep the picture-block path,
+    // which carries the paragraph's alignment, spacing and indents (issues
+    // #499, #2201).
+    let mut line_text_fragments: Vec<bool> = line_text_by_layout_fragment(para);
+    line_text_fragments[0] |= !runs.is_empty();
+    let mut layout_fragment: usize = 0;
     let mut inline_images: Vec<Block> = Vec::new();
     let mut emitted_paragraph: bool = false;
     let mut emitted_media_blocks: bool = false;
@@ -1700,7 +1817,10 @@ fn convert_paragraph_blocks(
                     continue;
                 }
 
-                for part in split_run_at_layout_breaks(run) {
+                for part in split_run_at_layout_breaks(run)
+                    .into_iter()
+                    .flat_map(split_content_at_inline_pictures)
+                {
                     match part {
                         break_part @ (RunLayoutPart::PageBreak | RunLayoutPart::ColumnBreak) => {
                             // Flush queued inline media even when no text run
@@ -1772,6 +1892,7 @@ fn convert_paragraph_blocks(
                                 RunLayoutPart::Content(_) => unreachable!(),
                             });
                             emitted_layout_break = true;
+                            layout_fragment += 1;
                         }
                         RunLayoutPart::Content(run_segment) => {
                             let media = extract_run_children_media(
@@ -1781,6 +1902,10 @@ fn convert_paragraph_blocks(
                                 style_map,
                                 ctx,
                                 &mut inline_images,
+                                line_text_fragments
+                                    .get(layout_fragment)
+                                    .copied()
+                                    .unwrap_or(false),
                             );
 
                             // A picture is the paragraph's content, so its paragraph mark
@@ -1877,6 +2002,21 @@ fn convert_paragraph_blocks(
                                     href: None,
                                     footnote: None,
                                     inline_box: Some(Box::new(inline_box)),
+                                });
+                            }
+
+                            // A picture on the line is a box of its extent whose
+                            // bottom edge sits on the baseline. Its own run adds
+                            // no text metrics: in Word's `leading-picture-*`
+                            // cases, a line holding the picture and only a
+                            // trailing space has no descent below it.
+                            for picture in media.inline_pictures {
+                                runs.push(Run {
+                                    text: String::new(),
+                                    style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
+                                    inline_box: Some(Box::new(picture)),
                                 });
                             }
                         }

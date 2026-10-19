@@ -259,6 +259,10 @@ Native Rust callers can use the same per-conversion path through
 | PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
 
+An inline DOCX picture that shares its paragraph with text stays on that text's
+line, in run order, with its bottom edge on the baseline; in the IR it rides
+`Run::inline_box`. Pictures with no text beside them remain `Image` or
+`InlineImages` blocks.
 DOCX picture crops apply per picture, including body, header and footer images.
 Crops extending beyond the original image are not yet rendered.
 Published library builds can omit DOCX picture rotation.
