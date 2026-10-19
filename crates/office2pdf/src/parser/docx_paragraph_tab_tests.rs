@@ -49,7 +49,7 @@ fn tab_docx(paragraphs: &[String]) -> Vec<u8> {
         paragraph("", &run(28, "<w:t>Public body</w:t>"))
     );
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     let parts: [(&str, &str); 5] = [
         (
             "[Content_Types].xml",
