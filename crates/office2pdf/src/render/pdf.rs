@@ -963,6 +963,10 @@ pub(crate) struct PlacedImageBox {
     /// reports them in the same source order, so the corner a transform was
     /// supposed to move is the one to read.
     pub corners: [(f64, f64); 4],
+    /// Page-space `(left, top, right, bottom)` of the region every enclosing
+    /// clip leaves visible, taken over each clip's bounding box; `None` when
+    /// nothing clips the image.
+    pub clip: Option<(f64, f64, f64, f64)>,
 }
 
 /// Every image the compiled document paints on `page_index`, in layout order.
@@ -987,12 +991,52 @@ pub(crate) fn compiled_image_boxes(
         )
     }
 
-    fn collect(frame: &Frame, transform: Transform, out: &mut Vec<PlacedImageBox>) {
+    type Bounds = (f64, f64, f64, f64);
+
+    fn collect(
+        frame: &Frame,
+        transform: Transform,
+        clip: Option<Bounds>,
+        out: &mut Vec<PlacedImageBox>,
+    ) {
         for (position, item) in frame.items() {
             let at: Transform = transform.pre_concat(Transform::translate(position.x, position.y));
             match item {
                 FrameItem::Group(group) => {
-                    collect(&group.frame, at.pre_concat(group.transform), out);
+                    let inner: Transform = at.pre_concat(group.transform);
+                    // A group's clip is stated in its own coordinates, after
+                    // its transform.
+                    let group_clip: Option<Bounds> = group.clip.as_ref().map(|curve| {
+                        let rect = curve.bbox(None);
+                        let (min, max) = (rect.min, rect.max);
+                        let corners = [
+                            place(inner, min.x.to_pt(), min.y.to_pt()),
+                            place(inner, max.x.to_pt(), min.y.to_pt()),
+                            place(inner, max.x.to_pt(), max.y.to_pt()),
+                            place(inner, min.x.to_pt(), max.y.to_pt()),
+                        ];
+                        corners.iter().fold(
+                            (
+                                f64::INFINITY,
+                                f64::INFINITY,
+                                f64::NEG_INFINITY,
+                                f64::NEG_INFINITY,
+                            ),
+                            |(left, top, right, bottom), (x, y)| {
+                                (left.min(*x), top.min(*y), right.max(*x), bottom.max(*y))
+                            },
+                        )
+                    });
+                    let clip: Option<Bounds> = match (clip, group_clip) {
+                        (Some(outer), Some(own)) => Some((
+                            outer.0.max(own.0),
+                            outer.1.max(own.1),
+                            outer.2.min(own.2),
+                            outer.3.min(own.3),
+                        )),
+                        (outer, own) => outer.or(own),
+                    };
+                    collect(&group.frame, inner, clip, out);
                 }
                 FrameItem::Image(_, size, _) => {
                     let (width, height): (f64, f64) = (size.x.to_pt(), size.y.to_pt());
@@ -1003,6 +1047,7 @@ pub(crate) fn compiled_image_boxes(
                             place(at, width, height),
                             place(at, 0.0, height),
                         ],
+                        clip,
                     });
                 }
                 _ => {}
@@ -1024,7 +1069,7 @@ pub(crate) fn compiled_image_boxes(
         ))
     })?;
     let mut boxes: Vec<PlacedImageBox> = Vec::new();
-    collect(&page.frame, Transform::identity(), &mut boxes);
+    collect(&page.frame, Transform::identity(), None, &mut boxes);
     Ok(boxes)
 }
 
