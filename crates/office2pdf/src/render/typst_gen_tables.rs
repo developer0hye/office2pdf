@@ -3776,7 +3776,7 @@ fn generate_cell_paragraph(
     // framed eojeol has to restore inside itself (issue #626). The two are
     // mutually exclusive: `word_cell_line_box` bails on a paragraph that
     // declares a `LineBox`.
-    let cell_line_box_em: Option<(f64, f64)> = word_cell_line_box(
+    let word_line_box: Option<CellLineBox> = word_cell_line_box(
         &para.runs,
         style,
         cell.line_grid_pitch,
@@ -3787,13 +3787,24 @@ fn generate_cell_paragraph(
         cell.sheet_seat,
         cell.sheet_print_scale,
         cell.in_top_aligned_floating_text_box,
-    )
-    .map(|line_box| (line_box.top_em, line_box.bottom_em))
-    .or_else(|| {
-        style
-            .line_box
-            .map(|line_box| (line_box.ascent_em, line_box.descent_em))
-    });
+    );
+    let cell_line_box_em: Option<(f64, f64)> = word_line_box
+        .as_ref()
+        .map(|line_box| (line_box.top_em, line_box.bottom_em))
+        .or_else(|| {
+            style
+                .line_box
+                .map(|line_box| (line_box.ascent_em, line_box.descent_em))
+        });
+    // An inline picture or other inline box on an exact line is clipped to the
+    // cell's Word line box (issue #2228); a slide's table line is PowerPoint's
+    // own.
+    let exact_line_ascent_pt: Option<f64> = word_line_box
+        .as_ref()
+        .filter(|_| !cell.uses_powerpoint_line_box)
+        .and_then(|line_box| {
+            exact_line_ascent_pt(style, Some(line_box.top_em), line_box.font_size_pt)
+        });
     // An empty `<w:p>` has no runs, so it resolves no line box above and would
     // otherwise emit nothing at all — zero height, where Word gives the
     // paragraph mark a full blank line (issue #625). Its metric runs were
@@ -4004,6 +4015,7 @@ fn generate_cell_paragraph(
                     style.tab_stops.as_deref(),
                     paragraph_default_tab_width_pt(style, cell.default_tab_width_pt),
                     eojeol_wrap,
+                    exact_line_ascent_pt,
                     ctx,
                 )?;
                 if let Some(space_pt) = sheet_trailing_advance_space_pt(style, &para.runs) {

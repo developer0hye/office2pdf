@@ -555,6 +555,182 @@ fn an_inline_picture_between_text_runs_stands_on_their_baseline() {
     }
 }
 
+/// A line under `w:lineRule="exact"` keeps its stated height whatever it
+/// holds (issue #2228). An inline picture taller than the line's ascent still
+/// stands on the baseline, but Word clips it to the line box instead of
+/// growing the line: its export of docxide-pdf's `cell-inline-exact` shows
+/// only the bottom 14.4pt of a 36pt picture, and the next paragraph starts one
+/// 18pt line below the table's top. So the text and the next line sit where
+/// they do without the picture, and the picture stays visible from the line's
+/// top down to the baseline. A picture that fits is drawn whole, and an
+/// at-least line, which states only a minimum, still grows to hold it.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_inline_picture_taller_than_an_exact_line_is_clipped_to_the_line() {
+    use crate::parser::{Parser, docx::DocxParser};
+
+    struct Laid {
+        left_baseline_pt: f64,
+        end_baseline_pt: f64,
+        next_baseline_pt: f64,
+        picture: Option<crate::render::pdf::PlacedImageBox>,
+    }
+    let lay_out = |place: &str,
+                   rule: docx_rs::LineSpacingType,
+                   line_twips: i32,
+                   picture_height_pt: Option<f64>| {
+        let mut paragraph = docx_rs::Paragraph::new()
+            .line_spacing(docx_rs::LineSpacing::new().line_rule(rule).line(line_twips))
+            .add_run(docx_rs::Run::new().add_text("Left "));
+        if let Some(height_pt) = picture_height_pt {
+            paragraph = paragraph.add_run(docx_rs::Run::new().add_image(
+                docx_rs::Pic::new(MINIMAL_PNG).size(914_400, (height_pt * 12_700.0) as u32),
+            ));
+        }
+        let paragraph = paragraph.add_run(docx_rs::Run::new().add_text(" End"));
+        // The paragraph, or the borderless table holding it, opens the page,
+        // so its line's top is the top margin.
+        let docx = docx_rs::Docx::new().page_margin(
+            docx_rs::PageMargin::new()
+                .top(1440)
+                .bottom(1440)
+                .left(1440)
+                .right(1440),
+        );
+        let docx = match place {
+            "body" => docx.add_paragraph(paragraph),
+            _ => docx.add_table(docx_rs::Table::without_borders(vec![
+                docx_rs::TableRow::new(vec![docx_rs::TableCell::new().add_paragraph(paragraph)]),
+            ])),
+        }
+        .add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Next line")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let (document, _) = DocxParser
+            .parse(
+                &cursor.into_inner(),
+                &crate::config::ConvertOptions::default(),
+            )
+            .expect("the exact-line document parses");
+        let output = generate_typst(&document).unwrap();
+        let pictures = crate::render::pdf::compiled_image_boxes(&output.source, &output.images, 0)
+            .expect("the exact-line document compiles");
+        let runs =
+            crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 0)
+                .expect("the exact-line document compiles");
+        let baseline_of = |needle: &str| {
+            runs.iter()
+                .find(|run| run.text.contains(needle))
+                .unwrap_or_else(|| panic!("no run holds {needle:?} in {runs:?}"))
+                .baseline_pt
+        };
+        assert!(
+            pictures.len() <= 1,
+            "expected at most one picture, got {pictures:?}"
+        );
+        Laid {
+            left_baseline_pt: baseline_of("Left"),
+            end_baseline_pt: baseline_of("End"),
+            next_baseline_pt: baseline_of("Next"),
+            picture: pictures.first().copied(),
+        }
+    };
+    let line_top_pt: f64 = 72.0;
+    let drawn_whole = |picture: &crate::render::pdf::PlacedImageBox| {
+        let (left, top) = picture.corners[0];
+        let (right, bottom) = picture.corners[2];
+        picture
+            .clip
+            .is_none_or(|(clip_left, clip_top, clip_right, clip_bottom)| {
+                clip_left <= left + 0.05
+                    && clip_top <= top + 0.05
+                    && clip_right >= right - 0.05
+                    && clip_bottom >= bottom - 0.05
+            })
+    };
+    for place in ["body", "table cell"] {
+        // 18pt and 24pt exact lines.
+        for line_twips in [360, 480] {
+            let without_picture: Laid =
+                lay_out(place, docx_rs::LineSpacingType::Exact, line_twips, None);
+            let ascent_pt: f64 = without_picture.left_baseline_pt - line_top_pt;
+            for height_pt in [36.0, 60.0, 4.0] {
+                let case = format!(
+                    "{height_pt}pt picture on a {line_twips}-twip exact line in the {place}"
+                );
+                let laid: Laid = lay_out(
+                    place,
+                    docx_rs::LineSpacingType::Exact,
+                    line_twips,
+                    Some(height_pt),
+                );
+                let picture = laid
+                    .picture
+                    .unwrap_or_else(|| panic!("{case}: the picture is not painted"));
+                let picture_bottom_pt: f64 = picture.corners[2].1;
+                assert!(
+                    (laid.left_baseline_pt - without_picture.left_baseline_pt).abs() < 0.05
+                        && (laid.end_baseline_pt - without_picture.left_baseline_pt).abs() < 0.05,
+                    "{case}: the text must keep the exact line's baseline ({}pt), got {}pt and {}pt",
+                    without_picture.left_baseline_pt,
+                    laid.left_baseline_pt,
+                    laid.end_baseline_pt
+                );
+                assert!(
+                    (picture_bottom_pt - laid.left_baseline_pt).abs() < 0.05,
+                    "{case}: the picture's bottom ({picture_bottom_pt}pt) must sit on the \
+                     baseline ({}pt)",
+                    laid.left_baseline_pt
+                );
+                assert!(
+                    (laid.next_baseline_pt - without_picture.next_baseline_pt).abs() < 0.05,
+                    "{case}: the next line must follow the exact line as it does with no \
+                     picture ({}pt), got {}pt",
+                    without_picture.next_baseline_pt,
+                    laid.next_baseline_pt
+                );
+                if height_pt > ascent_pt {
+                    let (clip_left, clip_top, clip_right, clip_bottom) = picture
+                        .clip
+                        .unwrap_or_else(|| panic!("{case}: the picture overflows unclipped"));
+                    assert!(
+                        (clip_top - line_top_pt).abs() < 0.05
+                            && clip_bottom >= picture_bottom_pt - 0.05
+                            && clip_left <= picture.corners[0].0 + 0.05
+                            && clip_right >= picture.corners[2].0 - 0.05,
+                        "{case}: the picture must stay visible across its width from the \
+                         line's top ({line_top_pt}pt) to the baseline ({picture_bottom_pt}pt), \
+                         got the clip {:?}",
+                        picture.clip
+                    );
+                } else {
+                    assert!(
+                        drawn_whole(&picture),
+                        "{case}: a picture inside the line must be drawn whole, got the clip {:?}",
+                        picture.clip
+                    );
+                }
+            }
+        }
+        let without_picture: Laid = lay_out(place, docx_rs::LineSpacingType::AtLeast, 360, None);
+        let laid: Laid = lay_out(place, docx_rs::LineSpacingType::AtLeast, 360, Some(36.0));
+        let picture = laid
+            .picture
+            .unwrap_or_else(|| panic!("at-least line in the {place}: the picture is not painted"));
+        assert!(
+            laid.next_baseline_pt > without_picture.next_baseline_pt + 10.0
+                && drawn_whole(&picture),
+            "an at-least line in the {place} must grow to hold the whole picture: the next line \
+             moved from {}pt to {}pt, clip {:?}",
+            without_picture.next_baseline_pt,
+            laid.next_baseline_pt,
+            picture.clip
+        );
+    }
+}
+
 fn make_image(format: ImageFormat, width: Option<f64>, height: Option<f64>) -> Block {
     Block::Image(ImageData {
         rotation_deg: None,

@@ -1,0 +1,215 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 87.0912,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 13.92,
+        "x": 182.88,
+        "y": 74.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The exact cell line seats its baseline at the face ascent (13.07pt below the line top) where Word seats it at 0.8 of the 18pt line (14.4pt). Left/End paint 1.46pt high and the clipped picture strip ends 1.33pt higher (13.07pt visible against 14.4pt); the strip's top edge at the line top matches. Geometry, not antialiasing; sub-material and tracked under #1874."
+      },
+      "id": "p1-0184026bcf20",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 76.032,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 72.48,
+        "x": 98.4,
+        "y": 72.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The exact cell line seats its baseline at the face ascent (13.07pt below the line top) where Word seats it at 0.8 of the 18pt line (14.4pt). Left/End paint 1.46pt high and the clipped picture strip ends 1.33pt higher (13.07pt visible against 14.4pt); the strip's top edge at the line top matches. Geometry, not antialiasing; sub-material and tracked under #1874."
+      },
+      "id": "p1-4a6af96ac8d6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 55.5264,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 8.64,
+        "x": 86.88,
+        "y": 74.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The exact cell line seats its baseline at the face ascent (13.07pt below the line top) where Word seats it at 0.8 of the 18pt line (14.4pt). Left/End paint 1.46pt high and the clipped picture strip ends 1.33pt higher (13.07pt visible against 14.4pt); the strip's top edge at the line top matches. Geometry, not antialiasing; sub-material and tracked under #1874."
+      },
+      "id": "p1-7109af390200",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 51.1488,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 8.16,
+        "x": 174.24,
+        "y": 75.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The exact cell line seats its baseline at the face ascent (13.07pt below the line top) where Word seats it at 0.8 of the 18pt line (14.4pt). Left/End paint 1.46pt high and the clipped picture strip ends 1.33pt higher (13.07pt visible against 14.4pt); the strip's top edge at the line top matches. Geometry, not antialiasing; sub-material and tracked under #1874."
+      },
+      "id": "p1-ce48281d5dbc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 11.52,
+        "x": 157.44,
+        "y": 95.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Following paragraph glyph outlines only: Times New Roman drawn as the metric-compatible Liberation Serif; the line's baseline is 0.04pt from Word's and its start 0.025pt."
+      },
+      "id": "p1-dd3a67667bf9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 80.64,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The exact cell line seats its baseline at the face ascent (13.07pt below the line top) where Word seats it at 0.8 of the 18pt line (14.4pt). Left/End paint 1.46pt high and the clipped picture strip ends 1.33pt higher (13.07pt visible against 14.4pt); the strip's top edge at the line top matches. Geometry, not antialiasing; sub-material and tracked under #1874."
+      },
+      "id": "p1-0724dd2e6704",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 75.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The exact cell line seats its baseline at the face ascent (13.07pt below the line top) where Word seats it at 0.8 of the 18pt line (14.4pt). Left/End paint 1.46pt high and the clipped picture strip ends 1.33pt higher (13.07pt visible against 14.4pt); the strip's top edge at the line top matches. Geometry, not antialiasing; sub-material and tracked under #1874."
+      },
+      "id": "p1-90e02da6ad67",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 123.36,
+        "y": 95.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Following paragraph glyph outlines only: Times New Roman drawn as the metric-compatible Liberation Serif; the line's baseline is 0.04pt from Word's and its start 0.025pt."
+      },
+      "id": "p1-ce049e35c607",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.2,
+        "x": 132.96,
+        "y": 96.0
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Following paragraph glyph outlines only: Times New Roman drawn as the metric-compatible Liberation Serif; the line's baseline is 0.04pt from Word's and its start 0.025pt."
+      },
+      "id": "p1-d93cdbae2c47",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 151.2,
+        "y": 96.0
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Following paragraph glyph outlines only: Times New Roman drawn as the metric-compatible Liberation Serif; the line's baseline is 0.04pt from Word's and its start 0.025pt."
+      },
+      "id": "p1-0fbe653a37fc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 4.32,
+        "x": 168.96,
+        "y": 96.0
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Following paragraph glyph outlines only: Times New Roman drawn as the metric-compatible Liberation Serif; the line's baseline is 0.04pt from Word's and its start 0.025pt."
+      },
+      "id": "p1-a868332731fb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 181.92,
+        "y": 92.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Following paragraph glyph outlines only: Times New Roman drawn as the metric-compatible Liberation Serif; the line's baseline is 0.04pt from Word's and its start 0.025pt."
+      },
+      "id": "p1-ed55a43b4fc7",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 12,
+    "duplicate": 0,
+    "total": 12,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

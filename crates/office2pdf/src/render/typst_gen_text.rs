@@ -482,6 +482,11 @@ pub(super) fn generate_paragraph(
         word_paragraph_tab_lines(style, indent, first_line_indent, available_measure_pt);
     let tab_stops: Option<Vec<TabStop>> =
         with_hanging_indent_stop(style.tab_stops.as_deref(), tab_lines);
+    let exact_line_ascent_pt: Option<f64> = exact_line_ascent_pt(
+        style,
+        line_box_em.map(|(top_em, _)| top_em),
+        paragraph_font_size_pt(line_metric_runs),
+    );
     match style.heading_level {
         // The runs keep the plain emitter: the per-run line boxes of issue
         // #638 were measured on mixed-face body paragraphs only.
@@ -496,7 +501,10 @@ pub(super) fn generate_paragraph(
                 TabPen::from_word_lines(tab_lines),
                 eojeol_wrap,
                 None,
-                style.line_spacing,
+                InlineBoxLine {
+                    line_spacing: style.line_spacing,
+                    exact_ascent_pt: exact_line_ascent_pt,
+                },
                 ctx,
             )?;
             write_terminal_word_paragraph_mark(out, runs, style, line_grid_pitch);
@@ -513,6 +521,7 @@ pub(super) fn generate_paragraph(
                 style,
                 line_grid_pitch,
                 tab_lines,
+                exact_line_ascent_pt,
                 ctx,
             )?;
             write_terminal_word_paragraph_mark(out, runs, style, line_grid_pitch);
@@ -4128,6 +4137,7 @@ fn generate_word_runs_with_tabs_in_context(
     style: &ParagraphStyle,
     line_grid_pitch: Option<f64>,
     tab_lines: Option<WordTabLines>,
+    exact_line_ascent_pt: Option<f64>,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     let metrics: Option<WordRunLineMetrics<'_>> =
@@ -4140,7 +4150,10 @@ fn generate_word_runs_with_tabs_in_context(
         TabPen::from_word_lines(tab_lines),
         eojeol_wrap,
         metrics.map(RunLineMetrics::Word),
-        style.line_spacing,
+        InlineBoxLine {
+            line_spacing: style.line_spacing,
+            exact_ascent_pt: exact_line_ascent_pt,
+        },
         ctx,
     )
 }
@@ -4200,6 +4213,38 @@ struct TabLineWrap {
     has_lead: bool,
 }
 
+/// What a paragraph's line box asks of the inline boxes riding its runs.
+#[derive(Clone, Copy, Default)]
+struct InlineBoxLine {
+    /// The paragraph's `w:spacing` rule: an expanded proportional line
+    /// reserves room below a tall inline diagram.
+    line_spacing: Option<LineSpacing>,
+    /// How far an exact line reaches above its baseline, from
+    /// [`exact_line_ascent_pt`].
+    exact_ascent_pt: Option<f64>,
+}
+
+/// How far above its baseline a paragraph's line reaches when the paragraph
+/// states `w:lineRule="exact"`: the top edge of its fixed line box,
+/// `line_box_top_em` at `font_size_pt`. Word keeps such a line at its stated
+/// height whatever it holds, so an inline box taller than this is clipped at
+/// the line's top instead of raising it (issue #2228). `None` for any other
+/// rule: an at-least line only sets a minimum and grows to hold the box.
+pub(super) fn exact_line_ascent_pt(
+    style: &ParagraphStyle,
+    line_box_top_em: Option<f64>,
+    font_size_pt: f64,
+) -> Option<f64> {
+    line_box_top_em
+        .filter(|_| {
+            matches!(
+                style.line_spacing,
+                Some(LineSpacing::Exact(points)) if points > 0.0
+            )
+        })
+        .map(|top_em| (top_em * font_size_pt).max(0.0))
+}
+
 fn word_inline_drawing_spacing_pt(run: &Run, line_spacing: Option<LineSpacing>) -> f64 {
     let Some(LineSpacing::Proportional(proportion)) = line_spacing else {
         return 0.0;
@@ -4228,7 +4273,7 @@ fn generate_runs_with_tabs_and_metrics_in_context(
     tab_pen: TabPen<'_>,
     eojeol_wrap: EojeolWrap,
     run_line_metrics: Option<RunLineMetrics<'_>>,
-    inline_drawing_line_spacing: Option<LineSpacing>,
+    inline_box_line: InlineBoxLine,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     if !paragraph_contains_tabs(runs) {
@@ -4237,7 +4282,7 @@ fn generate_runs_with_tabs_and_metrics_in_context(
             runs,
             eojeol_wrap,
             run_line_metrics,
-            inline_drawing_line_spacing,
+            inline_box_line,
             ctx,
         );
     }
@@ -4267,7 +4312,7 @@ fn generate_runs_with_tabs_and_metrics_in_context(
             runs,
             eojeol_wrap,
             run_line_metrics,
-            inline_drawing_line_spacing,
+            inline_box_line,
             ctx,
         )
     };
@@ -4385,15 +4430,24 @@ pub(super) fn generate_runs_with_context(
     eojeol_wrap: EojeolWrap,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
-    generate_runs_with_metrics_in_context(out, runs, eojeol_wrap, None, None, ctx)
+    generate_runs_with_metrics_in_context(
+        out,
+        runs,
+        eojeol_wrap,
+        None,
+        InlineBoxLine::default(),
+        ctx,
+    )
 }
 
+/// `exact_line_ascent_pt` is the paragraph's [`exact_line_ascent_pt`].
 pub(super) fn generate_runs_with_tabs_context(
     out: &mut String,
     runs: &[Run],
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
     eojeol_wrap: EojeolWrap,
+    exact_line_ascent_pt: Option<f64>,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     generate_runs_with_tabs_and_metrics_in_context(
@@ -4404,7 +4458,10 @@ pub(super) fn generate_runs_with_tabs_context(
         TabPen::default(),
         eojeol_wrap,
         None,
-        None,
+        InlineBoxLine {
+            line_spacing: None,
+            exact_ascent_pt: exact_line_ascent_pt,
+        },
         ctx,
     )
 }
@@ -4429,7 +4486,7 @@ pub(super) fn generate_runs_with_tabs_from_origin_context(
         TabPen::from_origin(Some(tab_origin)),
         eojeol_wrap,
         None,
-        None,
+        InlineBoxLine::default(),
         ctx,
     )
 }
@@ -4440,7 +4497,7 @@ pub(super) fn generate_run_with_context(
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     if let Some(inline_box) = run.inline_box.as_deref() {
-        return write_inline_text_box(out, inline_box, 0.0, ctx);
+        return write_inline_text_box(out, inline_box, 0.0, None, ctx);
     }
     if let Some(content) = run.footnote.as_deref() {
         out.push_str("#footnote[");
@@ -4466,7 +4523,7 @@ fn generate_runs_with_metrics_in_context(
     runs: &[Run],
     eojeol_wrap: EojeolWrap,
     run_line_metrics: Option<RunLineMetrics<'_>>,
-    inline_drawing_line_spacing: Option<LineSpacing>,
+    inline_box_line: InlineBoxLine,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     // A footnote can carry a box indirectly; its nested blocks still need the
@@ -4477,7 +4534,8 @@ fn generate_runs_with_metrics_in_context(
                 write_inline_text_box(
                     out,
                     inline_box,
-                    word_inline_drawing_spacing_pt(run, inline_drawing_line_spacing),
+                    word_inline_drawing_spacing_pt(run, inline_box_line.line_spacing),
+                    inline_box_line.exact_ascent_pt,
                     ctx,
                 )?;
             } else if run.footnote.is_some() {
@@ -5842,10 +5900,16 @@ fn generate_run_at_with_metrics(
 /// below the line instead of standing on it: measured at 85.92pt for that same
 /// anchor baseline. With the content placed, the box's own bottom edge is its
 /// baseline. The anchored text box path uses the same `#place(top + left)`.
+///
+/// On an exact line the box may reach only `exact_line_ascent_pt` above the
+/// baseline. A taller box keeps its bottom on the baseline inside a clipping
+/// box of that height, so the line keeps its stated height and only the part
+/// inside the line is painted, as in Word (issue #2228).
 fn write_inline_text_box(
     out: &mut String,
     inline_box: &InlineTextBox,
     inline_drawing_spacing_pt: f64,
+    exact_line_ascent_pt: Option<f64>,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     let padding: &Insets = &inline_box.padding;
@@ -5858,12 +5922,23 @@ fn write_inline_text_box(
     } else {
         0.0
     };
+    let box_height_pt: f64 = inline_box.height + drawing_spacing_pt;
+    let clip_height_pt: Option<f64> =
+        exact_line_ascent_pt.filter(|ascent_pt| box_height_pt > *ascent_pt);
+    if let Some(clip_height_pt) = clip_height_pt {
+        let _ = write!(
+            out,
+            "#box(width: {}pt, height: {}pt, clip: true)[#place(bottom + left)[",
+            format_f64(inline_box.width),
+            format_f64(clip_height_pt),
+        );
+    }
     let inner_width: f64 = (inline_box.width - padding.left - padding.right).max(0.0);
     let _ = write!(
         out,
         "#box(width: {}pt, height: {}pt, inset: {}",
         format_f64(inline_box.width),
-        format_f64(inline_box.height + drawing_spacing_pt),
+        format_f64(box_height_pt),
         super::format_insets(padding),
     );
     if drawing_spacing_pt > 0.0 {
@@ -5895,6 +5970,9 @@ fn write_inline_text_box(
     ctx.breaks_hangul_at_eojeol = previous_breaks_hangul_at_eojeol;
     result?;
     out.push_str("]]]");
+    if clip_height_pt.is_some() {
+        out.push_str("]]");
+    }
     Ok(())
 }
 
