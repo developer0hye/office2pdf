@@ -978,6 +978,11 @@ pub(super) fn floating_table_frame(
             .unwrap_or(FrameAnchor::Margin),
         horizontal_align,
         vertical_align: position_string("positionYAlignment").and_then(frame_align),
+        // TODO(docx-rs does not parse topFromText/bottomFromText): the
+        // vertical distances are taken as zero, the schema default.
+        left_from_text: position_twips("leftFromText").unwrap_or(0.0).max(0.0),
+        right_from_text: position_twips("rightFromText").unwrap_or(0.0).max(0.0),
+        anchored_to_text: position_string("verticalAnchor") == Some("text"),
     })
 }
 

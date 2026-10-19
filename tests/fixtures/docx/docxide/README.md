@@ -142,3 +142,11 @@ Apache-2.0, named by their `w:jc` and `w:ind` variant. Each holds one paragraph
 with only a 180×90pt inline picture and 72pt side margins. Native Word puts the
 picture where the paragraph's first line of text would start, inside its
 indents; a compiled-layout regression checks the eight left edges.
+
+`floating_table_wrap.docx` is the unmodified synthetic
+`cases/leading-table-clear-leading-no-clear/input.docx` from
+[docxide-pdf at adb8c2b8](https://github.com/sverrejb/docxide-pdf/tree/adb8c2b82baad8deb2973d1d059bfb7513b8e1fe/tests/fixtures/cases/leading-table-clear-leading-no-clear),
+Apache-2.0. A 241pt `w:tblpPr` table with `w:rightFromText="180"` sits at the
+left margin, followed by a centred greeting and a body paragraph. Native Word
+lays both beside the table, in the room right of it. A compiled-layout
+regression checks both lines against that room.

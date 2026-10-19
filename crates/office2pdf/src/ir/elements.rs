@@ -1314,6 +1314,16 @@ pub struct FloatingTableFrame {
     pub vertical_anchor: FrameAnchor,
     pub horizontal_align: Option<FrameAlign>,
     pub vertical_align: Option<FrameAlign>,
+    /// `w:leftFromText`: how far body text beside the table keeps from its
+    /// left edge, in points.
+    pub left_from_text: f64,
+    /// `w:rightFromText`: how far body text beside the table keeps from its
+    /// right edge, in points.
+    pub right_from_text: f64,
+    /// Whether `w:vertAnchor` is `text`, hanging the table from its anchor
+    /// paragraph. Section resolution keeps this while it rewrites
+    /// `vertical_anchor`.
+    pub anchored_to_text: bool,
 }
 
 /// Vertical alignment for fixed text box content.

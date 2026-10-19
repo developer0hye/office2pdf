@@ -277,6 +277,22 @@ struct GenCtx {
     /// which corroborates the direction and magnitude without being ground
     /// truth.
     table_uses_powerpoint_line_box: bool,
+    /// The floating tables placed so far in the current flow, which the root
+    /// paragraphs after them wrap around until a page, column or section
+    /// break, or until those paragraphs have advanced a page (issue #2229).
+    body_floats: Vec<float_wrap::BodyFloat>,
+    next_floating_table_id: usize,
+    /// The width and height of the single text column floating tables wrap
+    /// in, or `None` where they do not wrap yet: outside a flow body and in
+    /// multi-column sections.
+    float_wrap_text_area_pt: Option<(f64, f64)>,
+    /// Set for the paragraph `generate_block` is about to write at the flow
+    /// root while `body_floats` is non-empty; `generate_paragraph` takes it,
+    /// so the paragraphs nested inside that one never see it.
+    float_wrap_pending: bool,
+    /// Whether nothing that takes flow space has been written yet in a
+    /// section that starts a page, so the next block's top is the text area's.
+    flow_at_page_top: bool,
 }
 
 impl GenCtx {
@@ -338,6 +354,11 @@ impl GenCtx {
             active_page_size: None,
             active_page_margins: None,
             sheet_cell_box: None,
+            body_floats: Vec::new(),
+            next_floating_table_id: 0,
+            float_wrap_text_area_pt: None,
+            float_wrap_pending: false,
+            flow_at_page_top: false,
         }
     }
 
@@ -695,6 +716,10 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
         out.push('\n');
     }
 
+    if float_wrap::document_has_body_floating_table(doc) {
+        float_wrap::write_float_wrap_helper(&mut out);
+    }
+
     let mut ctx = GenCtx::new();
     ctx.document_default_tab_stop_pt = doc.styles.default_tab_stop_pt;
     ctx.document_default_text = doc.styles.default_text.clone();
@@ -825,6 +850,15 @@ fn generate_flow_page(
     // Typst distributes each page's flow, preserving page breaks and horizontal alignment.
     ctx.in_flow_body = true;
     write_flow_body_alignment(out, ctx);
+    // TODO(floating tables wrap in one column only): a table placed in a
+    // multi-column section still excludes no text.
+    ctx.body_floats.clear();
+    ctx.flow_at_page_top = !begins_continuously;
+    let text_height_pt: f64 = size.height - page.margins.top - page.margins.bottom;
+    ctx.float_wrap_text_area_pt = ctx
+        .available_measure_pt
+        .filter(|_| page.columns.is_none() && text_height_pt > 0.0)
+        .map(|width_pt| (width_pt, text_height_pt));
 
     // Word keeps `w:spacing w:before` on the document's first body paragraph,
     // but Typst collapses leading block spacing at a page boundary, pulling the
@@ -889,6 +923,9 @@ fn generate_flow_page(
     ctx.flow_body_is_breakable = false;
     ctx.in_flow_body = false;
     ctx.preserve_page_after_spacing = false;
+    ctx.body_floats.clear();
+    ctx.float_wrap_text_area_pt = None;
+    ctx.flow_at_page_top = false;
     reset_flow_body_alignment(out, ctx);
     Ok(())
 }
@@ -5904,9 +5941,20 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
         let residual_before: f64 = (before - ctx.flow_previous_after_spacing).max(0.0);
         let _ = writeln!(out, "#v({}pt, weak: true)", format_f64(residual_before));
     }
+    ctx.float_wrap_pending = is_root_flow_block
+        && !ctx.body_floats.is_empty()
+        && matches!(block, Block::Paragraph(_) | Block::Caption(_));
     ctx.block_depth += 1;
     let result = generate_block_inner(out, block, ctx);
     ctx.block_depth -= 1;
+    ctx.float_wrap_pending = false;
+    // A table only reaches the text on its own page and in its own column.
+    if is_root_flow_block && matches!(block, Block::PageBreak | Block::ColumnBreak) {
+        ctx.body_floats.clear();
+    }
+    if is_root_flow_block && !section_alignment::leaves_flow_gap_unchanged(block) {
+        ctx.flow_at_page_top = false;
+    }
     if is_root_flow_block && matches!(block, Block::PageBreak) {
         advance_flow_body_alignment(out, ctx);
     }
@@ -5955,7 +6003,29 @@ fn generate_block_inner(
                 format_f64(offset_x),
                 format_f64(offset_y)
             );
+            // Only a table placed at the flow root has root paragraphs after
+            // it to wrap around it.
+            // TODO(text-anchored floats are placed from the top margin, #2236):
+            // such a table is drawn where its anchor paragraph is only at the
+            // top of a page, so only there does the text wrap around it.
+            let drawn_at_its_anchor: bool =
+                !floating_table.frame.anchored_to_text || ctx.flow_at_page_top;
+            let wrap: Option<float_wrap::BodyFloat> = ctx
+                .float_wrap_text_area_pt
+                .filter(|_| ctx.in_flow_body && ctx.block_depth == 1 && drawn_at_its_anchor)
+                .map(|(width_pt, height_pt)| {
+                    let id: usize = ctx.next_floating_table_id;
+                    ctx.next_floating_table_id += 1;
+                    float_wrap::BodyFloat::new(id, floating_table, width_pt, height_pt)
+                });
+            if let Some(wrap) = wrap {
+                float_wrap::write_float_top_label(out, wrap.id());
+            }
             let result: Result<(), ConvertError> = generate_table(out, &floating_table.table, ctx);
+            if let Some(wrap) = wrap {
+                float_wrap::write_float_bottom_label(out, wrap.id());
+                ctx.body_floats.push(wrap);
+            }
             out.push_str("]\n");
             result
         }
@@ -7289,3 +7359,6 @@ mod tests;
 
 #[path = "typst_gen_section_alignment.rs"]
 mod section_alignment;
+
+#[path = "typst_gen_float_wrap.rs"]
+mod float_wrap;

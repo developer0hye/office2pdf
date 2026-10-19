@@ -1,0 +1,183 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 619.0848,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 90.24,
+        "x": 72.0,
+        "y": 95.04
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-901f504025ec",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 608.9472,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 92.16,
+        "x": 356.64,
+        "y": 134.88
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Greeting (+2.43pt) and body paragraph (+4.62pt) now lie beside the table as in Word; the room beside it starts at the table's right edge, which inherits the same 5.4pt left-edge offset (half of it for the centred greeting)."
+      },
+      "id": "p1-15397f82bc1d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 364.7232,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 48.0,
+        "x": 417.12,
+        "y": 96.0
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Greeting (+2.43pt) and body paragraph (+4.62pt) now lie beside the table as in Word; the room beside it starts at the table's right edge, which inherits the same 5.4pt left-edge offset (half of it for the centred greeting)."
+      },
+      "id": "p1-43010bd132a0",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 285.9264,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 48.0,
+        "x": 72.48,
+        "y": 115.2
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-4a00325b2908",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 276.0192,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 37.92,
+        "x": 377.76,
+        "y": 94.56
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Greeting (+2.43pt) and body paragraph (+4.62pt) now lie beside the table as in Word; the room beside it starts at the table's right edge, which inherits the same 5.4pt left-edge offset (half of it for the centred greeting)."
+      },
+      "id": "p1-2e9f41f91f51",
+      "region": "top"
+    },
+    {
+      "area_pt2": 193.3056,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 31.2,
+        "x": 120.96,
+        "y": 115.2
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-485c3b23d973",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 171.648,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 25.92,
+        "x": 317.28,
+        "y": 134.88
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Greeting (+2.43pt) and body paragraph (+4.62pt) now lie beside the table as in Word; the room beside it starts at the table's right edge, which inherits the same 5.4pt left-edge offset (half of it for the centred greeting)."
+      },
+      "id": "p1-643c8197e41e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 159.6672,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 23.04,
+        "x": 162.72,
+        "y": 96.96
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-559f1edf3a23",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 138.7008,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 21.6,
+        "x": 152.64,
+        "y": 115.2
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-c881c3ab72ef",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 73.9584,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 14.4,
+        "x": 343.2,
+        "y": 134.88
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Greeting (+2.43pt) and body paragraph (+4.62pt) now lie beside the table as in Word; the room beside it starts at the table's right edge, which inherits the same 5.4pt left-edge offset (half of it for the centred greeting)."
+      },
+      "id": "p1-5fe7d6f5f9a8",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 10,
+    "duplicate": 0,
+    "total": 10,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

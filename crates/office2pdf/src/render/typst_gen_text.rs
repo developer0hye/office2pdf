@@ -273,6 +273,7 @@ pub(super) fn generate_paragraph(
     let default_tab_width_pt: f64 = ctx.default_tab_width_pt;
     let breaks_hangul_at_eojeol: bool = ctx.breaks_hangul_at_eojeol;
     let available_measure_pt: Option<f64> = ctx.available_measure_pt;
+    let wraps_beside_floats: bool = std::mem::take(&mut ctx.float_wrap_pending);
     let style = &para.style;
     let inline_numbering_runs: Option<Vec<Run>> = word_inline_numbering_runs(para, line_grid_pitch);
     let runs: &[Run] = inline_numbering_runs.as_deref().unwrap_or(&para.runs);
@@ -359,6 +360,42 @@ pub(super) fn generate_paragraph(
         indent
     };
     let has_outer_spacing_block: bool = outer_indent.is_some();
+    // The wrap goes inside the paragraph's outermost block, where the block's
+    // own spacing has already been laid and its content starts at the first
+    // line's top. A paragraph that writes no block of its own is left as it
+    // is.
+    // TODO(bare paragraph beside a floating table): such a paragraph, which
+    // states no spacing, line or decoration, still runs under the table.
+    let float_wrap: Option<(String, f64)> =
+        (wraps_beside_floats && (has_para_style || has_outer_spacing_block)).then(|| {
+            let first_line_pt: f64 = if is_empty_paragraph {
+                empty_paragraph_line_height_pt
+            } else {
+                let font_size_pt: f64 = paragraph_font_size_pt(line_metric_runs);
+                word_line_box_em(line_metric_runs, style, line_grid_pitch)
+                    .map(|(top, bottom)| (top + bottom) * font_size_pt)
+                    .unwrap_or(font_size_pt)
+            };
+            let space_before_pt: f64 = style.space_before.unwrap_or(0.0).max(0.0);
+            let mut open = String::new();
+            super::float_wrap::write_float_wrap_open(
+                &mut open,
+                &ctx.body_floats,
+                first_line_pt,
+                space_before_pt,
+            );
+            // The least this paragraph advances the flow: its before-gap and
+            // one line, which a multiple below single makes shorter.
+            let line_multiple: f64 = match style.line_spacing {
+                Some(LineSpacing::Proportional(multiple)) => multiple.clamp(0.0, 1.0),
+                _ => 1.0,
+            };
+            (open, first_line_pt * line_multiple + space_before_pt)
+        });
+    if let Some((_, advance_pt)) = float_wrap {
+        super::float_wrap::advance_past_floats(&mut ctx.body_floats, advance_pt);
+    }
+    let float_wrap: Option<String> = float_wrap.map(|(open, _)| open);
     let should_move_empty_top_border_to_before_spacing: bool = is_empty_paragraph
         && style.decoration_before_spacing.is_some()
         && style.background.is_some()
@@ -367,6 +404,9 @@ pub(super) fn generate_paragraph(
             .as_deref()
             .and_then(|border| border.top.as_ref())
             .is_some_and(|side| side.style != BorderLineStyle::Double);
+    let wraps_in_outer_block: bool = has_outer_spacing_block && float_wrap.is_some();
+    let wraps_in_style_block: bool =
+        !has_outer_spacing_block && has_para_style && float_wrap.is_some();
     if has_outer_spacing_block {
         out.push_str("#block(width: 100%");
         write_block_spacing_params(out, style, true, empty_paragraph_bottom_border_extent_pt);
@@ -374,6 +414,9 @@ pub(super) fn generate_paragraph(
             write_paragraph_indent_inset(out, outer_indent);
         }
         out.push_str(")[\n");
+        if let Some(open) = float_wrap.as_deref().filter(|_| wraps_in_outer_block) {
+            out.push_str(open);
+        }
     }
 
     if has_para_style {
@@ -393,6 +436,9 @@ pub(super) fn generate_paragraph(
             &style.border,
             style.border_space.as_deref().copied().unwrap_or_default(),
         );
+        if let Some(open) = float_wrap.as_deref().filter(|_| wraps_in_style_block) {
+            out.push_str(open);
+        }
         if is_framed_inline_list_number {
             out.push_str("#block(width: 100%, above: 0pt, below: 0pt");
             write_paragraph_indent_inset(out, indent);
@@ -421,7 +467,13 @@ pub(super) fn generate_paragraph(
             "#v({}pt)",
             format_f64(empty_paragraph_placeholder_height_pt)
         );
+        if wraps_in_style_block {
+            out.push_str("\n]");
+        }
         if has_para_style {
+            out.push_str("\n]");
+        }
+        if wraps_in_outer_block {
             out.push_str("\n]");
         }
         if has_outer_spacing_block {
@@ -540,7 +592,13 @@ pub(super) fn generate_paragraph(
         out.push_str("\n]");
     }
 
+    if wraps_in_style_block {
+        out.push_str("\n]");
+    }
     if has_para_style {
+        out.push_str("\n]");
+    }
+    if wraps_in_outer_block {
         out.push_str("\n]");
     }
     if has_outer_spacing_block {
