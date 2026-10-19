@@ -17,7 +17,7 @@ use crate::ir::{
     ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo,
     Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TabAlignment, TabLeader,
     TabStop, Table, TableBorderPaintModel, TableCell, TableOfContents, TableRow, TextBoxData,
-    TextBoxVerticalAlign, TextDirection, TextStyle, VerticalTextAlign, WrapMode,
+    TextBoxVerticalAlign, TextDirection, TextFrame, TextStyle, VerticalTextAlign, WrapMode,
 };
 
 use self::diagrams::{
@@ -277,14 +277,16 @@ struct GenCtx {
     /// which corroborates the direction and magnitude without being ground
     /// truth.
     table_uses_powerpoint_line_box: bool,
-    /// The floating tables placed so far in the current flow, which the root
-    /// paragraphs after them wrap around until a page, column or section
-    /// break, or until those paragraphs have advanced a page (issue #2229).
+    /// The floating tables and text frames placed so far in the current
+    /// flow, which the root paragraphs after them wrap around until a page,
+    /// column or section break, or until those paragraphs have advanced a
+    /// page (issues #2229, #2231). A text frame outlasts the start of a
+    /// continuous section laid out in the same text area.
     body_floats: Vec<float_wrap::BodyFloat>,
-    next_floating_table_id: usize,
-    /// The width and height of the single text column floating tables wrap
-    /// in, or `None` where they do not wrap yet: outside a flow body and in
-    /// multi-column sections.
+    next_body_float_id: usize,
+    /// The width and height of the single text column floating tables and
+    /// text frames wrap in, or `None` where they do not wrap yet: outside a
+    /// flow body and in multi-column sections.
     float_wrap_text_area_pt: Option<(f64, f64)>,
     /// Set for the paragraph `generate_block` is about to write at the flow
     /// root while `body_floats` is non-empty; `generate_paragraph` takes it,
@@ -297,6 +299,12 @@ struct GenCtx {
     /// Whether nothing that takes flow space has been written yet in a
     /// section that starts a page, so the next block's top is the text area's.
     flow_at_page_top: bool,
+    /// Set for the root text frame `generate_block` is about to write: the gap
+    /// after the flow block before it, when there is one (issue #2231).
+    text_frame_anchor_gap_pt: Option<f64>,
+    /// The text area the previous flow section's floats wrapped in, whose
+    /// text frames a continuous section in the same area keeps in force.
+    carried_float_text_area_pt: Option<(f64, f64)>,
 }
 
 impl GenCtx {
@@ -359,11 +367,13 @@ impl GenCtx {
             active_page_margins: None,
             sheet_cell_box: None,
             body_floats: Vec::new(),
-            next_floating_table_id: 0,
+            next_body_float_id: 0,
             float_wrap_text_area_pt: None,
             float_wrap_pending: false,
             float_wrap_clear: None,
             flow_at_page_top: false,
+            text_frame_anchor_gap_pt: None,
+            carried_float_text_area_pt: None,
         }
     }
 
@@ -721,7 +731,7 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
         out.push('\n');
     }
 
-    if float_wrap::document_has_body_floating_table(doc) {
+    if float_wrap::document_has_body_float(doc) {
         float_wrap::write_float_wrap_helper(&mut out);
     }
 
@@ -855,15 +865,24 @@ fn generate_flow_page(
     // Typst distributes each page's flow, preserving page breaks and horizontal alignment.
     ctx.in_flow_body = true;
     write_flow_body_alignment(out, ctx);
-    // TODO(floating tables wrap in one column only): a table placed in a
-    // multi-column section still excludes no text.
-    ctx.body_floats.clear();
     ctx.flow_at_page_top = !begins_continuously;
     let text_height_pt: f64 = size.height - page.margins.top - page.margins.bottom;
-    ctx.float_wrap_text_area_pt = ctx
+    // TODO(floats wrap in one column only): a floating table or text frame
+    // placed in a multi-column section still excludes no text.
+    let text_area_pt: Option<(f64, f64)> = ctx
         .available_measure_pt
         .filter(|_| page.columns.is_none() && text_height_pt > 0.0)
         .map(|width_pt| (width_pt, text_height_pt));
+    // A text frame still excludes text in a continuous section laid out in
+    // the same text area (issue #2231), as docxide-pdf's
+    // `paragraph-offset-frame-immediate-long` shows: its frame ends the first
+    // section, and the paragraph beside it opens the next.
+    // TODO(floating table into a continuous section): a floating table's
+    // extent reaches there too.
+    if !begins_continuously || ctx.carried_float_text_area_pt != text_area_pt {
+        ctx.body_floats.clear();
+    }
+    ctx.float_wrap_text_area_pt = text_area_pt;
 
     // Word keeps `w:spacing w:before` on the document's first body paragraph,
     // but Typst collapses leading block spacing at a page boundary, pulling the
@@ -928,8 +947,8 @@ fn generate_flow_page(
     ctx.flow_body_is_breakable = false;
     ctx.in_flow_body = false;
     ctx.preserve_page_after_spacing = false;
-    ctx.body_floats.clear();
-    ctx.float_wrap_text_area_pt = None;
+    ctx.body_floats.retain(float_wrap::BodyFloat::is_text_frame);
+    ctx.carried_float_text_area_pt = ctx.float_wrap_text_area_pt.take();
     ctx.flow_at_page_top = false;
     reset_flow_body_alignment(out, ctx);
     Ok(())
@@ -5365,6 +5384,7 @@ fn generate_blocks_with_layout_space_before(
         let after_shading_space_pt: Option<f64> = joins_next
             .then(|| take_joined_paragraph_after_shading_space(&mut block))
             .flatten();
+        ctx.text_frame_anchor_gap_pt = text_frame_anchor_gap(blocks, index);
         let follows_column_break: bool =
             index > 0 && matches!(blocks[index - 1], Block::ColumnBreak);
         let follows_source_paragraph_page_break: bool = index > 0
@@ -5420,6 +5440,21 @@ fn generate_blocks_with_layout_space_before(
     }
 
     Ok(())
+}
+
+/// The gap Typst lays after the flow block before the text frame at
+/// `index`, or `None` when no block before it on its page or column takes
+/// flow space (issue #2231).
+fn text_frame_anchor_gap(blocks: &[Block], index: usize) -> Option<f64> {
+    if !matches!(blocks[index], Block::TextFrame(_)) {
+        return None;
+    }
+    let previous: &Block = blocks[..index]
+        .iter()
+        .rev()
+        .find(|block| !section_alignment::leaves_flow_gap_unchanged(block))
+        .filter(|block| !is_layout_break(block))?;
+    Some(section_alignment::paragraph_edge_spacing(previous).map_or(0.0, |(_, after)| after))
 }
 
 fn reduce_paragraph_space_before(block: &mut Block, preceding_after_space_pt: f64) {
@@ -5953,7 +5988,7 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
     let result = generate_block_inner(out, block, ctx);
     ctx.block_depth -= 1;
     ctx.float_wrap_pending = false;
-    // A table only reaches the text on its own page and in its own column.
+    // A float only reaches the text on its own page and in its own column.
     if is_root_flow_block && matches!(block, Block::PageBreak | Block::ColumnBreak) {
         ctx.body_floats.clear();
     }
@@ -6019,9 +6054,15 @@ fn generate_block_inner(
                 .float_wrap_text_area_pt
                 .filter(|_| ctx.in_flow_body && ctx.block_depth == 1 && drawn_at_its_anchor)
                 .map(|(width_pt, height_pt)| {
-                    let id: usize = ctx.next_floating_table_id;
-                    ctx.next_floating_table_id += 1;
-                    float_wrap::BodyFloat::new(id, floating_table, width_pt, height_pt)
+                    let id: usize = ctx.next_body_float_id;
+                    ctx.next_body_float_id += 1;
+                    float_wrap::BodyFloat::new(
+                        id,
+                        float_wrap::FloatExtent::of_table(floating_table),
+                        width_pt,
+                        height_pt,
+                        false,
+                    )
                 });
             if let Some(wrap) = wrap {
                 float_wrap::write_float_top_label(out, wrap.id());
@@ -6034,6 +6075,7 @@ fn generate_block_inner(
             out.push_str("]\n");
             result
         }
+        Block::TextFrame(frame) => generate_text_frame(out, frame, ctx),
         Block::Table(table) => {
             // Word gives a table no vertical spacing of its own: the gap above
             // it is the preceding paragraph's `w:after` and the gap below it is
@@ -6478,6 +6520,120 @@ fn generate_floating_image_content(out: &mut String, image: &ImageData, path: &s
     if pivot_shift.is_some() {
         out.push(']');
     }
+}
+
+/// Draw a lifted `w:framePr` frame where Word does (issue #2231): `y` below
+/// its anchor, which a `#place` without a vertical alignment finds in the
+/// flow, and `x` from the text area's left edge. At the flow root, the
+/// paragraphs after the frame wrap around it as they do around a floating
+/// table, with `w:vSpace` widening the band they keep clear of.
+///
+/// The frame takes no flow space. A bare placed item does not either, but
+/// Typst merges the gaps on both sides of it and lands it below the merged
+/// gap, where Word hangs the frame from the end of the gap after the block
+/// before it: docxide-pdf's `paragraph-offset-frame-exact` puts its frame
+/// where the immediate case does, though the paragraph after it states a
+/// 12pt `w:before`. So the frame is placed with the previous block's gap
+/// collapsed to nothing above it and that gap added to its offset, and a
+/// zero-height block after it lays the gap again, where it still merges with
+/// the next block's gap as before.
+fn generate_text_frame(
+    out: &mut String,
+    frame: &TextFrame,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    // A vertically centred section writes its own explicit gaps between root
+    // blocks; there the frame lands below them.
+    let anchor_gap: Option<f64> = std::mem::take(&mut ctx.text_frame_anchor_gap_pt)
+        .filter(|_| ctx.block_depth == 1 && !ctx.preserve_page_after_spacing);
+    if anchor_gap.is_some() {
+        // The strongest weak spacing replaces the gap the previous block
+        // left, and no gap a later block brings outweighs it.
+        out.push_str("#v(0pt, weak: true)\n");
+    }
+    let vertical_space: f64 = frame.vertical_space;
+    let _ = writeln!(
+        out,
+        "#place(left, dx: {}pt, dy: {}pt)[",
+        format_f64(frame.x),
+        format_f64(frame.y + anchor_gap.unwrap_or(0.0) - vertical_space)
+    );
+    // The paragraphs after an exact frame start at its anchor, so once they
+    // have advanced past its bottom edge none of them can meet it; an
+    // at-least frame's content can reach further, to the page's end.
+    let frame_bottom_pt: f64 = frame.y + anchor_gap.unwrap_or(0.0) + frame.height + vertical_space;
+    let wrap: Option<float_wrap::BodyFloat> = ctx
+        .float_wrap_text_area_pt
+        .filter(|_| ctx.in_flow_body && ctx.block_depth == 1)
+        .map(|(width_pt, height_pt)| {
+            let id: usize = ctx.next_body_float_id;
+            ctx.next_body_float_id += 1;
+            let reach_pt: f64 = if frame.exact_height {
+                frame_bottom_pt.clamp(0.0, height_pt)
+            } else {
+                height_pt
+            };
+            float_wrap::BodyFloat::new(
+                id,
+                float_wrap::FloatExtent::of_text_frame(frame),
+                width_pt,
+                reach_pt,
+                true,
+            )
+        });
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_top_label(out, wrap.id());
+    }
+    let write_vertical_space = |out: &mut String| {
+        if vertical_space > 0.0 {
+            let _ = writeln!(
+                out,
+                "#block(height: {}pt, above: 0pt, below: 0pt)",
+                format_f64(vertical_space)
+            );
+        }
+    };
+    write_vertical_space(out);
+    let width: String = format_f64(frame.width);
+    let height: String = format_f64(frame.height);
+    if frame.exact_height {
+        let _ = writeln!(
+            out,
+            "#block(width: {width}pt, height: {height}pt, above: 0pt, below: 0pt)["
+        );
+    } else {
+        // A least height: the frame is as tall as the taller of its stated
+        // height and its content.
+        let _ = writeln!(
+            out,
+            "#block(above: 0pt, below: 0pt, stack(dir: ltr, box(height: {height}pt), \
+             block(width: {width}pt)["
+        );
+    }
+    // A frame's content starts at its top, whatever the vertical alignment of
+    // the section around it.
+    out.push_str("#set align(top)\n");
+    let enclosing_measure_pt: Option<f64> = ctx.available_measure_pt.replace(frame.width);
+    let result: Result<(), ConvertError> = frame
+        .content
+        .iter()
+        .try_for_each(|block| generate_block(out, block, ctx));
+    ctx.available_measure_pt = enclosing_measure_pt;
+    out.push_str(if frame.exact_height { "]\n" } else { "]))\n" });
+    write_vertical_space(out);
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_bottom_label(out, wrap.id());
+        ctx.body_floats.push(wrap);
+    }
+    out.push_str("]\n");
+    if let Some(gap) = anchor_gap {
+        let _ = writeln!(
+            out,
+            "#block(height: 0pt, above: 0pt, below: {}pt)",
+            format_f64(gap)
+        );
+    }
+    result
 }
 
 fn generate_floating_text_box(

@@ -49,6 +49,7 @@ pub(super) fn leaves_flow_gap_unchanged(block: &Block) -> bool {
             | Block::FloatingTextBox(_)
             | Block::FloatingShape(_)
             | Block::FloatingTable(_)
+            | Block::TextFrame(_)
     )
 }
 

@@ -126,6 +126,11 @@ fn collect_runs_from_block<'a>(block: &'a Block, out: &mut Vec<&'a Run>) {
                 collect_runs_from_block(block, out);
             }
         }
+        Block::TextFrame(frame) => {
+            for block in &frame.content {
+                collect_runs_from_block(block, out);
+            }
+        }
         Block::DrawingGroup(group) => {
             for element in &group.elements {
                 if let office2pdf::ir::FixedElementKind::TextBox(text_box) = &element.kind {
@@ -180,6 +185,12 @@ fn block_text(block: &Block) -> String {
             .collect::<Vec<String>>()
             .join("\n"),
         Block::FloatingTextBox(text_box) => text_box
+            .content
+            .iter()
+            .map(block_text)
+            .collect::<Vec<String>>()
+            .join("\n"),
+        Block::TextFrame(frame) => frame
             .content
             .iter()
             .map(block_text)

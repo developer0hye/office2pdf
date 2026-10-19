@@ -3394,6 +3394,9 @@ fn generate_cell_content(
             }
             Block::FloatingImage(fi) => generate_floating_image(out, fi, ctx),
             Block::FloatingTextBox(ftb) => generate_floating_text_box(out, ftb, ctx)?,
+            // The parser lifts only body paragraphs into frames; a cell
+            // would lay a frame's paragraphs out in place.
+            Block::TextFrame(frame) => generate_cell_content(out, &frame.content, ctx)?,
             Block::FloatingShape(fs) => generate_floating_shape(out, fs, ctx),
             Block::DrawingGroup(group) => generate_drawing_group(out, group, ctx)?,
             Block::List(list) => {
