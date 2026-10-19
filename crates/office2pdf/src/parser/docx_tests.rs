@@ -1557,6 +1557,8 @@ fn build_docx_with_styles_xml(document_xml: &str, styles_xml: &str) -> Vec<u8> {
 
 #[path = "docx_contextual_spacing_tests.rs"]
 mod contextual_spacing_tests;
+#[path = "docx_floating_table_wrap_tests.rs"]
+mod floating_table_wrap_tests;
 #[path = "docx_layout_rtl_tests.rs"]
 mod layout_rtl_tests;
 #[path = "docx_math_chart_metadata_tests.rs"]
