@@ -570,6 +570,7 @@ fn apply_completed_frame_passes(document: &mut PagedDocument) {
     let mut pages: Vec<Page> = document.pages().to_vec();
     super::powerpoint_line_paint::adjust_paragraph_marks(&mut pages);
     super::excel_fill_paint::adjust_cell_fills(&mut pages);
+    super::cell_diagonal_paint::paint_cell_diagonals(&mut pages);
     super::excel_glyph_pacing::pace_sheet_glyphs_on_whole_points(&mut pages);
     super::word_justified_gap_phases::spread_justified_gaps_as_word_does(&mut pages);
     let info: typst::model::DocumentInfo = typst::model::Document::info(document).clone();

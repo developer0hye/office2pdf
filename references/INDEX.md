@@ -70,6 +70,7 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 | Resource | Type |
 |----------|------|
 | [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/) | Official spec (free download) |
+| [MS-OE376 diagonal borders](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oe376/575e93b1-372b-4dd9-866d-01239859206a) | Word style restrictions and native probes ([detail](word-diagonal-borders.md)) |
 | [officeopenxml.com](http://officeopenxml.com/) | Readable OOXML reference |
 | [PowerPoint BulletFormat docs](https://learn.microsoft.com/en-us/office/vba/api/powerpoint.bulletformat) | PowerPoint bullet semantics reference ([detail](powerpoint-bulletformat.md)) |
 

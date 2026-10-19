@@ -25,6 +25,7 @@ fn cell(text: &str) -> TableCell {
         background_alpha: None,
         data_bar: None,
         sparkline: None,
+        diagonal_borders: None,
         icon_text: None,
         icon_color: None,
         icon_shading: None,

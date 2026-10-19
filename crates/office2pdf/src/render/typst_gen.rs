@@ -166,6 +166,7 @@ struct GenCtx {
     /// its own sheet's first printed page (issue #1168).
     next_sheet_drawing_layer_id: usize,
     next_excel_fill_id: usize,
+    diagonal_cell_specs: Vec<String>,
     table_depth: usize,
     /// The table being written is a block of a breakable section body, so
     /// its rows may continue on the next page (issue #2217).
@@ -310,6 +311,7 @@ impl GenCtx {
             prefer_sibling_metrics_for_empty_cell_paragraphs: false,
             next_sheet_drawing_layer_id: 0,
             next_excel_fill_id: 0,
+            diagonal_cell_specs: Vec::new(),
             table_depth: 0,
             table_rows_may_split: false,
             table_uses_powerpoint_line_box: false,
@@ -727,6 +729,14 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
             }
         }
         ctx.at_document_start = false;
+    }
+    if !ctx.diagonal_cell_specs.is_empty() {
+        let _ = writeln!(
+            out,
+            "#metadata((\"{}\", ({})))",
+            crate::render::cell_diagonal_paint::MARKER,
+            ctx.diagonal_cell_specs.join("")
+        );
     }
     Ok(TypstOutput {
         source: out,

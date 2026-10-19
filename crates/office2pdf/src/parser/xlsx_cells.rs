@@ -3964,6 +3964,7 @@ pub(super) fn build_rows_for_range(
                 background_alpha: None,
                 data_bar,
                 sparkline,
+                diagonal_borders: None,
                 padding,
                 icon_text,
                 icon_color,

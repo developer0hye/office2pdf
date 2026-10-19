@@ -4,7 +4,7 @@ use super::{
     HyperlinkMap, ImageMap, Insets, LineCap, LineJoin, MAX_TABLE_DEPTH, StyleMap, Table, TableCell,
     TableRow, convert_paragraph_blocks, parse_hex_color, withheld_paragraph_block,
 };
-use crate::ir::TableBorderPaintModel;
+use crate::ir::{DiagonalCellBorders, TableBorderPaintModel};
 use crate::parser::units::{emu_to_pt, twips_to_pt};
 
 #[derive(Clone)]
@@ -15,6 +15,8 @@ struct RawCell {
     preferred_width: Option<f64>,
     vmerge: Option<String>,
     border: Option<CellBorder>,
+    diagonal_borders: Option<Box<DiagonalCellBorders>>,
+    diagonal_sides_stated: [bool; 2],
     border_spec: TableBorderSpec,
     background: Option<Color>,
     has_explicit_background: bool,
@@ -443,6 +445,17 @@ fn extract_raw_rows(
                 .and_then(|properties| properties.get("borders"))
                 .filter(|borders| !borders.is_null());
             let border = cell_border_properties.and_then(extract_cell_borders);
+            let diagonal_borders = cell_border_properties.and_then(|borders| {
+                diagonal_borders_from_sides(
+                    extract_diagonal_border_side(borders, "tl2br"),
+                    extract_diagonal_border_side(borders, "tr2bl"),
+                )
+            });
+            let diagonal_sides_stated = ["tl2br", "tr2bl"].map(|name| {
+                cell_border_properties
+                    .and_then(|borders| borders.get(name))
+                    .is_some_and(|value| !value.is_null())
+            });
             let border_spec = cell_border_properties
                 .map(extract_table_border_spec)
                 .unwrap_or_default();
@@ -470,6 +483,8 @@ fn extract_raw_rows(
                 preferred_width,
                 vmerge,
                 border,
+                diagonal_borders,
+                diagonal_sides_stated,
                 border_spec,
                 background,
                 has_explicit_background,
@@ -633,6 +648,21 @@ fn apply_conditional_table_style(
             // Explicit tcBorders win per edge: `nil` suppresses that side,
             // while an unstated side can still inherit the table style.
             cell.border = merge_cell_border_with_direct(&style.border, &cell.border_spec);
+            let direct = cell.diagonal_borders.as_deref();
+            let inherited = style.diagonal_borders.as_deref();
+            let down = if cell.diagonal_sides_stated[0] {
+                direct
+            } else {
+                inherited
+            }
+            .and_then(|borders| borders.top_left_to_bottom_right.clone());
+            let up = if cell.diagonal_sides_stated[1] {
+                direct
+            } else {
+                inherited
+            }
+            .and_then(|borders| borders.top_right_to_bottom_left.clone());
+            cell.diagonal_borders = diagonal_borders_from_sides(down, up);
             // A conditional region's `w:tcMar` applies only where that region
             // is active. Direct per-cell margins were resolved before this
             // pass and keep precedence.
@@ -1094,6 +1124,7 @@ fn resolve_vmerge_and_build_rows(raw_rows: &[RawRow]) -> Vec<TableRow> {
                         col_span: raw_cell.col_span,
                         row_span,
                         border: raw_cell.border.clone(),
+                        diagonal_borders: raw_cell.diagonal_borders.clone(),
                         background: raw_cell.background,
                         background_alpha: None,
                         data_bar: None,
@@ -1116,6 +1147,7 @@ fn resolve_vmerge_and_build_rows(raw_rows: &[RawRow]) -> Vec<TableRow> {
                         col_span: raw_cell.col_span,
                         row_span: 1,
                         border: raw_cell.border.clone(),
+                        diagonal_borders: raw_cell.diagonal_borders.clone(),
                         background: raw_cell.background,
                         background_alpha: None,
                         data_bar: None,
@@ -1394,11 +1426,37 @@ fn extract_border_side(borders_json: &serde_json::Value, key: &str) -> Option<Bo
         .and_then(|border| border.top)
 }
 
+fn extract_diagonal_border_side(borders_json: &serde_json::Value, key: &str) -> Option<BorderSide> {
+    let side = borders_json.get(key)?;
+    let style = word_diagonal_border_style(side.get("borderType")?.as_str()?)?;
+    let mut normalized = side.clone();
+    normalized["borderType"] = serde_json::json!("single");
+    let mut border = extract_cell_borders(&serde_json::json!({ "top": normalized }))?.top?;
+    border.style = style;
+    // Word retains a hairline even for an explicitly zero-size diagonal.
+    border.width = border.width.max(0.25);
+    Some(border)
+}
+
+/// Word's diagonal styles differ from ordinary edges: `nil` suppresses, but
+/// `none` and unsupported compound styles paint a single line (MS-OE376 2.1.174).
+pub(super) fn word_diagonal_border_style(value: &str) -> Option<BorderLineStyle> {
+    Some(match value {
+        "nil" | "" => return None,
+        "dashed" | "dashSmallGap" => BorderLineStyle::Dashed,
+        "dotted" => BorderLineStyle::Dotted,
+        "dotDash" => BorderLineStyle::DashDot,
+        "dotDotDash" => BorderLineStyle::DashDotDot,
+        "double" => BorderLineStyle::Double,
+        _ => BorderLineStyle::Solid,
+    })
+}
+
 /// One side of a `w:tblBorders`/`w:tcBorders`, keeping "stated as none" apart
 /// from "not stated at all".
 ///
-/// ECMA-376 gives `w:val="none"` (and its legacy spelling `nil`) the meaning
-/// "no border", which outranks whatever the table style would have drawn;
+/// Ordinary edges with `w:val="none"` (or `nil`) mean "no border", which
+/// outranks whatever the table style would have drawn;
 /// only an *absent* side inherits. Collapsing the two onto `None` made the
 /// invoice of #841 draw six grey rules its `w:tblBorders` asks not to have
 /// (issue #931).
@@ -1407,7 +1465,7 @@ pub(super) enum BorderSideSpec {
     /// The element states nothing; the style decides.
     #[default]
     Unstated,
-    /// `w:val="none"` or `"nil"` — draw nothing, and stop the style lookup.
+    /// Draw nothing and stop style lookup: `none`/`nil` for edges, `nil` for diagonals.
     Suppressed,
     /// A border to draw.
     Stated(BorderSide),
@@ -1492,6 +1550,18 @@ pub(super) fn extract_table_border_spec(borders_json: &serde_json::Value) -> Tab
         inside_h: side("insideH"),
         inside_v: side("insideV"),
     }
+}
+
+pub(super) fn diagonal_borders_from_sides(
+    down: Option<BorderSide>,
+    up: Option<BorderSide>,
+) -> Option<Box<DiagonalCellBorders>> {
+    (down.is_some() || up.is_some()).then(|| {
+        Box::new(DiagonalCellBorders {
+            top_left_to_bottom_right: down,
+            top_right_to_bottom_left: up,
+        })
+    })
 }
 
 fn extract_cell_borders(borders_json: &serde_json::Value) -> Option<CellBorder> {
