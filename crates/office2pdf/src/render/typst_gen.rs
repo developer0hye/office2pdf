@@ -2071,8 +2071,14 @@ fn write_placed_sheet_anchor(
                 out.push(']');
             }
             out.push(']');
+            // The label lets the completed-frame pass take the runs the
+            // window hides out of the text layer (issue #1736).
             if placement.clip_window.is_some() {
-                out.push_str("]]");
+                let _ = write!(
+                    out,
+                    "]<{}>]",
+                    super::excel_chart_window_text::SHEET_CHART_WINDOW_LABEL,
+                );
             }
         }
         SheetAnchor::TextBox(text_box) => {
