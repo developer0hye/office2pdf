@@ -405,6 +405,11 @@ API failures abort rather than indicate an empty queue; Codex setup failures sto
 without blocking an issue, and timeouts stop its process group. A final report is
 not completion proof: the runner checks GitHub issue/PR state for progress, while
 the agent must complete and verify CI, merge and cleanup under `AGENTS.md`.
+Progress counts use every page of the repository's merged and open PR listings,
+matching issue references in PR bodies without relying on the search index.
+Inspect an issue's merged count and newest open citing PR with
+`scripts/issue_loop.sh --print-progress N`; an API failure returns an error
+without reporting a partial count.
 See `scripts/issue_loop.sh --help` for limits, paths and stop behavior.
 
 ## Contributing files

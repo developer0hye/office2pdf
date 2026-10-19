@@ -85,3 +85,4 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 |----------|------|
 | [Meta-Harness (arXiv:2603.28052)](https://arxiv.org/abs/2603.28052) | Harness search from raw prior traces ([detail](meta-harness.md)) |
 | [OpenAI Codex](https://github.com/openai/codex) | Headless CLI, JSONL events and structured reports ([detail](codex.md)) |
+| [GitHub CLI](https://github.com/cli/cli) | Complete PR enumeration for progress detection ([detail](github-cli-pagination.md)) |
