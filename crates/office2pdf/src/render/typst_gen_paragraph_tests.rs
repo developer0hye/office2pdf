@@ -1043,8 +1043,10 @@ fn test_generate_tab_uses_measured_default_stops() {
         result.contains("#context {"),
         "Expected contextual tab rendering in: {result}"
     );
+    // A body paragraph's pen is the rendered prefix on the tab's own line
+    // (issue #2226).
     assert!(
-        result.contains("measure(tab_prefix_0).width"),
+        result.contains("measure(tab_line_0).width"),
         "Expected tab spacing to measure the rendered prefix in: {result}"
     );
     assert!(

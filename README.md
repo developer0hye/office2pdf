@@ -293,6 +293,12 @@ their indent. Tabs in a list item's first paragraph, when it has a hanging
 indent, advance from where its text starts to the paragraph's next stop,
 counted from the margin.
 
+DOCX body paragraph tabs also count stops and the default grid from the margin,
+past the paragraph's left and first-line indents. When a tab's left or default
+stop leaves no room for the next word before the line's end, the tab and that
+word start the next line. A line left holding only tabs keeps their runs'
+height. Centred, right and decimal stops keep their field on the line.
+
 DOCX section body text supports top, centered and bottom page alignment,
 including paragraph after-spacing and page breaks. Continuous sections use their
 common alignment; mixed alignments fall back to top on their shared explicit
