@@ -1,0 +1,199 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 173.0304,
+      "bbox_pt": {
+        "height": 36.48,
+        "width": 72.96,
+        "x": 98.4,
+        "y": 72.0
+      },
+      "disposition": {
+        "class": "photo-resampling",
+        "kind": "accepted-rendering",
+        "note": "The inline picture: Word embeds it as a 191x95 interpolated JPEG, office2pdf as the source 200x100 PNG, so the red/blue boundary row resamples differently; the one-pixel edge columns are its 0.10pt offset (98.92 vs Word 98.82pt), below a device pixel. Same size, same baseline seat."
+      },
+      "id": "p1-8de7d048490f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 11.52,
+        "x": 157.44,
+        "y": 116.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-66d033df1e76",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 123.36,
+        "y": 116.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-f11357efb96e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.2,
+        "x": 132.96,
+        "y": 117.12
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-1550aa7b9c17",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 151.2,
+        "y": 117.12
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-8a041a0f5f6a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 8.64,
+        "x": 86.88,
+        "y": 97.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-27688b19a1e0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 4.8,
+        "x": 192.0,
+        "y": 97.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-fcb91ff2f23c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 4.32,
+        "x": 168.96,
+        "y": 117.12
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-07ba8e421234",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 174.24,
+        "y": 98.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-20df5150ebdd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 80.64,
+        "y": 101.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-06624af39d22",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 181.92,
+        "y": 113.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Left, End and Following paragraph: outline-only differences of the same glyphs at the same positions (baselines within 0.07pt of Word); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-71686e44cc32",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 11,
+    "duplicate": 0,
+    "total": 11,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

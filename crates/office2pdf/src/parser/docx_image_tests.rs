@@ -918,3 +918,163 @@ fn docx_source_crops_stay_with_shared_pictures_across_story_tables() {
         assert_eq!(table_crop.left, 0.25);
     }
 }
+
+/// A paragraph's runs in order: a text run as its text, and a picture riding
+/// the line as `[width x height]`, read from both the box and its picture.
+fn line_items(paragraph: &Paragraph) -> Vec<String> {
+    paragraph
+        .runs
+        .iter()
+        .map(|run| match run.inline_box.as_deref() {
+            Some(inline_box) => match inline_box.content.as_slice() {
+                [Block::Image(image)]
+                    if image.width == Some(inline_box.width)
+                        && image.height == Some(inline_box.height) =>
+                {
+                    format!("[{}x{}]", inline_box.width, inline_box.height)
+                }
+                _ => "[other box]".to_string(),
+            },
+            None => run.text.clone(),
+        })
+        .collect()
+}
+
+/// Every picture block and every paragraph in `blocks`, descending into
+/// table cells.
+fn picture_blocks_and_paragraphs(blocks: &[Block]) -> (usize, Vec<&Paragraph>) {
+    let mut picture_blocks: usize = 0;
+    let mut paragraphs: Vec<&Paragraph> = Vec::new();
+    for block in blocks {
+        match block {
+            Block::Image(_) | Block::InlineImages(_) => picture_blocks += 1,
+            Block::Paragraph(paragraph) => paragraphs.push(paragraph),
+            Block::Table(table) => {
+                for cell in table.rows.iter().flat_map(|row| &row.cells) {
+                    let (cell_pictures, cell_paragraphs) =
+                        picture_blocks_and_paragraphs(&cell.content);
+                    picture_blocks += cell_pictures;
+                    paragraphs.extend(cell_paragraphs);
+                }
+            }
+            _ => {}
+        }
+    }
+    (picture_blocks, paragraphs)
+}
+
+/// An inline picture that shares its paragraph with text is a glyph-like
+/// object on that text's line, so it rides the paragraph's runs in source
+/// order as a box of its `wp:extent` (issue #2227). Lifting it out as an image
+/// block drew it above the paragraph and printed text that comes before it
+/// after it. Whitespace is text too: Word keeps leading spaces before the
+/// picture. A paragraph holding only pictures keeps the picture-paragraph path
+/// (issues #499, #2201).
+#[test]
+fn an_inline_picture_sharing_its_paragraph_with_text_rides_the_runs() {
+    let bmp_data = make_test_bmp();
+    // 72x36pt, the `wp:extent` of docxide-pdf's `cell-inline-*` cases.
+    let pic = || docx_rs::Pic::new(&bmp_data).size(914_400, 457_200);
+    let picture = || docx_rs::Run::new().add_image(pic());
+    let text = |text: &str| docx_rs::Run::new().add_text(text);
+    let cases: [(&str, docx_rs::Paragraph, &[&str]); 5] = [
+        (
+            "text on either side",
+            docx_rs::Paragraph::new()
+                .add_run(text("Left "))
+                .add_run(picture())
+                .add_run(text(" End")),
+            &["Left ", "[72x36]", " End"],
+        ),
+        (
+            "leading spaces only",
+            docx_rs::Paragraph::new()
+                .add_run(text("   "))
+                .add_run(picture()),
+            &["   ", "[72x36]"],
+        ),
+        (
+            "picture first",
+            docx_rs::Paragraph::new()
+                .add_run(picture())
+                .add_run(text("Caption")),
+            &["[72x36]", "Caption"],
+        ),
+        (
+            "text and picture in one run",
+            docx_rs::Paragraph::new().add_run(
+                docx_rs::Run::new()
+                    .add_text("Left ")
+                    .add_image(pic())
+                    .add_text(" End"),
+            ),
+            &["Left ", "[72x36]", " End"],
+        ),
+        (
+            "tab before the picture",
+            docx_rs::Paragraph::new()
+                .add_run(text("Left ").add_tab())
+                .add_run(picture())
+                .add_run(text(" End")),
+            &["Left \t", "[72x36]", " End"],
+        ),
+    ];
+    for (case, paragraph, expected) in cases {
+        let in_body = docx_rs::Docx::new().add_paragraph(paragraph.clone());
+        let in_cell =
+            docx_rs::Docx::new().add_table(docx_rs::Table::new(vec![docx_rs::TableRow::new(
+                vec![docx_rs::TableCell::new().add_paragraph(paragraph)],
+            )]));
+        for (place, docx) in [("body", in_body), ("table cell", in_cell)] {
+            let mut cursor = Cursor::new(Vec::new());
+            docx.build().pack(&mut cursor).unwrap();
+            let (doc, _warnings) = DocxParser
+                .parse(&cursor.into_inner(), &ConvertOptions::default())
+                .unwrap();
+            let Page::Flow(page) = &doc.pages[0] else {
+                panic!("Expected FlowPage");
+            };
+            let (picture_blocks, paragraphs) = picture_blocks_and_paragraphs(&page.content);
+            let lines: Vec<Vec<String>> = paragraphs.into_iter().map(line_items).collect();
+            assert_eq!(picture_blocks, 0, "{case} in {place}: {lines:?}");
+            assert_eq!(lines, vec![expected.to_vec()], "{case} in {place}");
+        }
+    }
+
+    // The controls: a picture alone in its paragraph is still a picture
+    // block, and so is one a page break separates from the paragraph's text,
+    // while a picture beside text past the break rides that text's line.
+    let alone = docx_rs::Paragraph::new().add_run(picture());
+    let split_by_break = docx_rs::Paragraph::new()
+        .add_run(picture())
+        .add_run(docx_rs::Run::new().add_break(docx_rs::BreakType::Page))
+        .add_run(text("Next "))
+        .add_run(picture());
+    for (case, paragraph, expected_picture_blocks, expected_lines) in [
+        ("picture alone", alone, 1, Vec::new()),
+        (
+            "picture split from the text by a page break",
+            split_by_break,
+            1,
+            vec![vec!["Next ".to_string(), "[72x36]".to_string()]],
+        ),
+    ] {
+        let docx = docx_rs::Docx::new().add_paragraph(paragraph);
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let (doc, _warnings) = DocxParser
+            .parse(&cursor.into_inner(), &ConvertOptions::default())
+            .unwrap();
+        let Page::Flow(page) = &doc.pages[0] else {
+            panic!("Expected FlowPage");
+        };
+        let (picture_blocks, paragraphs) = picture_blocks_and_paragraphs(&page.content);
+        let lines: Vec<Vec<String>> = paragraphs
+            .into_iter()
+            .map(line_items)
+            .filter(|line| !line.is_empty())
+            .collect();
+        assert_eq!(picture_blocks, expected_picture_blocks, "{case}: {lines:?}");
+        assert_eq!(lines, expected_lines, "{case}");
+    }
+}

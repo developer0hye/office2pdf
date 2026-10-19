@@ -44,6 +44,6 @@ confirms Word ignores restart rules inside complete level overrides.
 Marker clearance/suffixes follow `pdf/list_label.rs`. Native probes calibrate
 font/size/tab/wrap differences and inline marker ascent versus body descent/leading.
 Damaged-PNG recovery follows `src/pdf/images.rs`; locked `png` 0.18.1 recovers samples, calibrated by Word CRC/truncation probes.
-Picture crops follow `src/docx/images.rs`; raw XML retains per-picture offsets independently of [docx-rs#936](https://github.com/bokuweb/docx-rs/pull/936).
+Picture crops follow `src/docx/images.rs`; raw XML retains per-picture offsets independently of [docx-rs#936](https://github.com/bokuweb/docx-rs/pull/936). An inline picture beside text rides the line like a glyph, as `inline_line_advance` in `src/pdf/layout.rs` (`fe7b8bea`) lays out: picture plus text descent (#2227).
 SmartArt follows package relationships into cached DrawingML and separate text transforms; native outlines stay, compatible others use Annex D, and unsupported outlines/path paints warn and fall back.
 Do not copy its `embedded_fonts.rs` font key: reversing the mixed-endian GUID corrupts the first table record. Ours follows LibreOffice's `FontTable.cxx` (#2200).

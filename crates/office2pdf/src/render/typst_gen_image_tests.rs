@@ -446,6 +446,115 @@ fn inline_pictures_start_where_the_paragraphs_text_lines_would() {
     }
 }
 
+/// An inline picture between two text runs is a glyph-like object on their
+/// line, as Word lays it out (issue #2227). Its bottom edge sits on the
+/// baseline both runs share and the run after it starts at its right edge. A
+/// picture taller than the text grows the line upward only: the line's descent
+/// and leading stay the text's, so the next line follows as far below the
+/// baseline as it does under a short picture, which in the body is one
+/// ordinary line pitch. Main drew the picture as its own block above the
+/// paragraph and set both runs on one line beneath it.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_inline_picture_between_text_runs_stands_on_their_baseline() {
+    use crate::parser::{Parser, docx::DocxParser};
+
+    let line = |text: &str| docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text(text));
+    for place in ["body", "table cell"] {
+        // The gap from the picture line's baseline down to the next one, for a
+        // 72pt-wide picture 36pt tall (taller than the text) and 4pt tall.
+        let mut gaps_below_baseline: Vec<f64> = Vec::new();
+        for height_pt in [36.0, 4.0] {
+            let case = format!("{height_pt}pt picture in the {place}");
+            let picture_paragraph = docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Left "))
+                .add_run(docx_rs::Run::new().add_image(
+                    docx_rs::Pic::new(MINIMAL_PNG).size(914_400, (height_pt * 12_700.0) as u32),
+                ))
+                .add_run(docx_rs::Run::new().add_text(" End"));
+            let docx = docx_rs::Docx::new().add_paragraph(line("First line"));
+            let docx = match place {
+                "body" => docx.add_paragraph(picture_paragraph),
+                _ => docx.add_table(docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+                    docx_rs::TableCell::new().add_paragraph(picture_paragraph),
+                ])])),
+            }
+            .add_paragraph(line("Next line"))
+            .add_paragraph(line("Last line"));
+            let mut cursor = Cursor::new(Vec::new());
+            docx.build().pack(&mut cursor).unwrap();
+            let (document, _) = DocxParser
+                .parse(
+                    &cursor.into_inner(),
+                    &crate::config::ConvertOptions::default(),
+                )
+                .expect("the picture document parses");
+            let output = generate_typst(&document).unwrap();
+            let pictures =
+                crate::render::pdf::compiled_image_boxes(&output.source, &output.images, 0)
+                    .expect("the picture document compiles");
+            let runs = crate::render::pdf::compiled_text_runs_with_images(
+                &output.source,
+                &output.images,
+                0,
+            )
+            .expect("the picture document compiles");
+            let run_with = |needle: &str| {
+                runs.iter()
+                    .find(|run| run.text.contains(needle))
+                    .unwrap_or_else(|| panic!("{case}: no run holds {needle:?} in {runs:?}"))
+            };
+            let [picture] = pictures.as_slice() else {
+                panic!("{case}: expected one picture, got {pictures:?}");
+            };
+            let (picture_left, picture_top) = picture.corners[0];
+            let (picture_right, picture_bottom) = picture.corners[2];
+            let (first, left, end, next) = (
+                run_with("First"),
+                run_with("Left"),
+                run_with("End"),
+                run_with("Next"),
+            );
+            assert!(
+                (left.baseline_pt - picture_bottom).abs() < 0.05
+                    && (end.baseline_pt - picture_bottom).abs() < 0.05,
+                "{case}: the picture's bottom edge ({picture_bottom}pt) must sit on the baseline \
+                 of the runs on either side, got {}pt and {}pt",
+                left.baseline_pt,
+                end.baseline_pt
+            );
+            assert!(
+                left.left_pt < picture_left && (end.left_pt - picture_right).abs() < 0.05,
+                "{case}: the picture ({picture_left}..{picture_right}pt) must follow `Left ` \
+                 at {}pt and lead ` End`, which starts at {}pt",
+                left.left_pt,
+                end.left_pt
+            );
+            assert!(
+                picture_top > first.baseline_pt,
+                "{case}: the picture's top ({picture_top}pt) must stay below the line above, \
+                 whose baseline is at {}pt",
+                first.baseline_pt
+            );
+            gaps_below_baseline.push(next.baseline_pt - picture_bottom);
+            if place == "body" {
+                let pitch: f64 = run_with("Last").baseline_pt - next.baseline_pt;
+                assert!(
+                    (next.baseline_pt - picture_bottom - pitch).abs() < 0.05,
+                    "{case}: the next line must follow one line pitch ({pitch}pt) below the \
+                     picture line's baseline ({picture_bottom}pt), got {}pt",
+                    next.baseline_pt
+                );
+            }
+        }
+        assert!(
+            (gaps_below_baseline[0] - gaps_below_baseline[1]).abs() < 0.05,
+            "{place}: a tall picture must leave the line's descent and leading alone, but the \
+             next line follows {gaps_below_baseline:?}pt below the 36pt and 4pt picture lines"
+        );
+    }
+}
+
 fn make_image(format: ImageFormat, width: Option<f64>, height: Option<f64>) -> Block {
     Block::Image(ImageData {
         rotation_deg: None,
