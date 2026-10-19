@@ -1555,6 +1555,8 @@ fn build_docx_with_styles_xml(document_xml: &str, styles_xml: &str) -> Vec<u8> {
     zip.finish().unwrap().into_inner()
 }
 
+#[path = "docx_clearing_break_tests.rs"]
+mod clearing_break_tests;
 #[path = "docx_contextual_spacing_tests.rs"]
 mod contextual_spacing_tests;
 #[path = "docx_floating_table_wrap_tests.rs"]

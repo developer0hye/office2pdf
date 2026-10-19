@@ -123,6 +123,9 @@ pub struct ParagraphStyle {
     /// This paragraph fragment follows a hard break in its source paragraph.
     /// Typst uses the marker for continuation-specific layout behavior.
     pub starts_after_layout_break: bool,
+    /// The line breaks in the runs' text that resume the next line below
+    /// the floating objects beside it (`w:br w:clear`), in text order.
+    pub clearing_breaks: Box<[ClearingBreak]>,
     /// Leading runs carry a list number and source separator inside the paragraph frame.
     pub has_inline_list_number: bool,
     /// Resolved numbering suffix; absent for generic list paragraphs.
@@ -246,6 +249,25 @@ pub enum TabLeader {
     Dot,
     Hyphen,
     Underscore,
+}
+
+/// A line break that resumes the next line past the floating objects beside
+/// it, as a `w:br` with `w:clear` does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ClearingBreak {
+    /// Which `'\n'` of the paragraph's run text this is, counting from zero
+    /// across all its runs.
+    pub line_break: usize,
+    pub clear: BreakClear,
+}
+
+/// Which side of the line a clearing break needs free of floating objects
+/// (ECMA-376 `ST_BrClear`; `none` is a plain line break).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BreakClear {
+    Left,
+    Right,
+    All,
 }
 
 /// Text direction for bidirectional (BiDi) rendering.

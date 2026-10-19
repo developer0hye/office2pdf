@@ -24,11 +24,11 @@ use self::contexts::scan_table_headers;
 use self::contexts::{
     BidiContext, ChartContext, ContextualSpacingContext, DocxConversionContext,
     DrawingShapeContext, DrawingTextBoxContext, DrawingTextBoxInfo, FieldContext, MathContext,
-    NoteContent, NoteContext, ParagraphContextualSpacing, ParagraphMarkContext,
-    ParagraphRunLigatures, ParagraphShadingContext, PictureCropContext, RunLigatureContext,
-    SmallCapsContext, TableHeaderContext, TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo,
-    WordWrapContext, WpgDrawingInfo, WrapContext, build_chart_context_from_xml,
-    build_math_context_from_xml, build_note_context_from_xml, build_wrap_context_from_xml,
+    NoteContent, NoteContext, ParagraphContextualSpacing, ParagraphMarkContext, ParagraphRunScan,
+    ParagraphShadingContext, PictureCropContext, RunScan, RunScanContext, SmallCapsContext,
+    TableHeaderContext, TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo, WordWrapContext,
+    WpgDrawingInfo, WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
+    build_note_context_from_xml, build_wrap_context_from_xml,
     extract_column_layout_from_section_property, is_note_reference_run, read_zip_text,
     scan_column_layouts, scan_line_numbering, scan_page_borders, scan_page_numbering,
     scan_section_alignment, scan_style_paragraph_shading, scan_style_word_wrap, seq_identifier,
@@ -58,10 +58,11 @@ use self::tables::{convert_table, convert_table_in_text_box};
 use self::text::{
     ThemeFonts, WORD_UNSTATED_FONT_SIZE_PT, extract_doc_default_paragraph_style,
     extract_doc_default_text_style_with_theme, extract_paragraph_style, extract_run_style,
-    extract_run_style_id, extract_run_text, extract_tab_stop_overrides,
-    insert_east_asian_auto_space, is_column_break, is_page_break, pair_kerning_from_half_points,
-    parse_hex_color, parse_theme_fonts, resolve_hyperlink_url, resolve_latin_theme_font_family,
-    resolve_theme_font_family, word_built_in_doc_defaults,
+    extract_run_style_id, extract_run_text, extract_run_text_marking_clears,
+    extract_tab_stop_overrides, insert_east_asian_auto_space, is_column_break, is_page_break,
+    pair_kerning_from_half_points, parse_hex_color, parse_theme_fonts, resolve_hyperlink_url,
+    resolve_latin_theme_font_family, resolve_theme_font_family, take_clearing_break_markers,
+    word_built_in_doc_defaults,
 };
 #[cfg(test)]
 use self::text::{extract_pair_kerning, extract_tab_stops, resolve_highlight_color};
@@ -356,7 +357,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 vml_text_boxes,
                 bidi,
                 small_caps,
-                run_ligatures: RunLigatureContext::from_xml(doc_xml.as_deref()),
+                run_scan: RunScanContext::from_xml(doc_xml.as_deref()),
                 paragraph_shading: ParagraphShadingContext::from_xml(doc_xml.as_deref()),
                 word_wraps: WordWrapContext::from_xml(doc_xml.as_deref()),
                 contextual_spacing: ContextualSpacingContext::from_xml(
@@ -410,7 +411,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 vml_text_boxes: VmlTextBoxContext::from_xml(None),
                 bidi: BidiContext::from_xml(None),
                 small_caps: SmallCapsContext::from_xml(None),
-                run_ligatures: RunLigatureContext::from_xml(None),
+                run_scan: RunScanContext::from_xml(None),
                 paragraph_shading: ParagraphShadingContext::from_xml(None),
                 word_wraps: WordWrapContext::from_xml(None),
                 contextual_spacing: ContextualSpacingContext::from_xml(None, None),
@@ -1640,15 +1641,18 @@ fn process_hyperlink_runs(
     resolved_style: Option<&ResolvedStyle>,
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
-    run_ligatures: &ParagraphRunLigatures<'_>,
+    run_scan: &ParagraphRunScan<'_>,
     runs: &mut Vec<Run>,
 ) {
     let href: Option<String> = resolve_hyperlink_url(hyperlink, hyperlinks);
     for hchild in &hyperlink.children {
         if let docx_rs::ParagraphChild::Run(run) = hchild {
             let hl_small_caps: bool = ctx.small_caps.next_is_small_caps();
-            let direct_ligatures: Option<Ligatures> = run_ligatures.next_run(run);
-            let text: String = extract_run_text(run);
+            let scanned: RunScan<'_> = run_scan.next_run(run);
+            let text: String = extract_run_text_marking_clears(
+                run,
+                &mut scanned.line_break_clears.iter().copied(),
+            );
             if let Some(mut ir_run) = build_text_run(
                 text,
                 &run.run_property,
@@ -1658,7 +1662,7 @@ fn process_hyperlink_runs(
                 &ctx.theme_fonts,
                 href.clone(),
             ) {
-                apply_direct_ligatures(&mut ir_run.style, direct_ligatures);
+                apply_direct_ligatures(&mut ir_run.style, scanned.ligatures);
                 runs.push(ir_run);
             }
         }
@@ -1739,7 +1743,7 @@ fn convert_paragraph_blocks(
     // document, so this paragraph has no break of its own: it merges into the
     // paragraph after it (issue #1710).
     let mark_is_removed: bool = ctx.paragraph_marks.next_mark_is_removed(style_id);
-    let run_ligatures: ParagraphRunLigatures<'_> = ctx.run_ligatures.next_paragraph(style_id);
+    let run_scan: ParagraphRunScan<'_> = ctx.run_scan.next_paragraph(style_id);
 
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
@@ -1801,7 +1805,10 @@ fn convert_paragraph_blocks(
                 let is_small_caps: bool = ctx.small_caps.next_is_small_caps();
                 // Taken once per docx-rs run, before the run is split, so a
                 // note reference still keeps the paragraph's runs in step.
-                let direct_ligatures: Option<Ligatures> = run_ligatures.next_run(run);
+                let scanned: RunScan<'_> = run_scan.next_run(run);
+                // The run's line breaks in order; its split parts keep that
+                // order.
+                let mut line_break_clears = scanned.line_break_clears.iter().copied();
 
                 // Check for footnote/endnote reference runs
                 if is_note_reference_run(run, &ctx.notes) {
@@ -1959,9 +1966,15 @@ fn convert_paragraph_blocks(
                                 out.extend(media.text_box_blocks);
                             }
 
+                            // Extracted even when a field replaces it, so the
+                            // later parts' breaks keep their clears.
+                            let run_text: String = extract_run_text_marking_clears(
+                                &run_segment,
+                                &mut line_break_clears,
+                            );
                             let text: String =
                                 seq_field_text(&run_segment, &ctx.fields, &mut caption_identifier)
-                                    .unwrap_or_else(|| extract_run_text(&run_segment));
+                                    .unwrap_or(run_text);
                             if let Some(mut ir_run) = build_text_run(
                                 text,
                                 &run_segment.run_property,
@@ -1971,7 +1984,7 @@ fn convert_paragraph_blocks(
                                 &ctx.theme_fonts,
                                 None,
                             ) {
-                                apply_direct_ligatures(&mut ir_run.style, direct_ligatures);
+                                apply_direct_ligatures(&mut ir_run.style, scanned.ligatures);
                                 runs.push(ir_run);
                             }
 
@@ -2030,7 +2043,7 @@ fn convert_paragraph_blocks(
                     resolved_style,
                     style_map,
                     ctx,
-                    &run_ligatures,
+                    &run_scan,
                     &mut runs,
                 );
             }
@@ -2422,6 +2435,8 @@ fn build_paragraph_block(
         explicit_tab_overrides.as_deref(),
         resolved_style,
     );
+    // Before anything reads the runs' text, which must see only `'\n'`.
+    style.clearing_breaks = take_clearing_break_markers(runs);
     if explicit_para_style.space_after.is_none()
         && !resolved_style.is_some_and(|resolved| resolved.paragraph_space_after_is_explicit)
         && let Some(table_space_after) = flow.table_style_space_after
