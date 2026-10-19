@@ -769,8 +769,9 @@ fn generate_flow_page(
     if begins_continuously {
         suppress_typst_spacing_at_continuous_section_start(&mut section_content);
     }
+    let mut first_page_body_offset_pt: f64 = 0.0;
     if !begins_continuously {
-        write_flow_page_setup(out, page, &size, false, ctx)?;
+        first_page_body_offset_pt = write_flow_page_setup(out, page, &size, false, ctx)?;
         out.push('\n');
     }
     // The marker sits at the section's first page, so a first-page header can
@@ -816,6 +817,13 @@ fn generate_flow_page(
     // Typst distributes each page's flow, preserving page breaks and horizontal alignment.
     ctx.in_flow_body = true;
     write_flow_body_alignment(out, ctx);
+    // The section's margin is the default story's; the first page starts its
+    // body under its own story instead (issue #2216). Strong spacing at the
+    // top of the flow moves only that page, and may be negative where the
+    // default story is the taller one.
+    if first_page_body_offset_pt != 0.0 {
+        let _ = writeln!(out, "#v({}pt)", format_f64(first_page_body_offset_pt));
+    }
 
     // Word keeps `w:spacing w:before` on the document's first body paragraph,
     // but Typst collapses leading block spacing at a page boundary, pulling the
@@ -922,6 +930,8 @@ fn write_continuation_flow_setup(
     ctx.in_flow_body = false;
     ctx.preserve_page_after_spacing = false;
     reset_flow_body_alignment(out, ctx);
+    // A continuation page follows the one the section started on, so it is
+    // never the section's first page and shows the default story.
     write_flow_page_setup(out, page, size, true, ctx)?;
     ctx.in_flow_body = true;
     Ok(())
@@ -2965,12 +2975,7 @@ fn flow_header_value(
     // `w:pBdr` rule and its `w:space` gap — would otherwise push the text
     // up. `header-ascent: 0pt` puts the origin on the top margin line, and a
     // band of exactly that gap holds the content against Word's header top.
-    let header_band: Option<f64> = header
-        .distance_from_edge
-        // Keep float noise out of the emitted source.
-        .map(|distance| ((top_margin_pt - distance) * 100.0).round() / 100.0)
-        .filter(|band| *band > 0.0);
-    if let Some(band) = header_band {
+    if let Some(band) = header_band_pt(header, top_margin_pt) {
         match header_band_shift_pt(header) {
             Some(shift) => {
                 write_shifted_header_band(&mut out, header, band, shift, page, size, ctx)
@@ -3006,7 +3011,16 @@ fn flow_header_value(
     }
 }
 
-/// The top margin the page needs, in points.
+/// The band between `w:header` and the page's top margin, where it has room.
+fn header_band_pt(header: &HeaderFooter, top_margin_pt: f64) -> Option<f64> {
+    header
+        .distance_from_edge
+        // Keep float noise out of the emitted source.
+        .map(|distance| ((top_margin_pt - distance) * 100.0).round() / 100.0)
+        .filter(|band| *band > 0.0)
+}
+
+/// The top margin a page showing `header` needs, in points.
 ///
 /// Word's header band is `w:top - w:header`, and a header taller than it grows
 /// the top margin rather than overprinting the body. Before this, a header of
@@ -3016,24 +3030,23 @@ fn flow_header_value(
 /// top margin also reserves its bottom and any following empty header line
 /// boxes, as Word does (issue #1995).
 ///
+/// Only the story the page shows counts: where `w:titlePg` gives the first page
+/// its own story, Word lowers the body under it on that page alone, so each
+/// story is measured on its own (issue #2216).
+///
 /// Otherwise `w:top` is left alone, so the common case emits exactly what it
 /// always did. When a header face cannot be measured, its nonempty text cannot
 /// contribute a guessed height. Empty flow lines after a known overlay still
 /// reserve their declared/default font size and paragraph spacing.
 fn flow_page_top_margin_pt(
     page: &FlowPage,
+    header: Option<&HeaderFooter>,
     size: &PageSize,
     default_text: Option<&TextStyle>,
     reserve_page_anchored_header_shapes: bool,
 ) -> f64 {
-    // One margin serves the whole section, so where `w:titlePg` gives the first
-    // page its own story both have to fit it — taking the default story alone
-    // would leave a taller first-page header overprinting page one, which is
-    // the same defect one page in (#846 added that second story).
-    [page.header.as_ref(), page.first_header.as_ref()]
-        .into_iter()
-        .flatten()
-        .filter_map(|header| {
+    header
+        .and_then(|header| {
             let overlay_bottom: Option<f64> = reserve_page_anchored_header_shapes
                 .then(|| page_anchored_header_shape_bottom_pt(header, size, page.margins.top))
                 .flatten();
@@ -3104,7 +3117,7 @@ fn flow_page_top_margin_pt(
             // line 6pt down starts the body at 166pt (issue #2056).
             Some((reach + header_band_shift_pt(header).unwrap_or(0.0).max(0.0)).max(word_reach))
         })
-        .fold(page.margins.top, f64::max)
+        .map_or(page.margins.top, |reach| reach.max(page.margins.top))
 }
 
 /// Which line box [`hf_content_height_pt`] gives a header paragraph.
@@ -3419,13 +3432,20 @@ use page_borders::page_border_layer_markup;
 mod line_numbering;
 use line_numbering::write_line_numbering;
 
+/// Write a section's `#set page`, returning how much lower than its margin the
+/// section's first page starts the body.
+///
+/// One `#set page` margin serves every page of the section, so it is the one
+/// the default story needs. Where `w:titlePg` gives the first page a story
+/// whose reach differs, the caller moves that page's body by the difference
+/// instead (issue #2216).
 fn write_flow_page_setup(
     out: &mut String,
     page: &FlowPage,
     size: &PageSize,
     reserve_page_anchored_header_shapes: bool,
     ctx: &mut GenCtx,
-) -> Result<(), ConvertError> {
+) -> Result<f64, ConvertError> {
     ctx.active_page_size = Some(*size);
     ctx.active_page_margins = Some(page.margins);
     // A section may declare only a first-page story — `w:titlePg` with just a
@@ -3444,17 +3464,28 @@ fn write_flow_page_setup(
             }
         }
         ctx.flow_border_layers = [false; 2];
-        return Ok(());
+        return Ok(0.0);
     }
 
     // An overflowing header or a page-anchored overlay on a continuation page
     // grows the margin instead of overprinting the body (issues #736, #1995).
     let top_margin_pt: f64 = flow_page_top_margin_pt(
         page,
+        page.header.as_ref(),
         size,
         ctx.document_default_text.as_ref(),
         reserve_page_anchored_header_shapes,
     );
+    let first_page_top_margin_pt: f64 = match page.first_header.as_ref() {
+        Some(first_header) => flow_page_top_margin_pt(
+            page,
+            Some(first_header),
+            size,
+            ctx.document_default_text.as_ref(),
+            reserve_page_anchored_header_shapes,
+        ),
+        None => top_margin_pt,
+    };
     let _ = write!(
         out,
         "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
@@ -3468,8 +3499,8 @@ fn write_flow_page_setup(
 
     // A section with `<w:titlePg/>` draws a different story on its first page,
     // so the header value becomes a choice made per page rather than one block
-    // (issue #846). Both variants share the band and ascent, which come from
-    // the section's own margins, so they are built the same way.
+    // (issue #846). Both variants are built the same way and share the ascent;
+    // each takes its band from the margin of the pages it is drawn on.
     let default_header = page
         .header
         .as_ref()
@@ -3483,7 +3514,16 @@ fn write_flow_page_setup(
             .map(|header| flow_header_value(header, page, size, top_margin_pt, ctx))
             .unwrap_or_default();
         let first_value = first_header
-            .map(|header| flow_header_value(header, page, size, top_margin_pt, ctx))
+            .map(|header| {
+                first_page_header_value(
+                    header,
+                    page,
+                    size,
+                    top_margin_pt,
+                    first_page_top_margin_pt,
+                    ctx,
+                )
+            })
             .unwrap_or_default();
         // The ascent is a page property, so it is set when either story wants
         // it; a story that does not is unaffected by it.
@@ -3606,7 +3646,41 @@ fn write_flow_page_setup(
     }
 
     out.push_str(")\n");
-    Ok(())
+    Ok(first_page_top_margin_pt - top_margin_pt)
+}
+
+/// The first-page story's header value, drawn in the band its own margin gives
+/// it rather than the section's (issue #2216).
+///
+/// Typst lays the header out in a frame as tall as the section's margin and
+/// aligns it to the bottom, so a band sized by another margin would ride up or
+/// down with the difference. Placed from the page top instead, the band starts
+/// at `w:header` whatever the section's margin is, and its seat shift is
+/// clamped against the story's own room, as it is where the story is the
+/// section's only one.
+fn first_page_header_value(
+    header: &HeaderFooter,
+    page: &FlowPage,
+    size: &PageSize,
+    section_top_margin_pt: f64,
+    first_page_top_margin_pt: f64,
+    ctx: &mut GenCtx,
+) -> FlowHeaderValue {
+    let own_band_distance_pt: Option<f64> = header
+        .distance_from_edge
+        .filter(|_| header_band_pt(header, first_page_top_margin_pt).is_some())
+        .filter(|_| first_page_top_margin_pt != section_top_margin_pt);
+    let Some(distance) = own_band_distance_pt else {
+        return flow_header_value(header, page, size, section_top_margin_pt, ctx);
+    };
+    let mut value: FlowHeaderValue =
+        flow_header_value(header, page, size, first_page_top_margin_pt, ctx);
+    value.markup = format!(
+        "place(top, dy: {}pt, {})",
+        format_f64(distance),
+        value.markup
+    );
+    value
 }
 
 /// Where a `<wp:align>` puts a box of `extent` inside a reference frame of
