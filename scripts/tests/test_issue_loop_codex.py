@@ -50,9 +50,9 @@ elif args[:2] == ['issue', 'list']:
         sys.exit(0)
     pending = [n for n in state['issues'] if n not in state['closed']]
     print(pending[0] if pending else 'null')
-elif args[:2] == ['pr', 'list']:
+elif args[:2] == ['api', 'graphql']:
     if os.environ.get('PR_API_ERROR'): sys.exit(1)
-    print('0' if 'merged' in args else '')
+    print('')
 elif args[:2] == ['issue', 'view']:
     if os.environ.get('STATE_API_ERROR') and 'state' in args: sys.exit(1)
     if os.environ.get('LABEL_API_ERROR') and 'labels' in args: sys.exit(1)

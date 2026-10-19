@@ -19,6 +19,8 @@
 #                                                   # merged-PR preflight note
 #   scripts/issue_loop.sh --print-next-issue        # the issue the next run takes; files a
 #                                                   # main-red issue first if main is red
+#   scripts/issue_loop.sh --print-progress N        # the pull requests the loop counts as
+#                                                   # issue #N's progress
 #
 # Stop it gracefully with `touch target/issue-loop-logs/STOP` (finishes the current
 # issue first) or Ctrl+C. Each run's prompt, report, outcome and full transcript land
@@ -67,6 +69,7 @@ MAX_ISSUES=0
 USAGE_LIMIT_LOG=""                # diagnostic: report why one run counted as rate-limited
 PRINT_PROMPT=""                   # diagnostic: print one issue's next prompt and exit
 PRINT_NEXT_ISSUE=0                # diagnostic: pick (and file, if main is red) the next issue
+PRINT_PROGRESS=""                 # diagnostic: print one issue's merged and open citing PRs
 REFLECT_EVERY=0                   # 0 = never run the prompt-improvement proposer
 HISTORY="$SCRIPT_DIR/issue_loop_history.py"
 
@@ -74,7 +77,7 @@ usage() { awk 'NR > 1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "${BASH_SOURC
 
 while (( $# )); do
   case "$1" in
-    --agent|--model|--label|--blocked-label|--skip-label|--prompt-file|--max-turns|--log-dir|--expect-user|--cargo-target-dir|--min-free-gb|--usage-limit-reason|--max-issues|--max-runtime|--codex-sandbox|--reflect-every|--print-prompt)
+    --agent|--model|--label|--blocked-label|--skip-label|--prompt-file|--max-turns|--log-dir|--expect-user|--cargo-target-dir|--min-free-gb|--usage-limit-reason|--max-issues|--max-runtime|--codex-sandbox|--reflect-every|--print-prompt|--print-progress)
       (( $# >= 2 )) && [[ -n "$2" && "$2" != --* ]] || { echo "missing value for $1" >&2; exit 2; } ;;
   esac
   case "$1" in
@@ -96,6 +99,7 @@ while (( $# )); do
     --usage-limit-reason) shift; USAGE_LIMIT_LOG="${1:-}" ;;
     --print-prompt) shift; PRINT_PROMPT="${1:-}" ;;
     --print-next-issue) PRINT_NEXT_ISSUE=1 ;;
+    --print-progress) shift; PRINT_PROGRESS="${1:-}" ;;
     --reflect-every) shift; REFLECT_EVERY="${1:-0}" ;;
     -h|--help) usage ;;
     *) echo "unknown argument: $1 (try --help)" >&2; exit 2 ;;
@@ -266,16 +270,44 @@ pick_issue() {
   gh issue list --state open --search "$search" --json number --jq '.[0].number' 2>/dev/null
 }
 
+# Numbers of the pull requests in state $1 whose body cites issue #$2, ascending.
+# Enumerate the repository connection: search can lag an older PR's merge and
+# caps results at 1,000. Neither a search nor a newest-PR window proves the count.
+# Capture all pages before printing so a later-page error cannot count as progress.
+citing_prs() {
+  local state filter found
+  case "$1" in
+    merged) state=MERGED ;;
+    open) state=OPEN ;;
+    *) return 1 ;;
+  esac
+  filter=".data.repository.pullRequests.nodes[] | select(.body // \"\" | test(\"#$2\\\\b\")) | .number"
+  found="$(gh api graphql --paginate -F owner='{owner}' -F name='{repo}' -f state="$state" \
+    -f query='query($owner: String!, $name: String!, $state: PullRequestState!, $endCursor: String) {
+      repository(owner: $owner, name: $name) {
+        pullRequests(states: [$state], first: 100, after: $endCursor,
+                     orderBy: {field: CREATED_AT, direction: ASC}) {
+          nodes { number body }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    }' --jq "$filter" 2>/dev/null)" || return 1
+  printf '%s\n' "$found" | sed '/^$/d' | sort -nu
+}
+
 # Merged PRs whose body cites the issue. This — not only a closed issue — is the
 # progress signal, because a large issue is often advanced one milestone per run.
 merged_refs() {
-  gh pr list --state merged --limit 30 --json body \
-    --jq "[.[] | select(.body // \"\" | test(\"#$1\\\\b\"))] | length" 2>/dev/null
+  local prs
+  prs="$(citing_prs merged "$1")" || return 1
+  grep -c . <<<"$prs" || true
 }
 
+# The newest open PR whose body cites the issue, or nothing.
 open_ref_pr() {
-  gh pr list --state open --limit 30 --json number,body \
-    --jq "[.[] | select(.body // \"\" | test(\"#$1\\\\b\"))][0].number // empty" 2>/dev/null
+  local prs
+  prs="$(citing_prs open "$1")" || return 1
+  tail -n 1 <<<"$prs"
 }
 
 build_prompt() {
@@ -358,6 +390,14 @@ fi
 if (( PRINT_NEXT_ISSUE )); then
   pick_issue
   exit $?
+fi
+
+if [[ -n "$PRINT_PROGRESS" ]]; then
+  [[ "$PRINT_PROGRESS" =~ ^[1-9][0-9]*$ ]] || { echo "invalid issue number: $PRINT_PROGRESS" >&2; exit 2; }
+  merged="$(merged_refs "$PRINT_PROGRESS")" || exit 1
+  pr_open="$(open_ref_pr "$PRINT_PROGRESS")" || exit 1
+  printf 'merged=%s\nopen=%s\n' "$merged" "$pr_open"
+  exit 0
 fi
 
 for tool in "$AGENT" gh git python3; do
