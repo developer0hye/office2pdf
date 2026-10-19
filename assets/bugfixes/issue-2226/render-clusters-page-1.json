@@ -1,0 +1,199 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 132.48,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 24.0,
+        "x": 307.68,
+        "y": 109.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public greeting text: outline-only differences of the same glyphs at the same position (start within 0.3pt of Word on both axes); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-37faf822a432",
+      "region": "top"
+    },
+    {
+      "area_pt2": 114.2784,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 22.56,
+        "x": 331.2,
+        "y": 108.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public greeting text: outline-only differences of the same glyphs at the same position (start within 0.3pt of Word on both axes); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-f7f7ba6410a7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 45.3888,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 11.04,
+        "x": 268.32,
+        "y": 107.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public greeting text: outline-only differences of the same glyphs at the same position (start within 0.3pt of Word on both axes); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-90a12a23b754",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.68,
+        "x": 289.92,
+        "y": 107.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public greeting text: outline-only differences of the same glyphs at the same position (start within 0.3pt of Word on both axes); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-95c060eb2e20",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.68,
+        "x": 366.72,
+        "y": 110.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public greeting text: outline-only differences of the same glyphs at the same position (start within 0.3pt of Word on both axes); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-1eadde5c6595",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 360.96,
+        "y": 110.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public greeting text: outline-only differences of the same glyphs at the same position (start within 0.3pt of Word on both axes); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-d5d74e30ff1e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 110.88,
+        "y": 122.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public body: outline-only differences of the same glyphs at the same position; Times New Roman versus metric-compatible Liberation Serif."
+      },
+      "id": "p1-28aacf4c7208",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 121.44,
+        "y": 124.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public body: outline-only differences of the same glyphs at the same position; Times New Roman versus metric-compatible Liberation Serif."
+      },
+      "id": "p1-73f97dc4675e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 282.72,
+        "y": 107.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public greeting text: outline-only differences of the same glyphs at the same position (start within 0.3pt of Word on both axes); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-0e6302ba3ae5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 298.08,
+        "y": 110.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public greeting text: outline-only differences of the same glyphs at the same position (start within 0.3pt of Word on both axes); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-e2639ba57cea",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 3.84,
+        "x": 374.4,
+        "y": 108.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Public greeting text: outline-only differences of the same glyphs at the same position (start within 0.3pt of Word on both axes); Word paints Times New Roman, office2pdf the metric-compatible Liberation Serif."
+      },
+      "id": "p1-e1afefc39aef",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 11,
+    "duplicate": 0,
+    "total": 11,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

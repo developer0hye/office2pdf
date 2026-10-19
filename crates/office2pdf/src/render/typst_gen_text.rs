@@ -478,6 +478,10 @@ pub(super) fn generate_paragraph(
         line_box_em,
         available_measure_pt,
     );
+    let tab_lines: Option<WordTabLines> =
+        word_paragraph_tab_lines(style, indent, first_line_indent, available_measure_pt);
+    let tab_stops: Option<Vec<TabStop>> =
+        with_hanging_indent_stop(style.tab_stops.as_deref(), tab_lines);
     match style.heading_level {
         // The runs keep the plain emitter: the per-run line boxes of issue
         // #638 were measured on mixed-face body paragraphs only.
@@ -487,9 +491,9 @@ pub(super) fn generate_paragraph(
             generate_runs_with_tabs_and_metrics_in_context(
                 out,
                 runs,
-                style.tab_stops.as_deref(),
+                tab_stops.as_deref(),
                 paragraph_tab_width_pt,
-                None,
+                TabPen::from_word_lines(tab_lines),
                 eojeol_wrap,
                 None,
                 style.line_spacing,
@@ -503,11 +507,12 @@ pub(super) fn generate_paragraph(
             generate_word_runs_with_tabs_in_context(
                 out,
                 runs,
-                style.tab_stops.as_deref(),
+                tab_stops.as_deref(),
                 paragraph_tab_width_pt,
                 eojeol_wrap,
                 style,
                 line_grid_pitch,
+                tab_lines,
                 ctx,
             )?;
             write_terminal_word_paragraph_mark(out, runs, style, line_grid_pitch);
@@ -637,6 +642,72 @@ pub(super) fn powerpoint_trailing_letter_space_pt(
         // Zero is not tracking: PowerPoint writes `spc="0"` routinely, and a
         // `0pt` spacer would be pure noise in every deck that does.
         .filter(|spacing| *spacing != 0.0)
+}
+
+/// Where a Word paragraph's lines start and end from the margin, as
+/// [`generate_paragraph`] lays them out: `indent` is the paragraph's
+/// [`paragraph_indent_pt`], `first_line_indent` the first-line indent it
+/// emits, and `container_measure_pt` the width the container gives a line.
+///
+/// Word counts tab stops and the default grid from the margin, not from the
+/// indent (ECMA-376 Part 1, 17.3.1.37: a stop's position is "with respect to
+/// the current page margins"). Only a start-aligned left-to-right paragraph
+/// qualifies: a centred or right-aligned line, or a right-to-left one, does
+/// not start at its indent.
+pub(super) fn word_paragraph_tab_lines(
+    style: &ParagraphStyle,
+    indent: Option<(f64, f64)>,
+    first_line_indent: Option<f64>,
+    container_measure_pt: Option<f64>,
+) -> Option<WordTabLines> {
+    if matches!(style.direction, Some(TextDirection::Rtl))
+        || matches!(style.alignment, Some(Alignment::Center | Alignment::Right))
+    {
+        return None;
+    }
+    let (left, right): (f64, f64) = indent.unwrap_or((0.0, 0.0));
+    Some(WordTabLines {
+        first_origin_pt: left + first_line_indent.unwrap_or(0.0),
+        continuation_origin_pt: left,
+        end_pt: container_measure_pt
+            .map(|measure| measure - right)
+            .filter(|end| *end > left),
+    })
+}
+
+/// The paragraph's stops plus the one a hanging indent makes: Word sends a
+/// first-line tab to the left indent before any default stop, unless an
+/// explicit stop comes first (issue #2226). Later lines start at that indent,
+/// so the stop only ever serves the first.
+fn with_hanging_indent_stop(
+    tab_stops: Option<&[TabStop]>,
+    tab_lines: Option<WordTabLines>,
+) -> Option<Vec<TabStop>> {
+    let Some(lines) =
+        tab_lines.filter(|lines| lines.first_origin_pt < lines.continuation_origin_pt - 0.0001)
+    else {
+        return tab_stops.map(<[TabStop]>::to_vec);
+    };
+    let position: f64 = lines.continuation_origin_pt;
+    let mut stops: Vec<TabStop> = tab_stops.map(<[TabStop]>::to_vec).unwrap_or_default();
+    if !stops
+        .iter()
+        .any(|stop| (stop.position - position).abs() < 0.01)
+    {
+        let at: usize = stops
+            .iter()
+            .position(|stop| stop.position > position)
+            .unwrap_or(stops.len());
+        stops.insert(
+            at,
+            TabStop {
+                position,
+                alignment: TabAlignment::Left,
+                leader: TabLeader::None,
+            },
+        );
+    }
+    Some(stops)
 }
 
 pub(super) fn paragraph_default_tab_width_pt(style: &ParagraphStyle, fallback_pt: f64) -> f64 {
@@ -4056,6 +4127,7 @@ fn generate_word_runs_with_tabs_in_context(
     eojeol_wrap: EojeolWrap,
     style: &ParagraphStyle,
     line_grid_pitch: Option<f64>,
+    tab_lines: Option<WordTabLines>,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     let metrics: Option<WordRunLineMetrics<'_>> =
@@ -4065,12 +4137,67 @@ fn generate_word_runs_with_tabs_in_context(
         runs,
         tab_stops,
         default_tab_width_pt,
-        None,
+        TabPen::from_word_lines(tab_lines),
         eojeol_wrap,
         metrics.map(RunLineMetrics::Word),
         style.line_spacing,
         ctx,
     )
+}
+
+/// Where a Word body paragraph's lines start and end, measured from the
+/// margin its tab stops count from (issue #2226).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct WordTabLines {
+    /// Where the first line starts: the left indent plus the signed
+    /// first-line indent.
+    pub(super) first_origin_pt: f64,
+    /// Where every later line starts: the left indent.
+    pub(super) continuation_origin_pt: f64,
+    /// Where every line ends, when the container's measure is known.
+    pub(super) end_pt: Option<f64>,
+}
+
+/// How a run list's tabs find their stops.
+#[derive(Clone, Copy, Debug, Default)]
+struct TabPen<'a> {
+    /// A Typst length expression for where the runs' first line starts,
+    /// measured from the origin the stops count from; `None` measures from
+    /// the runs' own start.
+    origin: Option<&'a str>,
+    /// Where a Word body paragraph's lines start and end. With it, each tab
+    /// carries its run's line height, and a tab that runs past the line's
+    /// end starts the next line.
+    word_lines: Option<WordTabLines>,
+}
+
+impl<'a> TabPen<'a> {
+    fn from_origin(origin: Option<&'a str>) -> Self {
+        Self {
+            origin,
+            word_lines: None,
+        }
+    }
+
+    fn from_word_lines(word_lines: Option<WordTabLines>) -> Self {
+        Self {
+            origin: None,
+            word_lines,
+        }
+    }
+}
+
+/// Bindings a tab segment needs to restart its line when its tab runs past
+/// the line's end.
+#[derive(Clone, Copy, Debug)]
+struct TabLineWrap {
+    continuation_origin_pt: f64,
+    end_pt: f64,
+    /// Whether the line before the tab already holds something. A tab that
+    /// opens the paragraph's first line has nothing to leave behind.
+    can_break: bool,
+    /// Whether `tab_lead_{index}` holds the segment's first word.
+    has_lead: bool,
 }
 
 fn word_inline_drawing_spacing_pt(run: &Run, line_spacing: Option<LineSpacing>) -> f64 {
@@ -4092,16 +4219,13 @@ fn word_inline_drawing_spacing_pt(run: &Run, line_spacing: Option<LineSpacing>) 
     word_line_advance_pt(std::slice::from_ref(run)).unwrap_or(0.0) * (proportion - 1.0)
 }
 
-/// `tab_origin` is a Typst length expression for where the runs' first line
-/// starts, measured from the origin the stops count from; `None` measures
-/// from the runs' own start.
 #[allow(clippy::too_many_arguments)]
 fn generate_runs_with_tabs_and_metrics_in_context(
     out: &mut String,
     runs: &[Run],
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
-    tab_origin: Option<&str>,
+    tab_pen: TabPen<'_>,
     eojeol_wrap: EojeolWrap,
     run_line_metrics: Option<RunLineMetrics<'_>>,
     inline_drawing_line_spacing: Option<LineSpacing>,
@@ -4119,45 +4243,73 @@ fn generate_runs_with_tabs_and_metrics_in_context(
     }
 
     let segments: Vec<Vec<Run>> = split_runs_on_tabs(runs);
-    write_measured_tab_segments_with_result(
-        out,
-        &segments,
-        tab_stops,
-        default_tab_width_pt,
-        tab_origin,
-        |out, index| {
-            generate_runs_with_metrics_in_context(
-                out,
-                &segments[index],
-                eojeol_wrap,
-                run_line_metrics,
-                inline_drawing_line_spacing,
-                ctx,
-            )
-        },
-    )
-}
+    let word_origin: Option<String> = tab_pen
+        .word_lines
+        .map(|lines| lines.first_origin_pt)
+        .filter(|origin| origin.abs() > 0.0001)
+        .map(|origin| format!("{}pt", format_f64(origin)));
+    let tab_origin: Option<&str> = tab_pen.origin.or(word_origin.as_deref());
+    let wrap: Option<(f64, f64)> = tab_pen.word_lines.and_then(|lines| {
+        lines
+            .end_pt
+            .map(|end_pt| (lines.continuation_origin_pt, end_pt))
+    });
+    let struts: Vec<Run> = if wrap.is_some() {
+        tab_strut_runs(runs)
+    } else {
+        Vec::new()
+    };
 
-fn write_measured_tab_segments_with_result(
-    out: &mut String,
-    segment_runs: &[Vec<Run>],
-    tab_stops: Option<&[TabStop]>,
-    default_tab_width_pt: f64,
-    tab_origin: Option<&str>,
-    mut write_segment: impl FnMut(&mut String, usize) -> Result<(), ConvertError>,
-) -> Result<(), ConvertError> {
     out.push_str("#context {\n");
-
-    for (index, segment) in segment_runs.iter().enumerate() {
+    let mut write_runs = |out: &mut String, runs: &[Run]| {
+        generate_runs_with_metrics_in_context(
+            out,
+            runs,
+            eojeol_wrap,
+            run_line_metrics,
+            inline_drawing_line_spacing,
+            ctx,
+        )
+    };
+    for (index, segment) in segments.iter().enumerate() {
         let _ = write!(out, "  let tab_segment_{index} = [");
-        write_segment(out, index)?;
+        write_runs(out, segment)?;
         out.push_str("]\n");
 
         if index == 0 {
             out.push_str("  let tab_prefix_0 = tab_segment_0\n");
+            if wrap.is_some() {
+                let _ = writeln!(
+                    out,
+                    "  let tab_line_0 = tab_segment_0\n  let tab_line_origin_0 = {}\n  let tab_line_struts_0 = []",
+                    tab_origin.unwrap_or("0pt")
+                );
+            }
             continue;
         }
 
+        let line_wrap: Option<TabLineWrap> = match wrap {
+            Some((continuation_origin_pt, end_pt)) => {
+                let _ = write!(out, "  let tab_strut_{index} = [");
+                if let Some(strut) = struts.get(index - 1) {
+                    write_runs(out, std::slice::from_ref(strut))?;
+                }
+                out.push_str("]\n");
+                let lead: Vec<Run> = tab_segment_lead_runs(segment);
+                if !lead.is_empty() {
+                    let _ = write!(out, "  let tab_lead_{index} = [");
+                    write_runs(out, &lead)?;
+                    out.push_str("]\n");
+                }
+                Some(TabLineWrap {
+                    continuation_origin_pt,
+                    end_pt,
+                    can_break: index > 1 || !segments[0].is_empty(),
+                    has_lead: !lead.is_empty(),
+                })
+            }
+            None => None,
+        };
         write_tab_segment_bindings(
             out,
             index,
@@ -4165,12 +4317,66 @@ fn write_measured_tab_segments_with_result(
             tab_stops,
             default_tab_width_pt,
             tab_origin,
+            line_wrap,
         );
     }
 
-    let _ = writeln!(out, "  tab_prefix_{}", segment_runs.len() - 1);
+    let _ = writeln!(out, "  tab_prefix_{}", segments.len() - 1);
     out.push('}');
     Ok(())
+}
+
+/// One zero-width run per tab, in the tab's own run style. A tab is a
+/// character of its run, so a line that holds only tabs is as tall as their
+/// runs (issue #2226). U+2060 WORD JOINER paints nothing and adds no break
+/// opportunity.
+fn tab_strut_runs(runs: &[Run]) -> Vec<Run> {
+    runs.iter()
+        .filter(|run| run.footnote.is_none() && run.inline_box.is_none())
+        .flat_map(|run| {
+            run.text.matches('\t').map(|_| Run {
+                text: "\u{2060}".to_string(),
+                style: run.style.clone(),
+                href: None,
+                footnote: None,
+                inline_box: None,
+            })
+        })
+        .collect()
+}
+
+/// A tab segment's runs up to its first break opportunity: the word Word
+/// keeps on the tab's line, so the tab moves with it (issue #2226). An
+/// object ends the word, and an East Asian character is a word of its own.
+fn tab_segment_lead_runs(segment: &[Run]) -> Vec<Run> {
+    let mut lead: Vec<Run> = Vec::new();
+    for run in segment {
+        if run.footnote.is_some() || run.inline_box.is_some() {
+            break;
+        }
+        let end: Option<usize> = run.text.char_indices().find_map(|(at, ch)| {
+            if ch.is_whitespace() {
+                Some(at)
+            } else if is_cjk_like(ch) {
+                Some(at + ch.len_utf8())
+            } else {
+                None
+            }
+        });
+        match end {
+            Some(end) => {
+                if end > 0 {
+                    lead.push(Run {
+                        text: run.text[..end].to_string(),
+                        ..run.clone()
+                    });
+                }
+                break;
+            }
+            None => lead.push(run.clone()),
+        }
+    }
+    lead
 }
 
 pub(super) fn generate_runs_with_context(
@@ -4195,7 +4401,7 @@ pub(super) fn generate_runs_with_tabs_context(
         runs,
         tab_stops,
         default_tab_width_pt,
-        None,
+        TabPen::default(),
         eojeol_wrap,
         None,
         None,
@@ -4220,7 +4426,7 @@ pub(super) fn generate_runs_with_tabs_from_origin_context(
         runs,
         tab_stops,
         default_tab_width_pt,
-        Some(tab_origin),
+        TabPen::from_origin(Some(tab_origin)),
         eojeol_wrap,
         None,
         None,
@@ -4343,7 +4549,15 @@ pub(super) fn write_measured_tab_segments(
             continue;
         }
 
-        write_tab_segment_bindings(out, index, segment, tab_stops, default_tab_width_pt, None);
+        write_tab_segment_bindings(
+            out,
+            index,
+            segment,
+            tab_stops,
+            default_tab_width_pt,
+            None,
+            None,
+        );
     }
 
     let _ = writeln!(out, "  tab_prefix_{}", segment_runs.len() - 1);
@@ -4381,6 +4595,16 @@ pub(super) fn generate_runs_with_tabs_no_wrap(
 /// Emits Typst variable bindings for a non-first tab segment: measurement,
 /// decimal anchor (if applicable), default remainder, advance, fill, and
 /// the accumulated prefix content variable.
+///
+/// With `wrap`, the pen is measured on the current line only,
+/// `tab_line_{index}`. A tab whose left or default stop leaves no room for the
+/// segment's first word before the line's end breaks the line first and
+/// advances from the continuation origin, as Word moves the tab and that word
+/// to the next line (issue #2226). The line it closes may hold nothing but tabs, so it ends
+/// with their `tab_strut_*` runs and keeps their height. A pen already past
+/// the end belongs to a segment that wrapped by itself, whose line position
+/// the unwrapped measure does not know, so it never breaks.
+#[allow(clippy::too_many_arguments)]
 fn write_tab_segment_bindings(
     out: &mut String,
     index: usize,
@@ -4388,16 +4612,32 @@ fn write_tab_segment_bindings(
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
     tab_origin: Option<&str>,
+    wrap: Option<TabLineWrap>,
 ) {
-    let _ = write!(
-        out,
-        "  let tab_prefix_width_{index} = measure(tab_prefix_{}).width",
-        index - 1
-    );
-    // The stops and the default grid count from the origin, not from where
-    // these runs begin, so the pen is the measured prefix past that origin.
-    if let Some(origin) = tab_origin {
-        let _ = write!(out, " + {origin}");
+    let previous = index - 1;
+    let pen_var: String = match wrap {
+        Some(_) => format!("tab_pen_{index}"),
+        None => format!("tab_prefix_width_{index}"),
+    };
+    match wrap {
+        Some(_) => {
+            let _ = write!(
+                out,
+                "  let {pen_var} = measure(tab_line_{previous}).width + tab_line_origin_{previous}"
+            );
+        }
+        None => {
+            let _ = write!(
+                out,
+                "  let {pen_var} = measure(tab_prefix_{previous}).width"
+            );
+            // The stops and the default grid count from the origin, not from
+            // where these runs begin, so the pen is the measured prefix past
+            // that origin.
+            if let Some(origin) = tab_origin {
+                let _ = write!(out, " + {origin}");
+            }
+        }
     }
     out.push('\n');
     let _ = writeln!(
@@ -4417,26 +4657,92 @@ fn write_tab_segment_bindings(
         );
     }
 
+    let default_tab = format_f64(default_tab_width_pt);
+    if let Some(wrap) = wrap {
+        // A right stop on the margin ends its text exactly at the line's end,
+        // which measurement rounding must not push past it.
+        let end = format_f64(wrap.end_pt + 0.01);
+        let continuation = format_f64(wrap.continuation_origin_pt);
+        if wrap.can_break {
+            let _ = writeln!(
+                out,
+                "  let tab_pen_remainder_{index} = calc.rem-euclid({pen_var}.abs.pt(), {default_tab})"
+            );
+            let lead = if wrap.has_lead {
+                format!("measure(tab_lead_{index}).width")
+            } else {
+                "0pt".to_string()
+            };
+            let _ = writeln!(
+                out,
+                "  let tab_break_{index} = {pen_var} <= {end}pt and ({})",
+                build_tab_break_expr(
+                    &pen_var,
+                    &format!("tab_pen_remainder_{index}"),
+                    &lead,
+                    &format!("{end}pt"),
+                    tab_stops,
+                    default_tab_width_pt,
+                )
+            );
+        } else {
+            let _ = writeln!(out, "  let tab_break_{index} = false");
+        }
+        let _ = writeln!(
+            out,
+            "  let tab_prefix_width_{index} = if tab_break_{index} {{ {continuation}pt }} else {{ {pen_var} }}"
+        );
+    }
+
     let _ = writeln!(
         out,
-        "  let tab_default_remainder_{index} = calc.rem-euclid(tab_prefix_width_{index}.abs.pt(), {})",
-        format_f64(default_tab_width_pt)
+        "  let tab_default_remainder_{index} = calc.rem-euclid(tab_prefix_width_{index}.abs.pt(), {default_tab})"
     );
     let _ = writeln!(
         out,
         "  let tab_advance_{index} = {}",
-        build_tab_advance_expr(index, segment, tab_stops, default_tab_width_pt)
+        build_tab_advance_expr(
+            &format!("tab_prefix_width_{index}"),
+            &format!("tab_default_remainder_{index}"),
+            index,
+            segment,
+            tab_stops,
+            default_tab_width_pt,
+        )
     );
     let _ = writeln!(
         out,
         "  let tab_fill_{index} = {}",
         build_tab_fill_expr(index, tab_stops)
     );
-    let _ = writeln!(
-        out,
-        "  let tab_prefix_{index} = [#tab_prefix_{}#tab_fill_{index}#tab_segment_{index}]",
-        index - 1
-    );
+    let tail = format!("#tab_fill_{index}#tab_segment_{index}");
+    match wrap {
+        Some(wrap) => {
+            let continuation = format_f64(wrap.continuation_origin_pt);
+            let _ = writeln!(
+                out,
+                "  let tab_line_{index} = if tab_break_{index} {{ [{tail}] }} else {{ [#tab_line_{previous}{tail}] }}"
+            );
+            let _ = writeln!(
+                out,
+                "  let tab_line_origin_{index} = if tab_break_{index} {{ {continuation}pt }} else {{ tab_line_origin_{previous} }}"
+            );
+            let _ = writeln!(
+                out,
+                "  let tab_line_struts_{index} = if tab_break_{index} {{ tab_strut_{index} }} else {{ [#tab_line_struts_{previous}#tab_strut_{index}] }}"
+            );
+            let _ = writeln!(
+                out,
+                "  let tab_prefix_{index} = if tab_break_{index} {{ [#tab_prefix_{previous}#tab_line_struts_{previous}#linebreak(){tail}] }} else {{ [#tab_prefix_{previous}{tail}] }}"
+            );
+        }
+        None => {
+            let _ = writeln!(
+                out,
+                "  let tab_prefix_{index} = [#tab_prefix_{previous}{tail}]"
+            );
+        }
+    }
 }
 
 pub(super) fn paragraph_contains_tabs(runs: &[Run]) -> bool {
@@ -5332,17 +5638,20 @@ fn is_grouped_integer(text: &str, separator: char) -> bool {
         && parts[1..].iter().all(|part| part.len() == 3)
 }
 
+/// The advance of tab `index` from the pen held in `prefix_width_var`, whose
+/// remainder on the default grid `remainder_var` holds.
 fn build_tab_advance_expr(
+    prefix_width_var: &str,
+    remainder_var: &str,
     index: usize,
     segment: &[Run],
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
 ) -> String {
-    let prefix_width_var = format!("tab_prefix_width_{index}");
     let segment_width_var = format!("tab_segment_width_{index}");
     let decimal_width_var =
         extract_decimal_anchor_runs(segment).map(|_| format!("tab_decimal_width_{index}"));
-    let default_expr = build_default_tab_advance_expr(index, default_tab_width_pt);
+    let default_expr = build_default_tab_advance_expr(remainder_var, default_tab_width_pt);
 
     let Some(tab_stops) = tab_stops else {
         return default_expr;
@@ -5376,6 +5685,46 @@ fn build_tab_advance_expr(
     }
 
     let _ = write!(expr, " else {{ {default_expr} }}");
+    expr
+}
+
+/// Whether a tab at the pen in `prefix_width_var` lands where the segment's
+/// first word, `lead_width` wide, passes `end`: true for a left stop or a
+/// default stop past the explicit ones (issue #2226). An aligned stop (centre,
+/// right, decimal) never breaks here and keeps its field on the line:
+/// docxide-pdf lets such a field reach into the right indent, and Word's rule
+/// for one past the margin is not settled by the cases this was fitted on.
+fn build_tab_break_expr(
+    prefix_width_var: &str,
+    remainder_var: &str,
+    lead_width: &str,
+    end: &str,
+    tab_stops: Option<&[TabStop]>,
+    default_tab_width_pt: f64,
+) -> String {
+    let default_break = format!(
+        "{prefix_width_var} + ({}) + {lead_width} > {end}",
+        build_default_tab_advance_expr(remainder_var, default_tab_width_pt)
+    );
+    let mut expr = String::new();
+    for stop in tab_stops.unwrap_or_default() {
+        let position = format_f64(stop.position);
+        let branch = match stop.alignment {
+            TabAlignment::Left => format!("{position}pt + {lead_width} > {end}"),
+            TabAlignment::Center | TabAlignment::Right | TabAlignment::Decimal => {
+                "false".to_string()
+            }
+        };
+        let _ = write!(
+            expr,
+            "if {prefix_width_var} < {position}pt {{ {branch} }} else "
+        );
+    }
+    if expr.is_empty() {
+        // No explicit stops: the bare default branch.
+        return default_break;
+    }
+    let _ = write!(expr, "{{ {default_break} }}");
     expr
 }
 
@@ -5423,9 +5772,9 @@ fn tab_fill_content_expr(index: usize, leader: TabLeader) -> String {
     format!("box(width: tab_advance_{index}, repeat[{leader_markup}])")
 }
 
-fn build_default_tab_advance_expr(index: usize, default_tab_width_pt: f64) -> String {
+fn build_default_tab_advance_expr(remainder_var: &str, default_tab_width_pt: f64) -> String {
     format!(
-        "if tab_default_remainder_{index} == 0 {{ {}pt }} else {{ ({} - tab_default_remainder_{index}) * 1pt }}",
+        "if {remainder_var} == 0 {{ {}pt }} else {{ ({} - {remainder_var}) * 1pt }}",
         format_f64(default_tab_width_pt),
         format_f64(default_tab_width_pt)
     )
