@@ -514,7 +514,7 @@ fn build_test_pptx_with_table_styles(
     master_xml: Option<&str>,
 ) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let opts = FileOptions::default();
+    let opts = zip::write::SimpleFileOptions::default();
 
     let mut ct = String::from(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
     ct.push_str(r#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">"#);

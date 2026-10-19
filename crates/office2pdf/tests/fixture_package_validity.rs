@@ -302,7 +302,10 @@ fn authored_fixtures_declare_every_ignorable_prefix() {
         let Ok(mut archive) = zip::ZipArchive::new(file) else {
             continue;
         };
-        let part_names: Vec<String> = archive.file_names().map(str::to_owned).collect();
+        let part_names: Vec<String> = archive
+            .file_names()
+            .map(|name| name.expect("fixture entry name should decode").into_owned())
+            .collect();
         for part_name in part_names {
             if !part_name.ends_with(".xml") && !part_name.ends_with(".rels") {
                 continue;

@@ -298,7 +298,7 @@ fn test_docx_language_reaches_pdf_catalog() {
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).unwrap();
-        let name: String = entry.name().to_string();
+        let name: String = entry.name().expect("entry name should decode").into_owned();
         let mut content: Vec<u8> = Vec::new();
         entry.read_to_end(&mut content).unwrap();
         if name == "word/styles.xml" {
@@ -312,7 +312,7 @@ fn test_docx_language_reaches_pdf_catalog() {
             )
             .into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         out.write_all(&content).unwrap();
     }
@@ -373,7 +373,7 @@ fn build_narrow_justified_docx(settings: &str) -> Vec<u8> {
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).unwrap();
-        let name: String = entry.name().to_string();
+        let name: String = entry.name().expect("entry name should decode").into_owned();
         let mut content: Vec<u8> = Vec::new();
         entry.read_to_end(&mut content).unwrap();
         if name == "word/settings.xml" {
@@ -382,7 +382,7 @@ fn build_narrow_justified_docx(settings: &str) -> Vec<u8> {
             content =
                 format!("{}{settings}{}", &xml[..first_child], &xml[first_child..]).into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         out.write_all(&content).unwrap();
     }

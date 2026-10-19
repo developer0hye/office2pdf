@@ -36,7 +36,7 @@ pub(super) fn build_docx_with_title(title: &str) -> Vec<u8> {
     use std::io::{Cursor, Write};
 
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", options).unwrap();
     Write::write_all(&mut zip, br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -165,7 +165,7 @@ pub(super) fn build_test_pptx() -> Vec<u8> {
     use std::io::{Cursor, Write};
 
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let opts = zip::write::FileOptions::default();
+    let opts = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", opts).unwrap();
     zip.write_all(

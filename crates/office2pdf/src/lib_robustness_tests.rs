@@ -6,7 +6,7 @@ fn build_pptx_with_broken_slide() -> Vec<u8> {
     use std::io::{Cursor, Write};
 
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let opts = zip::write::FileOptions::default();
+    let opts = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", opts).unwrap();
     zip.write_all(
@@ -108,7 +108,7 @@ fn test_edge_empty_pptx_produces_valid_pdf() {
     use std::io::{Cursor, Write};
 
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let opts = zip::write::FileOptions::default();
+    let opts = zip::write::SimpleFileOptions::default();
     zip.start_file("[Content_Types].xml", opts).unwrap();
     zip.write_all(
         br#"<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/></Types>"#,

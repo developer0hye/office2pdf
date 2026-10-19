@@ -29,7 +29,10 @@ fn raw_zip_entries(bytes: &[u8]) -> Vec<(String, Vec<u8>)> {
         let mut payload: Vec<u8> = Vec::new();
         file.read_to_end(&mut payload)
             .expect("raw entry should read");
-        entries.push((file.name().to_string(), payload));
+        entries.push((
+            file.name().expect("entry name should decode").into_owned(),
+            payload,
+        ));
     }
     entries
 }

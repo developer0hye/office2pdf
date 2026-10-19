@@ -83,7 +83,10 @@ fn shared_strings_entry_name<R: std::io::Read + std::io::Seek>(
         let Ok(entry) = archive.by_index(index) else {
             continue;
         };
-        let name: String = entry.name().to_string();
+        let Ok(name) = entry.name() else {
+            continue;
+        };
+        let name: String = name.into_owned();
         if name.replace('\\', "/").to_ascii_lowercase() == folded {
             return Some(name);
         }
@@ -313,7 +316,7 @@ mod tests {
     /// resolves this one by several spellings.
     fn package_with_shared_strings(part: &str, items: &str) -> Vec<u8> {
         let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
-        zip.start_file(part, zip::write::FileOptions::default())
+        zip.start_file(part, zip::write::SimpleFileOptions::default())
             .expect("writable entry");
         std::io::Write::write_all(&mut zip, shared_string_table(items).as_bytes())
             .expect("writable entry body");

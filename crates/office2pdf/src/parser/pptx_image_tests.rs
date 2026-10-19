@@ -2,7 +2,7 @@ use super::*;
 use crate::ir::ImageCrop;
 use crate::test_support::make_test_svg;
 use std::io::{Cursor, Write};
-use zip::write::FileOptions;
+use zip::write::SimpleFileOptions as FileOptions;
 
 /// Create a minimal valid BMP (1×1 pixel, red) for test images.
 pub(super) fn make_test_bmp() -> Vec<u8> {

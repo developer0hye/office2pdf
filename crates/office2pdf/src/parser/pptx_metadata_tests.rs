@@ -3,7 +3,7 @@ use super::*;
 fn build_test_pptx_with_metadata(core_xml: &str) -> Vec<u8> {
     let slide = make_slide_xml(&[make_text_box(0, 0, 9144000, 6858000, "Hello")]);
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let opts = FileOptions::default();
+    let opts = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", opts).unwrap();
     zip.write_all(

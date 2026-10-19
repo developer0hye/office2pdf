@@ -97,7 +97,7 @@ fn test_extract_metadata_from_zip_with_core_xml() {
     let buf = Vec::new();
     let cursor = Cursor::new(buf);
     let mut zip_writer = zip::ZipWriter::new(cursor);
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     zip_writer.start_file("docProps/core.xml", options).unwrap();
     zip_writer.write_all(core_xml.as_bytes()).unwrap();
     let cursor = zip_writer.finish().unwrap();
@@ -115,7 +115,7 @@ fn test_extract_metadata_from_zip_without_core_xml() {
     let buf = Vec::new();
     let cursor = Cursor::new(buf);
     let mut zip_writer = zip::ZipWriter::new(cursor);
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     zip_writer
         .start_file("some_other_file.xml", options)
         .unwrap();

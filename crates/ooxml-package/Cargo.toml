@@ -14,9 +14,9 @@ publish = false
 thiserror = "2"
 tracing = "0.1"
 quick-xml = "0.41"
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate", "unreserved"] }
 
 [dev-dependencies]
 # The round-trip tests re-read saved containers with `zip` directly so the
 # crate under test never verifies its own output.
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate", "unreserved"] }

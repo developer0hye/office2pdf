@@ -22,7 +22,7 @@ fn build_pptx(slides: usize) -> Vec<u8> {
     let buf = Vec::new();
     let cursor = Cursor::new(buf);
     let mut writer = zip::ZipWriter::new(cursor);
-    let opts: zip::write::FileOptions = zip::write::FileOptions::default();
+    let opts = zip::write::SimpleFileOptions::default();
 
     // [Content_Types].xml
     let mut slide_content_types = String::new();

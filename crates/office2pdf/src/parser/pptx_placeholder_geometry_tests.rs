@@ -1,6 +1,6 @@
 use super::*;
 use std::io::Write;
-use zip::write::FileOptions;
+use zip::write::SimpleFileOptions as FileOptions;
 
 // ── Helpers ──────────────────────────────────────────────────────────
 

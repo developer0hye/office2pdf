@@ -17,12 +17,13 @@ fn replace_package_png(package: &[u8], png: &[u8]) -> Vec<u8> {
         let mut entry = source.by_index(index).unwrap();
         let mut bytes: Vec<u8> = Vec::new();
         entry.read_to_end(&mut bytes).unwrap();
+        let name = entry.name().expect("entry name should decode").into_owned();
         output
-            .start_file(entry.name(), zip::write::FileOptions::default())
+            .start_file(&name, zip::write::SimpleFileOptions::default())
             .unwrap();
         output
             .write_all(
-                if entry.name().starts_with("word/media/") && entry.name().ends_with(".png") {
+                if name.starts_with("word/media/") && name.ends_with(".png") {
                     png
                 } else {
                     &bytes
