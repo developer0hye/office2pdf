@@ -336,6 +336,14 @@ XML they do not model — and saving rewrites only edited entries. The
 `office2pdf` rendering pipeline stays a derived projection for PDF
 preview/export; it is not the editable source of truth.
 
+`ooxml-package` is unpublished. Its public `PackageError::Container` variant
+exposes `zip::ZipError` from ZIP 9, so maintainers must choose the crate's
+semver/API compatibility strategy before publication. ZIP 9 cannot preserve an
+invalid DOS timestamp while raw-copying an entry; `ooxml-package` rejects
+entries when ZIP 9 reports an invalid DOS timestamp during load, before a
+rewrite can normalize it. Round-trip tests cover valid, matching timestamps
+in the local and central ZIP headers of untouched entries.
+
 DOCX internal HTML/MHTML `altChunk` imports retain text, inline formatting,
 headings, basic tables, and simple lists. Tag/class/id and inline CSS support
 font, color, alignment, spacing, indentation, and cell widths. Images and row

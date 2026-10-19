@@ -5992,7 +5992,7 @@ fn explicit_sheet_print_percentage_scales_cell_origins() {
             let mut entry = archive.by_index(index).unwrap();
             let mut bytes: Vec<u8> = Vec::new();
             entry.read_to_end(&mut bytes).unwrap();
-            if entry.name() == "xl/worksheets/sheet1.xml" {
+            if entry.name().expect("entry name should decode") == "xl/worksheets/sheet1.xml" {
                 let xml = std::str::from_utf8(&bytes).unwrap();
                 assert_eq!(xml.matches("scale=\"85\"").count(), 1);
                 let mut rewritten = xml.replace("scale=\"85\"", &format!("scale=\"{percentage}\""));
@@ -6009,7 +6009,10 @@ fn explicit_sheet_print_percentage_scales_cell_origins() {
                 bytes = rewritten.into_bytes();
             }
             writer
-                .start_file(entry.name(), zip::write::FileOptions::default())
+                .start_file(
+                    entry.name().expect("entry name should decode").into_owned(),
+                    zip::write::SimpleFileOptions::default(),
+                )
                 .unwrap();
             writer.write_all(&bytes).unwrap();
         }

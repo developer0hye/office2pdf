@@ -7758,11 +7758,11 @@ fn repackaged_with_part(data: &[u8], part: &str, patch: impl Fn(&str) -> String)
     let mut patched: bool = false;
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).expect("the entry is readable");
-        let name: String = entry.name().to_string();
+        let name: String = entry.name().expect("entry name should decode").into_owned();
         let mut bytes: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut bytes).expect("the entry decompresses");
         rebuilt
-            .start_file(&name, zip::write::FileOptions::default())
+            .start_file(&name, zip::write::SimpleFileOptions::default())
             .expect("the entry is writable");
         if name == part {
             let xml: String = String::from_utf8(bytes).expect("the part is UTF-8 XML");

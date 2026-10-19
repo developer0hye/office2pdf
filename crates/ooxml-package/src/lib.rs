@@ -25,7 +25,7 @@ use quick_xml::events::{BytesStart, Event};
 /// Errors raised while reading, editing, or saving an OPC package.
 #[derive(Debug, thiserror::Error)]
 pub enum PackageError {
-    /// The container is not a readable ZIP archive.
+    /// A ZIP container error, including invalid entry metadata.
     #[error("failed to read package container: {0}")]
     Container(#[from] zip::result::ZipError),
     /// The underlying reader failed.
@@ -123,8 +123,15 @@ impl OpcPackage {
             // Raw access skips decompression: payloads stay in `source` until
             // a caller actually reads or replaces them.
             let file = archive.by_index_raw(source_index)?;
+            if file.last_modified().is_none() {
+                return Err(PackageError::Container(
+                    zip::result::ZipError::InvalidArchive(
+                        "entry has an invalid DOS timestamp".into(),
+                    ),
+                ));
+            }
             entries.push(PackageEntry {
-                name: file.name().to_string(),
+                name: file.name()?.into_owned(),
                 source_index,
                 is_directory: file.is_dir(),
                 payload: EntryPayload::Untouched,
@@ -262,9 +269,14 @@ impl OpcPackage {
                     // Mirror the source entry's metadata so the rewrite is
                     // confined to the payload itself.
                     let source_file = source_archive.by_index_raw(entry.source_index)?;
-                    let mut options: zip::write::FileOptions = zip::write::FileOptions::default()
-                        .compression_method(source_file.compression())
-                        .last_modified_time(source_file.last_modified());
+                    let mut options: zip::write::SimpleFileOptions =
+                        zip::write::SimpleFileOptions::default()
+                            .compression_method(source_file.compression())
+                            .last_modified_time(source_file.last_modified().ok_or_else(|| {
+                                PackageError::Container(zip::result::ZipError::InvalidArchive(
+                                    "entry has an invalid DOS timestamp".into(),
+                                ))
+                            })?);
                     if let Some(mode) = source_file.unix_mode() {
                         options = options.unix_permissions(mode);
                     }

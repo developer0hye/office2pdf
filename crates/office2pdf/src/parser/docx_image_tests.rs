@@ -44,7 +44,7 @@ fn build_docx_with_custom_media_document(
     media_bytes: &[u8],
 ) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", options).unwrap();
     std::io::Write::write_all(
@@ -557,8 +557,8 @@ fn patch_docx_wrap_type(data: &[u8], old_wrap: &str, new_wrap: &str) -> Vec<u8> 
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).unwrap();
-        let name = file.name().to_string();
-        let options = zip::write::FileOptions::default();
+        let name = file.name().expect("entry name should decode").into_owned();
+        let options = zip::write::SimpleFileOptions::default();
         new_zip.start_file(&name, options).unwrap();
 
         let mut contents = Vec::new();
@@ -584,8 +584,8 @@ fn patch_docx_behind_doc(data: &[u8]) -> Vec<u8> {
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).unwrap();
-        let name = file.name().to_string();
-        let options = zip::write::FileOptions::default();
+        let name = file.name().expect("entry name should decode").into_owned();
+        let options = zip::write::SimpleFileOptions::default();
         new_zip.start_file(&name, options).unwrap();
 
         let mut contents = Vec::new();
@@ -747,12 +747,12 @@ fn docx_source_crops_preserve_signed_offsets_in_body_header_and_footer() {
     let archive = zip::ZipArchive::new(Cursor::new(&base)).unwrap();
     let parts: Vec<String> = archive
         .file_names()
+        .map(|name| name.expect("entry name should decode").into_owned())
         .filter(|name| {
-            *name == "word/document.xml"
+            name == "word/document.xml"
                 || ((name.starts_with("word/header") || name.starts_with("word/footer"))
                     && name.ends_with(".xml"))
         })
-        .map(str::to_owned)
         .collect();
     assert_eq!(parts.len(), 3);
     for (rectangle, expected) in [
@@ -865,11 +865,11 @@ fn docx_source_crops_stay_with_shared_pictures_across_story_tables() {
     let archive = zip::ZipArchive::new(Cursor::new(&data)).unwrap();
     let parts: Vec<String> = archive
         .file_names()
+        .map(|name| name.expect("entry name should decode").into_owned())
         .filter(|name| {
             (name.starts_with("word/header") || name.starts_with("word/footer"))
                 && name.ends_with(".xml")
         })
-        .map(str::to_owned)
         .collect();
     for part in parts {
         data = rewrite_docx_part(&data, &part, |xml| {

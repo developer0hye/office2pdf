@@ -749,10 +749,10 @@ fn test_parse_docx_header_paragraph_border_space() {
 fn build_docx_with_doc_grid(type_attribute: &str) -> Vec<u8> {
     use std::io::Write;
     use zip::ZipWriter;
-    use zip::write::FileOptions;
+    use zip::write::SimpleFileOptions;
 
     let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
-    let opts = FileOptions::default();
+    let opts = SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", opts).unwrap();
     zip.write_all(
@@ -1694,10 +1694,10 @@ fn cjk_punctuation_is_not_a_boundary() {
 pub(super) fn build_docx_with_raw_styles(styles_xml: &str, body_xml: &str) -> Vec<u8> {
     use std::io::Write;
     use zip::ZipWriter;
-    use zip::write::FileOptions;
+    use zip::write::SimpleFileOptions;
 
     let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
-    let opts = FileOptions::default();
+    let opts = SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", opts).unwrap();
     zip.write_all(
@@ -2190,10 +2190,10 @@ fn a_section_with_only_a_first_page_header_still_emits_it() {
 fn build_docx_with_section_stories(body_xml: &str, stories: &[(&str, &str, &str)]) -> Vec<u8> {
     use std::io::Write;
     use zip::ZipWriter;
-    use zip::write::FileOptions;
+    use zip::write::SimpleFileOptions;
 
     let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
-    let opts = FileOptions::default();
+    let opts = SimpleFileOptions::default();
 
     let overrides: String = stories
         .iter()
@@ -2814,10 +2814,10 @@ fn a_header_tab_before_a_centre_stop_centres_its_text_on_that_stop() {
 fn build_docx_with_raw_header_styles(styles_xml: &str, header_xml: &str) -> Vec<u8> {
     use std::io::Write;
     use zip::ZipWriter;
-    use zip::write::FileOptions;
+    use zip::write::SimpleFileOptions;
 
     let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
-    let opts = FileOptions::default();
+    let opts = SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", opts).unwrap();
     zip.write_all(

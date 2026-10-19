@@ -231,7 +231,7 @@ fn build_xlsx_from_raw_parts(
     sheet_data_xml: &str,
 ) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     let mut write = |path: &str, body: &str| {
         zip.start_file(path, options).unwrap();
         std::io::Write::write_all(&mut zip, body.as_bytes()).unwrap();
@@ -1496,11 +1496,11 @@ fn worksheet_with_namespace_prefix(package: &[u8], prefix: &str) -> Vec<u8> {
     let mut rewritten = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut part = archive.by_index(index).unwrap();
-        let name: String = part.name().to_string();
+        let name: String = part.name().expect("entry name should decode").into_owned();
         let mut contents: Vec<u8> = Vec::new();
         part.read_to_end(&mut contents).unwrap();
         rewritten
-            .start_file(&name, zip::write::FileOptions::default())
+            .start_file(&name, zip::write::SimpleFileOptions::default())
             .unwrap();
         if name != "xl/worksheets/sheet1.xml" {
             rewritten.write_all(&contents).unwrap();

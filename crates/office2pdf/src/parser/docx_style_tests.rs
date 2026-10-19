@@ -915,7 +915,7 @@ fn build_docx_without_styles_part(body_xml: &str, theme_xml: Option<&str>) -> Ve
     use std::io::Write;
 
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     let theme_override: &str = if theme_xml.is_some() {
         r#"<Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>"#
     } else {

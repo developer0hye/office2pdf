@@ -877,7 +877,7 @@ fn with_normal_font_size(xlsx: &[u8], size_pt: u32) -> Vec<u8> {
     let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut file = archive.by_index(index).unwrap();
-        let name: String = file.name().to_string();
+        let name: String = file.name().expect("entry name should decode").into_owned();
         let mut contents: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut file, &mut contents).unwrap();
         if name == "xl/styles.xml" {
@@ -888,7 +888,7 @@ fn with_normal_font_size(xlsx: &[u8], size_pt: u32) -> Vec<u8> {
                 .into_bytes();
         }
         writer
-            .start_file(name, zip::write::FileOptions::default())
+            .start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         std::io::Write::write_all(&mut writer, &contents).unwrap();
     }
@@ -906,7 +906,7 @@ fn strip_worksheet_element(xlsx: &[u8], element_name: &str) -> Vec<u8> {
     let close_tag: String = format!("</{element_name}>");
     for index in 0..archive.len() {
         let mut file = archive.by_index(index).unwrap();
-        let name: String = file.name().to_string();
+        let name: String = file.name().expect("entry name should decode").into_owned();
         let mut contents: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut file, &mut contents).unwrap();
         if name.starts_with("xl/worksheets/") && name.ends_with(".xml") {
@@ -924,7 +924,7 @@ fn strip_worksheet_element(xlsx: &[u8], element_name: &str) -> Vec<u8> {
             contents = text.into_bytes();
         }
         writer
-            .start_file(name, zip::write::FileOptions::default())
+            .start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         std::io::Write::write_all(&mut writer, &contents).unwrap();
     }
@@ -1842,14 +1842,14 @@ fn rewrite_zip_parts(
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).expect("readable entry");
-        let name = entry.name().to_string();
+        let name = entry.name().expect("entry name should decode").into_owned();
         let mut bytes = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut bytes).expect("readable entry body");
         if selects(&name) {
             let xml = String::from_utf8(bytes).expect("part is utf-8");
             bytes = rewrite(&xml).into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("writable entry");
         std::io::Write::write_all(&mut out, &bytes).expect("writable entry body");
     }
@@ -1869,15 +1869,15 @@ fn read_zip_part(data: &[u8], part_name: &str) -> Vec<u8> {
 fn prepend_zip_part(data: &[u8], part_name: &str, contents: &[u8]) -> Vec<u8> {
     let mut archive = zip::ZipArchive::new(Cursor::new(data)).expect("readable zip");
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    out.start_file(part_name, zip::write::FileOptions::default())
+    out.start_file(part_name, zip::write::SimpleFileOptions::default())
         .expect("writable new entry");
     std::io::Write::write_all(&mut out, contents).expect("writable new entry body");
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).expect("readable entry");
-        let name = entry.name().to_string();
+        let name = entry.name().expect("entry name should decode").into_owned();
         let mut bytes = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut bytes).expect("readable entry body");
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("writable entry");
         std::io::Write::write_all(&mut out, &bytes).expect("writable entry body");
     }
@@ -1961,7 +1961,7 @@ fn rewrite_sheet_format_pr(data: &[u8], replacement: &str) -> Vec<u8> {
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).expect("readable entry");
-        let name = entry.name().to_string();
+        let name = entry.name().expect("entry name should decode").into_owned();
         let mut bytes = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut bytes).expect("readable entry body");
         if name.starts_with("xl/worksheets/sheet") && name.ends_with(".xml") {
@@ -1972,7 +1972,7 @@ fn rewrite_sheet_format_pr(data: &[u8], replacement: &str) -> Vec<u8> {
             let end = xml[start..].find("/>").expect("sheetFormatPr is closed") + start + 2;
             bytes = format!("{}{}{}", &xml[..start], replacement, &xml[end..]).into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("writable entry");
         std::io::Write::write_all(&mut out, &bytes).expect("writable entry body");
     }
@@ -2015,7 +2015,7 @@ fn splice_picture_drawing(data: &[u8], media: &[u8]) -> Vec<u8> {
     let mut has_sheet_rels = false;
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).expect("readable entry");
-        let name = entry.name().to_string();
+        let name = entry.name().expect("entry name should decode").into_owned();
         let mut bytes = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut bytes).expect("readable entry body");
         match name.as_str() {
@@ -2049,14 +2049,14 @@ fn splice_picture_drawing(data: &[u8], media: &[u8]) -> Vec<u8> {
             }
             _ => {}
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("writable entry");
         std::io::Write::write_all(&mut out, &bytes).expect("writable entry body");
     }
     if !has_sheet_rels {
         out.start_file(
             "xl/worksheets/_rels/sheet1.xml.rels",
-            zip::write::FileOptions::default(),
+            zip::write::SimpleFileOptions::default(),
         )
         .expect("writable sheet rels");
         std::io::Write::write_all(&mut out, SHEET_RELS.as_bytes()).expect("writable sheet rels");
@@ -2069,7 +2069,7 @@ fn splice_picture_drawing(data: &[u8], media: &[u8]) -> Vec<u8> {
         ),
         ("xl/media/image1.png", media),
     ] {
-        out.start_file(path, zip::write::FileOptions::default())
+        out.start_file(path, zip::write::SimpleFileOptions::default())
             .expect("writable drawing part");
         std::io::Write::write_all(&mut out, body).expect("writable drawing part body");
     }
@@ -2340,7 +2340,7 @@ fn inject_before_worksheet_close(xlsx: &[u8], insertion: &str) -> Vec<u8> {
     let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut file = archive.by_index(index).unwrap();
-        let name: String = file.name().to_string();
+        let name: String = file.name().expect("entry name should decode").into_owned();
         let mut contents: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut file, &mut contents).unwrap();
         if name.starts_with("xl/worksheets/") && name.ends_with(".xml") {
@@ -2350,7 +2350,7 @@ fn inject_before_worksheet_close(xlsx: &[u8], insertion: &str) -> Vec<u8> {
                 .into_bytes();
         }
         writer
-            .start_file(name, zip::write::FileOptions::default())
+            .start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         std::io::Write::write_all(&mut writer, &contents).unwrap();
     }
@@ -3949,7 +3949,7 @@ fn strip_theme_minor_font_script_faces(data: &[u8]) -> Vec<u8> {
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).expect("readable entry");
-        let name = entry.name().to_string();
+        let name = entry.name().expect("entry name should decode").into_owned();
         let mut bytes = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut bytes).expect("readable entry body");
         if name.starts_with("xl/theme/") && name.ends_with(".xml") {
@@ -3962,7 +3962,7 @@ fn strip_theme_minor_font_script_faces(data: &[u8]) -> Vec<u8> {
             let stripped: String = strip_script_font_elements(&xml[start..end]);
             bytes = format!("{}{}{}", &xml[..start], stripped, &xml[end..]).into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("writable entry");
         std::io::Write::write_all(&mut out, &bytes).expect("writable entry body");
     }

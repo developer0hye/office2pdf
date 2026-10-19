@@ -39,7 +39,10 @@ fn zip_entries(bytes: &[u8]) -> Vec<(String, Vec<u8>)> {
         let mut payload: Vec<u8> = Vec::new();
         file.read_to_end(&mut payload)
             .expect("entry should decompress");
-        entries.push((file.name().to_string(), payload));
+        entries.push((
+            file.name().expect("entry name should decode").into_owned(),
+            payload,
+        ));
     }
     entries
 }
@@ -56,7 +59,10 @@ fn raw_zip_entries(bytes: &[u8]) -> Vec<(String, Vec<u8>)> {
         let mut payload: Vec<u8> = Vec::new();
         file.read_to_end(&mut payload)
             .expect("raw entry should read");
-        entries.push((file.name().to_string(), payload));
+        entries.push((
+            file.name().expect("entry name should decode").into_owned(),
+            payload,
+        ));
     }
     entries
 }
@@ -71,7 +77,7 @@ fn with_extra_entries(original: &[u8], extras: &[(&str, &[u8])]) -> Vec<u8> {
     }
     for (name, payload) in extras {
         writer
-            .start_file(*name, zip::write::FileOptions::default())
+            .start_file(*name, zip::write::SimpleFileOptions::default())
             .expect("extra entry should start");
         writer.write_all(payload).expect("extra entry should write");
     }
@@ -79,6 +85,60 @@ fn with_extra_entries(original: &[u8], extras: &[(&str, &[u8])]) -> Vec<u8> {
         .finish()
         .expect("container should finish")
         .into_inner()
+}
+
+fn patch_entry_dos_date(bytes: &mut [u8], name: &str, date: u16) {
+    let mut patched_headers: usize = 0;
+    for offset in 0..bytes.len().saturating_sub(4) {
+        let signature: [u8; 4] = bytes[offset..offset + 4]
+            .try_into()
+            .expect("signature slice should have four bytes");
+        let (name_length_offset, name_offset, date_offset) = match signature {
+            [0x50, 0x4b, 0x03, 0x04] => (26, 30, 12),
+            [0x50, 0x4b, 0x01, 0x02] => (28, 46, 14),
+            _ => continue,
+        };
+        let name_length = u16::from_le_bytes([
+            bytes[offset + name_length_offset],
+            bytes[offset + name_length_offset + 1],
+        ]) as usize;
+        let name_start = offset + name_offset;
+        let name_end = name_start + name_length;
+        if bytes.get(name_start..name_end) == Some(name.as_bytes()) {
+            bytes[offset + date_offset..offset + date_offset + 2]
+                .copy_from_slice(&date.to_le_bytes());
+            patched_headers += 1;
+        }
+    }
+    assert_eq!(patched_headers, 2, "local and central headers should match");
+}
+
+fn entry_header_timestamps(bytes: &[u8], name: &str) -> Vec<(u16, u16)> {
+    let mut timestamps: Vec<(u16, u16)> = Vec::new();
+    for offset in 0..bytes.len().saturating_sub(4) {
+        let signature: [u8; 4] = bytes[offset..offset + 4]
+            .try_into()
+            .expect("signature slice should have four bytes");
+        let (name_length_offset, name_offset, time_offset, date_offset) = match signature {
+            [0x50, 0x4b, 0x03, 0x04] => (26, 30, 10, 12),
+            [0x50, 0x4b, 0x01, 0x02] => (28, 46, 12, 14),
+            _ => continue,
+        };
+        let name_length = u16::from_le_bytes([
+            bytes[offset + name_length_offset],
+            bytes[offset + name_length_offset + 1],
+        ]) as usize;
+        let name_start = offset + name_offset;
+        let name_end = name_start + name_length;
+        if bytes.get(name_start..name_end) == Some(name.as_bytes()) {
+            let time =
+                u16::from_le_bytes([bytes[offset + time_offset], bytes[offset + time_offset + 1]]);
+            let date =
+                u16::from_le_bytes([bytes[offset + date_offset], bytes[offset + date_offset + 1]]);
+            timestamps.push((time, date));
+        }
+    }
+    timestamps
 }
 
 #[test]
@@ -96,6 +156,59 @@ fn no_op_round_trip_preserves_every_part_payload_and_order() {
             "{fixture}: part names, order, or payloads changed across a no-op round trip"
         );
     }
+}
+
+#[test]
+fn package_rejects_invalid_dos_date_before_a_rewrite_can_normalize_it() {
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    writer
+        .start_file("ppt/document.xml", zip::write::SimpleFileOptions::default())
+        .expect("part should start");
+    writer.write_all(b"<document/>").expect("part should write");
+    let mut original = writer.finish().expect("ZIP should finish").into_inner();
+    patch_entry_dos_date(&mut original, "ppt/document.xml", 0);
+
+    let error = match OpcPackage::from_bytes(original) {
+        Err(error) => error,
+        Ok(_) => panic!("invalid DOS date should be rejected"),
+    };
+    assert!(
+        matches!(&error, PackageError::Container(zip::result::ZipError::InvalidArchive(message)) if message.contains("invalid DOS timestamp")),
+        "unexpected invalid DOS date error: {error}"
+    );
+}
+
+#[test]
+fn modified_part_keeps_untouched_part_dos_timestamps() {
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let timestamp =
+        zip::DateTime::from_date_and_time(2022, 4, 3, 2, 1, 0).expect("timestamp should be valid");
+    let options = zip::write::SimpleFileOptions::default().last_modified_time(timestamp);
+    writer
+        .start_file("ppt/document.xml", options)
+        .expect("first part should start");
+    writer
+        .write_all(b"<document/>")
+        .expect("first part should write");
+    writer
+        .start_file("ppt/presentation.xml", options)
+        .expect("second part should start");
+    writer
+        .write_all(b"<presentation/>")
+        .expect("second part should write");
+    let original = writer.finish().expect("ZIP should finish").into_inner();
+
+    let mut package = OpcPackage::from_bytes(original.clone()).expect("package should load");
+    package
+        .set_part_bytes("ppt/document.xml", b"<document changed=\"true\"/>".to_vec())
+        .expect("first part should update");
+    let saved = package.save_to_bytes().expect("package should save");
+
+    assert_eq!(
+        entry_header_timestamps(&original, "ppt/presentation.xml"),
+        entry_header_timestamps(&saved, "ppt/presentation.xml"),
+        "both raw-copied timestamp fields should remain byte-for-byte unchanged"
+    );
 }
 
 #[test]

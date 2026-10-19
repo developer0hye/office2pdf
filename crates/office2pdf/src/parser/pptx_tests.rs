@@ -1,6 +1,6 @@
 use super::*;
 use std::io::Write;
-use zip::write::FileOptions;
+use zip::write::SimpleFileOptions as FileOptions;
 
 // ── Test helpers ─────────────────────────────────────────────────────
 
@@ -541,7 +541,7 @@ fn build_test_pptx_with_default_text_style(default_text_style: &str) -> Vec<u8> 
     let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).unwrap();
-        let name: String = entry.name().to_string();
+        let name: String = entry.name().expect("entry name should decode").into_owned();
         let mut content: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut content).unwrap();
         if name == "ppt/presentation.xml" {

@@ -30,11 +30,12 @@ fn rewrite_part(package: &[u8], part: &str, transform: impl Fn(&str) -> String) 
         let mut entry = source.by_index(index).unwrap();
         let mut bytes = Vec::new();
         entry.read_to_end(&mut bytes).unwrap();
-        if entry.name() == part {
+        let name = entry.name().expect("entry name should decode").into_owned();
+        if name == part {
             bytes = transform(std::str::from_utf8(&bytes).unwrap()).into_bytes();
         }
         output
-            .start_file(entry.name(), zip::write::FileOptions::default())
+            .start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         output.write_all(&bytes).unwrap();
     }
@@ -93,6 +94,8 @@ fn docx_cached_smartart_follows_relationships_after_parts_and_prefixes_change() 
         entry.read_to_end(&mut bytes).unwrap();
         let name = entry
             .name()
+            .expect("entry name should decode")
+            .into_owned()
             .replace("drawing1.xml", "diagram-cache-alpha.xml")
             .replace("data1.xml", "diagram-model-alpha.xml");
         if name.ends_with(".xml") || name.ends_with(".rels") {
@@ -110,7 +113,7 @@ fn docx_cached_smartart_follows_relationships_after_parts_and_prefixes_change() 
             bytes = xml.into_bytes();
         }
         output
-            .start_file(name, zip::write::FileOptions::default())
+            .start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         output.write_all(&bytes).unwrap();
     }
@@ -226,15 +229,16 @@ fn docx_cached_smartart_keeps_a_neighboring_picture_source_crop() {
     let mut output = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let mut part = archive.by_index(index).unwrap();
+        let name = part.name().expect("entry name should decode").into_owned();
         output
-            .start_file(part.name(), zip::write::FileOptions::default())
+            .start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         std::io::copy(&mut part, &mut output).unwrap();
     }
     output
         .start_file(
             "word/media/crop-integration.png",
-            zip::write::FileOptions::default(),
+            zip::write::SimpleFileOptions::default(),
         )
         .unwrap();
     output.write_all(&pixels).unwrap();
@@ -292,7 +296,7 @@ fn docx_cached_smartart_text_rectangle_is_independent_of_shape_geometry() {
             let mut entry = source.by_index(index).unwrap();
             let mut bytes = Vec::new();
             entry.read_to_end(&mut bytes).unwrap();
-            if entry.name() == "word/diagrams/drawing1.xml" {
+            if entry.name().expect("entry name should decode") == "word/diagrams/drawing1.xml" {
                 let replacement = format!(
                     "cx=\"{}\" cy=\"{}\"",
                     (width * 12700.0) as i64,
@@ -304,7 +308,10 @@ fn docx_cached_smartart_text_rectangle_is_independent_of_shape_geometry() {
                     .into_bytes();
             }
             output
-                .start_file(entry.name(), zip::write::FileOptions::default())
+                .start_file(
+                    entry.name().expect("entry name should decode").into_owned(),
+                    zip::write::SimpleFileOptions::default(),
+                )
                 .unwrap();
             output.write_all(&bytes).unwrap();
         }

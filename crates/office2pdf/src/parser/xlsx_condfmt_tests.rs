@@ -693,7 +693,7 @@ fn rewrite_data_bar_children_as_start_end_tags(xlsx_bytes: &[u8]) -> Vec<u8> {
     let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).expect("zip entry");
-        let name: String = file.name().to_string();
+        let name: String = file.name().expect("entry name should decode").into_owned();
         let mut content: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut file, &mut content).expect("read entry");
         if name.starts_with("xl/worksheets/") {
@@ -701,7 +701,7 @@ fn rewrite_data_bar_children_as_start_end_tags(xlsx_bytes: &[u8]) -> Vec<u8> {
             let rewritten = regex_like_expand_self_closing(&xml);
             content = rewritten.into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("start entry");
         std::io::Write::write_all(&mut out, &content).expect("write entry");
     }

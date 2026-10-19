@@ -1399,7 +1399,7 @@ mod notes_textbox_tests;
 /// Build a DOCX ZIP with a custom document.xml containing OMML math.
 fn build_docx_with_math(document_xml: &str) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     // [Content_Types].xml
     zip.start_file("[Content_Types].xml", options).unwrap();
@@ -1452,7 +1452,7 @@ fn build_docx_with_columns(document_xml: &str) -> Vec<u8> {
 /// `footnotes.xml`.
 fn build_docx_with_notes_xml(document_xml: &str, styles_xml: &str, footnotes_xml: &str) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", options).unwrap();
     std::io::Write::write_all(
@@ -1510,7 +1510,7 @@ fn build_docx_with_notes_xml(document_xml: &str, styles_xml: &str, footnotes_xml
 /// the part itself.
 fn build_docx_with_styles_xml(document_xml: &str, styles_xml: &str) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", options).unwrap();
     std::io::Write::write_all(
@@ -1907,7 +1907,7 @@ fn rewrite_settings_default_tab_stop(docx_bytes: &[u8], replacement: &str) -> Ve
     let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).expect("zip entry");
-        let name: String = file.name().to_string();
+        let name: String = file.name().expect("entry name should decode").into_owned();
         let mut content: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut file, &mut content).expect("read entry");
         if name == "word/settings.xml" {
@@ -1921,7 +1921,7 @@ fn rewrite_settings_default_tab_stop(docx_bytes: &[u8], replacement: &str) -> Ve
             };
             content = rewritten.into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("start entry");
         std::io::Write::write_all(&mut out, &content).expect("write entry");
     }
@@ -2050,7 +2050,7 @@ fn rewrite_settings_compat(docx_bytes: &[u8], replacement: &str) -> Vec<u8> {
     let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).expect("zip entry");
-        let name: String = file.name().to_string();
+        let name: String = file.name().expect("entry name should decode").into_owned();
         let mut content: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut file, &mut content).expect("read entry");
         if name == "word/settings.xml" {
@@ -2059,7 +2059,7 @@ fn rewrite_settings_compat(docx_bytes: &[u8], replacement: &str) -> Vec<u8> {
             let end: usize = xml.find("</w:compat>").expect("closing tag") + "</w:compat>".len();
             content = format!("{}{}{}", &xml[..start], replacement, &xml[end..]).into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("start entry");
         std::io::Write::write_all(&mut out, &content).expect("write entry");
     }
@@ -3007,14 +3007,14 @@ fn rewrite_docx_part(data: &[u8], part: &str, edit: impl FnOnce(&str) -> String)
     let mut edit = Some(edit);
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).unwrap();
-        let name = entry.name().to_string();
+        let name = entry.name().expect("entry name should decode").into_owned();
         let mut content = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut content).unwrap();
         if name == part {
             content = edit.take().unwrap()(&String::from_utf8(content).unwrap()).into_bytes();
         }
         output
-            .start_file(name, zip::write::FileOptions::default())
+            .start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         std::io::Write::write_all(&mut output, &content).unwrap();
     }

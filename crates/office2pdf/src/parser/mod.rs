@@ -65,7 +65,7 @@ mod tests {
         let buf: Vec<u8> = Vec::new();
         let cursor = Cursor::new(buf);
         let mut writer = zip::ZipWriter::new(cursor);
-        let options = zip::write::FileOptions::default();
+        let options = zip::write::SimpleFileOptions::default();
         writer.start_file("hello.txt", options).unwrap();
         std::io::Write::write_all(&mut writer, b"world").unwrap();
         let cursor = writer.finish().unwrap();

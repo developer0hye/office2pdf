@@ -627,7 +627,7 @@ fn scan_package_font_classes<R: std::io::Read + std::io::Seek>(
             archive
                 .by_index(index)
                 .ok()
-                .map(|file| file.name().to_string())
+                .and_then(|file| file.name().ok().map(|name| name.into_owned()))
         })
         .filter(|name| {
             name.ends_with(".xml")
