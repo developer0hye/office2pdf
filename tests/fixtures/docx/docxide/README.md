@@ -150,3 +150,11 @@ Apache-2.0. A 241pt `w:tblpPr` table with `w:rightFromText="180"` sits at the
 left margin, followed by a centred greeting and a body paragraph. Native Word
 lays both beside the table, in the room right of it. A compiled-layout
 regression checks both lines against that room.
+
+`floating_table_clear_break.docx` is the unmodified synthetic
+`cases/leading-table-clear-leading-clear/input.docx` from
+[docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/leading-table-clear-leading-clear),
+Apache-2.0. It differs from `floating_table_wrap.docx` only by `w:clear="all"`
+on the break before the greeting. Native Word sets the greeting below the table,
+centred on the whole column, and the body paragraph two lines below it at the
+margin; a compiled-layout regression checks both lines.

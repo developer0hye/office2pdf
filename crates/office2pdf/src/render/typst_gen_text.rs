@@ -274,6 +274,7 @@ pub(super) fn generate_paragraph(
     let breaks_hangul_at_eojeol: bool = ctx.breaks_hangul_at_eojeol;
     let available_measure_pt: Option<f64> = ctx.available_measure_pt;
     let wraps_beside_floats: bool = std::mem::take(&mut ctx.float_wrap_pending);
+    let clears_floats: Option<BreakClear> = ctx.float_wrap_clear.take();
     let style = &para.style;
     let inline_numbering_runs: Option<Vec<Run>> = word_inline_numbering_runs(para, line_grid_pitch);
     let runs: &[Run] = inline_numbering_runs.as_deref().unwrap_or(&para.runs);
@@ -360,6 +361,21 @@ pub(super) fn generate_paragraph(
         indent
     };
     let has_outer_spacing_block: bool = outer_indent.is_some();
+    // Each part of a paragraph split at a clearing break wraps on its own, so
+    // the one after the break can start below the tables it clears. A heading
+    // stays whole: it is one outline entry.
+    if wraps_beside_floats
+        && (has_para_style || has_outer_spacing_block)
+        && style.heading_level.is_none()
+        && let Some((head, clear, tail)) = super::float_wrap::split_at_clearing_break(para)
+    {
+        for (part, part_clear) in [(head, clears_floats), (tail, Some(clear))] {
+            ctx.float_wrap_pending = !ctx.body_floats.is_empty();
+            ctx.float_wrap_clear = part_clear;
+            generate_paragraph(out, &part, ctx)?;
+        }
+        return Ok(());
+    }
     // The wrap goes inside the paragraph's outermost block, where the block's
     // own spacing has already been laid and its content starts at the first
     // line's top. A paragraph that writes no block of its own is left as it
@@ -381,6 +397,7 @@ pub(super) fn generate_paragraph(
             super::float_wrap::write_float_wrap_open(
                 &mut open,
                 &ctx.body_floats,
+                clears_floats,
                 first_line_pt,
                 space_before_pt,
             );

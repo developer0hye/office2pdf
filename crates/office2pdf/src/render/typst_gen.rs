@@ -7,7 +7,7 @@ use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
     Alignment, ArrowHead, AxisTickMark, BarBandLayout, BaselineShiftEm, Block, BorderLineStyle,
-    BorderSide, CellBorder, CellVerticalAlign, Chart, ChartGrouping, ChartType, Color,
+    BorderSide, BreakClear, CellBorder, CellVerticalAlign, Chart, ChartGrouping, ChartType, Color,
     ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
     FloatingImageVerticalAnchor, FloatingShape, FloatingTextBox, FlowPage, FrameAnchor,
     GradientFill, HFInline, HeaderFooter, HeaderFooterFrame, HeaderFooterShapeContent, IconShading,
@@ -290,6 +290,10 @@ struct GenCtx {
     /// root while `body_floats` is non-empty; `generate_paragraph` takes it,
     /// so the paragraphs nested inside that one never see it.
     float_wrap_pending: bool,
+    /// Set with `float_wrap_pending` for the part of a paragraph after a
+    /// clearing break, which starts below the floats it clears
+    /// (issue #2230).
+    float_wrap_clear: Option<BreakClear>,
     /// Whether nothing that takes flow space has been written yet in a
     /// section that starts a page, so the next block's top is the text area's.
     flow_at_page_top: bool,
@@ -358,6 +362,7 @@ impl GenCtx {
             next_floating_table_id: 0,
             float_wrap_text_area_pt: None,
             float_wrap_pending: false,
+            float_wrap_clear: None,
             flow_at_page_top: false,
         }
     }

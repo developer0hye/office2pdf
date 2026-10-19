@@ -93,11 +93,11 @@ impl PairKerningRules {
 /// the raw `word/styles.xml` for the reason `PairKerningRules` reads `w:kern`
 /// there: the docx-rs fork has no field for the element (issue #2205).
 ///
-/// A body run's own value comes from `RunLigatureContext` instead, which
+/// A body run's own value comes from `RunScanContext` instead, which
 /// checks each run's text before handing a value out.
 ///
 /// TODO(header, footer and note runs' own `w14:ligatures` are not read): those
-/// stories convert outside the paragraph cursor `RunLigatureContext` rides on,
+/// stories convert outside the paragraph cursor `RunScanContext` rides on,
 /// so their runs take the answer their styles resolve to.
 #[derive(Debug, Clone, Default)]
 pub(super) struct LigatureRules {
@@ -849,6 +849,7 @@ pub(super) fn merge_paragraph_style(
             .indent_first_line
             .or(style_paragraph.and_then(|style| style.indent_first_line)),
         starts_after_layout_break: false,
+        clearing_breaks: Box::default(),
         has_inline_list_number: false,
         numbering_suffix: None,
         line_spacing: explicit

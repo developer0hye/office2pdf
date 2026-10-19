@@ -14,6 +14,11 @@
 //! The rule follows docxide-pdf's `FloatZone` (`src/pdf/mod.rs` at
 //! `adb8c2b8`), which checks a paragraph at its first line only.
 //!
+//! A line break with `w:clear` resumes the line after it below the tables it
+//! clears (issue #2230). Typst cannot move one line of a paragraph, so the
+//! paragraph is laid out as two at that break, and the part after it wraps
+//! as though each table it clears left no room beside it.
+//!
 //! TODO(per-line wrap beside a floating table): Word narrows each line in the
 //! table's extent, so a paragraph that starts beside the table returns to the
 //! full column below its bottom edge; here the whole paragraph stays narrowed,
@@ -21,7 +26,7 @@
 
 use std::fmt::Write as _;
 
-use crate::ir::{Block, Document, FloatingTable, Page};
+use crate::ir::{Block, BreakClear, Document, FloatingTable, Page, Paragraph, Run};
 
 use super::format_f64;
 
@@ -172,18 +177,120 @@ pub(super) fn write_float_bottom_label(out: &mut String, id: usize) {
     let _ = writeln!(out, "#metadata(none) <o2p-float-{id}-bottom>");
 }
 
+/// Whether a line break clearing `clear` resumes below a table whose text
+/// lies on `side` of it: `left` clears a table on the line's left, which is
+/// one with its room on the right.
+///
+/// FIXME(unprobed one-sided clear): the Word references at hand clear only
+/// `all`; `left` and `right` follow ECMA-376's `ST_BrClear` wording.
+fn clears(clear: BreakClear, side: FloatSide) -> bool {
+    matches!(
+        (clear, side),
+        (BreakClear::All, _)
+            | (_, FloatSide::Below)
+            | (BreakClear::Left, FloatSide::Right { .. })
+            | (BreakClear::Right, FloatSide::Left { .. })
+    )
+}
+
+/// A paragraph split at its first clearing break: the part before the break,
+/// the break's clear, and the part after it, or `None` when it has no
+/// clearing break.
+///
+/// The break itself goes: the two parts are the lines on either side of it.
+/// The paragraph's own spacing stays on its outer edges, and its first-line
+/// indent and list number on the first part. A part with no text left keeps
+/// the line it stands for, sized by the run the break is in.
+///
+/// TODO(bordered paragraph split at a clearing break): each part draws its
+/// own `w:pBdr` box, where Word draws one around the paragraph.
+pub(super) fn split_at_clearing_break(
+    para: &Paragraph,
+) -> Option<(Paragraph, BreakClear, Paragraph)> {
+    let first = *para.style.clearing_breaks.first()?;
+    let mut head_runs: Vec<Run> = Vec::new();
+    let mut tail_runs: Vec<Run> = Vec::new();
+    let mut break_run: Option<&Run> = None;
+    let mut line_breaks_before: usize = 0;
+    for run in &para.runs {
+        if break_run.is_some() {
+            tail_runs.push(run.clone());
+            continue;
+        }
+        let line_breaks: usize = run.text.matches('\n').count();
+        if line_breaks_before + line_breaks <= first.line_break {
+            line_breaks_before += line_breaks;
+            head_runs.push(run.clone());
+            continue;
+        }
+        let (at, _) = run
+            .text
+            .match_indices('\n')
+            .nth(first.line_break - line_breaks_before)?;
+        for (part, runs) in [
+            (&run.text[..at], &mut head_runs),
+            (&run.text[at + 1..], &mut tail_runs),
+        ] {
+            if !part.is_empty() {
+                runs.push(Run {
+                    text: part.to_string(),
+                    ..run.clone()
+                });
+            }
+        }
+        break_run = Some(run);
+    }
+    let break_run: &Run = break_run?;
+
+    let mut head = Paragraph {
+        style: para.style.clone(),
+        runs: head_runs,
+    };
+    head.style.space_after = Some(0.0);
+    head.style.clearing_breaks = Box::default();
+    let mut tail = Paragraph {
+        style: para.style.clone(),
+        runs: tail_runs,
+    };
+    tail.style.space_before = Some(0.0);
+    tail.style.decoration_before_spacing = None;
+    tail.style.indent_first_line = None;
+    tail.style.has_inline_list_number = false;
+    tail.style.numbering_suffix = None;
+    tail.style.starts_after_layout_break = false;
+    tail.style.clearing_breaks = para.style.clearing_breaks[1..]
+        .iter()
+        .map(|clearing| crate::ir::ClearingBreak {
+            line_break: clearing.line_break - first.line_break - 1,
+            ..*clearing
+        })
+        .collect();
+    for part in [&mut head, &mut tail] {
+        if part.runs.is_empty() && part.style.paragraph_mark_text_style.is_none() {
+            part.style.paragraph_mark_text_style = Some(Box::new(break_run.style.clone()));
+        }
+    }
+    Some((head, first.clear, tail))
+}
+
 /// Open a root paragraph's wrap around `floats`; the caller closes it with
 /// `]`. `first_line_pt` is the paragraph's first line height and
-/// `space_before_pt` its own before-gap.
+/// `space_before_pt` its own before-gap. A paragraph that follows a clearing
+/// break of `clear` moves below the tables that break clears.
 pub(super) fn write_float_wrap_open(
     out: &mut String,
     floats: &[BodyFloat],
+    clear: Option<BreakClear>,
     first_line_pt: f64,
     space_before_pt: f64,
 ) {
     let _ = write!(out, "#{FLOAT_WRAP_HELPER}((");
     for float in floats {
-        let (side, inset_pt): (&str, f64) = match float.side {
+        let side: FloatSide = match clear {
+            Some(clear) if clears(clear, float.side) => FloatSide::Below,
+            _ => float.side,
+        };
+        let (side, inset_pt): (&str, f64) = match side {
             FloatSide::Right { inset_pt } => ("right", inset_pt),
             FloatSide::Left { inset_pt } => ("left", inset_pt),
             FloatSide::Below => ("below", 0.0),

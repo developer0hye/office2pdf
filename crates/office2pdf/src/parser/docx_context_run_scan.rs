@@ -1,10 +1,16 @@
-//! Each run's own `w14:ligatures`, recovered from the raw document XML
-//! (issue #2205).
+//! What docx-rs drops from each run, recovered from the raw document XML.
 //!
-//! docx-rs drops the element from `RunProperty`, so `LigatureRules` can only
-//! read the levels above the run. Word writes it on a run when a user picks
-//! ligatures in the Font dialog, and keeps it on runs pasted from a document
-//! whose defaults turn them on.
+//! - The run's own `w14:ligatures` (issue #2205). docx-rs drops the element
+//!   from `RunProperty`, so `LigatureRules` can only read the levels above the
+//!   run. Word writes it on a run when a user picks ligatures in the Font
+//!   dialog, and keeps it on runs pasted from a document whose defaults turn
+//!   them on.
+//! - Each line break's `w:clear` (issue #2230). docx-rs keeps only a `w:br`'s
+//!   `w:type`, so a break that resumes text below a floating table reached the
+//!   converter as a plain one.
+//!
+//! TODO(docx-rs drops w:clear): read it from `docx_rs::Break` once the
+//! published fork carries it.
 //!
 //! The scan counts the paragraph sequence of [`super::paragraph_cursor`] and,
 //! inside each paragraph, the runs docx-rs hands the converter in document
@@ -22,10 +28,11 @@ use std::cell::Cell;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
-use crate::ir::Ligatures;
+use crate::ir::{BreakClear, Ligatures};
 use crate::parser::xml_util::{OOXML_XML_VERSION, decode_general_ref};
 
 use super::super::styles::parse_ligatures_value;
+use super::super::text::is_line_break;
 use super::paragraph_cursor::{
     ParagraphCursor, ScannedParagraph, attribute_value, is_skipped_subtree,
 };
@@ -38,6 +45,29 @@ pub(in super::super) struct ScannedRun {
     text_key: String,
     /// The run's own `w:rPr/w14:ligatures`, or `None` when it states none.
     ligatures: Option<Ligatures>,
+    /// The `w:clear` of each of the run's line breaks, in order: every `w:br`
+    /// but a page or column break, which never clears.
+    line_break_clears: Vec<Option<BreakClear>>,
+}
+
+/// What the scan read for one converted run.
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub(in super::super) struct RunScan<'a> {
+    pub(in super::super) ligatures: Option<Ligatures>,
+    /// One entry per line break of the run, in order, or none at all when
+    /// the scan cannot vouch for them.
+    pub(in super::super) line_break_clears: &'a [Option<BreakClear>],
+}
+
+/// A `w:br`'s `w:clear`; `none`, an absent value and an unknown one clear
+/// nothing.
+fn parse_break_clear(value: Option<&str>) -> Option<BreakClear> {
+    match value? {
+        "left" => Some(BreakClear::Left),
+        "right" => Some(BreakClear::Right),
+        "all" => Some(BreakClear::All),
+        _ => None,
+    }
 }
 
 /// Subtrees whose runs never reach run conversion. The paragraphs inside them
@@ -52,27 +82,21 @@ fn text_key(text: &str) -> impl Iterator<Item = char> + '_ {
     text.chars().filter(|ch| !ch.is_whitespace())
 }
 
-pub(in super::super) struct RunLigatureContext {
+pub(in super::super) struct RunScanContext {
     paragraphs: ParagraphCursor<Vec<ScannedRun>>,
 }
 
-impl RunLigatureContext {
+impl RunScanContext {
     pub(in super::super) fn from_xml(xml: Option<&str>) -> Self {
         Self {
-            paragraphs: ParagraphCursor::new(
-                "w14:ligatures",
-                xml.map(Self::scan).unwrap_or_default(),
-            ),
+            paragraphs: ParagraphCursor::new("run scan", xml.map(Self::scan).unwrap_or_default()),
         }
     }
 
     /// The runs of the next paragraph. Must be called exactly once per
     /// converted `w:p`, with that paragraph's `w:pStyle`.
-    pub(in super::super) fn next_paragraph(
-        &self,
-        style_id: Option<&str>,
-    ) -> ParagraphRunLigatures<'_> {
-        ParagraphRunLigatures {
+    pub(in super::super) fn next_paragraph(&self, style_id: Option<&str>) -> ParagraphRunScan<'_> {
+        ParagraphRunScan {
             runs: self
                 .paragraphs
                 .next(style_id)
@@ -227,6 +251,20 @@ impl RunLigatureContext {
                                 .and_then(|value| parse_ligatures_value(&value));
                     }
                 }
+                b"br" => {
+                    if let Some((paragraph, run)) = current_run(&open_paragraphs, &open_runs)
+                        && !matches!(
+                            attribute_value(&reader, &element, b"type").as_deref(),
+                            Some("page" | "column")
+                        )
+                    {
+                        paragraphs[paragraph].value[run]
+                            .line_break_clears
+                            .push(parse_break_clear(
+                                attribute_value(&reader, &element, b"clear").as_deref(),
+                            ));
+                    }
+                }
                 b"t" if !is_empty && current_run(&open_paragraphs, &open_runs).is_some() => {
                     in_text = true;
                 }
@@ -239,23 +277,25 @@ impl RunLigatureContext {
 }
 
 /// One paragraph's scanned runs, handed out one per converted docx-rs run.
-pub(in super::super) struct ParagraphRunLigatures<'a> {
+pub(in super::super) struct ParagraphRunScan<'a> {
     runs: &'a [ScannedRun],
     cursor: Cell<usize>,
     has_drifted: Cell<bool>,
 }
 
-impl ParagraphRunLigatures<'_> {
-    /// The ligatures `run` states itself, or `None` when it states none or
-    /// the scan cannot vouch for it. Must be called once per docx-rs run of the
-    /// paragraph, in order, before the run is split.
-    pub(in super::super) fn next_run(&self, run: &docx_rs::Run) -> Option<Ligatures> {
+impl<'a> ParagraphRunScan<'a> {
+    /// What the scan read for `run`, or nothing where it cannot vouch for it.
+    /// Must be called once per docx-rs run of the paragraph, in order, before
+    /// the run is split.
+    pub(in super::super) fn next_run(&self, run: &docx_rs::Run) -> RunScan<'a> {
         let index: usize = self.cursor.get();
         self.cursor.set(index + 1);
         if self.has_drifted.get() {
-            return None;
+            return RunScan::default();
         }
-        let scanned: &ScannedRun = self.runs.get(index)?;
+        let Some(scanned) = self.runs.get(index) else {
+            return RunScan::default();
+        };
         let matches_run: bool = run
             .children
             .iter()
@@ -270,11 +310,33 @@ impl ParagraphRunLigatures<'_> {
             tracing::debug!(
                 run_index = index,
                 "run scan drifted from the converted runs; leaving the paragraph's \
-                 remaining runs to their styles' ligatures"
+                 remaining runs to their styles' ligatures and plain line breaks"
             );
-            return None;
+            return RunScan::default();
         }
-        scanned.ligatures
+        // A run whose breaks the two sides count differently keeps plain
+        // ones: a clear handed to the wrong break would move the wrong line.
+        let line_break_count: usize = run
+            .children
+            .iter()
+            .filter(|child| matches!(child, docx_rs::RunChild::Break(br) if is_line_break(br)))
+            .count();
+        let line_break_clears: &[Option<BreakClear>] =
+            if scanned.line_break_clears.len() == line_break_count {
+                &scanned.line_break_clears
+            } else {
+                tracing::debug!(
+                    run_index = index,
+                    scanned = scanned.line_break_clears.len(),
+                    converted = line_break_count,
+                    "run scan counts the run's line breaks differently; keeping them plain"
+                );
+                &[]
+            };
+        RunScan {
+            ligatures: scanned.ligatures,
+            line_break_clears,
+        }
     }
 }
 
@@ -294,7 +356,7 @@ mod tests {
     }
 
     fn scanned(xml: &str) -> Vec<Vec<ScannedRun>> {
-        RunLigatureContext::scan(xml)
+        RunScanContext::scan(xml)
             .into_iter()
             .map(|paragraph| paragraph.value)
             .collect()
@@ -304,6 +366,7 @@ mod tests {
         ScannedRun {
             text_key: text_key.to_string(),
             ligatures,
+            line_break_clears: Vec::new(),
         }
     }
 
@@ -371,7 +434,7 @@ mod tests {
 
     #[test]
     fn hands_each_run_its_own_value() {
-        let context = RunLigatureContext::from_xml(Some(
+        let context = RunScanContext::from_xml(Some(
             r#"<w:document xmlns:w="urn:w" xmlns:w14="urn:w14"><w:body>
               <w:p><w:pPr><w:pStyle w:val="Body"/></w:pPr>
                 <w:r><w:t>plain</w:t></w:r>
@@ -381,16 +444,20 @@ mod tests {
         ));
         let paragraph = context.next_paragraph(Some("Body"));
 
-        assert_eq!(paragraph.next_run(&run("plain")), None);
-        assert_eq!(paragraph.next_run(&run("fluffy")), Some(STANDARD));
-        assert_eq!(paragraph.next_run(&run("extra")), None, "past the scan");
+        assert_eq!(paragraph.next_run(&run("plain")).ligatures, None);
+        assert_eq!(paragraph.next_run(&run("fluffy")).ligatures, Some(STANDARD));
+        assert_eq!(
+            paragraph.next_run(&run("extra")).ligatures,
+            None,
+            "past the scan"
+        );
     }
 
     /// A run the scan and docx-rs count differently must not hand its value to
     /// another run: the rest of the paragraph keeps its styles' answer.
     #[test]
     fn stops_at_the_first_run_whose_text_differs() {
-        let context = RunLigatureContext::from_xml(Some(
+        let context = RunScanContext::from_xml(Some(
             r#"<w:document xmlns:w="urn:w" xmlns:w14="urn:w14"><w:body>
               <w:p>
                 <w:r><w:rPr><w14:ligatures w14:val="none"/></w:rPr><w:t>first</w:t></w:r>
@@ -400,9 +467,13 @@ mod tests {
         ));
         let paragraph = context.next_paragraph(None);
 
-        assert_eq!(paragraph.next_run(&run("second")), None, "out of step");
         assert_eq!(
-            paragraph.next_run(&run("second")),
+            paragraph.next_run(&run("second")).ligatures,
+            None,
+            "out of step"
+        );
+        assert_eq!(
+            paragraph.next_run(&run("second")).ligatures,
             None,
             "a drifted paragraph hands nothing out, even to a run that matches"
         );
@@ -410,7 +481,7 @@ mod tests {
 
     #[test]
     fn a_paragraph_whose_style_disagrees_hands_nothing_out() {
-        let context = RunLigatureContext::from_xml(Some(
+        let context = RunScanContext::from_xml(Some(
             r#"<w:document xmlns:w="urn:w" xmlns:w14="urn:w14"><w:body>
               <w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr>
                 <w:r><w:rPr><w14:ligatures w14:val="standard"/></w:rPr><w:t>fit</w:t></w:r>
@@ -418,6 +489,69 @@ mod tests {
             </w:body></w:document>"#,
         ));
 
-        assert_eq!(context.next_paragraph(None).next_run(&run("fit")), None);
+        assert_eq!(
+            context.next_paragraph(None).next_run(&run("fit")).ligatures,
+            None
+        );
+    }
+
+    /// Every line break of a run takes an entry, so the converter can pair
+    /// them in order; a page or column break is no line break and takes none.
+    #[test]
+    fn reads_each_line_breaks_clear_in_order() {
+        let xml = r#"<w:document xmlns:w="urn:w"><w:body>
+          <w:p>
+            <w:r><w:t>One</w:t><w:br/><w:t>Two</w:t><w:br w:type="textWrapping" w:clear="all"/></w:r>
+            <w:r><w:br w:type="page" w:clear="all"/><w:br w:clear="none"/><w:br w:clear="left"/><w:br w:clear="right"/></w:r>
+            <w:del><w:r><w:br w:clear="all"/></w:r></w:del>
+          </w:p>
+        </w:body></w:document>"#;
+
+        let runs: Vec<Vec<Option<BreakClear>>> = scanned(xml)
+            .remove(0)
+            .into_iter()
+            .map(|run| run.line_break_clears)
+            .collect();
+        assert_eq!(
+            runs,
+            vec![
+                vec![None, Some(BreakClear::All)],
+                vec![None, Some(BreakClear::Left), Some(BreakClear::Right)],
+            ]
+        );
+    }
+
+    #[test]
+    fn hands_out_a_runs_clears_only_when_both_sides_count_its_breaks_alike() {
+        let context = RunScanContext::from_xml(Some(
+            r#"<w:document xmlns:w="urn:w"><w:body>
+              <w:p>
+                <w:r><w:t>Before</w:t><w:br w:clear="all"/></w:r>
+                <w:r><w:t>After</w:t><w:br w:clear="all"/></w:r>
+              </w:p>
+            </w:body></w:document>"#,
+        ));
+        let paragraph = context.next_paragraph(None);
+        let with_break = |text: &str, breaks: usize| {
+            let mut run = run(text);
+            for _ in 0..breaks {
+                run = run.add_break(docx_rs::BreakType::TextWrapping);
+            }
+            run
+        };
+
+        assert_eq!(
+            paragraph
+                .next_run(&with_break("Before", 1))
+                .line_break_clears,
+            &[Some(BreakClear::All)]
+        );
+        assert!(
+            paragraph
+                .next_run(&with_break("After", 2))
+                .line_break_clears
+                .is_empty(),
+            "a break the scan did not see"
+        );
     }
 }

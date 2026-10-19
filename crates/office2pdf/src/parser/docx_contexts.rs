@@ -28,8 +28,8 @@ mod paragraph_mark;
 mod paragraph_shading;
 #[path = "docx_context_picture.rs"]
 mod picture;
-#[path = "docx_context_run_ligatures.rs"]
-mod run_ligatures;
+#[path = "docx_context_run_scan.rs"]
+mod run_scan;
 #[path = "docx_context_small_caps.rs"]
 mod small_caps;
 #[path = "docx_context_table_header.rs"]
@@ -60,7 +60,7 @@ pub(super) use paragraph_cursor::is_skipped_subtree;
 pub(super) use paragraph_mark::ParagraphMarkContext;
 pub(super) use paragraph_shading::{ParagraphShadingContext, scan_style_paragraph_shading};
 pub(super) use picture::PictureCropContext;
-pub(super) use run_ligatures::{ParagraphRunLigatures, RunLigatureContext};
+pub(super) use run_scan::{ParagraphRunScan, RunScan, RunScanContext};
 pub(super) use small_caps::SmallCapsContext;
 pub(super) use table_header::TableHeaderContext;
 #[cfg(test)]
@@ -89,8 +89,9 @@ pub(super) struct DocxConversionContext {
     pub(super) vml_text_boxes: VmlTextBoxContext,
     pub(super) bidi: BidiContext,
     pub(super) small_caps: SmallCapsContext,
-    /// Each run's own `w14:ligatures`, which docx-rs drops (issue #2205).
-    pub(super) run_ligatures: RunLigatureContext,
+    /// Each run's own `w14:ligatures` (issue #2205) and its line breaks'
+    /// `w:clear` (issue #2230), which docx-rs drops.
+    pub(super) run_scan: RunScanContext,
     pub(super) paragraph_shading: ParagraphShadingContext,
     pub(super) word_wraps: WordWrapContext,
     /// Each paragraph's `w:contextualSpacing`, which drops `w:spacing` gaps
@@ -135,7 +136,7 @@ impl DocxConversionContext {
             vml_text_boxes: VmlTextBoxContext::from_xml(story_xml),
             bidi: BidiContext::from_xml(story_xml),
             small_caps: SmallCapsContext::from_xml(story_xml),
-            run_ligatures: RunLigatureContext::from_xml(story_xml),
+            run_scan: RunScanContext::from_xml(story_xml),
             paragraph_shading: ParagraphShadingContext::from_xml(story_xml),
             word_wraps: WordWrapContext::from_xml(story_xml),
             contextual_spacing: ContextualSpacingContext::from_xml(story_xml, styles_xml),
