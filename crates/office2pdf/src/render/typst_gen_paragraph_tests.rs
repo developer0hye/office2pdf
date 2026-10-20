@@ -73,6 +73,127 @@ fn test_first_line_indent_does_not_change_baseline_after_page_break() {
     );
 }
 
+/// Word lets a paragraph hang into the margin: every line starts at the
+/// margin plus the signed `w:ind w:left`, the first line also plus its signed
+/// first-line offset, and a negative `w:right` moves the line end past the
+/// right margin (issue #2233). Main clamped both indents to zero.
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn a_negative_paragraph_indent_hangs_its_lines_into_the_margin() {
+    let compiled_runs = |left: Option<f64>,
+                         right: Option<f64>,
+                         first_line: Option<f64>,
+                         alignment: Option<Alignment>,
+                         text: &str|
+     -> Vec<crate::render::pdf::PlacedTextRun> {
+        let mut block = make_paragraph(text);
+        let Block::Paragraph(paragraph) = &mut block else {
+            unreachable!();
+        };
+        paragraph.style.indent_left = left;
+        paragraph.style.indent_right = right;
+        paragraph.style.indent_first_line = first_line;
+        paragraph.style.alignment = alignment;
+        let source = generate_typst(&make_doc(vec![make_flow_page(vec![block])]))
+            .unwrap()
+            .source;
+        crate::render::pdf::compiled_text_runs(&source, 0).unwrap()
+    };
+    // Each line's left edge, top to bottom, for a paragraph that wraps.
+    let line_starts = |left: Option<f64>, first_line: Option<f64>| -> Vec<f64> {
+        let text: String = "Word lets a paragraph hang into the margin. ".repeat(14);
+        let mut lines: Vec<(f64, f64)> = Vec::new();
+        for run in compiled_runs(left, None, first_line, None, &text) {
+            match lines
+                .iter_mut()
+                .find(|(baseline, _)| (baseline - run.baseline_pt).abs() < 0.01)
+            {
+                Some((_, start)) => *start = start.min(run.left_pt),
+                None => lines.push((run.baseline_pt, run.left_pt)),
+            }
+        }
+        lines.into_iter().map(|(_, start)| start).collect()
+    };
+    // A4 with 72pt margins: the text column runs from 72pt to 523.28pt. Each
+    // case is a left and a first-line indent, then where the first and the
+    // later lines start.
+    let cases: [(&str, f64, f64, f64, f64); 4] = [
+        ("left -36", -36.0, 0.0, 36.0, 36.0),
+        ("left -36, firstLine 40", -36.0, 40.0, 76.0, 36.0),
+        ("left -36, hanging 18", -36.0, -18.0, 18.0, 36.0),
+        ("left 20", 20.0, 0.0, 92.0, 92.0),
+    ];
+    for (case, left, first_line, first_start, continuation_start) in cases {
+        let starts: Vec<f64> = line_starts(Some(left), Some(first_line));
+        assert!(
+            starts.len() >= 3
+                && (starts[0] - first_start).abs() < 0.05
+                && starts[1..]
+                    .iter()
+                    .all(|start| (start - continuation_start).abs() < 0.05),
+            "{case}: the first line must start at {first_start}pt and the rest at {continuation_start}pt, got {starts:?}"
+        );
+    }
+
+    let right_aligned_start = |right: Option<f64>| -> f64 {
+        compiled_runs(None, right, None, Some(Alignment::Right), "Right")
+            .into_iter()
+            .find(|run| run.text == "Right")
+            .expect("the right-aligned line should be placed")
+            .left_pt
+    };
+    let no_indent: f64 = right_aligned_start(None);
+    for (right, shift) in [(-18.0, 18.0), (18.0, -18.0)] {
+        let moved: f64 = right_aligned_start(Some(right)) - no_indent;
+        assert!(
+            (moved - shift).abs() < 0.05,
+            "a {right}pt right indent must move a right-aligned line {shift}pt, got {moved}pt"
+        );
+    }
+}
+
+/// docxide-pdf `paragraph-offset-frame-no-frame` (`spaced_section_mark.docx`)
+/// and `paragraph-offset-frame-immediate` (`offset_text_frame.docx`),
+/// unmodified: "About providing information" has `w:ind w:left="-1418"
+/// w:firstLine="1560"`, -70.9pt and +78pt. Word starts it at 92.05pt in the
+/// body, 85.05pt − 70.9pt + 78pt, and at 72.28pt in the text-anchored frame
+/// that `w:x` starts at 65.3pt; main started both 71pt to the right
+/// (issue #2233).
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn a_paragraph_hanging_into_the_margin_starts_where_word_starts_it() {
+    use crate::parser::Parser;
+
+    let cases: [(&str, &[u8], f64); 2] = [
+        (
+            "body",
+            include_bytes!("../../../../tests/fixtures/docx/docxide/spaced_section_mark.docx"),
+            92.05,
+        ),
+        (
+            "text frame",
+            include_bytes!("../../../../tests/fixtures/docx/docxide/offset_text_frame.docx"),
+            72.28,
+        ),
+    ];
+    for (place, fixture, word_start) in cases {
+        let (document, _) = crate::parser::docx::DocxParser
+            .parse(fixture, &crate::config::ConvertOptions::default())
+            .expect("the fixture should parse");
+        let source = generate_typst(&document).unwrap().source;
+        let start: f64 = crate::render::pdf::compiled_text_runs(&source, 0)
+            .unwrap()
+            .into_iter()
+            .find(|run| run.text.starts_with("About"))
+            .expect("the hanging paragraph should be placed")
+            .left_pt;
+        assert!(
+            (start - word_start).abs() < 0.25,
+            "{place}: Word starts the paragraph at {word_start}pt, got {start}pt"
+        );
+    }
+}
+
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn docx_terminal_line_break_keeps_the_final_blank_line() {

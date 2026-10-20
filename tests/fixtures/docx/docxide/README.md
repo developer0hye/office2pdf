@@ -178,7 +178,10 @@ Apache-2.0. A one-cell table ("Recipient") is followed by a paragraph in a
 text-anchored `w:framePr` frame with a stated height, hung 16.8pt (`w:y`) below
 its place in the flow, and then by "Dear recipient". Native Word sets "Dear
 recipient" on the line after the table and the framed line 16.75pt below it; a
-compiled-layout regression checks both baselines.
+compiled-layout regression checks both baselines. The framed paragraph's
+`w:ind w:left="-1418" w:firstLine="1560"` puts it 7.1pt inside the frame that
+`w:x` starts at 65.3pt; Word starts it at 72.28pt, and a compiled-layout
+regression checks it.
 
 `floating_table_wrap.docx` is the unmodified synthetic
 `cases/leading-table-clear-leading-no-clear/input.docx` from
@@ -203,7 +206,10 @@ Apache-2.0. Its second section holds an empty paragraph with 12pt before, an
 empty paragraph and an empty Times New Roman 14pt section mark with 4pt after;
 a continuous section then opens with an empty paragraph and "Dear recipient".
 Native Word gives the mark no height and sets "Dear recipient" on a 162.30pt
-baseline; a compiled-layout regression checks it.
+baseline; a compiled-layout regression checks it. Its first-section paragraph
+"About providing information" has `w:ind w:left="-1418" w:firstLine="1560"`,
+which Word starts at 92.05pt, 85.05pt − 70.9pt + 78pt; a compiled-layout
+regression checks it.
 
 `section_mark_after_inline_table.docx` and
 `section_mark_after_inline_table_compat14.docx` are the unmodified synthetic

@@ -3888,7 +3888,13 @@ fn generate_cell_paragraph(
     // Unlike the body path this needs no separate outer block: a cell paragraph
     // paints no `w:shd` or `w:pBdr` of its own, so nothing has to span the
     // un-inset width.
-    let indent: Option<(f64, f64)> = paragraph_indent_pt(style);
+    // TODO(#2261 cell clip): Word clips a cell paragraph that hangs past its
+    // cell at the cell's edge. Until cells clip, a negative indent stays
+    // clamped to zero here, or the text would paint into the next cell
+    // (issue #2233).
+    let indent: Option<(f64, f64)> = paragraph_indent_pt(style)
+        .map(|(left, right)| (left.max(0.0), right.max(0.0)))
+        .filter(|(left, right)| *left > 0.0 || *right > 0.0);
     // Keep the signed first-line offset separate from the cell inset so only
     // the first visual line moves while wrapped lines retain the inset origin.
     let first_line_indent_pt: Option<f64> = style

@@ -802,13 +802,13 @@ pub(super) fn paragraph_default_tab_width_pt(style: &ParagraphStyle, fallback_pt
         .unwrap_or(fallback_pt)
 }
 
-/// The paragraph's `(left, right)` indent in points, or `None` when it has
-/// neither. Negative indents — Word lets a paragraph hang into the margin —
-/// are clamped to zero, because a Typst inset cannot be negative.
+/// The paragraph's signed `(left, right)` indent in points, or `None` when it
+/// has neither. Word lets a paragraph hang into the margin, and a negative
+/// block inset widens the line into it the same way (issue #2233).
 pub(super) fn paragraph_indent_pt(style: &ParagraphStyle) -> Option<(f64, f64)> {
-    let left: f64 = style.indent_left.unwrap_or(0.0).max(0.0);
-    let right: f64 = style.indent_right.unwrap_or(0.0).max(0.0);
-    (left > 0.0 || right > 0.0).then_some((left, right))
+    let left: f64 = style.indent_left.unwrap_or(0.0);
+    let right: f64 = style.indent_right.unwrap_or(0.0);
+    (left != 0.0 || right != 0.0).then_some((left, right))
 }
 
 fn write_paragraph_indent_inset(out: &mut String, indent: Option<(f64, f64)>) {

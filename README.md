@@ -302,6 +302,9 @@ past the paragraph's left and first-line indents. When a tab's left or default
 stop leaves no room for the next word before the line's end, the tab and that
 word start the next line. A line left holding only tabs keeps their runs'
 height. Centred, right and decimal stops keep their field on the line.
+A negative left or right indent widens a body paragraph's lines into the
+margin, as Word does; table cells still clamp it to zero until they clip their
+content at the cell edge (#2261).
 
 DOCX section body text supports top, centered and bottom page alignment,
 including paragraph after-spacing and page breaks. Continuous sections use their
