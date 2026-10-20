@@ -1323,6 +1323,8 @@ fn test_word_rows_stay_whole_inside_single_frame_containers() {
             vertical_align: None,
             left_from_text: 0.0,
             right_from_text: 0.0,
+            top_from_text: 0.0,
+            bottom_from_text: 0.0,
             anchored_to_text: false,
         },
     }));

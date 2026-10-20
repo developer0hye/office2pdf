@@ -6683,24 +6683,6 @@ fn generate_floating_table(
     // blocks; there the table lands below them.
     let anchor_gap: Option<f64> = std::mem::take(&mut ctx.flow_anchor_gap_pt)
         .filter(|_| ctx.block_depth == 1 && !ctx.preserve_page_after_spacing);
-    if floating_table.frame.anchored_to_text {
-        if anchor_gap.is_some() {
-            out.push_str("#v(0pt, weak: true)\n");
-        }
-        let _ = writeln!(
-            out,
-            "#place(left, dx: {}pt, dy: {}pt)[",
-            format_f64(offset_x),
-            format_f64(offset_y + anchor_gap.unwrap_or(0.0))
-        );
-    } else {
-        let _ = writeln!(
-            out,
-            "#place(top + left, dx: {}pt, dy: {}pt)[",
-            format_f64(offset_x),
-            format_f64(offset_y)
-        );
-    }
     // Only a table placed at the flow root has root paragraphs after it to
     // wrap around it.
     let wrap: Option<float_wrap::BodyFloat> = ctx
@@ -6717,10 +6699,56 @@ fn generate_floating_table(
                 false,
             )
         });
+    // The labels mark the band the paragraphs after the table keep clear
+    // of: the table widened by `w:topFromText` above and `w:bottomFromText`
+    // below, as `w:vSpace` widens a text frame's. Word's exports of
+    // docxide-pdf's `case164` and `case165`, one factor apart, lay a line
+    // that ends 6pt above the table at the margin with no `topFromText` and
+    // beside the table with 9pt of it.
+    // FIXME(unprobed bottomFromText): no Word reference in the corpus
+    // varies it on its own; it follows ECMA-376's wording, as `topFromText`
+    // does.
+    let (band_top_pt, band_bottom_pt): (f64, f64) = if wrap.is_some() {
+        (
+            floating_table.frame.top_from_text,
+            floating_table.frame.bottom_from_text,
+        )
+    } else {
+        (0.0, 0.0)
+    };
+    if floating_table.frame.anchored_to_text {
+        if anchor_gap.is_some() {
+            out.push_str("#v(0pt, weak: true)\n");
+        }
+        let _ = writeln!(
+            out,
+            "#place(left, dx: {}pt, dy: {}pt)[",
+            format_f64(offset_x),
+            format_f64(offset_y + anchor_gap.unwrap_or(0.0) - band_top_pt)
+        );
+    } else {
+        let _ = writeln!(
+            out,
+            "#place(top + left, dx: {}pt, dy: {}pt)[",
+            format_f64(offset_x),
+            format_f64(offset_y - band_top_pt)
+        );
+    }
+    let write_band_space = |out: &mut String, height_pt: f64| {
+        if height_pt > 0.0 {
+            let _ = writeln!(
+                out,
+                "#block(height: {}pt, above: 0pt, below: 0pt)",
+                format_f64(height_pt)
+            );
+        }
+    };
     if let Some(wrap) = wrap {
         float_wrap::write_float_top_label(out, wrap.id());
     }
+    write_band_space(out, band_top_pt);
     let result: Result<(), ConvertError> = generate_table(out, &floating_table.table, ctx);
+    write_band_space(out, band_bottom_pt);
     if let Some(wrap) = wrap {
         float_wrap::write_float_bottom_label(out, wrap.id());
         ctx.body_floats.push(wrap);
@@ -6769,6 +6797,15 @@ fn generate_floating_table_in_flow(
     let result: Result<(), ConvertError> = generate_table(out, &table, ctx);
     ctx.table_rows_may_split = enclosing_rows_may_split;
     out.push_str("]\n");
+    // The text after the table starts `w:bottomFromText` below it, as a line
+    // that meets a placed table's band does.
+    // FIXME(unprobed bottomFromText): no Word reference in the corpus
+    // states it on a table that leaves no room beside it.
+    // TODO(bottomFromText across a page break): the space is fixed, so it
+    // still opens the next page when the table ends at the bottom of one.
+    if floating_table.frame.bottom_from_text > 0.0 {
+        write_explicit_vertical_space(out, floating_table.frame.bottom_from_text);
+    }
     result
 }
 

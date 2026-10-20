@@ -385,3 +385,169 @@ fn issue_case_greeting_and_body_lie_beside_their_floating_table() {
         "centred greeting",
     );
 }
+
+/// `w:topFromText` and `w:bottomFromText` widen the band a floating table
+/// keeps body text out of, as `w:leftFromText` and `w:rightFromText` widen
+/// it across: a line that ends within `topFromText` above the table, or
+/// starts within `bottomFromText` below it, lies beside it too. Word's
+/// exports of docxide-pdf's `case164` and `case165`, which differ only in
+/// `topFromText` 0 and 180, put a line ending 6pt above the table at the
+/// margin and beside the table.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn lines_within_the_vertical_from_text_distances_lie_beside_a_floating_table() {
+    let wrap_edge: f64 = MARGIN_PT + 4820.0 / 20.0 + FROM_TEXT_PT;
+    let (offset_twips, height_twips) = (2400_u32, 1200_u32);
+    let table_top: f64 = MARGIN_PT + f64::from(offset_twips) / 20.0;
+    let table_bottom: f64 = table_top + f64::from(height_twips) / 20.0;
+    let lines: Vec<String> = (1..=24)
+        .map(|line| paragraph("", &format!("Line {line}")))
+        .collect();
+    for (top_twips, bottom_twips) in [(720_u32, 720_u32), (1080, 900)] {
+        let band_top: f64 = table_top - f64::from(top_twips) / 20.0;
+        let band_bottom: f64 = table_bottom + f64::from(bottom_twips) / 20.0;
+        let data = float_docx(
+            &[
+                anchored_floating_table(
+                    4820,
+                    height_twips,
+                    &format!(
+                        r#"w:vertAnchor="margin" w:tblpY="{offset_twips}" w:topFromText="{top_twips}" w:bottomFromText="{bottom_twips}""#
+                    ),
+                ),
+                lines.concat(),
+            ]
+            .concat(),
+        );
+        let runs = placed(&data);
+        let (mut above, mut over, mut under, mut below) = (0, 0, 0, 0);
+        for (run, _) in &runs {
+            let context = format!("{top_twips}/{bottom_twips}-twip distances, {}", run.text);
+            // A line whose bottom clears the widened band, one between the
+            // band's top and the table's, one between the table's bottom
+            // and the band's, and one whose top clears the band.
+            if run.baseline_pt + 0.3 * run.font_size_pt < band_top {
+                assert_close(run.left_pt, MARGIN_PT, &context);
+                above += 1;
+            } else if run.baseline_pt - run.font_size_pt > band_top
+                && run.baseline_pt + 0.3 * run.font_size_pt < table_top
+            {
+                assert_close(run.left_pt, wrap_edge, &context);
+                over += 1;
+            } else if run.baseline_pt - run.font_size_pt > table_bottom
+                && run.baseline_pt < band_bottom
+            {
+                assert_close(run.left_pt, wrap_edge, &context);
+                under += 1;
+            } else if run.baseline_pt - run.font_size_pt > band_bottom {
+                assert_close(run.left_pt, MARGIN_PT, &context);
+                below += 1;
+            }
+        }
+        assert!(
+            above > 0 && over > 0 && under > 0 && below > 0,
+            "{top_twips}/{bottom_twips}-twip distances: {above} above, {over} over, \
+             {under} under, {below} below in {runs:?}"
+        );
+    }
+}
+
+/// A line that meets a floating table that leaves no room beside it starts
+/// `w:bottomFromText` below the table, whether the table hangs from its
+/// anchor paragraph in the flow or is placed from the margin.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn text_below_a_floating_table_that_leaves_no_room_keeps_its_bottom_distance() {
+    let control = placed(&float_docx(&paragraph("", "Following")));
+    let (control_run, _) = find(&control, "Following");
+    for anchor in ["text", "margin"] {
+        for (height_twips, bottom_twips) in [(800_u32, 360_u32), (1200, 720)] {
+            let data = float_docx(
+                &[
+                    anchored_floating_table(
+                        9026,
+                        height_twips,
+                        &format!(
+                            r#"w:vertAnchor="{anchor}" w:horzAnchor="margin" w:bottomFromText="{bottom_twips}""#
+                        ),
+                    ),
+                    paragraph("", "Following"),
+                ]
+                .concat(),
+            );
+            let runs = placed(&data);
+            let context = format!("{anchor}-anchored {height_twips}/{bottom_twips}-twip float");
+            let (following, _) = find(&runs, "Following");
+            assert_close(following.left_pt, MARGIN_PT, &context);
+            assert_close(
+                following.baseline_pt,
+                control_run.baseline_pt + f64::from(height_twips + bottom_twips) / 20.0,
+                &context,
+            );
+        }
+    }
+}
+
+/// The first floating table in a package's first flow page.
+fn first_floating_table(data: &[u8]) -> crate::ir::FloatingTable {
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(page) = &document.pages[0] else {
+        panic!("expected a flow page");
+    };
+    page.content
+        .iter()
+        .find_map(|block| match block {
+            crate::ir::Block::FloatingTable(table) => Some(table.as_ref().clone()),
+            _ => None,
+        })
+        .expect("the table keeps its floating frame")
+}
+
+#[test]
+fn a_floating_table_keeps_its_vertical_from_text_distances() {
+    for (distances, top, bottom) in [
+        ("", 0.0, 0.0),
+        (r#"w:topFromText="180""#, 9.0, 0.0),
+        (r#"w:topFromText="72" w:bottomFromText="720""#, 3.6, 36.0),
+    ] {
+        let data = float_docx(&floating_table(4820, 800, distances));
+        let table = first_floating_table(&data);
+        assert_eq!(
+            (table.frame.top_from_text, table.frame.bottom_from_text),
+            (top, bottom),
+            "{distances:?}"
+        );
+    }
+}
+
+/// docxide-pdf's `case165`: Word lays "BodyNext", whose line ends above the
+/// second table but within its 9pt `w:topFromText`, beside that table.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn issue_case_line_within_top_from_text_lies_beside_the_floating_table() {
+    let data: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/floating_table_top_from_text.docx");
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let Page::Flow(page) = &document.pages[0] else {
+        panic!("expected a flow page");
+    };
+    let table = page
+        .content
+        .iter()
+        .rev()
+        .find_map(|block| match block {
+            crate::ir::Block::FloatingTable(table) => Some(table),
+            _ => None,
+        })
+        .expect("the second table keeps its floating frame");
+    assert_close(table.frame.top_from_text, 9.0, "topFromText");
+    // The section's left margin is 1701 twips.
+    let wrap_edge: f64 = 85.05
+        + table.frame.x.unwrap_or_default()
+        + table.table.column_widths.iter().sum::<f64>()
+        + table.frame.right_from_text;
+
+    let runs = placed(data);
+    let (body, _) = find(&runs, "BodyNext");
+    assert_close(body.left_pt, wrap_edge, "BodyNext");
+}
