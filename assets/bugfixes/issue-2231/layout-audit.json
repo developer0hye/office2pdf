@@ -2,49 +2,158 @@
  "pages": [
   {
    "lines": {
-    "gt": 7,
-    "out": 7,
-    "matched": 7,
+    "gt": 43,
+    "out": 43,
+    "matched": 43,
     "missing": 0,
     "extra": 0,
-    "deviant": 7,
+    "deviant": 12,
     "missing_text": [],
     "extra_text": []
    },
    "baseline": {
-    "mean_abs_dy": 1.0802624999999715,
-    "worst_dy": 1.1871399999999426,
-    "worst_dy_signed": -1.1871399999999426,
+    "mean_abs_dy": 0.08570068181819158,
+    "worst_dy": 0.2516000000000531,
+    "worst_dy_signed": -0.2516000000000531,
     "worst_line": "Publicrecipient"
    },
    "dx0": {
-    "mean_abs": 0.018749999999998934,
+    "mean_abs": 0.002840909090909091,
     "worst": 0.125
    },
    "width": {
-    "mean_abs_pct": 0.10675733885222494,
-    "worst_pct": 0.3277450219757085
+    "mean_abs_pct": 0.05193715774138119,
+    "worst_pct": 0.24108321558068319
    },
    "instances": {
-    "compared": 8,
+    "compared": 44,
     "large_shift_threshold": 5.0,
     "large_shift_count": 0,
     "large_shifts": [],
     "fine_shift_threshold": 0.5,
-    "fine_shift_count": 8,
+    "fine_shift_count": 0,
+    "fine_shifts": []
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 42,
+    "worst_delta": 0.18140000000016698
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 0,
+    "out_count": 0,
+    "canonical_gt_count": 0,
+    "canonical_out_count": 0,
+    "matched": 0,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  },
+  {
+   "lines": {
+    "gt": 33,
+    "out": 33,
+    "matched": 33,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 33,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 1.1380627272727482,
+    "worst_dy": 1.3253400000000966,
+    "worst_dy_signed": -1.3253400000000966,
+    "worst_line": "Publicgreeting"
+   },
+   "dx0": {
+    "mean_abs": 0.0007575757575754992,
+    "worst": 0.024999999999991473
+   },
+   "width": {
+    "mean_abs_pct": 0.05602952159706718,
+    "worst_pct": 0.3277450219757085
+   },
+   "instances": {
+    "compared": 33,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 33,
     "fine_shifts": [
      {
-      "label": "Publicleft",
-      "gt_x": 85.025,
-      "gt_y": 129.29999999999995,
-      "out_x": 85.15,
-      "out_y": 128.21833,
-      "dx": 0.125,
-      "dy": -1.0816699999999457,
-      "width_pct": -0.24108321558068319
-     },
-     {
-      "label": "Publicrecipient [1/6]",
+      "label": "Publicrecipient [1/32]",
       "gt_x": 365.15,
       "gt_y": 129.29999999999995,
       "out_x": 365.15,
@@ -54,7 +163,7 @@
       "width_pct": -0.04753841221023464
      },
      {
-      "label": "Publicrecipient [2/6]",
+      "label": "Publicrecipient [2/32]",
       "gt_x": 365.15,
       "gt_y": 145.29999999999995,
       "out_x": 365.15,
@@ -64,7 +173,7 @@
       "width_pct": -0.04753841221023464
      },
      {
-      "label": "Publicrecipient [3/6]",
+      "label": "Publicrecipient [3/32]",
       "gt_x": 365.15,
       "gt_y": 161.54999999999995,
       "out_x": 365.15,
@@ -74,7 +183,7 @@
       "width_pct": -0.04753841221023464
      },
      {
-      "label": "Publicrecipient [4/6]",
+      "label": "Publicrecipient [4/32]",
       "gt_x": 365.15,
       "gt_y": 177.54999999999995,
       "out_x": 365.15,
@@ -84,7 +193,7 @@
       "width_pct": -0.04753841221023464
      },
      {
-      "label": "Publicrecipient [5/6]",
+      "label": "Publicrecipient [5/32]",
       "gt_x": 365.15,
       "gt_y": 193.79999999999995,
       "out_x": 365.15,
@@ -94,7 +203,7 @@
       "width_pct": -0.04753841221023464
      },
      {
-      "label": "Publicrecipient [6/6]",
+      "label": "Publicrecipient [6/32]",
       "gt_x": 365.15,
       "gt_y": 209.83000000000004,
       "out_x": 365.15,
@@ -104,13 +213,273 @@
       "width_pct": -0.04753841221023464
      },
      {
+      "label": "Publicrecipient [7/32]",
+      "gt_x": 365.15,
+      "gt_y": 225.83000000000004,
+      "out_x": 365.15,
+      "out_y": 224.81012,
+      "dx": 0.0,
+      "dy": -1.019880000000029,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [8/32]",
+      "gt_x": 365.15,
+      "gt_y": 242.08000000000004,
+      "out_x": 365.15,
+      "out_y": 240.90876,
+      "dx": 0.0,
+      "dy": -1.17124000000004,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [9/32]",
+      "gt_x": 365.15,
+      "gt_y": 258.07000000000005,
+      "out_x": 365.15,
+      "out_y": 257.0074,
+      "dx": 0.0,
+      "dy": -1.0626000000000317,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [10/32]",
+      "gt_x": 365.15,
+      "gt_y": 274.33000000000004,
+      "out_x": 365.15,
+      "out_y": 273.10603,
+      "dx": 0.0,
+      "dy": -1.2239700000000653,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [11/32]",
+      "gt_x": 365.15,
+      "gt_y": 290.33000000000004,
+      "out_x": 365.15,
+      "out_y": 289.20466,
+      "dx": 0.0,
+      "dy": -1.125340000000051,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [12/32]",
+      "gt_x": 365.15,
+      "gt_y": 306.35,
+      "out_x": 365.15,
+      "out_y": 305.30329,
+      "dx": 0.0,
+      "dy": -1.0467100000000187,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [13/32]",
+      "gt_x": 365.15,
+      "gt_y": 322.6,
+      "out_x": 365.15,
+      "out_y": 321.40193,
+      "dx": 0.0,
+      "dy": -1.1980700000000297,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [14/32]",
+      "gt_x": 365.15,
+      "gt_y": 338.6,
+      "out_x": 365.15,
+      "out_y": 337.50059,
+      "dx": 0.0,
+      "dy": -1.0994100000000344,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [15/32]",
+      "gt_x": 365.15,
+      "gt_y": 354.6,
+      "out_x": 365.15,
+      "out_y": 353.5992,
+      "dx": 0.0,
+      "dy": -1.0008000000000266,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [16/32]",
+      "gt_x": 365.15,
+      "gt_y": 370.85,
+      "out_x": 365.15,
+      "out_y": 369.69786,
+      "dx": 0.0,
+      "dy": -1.1521400000000313,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [17/32]",
+      "gt_x": 365.15,
+      "gt_y": 386.87,
+      "out_x": 365.15,
+      "out_y": 385.79649,
+      "dx": 0.0,
+      "dy": -1.0735099999999989,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [18/32]",
+      "gt_x": 365.15,
+      "gt_y": 403.12,
+      "out_x": 365.15,
+      "out_y": 401.8951,
+      "dx": 0.0,
+      "dy": -1.224899999999991,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [19/32]",
+      "gt_x": 365.15,
+      "gt_y": 419.12,
+      "out_x": 365.15,
+      "out_y": 417.99375,
+      "dx": 0.0,
+      "dy": -1.1262500000000273,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [20/32]",
+      "gt_x": 365.15,
+      "gt_y": 435.12,
+      "out_x": 365.15,
+      "out_y": 434.09239,
+      "dx": 0.0,
+      "dy": -1.0276099999999815,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [21/32]",
+      "gt_x": 365.15,
+      "gt_y": 451.37,
+      "out_x": 365.15,
+      "out_y": 450.191,
+      "dx": 0.0,
+      "dy": -1.1790000000000305,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [22/32]",
+      "gt_x": 365.15,
+      "gt_y": 467.4,
+      "out_x": 365.15,
+      "out_y": 466.28965,
+      "dx": 0.0,
+      "dy": -1.1103499999999826,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [23/32]",
+      "gt_x": 365.15,
+      "gt_y": 483.65,
+      "out_x": 365.15,
+      "out_y": 482.38829,
+      "dx": 0.0,
+      "dy": -1.2617099999999937,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [24/32]",
+      "gt_x": 365.15,
+      "gt_y": 499.65,
+      "out_x": 365.15,
+      "out_y": 498.4869,
+      "dx": 0.0,
+      "dy": -1.1630999999999858,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [25/32]",
+      "gt_x": 365.15,
+      "gt_y": 515.65,
+      "out_x": 365.15,
+      "out_y": 514.5856,
+      "dx": 0.0,
+      "dy": -1.0643999999999778,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [26/32]",
+      "gt_x": 365.15,
+      "gt_y": 531.9,
+      "out_x": 365.15,
+      "out_y": 530.6842,
+      "dx": 0.0,
+      "dy": -1.2157999999999447,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [27/32]",
+      "gt_x": 365.15,
+      "gt_y": 547.9200000000001,
+      "out_x": 365.15,
+      "out_y": 546.78286,
+      "dx": 0.0,
+      "dy": -1.137140000000045,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [28/32]",
+      "gt_x": 365.15,
+      "gt_y": 564.1700000000001,
+      "out_x": 365.15,
+      "out_y": 562.8815,
+      "dx": 0.0,
+      "dy": -1.2885000000001128,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [29/32]",
+      "gt_x": 365.15,
+      "gt_y": 580.1700000000001,
+      "out_x": 365.15,
+      "out_y": 578.9801,
+      "dx": 0.0,
+      "dy": -1.1899000000000797,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [30/32]",
+      "gt_x": 365.15,
+      "gt_y": 596.1800000000001,
+      "out_x": 365.15,
+      "out_y": 595.07876,
+      "dx": 0.0,
+      "dy": -1.1012400000000753,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [31/32]",
+      "gt_x": 365.15,
+      "gt_y": 612.4300000000001,
+      "out_x": 365.15,
+      "out_y": 611.17739,
+      "dx": 0.0,
+      "dy": -1.252610000000118,
+      "width_pct": -0.04753841221023464
+     },
+     {
+      "label": "Publicrecipient [32/32]",
+      "gt_x": 365.15,
+      "gt_y": 628.45,
+      "out_x": 365.15,
+      "out_y": 627.276,
+      "dx": 0.0,
+      "dy": -1.1740000000000919,
+      "width_pct": -0.04753841221023464
+     },
+     {
       "label": "Publicgreeting",
       "gt_x": 85.025,
-      "gt_y": 225.83000000000004,
+      "gt_y": 644.7,
       "out_x": 85.05,
-      "out_y": 224.81012,
+      "out_y": 643.37466,
       "dx": 0.024999999999991473,
-      "dy": -1.019880000000029,
+      "dy": -1.3253400000000966,
       "width_pct": -0.3277450219757085
      }
     ]
@@ -128,8 +497,8 @@
     "mismatches": []
    },
    "pitch": {
-    "pairs": 6,
-    "worst_delta": 0.1513699999999858
+    "pairs": 32,
+    "worst_delta": 0.16137000000003354
    },
    "wraps": {
     "count": 0,
@@ -201,6 +570,6 @@
    "noise_floor": 0.12
   }
  ],
- "gt_pages": 1,
- "out_pages": 1
+ "gt_pages": 2,
+ "out_pages": 2
 }

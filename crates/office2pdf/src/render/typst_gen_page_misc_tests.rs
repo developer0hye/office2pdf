@@ -5533,6 +5533,31 @@ fn a_full_width_table_starts_below_an_empty_frames_box() {
     }
 }
 
+/// docxide-pdf `empty-margin-frame-long-prefix`, unmodified: the table of
+/// `empty-margin-frame-15-two-empty` with a cell long enough to carry its row
+/// onto page 2, where the empty frame group follows it. Word keeps the box at
+/// page 2's top margin and starts the carried part of the row below it, at
+/// 129.30pt, and the greeting at 644.70pt, while page 1 starts at the top
+/// margin, 105.28pt; main started page 2 at the top margin too, 24pt high
+/// (issue #2231). The same Tahoma substitute tolerance applies.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn table_rows_carried_onto_an_empty_frames_box_page_start_below_it() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/empty_frame_box_carried_rows.docx");
+    for (page, text, word) in [
+        (0, "Public left", 105.28),
+        (1, "Public recipient", 129.30),
+        (1, "Public greeting", 644.70),
+    ] {
+        let baseline: f64 = docx_fixture_baseline_pt(fixture, page, text);
+        assert!(
+            (baseline - word).abs() < 1.5,
+            "{text:?} on page {page} must sit near Word's {word}pt baseline, got {baseline}pt"
+        );
+    }
+}
+
 /// docxide-pdf `cont-first-first-fits`, unmodified: 38 exact 16pt lines, an
 /// empty framed paragraph ending the section, and a continuous section whose
 /// first paragraph states 24pt before an exact 16pt line. Word puts its

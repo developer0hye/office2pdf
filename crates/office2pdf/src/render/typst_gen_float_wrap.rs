@@ -32,7 +32,10 @@
 //! and start a full-width table on the box's page below it (issue #2231).
 //! A table in the box's section asks at layout time, through the labels on
 //! the box's edges, whether it starts within the box, which can be on its
-//! page whether the group comes before or after it.
+//! page whether the group comes before or after it. The box of a group
+//! that directly follows a table asks, through the labels on the table's
+//! first and last pages, whether the table carries rows onto the box's page,
+//! which start below the box too.
 
 use std::fmt::Write as _;
 
@@ -44,7 +47,10 @@ use super::format_f64;
 
 const FLOAT_WRAP_HELPER: &str = "o2p-float-wrap";
 const FRAME_BOX_CLEARANCE_HELPER: &str = "o2p-frame-box-clearance";
+const FRAME_BOX_CARRY_HELPER: &str = "o2p-frame-box-carry";
 const FRAME_BOX_LABEL: &str = "o2p-frame-box";
+const FRAME_BOX_TABLE_LABEL: &str = "o2p-frame-box-table";
+const FRAME_BOX_CARRIED_LABEL: &str = "o2p-frame-box-carried";
 
 /// The narrowest strip beside a floating table or text frame that body text
 /// is laid out in.
@@ -245,7 +251,7 @@ pub(super) fn write_float_wrap_helper(out: &mut String) {
 }
 
 /// Whether any flow section keeps an empty frame's box at the top margin,
-/// which is when the table clearance helper has to be defined.
+/// which is when the table clearance helpers have to be defined.
 pub(super) fn document_has_top_margin_frame_box(doc: &Document) -> bool {
     doc.pages.iter().any(|page| match page {
         Page::Flow(flow) | Page::FlowContinuous(flow) => has_top_margin_frame_box(&flow.content),
@@ -261,15 +267,30 @@ pub(super) fn has_top_margin_frame_box(blocks: &[Block]) -> bool {
     })
 }
 
-/// Define the layout-time clearance a full-width table takes from the
-/// top-margin frame boxes: a table that starts within one on its page starts
-/// at the box's bottom edge instead. The clearance is a block of its own
-/// before the table, so the gap above it and the rows the table carries on
-/// to the next page stay as they were.
+/// Define the layout-time clearances a full-width table takes from the
+/// top-margin frame boxes.
 ///
-/// TODO(table rows carried onto a box's page): Word's export of docxide-pdf's
-/// `empty-margin-frame-long-prefix` starts the rows a table carries onto the
-/// page of the box below it as well; here they start at the top margin.
+/// A table that starts within a box on its page starts at the box's bottom
+/// edge instead. The clearance is a block of its own before the table, so the
+/// gap above it stays as it was, and so do the rows the table carries on to
+/// the next page.
+///
+/// The rows a table carries onto the page of the box of a group that directly
+/// follows it start below the box as well, as in Word's export of
+/// docxide-pdf's `empty-margin-frame-long-prefix`. Such a box is drawn by a
+/// helper that floats it at the top of that page, which moves the carried
+/// rows and everything after them down; nothing else on the page comes before
+/// them. The helper floats the box only when the rows still end on that page
+/// below it, measured from where they end without it: a float that moved them
+/// on to the next page would move the group and its box there too, and
+/// Typst's layout would never settle. It takes the bottom of the text area,
+/// the box's offsets and its content. Typst does not settle either when the
+/// float's height is read from the box's own edge labels, which the float
+/// moves, so the helper measures the content instead.
+///
+/// TODO(rows carried past a box's page): when the box would push the carried
+/// rows onto the next page, they keep their place here; no Word reference
+/// shows that case.
 pub(super) fn write_top_margin_frame_box_clearance_helper(out: &mut String) {
     let _ = writeln!(
         out,
@@ -283,6 +304,17 @@ pub(super) fn write_top_margin_frame_box_clearance_helper(out: &mut String) {
          push = calc.max(push, bottom.y - at.y) }} }}; \
          block(height: push, above: 0pt, below: 0pt) }}"
     );
+    let _ = writeln!(
+        out,
+        "#let {FRAME_BOX_CARRY_HELPER}(text-bottom, dx, dy, body) = context {{ \
+         let start = query(selector(<{FRAME_BOX_TABLE_LABEL}-start>).before(here())).last().location().position(); \
+         let end = query(selector(<{FRAME_BOX_TABLE_LABEL}-end>).before(here())).last().location().position(); \
+         let height = measure(body).height; \
+         let carried = query(<{FRAME_BOX_CARRIED_LABEL}>).filter(carried => carried.location().page() == end.page).map(carried => carried.value).sum(default: 0pt); \
+         if start.page < end.page and end.y - carried + height <= text-bottom {{ \
+         place(top + left, float: true, clearance: 0pt, dx: dx, dy: dy, [#metadata(height) <{FRAME_BOX_CARRIED_LABEL}>#body]) }} \
+         else {{ place(top + left, dx: dx, dy: dy, body) }} }}"
+    );
 }
 
 /// Write the clearance a full-width table at the flow root takes from the
@@ -291,10 +323,37 @@ pub(super) fn write_top_margin_frame_box_clearance(out: &mut String) {
     let _ = writeln!(out, "#{FRAME_BOX_CLEARANCE_HELPER}()");
 }
 
+/// Open the box of a frame group that directly follows a full-width table at
+/// the flow root, `x_pt` and `y_pt` from the top left of the text area,
+/// through the helper that floats it above the rows the table carries onto
+/// its page. `text_bottom_pt` is the bottom of the text area, from the top of
+/// the page. The box's content follows; `]` closes it.
+pub(super) fn write_top_margin_frame_box_carry_open(
+    out: &mut String,
+    text_bottom_pt: f64,
+    x_pt: f64,
+    y_pt: f64,
+) {
+    let _ = writeln!(
+        out,
+        "#{FRAME_BOX_CARRY_HELPER}({}pt, {}pt, {}pt)[",
+        format_f64(text_bottom_pt),
+        format_f64(x_pt),
+        format_f64(y_pt)
+    );
+}
+
 /// The label a top-margin frame box carries at its `edge`, `top` or
 /// `bottom`.
 pub(super) fn write_top_margin_frame_box_label(out: &mut String, edge: &str) {
     let _ = writeln!(out, "#metadata(none) <{FRAME_BOX_LABEL}-{edge}>");
+}
+
+/// The label a full-width table that a frame group directly follows carries
+/// at its `edge`, `start` or `end`, inside its wrapper, so on its first or
+/// last page.
+pub(super) fn write_frame_box_table_label(out: &mut String, edge: &str) {
+    let _ = writeln!(out, "#metadata(none) <{FRAME_BOX_TABLE_LABEL}-{edge}>");
 }
 
 /// The labels a placed floating table or text frame carries at its top and

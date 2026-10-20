@@ -766,3 +766,161 @@ fn a_full_width_table_in_an_empty_frames_box_starts_below_it() {
         "a table below the box",
     );
 }
+
+/// A table as wide as the A4 text area with one row per paragraph.
+fn full_width_rows_table(paragraphs: impl IntoIterator<Item = String>) -> String {
+    let rows: String = paragraphs
+        .into_iter()
+        .map(|paragraph| {
+            format!(
+                r#"<w:tr><w:tc><w:tcPr><w:tcW w:w="9026" w:type="dxa"/></w:tcPr>{paragraph}</w:tc></w:tr>"#
+            )
+        })
+        .collect();
+    format!(
+        r#"<w:tbl><w:tblPr><w:tblW w:w="9026" w:type="dxa"/><w:tblCellMar><w:left w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="9026"/></w:tblGrid>{rows}</w:tbl>"#
+    )
+}
+
+/// The painted non-blank runs on `page`, as text and baseline.
+#[cfg(not(target_arch = "wasm32"))]
+fn page_baselines(data: &[u8], page: usize) -> Vec<(String, f64)> {
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+    crate::render::pdf::compiled_text_runs(&source.source, page)
+        .unwrap()
+        .into_iter()
+        .filter(|run| !run.text.trim().is_empty())
+        .map(|run| (run.text.trim_end().to_string(), run.baseline_pt))
+        .collect()
+}
+
+/// The rows a full-width table carries onto the page of an empty frame's box
+/// at the top margin start below the box, as Word's export of docxide-pdf's
+/// `empty-margin-frame-long-prefix` starts them, and what follows them moves
+/// with them. The table's first page keeps its rows, and a page the table
+/// does not reach keeps its body text where it was (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn rows_a_table_carries_onto_an_empty_frames_box_page_start_below_it() {
+    let group: String = empty_framed(TOP_MARGIN_FRAME, "").repeat(2);
+    let table: String =
+        full_width_rows_table((1..=70).map(|row| paragraph("", &format!("Row {row}"))));
+    let after: String = paragraph("", "After");
+    let carried: String = format!("{table}{group}{after}");
+    let legacy_carried = |page: usize| page_baselines(&compat_frame_docx(&carried, 14), page);
+    let box_carried = |page: usize| page_baselines(&compat_frame_docx(&carried, 15), page);
+    assert_eq!(
+        box_carried(0),
+        legacy_carried(0),
+        "the table's first page keeps its rows"
+    );
+    let (legacy, boxed) = (legacy_carried(1), box_carried(1));
+    assert_eq!(
+        legacy.iter().map(|(text, _)| text).collect::<Vec<_>>(),
+        boxed.iter().map(|(text, _)| text).collect::<Vec<_>>(),
+        "the same rows reach page 2"
+    );
+    assert!(
+        legacy
+            .first()
+            .is_some_and(|(text, _)| text.starts_with("Row ")),
+        "the table carries rows onto page 2: {legacy:?}"
+    );
+    // The box is the two exact 12pt lines.
+    for ((text, legacy_pt), (_, box_pt)) in legacy.iter().zip(&boxed) {
+        assert_close(*box_pt, legacy_pt + 24.0, text);
+    }
+
+    // The table ends on page 2 and body text carries the frame group onto
+    // page 3, which the table does not reach.
+    let filler: String = (1..=60)
+        .map(|line| paragraph("", &format!("Line {line}")))
+        .collect();
+    let beyond: String = format!("{table}{filler}{group}{after}");
+    let legacy_beyond: Vec<(String, f64)> = page_baselines(&compat_frame_docx(&beyond, 14), 2);
+    assert!(
+        legacy_beyond
+            .first()
+            .is_some_and(|(text, _)| text.starts_with("Line ")),
+        "the frame group lands on page 3 below body text: {legacy_beyond:?}"
+    );
+    assert_eq!(
+        page_baselines(&compat_frame_docx(&beyond, 15), 2),
+        legacy_beyond,
+        "body text on a page the table does not reach"
+    );
+}
+
+/// A box that would push the rows a table carries onto its page past the
+/// page's end leaves them in place, rather than move them, the group and the
+/// box itself on to the next page, where the box would no longer meet them.
+/// On exact 14pt rows, 49 fill the 697.9pt text area, and the two 12pt lines
+/// of the box leave room for 48 below it (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn rows_an_empty_frames_box_would_push_off_its_page_keep_their_place() {
+    let group: String = empty_framed(TOP_MARGIN_FRAME, "").repeat(2);
+    let after: String = paragraph("", "After");
+    let row = |row: usize| {
+        format!(
+            r#"<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="280" w:lineRule="exact"/></w:pPr>{}</w:p>"#,
+            run(&format!("<w:t>Row {row}</w:t>"))
+        )
+    };
+    let body = |rows: usize| {
+        format!(
+            "{}{group}{after}",
+            full_width_rows_table((1..=rows).map(row))
+        )
+    };
+    // Every page's painted runs, as text and baseline.
+    let pages = |rows: usize, mode: u32| {
+        let (document, _) = DocxParser
+            .parse(
+                &compat_frame_docx(&body(rows), mode),
+                &ConvertOptions::default(),
+            )
+            .unwrap();
+        let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+        (0..)
+            .map_while(|page| crate::render::pdf::compiled_text_runs(&source.source, page).ok())
+            .map(|runs| {
+                runs.into_iter()
+                    .filter(|run| !run.text.trim().is_empty())
+                    .map(|run| (run.text.trim_end().to_string(), run.baseline_pt))
+                    .collect::<Vec<(String, f64)>>()
+            })
+            .collect::<Vec<_>>()
+    };
+    let text = |runs: Option<&(String, f64)>| runs.map(|(text, _)| text.clone());
+
+    let (legacy, boxed) = (pages(97, 14), pages(97, 15));
+    assert_eq!(text(legacy[1].first()), Some("Row 50".to_string()));
+    assert_eq!(text(legacy[1].last()), Some("After".to_string()));
+    let carried: Vec<&(String, f64)> = legacy[1]
+        .iter()
+        .filter(|(text, _)| text.starts_with("Row "))
+        .collect();
+    assert_eq!(carried.len(), 48);
+    for ((text, legacy_pt), (box_text, box_pt)) in carried.into_iter().zip(&boxed[1]) {
+        assert_eq!(text, box_text);
+        assert_close(*box_pt, legacy_pt + 24.0, text);
+    }
+    assert_eq!(
+        text(boxed[1].last()),
+        Some("Row 97".to_string()),
+        "48 rows still fit below the box"
+    );
+    assert_eq!(
+        text(boxed[2].first()),
+        Some("After".to_string()),
+        "the paragraph after them moves on with them"
+    );
+
+    assert_eq!(
+        pages(98, 15),
+        pages(98, 14),
+        "49 rows keep their place, and nothing moves to a new page"
+    );
+}
