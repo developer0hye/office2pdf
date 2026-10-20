@@ -9,11 +9,11 @@ use crate::ir::{
     Alignment, ArrowHead, AxisTickMark, BarBandLayout, BaselineShiftEm, Block, BorderLineStyle,
     BorderSide, BreakClear, CellBorder, CellVerticalAlign, Chart, ChartGrouping, ChartType, Color,
     ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
-    FloatingImageVerticalAnchor, FloatingShape, FloatingTextBox, FlowPage, FrameAnchor,
-    GradientFill, HFInline, HeaderFooter, HeaderFooterFrame, HeaderFooterShapeContent, IconShading,
-    ImageCrop, ImageData, ImageFormat, ImageParagraphIndent, ImageParagraphSpacing, InlineTextBox,
-    Insets, LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, List, ListKind, Margins,
-    MathEquation, Metadata, Page, PageNumberFormat, PageSize, PairKerning, Paragraph,
+    FloatingImageVerticalAnchor, FloatingShape, FloatingTable, FloatingTextBox, FlowPage,
+    FrameAnchor, GradientFill, HFInline, HeaderFooter, HeaderFooterFrame, HeaderFooterShapeContent,
+    IconShading, ImageCrop, ImageData, ImageFormat, ImageParagraphIndent, ImageParagraphSpacing,
+    InlineTextBox, Insets, LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, List, ListKind,
+    Margins, MathEquation, Metadata, Page, PageNumberFormat, PageSize, PairKerning, Paragraph,
     ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo,
     Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TabAlignment, TabLeader,
     TabStop, Table, TableBorderPaintModel, TableCell, TableOfContents, TableRow, TextBoxData,
@@ -296,14 +296,11 @@ struct GenCtx {
     /// clearing break, which starts below the floats it clears
     /// (issue #2230).
     float_wrap_clear: Option<BreakClear>,
-    /// Whether nothing that takes flow space has been written yet in a
-    /// section that starts a page, so the next block's top is the text area's.
-    flow_at_page_top: bool,
-    /// Set for the root text-anchored text frame `generate_block` is about to
-    /// write: the gap after the flow block before it, when there is one
-    /// (issue #2231). A top-margin frame box hangs from no flow block, so it
-    /// never has one.
-    text_frame_anchor_gap_pt: Option<f64>,
+    /// Set for the root text-anchored text frame or floating table
+    /// `generate_block` is about to write: the gap after the flow block before
+    /// it, when there is one (issues #2231, #2236). A top-margin frame box
+    /// hangs from no flow block, so it never has one.
+    flow_anchor_gap_pt: Option<f64>,
     /// The text area the previous flow section's floats wrapped in, which a
     /// continuous section in the same area keeps in force.
     carried_float_text_area_pt: Option<(f64, f64)>,
@@ -386,8 +383,7 @@ impl GenCtx {
             float_wrap_text_area_pt: None,
             float_wrap_pending: false,
             float_wrap_clear: None,
-            flow_at_page_top: false,
-            text_frame_anchor_gap_pt: None,
+            flow_anchor_gap_pt: None,
             carried_float_text_area_pt: None,
             clears_top_margin_frame_boxes: false,
             top_margin_frame_box_follows: false,
@@ -888,7 +884,6 @@ fn generate_flow_page(
     // Typst distributes each page's flow, preserving page breaks and horizontal alignment.
     ctx.in_flow_body = true;
     write_flow_body_alignment(out, ctx);
-    ctx.flow_at_page_top = !begins_continuously;
     let text_height_pt: f64 = size.height - page.margins.top - page.margins.bottom;
     // TODO(floats wrap in one column only): a floating table or text frame
     // placed in a multi-column section still excludes no text.
@@ -991,7 +986,6 @@ fn generate_flow_page(
     ctx.preserve_page_after_spacing = false;
     ctx.carried_float_text_area_pt = ctx.float_wrap_text_area_pt.take();
     ctx.clears_top_margin_frame_boxes = false;
-    ctx.flow_at_page_top = false;
     reset_flow_body_alignment(out, ctx);
     Ok(())
 }
@@ -5475,7 +5469,7 @@ fn generate_blocks_with_layout_space_before(
         let after_shading_space_pt: Option<f64> = joins_next
             .then(|| take_joined_paragraph_after_shading_space(&mut block))
             .flatten();
-        ctx.text_frame_anchor_gap_pt = text_frame_anchor_gap(blocks, index);
+        ctx.flow_anchor_gap_pt = flow_anchor_gap(blocks, index, ctx);
         ctx.top_margin_frame_box_follows = matches!(
             blocks.get(index + 1),
             Some(Block::TextFrame(frame)) if frame.vertical_anchor != FrameAnchor::Text
@@ -5542,18 +5536,28 @@ fn generate_blocks_with_layout_space_before(
 }
 
 /// The gap Typst lays after the flow block before the text-anchored text
-/// frame at `index`, or `None` when no block before it on its page or column
-/// takes flow space (issue #2231). A top-margin frame box is placed from the
-/// top of the text area, not from the flow, so it gets `None` too.
-fn text_frame_anchor_gap(blocks: &[Block], index: usize) -> Option<f64> {
-    if !matches!(&blocks[index], Block::TextFrame(frame) if frame.vertical_anchor == FrameAnchor::Text)
-    {
+/// frame or placed floating table at `index`, or `None` when no block before
+/// it on its page or column takes flow space (issues #2231, #2236). A
+/// top-margin frame box and a margin- or page-anchored table are placed from
+/// the top of the text area, not from the flow, so they get `None` too, and so
+/// does a table laid out in the flow, whose own gaps are zero.
+fn flow_anchor_gap(blocks: &[Block], index: usize, ctx: &GenCtx) -> Option<f64> {
+    let at_flow_root: bool = ctx.in_flow_body && ctx.block_depth == 0;
+    let hangs_from_the_flow: bool = match &blocks[index] {
+        Block::TextFrame(frame) => frame.vertical_anchor == FrameAnchor::Text,
+        Block::FloatingTable(table) => {
+            table.frame.anchored_to_text
+                && !floating_table_lays_out_in_flow(table, at_flow_root, ctx)
+        }
+        _ => false,
+    };
+    if !hangs_from_the_flow {
         return None;
     }
     let previous: &Block = blocks[..index]
         .iter()
         .rev()
-        .find(|block| !section_alignment::leaves_flow_gap_unchanged(block))
+        .find(|block| !leaves_flow_gap_unchanged(block, at_flow_root, ctx))
         .filter(|block| !is_layout_break(block))?;
     Some(section_alignment::paragraph_edge_spacing(previous).map_or(0.0, |(_, after)| after))
 }
@@ -6093,9 +6097,6 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
     if is_root_flow_block && matches!(block, Block::PageBreak | Block::ColumnBreak) {
         ctx.body_floats.clear();
     }
-    if is_root_flow_block && !section_alignment::leaves_flow_gap_unchanged(block) {
-        ctx.flow_at_page_top = false;
-    }
     if is_root_flow_block && matches!(block, Block::PageBreak) {
         advance_flow_body_alignment(out, ctx);
     }
@@ -6104,7 +6105,7 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             out.push_str("#v(0pt, weak: true)\n");
             let _ = writeln!(out, "#v({}pt, weak: false)", format_f64(after));
             ctx.flow_previous_after_spacing = after;
-        } else if !section_alignment::leaves_flow_gap_unchanged(block) {
+        } else if !leaves_flow_gap_unchanged(block, is_root_flow_block, ctx) {
             ctx.flow_previous_after_spacing = 0.0;
         }
     }
@@ -6135,47 +6136,7 @@ fn generate_block_inner(
             out.push_str("#pagebreak()\n");
             Ok(())
         }
-        Block::FloatingTable(floating_table) => {
-            let offset_x: f64 = floating_table.frame.x.unwrap_or_default();
-            let offset_y: f64 = floating_table.frame.y.unwrap_or_default();
-            let _ = writeln!(
-                out,
-                "#place(top + left, dx: {}pt, dy: {}pt)[",
-                format_f64(offset_x),
-                format_f64(offset_y)
-            );
-            // Only a table placed at the flow root has root paragraphs after
-            // it to wrap around it.
-            // TODO(text-anchored floats are placed from the top margin, #2236):
-            // such a table is drawn where its anchor paragraph is only at the
-            // top of a page, so only there does the text wrap around it.
-            let drawn_at_its_anchor: bool =
-                !floating_table.frame.anchored_to_text || ctx.flow_at_page_top;
-            let wrap: Option<float_wrap::BodyFloat> = ctx
-                .float_wrap_text_area_pt
-                .filter(|_| ctx.in_flow_body && ctx.block_depth == 1 && drawn_at_its_anchor)
-                .map(|(width_pt, height_pt)| {
-                    let id: usize = ctx.next_body_float_id;
-                    ctx.next_body_float_id += 1;
-                    float_wrap::BodyFloat::new(
-                        id,
-                        float_wrap::FloatExtent::of_table(floating_table),
-                        width_pt,
-                        height_pt,
-                        false,
-                    )
-                });
-            if let Some(wrap) = wrap {
-                float_wrap::write_float_top_label(out, wrap.id());
-            }
-            let result: Result<(), ConvertError> = generate_table(out, &floating_table.table, ctx);
-            if let Some(wrap) = wrap {
-                float_wrap::write_float_bottom_label(out, wrap.id());
-                ctx.body_floats.push(wrap);
-            }
-            out.push_str("]\n");
-            result
-        }
+        Block::FloatingTable(floating_table) => generate_floating_table(out, floating_table, ctx),
         Block::TextFrame(frame) => generate_text_frame(out, frame, ctx),
         Block::Table(table) => {
             // Word gives a table no vertical spacing of its own: the gap above
@@ -6647,6 +6608,170 @@ fn generate_floating_image_content(out: &mut String, image: &ImageData, path: &s
     }
 }
 
+/// Whether a root text-anchored floating table leaves no room beside it in
+/// the one text column, so that Word starts every line of its anchor
+/// paragraph and after it that meets it below it. Such a table is laid out in
+/// the flow, where Typst continues it on the next page as Word does (issue
+/// #2236). A table hung above its anchor is placed, as the flow cannot go back
+/// up to it.
+fn floating_table_lays_out_in_flow(
+    floating_table: &FloatingTable,
+    at_flow_root: bool,
+    ctx: &GenCtx,
+) -> bool {
+    floating_table.frame.anchored_to_text
+        && at_flow_root
+        && floating_table.frame.y.unwrap_or_default() >= 0.0
+        && ctx.float_wrap_text_area_pt.is_some_and(|(width_pt, _)| {
+            float_wrap::leaves_no_room_beside(
+                float_wrap::FloatExtent::of_table(floating_table),
+                width_pt,
+            )
+        })
+}
+
+/// Whether `block` leaves the gap between the flow blocks around it as it
+/// was, taking no flow space of its own. A floating table laid out in the
+/// flow takes some.
+fn leaves_flow_gap_unchanged(block: &Block, at_flow_root: bool, ctx: &GenCtx) -> bool {
+    section_alignment::leaves_flow_gap_unchanged(block)
+        && !matches!(block, Block::FloatingTable(table)
+            if floating_table_lays_out_in_flow(table, at_flow_root, ctx))
+}
+
+/// Draw a `w:tblpPr` floating table where Word does. A margin- or
+/// page-anchored table's offsets are measured from the text area's top left.
+/// A text-anchored one hangs `y` below the top edge of its anchor paragraph,
+/// the one after it (issue #2236). That edge is the end of the gap after the
+/// block before the table: Word's exports of docxide-pdf's `case32` and
+/// `empty-float-float-indent-*` add that block's `w:after` to the offset and
+/// not the anchor paragraph's own `w:before`.
+///
+/// A text-anchored table that leaves no room beside it is laid out in the
+/// flow, after fixed space as tall as its offset, which adds to the gap before
+/// it rather than merging with it. Word continues such a table on the next
+/// page when it runs past the text area, as its exports of docxide-pdf's
+/// `scraped/bulgarian_road_safety_program` and
+/// `scraped/croatian_grant_guidelines` show, which a `#place` cannot, and
+/// starts the anchor paragraph below its bottom edge. Any other text-anchored
+/// table is placed by a `#place` without a vertical alignment, which finds the
+/// anchor in the flow. As for a text-anchored text frame, the gap is collapsed
+/// to nothing above the table and added to its offset, and a zero-height block
+/// after it lays the gap again. At the flow root, the paragraphs after a
+/// placed table wrap around it (issue #2229).
+///
+/// TODO(anchor lines above a full-width table's offset): Word keeps a line of
+/// the anchor paragraph that ends above the table's top edge above it, as the
+/// wrap does beside a placed table; here the whole paragraph starts below the
+/// table. No corpus document hangs a full-width table more than a line below
+/// a non-empty anchor.
+fn generate_floating_table(
+    out: &mut String,
+    floating_table: &FloatingTable,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let offset_x: f64 = floating_table.frame.x.unwrap_or_default();
+    let offset_y: f64 = floating_table.frame.y.unwrap_or_default();
+    if floating_table_lays_out_in_flow(
+        floating_table,
+        ctx.in_flow_body && ctx.block_depth == 1,
+        ctx,
+    ) {
+        return generate_floating_table_in_flow(out, floating_table, offset_x, offset_y, ctx);
+    }
+    // A vertically centred section writes its own explicit gaps between root
+    // blocks; there the table lands below them.
+    let anchor_gap: Option<f64> = std::mem::take(&mut ctx.flow_anchor_gap_pt)
+        .filter(|_| ctx.block_depth == 1 && !ctx.preserve_page_after_spacing);
+    if floating_table.frame.anchored_to_text {
+        if anchor_gap.is_some() {
+            out.push_str("#v(0pt, weak: true)\n");
+        }
+        let _ = writeln!(
+            out,
+            "#place(left, dx: {}pt, dy: {}pt)[",
+            format_f64(offset_x),
+            format_f64(offset_y + anchor_gap.unwrap_or(0.0))
+        );
+    } else {
+        let _ = writeln!(
+            out,
+            "#place(top + left, dx: {}pt, dy: {}pt)[",
+            format_f64(offset_x),
+            format_f64(offset_y)
+        );
+    }
+    // Only a table placed at the flow root has root paragraphs after it to
+    // wrap around it.
+    let wrap: Option<float_wrap::BodyFloat> = ctx
+        .float_wrap_text_area_pt
+        .filter(|_| ctx.in_flow_body && ctx.block_depth == 1)
+        .map(|(width_pt, height_pt)| {
+            let id: usize = ctx.next_body_float_id;
+            ctx.next_body_float_id += 1;
+            float_wrap::BodyFloat::new(
+                id,
+                float_wrap::FloatExtent::of_table(floating_table),
+                width_pt,
+                height_pt,
+                false,
+            )
+        });
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_top_label(out, wrap.id());
+    }
+    let result: Result<(), ConvertError> = generate_table(out, &floating_table.table, ctx);
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_bottom_label(out, wrap.id());
+        ctx.body_floats.push(wrap);
+    }
+    out.push_str("]\n");
+    if let Some(gap) = anchor_gap {
+        let _ = writeln!(
+            out,
+            "#block(height: 0pt, above: 0pt, below: {}pt)",
+            format_f64(gap)
+        );
+    }
+    result
+}
+
+/// Lay a text-anchored floating table that leaves no room beside it out in
+/// the flow, `offset_y` below the end of the gap before it and `offset_x`
+/// from the text area's left edge. Its rows may continue on the next page, as
+/// a flow table's do. `offset_x` already places the table where its
+/// `w:tblPr/w:jc` puts it, so the table is not aligned again.
+fn generate_floating_table_in_flow(
+    out: &mut String,
+    floating_table: &FloatingTable,
+    offset_x: f64,
+    offset_y: f64,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    tracing::debug!(
+        offset_x_pt = offset_x,
+        offset_y_pt = offset_y,
+        rows = floating_table.table.rows.len(),
+        "laying a text-anchored floating table out in the flow"
+    );
+    if offset_y > 0.0 {
+        write_explicit_vertical_space(out, offset_y);
+    }
+    let _ = writeln!(
+        out,
+        "#block(width: 100%, above: 0pt, below: 0pt, inset: (left: {}pt))[",
+        format_f64(offset_x)
+    );
+    let mut table: Table = floating_table.table.clone();
+    table.alignment = None;
+    let enclosing_rows_may_split: bool = ctx.table_rows_may_split;
+    ctx.table_rows_may_split = ctx.flow_body_is_breakable;
+    let result: Result<(), ConvertError> = generate_table(out, &table, ctx);
+    ctx.table_rows_may_split = enclosing_rows_may_split;
+    out.push_str("]\n");
+    result
+}
+
 /// Draw a lifted `w:framePr` frame where Word does (issue #2231): `y` below
 /// its anchor, which a `#place` without a vertical alignment finds in the
 /// flow, and `x` from the text area's left edge. At the flow root, the
@@ -6675,7 +6800,7 @@ fn generate_text_frame(
     }
     // A vertically centred section writes its own explicit gaps between root
     // blocks; there the frame lands below them.
-    let anchor_gap: Option<f64> = std::mem::take(&mut ctx.text_frame_anchor_gap_pt)
+    let anchor_gap: Option<f64> = std::mem::take(&mut ctx.flow_anchor_gap_pt)
         .filter(|_| ctx.block_depth == 1 && !ctx.preserve_page_after_spacing);
     if anchor_gap.is_some() {
         // The strongest weak spacing replaces the gap the previous block

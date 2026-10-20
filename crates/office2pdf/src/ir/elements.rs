@@ -1352,8 +1352,10 @@ pub struct FloatingTable {
 }
 
 /// Positioning for a DOCX floating table. Before section resolution, `x` and
-/// `y` are offsets from their corresponding anchors; afterwards they are
-/// offsets from the top-left of the page text area and both anchors are Text.
+/// `y` are offsets from their corresponding anchors. Afterwards both anchors
+/// are Text, `x` is an offset from the left of the page text area, and `y` is
+/// an offset from its top, or from the anchor paragraph's top edge when
+/// `anchored_to_text` is set.
 #[derive(Debug, Clone)]
 pub struct FloatingTableFrame {
     pub x: Option<f64>,
@@ -1370,7 +1372,10 @@ pub struct FloatingTableFrame {
     pub right_from_text: f64,
     /// Whether `w:vertAnchor` is `text`, hanging the table from its anchor
     /// paragraph. Section resolution keeps this while it rewrites
-    /// `vertical_anchor`.
+    /// `vertical_anchor`, except for a table aligned with `w:tblpYSpec`, which
+    /// it aligns in the text area and clears this for. The renderer measures
+    /// `y` from the top edge of that paragraph while this is set, rather than
+    /// from the text area's (issue #2236).
     pub anchored_to_text: bool,
 }
 
