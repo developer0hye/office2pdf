@@ -299,12 +299,20 @@ struct GenCtx {
     /// Whether nothing that takes flow space has been written yet in a
     /// section that starts a page, so the next block's top is the text area's.
     flow_at_page_top: bool,
-    /// Set for the root text frame `generate_block` is about to write: the gap
-    /// after the flow block before it, when there is one (issue #2231).
+    /// Set for the root text-anchored text frame `generate_block` is about to
+    /// write: the gap after the flow block before it, when there is one
+    /// (issue #2231). A top-margin frame box hangs from no flow block, so it
+    /// never has one.
     text_frame_anchor_gap_pt: Option<f64>,
     /// The text area the previous flow section's floats wrapped in, whose
     /// text frames a continuous section in the same area keeps in force.
     carried_float_text_area_pt: Option<(f64, f64)>,
+    /// Whether the current flow section keeps an empty frame's box at the top
+    /// margin, which the section's full-width tables at the flow root clear
+    /// (issue #2231). docxide-pdf's `empty_frame_table_bands` keeps the boxes
+    /// to their own section too, and the check is a layout-time query that
+    /// every such table would otherwise pay for.
+    clears_top_margin_frame_boxes: bool,
 }
 
 impl GenCtx {
@@ -374,6 +382,7 @@ impl GenCtx {
             flow_at_page_top: false,
             text_frame_anchor_gap_pt: None,
             carried_float_text_area_pt: None,
+            clears_top_margin_frame_boxes: false,
         }
     }
 
@@ -734,6 +743,9 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
     if float_wrap::document_has_body_float(doc) {
         float_wrap::write_float_wrap_helper(&mut out);
     }
+    if float_wrap::document_has_top_margin_frame_box(doc) {
+        float_wrap::write_top_margin_frame_box_clearance_helper(&mut out);
+    }
 
     let mut ctx = GenCtx::new();
     ctx.document_default_tab_stop_pt = doc.styles.default_tab_stop_pt;
@@ -883,6 +895,7 @@ fn generate_flow_page(
         ctx.body_floats.clear();
     }
     ctx.float_wrap_text_area_pt = text_area_pt;
+    ctx.clears_top_margin_frame_boxes = float_wrap::has_top_margin_frame_box(&section_content);
 
     // Word keeps `w:spacing w:before` on the document's first body paragraph,
     // but Typst collapses leading block spacing at a page boundary, pulling the
@@ -949,6 +962,7 @@ fn generate_flow_page(
     ctx.preserve_page_after_spacing = false;
     ctx.body_floats.retain(float_wrap::BodyFloat::is_text_frame);
     ctx.carried_float_text_area_pt = ctx.float_wrap_text_area_pt.take();
+    ctx.clears_top_margin_frame_boxes = false;
     ctx.flow_at_page_top = false;
     reset_flow_body_alignment(out, ctx);
     Ok(())
@@ -5442,11 +5456,13 @@ fn generate_blocks_with_layout_space_before(
     Ok(())
 }
 
-/// The gap Typst lays after the flow block before the text frame at
-/// `index`, or `None` when no block before it on its page or column takes
-/// flow space (issue #2231).
+/// The gap Typst lays after the flow block before the text-anchored text
+/// frame at `index`, or `None` when no block before it on its page or column
+/// takes flow space (issue #2231). A top-margin frame box is placed from the
+/// top of the text area, not from the flow, so it gets `None` too.
 fn text_frame_anchor_gap(blocks: &[Block], index: usize) -> Option<f64> {
-    if !matches!(blocks[index], Block::TextFrame(_)) {
+    if !matches!(&blocks[index], Block::TextFrame(frame) if frame.vertical_anchor == FrameAnchor::Text)
+    {
         return None;
     }
     let previous: &Block = blocks[..index]
@@ -6099,6 +6115,15 @@ fn generate_block_inner(
             // column so a `w:tblPr/w:jc` table still centres in it, and the
             // table's own `auto` gaps vanish against the wrapper's edges, where
             // the same routine drops weak spacing that no frame precedes.
+            let column_width_pt: Option<f64> = ctx
+                .float_wrap_text_area_pt
+                .filter(|_| ctx.clears_top_margin_frame_boxes && ctx.block_depth == 1)
+                .map(|(width_pt, _)| width_pt);
+            if column_width_pt
+                .is_some_and(|width_pt| table.column_widths.iter().sum::<f64>() >= width_pt - 0.05)
+            {
+                float_wrap::write_top_margin_frame_box_clearance(out);
+            }
             out.push_str("#block(width: 100%, above: 0pt, below: 0pt)[\n");
             // Only a table written straight into a breakable section body
             // meets a page break itself. A table inside a placed, boxed or
@@ -6542,6 +6567,9 @@ fn generate_text_frame(
     frame: &TextFrame,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
+    if frame.vertical_anchor != FrameAnchor::Text {
+        return generate_top_margin_frame_box(out, frame, ctx);
+    }
     // A vertically centred section writes its own explicit gaps between root
     // blocks; there the frame lands below them.
     let anchor_gap: Option<f64> = std::mem::take(&mut ctx.text_frame_anchor_gap_pt)
@@ -6633,6 +6661,63 @@ fn generate_text_frame(
             format_f64(gap)
         );
     }
+    result
+}
+
+/// Draw the box Word keeps at the top margin for a group of empty framed
+/// paragraphs (issue #2231): their lines at the frame's width, placed from the
+/// top of the text area on the page the group lands on. At the root of a
+/// one-column flow that pages, labels mark the box's top edge and its bottom
+/// edge, `w:vSpace` below it, which a full-width table that starts between
+/// them clears. The box takes no flow space.
+///
+/// TODO(body text beside an empty frame's box, #2355): Word lays a body line
+/// the box meets out on both sides of it, as docxide-pdf's
+/// `empty-frame-control` shows; here the line runs as though the box were
+/// absent.
+fn generate_top_margin_frame_box(
+    out: &mut String,
+    frame: &TextFrame,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    // A continuous section's frame is a `#move` whose top is not the page's
+    // text area top.
+    let labelled: bool = ctx.in_flow_body
+        && ctx.block_depth == 1
+        && ctx.flow_body_is_breakable
+        && ctx.float_wrap_text_area_pt.is_some();
+    let _ = writeln!(
+        out,
+        "#place(top + left, dx: {}pt, dy: {}pt)[",
+        format_f64(frame.x),
+        format_f64(frame.y)
+    );
+    if labelled {
+        float_wrap::write_top_margin_frame_box_label(out, "top");
+    }
+    let _ = writeln!(
+        out,
+        "#block(width: {}pt, above: 0pt, below: 0pt)[",
+        format_f64(frame.width)
+    );
+    let enclosing_measure_pt: Option<f64> = ctx.available_measure_pt.replace(frame.width);
+    let result: Result<(), ConvertError> = frame
+        .content
+        .iter()
+        .try_for_each(|block| generate_block(out, block, ctx));
+    ctx.available_measure_pt = enclosing_measure_pt;
+    out.push_str("]\n");
+    if frame.vertical_space > 0.0 {
+        let _ = writeln!(
+            out,
+            "#block(height: {}pt, above: 0pt, below: 0pt)",
+            format_f64(frame.vertical_space)
+        );
+    }
+    if labelled {
+        float_wrap::write_top_margin_frame_box_label(out, "bottom");
+    }
+    out.push_str("]\n");
     result
 }
 

@@ -1005,6 +1005,38 @@ pub(super) fn body_text_frame(frame: &docx_rs::FrameProperty) -> Option<TextFram
         && frame.y_align.is_none()
         && !matches!(frame.wrap.as_deref(), Some("none" | "notBeside"));
     hangs_below_text.then(|| TextFrame {
+        vertical_anchor: FrameAnchor::Text,
+        y: twips_to_pt(y),
+        height: twips_to_pt(height as i32),
+        exact_height: frame.h_rule.as_deref() == Some("exact"),
+        ..frame_box(frame, width)
+    })
+}
+
+/// The box of a `w:framePr` frame at the top margin, `w:w` wide and as tall
+/// as the paragraphs the caller fills in, for a group of empty paragraphs
+/// whose frame Word lifts out of the flow. Word 2013 and later keep that box
+/// though the paragraphs take no flow lines: its exports of docxide-pdf's
+/// `empty-margin-frame-15-*` cases start the full-width table on the frame's
+/// page one line lower per framed paragraph, where the compatibility-mode-14
+/// exports leave the table at the top margin (issue #2231). A frame that
+/// states no `w:vAnchor` is margin-anchored, as docxide-pdf's Word probe
+/// found.
+///
+/// FIXME(unprobed frame offsets): only frames at the top margin itself, with
+/// no `w:y` and no `w:yAlign`, have a Word reference.
+pub(super) fn top_margin_frame_box(frame: &docx_rs::FrameProperty) -> Option<TextFrame> {
+    let width: u32 = frame.w.filter(|&width| width > 0)?;
+    let at_top_margin: bool = matches!(frame.v_anchor.as_deref(), None | Some("margin"))
+        && frame.y.is_none_or(|y| y == 0)
+        && frame.y_align.is_none();
+    at_top_margin.then(|| frame_box(frame, width))
+}
+
+/// A frame `width_twips` wide at its horizontal place, its top at the top
+/// margin and no taller than its content.
+fn frame_box(frame: &docx_rs::FrameProperty, width_twips: u32) -> TextFrame {
+    TextFrame {
         content: Vec::new(),
         x: frame.x.map(twips_to_pt).unwrap_or(0.0),
         horizontal_anchor: frame_anchor(frame.h_anchor.as_deref()),
@@ -1015,27 +1047,34 @@ pub(super) fn body_text_frame(frame: &docx_rs::FrameProperty) -> Option<TextFram
             "outside" => Some(FrameAlign::End),
             align => frame_align(align),
         }),
-        y: twips_to_pt(y),
-        width: twips_to_pt(width as i32),
-        height: twips_to_pt(height as i32),
-        exact_height: frame.h_rule.as_deref() == Some("exact"),
+        vertical_anchor: FrameAnchor::Margin,
+        y: 0.0,
+        width: twips_to_pt(width_twips as i32),
+        height: 0.0,
+        exact_height: false,
         horizontal_space: frame.h_space.map(twips_to_pt).unwrap_or(0.0).max(0.0),
         vertical_space: frame.v_space.map(twips_to_pt).unwrap_or(0.0).max(0.0),
-    })
+    }
 }
 
 /// Measure each body text frame's `x` from the text area's left edge, where
-/// the renderer's `#place` starts. Its `y` stays an offset from the frame's
-/// place in the flow, which only layout knows.
+/// the renderer's `#place` starts. Its `y` stays an offset from its vertical
+/// anchor: a text-anchored frame's place in the flow is known only to layout.
+///
+/// A box at the top margin that lies wholly beside the text area is dropped:
+/// no body text or table can meet it, and Word's export of docxide-pdf's
+/// `empty-margin-frame-off-page` leaves the table after one at the top
+/// margin.
 ///
 /// TODO(text frames in multi-column sections): a frame's `#place` starts at
 /// its column's left edge, which is the text area's only in the first column.
 fn resolve_body_text_frame_positions(
-    blocks: &mut [Block],
+    blocks: &mut Vec<Block>,
     page_size: &PageSize,
     margins: &Margins,
 ) {
-    for block in blocks {
+    let text_width: f64 = (page_size.width - margins.left - margins.right).max(0.0);
+    for block in blocks.iter_mut() {
         let Block::TextFrame(frame) = block else {
             continue;
         };
@@ -1054,6 +1093,11 @@ fn resolve_body_text_frame_positions(
         frame.horizontal_anchor = FrameAnchor::Text;
         frame.horizontal_align = None;
     }
+    blocks.retain(|block| {
+        !matches!(block, Block::TextFrame(frame) if frame.vertical_anchor == FrameAnchor::Margin
+            && (frame.x - frame.horizontal_space >= text_width
+                || frame.x + frame.width + frame.horizontal_space <= 0.0))
+    });
 }
 
 fn resolve_body_floating_table_positions(

@@ -46,6 +46,7 @@ use self::sections::extract_page_size;
 use self::sections::{
     HeaderFooterAssets, HeaderFooterStyleContext, LinkedFirstStories, SectionHeaderFooterInputs,
     SectionOverrides, body_text_frame, build_flow_page_from_section, build_header_footer_assets,
+    top_margin_frame_box,
 };
 #[cfg(test)]
 use self::styles::parse_ligatures_value;
@@ -552,6 +553,9 @@ impl Parser for DocxParser {
         // them on without showing them (issue #2224).
         let mut linked_first_stories = LinkedFirstStories::default();
         let mut section_layout_index: usize = 0;
+        // The body index at which the frame of the last top-margin frame box
+        // opened starts, so the frame's later lines join that box.
+        let mut open_frame_box: Option<usize> = None;
         for (idx, child) in docx.document.children.iter().enumerate() {
             // A removed paragraph mark merges into the next paragraph; zero-width
             // bookmark/comment markers leave it pending. Tables, TOCs, and
@@ -596,7 +600,17 @@ impl Parser for DocxParser {
                             body_index = idx,
                             "Empty framed paragraph leaves no body line"
                         );
-                        tagged.clear();
+                        let lines: Vec<TaggedElement> = std::mem::take(&mut tagged);
+                        if word_compatibility_mode == WordCompatibilityMode::Word2013OrLater {
+                            tagged = keep_line_in_top_margin_frame_box(
+                                &mut elements,
+                                &mut open_frame_box,
+                                para,
+                                lines,
+                                &docx.document.children,
+                                idx,
+                            );
+                        }
                     } else if let Some(frame) =
                         lifted_text_frame(para, &tagged, &docx.document.children, idx)
                     {
@@ -2297,6 +2311,70 @@ fn is_empty_lifted_frame(
         && frame_mates.all(|child| {
             matches!(child, docx_rs::DocumentChild::Paragraph(mate) if shows_only_spaces(mate))
         })
+}
+
+/// Keep an empty framed paragraph's line in the box Word 2013 and later keep
+/// for its frame at the top margin ([`top_margin_frame_box`]), returning the
+/// box when this paragraph opens it. The frame's first paragraph with a line
+/// opens the box, and its later lines join it. A paragraph whose mark is
+/// hidden or that ends its section adds no line: Word's export of
+/// docxide-pdf's `empty-margin-frame-hidden-marks` keeps no box, and that of
+/// `empty-margin-frame-15-one-empty` keeps one line for an empty paragraph
+/// and the section mark after it (issue #2231).
+///
+/// `open_box` is the body index the frame of the box opened last starts at.
+///
+/// FIXME(docx-rs reads no `w:val` on `w:vanish`): a paragraph mark stating
+/// `w:vanish w:val="0"` counts as hidden.
+fn keep_line_in_top_margin_frame_box(
+    elements: &mut [TaggedElement],
+    open_box: &mut Option<usize>,
+    para: &docx_rs::Paragraph,
+    converted: Vec<TaggedElement>,
+    body: &[docx_rs::DocumentChild],
+    index: usize,
+) -> Vec<TaggedElement> {
+    let Some(frame_property) = para.property.frame_property.as_ref() else {
+        return Vec::new();
+    };
+    if para.property.section_property.is_some() || para.property.run_property.vanish.is_some() {
+        return Vec::new();
+    }
+    let Some(mut frame) = top_margin_frame_box(frame_property) else {
+        return Vec::new();
+    };
+    let lines: Vec<Block> = converted
+        .into_iter()
+        .flat_map(|element| match element {
+            TaggedElement::Plain(blocks) => blocks,
+            TaggedElement::ListParagraph { .. } => Vec::new(),
+        })
+        .collect();
+    let frame_start: usize = index
+        - body[..index]
+            .iter()
+            .rev()
+            .take_while(|child| leading_frame_property(child) == Some(frame_property))
+            .count();
+    if *open_box == Some(frame_start)
+        && let Some(TaggedElement::Plain(blocks)) = elements.last_mut()
+        && let [Block::TextFrame(open)] = blocks.as_mut_slice()
+    {
+        open.content.extend(lines);
+        return Vec::new();
+    }
+    tracing::debug!(
+        format = "DOCX",
+        body_index = index,
+        x_pt = frame.x,
+        width_pt = frame.width,
+        "Empty frame keeps its box at the top margin"
+    );
+    frame.content = lines;
+    *open_box = Some(frame_start);
+    vec![TaggedElement::Plain(vec![Block::TextFrame(Box::new(
+        frame,
+    ))])]
 }
 
 fn run_shows_only_spaces(run: &Run) -> bool {

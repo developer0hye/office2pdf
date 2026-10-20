@@ -5511,6 +5511,28 @@ fn a_group_of_empty_frames_takes_no_lines_after_a_table() {
     );
 }
 
+/// docxide-pdf `empty-margin-frame-15-two-empty`, unmodified: the same table,
+/// empty frame group and greeting as `empty-margin-frame-14-two-empty`, in
+/// compatibility mode 15. There Word keeps the frame's box at the top margin,
+/// two 10pt Tahoma lines tall, and starts the table below it: "Public left"
+/// at 129.30pt and the greeting at 225.83pt, 24pt lower than in mode 14; main
+/// left both where mode 14 has them (issue #2231). The box's lines take the
+/// height of whichever face stands in for Tahoma, up to about 1.5pt short of
+/// Word's two.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_full_width_table_starts_below_an_empty_frames_box() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/empty_frame_box.docx");
+    for (text, word) in [("Public left", 129.30), ("Public greeting", 225.83)] {
+        let baseline: f64 = docx_fixture_baseline_pt(fixture, 0, text);
+        assert!(
+            (baseline - word).abs() < 1.5,
+            "{text:?} must sit near Word's {word}pt baseline, got {baseline}pt"
+        );
+    }
+}
+
 /// docxide-pdf `cont-first-first-fits`, unmodified: 38 exact 16pt lines, an
 /// empty framed paragraph ending the section, and a continuous section whose
 /// first paragraph states 24pt before an exact 16pt line. Word puts its

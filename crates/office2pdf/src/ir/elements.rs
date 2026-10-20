@@ -1298,10 +1298,12 @@ pub struct FloatingShape {
     pub wrap_mode: WrapMode,
 }
 
-/// A body paragraph in a `w:framePr` frame that hangs `w:y` below the
-/// paragraph's own place in the flow (`w:vAnchor="text"`) with a stated
-/// height. Word draws it in its frame, out of the text flow, and lays the text
-/// after it beside the frame (issue #2231).
+/// Body paragraphs Word lifts out of the text flow into a `w:framePr` frame
+/// (issue #2231). One that hangs `w:y` below the paragraph's own place in the
+/// flow (`w:vAnchor="text"`) with a stated height is drawn in its frame, and
+/// the text after it lies beside the frame. A group of empty paragraphs in a
+/// frame at the top margin keeps the frame's box there, which a full-width
+/// table on its page starts below.
 #[derive(Debug, Clone)]
 pub struct TextFrame {
     pub content: Vec<Block>,
@@ -1313,8 +1315,10 @@ pub struct TextFrame {
     pub horizontal_anchor: FrameAnchor,
     /// `w:xAlign` in place of `w:x`.
     pub horizontal_align: Option<FrameAlign>,
-    /// `w:y`: how far below the top of the paragraph's place in the flow the
-    /// frame starts, in points.
+    /// What `y` is measured from: `Text`, the top of the paragraph's place in
+    /// the flow, or `Margin`, the top margin of the page the frame lands on.
+    pub vertical_anchor: FrameAnchor,
+    /// `w:y`: how far below `vertical_anchor` the frame starts, in points.
     pub y: f64,
     /// `w:w` in points.
     pub width: f64,
