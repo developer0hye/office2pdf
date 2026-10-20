@@ -27,6 +27,12 @@
 //! One that starts above a floating table runs over it, and one that starts
 //! above a text frame moves below the frame (issue #2231).
 //!
+//! A frame Word keeps at a fixed place on its page and keeps text off the
+//! sides of (`w:wrap` `notBeside` or `none`) leaves no room beside it: a
+//! root paragraph that meets its band starts below it. A paragraph moved
+//! below one band can meet another, so the bands are checked until none
+//! moves it further (issue #2231).
+//!
 //! Word 2013 and later also keep the box of a group of empty framed
 //! paragraphs at the top margin, though the paragraphs take no flow lines,
 //! and start a full-width table on the box's page below it (issue #2231).
@@ -172,6 +178,18 @@ impl BodyFloat {
         }
     }
 
+    /// The wrap of a frame that keeps text off its sides: a paragraph that
+    /// meets it starts below it, until the paragraphs after it have advanced
+    /// `reach_pt`.
+    pub(super) fn below(id: usize, reach_pt: f64) -> Self {
+        Self {
+            id,
+            side: FloatSide::Below,
+            reach_pt,
+            text_frame: true,
+        }
+    }
+
     pub(super) fn id(&self) -> usize {
         self.id
     }
@@ -194,14 +212,17 @@ pub(super) fn advance_past_floats(floats: &mut Vec<BodyFloat>, advance_pt: f64) 
     });
 }
 
-/// Whether any flow section places a body floating table or text-anchored
-/// text frame at its root, which is when the wrap helper has to be defined.
+/// Whether any flow section places a body floating table, text-anchored text
+/// frame or frame that keeps text off its sides at its root, which is when
+/// the wrap helper has to be defined.
 pub(super) fn document_has_body_float(doc: &Document) -> bool {
     doc.pages.iter().any(|page| match page {
         Page::Flow(flow) | Page::FlowContinuous(flow) => {
             flow.content.iter().any(|block| match block {
                 Block::FloatingTable(_) => true,
-                Block::TextFrame(frame) => frame.vertical_anchor == FrameAnchor::Text,
+                Block::TextFrame(frame) => {
+                    frame.vertical_anchor == FrameAnchor::Text || frame.text_below
+                }
                 _ => false,
             })
         }
@@ -218,6 +239,9 @@ pub(super) fn document_has_body_float(doc: &Document) -> bool {
 /// below it, the paragraph restarts at the float's bottom edge plus its own
 /// before-gap, as Word restarts a line that has no room. The move is a top
 /// pad rather than `v()`: Typst drops spacing that opens a block's content.
+/// The floats are checked again after a move, which can bring the first line
+/// into a float checked before it or out of one, until a pass moves it no
+/// further; the sides it lies beside are those of that last pass.
 ///
 /// A paragraph whose first line ends above a text frame (`pushes`) but which
 /// is tall enough to reach it also restarts below the frame. Its height is
@@ -230,6 +254,9 @@ pub(super) fn write_float_wrap_helper(out: &mut String) {
          let at = here().position(); \
          let wrap(width) = {{ \
          let push = 0pt; let left = 0pt; let right = 0pt; let height = none; \
+         let moved = true; let passes = 0; \
+         while moved and passes < floats.len() {{ \
+         moved = false; passes += 1; let start = push; left = 0pt; right = 0pt; \
          for float in floats {{ \
          let tops = query(label(\"o2p-float-\" + str(float.id) + \"-top\")); \
          let bottoms = query(label(\"o2p-float-\" + str(float.id) + \"-bottom\")); \
@@ -244,6 +271,7 @@ pub(super) fn write_float_wrap_helper(out: &mut String) {
          else if float.pushes and top.page == at.page and line-top < top.y {{ \
          if height == none {{ height = measure(body, width: width).height }}; \
          if line-top + height > top.y {{ push = calc.max(push, bottom.y + before - at.y) }} }} }} }}; \
+         moved = push > start }}; \
          pad(top: push, left: left, right: right, body) }}; \
          if floats.any(float => float.pushes) {{ layout(size => wrap(size.width)) }} \
          else {{ wrap(auto) }} }}"
@@ -263,7 +291,8 @@ pub(super) fn document_has_top_margin_frame_box(doc: &Document) -> bool {
 /// top margin.
 pub(super) fn has_top_margin_frame_box(blocks: &[Block]) -> bool {
     blocks.iter().any(|block| {
-        matches!(block, Block::TextFrame(frame) if frame.vertical_anchor != FrameAnchor::Text)
+        matches!(block, Block::TextFrame(frame) if frame.vertical_anchor != FrameAnchor::Text
+            && !frame.text_below)
     })
 }
 

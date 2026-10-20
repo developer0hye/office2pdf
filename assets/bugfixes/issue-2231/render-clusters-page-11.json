@@ -1,0 +1,2763 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 201.4848,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 46.32,
+        "x": 36.0,
+        "y": 425.52
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-4a2b65cb1041",
+      "region": "left"
+    },
+    {
+      "area_pt2": 196.7616,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 48.24,
+        "x": 36.0,
+        "y": 564.24
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-22ec45c1de2a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 164.9088,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 41.52,
+        "x": 36.0,
+        "y": 248.16
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-ea7d40fd98da",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 154.944,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 36.72,
+        "x": 36.0,
+        "y": 387.6
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-805ad637107b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 111.9744,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 30.96,
+        "x": 36.0,
+        "y": 703.68
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-b86a494a002b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 77.184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 46.56,
+        "x": 36.0,
+        "y": 478.32
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-2aba0cc60703",
+      "region": "left"
+    },
+    {
+      "area_pt2": 65.4912,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 41.52,
+        "x": 36.0,
+        "y": 300.96
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-b49647bea1cb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 57.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 36.72,
+        "x": 36.0,
+        "y": 440.16
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-43cce260bb54",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.3104,
+      "bbox_pt": {
+        "height": 0.96,
+        "width": 48.24,
+        "x": 36.0,
+        "y": 624.0
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-7d27ffbb51d5",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 42.048,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 12.72,
+        "x": 85.92,
+        "y": 763.2
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-368d544352ae",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 35.712,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 11.04,
+        "x": 36.0,
+        "y": 185.28
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-7a7a73e3e3be",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.3664,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 11.04,
+        "x": 36.0,
+        "y": 235.44
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-86d6833090ce",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.3184,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 8.64,
+        "x": 69.36,
+        "y": 478.32
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-70cb4cd9126b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 10.08,
+        "x": 35.76,
+        "y": 488.88
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-ee8ba0bb4985",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 10.08,
+        "x": 35.76,
+        "y": 729.12
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-c6ea637f33c2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.0144,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 10.8,
+        "x": 35.52,
+        "y": 539.28
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-c4c5d9ba2669",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 26.6112,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 11.04,
+        "x": 42.0,
+        "y": 361.92
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-f25d8ef6aee3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.6112,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 11.04,
+        "x": 42.0,
+        "y": 576.96
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-37403902ece8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.9776,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 7.2,
+        "x": 43.92,
+        "y": 311.04
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-746d63d05736",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.9776,
+      "bbox_pt": {
+        "height": 10.32,
+        "width": 7.2,
+        "x": 43.92,
+        "y": 526.08
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-2bf1d48efe9e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.96,
+        "x": 36.0,
+        "y": 615.12
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-b15f8171819a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.4016,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.08,
+        "x": 48.0,
+        "y": 45.6
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-ae65f543786e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.056,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 9.36,
+        "x": 75.36,
+        "y": 729.12
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-77368c794a0a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.96,
+        "x": 157.92,
+        "y": 761.28
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-3981da6ff817",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.5376,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.48,
+        "x": 78.96,
+        "y": 761.28
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-fbc51375ad27",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.48,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 5.76,
+        "x": 62.64,
+        "y": 235.44
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-61ef5053aff5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 5.52,
+        "width": 12.48,
+        "x": 137.76,
+        "y": 763.2
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-4bf6bff75921",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.1344,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.24,
+        "x": 36.24,
+        "y": 476.16
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-6e41d6e5f605",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.904,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 61.44,
+        "y": 298.8
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-3aea8ed9c24e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.904,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 43.44,
+        "y": 615.12
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-c28c3db72148",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.7888,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 62.4,
+        "y": 184.8
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-5b11696deacc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 4.8,
+        "x": 514.08,
+        "y": 762.72
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-d641fe4e1775",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.4432,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.48,
+        "x": 36.0,
+        "y": 210.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-1b7e22e439ac",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.4432,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.48,
+        "x": 69.12,
+        "y": 273.84
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-a3cf91503343",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.4432,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.48,
+        "x": 71.52,
+        "y": 450.96
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-f54ffa997cc4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.4432,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.48,
+        "x": 61.2,
+        "y": 488.88
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-71953dfbb614",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.4432,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.48,
+        "x": 69.12,
+        "y": 590.16
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-984ec2a6d03f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.4432,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.48,
+        "x": 69.12,
+        "y": 628.08
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-f91b752c5c8d",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.8672,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 8.16,
+        "x": 35.76,
+        "y": 71.52
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-aa06bfac51b7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8672,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 8.16,
+        "x": 35.76,
+        "y": 109.44
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-385323fa368d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8672,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 8.16,
+        "x": 75.12,
+        "y": 147.36
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-8252f909236e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 46.08
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-e71ca749f870",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 46.08
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-5a4c03d8d9ff",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 84.0
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-ea15ff9f7249",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 84.0
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-d4b294cc781f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 122.16
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-2cc3cf504139",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 122.16
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-2b3687491270",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 160.08
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-ebc980e606fe",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 160.08
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-190b169977c5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 223.2
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-17a6ff16825f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 223.2
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-3a9f1627220f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 286.56
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-e95a377ee46c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 286.56
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-6ddbbb7d4505",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 324.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-66374727bf28",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 324.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-651b2fe54c7f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 362.4
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-7347ba7db414",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 362.4
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-544b7257325d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 400.32
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-8a5253daf23d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 400.32
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-e76b40e31d44",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 463.68
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-99b82f8c0d9e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 463.68
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-a23da2b47616",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 501.6
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-ac8e7c9be68e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 501.6
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-eb06ef5a0b4a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 539.52
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-92e544669126",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 539.52
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-7e1767a356f3",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 602.64
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-7aa876f391fe",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 602.64
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-30afa06447a3",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 180.24,
+        "y": 640.56
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-403a7605c3db",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.68,
+        "x": 244.8,
+        "y": 640.56
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-332196711aad",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.96,
+        "x": 133.2,
+        "y": 450.96
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-fcd610db4a0a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.96,
+        "x": 122.64,
+        "y": 488.88
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-7d2942e0763e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.96,
+        "x": 130.56,
+        "y": 590.16
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-c676f0f96965",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.96,
+        "x": 130.56,
+        "y": 628.08
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-93e5b9f5cea6",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 58.56
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-eea25966d8a5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 58.56
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-d8d1146e6ef2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 96.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-a42b7e589599",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 96.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-59580564271d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 134.4
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-577765fc4506",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 134.4
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-37b25bb9ca48",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 172.32
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-e5c93dcd4d84",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 172.32
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-891035fe9575",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 210.24
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-0bdebd509685",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 210.24
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-0f1674e9034f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 273.6
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-0c54692622d4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 273.6
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-e1cc6554829e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 336.72
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-367d74097b78",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 336.72
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-b3317f36da6f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 374.88
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-02a62bd3608b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 374.88
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-9829fa77e2e9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 412.8
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-edfec14fdbd2",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 412.8
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-41cb9d3aeb4d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 450.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-7b6e718c4220",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 450.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-c80cfe4179a5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 513.84
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-0e109caf1592",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 513.84
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-a50ad7806b27",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 551.76
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-b45cf48cdf6c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 551.76
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-ffa44e0b46cb",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 589.92
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-3600be20f3ea",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 589.92
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-a12367e298b0",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 653.04
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-50bfe91cb92a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 653.04
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-272e7b0a6ffb",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 179.76,
+        "y": 691.2
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-4a5d785b7c53",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.9456,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 244.56,
+        "y": 691.2
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-cb85037aef23",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.7152,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 54.24,
+        "y": 438.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-84153c1617a3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.7152,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 4.56,
+        "x": 201.36,
+        "y": 761.28
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-7f1577c5d388",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.4848,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 58.32,
+        "y": 45.84
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-fa62995b4bce",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4848,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 69.12,
+        "y": 83.76
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-4ffb0fea15c1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4848,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 35.76,
+        "y": 261.12
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-8b805fc1b36c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.4848,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 69.12,
+        "y": 324.24
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-666a28a49d2c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.4848,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 71.52,
+        "y": 501.36
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-4554d6bccbff",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.4848,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 61.2,
+        "y": 539.28
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-1423f5bc424b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.4848,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 69.12,
+        "y": 640.32
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-537adc0e1c4a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.4848,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 69.12,
+        "y": 678.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-2772e19fb1c8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.3696,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 8.4,
+        "x": 35.52,
+        "y": 121.68
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-18530ddb105a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.3696,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 8.4,
+        "x": 35.52,
+        "y": 159.84
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-433bd6676b2d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.3696,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 8.4,
+        "x": 74.88,
+        "y": 197.76
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-53ecff33f92e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.1392,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 36.48,
+        "y": 311.52
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-f553831c7ecc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.1392,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 36.48,
+        "y": 526.56
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-8ff251b31972",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.9088,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 6.0,
+        "x": 73.68,
+        "y": 187.44
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-71f553cc84a3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.88,
+        "x": 44.16,
+        "y": 73.44
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-fa96fda3c595",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.8512,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.88,
+        "x": 44.16,
+        "y": 111.36
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-c260630a2bfa",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 133.44,
+        "y": 501.36
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-e88e37948348",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 122.88,
+        "y": 539.28
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-54b69f81c7b1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 130.8,
+        "y": 640.32
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-7e866f9d63e7",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.6784,
+      "bbox_pt": {
+        "height": 7.44,
+        "width": 6.72,
+        "x": 130.8,
+        "y": 678.48
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-926353ffcd1d",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.44,
+        "x": 36.48,
+        "y": 362.16
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-68b6b425809a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.44,
+        "x": 36.48,
+        "y": 577.2
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-de08e06c04f8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 72.24,
+        "y": 212.4
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-d51d3aeb253f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 45.36,
+        "y": 275.76
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-ab53315bf199",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 105.36,
+        "y": 275.76
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-4b2493714724",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 47.76,
+        "y": 452.88
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-c7d77b50a75d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 108.0,
+        "y": 452.88
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-126139745314",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 97.44,
+        "y": 490.8
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-497c99ea6577",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 45.36,
+        "y": 592.08
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-789388699ecd",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 105.36,
+        "y": 592.08
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-210cf8c16de3",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 45.36,
+        "y": 630.0
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-0110aa70f461",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.16,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.44,
+        "x": 105.36,
+        "y": 630.0
+      },
+      "disposition": {
+        "issues": [
+          "#2354",
+          "#2363",
+          "#2364"
+        ],
+        "kind": "issue",
+        "note": "Reflow from page 1's remaining deviations: every line on this page keeps Word's line pitch and sits at one constant offset from Word (-50.6pt), and the first 3 Word lines of the page end the previous page here. Page 1 is shorter than Word's because the signature EMF is dropped (#2364), the secretary text box does not push the letter down (#2354) and the governor block's absent face gets no line box (#2363)."
+      },
+      "id": "p11-a63a7d23d923",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 11,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 137,
+    "duplicate": 0,
+    "total": 137,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

@@ -5411,6 +5411,7 @@ fn generate_blocks_with_layout_space_before(
         ctx.top_margin_frame_box_follows = matches!(
             blocks.get(index + 1),
             Some(Block::TextFrame(frame)) if frame.vertical_anchor != FrameAnchor::Text
+                && !frame.text_below
         );
         if !matches!(blocks[index], Block::TextFrame(_)) {
             ctx.frame_box_carry_text_bottom_pt = None;
@@ -6596,6 +6597,9 @@ fn generate_text_frame(
     frame: &TextFrame,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
+    if frame.text_below {
+        return generate_fixed_text_frame(out, frame, ctx);
+    }
     if frame.vertical_anchor != FrameAnchor::Text {
         return generate_top_margin_frame_box(out, frame, ctx);
     }
@@ -6690,6 +6694,97 @@ fn generate_text_frame(
             format_f64(gap)
         );
     }
+    result
+}
+
+/// Draw a frame Word keeps at a fixed place on its page and keeps body text
+/// off the sides of (issue #2231): its content at `x` and `y` from the text
+/// area's top left, `w:w` wide. At the root of a one-column flow, labels mark
+/// its band, `w:vSpace` above and below it, and a root paragraph after it on
+/// its page whose first line meets the band starts below it.
+///
+/// FIXME(auto frame width): Word makes a frame without `w:w` as wide as its
+/// widest line or table. Its paragraphs here span the text area's width from
+/// the frame's left edge, the width `measure` cannot find for blocks
+/// `100%` wide, so a line centred or aligned right in it lands further right.
+///
+/// TODO(text before a fixed frame on its page): Word keeps body text that
+/// comes before the frame in the document out of its band too; here only the
+/// paragraphs after it move, and a table after it does not.
+///
+/// TODO(band reaching the page's end): a paragraph whose first line would
+/// start below the band but end past the text area belongs on the next page;
+/// the wrap's top pad does not move it there, so it overhangs the bottom
+/// margin or, when the move would change its page, stays beside the band
+/// (bulk `tdf104394_lostTextbox`).
+fn generate_fixed_text_frame(
+    out: &mut String,
+    frame: &TextFrame,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let vertical_space: f64 = frame.vertical_space;
+    let _ = writeln!(
+        out,
+        "#place(top + left, dx: {}pt, dy: {}pt)[",
+        format_f64(frame.x),
+        format_f64(frame.y - vertical_space)
+    );
+    let wrap: Option<float_wrap::BodyFloat> = ctx
+        .float_wrap_text_area_pt
+        .filter(|_| ctx.in_flow_body && ctx.block_depth == 1)
+        .map(|(_, height_pt)| {
+            let id: usize = ctx.next_body_float_id;
+            ctx.next_body_float_id += 1;
+            float_wrap::BodyFloat::below(id, height_pt)
+        });
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_top_label(out, wrap.id());
+    }
+    let write_vertical_space = |out: &mut String| {
+        if vertical_space > 0.0 {
+            let _ = writeln!(
+                out,
+                "#block(height: {}pt, above: 0pt, below: 0pt)",
+                format_f64(vertical_space)
+            );
+        }
+    };
+    write_vertical_space(out);
+    let width: String = if frame.width > 0.0 {
+        format!("width: {}pt, ", format_f64(frame.width))
+    } else {
+        String::new()
+    };
+    let height: String = format_f64(frame.height);
+    if frame.exact_height {
+        let _ = writeln!(
+            out,
+            "#block({width}height: {height}pt, above: 0pt, below: 0pt)["
+        );
+    } else {
+        let _ = writeln!(
+            out,
+            "#block(above: 0pt, below: 0pt, stack(dir: ltr, box(height: {height}pt), \
+             block({width}above: 0pt, below: 0pt)["
+        );
+    }
+    out.push_str("#set align(top)\n");
+    let enclosing_measure_pt: Option<f64> = ctx.available_measure_pt;
+    if frame.width > 0.0 {
+        ctx.available_measure_pt = Some(frame.width);
+    }
+    let result: Result<(), ConvertError> = frame
+        .content
+        .iter()
+        .try_for_each(|block| generate_block(out, block, ctx));
+    ctx.available_measure_pt = enclosing_measure_pt;
+    out.push_str(if frame.exact_height { "]\n" } else { "]))\n" });
+    write_vertical_space(out);
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_bottom_label(out, wrap.id());
+        ctx.body_floats.push(wrap);
+    }
+    out.push_str("]\n");
     result
 }
 

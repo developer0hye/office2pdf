@@ -648,6 +648,78 @@ pub(super) fn build_style_map(
     map
 }
 
+/// Each paragraph style's `w:framePr`: its own, or else that of its nearest
+/// `w:basedOn` ancestor that states one, as docxide-pdf's style inheritance
+/// takes it. A paragraph's own `w:framePr` then overrides it attribute by
+/// attribute ([`effective_frame_property`]).
+///
+/// FIXME(unprobed style chain merge): no Word reference shows whether a
+/// derived style's `w:framePr` merges with its base style's attribute by
+/// attribute or replaces it.
+pub(super) fn paragraph_style_frames(
+    styles: &docx_rs::Styles,
+) -> HashMap<String, docx_rs::FrameProperty> {
+    let styles_by_id: HashMap<&str, &docx_rs::Style> = styles
+        .styles
+        .iter()
+        .map(|style| (style.style_id.as_str(), style))
+        .collect();
+    styles
+        .styles
+        .iter()
+        .filter(|style| style.style_type == docx_rs::StyleType::Paragraph)
+        .filter_map(|style| {
+            let frame: &docx_rs::FrameProperty =
+                based_on_chain(style, &styles_by_id)
+                    .into_iter()
+                    .find_map(|definition| definition.paragraph_property.frame_property.as_ref())?;
+            Some((style.style_id.clone(), frame.clone()))
+        })
+        .collect()
+}
+
+/// The `w:framePr` a paragraph with `property` sits in: `style_frame`, its
+/// paragraph style's, with each attribute the paragraph states itself in
+/// place of the style's, as docxide-pdf's `parse_frame_props` merges them.
+/// Word's export of docxide-pdf's scraped
+/// `massachusetts_community_sanitation` draws its letterhead lines in one
+/// frame though only the first states `w:hAnchor` and `w:hSpace` itself; the
+/// others take them from their style (issue #2231).
+///
+/// A frame that states nothing but its `w:wrap` places nothing: Word flows
+/// such a paragraph as a plain one, as docxide-pdf notes for a `Normal`
+/// style's `<w:framePr w:wrap="auto"/>`.
+pub(super) fn effective_frame_property(
+    property: &docx_rs::ParagraphProperty,
+    style_frame: Option<&docx_rs::FrameProperty>,
+) -> Option<docx_rs::FrameProperty> {
+    let own: Option<&docx_rs::FrameProperty> = property.frame_property.as_ref();
+    let frame: docx_rs::FrameProperty = match (own, style_frame) {
+        (None, None) => return None,
+        (Some(own), None) => own.clone(),
+        (None, Some(style)) => style.clone(),
+        (Some(own), Some(style)) => docx_rs::FrameProperty {
+            h: own.h.or(style.h),
+            h_rule: own.h_rule.clone().or_else(|| style.h_rule.clone()),
+            h_anchor: own.h_anchor.clone().or_else(|| style.h_anchor.clone()),
+            h_space: own.h_space.or(style.h_space),
+            v_anchor: own.v_anchor.clone().or_else(|| style.v_anchor.clone()),
+            v_space: own.v_space.or(style.v_space),
+            w: own.w.or(style.w),
+            wrap: own.wrap.clone().or_else(|| style.wrap.clone()),
+            x: own.x.or(style.x),
+            x_align: own.x_align.clone().or_else(|| style.x_align.clone()),
+            y: own.y.or(style.y),
+            y_align: own.y_align.clone().or_else(|| style.y_align.clone()),
+        },
+    };
+    let places_something: bool = docx_rs::FrameProperty {
+        wrap: None,
+        ..frame.clone()
+    } != docx_rs::FrameProperty::default();
+    places_something.then_some(frame)
+}
+
 /// The style and its same-type ancestors, from child to root.
 ///
 /// A cycle invalidates the whole parent chain for this style. Dropping the
