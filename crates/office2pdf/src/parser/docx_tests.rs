@@ -1559,6 +1559,7 @@ fn build_docx_with_styles_xml(document_xml: &str, styles_xml: &str) -> Vec<u8> {
 mod clearing_break_tests;
 #[path = "docx_contextual_spacing_tests.rs"]
 mod contextual_spacing_tests;
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "docx_floating_table_anchor_tests.rs"]
 mod floating_table_anchor_tests;
 #[path = "docx_floating_table_wrap_tests.rs"]
