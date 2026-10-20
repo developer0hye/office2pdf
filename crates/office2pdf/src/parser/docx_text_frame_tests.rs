@@ -1263,3 +1263,99 @@ fn a_frame_holding_what_a_placed_frame_cannot_stays_whole_in_the_flow() {
         );
     }
 }
+
+/// `content` in a block-level content control.
+fn content_control(content: &str) -> String {
+    format!(
+        r#"<w:sdt><w:sdtPr><w:id w:val="1"/></w:sdtPr><w:sdtContent>{content}</w:sdtContent></w:sdt>"#
+    )
+}
+
+/// A block-level content control (`w:sdt`) only marks up the paragraphs and
+/// tables in it, so their frames are laid out as if it were absent: a fixed
+/// frame at its page place, joining the paragraphs beside the control that
+/// share it, an offset frame below its anchor, and an empty frame with no
+/// line. Bulk `tdf148671` wraps three of its six page frames in controls
+/// (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn frames_in_a_block_content_control_are_laid_out_as_without_it() {
+    let fixed: String = page_frame("notBeside", "page", 2000, 1200, r#"w:w="3000""#);
+    let framed_table: String = format!(
+        r#"<w:tbl><w:tblPr><w:tblW w:w="2000" w:type="dxa"/></w:tblPr><w:tblGrid><w:gridCol w:w="2000"/></w:tblGrid><w:tr><w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/></w:tcPr>{}</w:tc></w:tr></w:tbl>"#,
+        paragraph(&fixed, "Framed cell")
+    );
+    let offset: String = offset_frame(600, 800, r#"w:hRule="exact" w:hAnchor="page" w:x="2000""#);
+    let empty: &str = r#"<w:framePr w:w="4659" w:wrap="auto" w:hAnchor="text" w:x="1701"/>"#;
+    let body_one: String = paragraph("", "Body one");
+    let body_two: String = paragraph("", "Body two");
+    // (case, each part of the body, the parts a control wraps).
+    let cases: [(&str, Vec<String>, std::ops::Range<usize>); 5] = [
+        (
+            "a fixed frame group in one control",
+            vec![
+                paragraph(&fixed, "Framed one"),
+                paragraph(&fixed, "Framed two"),
+                body_one.clone(),
+                body_two.clone(),
+            ],
+            0..2,
+        ),
+        (
+            "a fixed frame group across a control's edge",
+            vec![
+                paragraph(&fixed, "Framed one"),
+                paragraph(&fixed, "Framed two"),
+                body_one.clone(),
+                body_two.clone(),
+            ],
+            1..2,
+        ),
+        (
+            "a framed table in a control",
+            vec![framed_table, body_one.clone(), body_two.clone()],
+            0..1,
+        ),
+        (
+            "an offset frame in a control",
+            vec![
+                paragraph("", "Anchor line"),
+                paragraph(&offset, "Framed text"),
+                body_one.clone(),
+            ],
+            1..2,
+        ),
+        (
+            "an empty frame in a control",
+            vec![paragraph(empty, ""), body_one.clone(), body_two.clone()],
+            0..1,
+        ),
+    ];
+    for (case, parts, wrapped) in cases {
+        let bare = page_runs(&frame_docx(&parts.concat()), 0);
+        // The parts in one control, and in a control nested in another.
+        for nested in [false, true] {
+            let inner: String = parts[wrapped.clone()].concat();
+            let control: String = if nested {
+                content_control(&content_control(&inner))
+            } else {
+                content_control(&inner)
+            };
+            let body: String = [
+                parts[..wrapped.start].concat(),
+                control,
+                parts[wrapped.end..].concat(),
+            ]
+            .concat();
+            let runs = page_runs(&frame_docx(&body), 0);
+            let context = format!("{case}, nested {nested}");
+            assert_eq!(runs.len(), bare.len(), "{context}: {runs:?}");
+            for (run, bare_run) in runs.iter().zip(&bare) {
+                assert_eq!(run.text, bare_run.text, "{context}");
+                let at = format!("{context}: {:?}", run.text);
+                assert_close(run.left_pt, bare_run.left_pt, &at);
+                assert_close(run.baseline_pt, bare_run.baseline_pt, &at);
+            }
+        }
+    }
+}
