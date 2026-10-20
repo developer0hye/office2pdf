@@ -289,14 +289,25 @@ fn list_root_level(list: &List) -> u32 {
     list.items.first().map(|item| item.level).unwrap_or(0)
 }
 
-fn paragraph_list_indent(style: &ParagraphStyle) -> Option<ListIndentGeometry> {
-    let indent_left = style.indent_left?.max(0.0);
+/// A list paragraph's marker origin and hanging span from the list's origin,
+/// or `None` without a hanging indent.
+///
+/// With `hangs_into_margin` both keep their sign, as in a Word body list: a
+/// negative `w:ind w:left`, or a hanging span wider than it, starts the marker
+/// left of the margin (issue #2233). Otherwise the left indent and the marker
+/// clamp at the origin.
+fn paragraph_list_indent(
+    style: &ParagraphStyle,
+    hangs_into_margin: bool,
+) -> Option<ListIndentGeometry> {
+    let clamp = |pt: f64| if hangs_into_margin { pt } else { pt.max(0.0) };
+    let indent_left = clamp(style.indent_left?);
     let first_line_indent = style.indent_first_line?;
     if first_line_indent >= -0.0001 {
         return None;
     }
 
-    let marker_origin_pt = (indent_left + first_line_indent).max(0.0);
+    let marker_origin_pt = clamp(indent_left + first_line_indent);
     let marker_width_pt = indent_left - marker_origin_pt;
     (marker_width_pt > 0.0001).then_some(ListIndentGeometry {
         marker_origin_pt,
@@ -307,12 +318,13 @@ fn paragraph_list_indent(style: &ParagraphStyle) -> Option<ListIndentGeometry> {
 fn common_list_level_indent(
     items: &[crate::ir::ListItem],
     level: u32,
+    hangs_into_margin: bool,
 ) -> Option<ListIndentGeometry> {
     let mut geometries = items
         .iter()
         .filter(|item| item.level == level)
         .filter_map(|item| item.content.first())
-        .map(|paragraph| paragraph_list_indent(&paragraph.style));
+        .map(|paragraph| paragraph_list_indent(&paragraph.style, hangs_into_margin));
     let first = geometries.next()??;
 
     geometries
@@ -564,7 +576,7 @@ pub(super) fn generate_list_with_spacing_model(
     let root_level: u32 = list_root_level(list);
     let style = list_style_for_level(list, root_level);
     let fallback_marker_style = common_list_level_text_style(&list.items, root_level);
-    let indent = common_list_level_indent(&list.items, root_level);
+    let indent = common_list_level_indent(&list.items, root_level, eojeol_wrap.hangs_into_margin);
     // Typst applies one root `spacing:` after every complete root item. In a
     // PowerPoint outline that item can end in a nested child, whose own
     // a:spcAft is the real boundary gap. Even one adjacent root pair is not
@@ -1766,12 +1778,16 @@ const WORD_BODY_ORIGIN: &str = "word_body_origin";
 fn word_numbering_suffix_placement(
     kind: ListKind,
     paragraph_style: &ParagraphStyle,
+    hangs_into_margin: bool,
 ) -> Option<(ListMarkerSuffix, ListIndentGeometry)> {
     let suffix = paragraph_style.numbering_suffix?;
     if suffix == ListMarkerSuffix::Tab && kind != ListKind::Ordered {
         return None;
     }
-    Some((suffix, paragraph_list_indent(paragraph_style)?))
+    Some((
+        suffix,
+        paragraph_list_indent(paragraph_style, hangs_into_margin)?,
+    ))
 }
 
 /// What a list's items need to decide their Hangul line breaking (issue #626).
@@ -1787,6 +1803,9 @@ pub(super) struct ListEojeolWrap {
     pub(super) available_measure_pt: Option<f64>,
     /// PowerPoint's raw and layout baseline seats for absolute slide snapping.
     pub(super) baseline_snap: Option<PowerPointBaselineSnap>,
+    /// Whether a marker or body may start left of the list's origin, as a
+    /// Word body list hanging into the margin does (issue #2233).
+    pub(super) hangs_into_margin: bool,
 }
 
 /// Word's suffix positions only the first body line; continuation lines keep
@@ -1806,8 +1825,10 @@ fn write_word_numbering_suffix_advance(
     numbers: &[u32],
     default_tab_width_pt: f64,
     tabbed_body: Option<&str>,
+    hangs_into_margin: bool,
 ) {
-    let Some((suffix, indent)) = word_numbering_suffix_placement(style.kind, paragraph_style)
+    let Some((suffix, indent)) =
+        word_numbering_suffix_placement(style.kind, paragraph_style, hangs_into_margin)
     else {
         return;
     };
@@ -1956,7 +1977,7 @@ fn generate_list_items(
     let (_, item_func) = list_funcs(style.kind);
     let marker_fallback = common_list_level_text_style(items, base_level);
     let uses_word_suffixes = eojeol_wrap.breaks_hangul_at_eojeol
-        && common_list_level_indent(items, base_level).is_some()
+        && common_list_level_indent(items, base_level, eojeol_wrap.hangs_into_margin).is_some()
         && items
             .iter()
             .filter(|item| item.level == base_level)
@@ -2007,11 +2028,16 @@ fn generate_list_items(
             // starts. A slide list keeps its own tab handling.
             let body_origin_pt: Option<f64> = (eojeol_wrap.breaks_hangul_at_eojeol
                 && super::text::paragraph_contains_tabs(&paragraph.runs))
-            .then(|| paragraph_list_indent(&paragraph.style))
+            .then(|| paragraph_list_indent(&paragraph.style, eojeol_wrap.hangs_into_margin))
             .flatten()
             .map(|indent| indent.marker_origin_pt + indent.marker_width_pt);
             if uses_word_suffixes
-                && word_numbering_suffix_placement(style.kind, &paragraph.style).is_some()
+                && word_numbering_suffix_placement(
+                    style.kind,
+                    &paragraph.style,
+                    eojeol_wrap.hangs_into_margin,
+                )
+                .is_some()
             {
                 let tabbed_body: Option<String> = match body_origin_pt {
                     Some(_) => {
@@ -2035,6 +2061,7 @@ fn generate_list_items(
                     &item_numbers,
                     ctx.default_tab_width_pt,
                     tabbed_body.as_deref(),
+                    eojeol_wrap.hangs_into_margin,
                 );
                 if tabbed_body.is_none() {
                     write_list_paragraph_runs(out, paragraph, eojeol_wrap, None, ctx)?;
@@ -2100,18 +2127,24 @@ fn generate_list_items(
                     // Typst list is laid out inside the parent item's body:
                     // subtract the parent's text origin so the child marker
                     // lands at its absolute position (issue #356).
-                    let parent_indent = common_list_level_indent(&items[i..=i], base_level);
-                    let indent =
-                        common_list_level_indent(&items[child_start..child_end], child_level).map(
-                            |mut child| {
-                                if let Some(parent) = parent_indent {
-                                    child.marker_origin_pt = (child.marker_origin_pt
-                                        - (parent.marker_origin_pt + parent.marker_width_pt))
-                                        .max(0.0);
-                                }
-                                child
-                            },
-                        );
+                    let parent_indent = common_list_level_indent(
+                        &items[i..=i],
+                        base_level,
+                        eojeol_wrap.hangs_into_margin,
+                    );
+                    let indent = common_list_level_indent(
+                        &items[child_start..child_end],
+                        child_level,
+                        eojeol_wrap.hangs_into_margin,
+                    )
+                    .map(|mut child| {
+                        if let Some(parent) = parent_indent {
+                            child.marker_origin_pt = (child.marker_origin_pt
+                                - (parent.marker_origin_pt + parent.marker_width_pt))
+                                .max(0.0);
+                        }
+                        child
+                    });
                     // PowerPoint's a:spcAft belongs to the item that declares it.
                     // A shared nested `spacing:` cannot carry the last child's
                     // gap across the return to its parent level, so retain every

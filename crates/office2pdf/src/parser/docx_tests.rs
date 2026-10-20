@@ -1909,6 +1909,191 @@ fn docx_level_text_literal_text_survives_parent_numbers() {
     assert_eq!(labels, ["1.1", "1.1.a", "1.1.b", "1.2"]);
 }
 
+/// Word lets a list paragraph hang into the margin like any other paragraph:
+/// its marker starts at the margin plus the signed `w:ind w:left` minus the
+/// hanging span, and its body lines start at the margin plus the signed left
+/// indent, even when either lies left of the margin (issue #2233). Main
+/// clamped both at the margin.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_list_marker_and_body_hang_into_the_margin_at_their_signed_indent() {
+    let body: String = "Hanging list item ".repeat(14);
+    // Level format and text, then the left indent and hanging span in twips.
+    // Each marker is narrower than its hanging span, so the body starts at
+    // the left indent.
+    let cases: [(&str, &str, i32, i32); 4] = [
+        ("decimal", "%1.", -720, 360),
+        ("decimal", "%1.", 200, 720),
+        ("bullet", "\u{2022}", -360, 360),
+        ("decimal", "%1.", 720, 360),
+    ];
+    for (number_format, level_text, left_twips, hanging_twips) in cases {
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(hanging_list_level(
+            0,
+            number_format,
+            level_text,
+            left_twips,
+            hanging_twips,
+        ));
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![docx_rs::Numbering::new(1, 0)],
+            vec![
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Margin")),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text(&body))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            ],
+        );
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+        let margin: f64 = runs
+            .iter()
+            .find(|run| run.text == "Margin")
+            .expect("the margin reference should be placed")
+            .left_pt;
+        let first_line = runs
+            .iter()
+            .find(|run| run.text.starts_with("Hanging"))
+            .expect("the list body should be placed");
+        let marker = runs
+            .iter()
+            .find(|run| {
+                (run.baseline_pt - first_line.baseline_pt).abs() < 0.01
+                    && run.left_pt < first_line.left_pt
+            })
+            .unwrap_or_else(|| panic!("no marker beside the body: {runs:?}"));
+        let continuations: Vec<f64> = runs
+            .iter()
+            .filter(|run| run.baseline_pt > first_line.baseline_pt + 1.0)
+            .map(|run| run.left_pt)
+            .collect();
+        let left: f64 = f64::from(left_twips) / 20.0;
+        let hanging: f64 = f64::from(hanging_twips) / 20.0;
+        let case = format!("{number_format} left {left}pt, hanging {hanging}pt");
+        assert!(
+            (marker.left_pt - (margin + left - hanging)).abs() < 0.05,
+            "{case}: the marker must start at {}pt, got {}pt",
+            margin + left - hanging,
+            marker.left_pt
+        );
+        assert!(
+            (first_line.left_pt - (margin + left)).abs() < 0.05,
+            "{case}: the body must start at {}pt, got {}pt",
+            margin + left,
+            first_line.left_pt
+        );
+        assert!(
+            !continuations.is_empty()
+                && continuations
+                    .iter()
+                    .all(|start| (start - (margin + left)).abs() < 0.05),
+            "{case}: wrapped lines must start at {}pt, got {continuations:?}",
+            margin + left
+        );
+    }
+}
+
+/// The gate `TODO(#2383)` in `group_into_lists` sets: under a direct
+/// `w:numPr`, a paragraph style's `w:ind` still stands in for the level's,
+/// so such a list keeps its marker at the margin instead of hanging the style
+/// chain's indent into it (issue #2233). Word draws these markers at the
+/// level's indent, margin + left − hanging (docxide-pdf
+/// `slovak_fuel_pricing_report`); delete this test with the gate.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_style_indent_under_direct_numbering_keeps_the_marker_at_the_margin() {
+    // The style's left indent and hanging span in twips, and where the body
+    // starts from the margin, in points.
+    let cases: [(i32, Option<i32>, f64); 2] = [(0, None, 0.0), (720, Some(1021), 36.0)];
+    for (style_left, style_hanging, body_start) in cases {
+        let abstract_num = docx_rs::AbstractNumbering::new(0)
+            .add_level(hanging_list_level(0, "decimal", "%1.", 720, 360));
+        let numberings = docx_rs::Numberings::new()
+            .add_abstract_numbering(abstract_num)
+            .add_numbering(docx_rs::Numbering::new(1, 0));
+        let style = docx_rs::Style::new("Indented", docx_rs::StyleType::Paragraph).indent(
+            Some(style_left),
+            style_hanging.map(docx_rs::SpecialIndentType::Hanging),
+            None,
+            None,
+        );
+        let docx = docx_rs::Docx::new()
+            .numberings(numberings)
+            .add_style(style)
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Margin")),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Styled item"))
+                    .style("Indented")
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+        let margin: f64 = runs
+            .iter()
+            .find(|run| run.text == "Margin")
+            .unwrap()
+            .left_pt;
+        let body = runs
+            .iter()
+            .find(|run| run.text.contains("Styled item"))
+            .unwrap_or_else(|| panic!("the item should be placed: {runs:?}"));
+        let marker_left: f64 = runs
+            .iter()
+            .filter(|run| (run.baseline_pt - body.baseline_pt).abs() < 0.01)
+            .map(|run| run.left_pt)
+            .fold(f64::INFINITY, f64::min);
+        assert!(
+            (marker_left - margin).abs() < 0.05,
+            "style left {style_left}: the marker must stay at the {margin}pt margin, got {marker_left}pt"
+        );
+        if body_start > 0.0 {
+            assert!(
+                (body.left_pt - (margin + body_start)).abs() < 0.05,
+                "style left {style_left}: the body must start at {}pt, got {}pt",
+                margin + body_start,
+                body.left_pt
+            );
+        }
+    }
+}
+
+/// docxide-pdf `case97` (`numbering_negative_indent.docx`), unmodified: a
+/// numbered paragraph with `w:ind w:left="-100" w:hanging="5"` and a left tab
+/// at 171 twips. Word draws "1." at 66.775pt, by the 72pt − 5pt − 0.25pt
+/// origin, and tabs the body to 80.525pt, by the 8.55pt stop; main drew them
+/// at 72pt and 88pt (issue #2233).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_list_hanging_into_the_margin_starts_where_word_starts_it() {
+    let data =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/numbering_negative_indent.docx");
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+    let start = |text: &str| -> f64 {
+        runs.iter()
+            .find(|run| run.text.starts_with(text))
+            .unwrap_or_else(|| panic!("{text:?} is not painted: {runs:?}"))
+            .left_pt
+    };
+    for (text, word_start) in [("1.", 66.775), ("Test", 80.525)] {
+        let placed: f64 = start(text);
+        assert!(
+            (placed - word_start).abs() < 0.25,
+            "Word starts {text:?} at {word_start}pt, got {placed}pt"
+        );
+    }
+}
+
 /// Rewrites `word/settings.xml` inside a DOCX, replacing the
 /// `w:defaultTabStop` element with `replacement` (empty string removes it).
 fn rewrite_settings_default_tab_stop(docx_bytes: &[u8], replacement: &str) -> Vec<u8> {

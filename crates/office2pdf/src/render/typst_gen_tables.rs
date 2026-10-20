@@ -3421,6 +3421,11 @@ fn generate_cell_content(
                             line_box_em: None,
                             available_measure_pt: ctx.available_measure_pt,
                             baseline_snap: None,
+                            // TODO(#2261 cell clip): Word clips a cell list
+                            // that hangs past its cell at the cell's edge. Until
+                            // cells clip, its indents clamp at the cell's inset,
+                            // as cell paragraphs do (issue #2233).
+                            hangs_into_margin: false,
                         },
                         ctx,
                     )?;

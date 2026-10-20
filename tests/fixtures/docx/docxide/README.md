@@ -226,3 +226,11 @@ line in compatibility mode 15 (greeting baseline 141.30pt) and drops it in mode
 revision and license: the mode-15 case with a full-width `w:tblpPr` table.
 Native Word drops the mark's line and starts the greeting right below the
 table, on a 117.28pt baseline; a compiled-layout regression checks it.
+
+`numbering_negative_indent.docx` is the unmodified synthetic `cases/case97/input.docx`
+from [docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/case97),
+Apache-2.0: one numbered Times New Roman 14pt paragraph, "Test marker", with
+`w:ind w:left="-100" w:hanging="5"` and a left tab at 171 twips. Native Word
+draws "1." at 66.775pt, 0.025pt from the 72pt − 5pt − 0.25pt origin, and tabs
+the body to 80.525pt, by the 8.55pt stop; a compiled-layout regression checks
+both within 0.25pt.

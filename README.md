@@ -304,7 +304,11 @@ word start the next line. A line left holding only tabs keeps their runs'
 height. Centred, right and decimal stops keep their field on the line.
 A negative left or right indent widens a body paragraph's lines into the
 margin, as Word does; table cells still clamp it to zero until they clip their
-content at the cell edge (#2261).
+content at the cell edge (#2261). A body list item's marker likewise starts at
+its signed left indent minus its hanging span, and its lines at the signed left
+indent, even left of the margin. While a paragraph style's `w:ind` still
+stands in for a direct `w:numPr` level's (#2383), such an item keeps its marker
+at the margin.
 
 DOCX section body text supports top, centered and bottom page alignment,
 including paragraph after-spacing and page breaks. Continuous sections use their

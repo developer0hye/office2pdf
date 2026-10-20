@@ -6350,6 +6350,8 @@ fn generate_block_inner(
                     line_box_em,
                     available_measure_pt: ctx.available_measure_pt,
                     baseline_snap: None,
+                    // A Word list hangs into the margin like its paragraphs.
+                    hangs_into_margin: ctx.breaks_hangul_at_eojeol,
                 },
                 ctx,
             )
