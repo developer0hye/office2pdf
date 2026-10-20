@@ -280,8 +280,8 @@ struct GenCtx {
     /// The floating tables and text frames placed so far in the current
     /// flow, which the root paragraphs after them wrap around until a page,
     /// column or section break, or until those paragraphs have advanced a
-    /// page (issues #2229, #2231). A text frame outlasts the start of a
-    /// continuous section laid out in the same text area.
+    /// page (issues #2229, #2231). A float outlasts the start of a
+    /// continuous section laid out in the same text area (issue #2369).
     body_floats: Vec<float_wrap::BodyFloat>,
     next_body_float_id: usize,
     /// The width and height of the single text column floating tables and
@@ -304,8 +304,8 @@ struct GenCtx {
     /// (issue #2231). A top-margin frame box hangs from no flow block, so it
     /// never has one.
     text_frame_anchor_gap_pt: Option<f64>,
-    /// The text area the previous flow section's floats wrapped in, whose
-    /// text frames a continuous section in the same area keeps in force.
+    /// The text area the previous flow section's floats wrapped in, which a
+    /// continuous section in the same area keeps in force.
     carried_float_text_area_pt: Option<(f64, f64)>,
     /// Whether the current flow section keeps an empty frame's box at the top
     /// margin, which the section's full-width tables at the flow root clear
@@ -894,12 +894,12 @@ fn generate_flow_page(
         .available_measure_pt
         .filter(|_| page.columns.is_none() && text_height_pt > 0.0)
         .map(|width_pt| (width_pt, text_height_pt));
-    // A text frame still excludes text in a continuous section laid out in
-    // the same text area (issue #2231), as docxide-pdf's
-    // `paragraph-offset-frame-immediate-long` shows: its frame ends the first
-    // section, and the paragraph beside it opens the next.
-    // TODO(floating table into a continuous section): a floating table's
-    // extent reaches there too.
+    // A float still excludes text in a continuous section laid out in the
+    // same text area. In Word's exports of docxide-pdf's
+    // `paragraph-offset-frame-immediate-long` (a text frame, issue #2231) and
+    // `section-mark-after-table-float-compat15` (a floating table, issue
+    // #2369), the float ends the first section, and the text it keeps off
+    // opens the next.
     if !begins_continuously || ctx.carried_float_text_area_pt != text_area_pt {
         ctx.body_floats.clear();
     }
@@ -945,6 +945,7 @@ fn generate_flow_page(
             cols,
             FlowColumnRenderOptions {
                 begins_continuously,
+                ends_continuously,
                 balance_final_segment: ends_continuously,
             },
             ctx,
@@ -954,7 +955,14 @@ fn generate_flow_page(
             .iter()
             .any(|block| matches!(block, Block::PageBreak))
     {
-        generate_continuous_flow_blocks(out, page, &size, &section_content, ctx)?;
+        generate_continuous_flow_blocks(
+            out,
+            page,
+            &size,
+            &section_content,
+            ends_continuously,
+            ctx,
+        )?;
     } else {
         let has_continuous_frame: bool =
             begins_continuously && write_continuous_flow_frame_open(out, page, ctx);
@@ -969,7 +977,6 @@ fn generate_flow_page(
     ctx.flow_body_is_breakable = false;
     ctx.in_flow_body = false;
     ctx.preserve_page_after_spacing = false;
-    ctx.body_floats.retain(float_wrap::BodyFloat::is_text_frame);
     ctx.carried_float_text_area_pt = ctx.float_wrap_text_area_pt.take();
     ctx.clears_top_margin_frame_boxes = false;
     ctx.flow_at_page_top = false;
@@ -1096,17 +1103,23 @@ fn write_continuous_flow_frame_close(out: &mut String) {
 
 /// Keep page breaks at the top level while applying continuous-section page
 /// setup to each continuation page.
+///
+/// A break that ends the section leaves an empty last slice. The next section
+/// starts a page of its own unless it continues on this one
+/// (`ends_continuously`), so only then is that break written (issue #2370).
 fn generate_continuous_flow_blocks(
     out: &mut String,
     page: &FlowPage,
     size: &PageSize,
     content: &[Block],
+    ends_continuously: bool,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     let segments: Vec<(usize, &[Block])> = split_at_page_breaks(content);
     let last_segment_index: usize = segments.len() - 1;
     for (index, (segment_start, segment)) in segments.iter().enumerate() {
-        let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
+        let is_trailing_empty_segment: bool =
+            index == last_segment_index && segment.is_empty() && !ends_continuously;
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
             write_continuation_flow_setup(out, page, size, ctx)?;
@@ -1148,9 +1161,12 @@ fn generate_continuous_flow_blocks(
 /// page, which is one wrapper per page's slice of the content with a top-level
 /// break between the slices. A break at either end of the section leaves an
 /// empty slice, and an empty wrapper would paint nothing while still claiming
-/// vertical space, so only the break itself is emitted for those.
+/// vertical space, so only the break itself is emitted for those. A break
+/// that ends the section is emitted only when the next section continues on
+/// the same page; one that does not starts a page of its own (issue #2370).
 struct FlowColumnRenderOptions {
     begins_continuously: bool,
+    ends_continuously: bool,
     balance_final_segment: bool,
 }
 
@@ -1168,7 +1184,8 @@ fn generate_flow_page_columns(
     let segments: Vec<(usize, &[Block])> = split_at_page_breaks(content);
     let last_segment_index: usize = segments.len() - 1;
     for (index, (segment_start, segment)) in segments.iter().enumerate() {
-        let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
+        let is_trailing_empty_segment: bool =
+            index == last_segment_index && segment.is_empty() && !options.ends_continuously;
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
             if options.begins_continuously {

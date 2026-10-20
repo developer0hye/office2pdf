@@ -128,8 +128,7 @@ pub(super) struct BodyFloat {
     reach_pt: f64,
     /// Whether the float is a text frame. A text frame typically hangs into
     /// the paragraph after its own, which starts above it; that paragraph
-    /// moves below the frame rather than run over it, and the frame still
-    /// excludes text in a continuous section that follows on its page.
+    /// moves below the frame rather than run over it.
     text_frame: bool,
 }
 
@@ -192,10 +191,6 @@ impl BodyFloat {
 
     pub(super) fn id(&self) -> usize {
         self.id
-    }
-
-    pub(super) fn is_text_frame(&self) -> bool {
-        self.text_frame
     }
 }
 

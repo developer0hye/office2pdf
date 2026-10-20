@@ -5582,6 +5582,102 @@ fn a_continuous_section_after_an_empty_framed_mark_keeps_its_space_before() {
     );
 }
 
+/// docxide-pdf `page-header-ordinary-marker`, unmodified: the first section
+/// is one bare section mark, and a continuous section holds "Following
+/// section". The mark is the first block of its section, so Word lays it out
+/// as a Tahoma 10 line (12.07pt) and sets the text's baseline at 94.03pt,
+/// where main dropped the mark and set it at 81.38pt (issue #2232). A sans
+/// stand-in's own 10pt line is up to about 1.2pt shorter than Tahoma's.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_empty_section_mark_opening_its_section_takes_a_line() {
+    let following: f64 = docx_fixture_baseline_pt(
+        include_bytes!("../../../../tests/fixtures/docx/docxide/page_header_ordinary_marker.docx"),
+        0,
+        "Following section",
+    );
+    assert!(
+        (following - 94.03).abs() < 1.5,
+        "the text after the mark's line must sit near Word's 94.03pt baseline, got {following}pt"
+    );
+}
+
+/// docxide-pdf `paragraph-offset-frame-no-frame`, unmodified: the second
+/// section holds an empty paragraph with 12pt before, an empty paragraph and
+/// an empty Times New Roman 14pt section mark with 4pt after; a continuous
+/// section then opens with an empty paragraph and "Dear recipient". Word
+/// gives the mark no height and sets "Dear recipient" at 162.30pt, where main
+/// kept the mark's 16.1pt line and its 4pt after (issue #2232).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_empty_section_mark_after_other_blocks_takes_no_line() {
+    let dear: f64 = docx_fixture_baseline_pt(
+        include_bytes!("../../../../tests/fixtures/docx/docxide/spaced_section_mark.docx"),
+        0,
+        "Dear recipient",
+    );
+    assert!(
+        (dear - 162.30).abs() < 0.5,
+        "the text after the mark must sit on Word's 162.30pt baseline, got {dear}pt"
+    );
+}
+
+/// docxide-pdf `section-mark-after-table-inline-compat15` and `-compat14`,
+/// unmodified: an inline two-line table, an empty 1.5-line section mark, and
+/// a continuous section opening with "Public greeting". In compatibility mode
+/// 15, Word keeps the mark's line and sets the greeting at 141.30pt; in mode
+/// 14 it drops the line and sets the greeting right below the table, at
+/// 117.28pt, where main kept the line (issue #2232).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_empty_section_mark_after_an_inline_table_takes_a_line_only_in_mode_15() {
+    let cases: [(&str, &[u8], f64); 2] = [
+        (
+            "mode 15",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/section_mark_after_inline_table.docx"
+            ),
+            141.30,
+        ),
+        (
+            "mode 14",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/section_mark_after_inline_table_compat14.docx"
+            ),
+            117.28,
+        ),
+    ];
+    for (mode, fixture, word_baseline) in cases {
+        let greeting: f64 = docx_fixture_baseline_pt(fixture, 0, "Public greeting");
+        assert!(
+            (greeting - word_baseline).abs() < 0.5,
+            "in {mode}, the greeting must sit on Word's {word_baseline}pt baseline, got {greeting}pt"
+        );
+    }
+}
+
+/// docxide-pdf `section-mark-after-table-float-compat15`, unmodified: the
+/// inline-table case with a full-width `w:tblpPr` table. Word drops the
+/// mark's line, and the table still keeps the next section's text off its
+/// extent: "Public greeting" sits right below it at 117.28pt. Main kept the
+/// line, below the table, and set the greeting at 141.47pt; dropping the line
+/// alone painted the greeting over the table (issues #2232, #2369).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_continuous_section_after_a_floating_table_starts_below_it() {
+    let greeting: f64 = docx_fixture_baseline_pt(
+        include_bytes!(
+            "../../../../tests/fixtures/docx/docxide/section_mark_after_floating_table.docx"
+        ),
+        0,
+        "Public greeting",
+    );
+    assert!(
+        (greeting - 117.28).abs() < 0.5,
+        "the greeting must sit on Word's 117.28pt baseline below the table, got {greeting}pt"
+    );
+}
+
 /// docxide-pdf's `first-header-small-control` and
 /// `first-header-no-minimum-control`, unmodified: packages with no styles
 /// part, whose three Arial 12pt body paragraphs state `w:after="0"` but no
