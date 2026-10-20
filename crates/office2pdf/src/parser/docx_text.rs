@@ -248,7 +248,9 @@ fn extract_paragraph_borders(
     Some(Box::new(border))
 }
 
-fn extract_indent(indent: &Option<docx_rs::Indent>) -> (Option<f64>, Option<f64>, Option<f64>) {
+pub(super) fn extract_indent(
+    indent: &Option<docx_rs::Indent>,
+) -> (Option<f64>, Option<f64>, Option<f64>) {
     let Some(indent) = indent else {
         return (None, None, None);
     };

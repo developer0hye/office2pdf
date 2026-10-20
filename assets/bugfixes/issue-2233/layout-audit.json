@@ -2,31 +2,31 @@
  "pages": [
   {
    "lines": {
-    "gt": 3,
-    "out": 3,
-    "matched": 3,
+    "gt": 1,
+    "out": 1,
+    "matched": 1,
     "missing": 0,
     "extra": 0,
-    "deviant": 0,
+    "deviant": 1,
     "missing_text": [],
     "extra_text": []
    },
    "baseline": {
-    "mean_abs_dy": 0.04504733333331975,
-    "worst_dy": 0.08896000000002857,
-    "worst_dy_signed": 0.08896000000002857,
-    "worst_line": "Aboutprovidinginformation"
+    "mean_abs_dy": 0.2096899999999664,
+    "worst_dy": 0.2096899999999664,
+    "worst_dy_signed": -0.2096899999999664,
+    "worst_line": "1.Testmarker"
    },
    "dx0": {
-    "mean_abs": 0.07666666666666326,
-    "worst": 0.10499999999998977
+    "mean_abs": 0.025000000000005684,
+    "worst": -0.025000000000005684
    },
    "width": {
-    "mean_abs_pct": 0.15638470487368875,
-    "worst_pct": 0.31213315474126385
+    "mean_abs_pct": 1.2162516818425884,
+    "worst_pct": 1.2162516818425884
    },
    "instances": {
-    "compared": 3,
+    "compared": 1,
     "large_shift_threshold": 5.0,
     "large_shift_count": 0,
     "large_shifts": [],
@@ -47,8 +47,8 @@
     "mismatches": []
    },
    "pitch": {
-    "pairs": 2,
-    "worst_delta": 0.12546999999999287
+    "pairs": 0,
+    "worst_delta": 0.0
    },
    "wraps": {
     "count": 0,

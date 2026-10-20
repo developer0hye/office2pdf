@@ -42,7 +42,7 @@ inline probes check ancestor counters and literals; case72 probes calibrate
 restarts, suppression, implicit counters and skipped-level origins. MS-OI29500 2.1.282
 confirms Word ignores restart rules inside complete level overrides.
 Marker clearance/suffixes follow `pdf/list_label.rs`. Native probes calibrate
-font/size/tab/wrap differences and inline marker ascent versus body descent/leading.
+font/size/tab/wrap differences and inline marker ascent versus body descent/leading; Word's `case97` export puts a list marker with a negative `w:ind w:left` left of the margin, as the body list path now does (#2233).
 Damaged-PNG recovery follows `src/pdf/images.rs`; locked `png` 0.18.1 recovers samples, calibrated by Word CRC/truncation probes.
 Picture crops follow `src/docx/images.rs`; raw XML retains per-picture offsets independently of [docx-rs#936](https://github.com/bokuweb/docx-rs/pull/936). An inline picture beside text rides the line like a glyph, as `inline_line_advance` in `src/pdf/layout.rs` (`fe7b8bea`) lays out: picture plus text descent (#2227).
 SmartArt follows package relationships into cached DrawingML and separate text transforms; native outlines stay, compatible others use Annex D, and unsupported outlines/path paints warn and fall back.

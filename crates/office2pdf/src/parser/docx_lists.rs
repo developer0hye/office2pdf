@@ -10,6 +10,17 @@ use crate::ir::{
 pub(super) struct NumInfo {
     pub(super) num_id: usize,
     pub(super) level: u32,
+    /// Under a direct `w:numPr`, which indents the paragraph's style chain
+    /// supplies where its own `w:ind` is silent.
+    pub(super) style_supplied_indents: StyleSuppliedIndents,
+}
+
+/// Indents a numbered paragraph takes from its style chain rather than from
+/// its own `w:ind`.
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct StyleSuppliedIndents {
+    pub(super) left: bool,
+    pub(super) first_line: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -349,7 +360,11 @@ pub(super) fn extract_num_info(
         if num_id == 0 {
             return None;
         }
-        return Some(NumInfo { num_id, level });
+        return Some(NumInfo {
+            num_id,
+            level,
+            style_supplied_indents: StyleSuppliedIndents::default(),
+        });
     }
 
     let style_id = para
@@ -370,7 +385,11 @@ pub(super) fn extract_num_info(
     if num_id == 0 {
         return None;
     }
-    Some(NumInfo { num_id, level })
+    Some(NumInfo {
+        num_id,
+        level,
+        style_supplied_indents: StyleSuppliedIndents::default(),
+    })
 }
 
 /// An intermediate element that carries optional numbering info alongside blocks.
@@ -529,6 +548,35 @@ fn apply_numbering_level_indentation(
     style.indent_first_line = style.indent_first_line.or(level_style.indent_first_line);
     if style.tab_stops.is_none() {
         style.tab_stops = level_style.tab_stops.clone();
+    }
+}
+
+/// Whether a style-chain indent stands in for one the paragraph's direct
+/// numbering level declares. Word uses the level's there; the parser keeps
+/// the style's (#2383).
+fn style_indent_masks_level(
+    supplied: StyleSuppliedIndents,
+    level_style: Option<&ParagraphStyle>,
+) -> bool {
+    level_style.is_some_and(|level| {
+        (supplied.left && level.indent_left.is_some())
+            || (supplied.first_line && level.indent_first_line.is_some())
+    })
+}
+
+/// Clamps a list paragraph's left indent and marker origin at the margin, the
+/// geometry the renderer drew for every list before list indents kept their
+/// sign (issue #2233).
+fn clamp_list_indent_at_margin(style: &mut ParagraphStyle) {
+    let Some(left) = style.indent_left.map(|left| left.max(0.0)) else {
+        return;
+    };
+    style.indent_left = Some(left);
+    if let Some(first_line) = style
+        .indent_first_line
+        .filter(|first_line| *first_line < 0.0)
+    {
+        style.indent_first_line = Some((left + first_line).max(0.0) - left);
     }
 }
 
@@ -813,6 +861,16 @@ pub(super) fn group_into_lists(
                     &mut paragraph,
                     resolved_level.map(|level| &level.paragraph_style),
                 );
+                // TODO(#2383): Word lays such a paragraph out at its level's
+                // indent. Until the parser does, keep it at the margin as
+                // before: hanging the style-chain indent into the margin would
+                // move it further from Word (issue #2233).
+                if style_indent_masks_level(
+                    info.style_supplied_indents,
+                    resolved_level.map(|level| &level.paragraph_style),
+                ) {
+                    clamp_list_indent_at_margin(&mut paragraph.style);
+                }
                 let mut item = ListItem {
                     content: vec![*paragraph],
                     level: info.level,

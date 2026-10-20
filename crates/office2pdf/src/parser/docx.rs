@@ -35,7 +35,8 @@ use self::contexts::{
     toc_caption_identifier, toc_heading_depth,
 };
 use self::lists::{
-    NumberingMap, TaggedElement, build_numbering_map, extract_num_info, group_into_lists,
+    NumberingMap, StyleSuppliedIndents, TaggedElement, build_numbering_map, extract_num_info,
+    group_into_lists,
 };
 use self::media::{
     DrawingTextBoxPlacement, extract_drawing_image, extract_drawing_text_box_blocks,
@@ -59,8 +60,8 @@ use self::styles::{
 use self::tables::{convert_table, convert_table_in_text_box};
 use self::text::{
     ThemeFonts, WORD_UNSTATED_FONT_SIZE_PT, extract_doc_default_paragraph_style,
-    extract_doc_default_text_style_with_theme, extract_paragraph_style, extract_run_style,
-    extract_run_style_id, extract_run_text, extract_run_text_marking_clears,
+    extract_doc_default_text_style_with_theme, extract_indent, extract_paragraph_style,
+    extract_run_style, extract_run_style_id, extract_run_text, extract_run_text_marking_clears,
     extract_tab_stop_overrides, insert_east_asian_auto_space, is_column_break, is_page_break,
     pair_kerning_from_half_points, parse_hex_color, parse_theme_fonts, resolve_hyperlink_url,
     resolve_latin_theme_font_family, resolve_theme_font_family, take_clearing_break_markers,
@@ -1061,6 +1062,25 @@ fn convert_sdt_children(
     result
 }
 
+/// Which indents a paragraph with a direct `w:numPr` takes from its style
+/// chain because its own `w:ind` does not state them. None when the numbering
+/// comes from the style.
+fn style_supplied_indents(para: &docx_rs::Paragraph, style_map: &StyleMap) -> StyleSuppliedIndents {
+    if !para.has_numbering {
+        return StyleSuppliedIndents::default();
+    }
+    let (left, _, first_line) = extract_indent(&para.property.indent);
+    let style: Option<&ParagraphStyle> = get_paragraph_style_id(&para.property)
+        .and_then(|id| style_map.get(id))
+        .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID))
+        .map(|resolved| &resolved.paragraph);
+    StyleSuppliedIndents {
+        left: left.is_none() && style.is_some_and(|style| style.indent_left.is_some()),
+        first_line: first_line.is_none()
+            && style.is_some_and(|style| style.indent_first_line.is_some()),
+    }
+}
+
 fn convert_body_table_block(
     source_table: &docx_rs::Table,
     images: &ImageMap,
@@ -1085,7 +1105,10 @@ fn convert_paragraph_element(
     ctx: &DocxConversionContext,
     styles: &docx_rs::Styles,
 ) -> Vec<TaggedElement> {
-    let num_info = extract_num_info(para, styles);
+    let num_info = extract_num_info(para, styles).map(|mut info| {
+        info.style_supplied_indents = style_supplied_indents(para, style_map);
+        info
+    });
 
     // Build the paragraph IR
     let mut blocks = Vec::new();
