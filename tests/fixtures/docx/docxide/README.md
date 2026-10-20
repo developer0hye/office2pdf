@@ -143,6 +143,14 @@ with only a 180×90pt inline picture and 72pt side margins. Native Word puts the
 picture where the paragraph's first line of text would start, inside its
 indents; a compiled-layout regression checks the eight left edges.
 
+`empty_frame_group.docx` is the unmodified synthetic
+`cases/empty-margin-frame-14-two-empty/input.docx` from
+[docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/empty-margin-frame-14-two-empty),
+Apache-2.0. A two-column table is followed by three empty paragraphs sharing
+one `w:framePr`, the last carrying the section's `w:sectPr`, and then
+"Public greeting". Native Word sets the greeting on the line after the table,
+as if the frame were absent; a compiled-layout regression checks its baseline.
+
 `offset_text_frame.docx` is the unmodified synthetic
 `cases/paragraph-offset-frame-immediate/input.docx` from
 [docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/paragraph-offset-frame-immediate),

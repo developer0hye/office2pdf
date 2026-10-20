@@ -2,57 +2,57 @@
  "pages": [
   {
    "lines": {
-    "gt": 3,
-    "out": 3,
-    "matched": 3,
+    "gt": 7,
+    "out": 7,
+    "matched": 7,
     "missing": 0,
     "extra": 0,
-    "deviant": 1,
+    "deviant": 0,
     "missing_text": [],
     "extra_text": []
    },
    "baseline": {
-    "mean_abs_dy": 0.07919366666667334,
-    "worst_dy": 0.13894900000002508,
-    "worst_dy_signed": 0.13894900000002508,
-    "worst_line": "Aboutprovidinginformation"
+    "mean_abs_dy": 0.053907777777790024,
+    "worst_dy": 0.11754000000004794,
+    "worst_dy_signed": 0.11754000000004794,
+    "worst_line": "Publicrecipient"
    },
    "dx0": {
-    "mean_abs": 23.71833333333333,
-    "worst": 71.025
+    "mean_abs": 30.998444444444445,
+    "worst": -278.836
    },
    "width": {
-    "mean_abs_pct": 0.15638265639235263,
-    "worst_pct": 0.31213315474126385
+    "mean_abs_pct": 0.12640210208966163,
+    "worst_pct": 0.42854120751153657
    },
    "instances": {
-    "compared": 3,
+    "compared": 9,
     "large_shift_threshold": 5.0,
     "large_shift_count": 1,
     "large_shifts": [
      {
-      "label": "Aboutprovidinginformation",
-      "gt_x": 72.275,
-      "gt_y": 102.52999999999997,
-      "out_x": 143.3,
-      "out_y": 102.668949,
-      "dx": 71.025,
-      "dy": 0.13894900000002508,
-      "width_pct": -0.05168531892225313
+      "label": "greeting",
+      "gt_x": 403.17,
+      "gt_y": 201.79999999999995,
+      "out_x": 124.334,
+      "out_y": 201.81208,
+      "dx": -278.836,
+      "dy": 0.01208000000005427,
+      "width_pct": -0.18276402245332699
      }
     ],
     "fine_shift_threshold": 0.5,
     "fine_shift_count": 1,
     "fine_shifts": [
      {
-      "label": "Aboutprovidinginformation",
-      "gt_x": 72.275,
-      "gt_y": 102.52999999999997,
-      "out_x": 143.3,
-      "out_y": 102.668949,
-      "dx": 71.025,
-      "dy": 0.13894900000002508,
-      "width_pct": -0.05168531892225313
+      "label": "greeting",
+      "gt_x": 403.17,
+      "gt_y": 201.79999999999995,
+      "out_x": 124.334,
+      "out_y": 201.81208,
+      "dx": -278.836,
+      "dy": 0.01208000000005427,
+      "width_pct": -0.18276402245332699
      }
     ]
    },
@@ -69,8 +69,8 @@
     "mismatches": []
    },
    "pitch": {
-    "pairs": 2,
-    "worst_delta": 0.09863199999999495
+    "pairs": 6,
+    "worst_delta": 0.15136000000001104
    },
    "wraps": {
     "count": 0,

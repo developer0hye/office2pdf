@@ -2251,14 +2251,20 @@ fn is_empty_section_break_paragraph(para: &docx_rs::Paragraph) -> bool {
     properties == docx_rs::ParagraphProperty::default()
 }
 
-/// A body paragraph alone in a `w:framePr` frame that Word lifts out of the
-/// flow, whose converted paragraph is empty and undecorated. The frame paints
-/// nothing, so the paragraph leaves no line in the flow: Word's exports of
-/// docxide-pdf's `empty-frame-control` and `cont-first-first-fits` advance the
-/// next text as if it were absent (issue #2161). Adjacent paragraphs with an
-/// identical `w:framePr` share one frame, as does a table whose cell
-/// paragraphs carry it; an empty paragraph there is a line of the frame's own
-/// content, so it keeps it.
+/// A body paragraph in a `w:framePr` frame that Word lifts out of the flow,
+/// whose converted paragraph is undecorated and has no text but spaces, in a
+/// frame that shows nothing. Adjacent paragraphs with an identical
+/// `w:framePr` share one frame, as does a table whose cell paragraphs carry
+/// it, so the frame shows nothing when none of them does. Such a paragraph
+/// leaves no line in the flow: Word's exports of docxide-pdf's
+/// `empty-frame-control` and `cont-first-first-fits` advance the next text as
+/// if it were absent (issue #2161), and those of `empty-margin-frame-14-*` do
+/// the same for groups of two and three (issue #2231). An empty paragraph in a
+/// frame with text or a table is a line of the frame's own content, so it
+/// keeps it.
+///
+/// The other paragraphs of the frame are judged on their source runs, which
+/// cannot tell a paragraph style's border or shading.
 fn is_empty_lifted_frame(
     para: &docx_rs::Paragraph,
     converted: &[TaggedElement],
@@ -2268,21 +2274,52 @@ fn is_empty_lifted_frame(
     let Some(frame) = para.property.frame_property.as_ref() else {
         return false;
     };
-    let shares_frame = |neighbour: Option<&docx_rs::DocumentChild>| {
-        neighbour.and_then(leading_frame_property) == Some(frame)
-    };
+    let shares_frame =
+        |child: &&docx_rs::DocumentChild| leading_frame_property(child) == Some(frame);
+    let mut frame_mates = body[..index]
+        .iter()
+        .rev()
+        .take_while(shares_frame)
+        .chain(body[index + 1..].iter().take_while(shares_frame));
     frame_lifts_out_of_flow(frame)
-        && !shares_frame(index.checked_sub(1).and_then(|previous| body.get(previous)))
-        && !shares_frame(body.get(index + 1))
         && matches!(
             converted,
             [TaggedElement::Plain(blocks)] if matches!(
                 blocks.as_slice(),
-                [Block::Paragraph(paragraph)] if paragraph.runs.is_empty()
+                [Block::Paragraph(paragraph)] if paragraph
+                    .runs
+                    .iter()
+                    .all(run_shows_only_spaces)
                     && paragraph.style.background.is_none()
                     && paragraph.style.border.is_none()
             )
         )
+        && frame_mates.all(|child| {
+            matches!(child, docx_rs::DocumentChild::Paragraph(mate) if shows_only_spaces(mate))
+        })
+}
+
+fn run_shows_only_spaces(run: &Run) -> bool {
+    run.text.bytes().all(|byte| byte == b' ')
+        && run.href.is_none()
+        && run.footnote.is_none()
+        && run.inline_box.is_none()
+}
+
+/// Whether a source paragraph holds nothing but spaces: runs of space-only
+/// text and zero-width bookmark and comment markers. A tab, a break, a
+/// picture, a field or a link is content.
+fn shows_only_spaces(para: &docx_rs::Paragraph) -> bool {
+    para.children.iter().all(|child| match child {
+        docx_rs::ParagraphChild::Run(run) => run.children.iter().all(|run_child| {
+            matches!(run_child, docx_rs::RunChild::Text(text) if text.text.bytes().all(|byte| byte == b' '))
+        }),
+        docx_rs::ParagraphChild::BookmarkStart(_)
+        | docx_rs::ParagraphChild::BookmarkEnd(_)
+        | docx_rs::ParagraphChild::CommentStart(_)
+        | docx_rs::ParagraphChild::CommentEnd(_) => true,
+        _ => false,
+    })
 }
 
 /// A body paragraph alone in a `w:framePr` frame hung below its own place in
