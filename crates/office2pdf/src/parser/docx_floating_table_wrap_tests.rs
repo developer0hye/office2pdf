@@ -4,19 +4,19 @@
 
 use super::*;
 
-const MARGIN_PT: f64 = 72.0;
+pub(super) const MARGIN_PT: f64 = 72.0;
 /// A4's 11906 twips less two 1440-twip margins.
 const TEXT_WIDTH_PT: f64 = 451.3;
 /// The `leftFromText`/`rightFromText` every table here states: 180 twips.
-const FROM_TEXT_PT: f64 = 9.0;
+pub(super) const FROM_TEXT_PT: f64 = 9.0;
 
-fn run(content: &str) -> String {
+pub(super) fn run(content: &str) -> String {
     format!(
         r#"<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="24"/></w:rPr>{content}</w:r>"#
     )
 }
 
-fn paragraph(paragraph_properties: &str, text: &str) -> String {
+pub(super) fn paragraph(paragraph_properties: &str, text: &str) -> String {
     format!(
         r#"<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>{paragraph_properties}</w:pPr>{}</w:p>"#,
         run(&format!("<w:t>{text}</w:t>"))
@@ -45,7 +45,7 @@ fn anchored_floating_table(width_twips: u32, height_twips: u32, position: &str) 
 const PAGE_SETUP: &str = r#"<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440"/>"#;
 
 /// An A4 package with 72pt margins, no settings part and no styles part.
-fn float_docx(body: &str) -> Vec<u8> {
+pub(super) fn float_docx(body: &str) -> Vec<u8> {
     section_float_docx(body, PAGE_SETUP)
 }
 
@@ -77,7 +77,7 @@ fn section_float_docx(body: &str, section_properties: &str) -> Vec<u8> {
 /// The painted body runs with each run's advance width; the table's own
 /// cell text is left out.
 #[cfg(not(target_arch = "wasm32"))]
-fn placed(data: &[u8]) -> Vec<(crate::render::pdf::PlacedTextRun, f64)> {
+pub(super) fn placed(data: &[u8]) -> Vec<(crate::render::pdf::PlacedTextRun, f64)> {
     let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
     let source = crate::render::typst_gen::generate_typst(&document).unwrap();
     let text = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
@@ -96,7 +96,7 @@ fn placed(data: &[u8]) -> Vec<(crate::render::pdf::PlacedTextRun, f64)> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn find<'a>(
+pub(super) fn find<'a>(
     runs: &'a [(crate::render::pdf::PlacedTextRun, f64)],
     text: &str,
 ) -> &'a (crate::render::pdf::PlacedTextRun, f64) {
@@ -106,7 +106,7 @@ fn find<'a>(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn assert_close(actual: f64, expected: f64, context: &str) {
+pub(super) fn assert_close(actual: f64, expected: f64, context: &str) {
     assert!(
         (actual - expected).abs() < 0.05,
         "{context}: {actual} != {expected}"

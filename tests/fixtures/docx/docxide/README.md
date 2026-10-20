@@ -199,6 +199,15 @@ on the break before the greeting. Native Word sets the greeting below the table,
 centred on the whole column, and the body paragraph two lines below it at the
 margin; a compiled-layout regression checks both lines.
 
+`text_anchored_float_after_table.docx` is the unmodified synthetic
+`cases/empty-float-float-indent-0-0/input.docx` from
+[docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/empty-float-float-indent-0-0),
+Apache-2.0. A 100pt exact-height flow table is followed by a 280pt
+`w:tblpPr` table with `w:vertAnchor="text"` and `w:tblpY="390"`, and an empty
+anchor paragraph with a 20pt `w:before`. Native Word draws the floating row
+19.5pt below the flow table's bottom edge, at 191.52pt; a compiled-layout
+regression checks the 119.5pt between the two rows.
+
 `spaced_section_mark.docx` is the unmodified synthetic
 `cases/paragraph-offset-frame-no-frame/input.docx` from
 [docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/paragraph-offset-frame-no-frame),

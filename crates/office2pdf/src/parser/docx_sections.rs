@@ -1141,6 +1141,15 @@ fn resolve_body_text_frame_positions(
     });
 }
 
+/// Measure each body floating table's offsets from the text area's top left,
+/// where the renderer's `#place` starts. A text-anchored table's `y` stays an
+/// offset from the top edge of its anchor paragraph, whose place in the flow
+/// is known only to layout (issue #2236).
+///
+/// FIXME(unprobed vertical alignment on a text anchor): no Word reference
+/// aligns a text-anchored table with `w:tblpYSpec`, and none of docxide-pdf's
+/// 90 documents with a text-anchored `w:tblpPr` table does. Such a table is
+/// aligned in the text area, as a margin-anchored one is.
 fn resolve_body_floating_table_positions(
     blocks: &mut [Block],
     page_size: &PageSize,
@@ -1192,6 +1201,9 @@ fn resolve_body_floating_table_positions(
         // Typst's top-level `place` measures offsets from the text area's
         // origin. Resolve section anchors here so the renderer receives one
         // stable coordinate pair, including for over-wide aligned tables.
+        if frame.y.is_none() && frame.vertical_align.is_some() {
+            frame.anchored_to_text = false;
+        }
         frame.x = Some(page_x - margins.left);
         frame.y = Some(page_y - margins.top);
         frame.horizontal_anchor = FrameAnchor::Text;

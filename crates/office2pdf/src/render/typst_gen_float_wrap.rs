@@ -82,6 +82,37 @@ enum FloatSide {
     Below,
 }
 
+impl FloatSide {
+    /// Where a root paragraph that meets a float of `extent` goes in a column
+    /// `column_width_pt` wide.
+    fn of(extent: FloatExtent, column_width_pt: f64) -> Self {
+        let left_edge: f64 = extent.x_pt - extent.left_from_text_pt;
+        let right_edge: f64 = extent.x_pt + extent.width_pt + extent.right_from_text_pt;
+        let room_left: f64 = left_edge.min(column_width_pt);
+        let room_right: f64 = column_width_pt - right_edge.max(0.0);
+        // The wider side; the right one on a tie, a choice no Word reference
+        // decides yet.
+        if room_right >= room_left && room_right >= MIN_ROOM_BESIDE_PT {
+            Self::Right {
+                inset_pt: right_edge.max(0.0),
+            }
+        } else if room_left >= MIN_ROOM_BESIDE_PT {
+            Self::Left {
+                inset_pt: (column_width_pt - left_edge).max(0.0),
+            }
+        } else {
+            Self::Below
+        }
+    }
+}
+
+/// Whether a float of `extent` leaves no room beside it for body text in a
+/// column `column_width_pt` wide, so every line that meets it starts below
+/// it.
+pub(super) fn leaves_no_room_beside(extent: FloatExtent, column_width_pt: f64) -> bool {
+    FloatSide::of(extent, column_width_pt) == FloatSide::Below
+}
+
 /// The horizontal extent of a float that body text keeps clear of, measured
 /// from the left edge of the column it wraps in.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -142,30 +173,10 @@ impl BodyFloat {
         reach_pt: f64,
         text_frame: bool,
     ) -> Self {
-        let x: f64 = extent.x_pt;
-        let width: f64 = extent.width_pt;
-        let left_edge: f64 = x - extent.left_from_text_pt;
-        let right_edge: f64 = x + width + extent.right_from_text_pt;
-        let room_left: f64 = left_edge.min(column_width_pt);
-        let room_right: f64 = column_width_pt - right_edge.max(0.0);
-        // The wider side; the right one on a tie, a choice no Word reference
-        // decides yet.
-        let side: FloatSide = if room_right >= room_left && room_right >= MIN_ROOM_BESIDE_PT {
-            FloatSide::Right {
-                inset_pt: right_edge.max(0.0),
-            }
-        } else if room_left >= MIN_ROOM_BESIDE_PT {
-            FloatSide::Left {
-                inset_pt: (column_width_pt - left_edge).max(0.0),
-            }
-        } else {
-            FloatSide::Below
-        };
+        let side: FloatSide = FloatSide::of(extent, column_width_pt);
         tracing::debug!(
             id,
-            float_width_pt = width,
-            room_left_pt = room_left,
-            room_right_pt = room_right,
+            float_width_pt = extent.width_pt,
             ?side,
             "resolved body text wrap beside a float"
         );

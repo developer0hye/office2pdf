@@ -1,0 +1,247 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 96.3072,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 15.84,
+        "x": 88.8,
+        "y": 232.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"AFTER FLOAT\": same glyphs, drawn 1.74pt lower than Word (glyph top 231.48pt against 229.75pt), exactly as on main before this change. The empty anchor paragraph's line is taller than Word's, whose paragraph mark is painted in the Aptos the package's missing styles part leaves as default. Word also pair-kerns 'A'-'T' by 1.64pt in this package without a styles part, although the run states no w:kern, so its final 'T' is at 148.93pt against our 150.36pt. Both residuals are below materiality; recorded under #1874."
+      },
+      "id": "p1-ea762a16dc24",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 90.7776,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 16.32,
+        "x": 72.0,
+        "y": 231.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"AFTER FLOAT\": same glyphs, drawn 1.74pt lower than Word (glyph top 231.48pt against 229.75pt), exactly as on main before this change. The empty anchor paragraph's line is taller than Word's, whose paragraph mark is painted in the Aptos the package's missing styles part leaves as default. Word also pair-kerns 'A'-'T' by 1.64pt in this package without a styles part, although the run states no w:kern, so its final 'T' is at 148.93pt against our 150.36pt. Both residuals are below materiality; recorded under #1874."
+      },
+      "id": "p1-515098e5fe73",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 89.3952,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 17.76,
+        "x": 140.64,
+        "y": 231.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"AFTER FLOAT\": same glyphs, drawn 1.74pt lower than Word (glyph top 231.48pt against 229.75pt), exactly as on main before this change. The empty anchor paragraph's line is taller than Word's, whose paragraph mark is painted in the Aptos the package's missing styles part leaves as default. Word also pair-kerns 'A'-'T' by 1.64pt in this package without a styles part, although the run states no w:kern, so its final 'T' is at 148.93pt against our 150.36pt. Both residuals are below materiality; recorded under #1874."
+      },
+      "id": "p1-19cbd83891d6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 56.9088,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 8.64,
+        "x": 132.0,
+        "y": 231.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"AFTER FLOAT\": same glyphs, drawn 1.74pt lower than Word (glyph top 231.48pt against 229.75pt), exactly as on main before this change. The empty anchor paragraph's line is taller than Word's, whose paragraph mark is painted in the Aptos the package's missing styles part leaves as default. Word also pair-kerns 'A'-'T' by 1.64pt in this package without a styles part, although the run states no w:kern, so its final 'T' is at 148.93pt against our 150.36pt. Both residuals are below materiality; recorded under #1874."
+      },
+      "id": "p1-61a5ef68003b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 56.9088,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 9.12,
+        "x": 104.64,
+        "y": 232.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"AFTER FLOAT\": same glyphs, drawn 1.74pt lower than Word (glyph top 231.48pt against 229.75pt), exactly as on main before this change. The empty anchor paragraph's line is taller than Word's, whose paragraph mark is painted in the Aptos the package's missing styles part leaves as default. Word also pair-kerns 'A'-'T' by 1.64pt in this package without a styles part, although the run states no w:kern, so its final 'T' is at 148.93pt against our 150.36pt. Both residuals are below materiality; recorded under #1874."
+      },
+      "id": "p1-9e5a3eb9a10c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 56.6784,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 14.4,
+        "x": 120.96,
+        "y": 197.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"Floating topic\", the fixed float row: drawn at Word's position (baseline 203.64pt against 203.80pt, 'F' at 72.58pt against 72.53pt), with the same glyphs and weight. Advances accumulate to +0.39pt at the final 'c' (139.40pt against 139.01pt), visible only as edge fringes in the 300 DPI crop. Sub-material, recorded under #1874."
+      },
+      "id": "p1-f4c3071fd6a1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 10.08,
+        "x": 127.2,
+        "y": 76.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"Preceding table\" in the flow table's cell: same serif regular glyphs and baseline as Word (84.14pt against 84.28pt, 'P' at 72.58pt against 72.53pt). Our per-glyph advances run 0.02-0.03pt wider than Word's Times New Roman, so the final 'e' lands 0.29pt right (147.32pt against 147.03pt). The 300 DPI crop shows only edge fringes from that drift. Sub-material, recorded under #1874."
+      },
+      "id": "p1-b67a629a39b0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 44.4672,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 108.96,
+        "y": 196.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"Floating topic\", the fixed float row: drawn at Word's position (baseline 203.64pt against 203.80pt, 'F' at 72.58pt against 72.53pt), with the same glyphs and weight. Advances accumulate to +0.39pt at the final 'c' (139.40pt against 139.01pt), visible only as edge fringes in the 300 DPI crop. Sub-material, recorded under #1874."
+      },
+      "id": "p1-c68a990344c8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.7024,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.72,
+        "x": 116.64,
+        "y": 232.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"AFTER FLOAT\": same glyphs, drawn 1.74pt lower than Word (glyph top 231.48pt against 229.75pt), exactly as on main before this change. The empty anchor paragraph's line is taller than Word's, whose paragraph mark is painted in the Aptos the package's missing styles part leaves as default. Word also pair-kerns 'A'-'T' by 1.64pt in this package without a styles part, although the run states no w:kern, so its final 'T' is at 148.93pt against our 150.36pt. Both residuals are below materiality; recorded under #1874."
+      },
+      "id": "p1-e57950cc8997",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 118.08,
+        "y": 77.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"Preceding table\" in the flow table's cell: same serif regular glyphs and baseline as Word (84.14pt against 84.28pt, 'P' at 72.58pt against 72.53pt). Our per-glyph advances run 0.02-0.03pt wider than Word's Times New Roman, so the final 'e' lands 0.29pt right (147.32pt against 147.03pt). The 300 DPI crop shows only edge fringes from that drift. Sub-material, recorded under #1874."
+      },
+      "id": "p1-ecfcea4dea64",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 96.0,
+        "y": 77.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"Preceding table\" in the flow table's cell: same serif regular glyphs and baseline as Word (84.14pt against 84.28pt, 'P' at 72.58pt against 72.53pt). Our per-glyph advances run 0.02-0.03pt wider than Word's Times New Roman, so the final 'e' lands 0.29pt right (147.32pt against 147.03pt). The 300 DPI crop shows only edge fringes from that drift. Sub-material, recorded under #1874."
+      },
+      "id": "p1-222972f0a8d6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 90.24,
+        "y": 197.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"Floating topic\", the fixed float row: drawn at Word's position (baseline 203.64pt against 203.80pt, 'F' at 72.58pt against 72.53pt), with the same glyphs and weight. Advances accumulate to +0.39pt at the final 'c' (139.40pt against 139.01pt), visible only as edge fringes in the 300 DPI crop. Sub-material, recorded under #1874."
+      },
+      "id": "p1-da6868b7382c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 136.8,
+        "y": 74.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"Preceding table\" in the flow table's cell: same serif regular glyphs and baseline as Word (84.14pt against 84.28pt, 'P' at 72.58pt against 72.53pt). Our per-glyph advances run 0.02-0.03pt wider than Word's Times New Roman, so the final 'e' lands 0.29pt right (147.32pt against 147.03pt). The 300 DPI crop shows only edge fringes from that drift. Sub-material, recorded under #1874."
+      },
+      "id": "p1-6df373b2b8ff",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.68,
+        "x": 101.76,
+        "y": 197.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"Floating topic\", the fixed float row: drawn at Word's position (baseline 203.64pt against 203.80pt, 'F' at 72.58pt against 72.53pt), with the same glyphs and weight. Advances accumulate to +0.39pt at the final 'c' (139.40pt against 139.01pt), visible only as edge fringes in the 300 DPI crop. Sub-material, recorded under #1874."
+      },
+      "id": "p1-3dd55d1744f1",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 14,
+    "duplicate": 0,
+    "total": 14,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
