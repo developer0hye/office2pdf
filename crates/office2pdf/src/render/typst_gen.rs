@@ -6420,8 +6420,8 @@ fn border_line_style_to_typst(style: BorderLineStyle) -> &'static str {
 /// Both are always written. An absent `w:spacing` means Word draws no gap, not
 /// that Typst should fall back to its 1.2em default, so `None` maps to `0pt`.
 /// A `(left, right)` inset narrows the picture's measure to its paragraph's
-/// indents. A negative one widens it into the margin, as Word does; text still
-/// clamps a negative `w:left` or `w:right` at the margin (issue #2233).
+/// indents. A negative one widens it into the margin, as Word does, the same
+/// way a body paragraph's negative indent widens its text lines (issue #2233).
 fn write_image_block_open(
     out: &mut String,
     spacing: Option<ImageParagraphSpacing>,
