@@ -26,14 +26,25 @@
 //! full column below its bottom edge; here the whole paragraph stays narrowed.
 //! One that starts above a floating table runs over it, and one that starts
 //! above a text frame moves below the frame (issue #2231).
+//!
+//! Word 2013 and later also keep the box of a group of empty framed
+//! paragraphs at the top margin, though the paragraphs take no flow lines,
+//! and start a full-width table on the box's page below it (issue #2231).
+//! A table in the box's section asks at layout time, through the labels on
+//! the box's edges, whether it starts within the box, which can be on its
+//! page whether the group comes before or after it.
 
 use std::fmt::Write as _;
 
-use crate::ir::{Block, BreakClear, Document, FloatingTable, Page, Paragraph, Run, TextFrame};
+use crate::ir::{
+    Block, BreakClear, Document, FloatingTable, FrameAnchor, Page, Paragraph, Run, TextFrame,
+};
 
 use super::format_f64;
 
 const FLOAT_WRAP_HELPER: &str = "o2p-float-wrap";
+const FRAME_BOX_CLEARANCE_HELPER: &str = "o2p-frame-box-clearance";
+const FRAME_BOX_LABEL: &str = "o2p-frame-box";
 
 /// The narrowest strip beside a floating table or text frame that body text
 /// is laid out in.
@@ -177,14 +188,17 @@ pub(super) fn advance_past_floats(floats: &mut Vec<BodyFloat>, advance_pt: f64) 
     });
 }
 
-/// Whether any flow section places a body floating table or text frame at its
-/// root, which is when the wrap helper has to be defined.
+/// Whether any flow section places a body floating table or text-anchored
+/// text frame at its root, which is when the wrap helper has to be defined.
 pub(super) fn document_has_body_float(doc: &Document) -> bool {
     doc.pages.iter().any(|page| match page {
-        Page::Flow(flow) | Page::FlowContinuous(flow) => flow
-            .content
-            .iter()
-            .any(|block| matches!(block, Block::FloatingTable(_) | Block::TextFrame(_))),
+        Page::Flow(flow) | Page::FlowContinuous(flow) => {
+            flow.content.iter().any(|block| match block {
+                Block::FloatingTable(_) => true,
+                Block::TextFrame(frame) => frame.vertical_anchor == FrameAnchor::Text,
+                _ => false,
+            })
+        }
         _ => false,
     })
 }
@@ -228,6 +242,59 @@ pub(super) fn write_float_wrap_helper(out: &mut String) {
          if floats.any(float => float.pushes) {{ layout(size => wrap(size.width)) }} \
          else {{ wrap(auto) }} }}"
     );
+}
+
+/// Whether any flow section keeps an empty frame's box at the top margin,
+/// which is when the table clearance helper has to be defined.
+pub(super) fn document_has_top_margin_frame_box(doc: &Document) -> bool {
+    doc.pages.iter().any(|page| match page {
+        Page::Flow(flow) | Page::FlowContinuous(flow) => has_top_margin_frame_box(&flow.content),
+        _ => false,
+    })
+}
+
+/// Whether a flow section's root `blocks` keep an empty frame's box at the
+/// top margin.
+pub(super) fn has_top_margin_frame_box(blocks: &[Block]) -> bool {
+    blocks.iter().any(|block| {
+        matches!(block, Block::TextFrame(frame) if frame.vertical_anchor != FrameAnchor::Text)
+    })
+}
+
+/// Define the layout-time clearance a full-width table takes from the
+/// top-margin frame boxes: a table that starts within one on its page starts
+/// at the box's bottom edge instead. The clearance is a block of its own
+/// before the table, so the gap above it and the rows the table carries on
+/// to the next page stay as they were.
+///
+/// TODO(table rows carried onto a box's page): Word's export of docxide-pdf's
+/// `empty-margin-frame-long-prefix` starts the rows a table carries onto the
+/// page of the box below it as well; here they start at the top margin.
+pub(super) fn write_top_margin_frame_box_clearance_helper(out: &mut String) {
+    let _ = writeln!(
+        out,
+        "#let {FRAME_BOX_CLEARANCE_HELPER}() = context {{ \
+         let at = here().position(); \
+         let push = 0pt; \
+         for (top, bottom) in query(<{FRAME_BOX_LABEL}-top>).zip(query(<{FRAME_BOX_LABEL}-bottom>)) {{ \
+         let top = top.location().position(); \
+         let bottom = bottom.location().position(); \
+         if top.page == at.page and at.y >= top.y and at.y < bottom.y {{ \
+         push = calc.max(push, bottom.y - at.y) }} }}; \
+         block(height: push, above: 0pt, below: 0pt) }}"
+    );
+}
+
+/// Write the clearance a full-width table at the flow root takes from the
+/// top-margin frame boxes, just before the table.
+pub(super) fn write_top_margin_frame_box_clearance(out: &mut String) {
+    let _ = writeln!(out, "#{FRAME_BOX_CLEARANCE_HELPER}()");
+}
+
+/// The label a top-margin frame box carries at its `edge`, `top` or
+/// `bottom`.
+pub(super) fn write_top_margin_frame_box_label(out: &mut String, edge: &str) {
+    let _ = writeln!(out, "#metadata(none) <{FRAME_BOX_LABEL}-{edge}>");
 }
 
 /// The labels a placed floating table or text frame carries at its top and

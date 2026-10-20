@@ -1,6 +1,8 @@
 //! A body paragraph in a `w:framePr` frame hung `w:y` below its anchor
 //! paragraph: Word lifts it out of the flow, draws it in its frame, and lays
-//! the text after it beside the frame (issue #2231).
+//! the text after it beside the frame. Empty paragraphs in a frame at the top
+//! margin keep the frame's box there, which a full-width table clears
+//! (issue #2231).
 
 use super::*;
 
@@ -44,11 +46,27 @@ fn frame_docx(body: &str) -> Vec<u8> {
 /// [`frame_docx`] with `section_properties` in the body's closing
 /// `w:sectPr`.
 fn section_docx(body: &str, section_properties: &str) -> Vec<u8> {
+    package_docx(body, section_properties, None)
+}
+
+/// [`frame_docx`] whose settings declare `compatibilityMode` `mode`.
+fn compat_frame_docx(body: &str, mode: u32) -> Vec<u8> {
+    package_docx(body, PAGE_SETUP, Some(mode))
+}
+
+fn package_docx(body: &str, section_properties: &str, compatibility_mode: Option<u32>) -> Vec<u8> {
     let document = format!(
         r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{body}<w:sectPr>{section_properties}</w:sectPr></w:body></w:document>"#
     );
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
     let options = zip::write::SimpleFileOptions::default();
+    if let Some(mode) = compatibility_mode {
+        zip.start_file("word/settings.xml", options).unwrap();
+        let settings: String = format!(
+            r#"<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="{mode}"/></w:compat></w:settings>"#
+        );
+        std::io::Write::write_all(&mut zip, settings.as_bytes()).unwrap();
+    }
     let parts: [(&str, &str); 3] = [
         (
             "[Content_Types].xml",
@@ -575,5 +593,176 @@ fn issue_case_frame_hangs_below_the_table_and_leaves_no_line() {
         about.baseline_pt,
         dear.baseline_pt + 16.8,
         "framed paragraph",
+    );
+}
+
+/// A one-row table as wide as the A4 text area, with no cell margins.
+fn full_width_table(text: &str) -> String {
+    format!(
+        r#"<w:tbl><w:tblPr><w:tblW w:w="9026" w:type="dxa"/><w:tblCellMar><w:left w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="9026"/></w:tblGrid><w:tr><w:tc><w:tcPr><w:tcW w:w="9026" w:type="dxa"/></w:tcPr>{}</w:tc></w:tr></w:tbl>"#,
+        paragraph("", text)
+    )
+}
+
+/// An empty paragraph on an exact 12pt line in the frame `frame_xml`;
+/// `extra` adds to its properties.
+fn empty_framed(frame_xml: &str, extra: &str) -> String {
+    format!(
+        r#"<w:p><w:pPr>{frame_xml}<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="exact"/>{extra}</w:pPr></w:p>"#
+    )
+}
+
+/// The frame docxide-pdf's `empty-margin-frame-*` cases state: no
+/// `w:vAnchor`, so margin-anchored, 3000 twips wide and 1000 twips right of
+/// the text area's left edge.
+const TOP_MARGIN_FRAME: &str =
+    r#"<w:framePr w:w="3000" w:wrap="auto" w:hAnchor="text" w:x="1000"/>"#;
+
+/// Empty paragraphs sharing a frame at the top margin keep the frame's box
+/// there in Word 2013's layout, one line per paragraph that shows a mark,
+/// though they take no flow lines (issue #2231). Word's exports of
+/// docxide-pdf's `empty-margin-frame-*` cases decide each condition: the
+/// compatibility-mode-14 exports keep no box, nor do hidden marks or a frame
+/// beside the text area, and the paragraph ending the section adds no line.
+#[test]
+fn empty_paragraphs_in_a_top_margin_frame_keep_its_box_in_word_2013_layout() {
+    let empty: String = empty_framed(TOP_MARGIN_FRAME, "");
+    let section_end: String = empty_framed(
+        TOP_MARGIN_FRAME,
+        &format!("<w:sectPr>{PAGE_SETUP}</w:sectPr>"),
+    );
+    let body: String = format!(
+        "{}{empty}{empty}{section_end}{}",
+        full_width_table("Table text"),
+        paragraph("", "After")
+    );
+    let blocks: Vec<Block> = body_blocks(&compat_frame_docx(&body, 15));
+    let frames: Vec<&TextFrame> = blocks
+        .iter()
+        .filter_map(|block| match block {
+            Block::TextFrame(frame) => Some(frame.as_ref()),
+            _ => None,
+        })
+        .collect();
+    let [frame] = frames.as_slice() else {
+        panic!("expected one frame box: {blocks:?}");
+    };
+    assert_eq!(frame.vertical_anchor, FrameAnchor::Margin);
+    assert!((frame.y).abs() < 1e-9, "{frame:?}");
+    assert!((frame.x - 50.0).abs() < 1e-9, "{frame:?}");
+    assert!((frame.width - FRAME_WIDTH_PT).abs() < 1e-9, "{frame:?}");
+    assert!(
+        matches!(
+            frame.content.as_slice(),
+            [Block::Paragraph(_), Block::Paragraph(_)]
+        ),
+        "two lines, none for the section mark: {frame:?}"
+    );
+
+    let explicit_margin: String = empty_framed(
+        r#"<w:framePr w:w="3000" w:wrap="auto" w:vAnchor="margin" w:hAnchor="text" w:x="1000"/>"#,
+        "",
+    );
+    let has_box = |body: &str, mode: u32| {
+        body_blocks(&compat_frame_docx(body, mode))
+            .iter()
+            .any(|block| matches!(block, Block::TextFrame(_)))
+    };
+    let table: String = full_width_table("Table text");
+    assert!(has_box(&format!("{table}{explicit_margin}"), 15));
+    assert!(!has_box(&body, 14), "compatibility mode 14 keeps no box");
+    let no_settings: bool = body_blocks(&frame_docx(&body))
+        .iter()
+        .any(|block| matches!(block, Block::TextFrame(_)));
+    assert!(!no_settings, "an undeclared mode is a legacy one");
+
+    let no_box: [(&str, String); 6] = [
+        (
+            "hidden marks",
+            empty_framed(TOP_MARGIN_FRAME, r#"<w:rPr><w:vanish/></w:rPr>"#).repeat(2),
+        ),
+        (
+            "beside the text area",
+            empty_framed(
+                r#"<w:framePr w:w="3000" w:wrap="auto" w:hAnchor="text" w:x="9100"/>"#,
+                "",
+            ),
+        ),
+        (
+            "page anchored",
+            empty_framed(
+                r#"<w:framePr w:w="3000" w:wrap="auto" w:vAnchor="page" w:hAnchor="text" w:x="1000"/>"#,
+                "",
+            ),
+        ),
+        (
+            "offset below the margin",
+            empty_framed(
+                r#"<w:framePr w:w="3000" w:wrap="auto" w:hAnchor="text" w:x="1000" w:y="400"/>"#,
+                "",
+            ),
+        ),
+        (
+            "aligned vertically",
+            empty_framed(
+                r#"<w:framePr w:w="3000" w:wrap="auto" w:hAnchor="text" w:x="1000" w:yAlign="center"/>"#,
+                "",
+            ),
+        ),
+        (
+            "no width",
+            empty_framed(
+                r#"<w:framePr w:wrap="auto" w:hAnchor="text" w:x="1000"/>"#,
+                "",
+            ),
+        ),
+    ];
+    for (case, frame_group) in no_box {
+        assert!(!has_box(&format!("{table}{frame_group}"), 15), "{case}");
+    }
+}
+
+/// A full-width table that starts within an empty frame's box at the top
+/// margin starts below it, whether the frame's paragraphs come after the
+/// table or before it: Word's exports of docxide-pdf's
+/// `empty-margin-frame-15-*` cases start such a table one line lower per
+/// framed paragraph. Body text there stays put, as in Word's
+/// `empty-frame-control` export, and so does a table that starts below the
+/// box (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_full_width_table_in_an_empty_frames_box_starts_below_it() {
+    let empty: String = empty_framed(TOP_MARGIN_FRAME, "");
+    let group: String = empty.repeat(2);
+    let table: String = full_width_table("Table text");
+    let after: String = paragraph("", "After");
+    let baseline = |body: &str, mode: u32, text: &str| {
+        let runs = placed(&compat_frame_docx(body, mode));
+        find(&runs, text).0.baseline_pt
+    };
+    // The box is the two exact 12pt lines.
+    for (case, body) in [
+        ("frame after the table", format!("{table}{group}{after}")),
+        ("frame before the table", format!("{group}{table}{after}")),
+    ] {
+        let legacy: f64 = baseline(&body, 14, "Table text");
+        assert_close(baseline(&body, 15, "Table text"), legacy + 24.0, case);
+        let legacy_after: f64 = baseline(&body, 14, "After");
+        assert_close(baseline(&body, 15, "After"), legacy_after + 24.0, case);
+    }
+
+    let lead: String = paragraph("", "Lead text");
+    let text_first: String = format!("{lead}{group}{after}");
+    assert_close(
+        baseline(&text_first, 15, "Lead text"),
+        baseline(&text_first, 14, "Lead text"),
+        "body text in the box",
+    );
+    // Three lines of text put the table's top below the box.
+    let below: String = format!("{}{table}{group}", lead.repeat(3));
+    assert_close(
+        baseline(&below, 15, "Table text"),
+        baseline(&below, 14, "Table text"),
+        "a table below the box",
     );
 }
