@@ -46,14 +46,15 @@ use self::sections::extract_page_size;
 use self::sections::{
     HeaderFooterAssets, HeaderFooterStyleContext, LinkedFirstStories, SectionHeaderFooterInputs,
     SectionOverrides, body_text_frame, build_flow_page_from_section, build_header_footer_assets,
-    top_margin_frame_box,
+    fixed_text_frame, top_margin_frame_box,
 };
 #[cfg(test)]
 use self::styles::parse_ligatures_value;
 use self::styles::{
     DOC_DEFAULT_STYLE_ID, LigatureRules, PairKerningRules, ResolvedStyle, StyleMap,
-    TabStopOverride, apply_tab_stop_overrides, build_style_map, get_paragraph_style_id,
-    merge_paragraph_style, merge_text_style, resolve_doc_default_text_style,
+    TabStopOverride, apply_tab_stop_overrides, build_style_map, effective_frame_property,
+    get_paragraph_style_id, merge_paragraph_style, merge_text_style, paragraph_style_frames,
+    resolve_doc_default_text_style,
 };
 use self::tables::{convert_table, convert_table_in_text_box};
 use self::text::{
@@ -556,6 +557,19 @@ impl Parser for DocxParser {
         // The body index at which the frame of the last top-margin frame box
         // opened starts, so the frame's later lines join that box.
         let mut open_frame_box: Option<usize> = None;
+        // The last run of children sharing a frame at a fixed place on its
+        // page, so its later children join that frame.
+        let mut open_fixed_frame: Option<FixedFrameGroup> = None;
+        let style_frames: HashMap<String, docx_rs::FrameProperty> =
+            paragraph_style_frames(&docx.styles);
+        let body_frames: Vec<Option<docx_rs::FrameProperty>> = docx
+            .document
+            .children
+            .iter()
+            .map(|child| {
+                leading_frame_property(child, &style_frames, default_paragraph_style_id.as_deref())
+            })
+            .collect();
         for (idx, child) in docx.document.children.iter().enumerate() {
             // A removed paragraph mark merges into the next paragraph; zero-width
             // bookmark/comment markers leave it pending. Tables, TOCs, and
@@ -594,7 +608,22 @@ impl Parser for DocxParser {
                         &ctx,
                         &docx.styles,
                     );
-                    if is_empty_lifted_frame(para, &tagged, &docx.document.children, idx) {
+                    if let Some(frame) = body_frames[idx].as_ref().and_then(fixed_text_frame) {
+                        tagged = join_fixed_text_frame(
+                            &mut elements,
+                            &mut open_fixed_frame,
+                            frame,
+                            tagged,
+                            &docx.document.children,
+                            &body_frames,
+                            idx,
+                        );
+                    } else if is_empty_lifted_frame(
+                        &tagged,
+                        &docx.document.children,
+                        &body_frames,
+                        idx,
+                    ) {
                         tracing::debug!(
                             format = "DOCX",
                             body_index = idx,
@@ -607,13 +636,11 @@ impl Parser for DocxParser {
                                 &mut open_frame_box,
                                 para,
                                 lines,
-                                &docx.document.children,
+                                &body_frames,
                                 idx,
                             );
                         }
-                    } else if let Some(frame) =
-                        lifted_text_frame(para, &tagged, &docx.document.children, idx)
-                    {
+                    } else if let Some(frame) = lifted_text_frame(&tagged, &body_frames, idx) {
                         tracing::debug!(
                             format = "DOCX",
                             body_index = idx,
@@ -640,13 +667,26 @@ impl Parser for DocxParser {
                     tagged
                 }
                 docx_rs::DocumentChild::Table(table) => {
-                    vec![TaggedElement::Plain(vec![convert_body_table_block(
-                        table,
-                        &images,
-                        &hyperlinks,
-                        &style_map,
-                        &ctx,
-                    )])]
+                    let tagged: Vec<TaggedElement> =
+                        vec![TaggedElement::Plain(vec![convert_body_table_block(
+                            table,
+                            &images,
+                            &hyperlinks,
+                            &style_map,
+                            &ctx,
+                        )])];
+                    match body_frames[idx].as_ref().and_then(fixed_text_frame) {
+                        Some(frame) => join_fixed_text_frame(
+                            &mut elements,
+                            &mut open_fixed_frame,
+                            frame,
+                            tagged,
+                            &docx.document.children,
+                            &body_frames,
+                            idx,
+                        ),
+                        None => tagged,
+                    }
                 }
                 docx_rs::DocumentChild::StructuredDataTag(sdt) => {
                     convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &ctx, &docx.styles)
@@ -2279,22 +2319,23 @@ fn is_empty_section_break_paragraph(para: &docx_rs::Paragraph) -> bool {
 ///
 /// The other paragraphs of the frame are judged on their source runs, which
 /// cannot tell a paragraph style's border or shading.
+///
+/// `frames` holds each body child's [`leading_frame_property`].
 fn is_empty_lifted_frame(
-    para: &docx_rs::Paragraph,
     converted: &[TaggedElement],
     body: &[docx_rs::DocumentChild],
+    frames: &[Option<docx_rs::FrameProperty>],
     index: usize,
 ) -> bool {
-    let Some(frame) = para.property.frame_property.as_ref() else {
+    let Some(frame) = frames[index].as_ref() else {
         return false;
     };
-    let shares_frame =
-        |child: &&docx_rs::DocumentChild| leading_frame_property(child) == Some(frame);
-    let mut frame_mates = body[..index]
-        .iter()
+    let shares_frame = |mate: &usize| frames[*mate].as_ref() == Some(frame);
+    let mut frame_mates = (0..index)
         .rev()
         .take_while(shares_frame)
-        .chain(body[index + 1..].iter().take_while(shares_frame));
+        .chain((index + 1..body.len()).take_while(shares_frame))
+        .map(|mate| &body[mate]);
     frame_lifts_out_of_flow(frame)
         && matches!(
             converted,
@@ -2331,10 +2372,10 @@ fn keep_line_in_top_margin_frame_box(
     open_box: &mut Option<usize>,
     para: &docx_rs::Paragraph,
     converted: Vec<TaggedElement>,
-    body: &[docx_rs::DocumentChild],
+    frames: &[Option<docx_rs::FrameProperty>],
     index: usize,
 ) -> Vec<TaggedElement> {
-    let Some(frame_property) = para.property.frame_property.as_ref() else {
+    let Some(frame_property) = frames[index].as_ref() else {
         return Vec::new();
     };
     if para.property.section_property.is_some() || para.property.run_property.vanish.is_some() {
@@ -2350,12 +2391,7 @@ fn keep_line_in_top_margin_frame_box(
             TaggedElement::ListParagraph { .. } => Vec::new(),
         })
         .collect();
-    let frame_start: usize = index
-        - body[..index]
-            .iter()
-            .rev()
-            .take_while(|child| leading_frame_property(child) == Some(frame_property))
-            .count();
+    let frame_start: usize = frame_start(frames, index);
     if *open_box == Some(frame_start)
         && let Some(TaggedElement::Plain(blocks)) = elements.last_mut()
         && let [Block::TextFrame(open)] = blocks.as_mut_slice()
@@ -2409,18 +2445,20 @@ fn shows_only_spaces(para: &docx_rs::Paragraph) -> bool {
 /// TODO(frames shared by several paragraphs): Word draws a group of
 /// paragraphs with an identical `w:framePr` in one frame.
 fn lifted_text_frame(
-    para: &docx_rs::Paragraph,
     converted: &[TaggedElement],
-    body: &[docx_rs::DocumentChild],
+    frames: &[Option<docx_rs::FrameProperty>],
     index: usize,
 ) -> Option<TextFrame> {
-    let frame_property: &docx_rs::FrameProperty = para.property.frame_property.as_ref()?;
+    let frame_property: &docx_rs::FrameProperty = frames[index].as_ref()?;
     let mut frame: TextFrame = body_text_frame(frame_property)?;
-    let shares_frame = |neighbour: Option<&docx_rs::DocumentChild>| {
-        neighbour.and_then(leading_frame_property) == Some(frame_property)
+    let shares_frame = |neighbour: Option<&Option<docx_rs::FrameProperty>>| {
+        neighbour.and_then(Option::as_ref) == Some(frame_property)
     };
-    if shares_frame(index.checked_sub(1).and_then(|previous| body.get(previous)))
-        || shares_frame(body.get(index + 1))
+    if shares_frame(
+        index
+            .checked_sub(1)
+            .and_then(|previous| frames.get(previous)),
+    ) || shares_frame(frames.get(index + 1))
     {
         return None;
     }
@@ -2439,30 +2477,176 @@ fn lifted_text_frame(
     (!frame.content.is_empty()).then_some(frame)
 }
 
-/// The `w:framePr` a body child would sit in: a paragraph's own, or a table's
-/// first cell paragraph's, which is how Word frames a table.
-fn leading_frame_property(child: &docx_rs::DocumentChild) -> Option<&docx_rs::FrameProperty> {
-    match child {
-        docx_rs::DocumentChild::Paragraph(paragraph) => paragraph.property.frame_property.as_ref(),
+/// The run of adjacent body children that share a frame Word keeps at a
+/// fixed place on its page, as [`join_fixed_text_frame`] last saw it.
+struct FixedFrameGroup {
+    /// The body index the run starts at.
+    start: usize,
+    /// Whether the run is drawn in its frame, or stays in the flow because one
+    /// of its children holds what a placed frame cannot.
+    lifted: bool,
+}
+
+/// Draw a body child in the `w:framePr` frame Word keeps at a fixed place on
+/// its page ([`fixed_text_frame`]), together with the adjacent children that
+/// share the frame: the first opens it, and the others join it while it is
+/// still the last element. Returns what the flow keeps: the frame when this
+/// child opens it, nothing when it joins one, and the child's own blocks when
+/// its frame stays in the flow.
+///
+/// A frame whose children show nothing but spaces stays in the flow, each
+/// empty paragraph keeping its line: no Word reference shows such a frame
+/// that keeps text off its sides leaving no line, as [`frame_lifts_out_of_flow`]
+/// notes.
+///
+/// A frame holds paragraphs, tables and inline pictures. A child holding
+/// anything else — a list paragraph, a page or column break, a floating or
+/// grouped drawing — keeps the whole frame in the flow, its earlier children
+/// included, as before frames were lifted: a drawing group's zero-size
+/// anchor boxes spread across a placed block's line instead of stacking at
+/// their anchor.
+///
+/// TODO(lists and drawings in a fixed frame): Word draws them in the frame
+/// too.
+///
+/// `frames` holds each body child's [`leading_frame_property`].
+fn join_fixed_text_frame(
+    elements: &mut Vec<TaggedElement>,
+    group: &mut Option<FixedFrameGroup>,
+    mut frame: TextFrame,
+    converted: Vec<TaggedElement>,
+    body: &[docx_rs::DocumentChild],
+    frames: &[Option<docx_rs::FrameProperty>],
+    index: usize,
+) -> Vec<TaggedElement> {
+    let start: usize = frame_start(frames, index);
+    let fits_in_frame: bool = converted.iter().all(|element| {
+        matches!(element, TaggedElement::Plain(blocks) if blocks.iter().all(|block| matches!(
+            block,
+            Block::Paragraph(_)
+                | Block::Caption(_)
+                | Block::Table(_)
+                | Block::Image(_)
+                | Block::InlineImages(_)
+        )))
+    });
+    if let Some(open) = group.as_mut()
+        && open.start == start
+    {
+        if !open.lifted {
+            return converted;
+        }
+        let open_frame: Option<&mut TextFrame> = match elements.last_mut() {
+            Some(TaggedElement::Plain(blocks)) => match blocks.as_mut_slice() {
+                [Block::TextFrame(open_frame)] => Some(open_frame),
+                _ => None,
+            },
+            _ => None,
+        };
+        if let Some(open_frame) = open_frame {
+            if fits_in_frame {
+                open_frame
+                    .content
+                    .extend(converted.into_iter().flat_map(plain_blocks));
+                return Vec::new();
+            }
+            let earlier: Vec<Block> = std::mem::take(&mut open_frame.content);
+            elements.pop();
+            elements.push(TaggedElement::Plain(earlier));
+            open.lifted = false;
+            return converted;
+        }
+    }
+    let frame_shows_something: bool = (start..body.len())
+        .take_while(|&mate| frames[mate] == frames[start])
+        .any(|mate| match &body[mate] {
+            docx_rs::DocumentChild::Paragraph(paragraph) => !shows_only_spaces(paragraph),
+            _ => true,
+        });
+    if !fits_in_frame || !frame_shows_something {
+        *group = Some(FixedFrameGroup {
+            start,
+            lifted: false,
+        });
+        return converted;
+    }
+    tracing::debug!(
+        format = "DOCX",
+        body_index = index,
+        x_pt = frame.x,
+        y_pt = frame.y,
+        width_pt = frame.width,
+        "Framed body content drawn at its place on the page"
+    );
+    frame.content = converted.into_iter().flat_map(plain_blocks).collect();
+    *group = Some(FixedFrameGroup {
+        start,
+        lifted: true,
+    });
+    vec![TaggedElement::Plain(vec![Block::TextFrame(Box::new(
+        frame,
+    ))])]
+}
+
+/// A plain element's blocks. A list paragraph has none here:
+/// [`join_fixed_text_frame`] keeps those in the flow.
+fn plain_blocks(element: TaggedElement) -> Vec<Block> {
+    match element {
+        TaggedElement::Plain(blocks) => blocks,
+        TaggedElement::ListParagraph { .. } => Vec::new(),
+    }
+}
+
+/// The body index at which the run of children sharing the frame of the
+/// child at `index` starts.
+fn frame_start(frames: &[Option<docx_rs::FrameProperty>], index: usize) -> usize {
+    index
+        - frames[..index]
+            .iter()
+            .rev()
+            .take_while(|frame| *frame == &frames[index])
+            .count()
+}
+
+/// The `w:framePr` a body child would sit in: a paragraph's, or a table's
+/// first cell paragraph's, which is how Word frames a table, merged over its
+/// paragraph style's ([`effective_frame_property`]). A paragraph that names
+/// no style takes the default paragraph style's, `default_style_id`.
+///
+/// TODO(frames in block-level content controls): a framed paragraph inside a
+/// body `w:sdt` is not a body child here, so it stays in the flow; bulk
+/// `tdf148671` keeps three of its six page frames there.
+fn leading_frame_property(
+    child: &docx_rs::DocumentChild,
+    style_frames: &HashMap<String, docx_rs::FrameProperty>,
+    default_style_id: Option<&str>,
+) -> Option<docx_rs::FrameProperty> {
+    let paragraph: &docx_rs::Paragraph = match child {
+        docx_rs::DocumentChild::Paragraph(paragraph) => paragraph,
         docx_rs::DocumentChild::Table(table) => {
             let docx_rs::TableChild::TableRow(row) = table.rows.first()?;
             let docx_rs::TableRowChild::TableCell(cell) = row.cells.first()?;
             match cell.children.first()? {
-                docx_rs::TableCellContent::Paragraph(paragraph) => {
-                    paragraph.property.frame_property.as_ref()
-                }
-                _ => None,
+                docx_rs::TableCellContent::Paragraph(paragraph) => paragraph,
+                _ => return None,
             }
         }
-        _ => None,
-    }
+        _ => return None,
+    };
+    let style_id: Option<&str> = get_paragraph_style_id(&paragraph.property).or(default_style_id);
+    effective_frame_property(
+        &paragraph.property,
+        style_id.and_then(|style_id| style_frames.get(style_id)),
+    )
 }
 
-/// Whether Word lays a `w:framePr` frame outside the body flow, following
-/// docxide-pdf's Word-probed `is_empty_wrapping_frame`. A frame stating only
-/// its `w:wrap` flows as a plain paragraph, and an inline one sits in the
-/// flow. One that keeps text off its sides (`none`, `notBeside`) or states
-/// its own height also stays: no reference shows those leaving no line.
+/// Whether Word lays an empty paragraph's `w:framePr` frame outside the body
+/// flow, following docxide-pdf's Word-probed `is_empty_wrapping_frame`. A
+/// frame stating only its `w:wrap` flows as a plain paragraph, and an inline
+/// one sits in the flow. One that keeps text off its sides (`none`,
+/// `notBeside`) or states its own height is not judged here: no reference
+/// shows those leaving no line, and [`fixed_text_frame`] draws those it
+/// places.
 fn frame_lifts_out_of_flow(frame: &docx_rs::FrameProperty) -> bool {
     let placement = docx_rs::FrameProperty {
         wrap: None,

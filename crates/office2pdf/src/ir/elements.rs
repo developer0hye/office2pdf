@@ -1303,7 +1303,9 @@ pub struct FloatingShape {
 /// flow (`w:vAnchor="text"`) with a stated height is drawn in its frame, and
 /// the text after it lies beside the frame. A group of empty paragraphs in a
 /// frame at the top margin keeps the frame's box there, which a full-width
-/// table on its page starts below.
+/// table on its page starts below. A paragraph group or table in a frame at
+/// a fixed place on its page that keeps text off its sides (`text_below`) is
+/// drawn there, and the body text that meets it starts below it.
 #[derive(Debug, Clone)]
 pub struct TextFrame {
     pub content: Vec<Block>,
@@ -1316,11 +1318,14 @@ pub struct TextFrame {
     /// `w:xAlign` in place of `w:x`.
     pub horizontal_align: Option<FrameAlign>,
     /// What `y` is measured from: `Text`, the top of the paragraph's place in
-    /// the flow, or `Margin`, the top margin of the page the frame lands on.
+    /// the flow, `Margin`, the top margin of the page the frame lands on, or
+    /// `Page`, that page's top edge. Section resolution measures a `Page`
+    /// frame's `y` from the top margin and makes it `Margin`.
     pub vertical_anchor: FrameAnchor,
     /// `w:y`: how far below `vertical_anchor` the frame starts, in points.
     pub y: f64,
-    /// `w:w` in points.
+    /// `w:w` in points, or zero for a frame that states none, which is as
+    /// wide as its content.
     pub width: f64,
     /// `w:h` in points: the frame's height when `exact_height`, otherwise the
     /// least height its content stretches.
@@ -1333,6 +1338,9 @@ pub struct TextFrame {
     /// `w:vSpace`: how far body text keeps from its top and bottom edges, in
     /// points.
     pub vertical_space: f64,
+    /// `w:wrap` `notBeside` or `none`: no body text lies beside the frame, so
+    /// a line that meets its band starts below it.
+    pub text_below: bool,
 }
 
 /// A DOCX body table whose `w:tblpPr` frame has been resolved against its

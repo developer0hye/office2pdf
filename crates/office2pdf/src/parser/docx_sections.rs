@@ -1033,6 +1033,39 @@ pub(super) fn top_margin_frame_box(frame: &docx_rs::FrameProperty) -> Option<Tex
     at_top_margin.then(|| frame_box(frame, width))
 }
 
+/// The frame of a body paragraph group, or table, that Word draws at a fixed
+/// place on its page and keeps body text off the sides of: `w:wrap`
+/// `notBeside` or `none`, `w:y` below the top of the page (`w:vAnchor`
+/// `page`) or the top margin (`margin`, or no `w:vAnchor`, as docxide-pdf's
+/// Word probe found). docxide-pdf's `lifted_frame` lifts the same frames, and
+/// Word's export of its scraped `massachusetts_community_sanitation` draws
+/// the letterhead in four of them and starts the letter below them (issue
+/// #2231). A frame without `w:w` is as wide as its content. The caller fills
+/// in the content.
+///
+/// TODO(vertically aligned fixed frames): a frame placed by `w:yAlign`, or
+/// one without `w:w` placed by `w:xAlign`, needs its content's size to find
+/// its place, and stays in the flow.
+pub(super) fn fixed_text_frame(frame: &docx_rs::FrameProperty) -> Option<TextFrame> {
+    let vertical_anchor: FrameAnchor = match frame.v_anchor.as_deref() {
+        Some("page") => FrameAnchor::Page,
+        None | Some("margin") => FrameAnchor::Margin,
+        _ => return None,
+    };
+    let width: u32 = frame.w.unwrap_or(0);
+    let placed: bool = matches!(frame.wrap.as_deref(), Some("none" | "notBeside"))
+        && frame.y_align.is_none()
+        && (width > 0 || frame.x_align.is_none());
+    placed.then(|| TextFrame {
+        vertical_anchor,
+        y: frame.y.map(twips_to_pt).unwrap_or(0.0),
+        height: frame.h.map_or(0.0, |height| twips_to_pt(height as i32)),
+        exact_height: frame.h_rule.as_deref() == Some("exact"),
+        text_below: true,
+        ..frame_box(frame, width)
+    })
+}
+
 /// A frame `width_twips` wide at its horizontal place, its top at the top
 /// margin and no taller than its content.
 fn frame_box(frame: &docx_rs::FrameProperty, width_twips: u32) -> TextFrame {
@@ -1054,17 +1087,20 @@ fn frame_box(frame: &docx_rs::FrameProperty, width_twips: u32) -> TextFrame {
         exact_height: false,
         horizontal_space: frame.h_space.map(twips_to_pt).unwrap_or(0.0).max(0.0),
         vertical_space: frame.v_space.map(twips_to_pt).unwrap_or(0.0).max(0.0),
+        text_below: false,
     }
 }
 
 /// Measure each body text frame's `x` from the text area's left edge, where
-/// the renderer's `#place` starts. Its `y` stays an offset from its vertical
-/// anchor: a text-anchored frame's place in the flow is known only to layout.
+/// the renderer's `#place` starts. A text-anchored frame's `y` stays an
+/// offset from its anchor, whose place in the flow is known only to layout;
+/// a page-anchored one's is measured from the text area's top too, and it
+/// becomes margin-anchored.
 ///
-/// A box at the top margin that lies wholly beside the text area is dropped:
-/// no body text or table can meet it, and Word's export of docxide-pdf's
-/// `empty-margin-frame-off-page` leaves the table after one at the top
-/// margin.
+/// An empty frame's box at the top margin that lies wholly beside the text
+/// area is dropped: no body text or table can meet it, and Word's export of
+/// docxide-pdf's `empty-margin-frame-off-page` leaves the table after one at
+/// the top margin.
 ///
 /// TODO(text frames in multi-column sections): a frame's `#place` starts at
 /// its column's left edge, which is the text area's only in the first column.
@@ -1092,9 +1128,14 @@ fn resolve_body_text_frame_positions(
         frame.x = origin + offset - margins.left;
         frame.horizontal_anchor = FrameAnchor::Text;
         frame.horizontal_align = None;
+        if frame.vertical_anchor == FrameAnchor::Page {
+            frame.y -= margins.top;
+            frame.vertical_anchor = FrameAnchor::Margin;
+        }
     }
     blocks.retain(|block| {
         !matches!(block, Block::TextFrame(frame) if frame.vertical_anchor == FrameAnchor::Margin
+            && !frame.text_below
             && (frame.x - frame.horizontal_space >= text_width
                 || frame.x + frame.width + frame.horizontal_space <= 0.0))
     });

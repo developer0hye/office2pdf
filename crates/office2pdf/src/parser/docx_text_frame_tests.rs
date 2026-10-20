@@ -1,8 +1,9 @@
 //! A body paragraph in a `w:framePr` frame hung `w:y` below its anchor
 //! paragraph: Word lifts it out of the flow, draws it in its frame, and lays
 //! the text after it beside the frame. Empty paragraphs in a frame at the top
-//! margin keep the frame's box there, which a full-width table clears
-//! (issue #2231).
+//! margin keep the frame's box there, which a full-width table clears. A
+//! frame at a fixed place on its page that keeps text off its sides is drawn
+//! there, and the body text that meets it starts below it (issue #2231).
 
 use super::*;
 
@@ -923,4 +924,342 @@ fn rows_an_empty_frames_box_would_push_off_its_page_keep_their_place() {
         pages(98, 14),
         "49 rows keep their place, and nothing moves to a new page"
     );
+}
+
+/// A frame `w:x="{x_twips}"` from the page's left edge and `w:y="{y_twips}"`
+/// below `v_anchor`, which keeps body text off its sides (`wrap` is
+/// `notBeside` or `none`); `width` states its `w:w`, or nothing for an auto
+/// width.
+fn page_frame(wrap: &str, v_anchor: &str, x_twips: i32, y_twips: i32, width: &str) -> String {
+    format!(
+        r#"<w:framePr {width} w:wrap="{wrap}" w:vAnchor="{v_anchor}" w:hAnchor="page" w:x="{x_twips}" w:y="{y_twips}"/>"#
+    )
+}
+
+/// The painted non-blank runs on `page`.
+#[cfg(not(target_arch = "wasm32"))]
+fn page_runs(data: &[u8], page: usize) -> Vec<crate::render::pdf::PlacedTextRun> {
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+    crate::render::pdf::compiled_text_runs(&source.source, page)
+        .unwrap()
+        .into_iter()
+        .filter(|run| !run.text.trim().is_empty())
+        .collect()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn run_named<'a>(
+    runs: &'a [crate::render::pdf::PlacedTextRun],
+    text: &str,
+) -> &'a crate::render::pdf::PlacedTextRun {
+    runs.iter()
+        .find(|run| run.text.trim_end() == text)
+        .unwrap_or_else(|| panic!("no run {text:?} in {runs:?}"))
+}
+
+/// Where a 12pt single-spaced line of these tests sits: its baseline below
+/// the top of its line, and the pitch from one such line to the next.
+#[cfg(not(target_arch = "wasm32"))]
+fn line_geometry() -> (f64, f64) {
+    let runs = page_runs(
+        &frame_docx(&[paragraph("", "First"), paragraph("", "Second")].concat()),
+        0,
+    );
+    let first: f64 = run_named(&runs, "First").baseline_pt;
+    (
+        first - MARGIN_PT,
+        run_named(&runs, "Second").baseline_pt - first,
+    )
+}
+
+/// A paragraph group Word frames at a fixed place on its page, keeping body
+/// text off its sides (`w:wrap` `notBeside` or `none`, `w:vAnchor` `page`
+/// or `margin`), is drawn at that place, not in the flow. A body line that
+/// meets the frame's band starts below it; one above or below the band
+/// keeps its place. Word's export of docxide-pdf's scraped
+/// `massachusetts_community_sanitation` draws its letterhead frames this
+/// way and starts the letter below them (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_frame_that_keeps_text_off_its_sides_is_drawn_at_its_page_place() {
+    let (ascent, pitch) = line_geometry();
+    let body_after = |frame: &str, page_break: bool| {
+        let lead: String = if page_break {
+            [
+                paragraph("", "Lead"),
+                r#"<w:p><w:r><w:br w:type="page"/></w:r></w:p>"#.to_string(),
+            ]
+            .concat()
+        } else {
+            String::new()
+        };
+        frame_docx(
+            &[
+                lead,
+                paragraph(frame, "Framed one"),
+                paragraph(frame, "Framed two"),
+                paragraph("", "Body one"),
+                paragraph("", "Body two"),
+            ]
+            .concat(),
+        )
+    };
+    let width: &str = r#"w:w="3000""#;
+    // (wrap, vAnchor, w:y, frame top, the first body line's top, the
+    // second's): a two-line band from 60pt meets the first body line at the
+    // top margin, one from 92pt only the second, and one from 10pt neither.
+    let cases: [(&str, &str, i32, f64, f64, f64); 3] = [
+        (
+            "notBeside",
+            "page",
+            1200,
+            60.0,
+            60.0 + 2.0 * pitch,
+            60.0 + 3.0 * pitch,
+        ),
+        (
+            "none",
+            "margin",
+            400,
+            MARGIN_PT + 20.0,
+            MARGIN_PT,
+            MARGIN_PT + 20.0 + 2.0 * pitch,
+        ),
+        ("notBeside", "page", 200, 10.0, MARGIN_PT, MARGIN_PT + pitch),
+    ];
+    for (wrap, v_anchor, y_twips, frame_top, body_one_top, body_two_top) in cases {
+        let frame: String = page_frame(wrap, v_anchor, 2000, y_twips, width);
+        for page_break in [false, true] {
+            let runs = page_runs(&body_after(&frame, page_break), usize::from(page_break));
+            let context = format!("wrap={wrap} vAnchor={v_anchor} y={y_twips} page {page_break}");
+            for (line, text) in ["Framed one", "Framed two"].into_iter().enumerate() {
+                let framed = run_named(&runs, text);
+                assert_close(framed.left_pt, 100.0, &context);
+                assert_close(
+                    framed.baseline_pt,
+                    frame_top + ascent + line as f64 * pitch,
+                    &context,
+                );
+            }
+            for (text, top) in [("Body one", body_one_top), ("Body two", body_two_top)] {
+                let body = run_named(&runs, text);
+                assert_close(body.left_pt, MARGIN_PT, &context);
+                assert_close(body.baseline_pt, top + ascent, &format!("{context} {text}"));
+            }
+        }
+    }
+}
+
+/// Adjacent paragraphs share a frame when their `w:framePr` agree once each
+/// takes the attributes it does not state from its paragraph style's, as
+/// docxide-pdf's `parse_frame_props` resolves them. The seven lines below
+/// the first of `massachusetts_community_sanitation`'s letterhead state no
+/// `w:hAnchor` or `w:hSpace` of their own; Word draws them in the first
+/// line's frame (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_paragraph_takes_the_frame_attributes_it_omits_from_its_style() {
+    let (ascent, pitch) = line_geometry();
+    let styles: &str = r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Letterhead"><w:name w:val="Letterhead"/><w:pPr><w:framePr w:w="3000" w:hSpace="187" w:wrap="notBeside" w:vAnchor="text" w:hAnchor="page" w:x="4000" w:y="1"/></w:pPr></w:style></w:styles>"#;
+    let own: &str = r#"<w:framePr w:w="3000" w:hSpace="187" w:wrap="notBeside" w:vAnchor="page" w:hAnchor="page" w:x="2000" w:y="1200"/>"#;
+    let partial: &str = r#"<w:pStyle w:val="Letterhead"/><w:framePr w:w="3000" w:wrap="notBeside" w:vAnchor="page" w:x="2000" w:y="1200"/>"#;
+    let document: String = format!(
+        r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{}<w:sectPr>{PAGE_SETUP}</w:sectPr></w:body></w:document>"#,
+        [
+            paragraph(own, "Head line"),
+            paragraph(partial, "Second line"),
+            paragraph(partial, "Third line"),
+            paragraph("", "Body text"),
+        ]
+        .concat()
+    );
+    let runs = page_runs(&build_docx_with_styles_xml(&document, styles), 0);
+    for (line, text) in ["Head line", "Second line", "Third line"]
+        .into_iter()
+        .enumerate()
+    {
+        let framed = run_named(&runs, text);
+        assert_close(framed.left_pt, 100.0, text);
+        assert_close(
+            framed.baseline_pt,
+            60.0 + ascent + line as f64 * pitch,
+            text,
+        );
+    }
+    assert_close(
+        run_named(&runs, "Body text").baseline_pt,
+        60.0 + 3.0 * pitch + ascent,
+        "body text below the frame",
+    );
+}
+
+/// A frame without `w:w` starts at its `w:x`, and its band is as tall as its
+/// content; a table whose first cell paragraph carries the frame is drawn in
+/// it, its band as tall as its rows. `massachusetts_community_sanitation`'s
+/// seal and governor table are such frames (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_auto_width_frame_starts_at_its_place_and_can_hold_a_table() {
+    let (ascent, pitch) = line_geometry();
+    let auto: String = page_frame("notBeside", "page", 2000, 1200, "");
+    let runs = page_runs(
+        &frame_docx(
+            &[
+                paragraph(&auto, "A framed line"),
+                paragraph(&auto, "Another"),
+                paragraph("", "Body text"),
+            ]
+            .concat(),
+        ),
+        0,
+    );
+    for (line, text) in ["A framed line", "Another"].into_iter().enumerate() {
+        let framed = run_named(&runs, text);
+        assert_close(framed.left_pt, 100.0, text);
+        assert_close(
+            framed.baseline_pt,
+            60.0 + ascent + line as f64 * pitch,
+            text,
+        );
+    }
+    assert_close(
+        run_named(&runs, "Body text").baseline_pt,
+        60.0 + 2.0 * pitch + ascent,
+        "body text below the frame",
+    );
+
+    // The same table in the flow, at the text area's top left, shows where
+    // its rows sit in it and where the line after it starts.
+    let framed_table = |frame: &str| {
+        let rows: String = ["Row one", "Row two"]
+            .into_iter()
+            .map(|text| {
+                format!(
+                    r#"<w:tr><w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/></w:tcPr>{}</w:tc></w:tr>"#,
+                    paragraph(frame, text)
+                )
+            })
+            .collect();
+        let table: String = format!(
+            r#"<w:tbl><w:tblPr><w:tblW w:w="2000" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="2000"/></w:tblGrid>{rows}</w:tbl>"#
+        );
+        page_runs(
+            &frame_docx(&[table, paragraph("", "Body text")].concat()),
+            0,
+        )
+    };
+    let in_flow = framed_table("");
+    // From 60pt, the table's band meets the top margin's first line.
+    let framed = framed_table(&page_frame("notBeside", "page", 1000, 1200, ""));
+    for text in ["Row one", "Row two"] {
+        let (row, flow_row) = (run_named(&framed, text), run_named(&in_flow, text));
+        assert_close(row.left_pt, 50.0 + flow_row.left_pt - MARGIN_PT, text);
+        assert_close(
+            row.baseline_pt,
+            60.0 + flow_row.baseline_pt - MARGIN_PT,
+            text,
+        );
+    }
+    assert_close(
+        run_named(&framed, "Body text").baseline_pt,
+        60.0 + run_named(&in_flow, "Body text").baseline_pt - MARGIN_PT,
+        "body text below the table's frame",
+    );
+}
+
+/// Body text clears every band it meets, whichever frame comes first in the
+/// document: a line moved below one frame's band can meet another's.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn body_text_clears_overlapping_frame_bands_in_any_order() {
+    let (ascent, pitch) = line_geometry();
+    let width: &str = r#"w:w="3000""#;
+    let lower: String = page_frame("notBeside", "page", 2000, 2000, width);
+    let upper: String = page_frame("notBeside", "page", 6000, 1200, width);
+    let lower_group: String = ["Lower one", "Lower two"]
+        .map(|text| paragraph(&lower, text))
+        .concat();
+    let upper_group: String = ["Upper one", "Upper two", "Upper three"]
+        .map(|text| paragraph(&upper, text))
+        .concat();
+    let body: String = paragraph("", "Body text");
+    // The upper band, 60pt to three lines lower, reaches into the lower one,
+    // which starts at 100pt.
+    for (case, frames) in [
+        ("upper first", format!("{upper_group}{lower_group}")),
+        ("lower first", format!("{lower_group}{upper_group}")),
+    ] {
+        let runs = page_runs(&frame_docx(&format!("{frames}{body}")), 0);
+        assert_close(
+            run_named(&runs, "Upper one").baseline_pt,
+            60.0 + ascent,
+            case,
+        );
+        assert_close(
+            run_named(&runs, "Lower one").baseline_pt,
+            100.0 + ascent,
+            case,
+        );
+        assert_close(
+            run_named(&runs, "Body text").baseline_pt,
+            100.0 + 2.0 * pitch + ascent,
+            case,
+        );
+    }
+}
+
+/// A frame at a fixed place holds paragraphs, tables and pictures. When one
+/// of its paragraphs holds something a placed frame cannot, such as a page
+/// break, the whole frame stays in the flow rather than splitting its
+/// paragraphs between the frame and the flow (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_frame_holding_what_a_placed_frame_cannot_stays_whole_in_the_flow() {
+    let (ascent, pitch) = line_geometry();
+    let frame: String = page_frame("notBeside", "page", 2000, 1200, r#"w:w="3000""#);
+    let page_break: String = format!(
+        r#"<w:p><w:pPr>{frame}<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>{}{}</w:p>"#,
+        run("<w:t>Framed two</w:t>"),
+        run(r#"<w:br w:type="page"/><w:t>Framed three</w:t>"#)
+    );
+    // A break in the frame's second paragraph: its first stays put too.
+    let runs = page_runs(
+        &frame_docx(&[paragraph(&frame, "Framed one"), page_break.clone()].concat()),
+        0,
+    );
+    for (line, text) in ["Framed one", "Framed two"].into_iter().enumerate() {
+        let framed = run_named(&runs, text);
+        assert_close(framed.left_pt, MARGIN_PT, text);
+        assert_close(
+            framed.baseline_pt,
+            MARGIN_PT + ascent + line as f64 * pitch,
+            text,
+        );
+    }
+    // A break in its first paragraph: the paragraph after it follows the
+    // break onto page 2.
+    let data: Vec<u8> = frame_docx(&[page_break, paragraph(&frame, "Framed one")].concat());
+    let first_page = page_runs(&data, 0);
+    assert_close(
+        run_named(&first_page, "Framed two").left_pt,
+        MARGIN_PT,
+        "Framed two",
+    );
+    assert!(
+        first_page
+            .iter()
+            .all(|run| run.text.trim_end() != "Framed one"),
+        "{first_page:?}"
+    );
+    let second_page = page_runs(&data, 1);
+    for (line, text) in ["Framed three", "Framed one"].into_iter().enumerate() {
+        let framed = run_named(&second_page, text);
+        assert_close(framed.left_pt, MARGIN_PT, text);
+        assert_close(
+            framed.baseline_pt,
+            MARGIN_PT + ascent + line as f64 * pitch,
+            text,
+        );
+    }
 }
