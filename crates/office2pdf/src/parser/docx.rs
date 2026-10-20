@@ -560,6 +560,8 @@ impl Parser for DocxParser {
         // The last run of children sharing a frame at a fixed place on its
         // page, so its later children join that frame.
         let mut open_fixed_frame: Option<FixedFrameGroup> = None;
+        // The body index the current section's first child sits at.
+        let mut section_start: usize = 0;
         let style_frames: HashMap<String, docx_rs::FrameProperty> =
             paragraph_style_frames(&docx.styles);
         let body_frames: Vec<Option<docx_rs::FrameProperty>> = docx
@@ -584,21 +586,6 @@ impl Parser for DocxParser {
                 elements.push(TaggedElement::Plain(vec![block]));
             }
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
-                docx_rs::DocumentChild::Paragraph(para)
-                    if is_empty_section_break_paragraph(para) =>
-                {
-                    // Paragraph cursors scan raw XML, so even this marker must
-                    // advance them before its layout-only block is discarded.
-                    let _ = convert_paragraph_element(
-                        para,
-                        &images,
-                        &hyperlinks,
-                        &style_map,
-                        &ctx,
-                        &docx.styles,
-                    );
-                    vec![]
-                }
                 docx_rs::DocumentChild::Paragraph(para) => {
                     let mut tagged: Vec<TaggedElement> = convert_paragraph_element(
                         para,
@@ -663,6 +650,25 @@ impl Parser for DocxParser {
                     let chs = chart_ctx.take(idx);
                     for ch in chs {
                         tagged.push(TaggedElement::Plain(vec![Block::Chart(Box::new(ch))]));
+                    }
+                    if para.property.section_property.is_some()
+                        && body_frames[idx].is_none()
+                        && is_blank_paragraph_output(&tagged)
+                        && !empty_section_mark_keeps_line(
+                            &docx.document.children,
+                            section_start,
+                            idx,
+                            elements.last(),
+                            word_compatibility_mode,
+                            &docx.document.section_property,
+                        )
+                    {
+                        tracing::debug!(
+                            format = "DOCX",
+                            body_index = idx,
+                            "Empty section mark takes no line"
+                        );
+                        tagged.clear();
                     }
                     tagged
                 }
@@ -757,6 +763,7 @@ impl Parser for DocxParser {
                     &mut warnings,
                 );
                 linked_first_stories = section_first_stories;
+                section_start = idx + 1;
                 pages.push(
                     if section_prop.section_type == Some(docx_rs::SectionType::Continuous) {
                         Page::FlowContinuous(flow_page)
@@ -2294,15 +2301,95 @@ fn withheld_paragraph_block(ctx: &DocxConversionContext) -> Option<Block> {
         .map(Block::Paragraph)
 }
 
-/// A bare paragraph mark carrying only section properties marks the boundary;
-/// Word does not lay it out as an extra blank body line.
-fn is_empty_section_break_paragraph(para: &docx_rs::Paragraph) -> bool {
-    if !para.children.is_empty() || para.property.section_property.is_none() {
-        return false;
-    }
-    let mut properties: docx_rs::ParagraphProperty = para.property.clone();
-    properties.section_property = None;
-    properties == docx_rs::ParagraphProperty::default()
+/// Whether an empty paragraph carrying a `w:sectPr` (a section mark), at body
+/// index `index` of a section whose first child is at `section_start`, is
+/// laid out as a line. Word decides by the mark's place in its section, not
+/// by its `w:pPr`, following docxide-pdf's Word-probed rule (issue #2232):
+///
+/// - The first block of its section keeps its line, as Word's export of
+///   docxide-pdf's `page-header-ordinary-marker` shows for a bare mark.
+/// - After other blocks it takes no height: `paragraph-offset-frame-no-frame`
+///   drops a 14pt mark with 4pt after, and `section-mark-after-table-float-*`
+///   a 1.5-line one after a floating table.
+/// - In compatibility mode 15, a mark right after an inline table keeps its
+///   line when the next section starts continuously
+///   (`section-mark-after-table-inline-compat15`); mode 14 drops it.
+///
+/// `last_output` is the converted output of the body child before the mark.
+///
+/// TODO(section mark spacing): a dropped mark before a continuous section
+/// passes on only `max(0, next before − its own after)` of the next
+/// paragraph's `w:before`, after the previous paragraph's whole `w:after`;
+/// Typst collapses the two neighbours' gaps to their maximum instead.
+fn empty_section_mark_keeps_line(
+    body: &[docx_rs::DocumentChild],
+    section_start: usize,
+    index: usize,
+    last_output: Option<&TaggedElement>,
+    compatibility_mode: WordCompatibilityMode,
+    final_section: &docx_rs::SectionProperty,
+) -> bool {
+    let Some(previous) = body[section_start..index]
+        .iter()
+        .rev()
+        .find(|child| is_body_block(child))
+    else {
+        return true;
+    };
+    compatibility_mode == WordCompatibilityMode::Word2013OrLater
+        && matches!(previous, docx_rs::DocumentChild::Table(_))
+        && matches!(
+            last_output,
+            Some(TaggedElement::Plain(blocks)) if matches!(blocks.last(), Some(Block::Table(_)))
+        )
+        && next_section_starts_continuously(body, index, final_section)
+}
+
+/// A body child Word lays out as a block of its section; bookmark and
+/// comment markers take no place.
+fn is_body_block(child: &docx_rs::DocumentChild) -> bool {
+    matches!(
+        child,
+        docx_rs::DocumentChild::Paragraph(_)
+            | docx_rs::DocumentChild::Table(_)
+            | docx_rs::DocumentChild::StructuredDataTag(_)
+            | docx_rs::DocumentChild::TableOfContents(_)
+    )
+}
+
+/// Whether the section after the one the mark at body index `index` closes
+/// starts on the same page. That is the next section's own `w:type`, on the
+/// next section mark or else on the body's closing `w:sectPr`.
+fn next_section_starts_continuously(
+    body: &[docx_rs::DocumentChild],
+    index: usize,
+    final_section: &docx_rs::SectionProperty,
+) -> bool {
+    let next_section: &docx_rs::SectionProperty = body[index + 1..]
+        .iter()
+        .find_map(|child| match child {
+            docx_rs::DocumentChild::Paragraph(paragraph) => {
+                paragraph.property.section_property.as_ref()
+            }
+            _ => None,
+        })
+        .unwrap_or(final_section);
+    next_section.section_type == Some(docx_rs::SectionType::Continuous)
+}
+
+/// Whether a body paragraph converted to one paragraph that paints nothing:
+/// no text, link, note or inline box, and no border or shading.
+fn is_blank_paragraph_output(converted: &[TaggedElement]) -> bool {
+    matches!(
+        converted,
+        [TaggedElement::Plain(blocks)] if matches!(
+            blocks.as_slice(),
+            [Block::Paragraph(paragraph)] if paragraph.runs.iter().all(|run| {
+                run.text.is_empty() && run_shows_only_spaces(run)
+            }) && paragraph.style.background.is_none()
+                && paragraph.style.border.is_none()
+        )
+    )
 }
 
 /// A body paragraph in a `w:framePr` frame that Word lifts out of the flow,

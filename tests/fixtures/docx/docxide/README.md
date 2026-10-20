@@ -119,7 +119,10 @@ Apache-2.0. Nothing in its styles cascade states a `w:sz`: `w:docDefaults`
 names Times New Roman, and `Normal` names Tahoma with only `w:szCs="24"`.
 Native Word sets the first-page header and the body text in Tahoma 10.
 Compiled-layout regressions check that both are set at 10pt, and that both
-paint in Tahoma or one of its sans stand-ins rather than the default serif.
+paint in Tahoma or one of its sans stand-ins rather than the default serif. Its
+first section is one bare section mark, which native Word lays out as a line,
+so "Following section" sits on a 94.03pt baseline; a compiled-layout regression
+checks it.
 
 `continuous_framed_section_mark.docx` is the unmodified synthetic
 `cases/cont-first-first-fits/input.docx` from
@@ -192,3 +195,28 @@ Apache-2.0. It differs from `floating_table_wrap.docx` only by `w:clear="all"`
 on the break before the greeting. Native Word sets the greeting below the table,
 centred on the whole column, and the body paragraph two lines below it at the
 margin; a compiled-layout regression checks both lines.
+
+`spaced_section_mark.docx` is the unmodified synthetic
+`cases/paragraph-offset-frame-no-frame/input.docx` from
+[docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/paragraph-offset-frame-no-frame),
+Apache-2.0. Its second section holds an empty paragraph with 12pt before, an
+empty paragraph and an empty Times New Roman 14pt section mark with 4pt after;
+a continuous section then opens with an empty paragraph and "Dear recipient".
+Native Word gives the mark no height and sets "Dear recipient" on a 162.30pt
+baseline; a compiled-layout regression checks it.
+
+`section_mark_after_inline_table.docx` and
+`section_mark_after_inline_table_compat14.docx` are the unmodified synthetic
+`cases/section-mark-after-table-inline-compat15/input.docx` and
+`cases/section-mark-after-table-inline-compat14/input.docx` from
+[docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases),
+Apache-2.0: a two-line inline table, an empty 1.5-line section mark, and a
+continuous section opening with "Public greeting". Native Word keeps the mark's
+line in compatibility mode 15 (greeting baseline 141.30pt) and drops it in mode
+14 (117.28pt); a compiled-layout regression checks both.
+
+`section_mark_after_floating_table.docx` is the unmodified synthetic
+`cases/section-mark-after-table-float-compat15/input.docx` from the same
+revision and license: the mode-15 case with a full-width `w:tblpPr` table.
+Native Word drops the mark's line and starts the greeting right below the
+table, on a 117.28pt baseline; a compiled-layout regression checks it.

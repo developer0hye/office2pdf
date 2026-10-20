@@ -41,10 +41,18 @@ fn anchored_floating_table(width_twips: u32, height_twips: u32, position: &str) 
     )
 }
 
+/// An A4 section's page size and 72pt margins.
+const PAGE_SETUP: &str = r#"<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440"/>"#;
+
 /// An A4 package with 72pt margins, no settings part and no styles part.
 fn float_docx(body: &str) -> Vec<u8> {
+    section_float_docx(body, PAGE_SETUP)
+}
+
+/// [`float_docx`] with `section_properties` in the body's closing `w:sectPr`.
+fn section_float_docx(body: &str, section_properties: &str) -> Vec<u8> {
     let document = format!(
-        r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440"/></w:sectPr></w:body></w:document>"#
+        r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{body}<w:sectPr>{section_properties}</w:sectPr></w:body></w:document>"#
     );
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
     let options = zip::write::SimpleFileOptions::default();
@@ -294,6 +302,50 @@ fn text_moves_below_a_floating_table_that_leaves_no_room_beside_it() {
         let (next, _) = find(&runs, "Next");
         assert_close(next.left_pt, MARGIN_PT, &context);
         assert!(next.baseline_pt > following.baseline_pt, "{context}");
+    }
+}
+
+/// A floating table that ends its section keeps the text of a continuous
+/// section after it, laid out in the same text area, off its extent, as a
+/// text frame does. Word's exports of docxide-pdf's
+/// `section-mark-after-table-float-compat14` and `-compat15` start that
+/// section's text right below a table as wide as the column.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_floating_table_keeps_text_off_its_extent_in_the_continuous_section_after_it() {
+    let control = placed(&float_docx(&paragraph("", "Following")));
+    let (control_run, _) = find(&control, "Following");
+    let section_mark: String =
+        format!(r#"<w:p><w:pPr><w:sectPr>{PAGE_SETUP}</w:sectPr></w:pPr></w:p>"#);
+    let continuous: String = format!(r#"<w:type w:val="continuous"/>{PAGE_SETUP}"#);
+    for (width_twips, height_twips) in [(3000_u32, 1200_u32), (9026, 800), (9026, 1200)] {
+        let data = section_float_docx(
+            &[
+                floating_table(width_twips, height_twips, ""),
+                section_mark.clone(),
+                paragraph("", "Following"),
+            ]
+            .concat(),
+            &continuous,
+        );
+        let runs = placed(&data);
+        let context = format!("{width_twips}x{height_twips}-twip float");
+        let (following, _) = find(&runs, "Following");
+        if width_twips == 3000 {
+            assert_close(
+                following.left_pt,
+                MARGIN_PT + f64::from(width_twips) / 20.0 + FROM_TEXT_PT,
+                &context,
+            );
+            assert_close(following.baseline_pt, control_run.baseline_pt, &context);
+        } else {
+            assert_close(following.left_pt, MARGIN_PT, &context);
+            assert_close(
+                following.baseline_pt,
+                control_run.baseline_pt + f64::from(height_twips) / 20.0,
+                &context,
+            );
+        }
     }
 }
 

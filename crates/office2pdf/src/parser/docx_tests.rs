@@ -1569,6 +1569,8 @@ mod math_chart_metadata_tests;
 mod paragraph_cursor_tests;
 #[path = "docx_paragraph_tab_tests.rs"]
 mod paragraph_tab_tests;
+#[path = "docx_section_mark_tests.rs"]
+mod section_mark_tests;
 #[path = "docx_text_frame_tests.rs"]
 mod text_frame_tests;
 #[path = "docx_tracked_paragraph_mark_tests.rs"]

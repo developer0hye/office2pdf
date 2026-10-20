@@ -1,0 +1,327 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 150.72,
+        "y": 109.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-97d3190c06cf",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 111.36,
+        "y": 109.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-ae312a91f7be",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 132.96,
+        "y": 94.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-c64fbf3161d6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.68,
+        "x": 153.6,
+        "y": 90.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-02d97ee96a2c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 91.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-fd5d7987e887",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.2,
+        "x": 127.68,
+        "y": 78.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-8f230c683b10",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 10.56,
+        "x": 118.08,
+        "y": 110.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-6651ee705035",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.6432,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 161.76,
+        "y": 94.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-777a6cfae3e6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 126.24,
+        "y": 94.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-bc19c5d91dc3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 148.32,
+        "y": 74.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-04660cd2afeb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 136.32,
+        "y": 108.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-6f48d3c6909b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 144.0,
+        "y": 94.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-72b89a70505c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 111.84,
+        "y": 91.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-fc29659f3c3b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 120.96,
+        "y": 78.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-4db37ee67e55",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 94.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-292245056207",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.6,
+        "x": 77.76,
+        "y": 75.36
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-9b10b1c80612",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 92.16,
+        "y": 74.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-edaa52b64f5d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 4.32,
+        "x": 121.92,
+        "y": 92.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-b91d9529e100",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 142.56,
+        "y": 110.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the three text lines only: Word embeds Times New Roman, this host paints the metric-compatible Liberation Serif. Inspected at 150 DPI and 3x zoom; every line sits at Word's position."
+      },
+      "id": "p1-1f065adcfa54",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 19,
+    "duplicate": 0,
+    "total": 19,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
