@@ -5494,6 +5494,23 @@ fn an_empty_frame_takes_no_line_before_the_first_body_text() {
     );
 }
 
+/// docxide-pdf `empty-margin-frame-14-two-empty`, unmodified: a table, then
+/// three empty paragraphs sharing one `w:framePr`, the last ending the
+/// section, then "Public greeting". Word sets the greeting one 16pt line below
+/// the table's last line, at 201.80pt, as if the frame were absent; main gave
+/// each empty paragraph a line, 34.51pt lower (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_group_of_empty_frames_takes_no_lines_after_a_table() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/empty_frame_group.docx");
+    let greeting: f64 = docx_fixture_baseline_pt(fixture, 0, "Public greeting");
+    assert!(
+        (greeting - 201.80).abs() < 0.5,
+        "the greeting must sit on Word's 201.80pt baseline, got {greeting}pt"
+    );
+}
+
 /// docxide-pdf `cont-first-first-fits`, unmodified: 38 exact 16pt lines, an
 /// empty framed paragraph ending the section, and a continuous section whose
 /// first paragraph states 24pt before an exact 16pt line. Word puts its

@@ -3284,11 +3284,62 @@ fn an_empty_positioned_frame_paragraph_leaves_no_body_line() {
     }
 }
 
+/// Adjacent paragraphs with an identical `w:framePr` share one frame. When
+/// none of them shows anything, Word gives the group no body lines at all:
+/// its exports of docxide-pdf's `empty-margin-frame-14-*` cases set the text
+/// after two or three such paragraphs, empty, space-only or with a hidden
+/// mark, and the last one ending the section, one line below the table
+/// before them, as if they were absent (issue #2231).
+#[test]
+fn a_group_of_framed_paragraphs_that_shows_nothing_leaves_no_body_lines() {
+    let positioning_frames: [&str; 3] = [
+        r#"<w:framePr w:w="4659" w:wrap="auto" w:hAnchor="text" w:x="1701"/>"#,
+        r#"<w:framePr w:wrap="around" w:vAnchor="page" w:hAnchor="page" w:x="8000" w:y="2000"/>"#,
+        r#"<w:framePr w:w="2000" w:hAnchor="margin" w:xAlign="right"/>"#,
+    ];
+    let section_mark: &str =
+        r#"<w:sectPr><w:type w:val="continuous"/><w:pgSz w:w="11906" w:h="16838"/></w:sectPr>"#;
+    for frame_xml in positioning_frames {
+        let empty: String = format!(r#"<w:p><w:pPr>{frame_xml}</w:pPr></w:p>"#);
+        let space_only: String = format!(
+            r#"<w:p><w:pPr>{frame_xml}</w:pPr><w:r><w:t xml:space="preserve"> </w:t></w:r></w:p>"#
+        );
+        let hidden_mark: String =
+            format!(r#"<w:p><w:pPr>{frame_xml}<w:rPr><w:vanish/></w:rPr></w:pPr></w:p>"#);
+        let section_end: String = format!(r#"<w:p><w:pPr>{frame_xml}{section_mark}</w:pPr></w:p>"#);
+        let groups: [(&str, String); 4] = [
+            ("two empty", format!("{empty}{empty}")),
+            (
+                "three empty ending a section",
+                format!("{empty}{empty}{section_end}"),
+            ),
+            (
+                "space-only ending a section",
+                format!("{space_only}{space_only}{section_end}"),
+            ),
+            (
+                "hidden marks",
+                format!("{hidden_mark}{hidden_mark}{hidden_mark}"),
+            ),
+        ];
+        for (label, group) in groups {
+            let body: String = format!(
+                r#"<w:p><w:r><w:t>Before</w:t></w:r></w:p>{group}<w:p><w:r><w:t>After</w:t></w:r></w:p>"#
+            );
+            assert_eq!(
+                body_flow_paragraph_texts(&body),
+                ["Before", "After"],
+                "{label} paragraphs in {frame_xml} must not take body lines"
+            );
+        }
+    }
+}
+
 /// The frames Word does not lift out of the flow keep the empty paragraph's
 /// line: one stating only its wrap, an inline one, one that keeps text off
 /// its sides, and one with a stated height. So does an empty paragraph inside
-/// a frame it shares with its neighbours, where it is a line of the frame's
-/// own text.
+/// a frame it shares with paragraphs that show text, where it is a line of
+/// the frame's own text.
 #[test]
 fn an_empty_paragraph_keeps_its_line_when_its_frame_stays_in_the_flow() {
     let in_flow_frames: [&str; 5] = [
@@ -3316,6 +3367,18 @@ fn an_empty_paragraph_keeps_its_line_when_its_frame_stays_in_the_flow() {
         body_flow_paragraph_texts(&shared_frame_body),
         ["Street", "", "City"],
         "an empty paragraph sharing its frame with its neighbours is one of the frame's lines"
+    );
+    // The frame is the whole run of paragraphs that carry it, so text two
+    // paragraphs away still makes the empty ones its lines.
+    let distant_text_body: String = format!(
+        r#"<w:p><w:pPr>{shared_frame}</w:pPr></w:p>
+<w:p><w:pPr>{shared_frame}</w:pPr></w:p>
+<w:p><w:pPr>{shared_frame}</w:pPr><w:r><w:t>City</w:t></w:r></w:p>"#
+    );
+    assert_eq!(
+        body_flow_paragraph_texts(&distant_text_body),
+        ["", "", "City"],
+        "empty paragraphs sharing a frame with text further along are the frame's lines"
     );
 
     // A table whose cell paragraphs carry the frame sits in it too, so an
