@@ -562,6 +562,9 @@ impl Parser for DocxParser {
         let mut open_fixed_frame: Option<FixedFrameGroup> = None;
         // The body index the current section's first child sits at.
         let mut section_start: usize = 0;
+        // The `w:after` of an empty section mark that took no line before a
+        // continuous section, until that section's first block takes it.
+        let mut section_mark_after: Option<f64> = None;
         let style_frames: HashMap<String, docx_rs::FrameProperty> =
             paragraph_style_frames(&docx.styles);
         let body_frames: Vec<Option<docx_rs::FrameProperty>> = docx
@@ -585,6 +588,7 @@ impl Parser for DocxParser {
             {
                 elements.push(TaggedElement::Plain(vec![block]));
             }
+            let mut dropped_mark_after: Option<f64> = None;
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
                 docx_rs::DocumentChild::Paragraph(para) => {
                     let mut tagged: Vec<TaggedElement> = convert_paragraph_element(
@@ -668,6 +672,16 @@ impl Parser for DocxParser {
                             body_index = idx,
                             "Empty section mark takes no line"
                         );
+                        // After a page or column break the next section opens
+                        // at a page or column top, which has no gap to share.
+                        if next_section_starts_continuously(
+                            &docx.document.children,
+                            idx,
+                            &docx.document.section_property,
+                        ) && !ends_with_layout_break(elements.last())
+                        {
+                            dropped_mark_after = blank_paragraph_space_after(&tagged);
+                        }
                         tagged.clear();
                     }
                     tagged
@@ -705,7 +719,14 @@ impl Parser for DocxParser {
             }));
 
             match result {
-                Ok(elems) => elements.extend(elems),
+                Ok(mut elems) => {
+                    if is_body_block(child)
+                        && let Some(mark_after) = section_mark_after.take()
+                    {
+                        pass_on_section_mark_after(&mut elems, mark_after);
+                    }
+                    elements.extend(elems);
+                }
                 Err(panic_info) => {
                     let detail = if let Some(s) = panic_info.downcast_ref::<String>() {
                         s.clone()
@@ -721,6 +742,9 @@ impl Parser for DocxParser {
                         ),
                     });
                 }
+            }
+            if dropped_mark_after.is_some() {
+                section_mark_after = dropped_mark_after;
             }
 
             if let docx_rs::DocumentChild::Paragraph(para) = child
@@ -2317,10 +2341,8 @@ fn withheld_paragraph_block(ctx: &DocxConversionContext) -> Option<Block> {
 ///
 /// `last_output` is the converted output of the body child before the mark.
 ///
-/// TODO(section mark spacing): a dropped mark before a continuous section
-/// passes on only `max(0, next before − its own after)` of the next
-/// paragraph's `w:before`, after the previous paragraph's whole `w:after`;
-/// Typst collapses the two neighbours' gaps to their maximum instead.
+/// A mark that takes no line before a continuous section still has a say in
+/// the gap: see [`pass_on_section_mark_after`].
 fn empty_section_mark_keeps_line(
     body: &[docx_rs::DocumentChild],
     section_start: usize,
@@ -2375,6 +2397,51 @@ fn next_section_starts_continuously(
         })
         .unwrap_or(final_section);
     next_section.section_type == Some(docx_rs::SectionType::Continuous)
+}
+
+/// The `w:after` of a converted blank paragraph, as
+/// [`is_blank_paragraph_output`] accepts it; an unstated one is zero.
+fn blank_paragraph_space_after(converted: &[TaggedElement]) -> Option<f64> {
+    match converted {
+        [TaggedElement::Plain(blocks)] => match blocks.as_slice() {
+            [Block::Paragraph(paragraph)] => Some(paragraph.style.space_after.unwrap_or(0.0)),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// Whether the converted output ends at a page or column break, so a section
+/// mark after it opens the next section at the top of a page or column.
+fn ends_with_layout_break(output: Option<&TaggedElement>) -> bool {
+    matches!(
+        output,
+        Some(TaggedElement::Plain(blocks))
+            if matches!(blocks.last(), Some(Block::PageBreak | Block::ColumnBreak))
+    )
+}
+
+/// Hand the `w:after` of an empty section mark that took no line to the first
+/// paragraph of `converted`, the first block of the continuous section after
+/// it. Word lays that paragraph out after the previous paragraph's whole
+/// `w:after`, plus only the part of its own `w:before` beyond the mark's
+/// `w:after`: `after + max(0, before − mark after)`, not the larger of the two
+/// (docxide-pdf's `section_break_spacing`, from Word probes; Word's export of
+/// docxide-pdf's `scraped/covid_insomnia_mental_health` starts its numbered
+/// heading 12 + 10pt below the paragraph before its 0pt mark).
+fn pass_on_section_mark_after(converted: &mut [TaggedElement], mark_after: f64) {
+    let style: Option<&mut ParagraphStyle> = match converted.first_mut() {
+        Some(TaggedElement::Plain(blocks)) => blocks.iter_mut().find_map(|block| match block {
+            Block::Paragraph(paragraph) => Some(&mut paragraph.style),
+            Block::Caption(caption) => Some(&mut caption.paragraph.style),
+            _ => None,
+        }),
+        Some(TaggedElement::ListParagraph { paragraph, .. }) => Some(&mut paragraph.style),
+        None => None,
+    };
+    if let Some(style) = style {
+        style.section_mark_after = Some(mark_after);
+    }
 }
 
 /// Whether a body paragraph converted to one paragraph that paints nothing:

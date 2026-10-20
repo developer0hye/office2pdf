@@ -2,37 +2,309 @@
  "pages": [
   {
    "lines": {
-    "gt": 3,
-    "out": 3,
-    "matched": 3,
+    "gt": 55,
+    "out": 53,
+    "matched": 42,
     "missing": 0,
     "extra": 0,
-    "deviant": 0,
+    "deviant": 25,
     "missing_text": [],
     "extra_text": []
    },
    "baseline": {
-    "mean_abs_dy": 0.06297966666667776,
-    "worst_dy": 0.09030000000002758,
-    "worst_dy_signed": 0.09030000000002758,
-    "worst_line": "Publictopicfirstline"
+    "mean_abs_dy": 2.3453721739130406,
+    "worst_dy": 13.475000000000023,
+    "worst_dy_signed": 13.475000000000023,
+    "worst_line": "xxxx-xxxx/xx/xxxxxx"
    },
    "dx0": {
-    "mean_abs": 0.025000000000005684,
-    "worst": -0.025000000000005684
+    "mean_abs": 3.9505502173913065,
+    "worst": 177.16357
    },
    "width": {
-    "mean_abs_pct": 0.18902499673190631,
-    "worst_pct": 0.3277216910042253
+    "mean_abs_pct": 0.1727641859673465,
+    "worst_pct": 2.5146500000000556
    },
    "instances": {
-    "compared": 3,
+    "compared": 46,
     "large_shift_threshold": 5.0,
-    "large_shift_count": 0,
-    "large_shifts": [],
+    "large_shift_count": 12,
+    "large_shifts": [
+     {
+      "label": "uncomfortable(Nevid,etal.,2018).Severalfactorsincluding",
+      "gt_x": 303.38,
+      "gt_y": 682.45,
+      "out_x": 303.325,
+      "out_y": 687.5372,
+      "dx": -0.05500000000000682,
+      "dy": 5.087199999999939,
+      "width_pct": -0.020600632244452532
+     },
+     {
+      "label": "demographics,caninfluencepandemicanxiety(Goodwin,et",
+      "gt_x": 303.38,
+      "gt_y": 693.45,
+      "out_x": 303.325,
+      "out_y": 699.0362,
+      "dx": -0.05500000000000682,
+      "dy": 5.5861999999999625,
+      "width_pct": 0.03161844423046842
+     },
+     {
+      "label": "al.,2011).Theprevalenceofanxietydisordersaccordingtothe",
+      "gt_x": 303.38,
+      "gt_y": 704.45,
+      "out_x": 303.325,
+      "out_y": 710.5352,
+      "dx": -0.05500000000000682,
+      "dy": 6.085199999999986,
+      "width_pct": 0.05051943388838345
+     },
+     {
+      "label": "resultsofRiskesdas(RisetKesehatanDasar)in2018showed",
+      "gt_x": 303.38,
+      "gt_y": 715.2,
+      "out_x": 303.325,
+      "out_y": 722.03427,
+      "dx": -0.05500000000000682,
+      "dy": 6.834269999999947,
+      "width_pct": 0.07905712431029113
+     },
+     {
+      "label": "38,317,777caseshavebeendiagnosedglobally,withmore",
+      "gt_x": 45.275,
+      "gt_y": 723.95,
+      "out_x": 45.35,
+      "out_y": 729.527,
+      "dx": 0.07500000000000284,
+      "dy": 5.576999999999998,
+      "width_pct": 0.06767574356139808
+     },
+     {
+      "label": "that9.8%ofthoseaged15yearsandover,oraround14million",
+      "gt_x": 303.38,
+      "gt_y": 726.22,
+      "out_x": 303.325,
+      "out_y": 733.53329,
+      "dx": -0.05500000000000682,
+      "dy": 7.313289999999938,
+      "width_pct": 0.019602675856464954
+     },
+     {
+      "label": "than1,088,704deathsrecordedasofOctober13,2020(Johns",
+      "gt_x": 45.275,
+      "gt_y": 734.97,
+      "out_x": 45.35,
+      "out_y": 741.026,
+      "dx": 0.07500000000000284,
+      "dy": 6.055999999999926,
+      "width_pct": 0.07105952720850049
+     },
+     {
+      "label": "peopleinIndonesia,experiencedmentaldisordersasindicated",
+      "gt_x": 303.38,
+      "gt_y": 737.22,
+      "out_x": 303.325,
+      "out_y": 745.0323,
+      "dx": -0.05500000000000682,
+      "dy": 7.8122999999999365,
+      "width_pct": 0.03688669483496948
+     },
+     {
+      "label": "bysymptomsofanxietyanddepression(Riskesdas,2018).",
+      "gt_x": 303.38,
+      "gt_y": 748.225,
+      "out_x": 303.325,
+      "out_y": 756.5313,
+      "dx": -0.05500000000000682,
+      "dy": 8.306299999999965,
+      "width_pct": -0.06426315294933138
+     },
+     {
+      "label": "xxxx-xxxx/xx/xxxxxx",
+      "gt_x": 45.275,
+      "gt_y": 790.975,
+      "out_x": 222.43857,
+      "out_y": 804.45,
+      "dx": 177.16357,
+      "dy": 13.475000000000023,
+      "width_pct": -0.19579689262374508
+     },
+     {
+      "label": "1 [2/2]",
+      "gt_x": 295.88,
+      "gt_y": 790.975,
+      "out_x": 297.50498,
+      "out_y": 804.45,
+      "dx": 1.6249799999999937,
+      "dy": 13.475000000000023,
+      "width_pct": 0.0
+     },
+     {
+      "label": "\u00a9xxxxIOPPublishingLtd",
+      "gt_x": 467.2,
+      "gt_y": 790.975,
+      "out_x": 467.14143,
+      "out_y": 804.45,
+      "dx": -0.0585699999999747,
+      "dy": 13.475000000000023,
+      "width_pct": -0.10615792625107426
+     }
+    ],
     "fine_shift_threshold": 0.5,
-    "fine_shift_count": 0,
-    "fine_shifts": []
+    "fine_shift_count": 15,
+    "fine_shifts": [
+     {
+      "label": "1 [1/2]",
+      "gt_x": 45.275,
+      "gt_y": 255.83000000000004,
+      "out_x": 45.35,
+      "out_y": 254.5636,
+      "dx": 0.07500000000000284,
+      "dy": -1.2664000000000328,
+      "width_pct": -2.5146500000000556
+     },
+     {
+      "label": "2",
+      "gt_x": 45.275,
+      "gt_y": 267.07000000000005,
+      "out_x": 45.35,
+      "out_y": 265.73207,
+      "dx": 0.07500000000000284,
+      "dy": -1.3379300000000285,
+      "width_pct": -2.5146500000000556
+     },
+     {
+      "label": "TheWHO(WorldHealthOrganization)declaredthe",
+      "gt_x": 59.775,
+      "gt_y": 669.2,
+      "out_x": 59.75,
+      "out_y": 672.03189,
+      "dx": -0.02499999999999858,
+      "dy": 2.8318899999999303,
+      "width_pct": 0.13475666423981375
+     },
+     {
+      "label": "uncomfortable(Nevid,etal.,2018).Severalfactorsincluding",
+      "gt_x": 303.38,
+      "gt_y": 682.45,
+      "out_x": 303.325,
+      "out_y": 687.5372,
+      "dx": -0.05500000000000682,
+      "dy": 5.087199999999939,
+      "width_pct": -0.020600632244452532
+     },
+     {
+      "label": "demographics,caninfluencepandemicanxiety(Goodwin,et",
+      "gt_x": 303.38,
+      "gt_y": 693.45,
+      "out_x": 303.325,
+      "out_y": 699.0362,
+      "dx": -0.05500000000000682,
+      "dy": 5.5861999999999625,
+      "width_pct": 0.03161844423046842
+     },
+     {
+      "label": "al.,2011).Theprevalenceofanxietydisordersaccordingtothe",
+      "gt_x": 303.38,
+      "gt_y": 704.45,
+      "out_x": 303.325,
+      "out_y": 710.5352,
+      "dx": -0.05500000000000682,
+      "dy": 6.085199999999986,
+      "width_pct": 0.05051943388838345
+     },
+     {
+      "label": "resultsofRiskesdas(RisetKesehatanDasar)in2018showed",
+      "gt_x": 303.38,
+      "gt_y": 715.2,
+      "out_x": 303.325,
+      "out_y": 722.03427,
+      "dx": -0.05500000000000682,
+      "dy": 6.834269999999947,
+      "width_pct": 0.07905712431029113
+     },
+     {
+      "label": "38,317,777caseshavebeendiagnosedglobally,withmore",
+      "gt_x": 45.275,
+      "gt_y": 723.95,
+      "out_x": 45.35,
+      "out_y": 729.527,
+      "dx": 0.07500000000000284,
+      "dy": 5.576999999999998,
+      "width_pct": 0.06767574356139808
+     },
+     {
+      "label": "that9.8%ofthoseaged15yearsandover,oraround14million",
+      "gt_x": 303.38,
+      "gt_y": 726.22,
+      "out_x": 303.325,
+      "out_y": 733.53329,
+      "dx": -0.05500000000000682,
+      "dy": 7.313289999999938,
+      "width_pct": 0.019602675856464954
+     },
+     {
+      "label": "than1,088,704deathsrecordedasofOctober13,2020(Johns",
+      "gt_x": 45.275,
+      "gt_y": 734.97,
+      "out_x": 45.35,
+      "out_y": 741.026,
+      "dx": 0.07500000000000284,
+      "dy": 6.055999999999926,
+      "width_pct": 0.07105952720850049
+     },
+     {
+      "label": "peopleinIndonesia,experiencedmentaldisordersasindicated",
+      "gt_x": 303.38,
+      "gt_y": 737.22,
+      "out_x": 303.325,
+      "out_y": 745.0323,
+      "dx": -0.05500000000000682,
+      "dy": 7.8122999999999365,
+      "width_pct": 0.03688669483496948
+     },
+     {
+      "label": "bysymptomsofanxietyanddepression(Riskesdas,2018).",
+      "gt_x": 303.38,
+      "gt_y": 748.225,
+      "out_x": 303.325,
+      "out_y": 756.5313,
+      "dx": -0.05500000000000682,
+      "dy": 8.306299999999965,
+      "width_pct": -0.06426315294933138
+     },
+     {
+      "label": "xxxx-xxxx/xx/xxxxxx",
+      "gt_x": 45.275,
+      "gt_y": 790.975,
+      "out_x": 222.43857,
+      "out_y": 804.45,
+      "dx": 177.16357,
+      "dy": 13.475000000000023,
+      "width_pct": -0.19579689262374508
+     },
+     {
+      "label": "1 [2/2]",
+      "gt_x": 295.88,
+      "gt_y": 790.975,
+      "out_x": 297.50498,
+      "out_y": 804.45,
+      "dx": 1.6249799999999937,
+      "dy": 13.475000000000023,
+      "width_pct": 0.0
+     },
+     {
+      "label": "\u00a9xxxxIOPPublishingLtd",
+      "gt_x": 467.2,
+      "gt_y": 790.975,
+      "out_x": 467.14143,
+      "out_y": 804.45,
+      "dx": -0.0585699999999747,
+      "dy": 13.475000000000023,
+      "width_pct": -0.10615792625107426
+     }
+    ]
    },
    "visibility": {
     "mismatch_count": 0,
@@ -47,8 +319,8 @@
     "mismatches": []
    },
    "pitch": {
-    "pairs": 2,
-    "worst_delta": 0.15137
+    "pairs": 41,
+    "worst_delta": 5.168700000000058
    },
    "wraps": {
     "count": 0,
@@ -61,38 +333,501 @@
     "samples": []
    },
    "reflow": {
-    "gt_lines": 0,
-    "out_lines": 0,
-    "samples": []
+    "gt_lines": 13,
+    "out_lines": 11,
+    "samples": [
+     "1234",
+     "DessyWahyuni,Sulistyani,ErnaHerawatiandRetnoSintowati",
+     "COVID-19with37,932deaths,reportedtoWHO.Thetotal"
+    ]
    },
    "rects": {
-    "gt_count": 0,
-    "out_count": 0,
-    "canonical_gt_count": 0,
-    "canonical_out_count": 0,
-    "matched": 0,
+    "gt_count": 2,
+    "out_count": 3,
+    "canonical_gt_count": 2,
+    "canonical_out_count": 3,
+    "matched": 2,
     "unmatched_gt": 0,
-    "unmatched_out": 0,
-    "mean_center_delta": 0.0,
+    "unmatched_out": 1,
+    "mean_center_delta": 271.900463,
     "geometry_threshold": 0.5,
-    "raw_geometry_mismatch_count": 0,
-    "raw_geometry_mismatch_samples": [],
+    "raw_geometry_mismatch_count": 2,
+    "raw_geometry_mismatch_samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       1
+      ],
+      "gt_bbox": [
+       43.775,
+       50.02999999999997,
+       551.47506,
+       50.52999999999997
+      ],
+      "out_bbox": [
+       43.91,
+       592.795763,
+       551.39,
+       593.295763
+      ],
+      "dx": 0.134999999999998,
+      "dy": 542.765763,
+      "dwidth": -0.2200599999999895,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.134999999999998,
+       "top": 542.765763,
+       "right": -0.08505999999999858,
+       "bottom": 542.765763
+      },
+      "center_dx": 0.024969999999996162,
+      "center_dy": 542.765763,
+      "max_abs_delta": 542.765763,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 419.8264387999871,
+       "unmodeled_area_pt2": 0.0,
+       "unmodeled_samples": [],
+       "mismatch_samples": [
+        [
+         43.775,
+         50.02999999999997,
+         43.91,
+         50.20294
+        ],
+        [
+         43.775,
+         50.20294,
+         43.91,
+         50.52999999999997
+        ],
+        [
+         43.91,
+         50.20294,
+         551.39,
+         50.52999999999997
+        ],
+        [
+         43.91,
+         592.795763,
+         551.39,
+         593.295763
+        ],
+        [
+         551.39,
+         50.02999999999997,
+         551.47506,
+         50.20294
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "different",
+        "bottom": "different"
+       }
+      }
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       1
+      ],
+      "out_indices": [
+       2
+      ],
+      "gt_bbox": [
+       43.775,
+       617.42,
+       551.47506,
+       617.92
+      ],
+      "out_bbox": [
+       43.91,
+       618.455163,
+       551.39,
+       618.955163
+      ],
+      "dx": 0.134999999999998,
+      "dy": 1.0351630000000114,
+      "dwidth": -0.2200599999999895,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.134999999999998,
+       "top": 1.0351630000000114,
+       "right": -0.08505999999999858,
+       "bottom": 1.0351630000000114
+      },
+      "center_dx": 0.024969999999996162,
+      "center_dy": 1.0351630000000114,
+      "max_abs_delta": 1.0351630000000114,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 507.59003,
+       "unmodeled_area_pt2": 0.0,
+       "unmodeled_samples": [],
+       "mismatch_samples": [
+        [
+         43.775,
+         617.42,
+         43.91,
+         617.92
+        ],
+        [
+         43.91,
+         617.42,
+         551.39,
+         617.92
+        ],
+        [
+         43.91,
+         618.455163,
+         551.39,
+         618.955163
+        ],
+        [
+         551.39,
+         617.42,
+         551.47506,
+         617.92
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "different",
+        "bottom": "different"
+       }
+      }
+     }
+    ],
     "coverage_equivalent_count": 0,
     "coverage_unmodeled_count": 0,
-    "geometry_mismatch_count": 0,
-    "geometry_mismatch_samples": [],
-    "samples": [],
+    "geometry_mismatch_count": 2,
+    "geometry_mismatch_samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       1
+      ],
+      "gt_bbox": [
+       43.775,
+       50.02999999999997,
+       551.47506,
+       50.52999999999997
+      ],
+      "out_bbox": [
+       43.91,
+       592.795763,
+       551.39,
+       593.295763
+      ],
+      "dx": 0.134999999999998,
+      "dy": 542.765763,
+      "dwidth": -0.2200599999999895,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.134999999999998,
+       "top": 542.765763,
+       "right": -0.08505999999999858,
+       "bottom": 542.765763
+      },
+      "center_dx": 0.024969999999996162,
+      "center_dy": 542.765763,
+      "max_abs_delta": 542.765763,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 419.8264387999871,
+       "unmodeled_area_pt2": 0.0,
+       "unmodeled_samples": [],
+       "mismatch_samples": [
+        [
+         43.775,
+         50.02999999999997,
+         43.91,
+         50.20294
+        ],
+        [
+         43.775,
+         50.20294,
+         43.91,
+         50.52999999999997
+        ],
+        [
+         43.91,
+         50.20294,
+         551.39,
+         50.52999999999997
+        ],
+        [
+         43.91,
+         592.795763,
+         551.39,
+         593.295763
+        ],
+        [
+         551.39,
+         50.02999999999997,
+         551.47506,
+         50.20294
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "different",
+        "bottom": "different"
+       }
+      }
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       1
+      ],
+      "out_indices": [
+       2
+      ],
+      "gt_bbox": [
+       43.775,
+       617.42,
+       551.47506,
+       617.92
+      ],
+      "out_bbox": [
+       43.91,
+       618.455163,
+       551.39,
+       618.955163
+      ],
+      "dx": 0.134999999999998,
+      "dy": 1.0351630000000114,
+      "dwidth": -0.2200599999999895,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.134999999999998,
+       "top": 1.0351630000000114,
+       "right": -0.08505999999999858,
+       "bottom": 1.0351630000000114
+      },
+      "center_dx": 0.024969999999996162,
+      "center_dy": 1.0351630000000114,
+      "max_abs_delta": 1.0351630000000114,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 507.59003,
+       "unmodeled_area_pt2": 0.0,
+       "unmodeled_samples": [],
+       "mismatch_samples": [
+        [
+         43.775,
+         617.42,
+         43.91,
+         617.92
+        ],
+        [
+         43.91,
+         617.42,
+         551.39,
+         617.92
+        ],
+        [
+         43.91,
+         618.455163,
+         551.39,
+         618.955163
+        ],
+        [
+         551.39,
+         617.42,
+         551.47506,
+         617.92
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "different",
+        "bottom": "different"
+       }
+      }
+     }
+    ],
+    "samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       1
+      ],
+      "gt_bbox": [
+       43.775,
+       50.02999999999997,
+       551.47506,
+       50.52999999999997
+      ],
+      "out_bbox": [
+       43.91,
+       592.795763,
+       551.39,
+       593.295763
+      ],
+      "dx": 0.134999999999998,
+      "dy": 542.765763,
+      "dwidth": -0.2200599999999895,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.134999999999998,
+       "top": 542.765763,
+       "right": -0.08505999999999858,
+       "bottom": 542.765763
+      },
+      "center_dx": 0.024969999999996162,
+      "center_dy": 542.765763,
+      "max_abs_delta": 542.765763,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 419.8264387999871,
+       "unmodeled_area_pt2": 0.0,
+       "unmodeled_samples": [],
+       "mismatch_samples": [
+        [
+         43.775,
+         50.02999999999997,
+         43.91,
+         50.20294
+        ],
+        [
+         43.775,
+         50.20294,
+         43.91,
+         50.52999999999997
+        ],
+        [
+         43.91,
+         50.20294,
+         551.39,
+         50.52999999999997
+        ],
+        [
+         43.91,
+         592.795763,
+         551.39,
+         593.295763
+        ],
+        [
+         551.39,
+         50.02999999999997,
+         551.47506,
+         50.20294
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "different",
+        "bottom": "different"
+       }
+      }
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       1
+      ],
+      "out_indices": [
+       2
+      ],
+      "gt_bbox": [
+       43.775,
+       617.42,
+       551.47506,
+       617.92
+      ],
+      "out_bbox": [
+       43.91,
+       618.455163,
+       551.39,
+       618.955163
+      ],
+      "dx": 0.134999999999998,
+      "dy": 1.0351630000000114,
+      "dwidth": -0.2200599999999895,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.134999999999998,
+       "top": 1.0351630000000114,
+       "right": -0.08505999999999858,
+       "bottom": 1.0351630000000114
+      },
+      "center_dx": 0.024969999999996162,
+      "center_dy": 1.0351630000000114,
+      "max_abs_delta": 1.0351630000000114,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 507.59003,
+       "unmodeled_area_pt2": 0.0,
+       "unmodeled_samples": [],
+       "mismatch_samples": [
+        [
+         43.775,
+         617.42,
+         43.91,
+         617.92
+        ],
+        [
+         43.91,
+         617.42,
+         551.39,
+         617.92
+        ],
+        [
+         43.91,
+         618.455163,
+         551.39,
+         618.955163
+        ],
+        [
+         551.39,
+         617.42,
+         551.47506,
+         617.92
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "different",
+        "bottom": "different"
+       }
+      }
+     }
+    ],
     "x": {
-     "mean_abs": 0.0,
-     "worst": 0.0
+     "mean_abs": 0.134999999999998,
+     "worst": 0.134999999999998
     },
     "y": {
-     "mean_abs": 0.0,
-     "worst": 0.0
+     "mean_abs": 271.900463,
+     "worst": 542.765763
     },
     "width": {
-     "mean_abs": 0.0,
-     "worst": 0.0
+     "mean_abs": 0.2200599999999895,
+     "worst": -0.2200599999999895
     },
     "height": {
      "mean_abs": 0.0,
@@ -100,20 +835,20 @@
     },
     "edges": {
      "left": {
-      "mean_abs": 0.0,
-      "worst": 0.0
+      "mean_abs": 0.134999999999998,
+      "worst": 0.134999999999998
      },
      "top": {
-      "mean_abs": 0.0,
-      "worst": 0.0
+      "mean_abs": 271.900463,
+      "worst": 542.765763
      },
      "right": {
-      "mean_abs": 0.0,
-      "worst": 0.0
+      "mean_abs": 0.08505999999999858,
+      "worst": -0.08505999999999858
      },
      "bottom": {
-      "mean_abs": 0.0,
-      "worst": 0.0
+      "mean_abs": 271.900463,
+      "worst": 542.765763
      }
     }
    },
