@@ -1370,6 +1370,12 @@ pub struct FloatingTableFrame {
     /// `w:rightFromText`: how far body text beside the table keeps from its
     /// right edge, in points.
     pub right_from_text: f64,
+    /// `w:topFromText`: how far body text keeps from the table's top edge,
+    /// in points.
+    pub top_from_text: f64,
+    /// `w:bottomFromText`: how far body text keeps from the table's bottom
+    /// edge, in points.
+    pub bottom_from_text: f64,
     /// Whether `w:vertAnchor` is `text`, hanging the table from its anchor
     /// paragraph. Section resolution keeps this while it rewrites
     /// `vertical_anchor`, except for a table aligned with `w:tblpYSpec`, which

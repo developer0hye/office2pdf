@@ -7,6 +7,10 @@ pub(in super::super) struct TableHeaderInfo {
     /// Each `w:tr`'s `w:cantSplit`, in document order. docx-rs drops the
     /// element, so the flag is read from the story XML here (issue #2217).
     pub(in super::super) cant_split_rows: Vec<bool>,
+    /// The `w:tblpPr` `w:topFromText` and `w:bottomFromText`, in twips.
+    /// docx-rs reads the table position's other attributes but not these two
+    /// (issue #2229).
+    pub(in super::super) vertical_from_text_twips: (Option<f64>, Option<f64>),
 }
 
 pub(in super::super) struct TableHeaderContext {
@@ -20,6 +24,15 @@ impl TableHeaderContext {
             headers: xml.map(scan_table_headers).unwrap_or_default(),
             cursor: Cell::new(0),
         }
+    }
+
+    /// The `w:tblpPr` vertical distances of the table [`Self::consume_next`]
+    /// yields next, without consuming it.
+    pub(in super::super) fn next_vertical_from_text_twips(&self) -> (Option<f64>, Option<f64>) {
+        self.headers
+            .get(self.cursor.get())
+            .map(|header| header.vertical_from_text_twips)
+            .unwrap_or_default()
     }
 
     pub(in super::super) fn consume_next(&self) -> TableHeaderInfo {
@@ -38,6 +51,7 @@ struct TableHeaderScanState {
     in_table_properties: bool,
     is_visual_rtl: bool,
     cant_split_rows: Vec<bool>,
+    vertical_from_text_twips: (Option<f64>, Option<f64>),
 }
 
 #[cfg(test)]
@@ -71,6 +85,7 @@ fn scan_table_headers_impl(xml: &str) -> Vec<TableHeaderInfo> {
                         in_table_properties: false,
                         is_visual_rtl: false,
                         cant_split_rows: Vec::new(),
+                        vertical_from_text_twips: (None, None),
                     });
                 }
                 b"tblPr" => {
@@ -108,6 +123,13 @@ fn scan_table_headers_impl(xml: &str) -> Vec<TableHeaderInfo> {
                         && on_off_element_is_enabled(element)
                     {
                         state.is_visual_rtl = true;
+                    }
+                }
+                b"tblpPr" => {
+                    if let Some(state) = stack.last_mut()
+                        && state.in_table_properties
+                    {
+                        state.vertical_from_text_twips = vertical_from_text_twips(element);
                     }
                 }
                 _ => {}
@@ -148,6 +170,13 @@ fn scan_table_headers_impl(xml: &str) -> Vec<TableHeaderInfo> {
                         state.is_visual_rtl = true;
                     }
                 }
+                b"tblpPr" => {
+                    if let Some(state) = stack.last_mut()
+                        && state.in_table_properties
+                    {
+                        state.vertical_from_text_twips = vertical_from_text_twips(element);
+                    }
+                }
                 _ => {}
             },
             Ok(quick_xml::events::Event::End(ref element)) => match element.local_name().as_ref() {
@@ -166,6 +195,8 @@ fn scan_table_headers_impl(xml: &str) -> Vec<TableHeaderInfo> {
                         headers[state.table_index].repeat_rows = state.repeat_rows;
                         headers[state.table_index].is_visual_rtl = state.is_visual_rtl;
                         headers[state.table_index].cant_split_rows = state.cant_split_rows;
+                        headers[state.table_index].vertical_from_text_twips =
+                            state.vertical_from_text_twips;
                     }
                 }
                 _ => {}
@@ -193,6 +224,25 @@ fn finalize_table_header_row(state: &mut TableHeaderScanState) {
 
     state.in_row = false;
     state.current_row_is_header = false;
+}
+
+/// A `w:tblpPr`'s `w:topFromText` and `w:bottomFromText`, in twips.
+fn vertical_from_text_twips(
+    element: &quick_xml::events::BytesStart<'_>,
+) -> (Option<f64>, Option<f64>) {
+    let mut distances: (Option<f64>, Option<f64>) = (None, None);
+    for attribute in element.attributes().flatten() {
+        let slot: &mut Option<f64> = match attribute.key.local_name().as_ref() {
+            b"topFromText" => &mut distances.0,
+            b"bottomFromText" => &mut distances.1,
+            _ => continue,
+        };
+        *slot = std::str::from_utf8(&attribute.value)
+            .ok()
+            .and_then(|value| value.trim().parse::<f64>().ok())
+            .filter(|twips| twips.is_finite());
+    }
+    distances
 }
 
 fn on_off_element_is_enabled(element: &quick_xml::events::BytesStart<'_>) -> bool {

@@ -1088,8 +1088,11 @@ fn convert_body_table_block(
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
 ) -> Block {
+    // Read before the conversion consumes the table's scan entry.
+    let vertical_from_text_twips: (Option<f64>, Option<f64>) =
+        ctx.table_headers.next_vertical_from_text_twips();
     let table: Table = convert_table(source_table, images, hyperlinks, style_map, ctx, 0);
-    match sections::floating_table_frame(source_table, &table) {
+    match sections::floating_table_frame(source_table, &table, vertical_from_text_twips) {
         Some(frame) => Block::FloatingTable(Box::new(FloatingTable { table, frame })),
         None => Block::Table(table),
     }

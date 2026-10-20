@@ -9,9 +9,10 @@
 //! text wrap of its own. Which lines meet the table is only known once the
 //! page is laid out, so each root paragraph that follows a floating table asks
 //! at layout time, through the `-top`/`-bottom` labels the placed table
-//! carries, whether its first line falls within the table's extent, and
-//! narrows or moves itself accordingly. The room on each side is known from
-//! the frame alone, so that choice is made here.
+//! carries, whether its first line falls within the table's extent, widened
+//! by `w:topFromText` and `w:bottomFromText`, and narrows or moves itself
+//! accordingly. The room on each side is known from the frame alone, so that
+//! choice is made here.
 //!
 //! The rule follows docxide-pdf's `FloatZone` (`src/pdf/mod.rs` at
 //! `adb8c2b8`), which checks a paragraph at its first line only.
@@ -391,8 +392,10 @@ pub(super) fn write_frame_box_table_label(out: &mut String, edge: &str) {
     let _ = writeln!(out, "#metadata(none) <{FRAME_BOX_TABLE_LABEL}-{edge}>");
 }
 
-/// The labels a placed floating table or text frame carries at its top and
-/// bottom edges.
+/// The labels a placed floating table or text frame carries at the top and
+/// bottom edges of the band it keeps body text out of: its own edges,
+/// widened by a table's `w:topFromText`/`w:bottomFromText` or a frame's
+/// `w:vSpace`.
 pub(super) fn write_float_top_label(out: &mut String, id: usize) {
     let _ = writeln!(out, "#metadata(none) <o2p-float-{id}-top>");
 }

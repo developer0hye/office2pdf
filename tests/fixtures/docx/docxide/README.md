@@ -208,6 +208,16 @@ anchor paragraph with a 20pt `w:before`. Native Word draws the floating row
 19.5pt below the flow table's bottom edge, at 191.52pt; a compiled-layout
 regression checks the 119.5pt between the two rows.
 
+`floating_table_top_from_text.docx` is the unmodified synthetic
+`cases/case165/input.docx` from
+[docxide-pdf at adb8c2b8](https://github.com/sverrejb/docxide-pdf/tree/adb8c2b82baad8deb2973d1d059bfb7513b8e1fe/tests/fixtures/cases/case165),
+Apache-2.0. A 245pt `w:tblpPr` table hangs 20pt below the top of its anchor
+paragraph, "BodyNext", with `w:topFromText="180"`. The line ends above the
+table but within those 9pt of it, so native Word lays it beside the table, at
+334.90pt; `case164`, which states `w:topFromText="0"`, keeps it at the
+margin. A compiled-layout regression checks the line against the room beside
+the table.
+
 `spaced_section_mark.docx` is the unmodified synthetic
 `cases/paragraph-offset-frame-no-frame/input.docx` from
 [docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/paragraph-offset-frame-no-frame),

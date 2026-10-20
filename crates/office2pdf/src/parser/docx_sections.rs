@@ -939,9 +939,13 @@ fn convert_hf_table(
     }
 }
 
+/// The `w:tblpPr` frame of a body table, or `None` for a flow table.
+/// `vertical_from_text_twips` are the frame's `w:topFromText` and
+/// `w:bottomFromText`, which docx-rs does not read, from the story scan.
 pub(super) fn floating_table_frame(
     source_table: &docx_rs::Table,
     table: &Table,
+    vertical_from_text_twips: (Option<f64>, Option<f64>),
 ) -> Option<FloatingTableFrame> {
     let properties: serde_json::Value = serde_json::to_value(&source_table.property).ok()?;
     let position: &serde_json::Map<String, serde_json::Value> =
@@ -959,6 +963,8 @@ pub(super) fn floating_table_frame(
             .and_then(serde_json::Value::as_f64)
             .map(|twips| twips_to_pt(twips as i32))
     };
+    let from_text_pt =
+        |twips: Option<f64>| -> f64 { twips.map_or(0.0, |twips| twips / 20.0).max(0.0) };
     let horizontal_align = position_string("positionXAlignment")
         .and_then(frame_align)
         .or(match table.alignment {
@@ -979,10 +985,10 @@ pub(super) fn floating_table_frame(
             .unwrap_or(FrameAnchor::Margin),
         horizontal_align,
         vertical_align: position_string("positionYAlignment").and_then(frame_align),
-        // TODO(docx-rs does not parse topFromText/bottomFromText): the
-        // vertical distances are taken as zero, the schema default.
         left_from_text: position_twips("leftFromText").unwrap_or(0.0).max(0.0),
         right_from_text: position_twips("rightFromText").unwrap_or(0.0).max(0.0),
+        top_from_text: from_text_pt(vertical_from_text_twips.0),
+        bottom_from_text: from_text_pt(vertical_from_text_twips.1),
         anchored_to_text: position_string("verticalAnchor") == Some("text"),
     })
 }
