@@ -313,6 +313,13 @@ struct GenCtx {
     /// to their own section too, and the check is a layout-time query that
     /// every such table would otherwise pay for.
     clears_top_margin_frame_boxes: bool,
+    /// Whether the next block in the block list being written is a top-margin
+    /// frame box, so a full-width table before it clears the box with the
+    /// rows it carries onto the box's page (issue #2231).
+    top_margin_frame_box_follows: bool,
+    /// Set by such a table for the box after it: the bottom of the text area,
+    /// from the top of the page.
+    frame_box_carry_text_bottom_pt: Option<f64>,
 }
 
 impl GenCtx {
@@ -383,6 +390,8 @@ impl GenCtx {
             text_frame_anchor_gap_pt: None,
             carried_float_text_area_pt: None,
             clears_top_margin_frame_boxes: false,
+            top_margin_frame_box_follows: false,
+            frame_box_carry_text_bottom_pt: None,
         }
     }
 
@@ -5399,6 +5408,13 @@ fn generate_blocks_with_layout_space_before(
             .then(|| take_joined_paragraph_after_shading_space(&mut block))
             .flatten();
         ctx.text_frame_anchor_gap_pt = text_frame_anchor_gap(blocks, index);
+        ctx.top_margin_frame_box_follows = matches!(
+            blocks.get(index + 1),
+            Some(Block::TextFrame(frame)) if frame.vertical_anchor != FrameAnchor::Text
+        );
+        if !matches!(blocks[index], Block::TextFrame(_)) {
+            ctx.frame_box_carry_text_bottom_pt = None;
+        }
         let follows_column_break: bool =
             index > 0 && matches!(blocks[index - 1], Block::ColumnBreak);
         let follows_source_paragraph_page_break: bool = index > 0
@@ -6119,12 +6135,21 @@ fn generate_block_inner(
                 .float_wrap_text_area_pt
                 .filter(|_| ctx.clears_top_margin_frame_boxes && ctx.block_depth == 1)
                 .map(|(width_pt, _)| width_pt);
-            if column_width_pt
-                .is_some_and(|width_pt| table.column_widths.iter().sum::<f64>() >= width_pt - 0.05)
-            {
+            let clears_frame_boxes: bool = column_width_pt
+                .is_some_and(|width_pt| table.column_widths.iter().sum::<f64>() >= width_pt - 0.05);
+            if clears_frame_boxes {
                 float_wrap::write_top_margin_frame_box_clearance(out);
             }
+            // Read before the cells' own block lists overwrite the flag.
+            let text_bottom_pt: Option<f64> = ctx
+                .active_page_size
+                .zip(ctx.active_page_margins)
+                .map(|(size, margins)| size.height - margins.bottom)
+                .filter(|_| clears_frame_boxes && ctx.top_margin_frame_box_follows);
             out.push_str("#block(width: 100%, above: 0pt, below: 0pt)[\n");
+            if text_bottom_pt.is_some() {
+                float_wrap::write_frame_box_table_label(out, "start");
+            }
             // Only a table written straight into a breakable section body
             // meets a page break itself. A table inside a placed, boxed or
             // otherwise single-frame container keeps its rows whole: Typst
@@ -6133,7 +6158,11 @@ fn generate_block_inner(
             ctx.table_rows_may_split = ctx.flow_body_is_breakable && ctx.block_depth == 1;
             let result = generate_table(out, table, ctx);
             ctx.table_rows_may_split = enclosing_rows_may_split;
+            if text_bottom_pt.is_some() {
+                float_wrap::write_frame_box_table_label(out, "end");
+            }
             out.push_str("]\n");
+            ctx.frame_box_carry_text_bottom_pt = text_bottom_pt;
             result
         }
         Block::Image(img) => {
@@ -6669,7 +6698,8 @@ fn generate_text_frame(
 /// top of the text area on the page the group lands on. At the root of a
 /// one-column flow that pages, labels mark the box's top edge and its bottom
 /// edge, `w:vSpace` below it, which a full-width table that starts between
-/// them clears. The box takes no flow space.
+/// them clears. The box takes no flow space, except above the rows a
+/// full-width table it directly follows carries onto its page.
 ///
 /// TODO(body text beside an empty frame's box, #2355): Word lays a body line
 /// the box meets out on both sides of it, as docxide-pdf's
@@ -6686,12 +6716,20 @@ fn generate_top_margin_frame_box(
         && ctx.block_depth == 1
         && ctx.flow_body_is_breakable
         && ctx.float_wrap_text_area_pt.is_some();
-    let _ = writeln!(
-        out,
-        "#place(top + left, dx: {}pt, dy: {}pt)[",
-        format_f64(frame.x),
-        format_f64(frame.y)
-    );
+    let carry_text_bottom_pt: Option<f64> = ctx
+        .frame_box_carry_text_bottom_pt
+        .take()
+        .filter(|_| labelled);
+    if let Some(text_bottom_pt) = carry_text_bottom_pt {
+        float_wrap::write_top_margin_frame_box_carry_open(out, text_bottom_pt, frame.x, frame.y);
+    } else {
+        let _ = writeln!(
+            out,
+            "#place(top + left, dx: {}pt, dy: {}pt)[",
+            format_f64(frame.x),
+            format_f64(frame.y)
+        );
+    }
     if labelled {
         float_wrap::write_top_margin_frame_box_label(out, "top");
     }

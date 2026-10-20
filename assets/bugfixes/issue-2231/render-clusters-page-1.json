@@ -1,852 +1,708 @@
 {
   "clusters": [
     {
-      "area_pt2": 59.0976,
+      "area_pt2": 24.192,
       "bbox_pt": {
-        "height": 11.28,
-        "width": 11.52,
-        "x": 124.56,
-        "y": 217.44
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-75ebcb041e4b",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 51.6672,
-      "bbox_pt": {
-        "height": 11.28,
-        "width": 6.96,
-        "x": 163.44,
-        "y": 217.44
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-0a9e2ed8f25f",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 35.5968,
-      "bbox_pt": {
-        "height": 11.28,
+        "height": 10.32,
         "width": 8.64,
         "x": 134.64,
-        "y": 118.08
+        "y": 95.04
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-608846cd31b1",
+      "id": "p1-6d18fe09a2be",
       "region": "top-left"
     },
     {
-      "area_pt2": 31.5072,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 11.04,
+        "height": 10.08,
         "width": 6.96,
         "x": 425.28,
-        "y": 153.6
+        "y": 178.8
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-8fc2905ff76c",
+      "id": "p1-5bbc96154c1f",
       "region": "top-right"
     },
     {
-      "area_pt2": 31.5072,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 11.04,
+        "height": 10.08,
         "width": 6.96,
         "x": 425.28,
-        "y": 185.76
+        "y": 339.84
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-537c5f4fc85f",
-      "region": "top-right"
+      "id": "p1-61f9d3d73d9e",
+      "region": "right"
     },
     {
-      "area_pt2": 31.5072,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 11.04,
+        "height": 10.08,
         "width": 6.96,
         "x": 425.28,
-        "y": 201.84
+        "y": 388.08
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-971373bb7729",
-      "region": "top-right"
+      "id": "p1-f24705fcd5a6",
+      "region": "right"
     },
     {
-      "area_pt2": 30.7584,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 10.8,
+        "height": 10.08,
         "width": 6.96,
         "x": 425.28,
-        "y": 121.44
+        "y": 404.16
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-ab0b096cda4e",
-      "region": "top-right"
+      "id": "p1-ab30fd79f199",
+      "region": "right"
     },
     {
-      "area_pt2": 30.7584,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 10.8,
+        "height": 10.08,
         "width": 6.96,
         "x": 425.28,
-        "y": 137.52
+        "y": 549.12
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-4f568c86aad2",
-      "region": "top-right"
+      "id": "p1-b095ef9a052a",
+      "region": "right"
     },
     {
-      "area_pt2": 30.7584,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 10.8,
+        "height": 10.08,
         "width": 6.96,
         "x": 425.28,
-        "y": 169.68
+        "y": 565.2
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-447cbaaa5da7",
-      "region": "top-right"
+      "id": "p1-7f96987598b2",
+      "region": "bottom-right"
     },
     {
-      "area_pt2": 28.6272,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 8.16,
-        "width": 5.76,
-        "x": 409.44,
-        "y": 153.6
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-3f94ce6aae0d",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 28.6272,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.76,
-        "x": 436.56,
-        "y": 153.6
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-9c95e850a36b",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 28.6272,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.76,
-        "x": 409.44,
-        "y": 185.76
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-a630e3bdf49d",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 28.6272,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.76,
-        "x": 436.56,
-        "y": 185.76
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-de688a9ec461",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 28.6272,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.76,
-        "x": 409.44,
-        "y": 201.84
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-815d037a9dd1",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 28.6272,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.76,
-        "x": 436.56,
-        "y": 201.84
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-38c07eaeec55",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 28.5696,
-      "bbox_pt": {
-        "height": 11.28,
-        "width": 6.72,
-        "x": 379.92,
-        "y": 150.48
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-c74d093a414b",
-      "region": "top"
-    },
-    {
-      "area_pt2": 28.5696,
-      "bbox_pt": {
-        "height": 11.28,
-        "width": 6.72,
-        "x": 379.92,
-        "y": 182.64
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-638e4aa527c6",
-      "region": "top"
-    },
-    {
-      "area_pt2": 28.5696,
-      "bbox_pt": {
-        "height": 11.28,
-        "width": 6.72,
-        "x": 379.92,
-        "y": 198.72
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-fd5268a172e8",
-      "region": "top"
-    },
-    {
-      "area_pt2": 27.8208,
-      "bbox_pt": {
-        "height": 11.04,
-        "width": 6.72,
-        "x": 379.92,
-        "y": 118.32
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-f456ee9f6acb",
-      "region": "top"
-    },
-    {
-      "area_pt2": 27.8208,
-      "bbox_pt": {
-        "height": 11.04,
-        "width": 6.72,
-        "x": 379.92,
-        "y": 134.4
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-37c0c3d9fd6c",
-      "region": "top"
-    },
-    {
-      "area_pt2": 27.8208,
-      "bbox_pt": {
-        "height": 11.04,
-        "width": 6.72,
-        "x": 379.92,
-        "y": 166.56
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-b8f13afbd830",
-      "region": "top"
-    },
-    {
-      "area_pt2": 27.8208,
-      "bbox_pt": {
-        "height": 11.04,
-        "width": 6.72,
-        "x": 99.6,
-        "y": 214.8
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-dfbaa6e2bc52",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 26.8992,
-      "bbox_pt": {
-        "height": 10.56,
-        "width": 7.2,
-        "x": 365.28,
-        "y": 150.96
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-7c76d0482698",
-      "region": "top"
-    },
-    {
-      "area_pt2": 26.8992,
-      "bbox_pt": {
-        "height": 10.56,
-        "width": 7.2,
-        "x": 365.28,
-        "y": 183.12
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-de39897602b1",
-      "region": "top"
-    },
-    {
-      "area_pt2": 26.8992,
-      "bbox_pt": {
-        "height": 10.56,
-        "width": 7.2,
-        "x": 365.28,
-        "y": 199.2
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-4df63f41be48",
-      "region": "top"
-    },
-    {
-      "area_pt2": 26.208,
-      "bbox_pt": {
-        "height": 11.04,
-        "width": 6.72,
-        "x": 99.6,
-        "y": 118.32
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-474cfe6858c0",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 24.4224,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.52,
-        "x": 142.56,
-        "y": 217.92
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-cd3b9a017230",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 24.2496,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.76,
-        "x": 128.64,
-        "y": 121.44
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-d8df627ecbe6",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 24.2496,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.76,
-        "x": 409.44,
-        "y": 121.44
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-28412767c15a",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 24.2496,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.76,
-        "x": 436.56,
-        "y": 121.44
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-9876cf4f84cc",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 24.2496,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.76,
-        "x": 409.44,
-        "y": 137.52
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-5eef04a8211d",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 24.2496,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.76,
-        "x": 436.56,
-        "y": 137.52
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-9c40c8c32e7e",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 24.2496,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.76,
-        "x": 409.44,
-        "y": 169.68
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-b704411c28dd",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 24.2496,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.76,
-        "x": 436.56,
-        "y": 169.68
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-cf6ece2e1e8e",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 24.2496,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.76,
-        "x": 136.32,
-        "y": 217.92
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-ce88414b852d",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 23.904,
-      "bbox_pt": {
-        "height": 9.12,
-        "width": 7.68,
-        "x": 148.32,
-        "y": 216.72
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-258b39154805",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 23.3856,
-      "bbox_pt": {
-        "height": 7.92,
+        "height": 10.08,
         "width": 6.96,
-        "x": 442.56,
-        "y": 153.6
+        "x": 425.28,
+        "y": 597.36
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-50b47c5e678d",
-      "region": "top-right"
+      "id": "p1-e68d4b962236",
+      "region": "bottom-right"
     },
     {
-      "area_pt2": 23.3856,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 7.92,
+        "height": 10.08,
         "width": 6.96,
-        "x": 442.56,
-        "y": 185.76
+        "x": 425.28,
+        "y": 613.44
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-9b3a920d6edf",
-      "region": "top-right"
+      "id": "p1-315142d0d3c5",
+      "region": "bottom-right"
     },
     {
-      "area_pt2": 23.3856,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 7.92,
+        "height": 10.08,
         "width": 6.96,
-        "x": 442.56,
-        "y": 201.84
+        "x": 425.28,
+        "y": 629.52
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-0bab3f646c7c",
-      "region": "top-right"
+      "id": "p1-7245de1014d7",
+      "region": "bottom-right"
     },
     {
-      "area_pt2": 22.9824,
+      "area_pt2": 23.04,
       "bbox_pt": {
-        "height": 8.16,
-        "width": 5.52,
-        "x": 415.68,
-        "y": 153.6
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-156733f3301f",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 22.9824,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.52,
-        "x": 415.68,
-        "y": 185.76
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-d0fb6a77694f",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 22.9824,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.52,
-        "x": 415.68,
-        "y": 201.84
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-8be544137624",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 22.2336,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.52,
-        "x": 415.68,
-        "y": 121.44
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-a57b6e330d85",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 22.2336,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.52,
-        "x": 415.68,
-        "y": 137.52
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-aeffc8374407",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 22.2336,
-      "bbox_pt": {
-        "height": 7.92,
-        "width": 5.52,
-        "x": 415.68,
-        "y": 169.68
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-8ea466dc998a",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 22.176,
-      "bbox_pt": {
-        "height": 7.68,
-        "width": 7.2,
-        "x": 92.64,
-        "y": 121.68
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-107bf60caf19",
-      "region": "top-left"
-    },
-    {
-      "area_pt2": 22.176,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.52,
-        "x": 395.04,
-        "y": 153.6
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-5fa9130d9d8b",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 22.176,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.52,
-        "x": 395.04,
-        "y": 185.76
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-af5848ad8ce1",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 22.176,
-      "bbox_pt": {
-        "height": 8.16,
-        "width": 5.52,
-        "x": 395.04,
-        "y": 201.84
-      },
-      "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
-      },
-      "id": "p1-2650308dc5bd",
-      "region": "top-right"
-    },
-    {
-      "area_pt2": 21.7728,
-      "bbox_pt": {
-        "height": 7.68,
+        "height": 10.08,
         "width": 6.96,
-        "x": 442.56,
-        "y": 121.44
+        "x": 425.28,
+        "y": 710.16
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-20cc1462f632",
+      "id": "p1-2fe7bf1df9e6",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 726.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-2734aa528fcc",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 758.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-082a0de88086",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 774.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-210833852933",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 98.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-632a8cbba234",
       "region": "top-right"
     },
     {
-      "area_pt2": 21.7728,
+      "area_pt2": 20.6208,
       "bbox_pt": {
-        "height": 7.68,
+        "height": 9.84,
         "width": 6.96,
-        "x": 442.56,
-        "y": 137.52
+        "x": 425.28,
+        "y": 114.48
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-1f2141ab085b",
+      "id": "p1-7c6d92a2fa9e",
       "region": "top-right"
     },
     {
-      "area_pt2": 21.7728,
+      "area_pt2": 20.6208,
       "bbox_pt": {
-        "height": 7.68,
+        "height": 9.84,
         "width": 6.96,
-        "x": 442.56,
-        "y": 169.68
+        "x": 425.28,
+        "y": 130.56
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-7c2db9dbb620",
+      "id": "p1-73f67cc4bc24",
       "region": "top-right"
     },
     {
-      "area_pt2": 21.7728,
+      "area_pt2": 20.6208,
       "bbox_pt": {
-        "height": 7.68,
+        "height": 9.84,
         "width": 6.96,
-        "x": 156.24,
-        "y": 217.92
+        "x": 425.28,
+        "y": 146.64
       },
       "disposition": {
-        "issue": "#1874",
-        "kind": "issue",
-        "note": "Every cluster is a glyph of the eight text lines (the table's two columns and the greeting), doubled by a uniform 0.98-1.19pt upward offset: the frame box's two 10pt lines are laid out in Liberation Sans, which stands in for Tahoma on this host (11.50pt per line against Tahoma's 12.07pt). With Word's embedded Tahoma subset on the font path the same build puts 'Public left' at 129.36pt (Word 129.30pt). Outlines otherwise differ only as Times New Roman against its metric-compatible Liberation Serif. Sub-material; recorded under #1874."
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
       },
-      "id": "p1-e2e9658db2fe",
-      "region": "top-left"
+      "id": "p1-780705a5674e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 162.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-236571f33298",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 194.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-ec12615eefc8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 210.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-0f20ce20a2e6",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 227.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-b5f3993b5203",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 243.36
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-fe535d67049c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 259.44
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-8f0279b07eda",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 275.52
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-0c11078ddcbc",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 291.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-d51c9e361e2a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 307.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-2673547e6625",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 323.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-0c4e5f65b454",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 355.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-f9f16a875403",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 372.0
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-7471f1840cf7",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 420.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-22773056e102",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 436.56
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-4896d0ef2e9c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 452.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-b39232616df9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 468.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-274188587b33",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 484.8
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-2a120f82191f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 500.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-06cc3b0ba840",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 516.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-2ed70e6cdd20",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 533.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-a0b3df05314e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 581.28
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-c9b60ab483c1",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 645.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-e511fe35fa8f",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 661.92
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-13e19a3a116a",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 678.0
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-e9d9c5faee27",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 694.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-b713bb40cb26",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.6208,
+      "bbox_pt": {
+        "height": 9.84,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 742.32
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Every cluster is a glyph outline of page 1's 43 text lines, which the fix leaves unchanged: Times New Roman against its metric-compatible Liberation Serif, regular, black, same x, baselines within 0.25pt (layout audit: no shift above 0.5pt). No fills, strokes or other marks."
+      },
+      "id": "p1-eb0e1d0c2854",
+      "region": "bottom-right"
     }
   ],
   "dpi": 300,
@@ -860,9 +716,9 @@
   "schema_version": 1,
   "strict": true,
   "summary": {
-    "dispositioned": 53,
+    "dispositioned": 44,
     "duplicate": 0,
-    "total": 53,
+    "total": 44,
     "undispositioned": 0,
     "unknown": 0
   },

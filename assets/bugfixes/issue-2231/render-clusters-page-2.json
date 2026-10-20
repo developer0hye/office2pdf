@@ -1,0 +1,3895 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 64.512,
+      "bbox_pt": {
+        "height": 11.76,
+        "width": 11.52,
+        "x": 124.56,
+        "y": 636.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-cb19c2a8f269",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 51.552,
+      "bbox_pt": {
+        "height": 11.76,
+        "width": 6.96,
+        "x": 163.44,
+        "y": 636.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b791d4c95596",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 153.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-2f2f8d21b703",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 185.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-5b24825a8bb5",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 201.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-1a44a4e87e86",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 234.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4be2fed323e7",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-68bbabb3f516",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 314.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-e2f95994dfc3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 362.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-bd3bf88172e0",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 395.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d3cbbb9759cd",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 411.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-36672ce86816",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 427.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-74aa74ef6537",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 443.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-224098e6b428",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 459.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-f4cc79095bf7",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 523.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-c408088df235",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 540.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-70f6cce81eae",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 556.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-69d8004b031e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 572.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b31eb23adc40",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 588.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-25ddba84b588",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 604.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4094f77d1a99",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 31.5072,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 620.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-9fee165c312d",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 266.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-eeaf4567119a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 475.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4b1e3e225a61",
+      "region": "right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 121.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-95bf1c4b3493",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 137.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-edaeed1108f5",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 169.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-67bc1b3f28d4",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 217.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-bd7527aa9ed4",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 282.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d278167c5567",
+      "region": "right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 298.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-879dd1b79c66",
+      "region": "right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 330.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-eb404166a7d4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 346.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d139392c9bf5",
+      "region": "right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 378.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-51dd351ddc74",
+      "region": "right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 491.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-5b689748e950",
+      "region": "right"
+    },
+    {
+      "area_pt2": 30.7584,
+      "bbox_pt": {
+        "height": 10.8,
+        "width": 6.96,
+        "x": 425.28,
+        "y": 507.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b22c0a99fd69",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.6064,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.52,
+        "x": 142.56,
+        "y": 636.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-58953a20a8b4",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.376,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 266.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b5679b51e26d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 29.376,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 266.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-0aedea27a7ed",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 29.376,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 475.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-7f3f5827a29a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.376,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 475.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-40e90b3c56da",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.376,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.76,
+        "x": 136.32,
+        "y": 636.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-440b7512043e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 28.8576,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 263.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-30491838340c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.8576,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 472.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8e5ef357fb56",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.8576,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 6.72,
+        "x": 99.6,
+        "y": 633.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-39449e59e086",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 153.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-33f76b168599",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 153.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-c45333b2d9ed",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 185.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-81bd05581ddc",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 185.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-108b2ff54fd9",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 201.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-2a9f7fed54ed",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 201.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-095a5207e41e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 234.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-265c89a09ebd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 234.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b2eeceff3d04",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-899e042752ed",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-091ba62c814f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 314.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-19dc7e49ca71",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 314.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-034485d92ee5",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 362.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8bea87c7b3ff",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 362.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-3366463e07e0",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 395.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-0ec988098161",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 395.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b933779242a6",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 411.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-146786bde3e4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 411.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-60d651a71468",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 427.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-e63c42ce4e07",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 427.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-0ba96eec79db",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 443.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-213a24bcd214",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 443.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-2fd9be5bb138",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 459.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8c42346bd4d4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 459.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-ffef59cc6830",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 523.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b4269907ec07",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 523.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-fa6084a14824",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 540.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-e7efc47c8fad",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 540.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-a8fa2966d805",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 556.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-3e506023edfb",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 556.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b4dec118c272",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 572.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-9f3808877715",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 572.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-5af165a331c6",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 588.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-c0e9839b3489",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 588.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-41f111ade44a",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 604.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-98ef8000247c",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 604.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d84d4a09469e",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 620.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-105450446039",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 28.6272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 620.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-c85873262a74",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 150.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8d32e88b3458",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 182.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-46f70da33438",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 198.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-7b9ed815ac16",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 230.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8fb408152b3b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 246.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-571eb3677bc8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 311.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-6bf590eb5d26",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 359.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-6ded6782e458",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 391.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-601518b2deeb",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 408.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-ab1ac1206ced",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 424.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-c184f039699f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 440.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-50b4b23ffd68",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 456.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-62d4080d1a39",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 520.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-df136ea62eaa",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 536.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-ac4cec2de8c9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 552.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4bcfd5cced92",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 569.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8eef8bf95657",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 585.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-979a3a161ad7",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 601.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-309a030792b3",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 11.28,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 617.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-41c0560f5554",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 118.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-17e7ef53d0c4",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 134.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-79943afd4e71",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 166.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-7b2c92417b8d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 214.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-dd13d2c33849",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 279.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-1087dffee971",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 295.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-2a91fedb8b8c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 327.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-71739819de29",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 343.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-201fd37c6adb",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 375.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-55e7ec86d2d7",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 488.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-f411668887bf",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.8208,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.72,
+        "x": 379.92,
+        "y": 504.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-2d9e6c277c5e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 150.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-36bd18107566",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 183.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-21b66a0cf56c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 199.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4056bb304e1a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 231.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-ecc3a7ea7d6d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 247.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-56e343506822",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 312.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-a1108ae12b3f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 360.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-58f586ff4dac",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 392.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4cab22480b3b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 408.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-14a4515b7f38",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 424.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4432f7779c06",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 440.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-f95ca841e318",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 456.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b58bbf33fb68",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 521.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-dca7dc7b74f8",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 537.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-5e6799fd9728",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 553.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-61d295e1ebbd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 569.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-def13b6159d9",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 585.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-087e40201bf9",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 601.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-324de82e1728",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 26.8992,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 617.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4ba61cabcb00",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 25.4592,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 263.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-35badb1f9b4d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.4592,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 7.2,
+        "x": 365.28,
+        "y": 472.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d64dd2b041a7",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.4592,
+      "bbox_pt": {
+        "height": 9.36,
+        "width": 7.2,
+        "x": 85.2,
+        "y": 633.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-6d04e160f3df",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.48,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 266.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-ea512823efca",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.48,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 475.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-6804d6a30a74",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.3072,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 266.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-f1a084d36a62",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.3072,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 475.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-a24a582e04d1",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.3072,
+      "bbox_pt": {
+        "height": 8.4,
+        "width": 5.52,
+        "x": 114.96,
+        "y": 636.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-369ea0c9a40b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 121.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-6e1f068f12f9",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 121.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-197966ddeb1a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 137.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-1500e7cfe94c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 137.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-7ecc38163085",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 169.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-466e704ec6d0",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 169.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-1a376e4f3070",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 217.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-43876baa1795",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 217.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-dd7a99a06d8d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 282.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-59acbe11f31c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 282.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-adf27afb223d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 298.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-971878f54bd7",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 298.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-a713ad8cc321",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 330.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8891cd078fd8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 330.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-0007a7ad8031",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 346.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-c63d9de39cfb",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 346.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-0f6e4aac92fe",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 378.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-588f994daeaf",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 378.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-f5674963be0d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 491.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-380f96720206",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 491.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-f5221f410a22",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 409.44,
+        "y": 507.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-fdfe1a333259",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.2496,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.76,
+        "x": 436.56,
+        "y": 507.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-9271400e028b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 153.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-87bf1f53f7dd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 185.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4da4942847c5",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 201.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b1417faaefdf",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 234.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-96740cf6f436",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-e6fe4e4ae65c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 314.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-41ab18b6b63e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 362.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-c57b5ef2051f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 395.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-60e004c4dfd3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 411.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-e2cc8a055a3a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 427.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d1caf44ecd31",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 443.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-00bfbeddb3d8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 459.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-20aadf755989",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 523.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-616a97feb8e7",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 540.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-bbf581738625",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 556.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-46c56cc08a9a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 572.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-5d722b985633",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 588.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-1d9a3d42d2e3",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 604.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-109d15de54be",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 23.3856,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 620.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-40a59d8b0639",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 153.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d98e862bddf9",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 185.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-ebc91239bd28",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 201.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-844ceceac646",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 234.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-f20f6d5ae95a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-17fae42e7263",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 266.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-94b7642ae589",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 314.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d81edeaa5ce0",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 362.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d1b32a79e2ac",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 395.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-796fa1f04069",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 411.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-28a90a807820",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 427.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-af230cff07dc",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 443.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4e7bfb7b5c9f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 459.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b0ff3c203dca",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 475.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8ca30f84d774",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 523.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-518d8c81f1c5",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 540.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-5ee3f4187ac7",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 556.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-94ccd69b37e4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 572.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-a1c7494aa8ea",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 588.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-37c096993086",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 604.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d3cd1a0bd10f",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 620.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d36e4a7bcf87",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.9824,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.96,
+        "x": 156.24,
+        "y": 636.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-86a1b884e9a0",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 121.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-fd520a0d9f74",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 137.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-32369c993888",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 169.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-0a3ddbb7558e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 217.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b9f2c487736a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 282.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8745e4abae4b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 298.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-4e6df7659e1a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 330.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-1d6d486bdae3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 346.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-04e45048c59d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 378.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-9ad300a717f3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 491.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-9b6714437cae",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.2336,
+      "bbox_pt": {
+        "height": 7.92,
+        "width": 5.52,
+        "x": 415.68,
+        "y": 507.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-a78bad444bbc",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 153.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-0bbbea4fe2bc",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 185.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-3e0fcc25882d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 201.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-3a54ae9fd868",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 234.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-0301f21a5be3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-7311e399a4c6",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 314.64
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-35c0f8a0f9e5",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 362.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d257617d872f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 395.04
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8fa09d6bf735",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 411.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-7bab8b4b871d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 427.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-7a38861ab175",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 443.28
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b675fc931f70",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 459.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-1f000964a205",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 523.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-8466ea915f40",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 540.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-e49eada250ee",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 556.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-88f2eda5d087",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 572.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-f35e3c59fe2c",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 588.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-b68918acec97",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 604.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-16cac57a44ff",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 22.176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.52,
+        "x": 395.04,
+        "y": 620.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-0b3f5b073db0",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 121.44
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-9f2ff0254cfa",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 137.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-ef6f25d451ed",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 169.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-6c3ad128cc5b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 217.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-c0fdc1682e1c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 282.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-eb6b72f63d7f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 298.56
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-545f029580a9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 330.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-ae275bcc9349",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 346.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-043c46c8607c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 378.96
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-3ff31c69159e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 491.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-81c640763ff5",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.96,
+        "x": 442.56,
+        "y": 507.84
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is a glyph of page 2's 33 text lines (32 carried 'Public recipient' rows and the greeting), doubled by a uniform 0.98-1.33pt upward offset: the empty frame's box is two 10pt Tahoma lines, laid out in this host's Tahoma substitute (11.50pt per line against Tahoma's 12.07pt). With the Tahoma subset Word's PDF embeds on --font-path, the first row lands at 129.36pt (Word 129.30). Same glyphs, same x, regular weight."
+      },
+      "id": "p2-d6eb80de3805",
+      "region": "right"
+    }
+  ],
+  "dpi": 300,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 242,
+    "duplicate": 0,
+    "total": 242,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

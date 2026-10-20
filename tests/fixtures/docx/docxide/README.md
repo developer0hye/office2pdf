@@ -159,6 +159,15 @@ Word keeps the empty frame's box at the top margin and starts the table below
 it, 24pt lower; a compiled-layout regression checks the table's first line and
 the greeting.
 
+`empty_frame_box_carried_rows.docx` is the unmodified synthetic
+`cases/empty-margin-frame-long-prefix/input.docx` from
+[docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/empty-margin-frame-long-prefix),
+Apache-2.0: `empty_frame_box.docx` with a cell long enough to carry its row onto
+page 2, where the empty frame group follows the table. Native Word keeps the
+box at page 2's top margin and starts the carried part of the row below it,
+24pt lower; a compiled-layout regression checks both pages' first lines and the
+greeting.
+
 `offset_text_frame.docx` is the unmodified synthetic
 `cases/paragraph-offset-frame-immediate/input.docx` from
 [docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/paragraph-offset-frame-immediate),
