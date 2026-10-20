@@ -127,6 +127,7 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         line_box: None,
         space_before,
         space_after,
+        section_mark_after: None,
         decoration_before_spacing: None,
         space_before_percent: None,
         space_after_percent: None,

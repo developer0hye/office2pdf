@@ -139,6 +139,11 @@ pub struct ParagraphStyle {
     pub line_box: Option<LineBox>,
     pub space_before: Option<f64>,
     pub space_after: Option<f64>,
+    /// The `w:after` of an empty section mark that ends the previous section
+    /// without a line of its own, on the first paragraph of the continuous
+    /// section after it. Word adds only the part of `space_before` beyond it
+    /// to the previous paragraph's whole after-gap (issue #2232).
+    pub section_mark_after: Option<f64>,
     /// Decoration-only portion of before-spacing suppressed at a later page top.
     pub decoration_before_spacing: Option<f64>,
     /// DrawingML paragraph spacing stated as a fraction of the paragraph's

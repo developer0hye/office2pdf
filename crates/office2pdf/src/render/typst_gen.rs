@@ -836,8 +836,10 @@ fn generate_flow_page(
                 DEFAULT_TAB_WIDTH_PT
             });
     let mut section_content: Vec<Block> = page.content.clone();
+    let mut section_mark_space: Option<(usize, f64)> = None;
     if begins_continuously {
         suppress_typst_spacing_at_continuous_section_start(&mut section_content);
+        section_mark_space = take_section_mark_space(&mut section_content);
     }
     if !begins_continuously {
         write_flow_page_setup(out, page, &size, false, ctx)?;
@@ -947,6 +949,7 @@ fn generate_flow_page(
                 begins_continuously,
                 ends_continuously,
                 balance_final_segment: ends_continuously,
+                section_mark_space,
             },
             ctx,
         )?;
@@ -961,6 +964,7 @@ fn generate_flow_page(
             &size,
             &section_content,
             ends_continuously,
+            section_mark_space,
             ctx,
         )?;
     } else {
@@ -969,7 +973,15 @@ fn generate_flow_page(
         // The continuous-section frame is a `#move`, which lays its body out
         // as one frame that cannot continue on the next page.
         ctx.flow_body_is_breakable = !has_continuous_frame;
-        generate_blocks(out, &section_content, ctx)?;
+        generate_blocks_with_layout_space_before(
+            out,
+            &section_content,
+            ctx,
+            section_mark_space,
+            false,
+            false,
+            false,
+        )?;
         if has_continuous_frame {
             write_continuous_flow_frame_close(out);
         }
@@ -1046,24 +1058,58 @@ fn suppress_typst_spacing_at_continuous_section_start(content: &mut [Block]) {
     {
         return;
     }
-    let space_before: &mut Option<f64> = match &mut content[first_content_index] {
-        Block::Paragraph(paragraph) => &mut paragraph.style.space_before,
-        Block::Caption(caption) => &mut caption.paragraph.style.space_before,
-        Block::List(list) => {
-            let Some(paragraph) = list
-                .items
-                .first_mut()
-                .and_then(|item| item.content.first_mut())
-            else {
-                return;
-            };
-            &mut paragraph.style.space_before
-        }
-        _ => return,
+    let Some(style) = first_paragraph_style_mut(&mut content[first_content_index]) else {
+        return;
     };
-    if !space_before.is_some_and(|gap| gap > 0.0) {
-        *space_before = Some(0.0);
+    if !style.space_before.is_some_and(|gap| gap > 0.0) {
+        style.space_before = Some(0.0);
     }
+}
+
+/// The style of a block's first paragraph; a list's is its first item's.
+fn first_paragraph_style_mut(block: &mut Block) -> Option<&mut ParagraphStyle> {
+    match block {
+        Block::Paragraph(paragraph) => Some(&mut paragraph.style),
+        Block::Caption(caption) => Some(&mut caption.paragraph.style),
+        Block::List(list) => list
+            .items
+            .first_mut()?
+            .content
+            .first_mut()
+            .map(|paragraph| &mut paragraph.style),
+        _ => None,
+    }
+}
+
+/// The gap a continuous section's first paragraph takes after an empty
+/// section mark that took no line ([`ParagraphStyle::section_mark_after`]),
+/// with the index of the block it goes before. Word adds the part of the
+/// paragraph's `w:before` beyond the mark's `w:after` to the previous
+/// paragraph's whole after-gap (issue #2232), where Typst's block spacing
+/// would keep only the larger of the two. So the gap is written as fixed
+/// space, which Typst's weak block spacing looks past, and the paragraph's
+/// own before-gap becomes zero. In a multi-column section the space goes in
+/// the first column, where the paragraph is: Word's export of docxide-pdf's
+/// `scraped/covid_insomnia_mental_health` starts its second column above the
+/// first column's numbered heading. After a layout break the paragraph sits
+/// at a page or column top, so it keeps its gaps as they were.
+fn take_section_mark_space(content: &mut [Block]) -> Option<(usize, f64)> {
+    let index: usize = content.iter().position(|block| {
+        matches!(
+            block,
+            Block::Paragraph(_) | Block::Caption(_) | Block::List(_)
+        )
+    })?;
+    if content[..index].iter().any(is_layout_break)
+        || block_starts_after_layout_break(&content[index])
+    {
+        return None;
+    }
+    let style: &mut ParagraphStyle = first_paragraph_style_mut(&mut content[index])?;
+    let mark_after: f64 = style.section_mark_after?;
+    let space: f64 = (style.space_before.unwrap_or(0.0) - mark_after).max(0.0);
+    style.space_before = Some(0.0);
+    (space > 0.0).then_some((index, space))
 }
 
 /// Open the new section's horizontal text frame inside the page that is
@@ -1113,6 +1159,7 @@ fn generate_continuous_flow_blocks(
     size: &PageSize,
     content: &[Block],
     ends_continuously: bool,
+    section_mark_space: Option<(usize, f64)>,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     let segments: Vec<(usize, &[Block])> = split_at_page_breaks(content);
@@ -1139,7 +1186,7 @@ fn generate_continuous_flow_blocks(
             out,
             segment,
             ctx,
-            None,
+            section_mark_space.filter(|_| index == 0),
             joins_previous_at_page_boundary,
             joins_next_at_page_boundary,
             segment_end < content.len(),
@@ -1168,6 +1215,8 @@ struct FlowColumnRenderOptions {
     begins_continuously: bool,
     ends_continuously: bool,
     balance_final_segment: bool,
+    /// [`take_section_mark_space`]'s gap, written in the first column.
+    section_mark_space: Option<(usize, f64)>,
 }
 
 fn generate_flow_page_columns(
@@ -1200,7 +1249,9 @@ fn generate_flow_page_columns(
         // A page-top paragraph consumes space only in the column where it
         // starts; writing this gap before `#columns` would shift every column.
         let mut layout_break_space_before: Option<(usize, f64)> = None;
-        if index > 0 {
+        if index == 0 {
+            layout_break_space_before = options.section_mark_space;
+        } else {
             let has_content_before_page_break: bool = segments[..index]
                 .iter()
                 .flat_map(|(_, previous_segment)| previous_segment.iter())
