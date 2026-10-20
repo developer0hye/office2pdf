@@ -554,22 +554,12 @@ impl Parser for DocxParser {
         // them on without showing them (issue #2224).
         let mut linked_first_stories = LinkedFirstStories::default();
         let mut section_layout_index: usize = 0;
-        // The body index at which the frame of the last top-margin frame box
-        // opened starts, so the frame's later lines join that box.
-        let mut open_frame_box: Option<usize> = None;
-        // The last run of children sharing a frame at a fixed place on its
-        // page, so its later children join that frame.
-        let mut open_fixed_frame: Option<FixedFrameGroup> = None;
-        let style_frames: HashMap<String, docx_rs::FrameProperty> =
-            paragraph_style_frames(&docx.styles);
-        let body_frames: Vec<Option<docx_rs::FrameProperty>> = docx
-            .document
-            .children
-            .iter()
-            .map(|child| {
-                leading_frame_property(child, &style_frames, default_paragraph_style_id.as_deref())
-            })
-            .collect();
+        let mut body_frames = BodyFrames::new(
+            &docx.document.children,
+            &paragraph_style_frames(&docx.styles),
+            default_paragraph_style_id.as_deref(),
+            word_compatibility_mode == WordCompatibilityMode::Word2013OrLater,
+        );
         for (idx, child) in docx.document.children.iter().enumerate() {
             // A removed paragraph mark merges into the next paragraph; zero-width
             // bookmark/comment markers leave it pending. Tables, TOCs, and
@@ -608,52 +598,8 @@ impl Parser for DocxParser {
                         &ctx,
                         &docx.styles,
                     );
-                    if let Some(frame) = body_frames[idx].as_ref().and_then(fixed_text_frame) {
-                        tagged = join_fixed_text_frame(
-                            &mut elements,
-                            &mut open_fixed_frame,
-                            frame,
-                            tagged,
-                            &docx.document.children,
-                            &body_frames,
-                            idx,
-                        );
-                    } else if is_empty_lifted_frame(
-                        &tagged,
-                        &docx.document.children,
-                        &body_frames,
-                        idx,
-                    ) {
-                        tracing::debug!(
-                            format = "DOCX",
-                            body_index = idx,
-                            "Empty framed paragraph leaves no body line"
-                        );
-                        let lines: Vec<TaggedElement> = std::mem::take(&mut tagged);
-                        if word_compatibility_mode == WordCompatibilityMode::Word2013OrLater {
-                            tagged = keep_line_in_top_margin_frame_box(
-                                &mut elements,
-                                &mut open_frame_box,
-                                para,
-                                lines,
-                                &body_frames,
-                                idx,
-                            );
-                        }
-                    } else if let Some(frame) = lifted_text_frame(&tagged, &body_frames, idx) {
-                        tracing::debug!(
-                            format = "DOCX",
-                            body_index = idx,
-                            x_pt = frame.x,
-                            y_pt = frame.y,
-                            width_pt = frame.width,
-                            height_pt = frame.height,
-                            "Framed paragraph lifted out of the body flow"
-                        );
-                        tagged = vec![TaggedElement::Plain(vec![Block::TextFrame(Box::new(
-                            frame,
-                        ))])];
-                    }
+                    let flow_index: usize = body_frames.first_flow_child[idx];
+                    tagged = body_frames.place_paragraph(&mut elements, para, tagged, flow_index);
                     // Inject math equations for this body child
                     let eqs = math.take(idx);
                     for eq in eqs {
@@ -675,21 +621,43 @@ impl Parser for DocxParser {
                             &style_map,
                             &ctx,
                         )])];
-                    match body_frames[idx].as_ref().and_then(fixed_text_frame) {
-                        Some(frame) => join_fixed_text_frame(
-                            &mut elements,
-                            &mut open_fixed_frame,
-                            frame,
-                            tagged,
-                            &docx.document.children,
-                            &body_frames,
-                            idx,
-                        ),
-                        None => tagged,
-                    }
+                    let flow_index: usize = body_frames.first_flow_child[idx];
+                    body_frames.place_table(&mut elements, tagged, flow_index)
                 }
-                docx_rs::DocumentChild::StructuredDataTag(sdt) => {
-                    convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &ctx, &docx.styles)
+                docx_rs::DocumentChild::StructuredDataTag(_) => {
+                    // Each paragraph and table of the control joins `elements`
+                    // before the next is placed, so a frame they share is open.
+                    for flow_index in
+                        body_frames.first_flow_child[idx]..body_frames.first_flow_child[idx + 1]
+                    {
+                        let placed: Vec<TaggedElement> = match body_frames.children[flow_index] {
+                            FlowChild::Paragraph(para) => {
+                                let tagged: Vec<TaggedElement> = convert_paragraph_element(
+                                    para,
+                                    &images,
+                                    &hyperlinks,
+                                    &style_map,
+                                    &ctx,
+                                    &docx.styles,
+                                );
+                                body_frames.place_paragraph(&mut elements, para, tagged, flow_index)
+                            }
+                            FlowChild::Table(table) => {
+                                let tagged: Vec<TaggedElement> =
+                                    vec![TaggedElement::Plain(vec![convert_body_table_block(
+                                        table,
+                                        &images,
+                                        &hyperlinks,
+                                        &style_map,
+                                        &ctx,
+                                    )])];
+                                body_frames.place_table(&mut elements, tagged, flow_index)
+                            }
+                            FlowChild::Other => Vec::new(),
+                        };
+                        elements.extend(placed);
+                    }
+                    vec![]
                 }
                 docx_rs::DocumentChild::BookmarkStart(_)
                 | docx_rs::DocumentChild::BookmarkEnd(_)
@@ -995,39 +963,23 @@ fn declared_compatibility_mode(data: &[u8]) -> Option<u32> {
         })
 }
 
-/// Extract content from a StructuredDataTag (SDT), processing its paragraph
-/// and table children through the standard conversion pipeline.
-/// SDTs are used for various structured content in DOCX, including Table of Contents.
-fn convert_sdt_children(
-    sdt: &docx_rs::StructuredDataTag,
-    images: &ImageMap,
-    hyperlinks: &HyperlinkMap,
-    style_map: &StyleMap,
-    ctx: &DocxConversionContext,
-    styles: &docx_rs::Styles,
-) -> Vec<TaggedElement> {
-    let mut result = Vec::new();
+/// Push the paragraphs and tables of a block-level StructuredDataTag (SDT),
+/// nested ones included, in document order. SDTs are used for various
+/// structured content in DOCX, including Table of Contents; their content
+/// goes through the standard conversion pipeline.
+fn push_sdt_flow_children<'a>(sdt: &'a docx_rs::StructuredDataTag, out: &mut Vec<FlowChild<'a>>) {
     for child in &sdt.children {
         match child {
             docx_rs::StructuredDataTagChild::Paragraph(para) => {
-                result.extend(convert_paragraph_element(
-                    para, images, hyperlinks, style_map, ctx, styles,
-                ));
+                out.push(FlowChild::Paragraph(para));
             }
-            docx_rs::StructuredDataTagChild::Table(table) => {
-                result.push(TaggedElement::Plain(vec![convert_body_table_block(
-                    table, images, hyperlinks, style_map, ctx,
-                )]));
-            }
+            docx_rs::StructuredDataTagChild::Table(table) => out.push(FlowChild::Table(table)),
             docx_rs::StructuredDataTagChild::StructuredDataTag(nested) => {
-                result.extend(convert_sdt_children(
-                    nested, images, hyperlinks, style_map, ctx, styles,
-                ));
+                push_sdt_flow_children(nested, out);
             }
             _ => {}
         }
     }
-    result
 }
 
 fn convert_body_table_block(
@@ -2305,6 +2257,156 @@ fn is_empty_section_break_paragraph(para: &docx_rs::Paragraph) -> bool {
     properties == docx_rs::ParagraphProperty::default()
 }
 
+/// A paragraph or table of the body flow: a body child, or one in a
+/// block-level `w:sdt`, which only marks up its content, so Word frames it as
+/// if the control were absent (bulk `tdf148671`, issue #2231). Any other body
+/// child, such as a bookmark or a table of contents, ends a run of children
+/// sharing a frame.
+#[derive(Clone, Copy)]
+enum FlowChild<'a> {
+    Paragraph(&'a docx_rs::Paragraph),
+    Table(&'a docx_rs::Table),
+    Other,
+}
+
+/// The body's flow children, each with the frame it would sit in, and the
+/// frames the conversion has opened so far. Frames are found and joined by
+/// flow index, the position in `children`.
+struct BodyFrames<'a> {
+    children: Vec<FlowChild<'a>>,
+    /// Each flow child's [`leading_frame_property`].
+    frames: Vec<Option<docx_rs::FrameProperty>>,
+    /// The flow index of each body child's first flow child, then the number
+    /// of flow children, so body child `i` spans `first_flow_child[i]` to
+    /// `first_flow_child[i + 1]`.
+    first_flow_child: Vec<usize>,
+    /// The flow index at which the frame of the last top-margin frame box
+    /// opened starts, so the frame's later lines join that box.
+    open_box: Option<usize>,
+    /// The last run of children sharing a frame at a fixed place on its
+    /// page, so its later children join that frame.
+    open_fixed: Option<FixedFrameGroup>,
+    /// Whether the document lays out like Word 2013 and later, which keeps an
+    /// empty frame's box at the top margin ([`keep_line_in_top_margin_frame_box`]).
+    keeps_top_margin_boxes: bool,
+}
+
+impl<'a> BodyFrames<'a> {
+    fn new(
+        body: &'a [docx_rs::DocumentChild],
+        style_frames: &HashMap<String, docx_rs::FrameProperty>,
+        default_style_id: Option<&str>,
+        keeps_top_margin_boxes: bool,
+    ) -> Self {
+        let mut children: Vec<FlowChild<'a>> = Vec::with_capacity(body.len());
+        let mut first_flow_child: Vec<usize> = Vec::with_capacity(body.len() + 1);
+        for child in body {
+            first_flow_child.push(children.len());
+            match child {
+                docx_rs::DocumentChild::Paragraph(para) => {
+                    children.push(FlowChild::Paragraph(para))
+                }
+                docx_rs::DocumentChild::Table(table) => children.push(FlowChild::Table(table)),
+                docx_rs::DocumentChild::StructuredDataTag(sdt) => {
+                    push_sdt_flow_children(sdt, &mut children);
+                }
+                _ => children.push(FlowChild::Other),
+            }
+        }
+        first_flow_child.push(children.len());
+        let frames: Vec<Option<docx_rs::FrameProperty>> = children
+            .iter()
+            .map(|child| leading_frame_property(*child, style_frames, default_style_id))
+            .collect();
+        Self {
+            children,
+            frames,
+            first_flow_child,
+            open_box: None,
+            open_fixed: None,
+            keeps_top_margin_boxes,
+        }
+    }
+
+    /// What the flow keeps of `para`, the flow child at `index`, converted to
+    /// `converted`: the paragraph, its frame, or nothing when it joins a frame
+    /// already open or its empty frame leaves no line.
+    fn place_paragraph(
+        &mut self,
+        elements: &mut Vec<TaggedElement>,
+        para: &docx_rs::Paragraph,
+        converted: Vec<TaggedElement>,
+        index: usize,
+    ) -> Vec<TaggedElement> {
+        if let Some(frame) = self.frames[index].as_ref().and_then(fixed_text_frame) {
+            return join_fixed_text_frame(
+                elements,
+                &mut self.open_fixed,
+                frame,
+                converted,
+                &self.children,
+                &self.frames,
+                index,
+            );
+        }
+        if is_empty_lifted_frame(&converted, &self.children, &self.frames, index) {
+            tracing::debug!(
+                format = "DOCX",
+                flow_index = index,
+                "Empty framed paragraph leaves no body line"
+            );
+            if !self.keeps_top_margin_boxes {
+                return Vec::new();
+            }
+            return keep_line_in_top_margin_frame_box(
+                elements,
+                &mut self.open_box,
+                para,
+                converted,
+                &self.frames,
+                index,
+            );
+        }
+        if let Some(frame) = lifted_text_frame(&converted, &self.frames, index) {
+            tracing::debug!(
+                format = "DOCX",
+                flow_index = index,
+                x_pt = frame.x,
+                y_pt = frame.y,
+                width_pt = frame.width,
+                height_pt = frame.height,
+                "Framed paragraph lifted out of the body flow"
+            );
+            return vec![TaggedElement::Plain(vec![Block::TextFrame(Box::new(
+                frame,
+            ))])];
+        }
+        converted
+    }
+
+    /// What the flow keeps of the table at flow index `index`, converted to
+    /// `converted`: the table, its frame, or nothing when it joins a frame.
+    fn place_table(
+        &mut self,
+        elements: &mut Vec<TaggedElement>,
+        converted: Vec<TaggedElement>,
+        index: usize,
+    ) -> Vec<TaggedElement> {
+        match self.frames[index].as_ref().and_then(fixed_text_frame) {
+            Some(frame) => join_fixed_text_frame(
+                elements,
+                &mut self.open_fixed,
+                frame,
+                converted,
+                &self.children,
+                &self.frames,
+                index,
+            ),
+            None => converted,
+        }
+    }
+}
+
 /// A body paragraph in a `w:framePr` frame that Word lifts out of the flow,
 /// whose converted paragraph is undecorated and has no text but spaces, in a
 /// frame that shows nothing. Adjacent paragraphs with an identical
@@ -2320,10 +2422,10 @@ fn is_empty_section_break_paragraph(para: &docx_rs::Paragraph) -> bool {
 /// The other paragraphs of the frame are judged on their source runs, which
 /// cannot tell a paragraph style's border or shading.
 ///
-/// `frames` holds each body child's [`leading_frame_property`].
+/// `frames` holds each flow child's [`leading_frame_property`].
 fn is_empty_lifted_frame(
     converted: &[TaggedElement],
-    body: &[docx_rs::DocumentChild],
+    body: &[FlowChild<'_>],
     frames: &[Option<docx_rs::FrameProperty>],
     index: usize,
 ) -> bool {
@@ -2349,9 +2451,8 @@ fn is_empty_lifted_frame(
                     && paragraph.style.border.is_none()
             )
         )
-        && frame_mates.all(|child| {
-            matches!(child, docx_rs::DocumentChild::Paragraph(mate) if shows_only_spaces(mate))
-        })
+        && frame_mates
+            .all(|child| matches!(child, FlowChild::Paragraph(mate) if shows_only_spaces(mate)))
 }
 
 /// Keep an empty framed paragraph's line in the box Word 2013 and later keep
@@ -2363,7 +2464,7 @@ fn is_empty_lifted_frame(
 /// `empty-margin-frame-15-one-empty` keeps one line for an empty paragraph
 /// and the section mark after it (issue #2231).
 ///
-/// `open_box` is the body index the frame of the box opened last starts at.
+/// `open_box` is the flow index the frame of the box opened last starts at.
 ///
 /// FIXME(docx-rs reads no `w:val` on `w:vanish`): a paragraph mark stating
 /// `w:vanish w:val="0"` counts as hidden.
@@ -2401,7 +2502,7 @@ fn keep_line_in_top_margin_frame_box(
     }
     tracing::debug!(
         format = "DOCX",
-        body_index = index,
+        flow_index = index,
         x_pt = frame.x,
         width_pt = frame.width,
         "Empty frame keeps its box at the top margin"
@@ -2477,17 +2578,17 @@ fn lifted_text_frame(
     (!frame.content.is_empty()).then_some(frame)
 }
 
-/// The run of adjacent body children that share a frame Word keeps at a
+/// The run of adjacent flow children that share a frame Word keeps at a
 /// fixed place on its page, as [`join_fixed_text_frame`] last saw it.
 struct FixedFrameGroup {
-    /// The body index the run starts at.
+    /// The flow index the run starts at.
     start: usize,
     /// Whether the run is drawn in its frame, or stays in the flow because one
     /// of its children holds what a placed frame cannot.
     lifted: bool,
 }
 
-/// Draw a body child in the `w:framePr` frame Word keeps at a fixed place on
+/// Draw a flow child in the `w:framePr` frame Word keeps at a fixed place on
 /// its page ([`fixed_text_frame`]), together with the adjacent children that
 /// share the frame: the first opens it, and the others join it while it is
 /// still the last element. Returns what the flow keeps: the frame when this
@@ -2509,13 +2610,13 @@ struct FixedFrameGroup {
 /// TODO(lists and drawings in a fixed frame): Word draws them in the frame
 /// too.
 ///
-/// `frames` holds each body child's [`leading_frame_property`].
+/// `frames` holds each flow child's [`leading_frame_property`].
 fn join_fixed_text_frame(
     elements: &mut Vec<TaggedElement>,
     group: &mut Option<FixedFrameGroup>,
     mut frame: TextFrame,
     converted: Vec<TaggedElement>,
-    body: &[docx_rs::DocumentChild],
+    body: &[FlowChild<'_>],
     frames: &[Option<docx_rs::FrameProperty>],
     index: usize,
 ) -> Vec<TaggedElement> {
@@ -2559,8 +2660,8 @@ fn join_fixed_text_frame(
     }
     let frame_shows_something: bool = (start..body.len())
         .take_while(|&mate| frames[mate] == frames[start])
-        .any(|mate| match &body[mate] {
-            docx_rs::DocumentChild::Paragraph(paragraph) => !shows_only_spaces(paragraph),
+        .any(|mate| match body[mate] {
+            FlowChild::Paragraph(paragraph) => !shows_only_spaces(paragraph),
             _ => true,
         });
     if !fits_in_frame || !frame_shows_something {
@@ -2572,7 +2673,7 @@ fn join_fixed_text_frame(
     }
     tracing::debug!(
         format = "DOCX",
-        body_index = index,
+        flow_index = index,
         x_pt = frame.x,
         y_pt = frame.y,
         width_pt = frame.width,
@@ -2597,7 +2698,7 @@ fn plain_blocks(element: TaggedElement) -> Vec<Block> {
     }
 }
 
-/// The body index at which the run of children sharing the frame of the
+/// The flow index at which the run of children sharing the frame of the
 /// child at `index` starts.
 fn frame_start(frames: &[Option<docx_rs::FrameProperty>], index: usize) -> usize {
     index
@@ -2608,22 +2709,18 @@ fn frame_start(frames: &[Option<docx_rs::FrameProperty>], index: usize) -> usize
             .count()
 }
 
-/// The `w:framePr` a body child would sit in: a paragraph's, or a table's
+/// The `w:framePr` a flow child would sit in: a paragraph's, or a table's
 /// first cell paragraph's, which is how Word frames a table, merged over its
 /// paragraph style's ([`effective_frame_property`]). A paragraph that names
 /// no style takes the default paragraph style's, `default_style_id`.
-///
-/// TODO(frames in block-level content controls): a framed paragraph inside a
-/// body `w:sdt` is not a body child here, so it stays in the flow; bulk
-/// `tdf148671` keeps three of its six page frames there.
 fn leading_frame_property(
-    child: &docx_rs::DocumentChild,
+    child: FlowChild<'_>,
     style_frames: &HashMap<String, docx_rs::FrameProperty>,
     default_style_id: Option<&str>,
 ) -> Option<docx_rs::FrameProperty> {
     let paragraph: &docx_rs::Paragraph = match child {
-        docx_rs::DocumentChild::Paragraph(paragraph) => paragraph,
-        docx_rs::DocumentChild::Table(table) => {
+        FlowChild::Paragraph(paragraph) => paragraph,
+        FlowChild::Table(table) => {
             let docx_rs::TableChild::TableRow(row) = table.rows.first()?;
             let docx_rs::TableRowChild::TableCell(cell) = row.cells.first()?;
             match cell.children.first()? {
@@ -2631,7 +2728,7 @@ fn leading_frame_property(
                 _ => return None,
             }
         }
-        _ => return None,
+        FlowChild::Other => return None,
     };
     let style_id: Option<&str> = get_paragraph_style_id(&paragraph.property).or(default_style_id);
     effective_frame_property(
